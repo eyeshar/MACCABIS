@@ -14,6 +14,25 @@ _Última actualización: 04/08/2026 — bloque "histórico de temporadas", **pub
 
 ## Hecho y funcionando
 
+### Historia del club: matriz de presencia 2013→2026 (rama `feat/historia-club-datos`)
+- **76 personas** con sus temporadas de presencia en el club, en `data/historia_club.json` (cerrado por Iván el 04/08/2026 a partir de `Historia_de_los_Maccabi.xlsx` + SportEasy).
+- **Sólo datos**: la interfaz visual (rejilla, tira temporal, fichas) es el bloque siguiente y NO está construida.
+- **Registro único de identidades** en `data/personas.json` (80 personas): fuente de verdad de los `person_id` que comparten la Historia y las estadísticas. Ver DECISIONS D13-D15.
+- Validado contra sus propias reglas: `n_temporadas` cuadra con los años jugados 2013-2025 en las 76; ninguna tiene 2026 como jugada (22 la tienen como **prevista** 26/27, que no cuenta en veteranía); sin ids duplicados.
+- `npm run check:personas` valida las identidades y las reglas sin escribir nada.
+
+#### Reconciliación de identidades (04/08/2026)
+- **55** personas coincidían de id exactamente entre Historia y estadísticas.
+- **3 unificadas**, cada una confirmada por apellidos Y coincidencia de temporadas:
+  | Antes | Después | Dónde se corrigió |
+  |---|---|---|
+  | `martinez-victor` | `martinez-martinez-victor` | `.md` del diccionario (21/22) + temporadas regeneradas |
+  | `ballesteros-fuentes-robert` | `ballesteros-fuentes-roberto` | `data/historia_club.json` |
+  | `mendez-escandon-fernando-antonio` | `mendez-escandon-fernando` | alias; el acta 25/26 trae el nombre legal completo |
+- **21** personas sólo en la Historia, sin estadísticas: es lo esperado (el entrenador, los 3 `solo_mote` y quienes jugaron años sin actas o sólo en el MdA).
+- **4** personas con estadísticas que **no aparecen en la matriz** — pendientes de revisión humana, ver cabos sueltos.
+- La 25/26 era la única temporada sin `person_id` (venía del pipeline antiguo): estampado en sus 24 jugadores y 382 filas de boxscore, sin alterar ningún dato deportivo.
+
 ### Histórico completo: 10 temporadas 2013/14 → 2024/25 (rama `feat/historico-temporadas`)
 - **11 temporadas en el dashboard** (13/14 → 25/26) con selector operativo. La 25/26 sigue siendo la temporada por defecto y **no ha cambiado**.
 - Un `data/season_YYYY-YY.json` por temporada, con el **mismo esquema** que 25/26 (`season`, `label`, `partidos`, `players`, `box`, `qstats`) más claves nuevas donde el esquema no llegaba: `metrics`, `validacion`, `mda_resumen`.
@@ -61,10 +80,11 @@ Equipo (balance, racha, tabla de partidos con boxscore desplegable al clic) · J
 3. **Motes sueltos sin entrada en el diccionario** (tratados como "sin catalogar", sus puntos siguen contando en el equipo):
    - 14/15: `Paaco` y `Coach` — sin puntos, sólo aparecen en faltas/tiros libres. Probables erratas de `Paco` y de la etiqueta de entrenador.
    - 17/18: `Víctor` — **6 puntos**. La regla 4 del diccionario dice que "Víctor" = Víctor Martínez, pero la tabla de 17/18 no lo lista, así que no se ha aplicado.
-4. **Dos `person_id` para Víctor Martínez** — el diccionario lo escribe "Martínez Martínez, Víctor" en 20/21 y 23/24 y "Martínez, Víctor" en 21/22. Sin efecto dentro de cada temporada, pero conviene unificarlo antes de cruzar temporadas.
+4. ~~**Dos `person_id` para Víctor Martínez**~~ — **RESUELTO (04/08/2026).** Unificado a `martinez-martinez-victor` en el `.md` fuente y en las cuatro temporadas donde aparece (20/21, 21/22, 23/24, 24/25). El id retirado queda anotado en `alias_ids`.
 5. **Tres celdas corruptas en el MdA 23/24** — valores decimales donde debería haber enteros (Jon/triples = 1,875; Edwin/TL = 1,875; J. Perchín/TL = 1,43). Se transcriben tal cual y salen marcadas con "?" en el dashboard.
 6. **Dos jugadores con 2P no derivables en 20/21** (partido 10: Heriberto Gil 11 puntos y Alfredo David López 3, ambos sin triples ni tiros libres registrados). El dato de la fuente es incompleto; se deja ausente.
-7. **Partidos sin estadística individual**: 3 en 15/16 (5, 11 y 18) y 9 en 21/22 (10 al 18). El marcador sí consta; el boxscore no se ha fabricado y salen marcados como "sin stats".
+7. **Cuatro personas con estadísticas que no están en la matriz de historia** — Ignacio Ferrando del Rincón (23/24), Ramón Mora-Gil Jiménez (21/22 y 23/24), Javier Páez García (20/21) y Daniele Vallesi (21/22, 23/24, 24/25). **No se han fusionado con nadie**: había parecidos superficiales (otro Ramón, otro Javier, otro Ignacio) que son personas distintas. Falta decidir si se añaden a la matriz o si su ausencia es intencionada. `npm run check:personas` los avisa en cada ejecución.
+8. **Partidos sin estadística individual**: 3 en 15/16 (5, 11 y 18) y 9 en 21/22 (10 al 18). El marcador sí consta; el boxscore no se ha fabricado y salen marcados como "sin stats".
 
 ## En curso / decidido pero no empezado
 

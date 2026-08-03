@@ -17,14 +17,17 @@
 - [ ] **Verificar la ficha de Ignacio Mateos Aparicio** ("Nacho S.", 23/24 y 24/25): la tabla MdA confirma que jugaba en las dos fichas (36 puntos en el MdA de 23/24), pero sigue sin aparecer en las fichas de inscripción MdL. Falta localizar en qué ficha constaba.
 - [x] **Ampliar el diccionario de nombres al MdA** — HECHO (04/08/2026). Iván cerró las tablas `### 2023/24 (MdA)` y `### 2024/25 (MdA)`; los 37 motes resuelven a persona real y no queda ninguno sin catalogar.
 - [ ] **Resolver 3 motes sueltos del MdL**: `Paaco` y `Coach` (14/15, sin puntos) y `Víctor` (17/18, **6 puntos**). No se han deducido: hace falta una fila explícita en el diccionario.
-- [ ] **Unificar el `person_id` de Víctor Martínez** (aparece como "Martínez Martínez, Víctor" y como "Martínez, Víctor" según la temporada). Importante antes de cualquier ranking histórico entre temporadas.
+- [x] **Unificar el `person_id` de Víctor Martínez** — HECHO (04/08/2026). Unificado a `martinez-martinez-victor` en todos los datos.
+- [ ] **Decidir sobre 4 personas con estadísticas ausentes de la matriz de historia**: Ferrando del Rincón, Mora-Gil Jiménez, Páez García y Vallesi. ¿Se añaden a la matriz o su ausencia es intencionada? No se han fusionado con nadie por seguridad.
+- [ ] **Cabos del diccionario de la matriz** (`docs/HISTORIA_diccionario_matriz.md`): desambiguar 'Sam' (Rogaia vs Gruppo) por año, repartir 'Ignacio' entre Ferrando/Mileo/Mateos, y confirmar 'Jose' 2020 = Gil Fernández (confianza media).
 - [ ] **Revisar 3 celdas del MdA 23/24** con decimales donde debería haber enteros (marcadas con "?" en el dashboard).
 - [ ] **Recuperar, si existen, las actas de los partidos sin estadística individual**: 15/16 (5, 11, 18) y 21/22 (10 al 18).
 - [ ] **Enriquecer las históricas** si aparecen las fuentes: fechas de partido, dorsales, parciales por cuarto del MdL y asistencia. Hoy no existen y por eso esas columnas y pestañas ni se muestran.
 
 ## Siguiente (bloque 2: historia del club)
 
-- [ ] **Sección visual "Historia de los Maccabis"** a partir de `Historia_de_los_Maccabi.xlsx`:
+- [x] **Datos de la Historia integrados y reconciliados** — HECHO (04/08/2026, rama `feat/historia-club-datos`): `data/historia_club.json` (76 personas) + `data/personas.json` (registro único de identidades).
+- [ ] **Sección visual "Historia de los Maccabis"** — SIGUIENTE BLOQUE. Los datos ya están listos:
   - Matriz de 80 personas × 14 temporadas (2013→2026), con dorsal y nº de temporadas en activo por persona.
   - Idea: línea temporal del club, quién estuvo cada año, veteranía, "since 2013". Diseño visual y bonito.
   - Nota: el Excel tiene hojas "Equipo", "Copy of Equipo" (ordenada por dorsal) y "Sheet2". Usar la principal.

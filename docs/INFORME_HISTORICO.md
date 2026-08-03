@@ -2,8 +2,8 @@
 
 _Generado por `scripts/build_historico.js` a partir de los Excel de estadísticas del club._
 
-| Temporada | Partidos | Jugadores | Cuadre acta | MdA agregado | Métricas disponibles |
-|---|---|---|---|---|---|
+| Temporada | Partidos | Sin stats | Jugadores | Cuadre acta | MdA agregado | Métricas disponibles |
+|---|---|---|---|---|---|---|
 | 2013 / 14 | 19 | 0 | 13 | 19/19 | — | pts, p3, tl, fc, p2 |
 | 2014 / 15 | 20 | 0 | 12 | 20/20 | — | pts, p3, tl, fc, p2 |
 | 2015 / 16 | 20 | 3 | 13 | 17/17 | — | pts, p3, tl, fc, p2 |

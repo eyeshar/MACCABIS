@@ -618,8 +618,8 @@ function main() {
   // informe
   report.push('# Informe de generación del histórico (2013/14 – 2024/25)', '',
     `_Generado por \`scripts/build_historico.js\` a partir de los Excel de estadísticas del club._`, '',
-    '| Temporada | Partidos | Jugadores | Cuadre acta | MdA agregado | Métricas disponibles |',
-    '|---|---|---|---|---|---|');
+    '| Temporada | Partidos | Sin stats | Jugadores | Cuadre acta | MdA agregado | Métricas disponibles |',
+    '|---|---|---|---|---|---|---|');
   for (const r of resumen) {
     report.push(`| ${labelOf(r.id)} | ${r.partidos} | ${r.sin_stats || 0} | ${r.jugadores} | ${r.cuadre} | ${r.mda ?? '—'} | ${r.metrics} |`);
   }

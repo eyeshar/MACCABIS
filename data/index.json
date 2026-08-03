@@ -1,0 +1,10 @@
+{
+  "seasons": [
+    {
+      "id": "2025-26",
+      "label": "2025 / 26",
+      "file": "data/season_2025-26.json"
+    }
+  ],
+  "default": "2025-26"
+}

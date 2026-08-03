@@ -42,11 +42,14 @@ relanzarlo. Los Excel de origen **no** están en el repositorio.
 5. Sube el nuevo `data/season_AAAA-AA.json` y, si es temporada nueva, añádela a `data/index.json`.
 6. GitHub Pages se actualiza solo en 1-2 minutos.
 
-## Publicar en GitHub Pages
-1. Crea un repositorio (por ejemplo `maccabis-stats`).
-2. Sube estos archivos (index.html, carpeta data, carpeta scripts, README).
-3. En Settings → Pages → Source, elige la rama `main` y carpeta `/root`.
-4. Tu URL será `https://TU_USUARIO.github.io/maccabis-stats/`.
+## Publicado en GitHub Pages
+
+**https://eyeshar.github.io/MACCABIS/**
+
+Se sirve desde la rama `main`, carpeta raíz del repositorio `eyeshar/MACCABIS`.
+Cada push a `main` redespliega solo en 1-2 minutos. Como es una web estática que
+lee los JSON por `fetch`, para actualizar datos basta con subir el
+`data/season_AAAA-AA.json` correspondiente.
 
 ## Notas de datos
 - Columnas siempre a cero (rebotes, asistencias, robos…) se descartan porque la liga no las registra.

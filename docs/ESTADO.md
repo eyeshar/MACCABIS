@@ -2,7 +2,15 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 04/08/2026 — bloque "histórico de temporadas" (rama `feat/historico-temporadas`, pendiente de revisión y merge)._
+_Última actualización: 04/08/2026 — bloque "histórico de temporadas", **publicado en GitHub Pages**._
+
+## Repositorio y publicación
+
+- **Remoto:** `https://github.com/eyeshar/MACCABIS.git` (público). Conectado el 04/08/2026.
+- **Ramas publicadas:** `main` (es la que sirve GitHub Pages) y `feat/historico-temporadas` (idéntica, queda para revisión).
+- El repositorio local **no estaba bajo git**; se inicializó en este bloque. El remoto tenía un único commit de subida manual (`45b31d9`) con una versión anterior del proyecto. Las dos historias estaban desconectadas y se unieron con `--allow-unrelated-histories`: **el commit `45b31d9` se conserva** como segundo padre del merge `b42576b`. Ningún archivo suyo se perdió.
+- Hay una etiqueta local `pre-merge-remoto` (= `99e52d3`) como punto de retorno anterior a esa unión.
+- **URL pública:** https://eyeshar.github.io/MACCABIS/
 
 ## Hecho y funcionando
 

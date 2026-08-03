@@ -17,22 +17,53 @@ Puedes enlazar a una temporada y pestaña concretas: `index.html?t=2013-14&p=jug
 - `index.html` — el panel (código; no se toca salvo mejoras de diseño).
 - `data/index.json` — lista de temporadas disponibles.
 - `data/season_AAAA-AA.json` — los datos de cada temporada.
-- `data/diccionario_nombres.json` — mote → persona, por temporada. **Generado**, no editar a mano:
-  la fuente de verdad es `docs/DICCIONARIO_NOMBRES_maccabis.md`.
+- `data/personas.json` — **registro único de identidades del club**: fuente de verdad de los
+  `person_id`. **Generado**, no editar a mano.
+- `data/historia_club.json` — matriz de presencia: quién estuvo en el club cada temporada
+  (2013→2026). Cerrado por Iván; referencia los `person_id` del registro.
+- `data/diccionario_nombres.json` — mote → persona, por temporada y por ficha (MdL / MdA).
+  **Generado**, no editar a mano: la fuente de verdad es `docs/DICCIONARIO_NOMBRES_maccabis.md`.
 - `scripts/` — utilidades para generar los JSON desde los Excel.
 - `docs/INFORME_HISTORICO.md` — informe de generación del histórico, con las incidencias.
 
-## Regenerar el histórico (2013/14 – 2024/25)
+## Identidad de las personas: un único `person_id`
+
+Todo el proyecto identifica a cada persona por un **`person_id` canónico**, y `data/personas.json`
+es la fuente de verdad de esos identificadores. El registro guarda **sólo identidad**
+(id, nombre formal, display) y dos banderas de negocio:
+
+- `es_entrenador` — Carlos Barreiro nunca jugó: queda fuera de cualquier ranking de jugador.
+- `solo_mote` — persona real de paso sin nombre formal (Pupo, Eric, Alejandro). Se conserva
+  en la historia del club, pero no tiene ficha de estadísticas.
+
+Los dos lados del proyecto apuntan a ese mismo id y no duplican identidad:
+
+| Qué | Dónde vive |
+|---|---|
+| Quién es cada persona | `data/personas.json` |
+| En qué temporadas estuvo en el club | `data/historia_club.json` |
+| Qué hizo en la cancha | `data/season_*.json` |
+
+El id se deriva del nombre formal (`slug`: sin tildes, minúsculas, guiones). Cuando una misma
+persona aparecía escrita de dos formas, se unificó a un id canónico y la escritura antigua queda
+anotada en `alias_ids` para no repetir la reconciliación.
+
+## Regenerar los datos
 
 ```bash
 npm install
-npm run build:datos          # busca los Excel en ~/Downloads
-npm run historico -- --src "ruta/a/los/excel"
+npm run build:datos          # diccionario + histórico + registro de personas
+npm run historico -- --src "ruta/a/los/excel"   # los Excel se buscan en ~/Downloads por defecto
+npm run check:personas       # sólo valida identidades y reglas; no escribe nada
 ```
 
-`build:datos` reconstruye el diccionario desde el `.md` y vuelve a generar las 10
-temporadas históricas. Es idempotente: si sólo cambias el diccionario, basta con
-relanzarlo. Los Excel de origen **no** están en el repositorio.
+`build:datos` reconstruye el diccionario desde el `.md`, regenera las 10 temporadas históricas
+y vuelve a construir el registro de personas. Es idempotente: dos ejecuciones seguidas producen
+exactamente los mismos ficheros. Los Excel de origen **no** están en el repositorio.
+
+`check:personas` valida que todos los `person_id` de la Historia y de las estadísticas existan
+en el registro, que `n_temporadas` cuadre con los años jugados y que 2026 (temporada 26/27,
+prevista) no cuente como jugada. Devuelve código 1 si algo falla.
 
 ## Cómo añadir partidos / una temporada nueva
 1. Exporta de la app **Afición FBM** las hojas de estadística de cada partido (XLSX).

@@ -178,12 +178,6 @@
       "formal": "Martínez Martínez, Víctor"
     },
     {
-      "person_id": "martinez-victor",
-      "nombre": "MARTÍNEZ, VÍCTOR",
-      "display": "Víctor Martínez",
-      "formal": "Martínez, Víctor"
-    },
-    {
       "person_id": "mateos-aparicio-ignacio",
       "nombre": "MATEOS APARICIO, IGNACIO",
       "display": "Ignacio Mateos Aparicio",
@@ -870,7 +864,7 @@
       },
       "Víctor": {
         "tipo": "jugador",
-        "person_id": "martinez-victor"
+        "person_id": "martinez-martinez-victor"
       },
       "Ramón": {
         "tipo": "jugador",

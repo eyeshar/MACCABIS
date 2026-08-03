@@ -10,7 +10,7 @@
    - **Eric, Lonchas** = personas reales de paso, sin apellido/ficha. Categoría 'Sin catalogar': sin ficha individual, pero sus puntos cuentan en el total de equipo. No se inventan apellidos.
    - **NS / 'No sabemos' / '(coach)'** = RUIDO (etiquetas de Carlos para anotaciones sin dueño claro). NO son jugadores: no generan ficha ni entran en rankings. Sus puntos SÍ permanecen en el total de equipo (para que los marcadores cuadren con las actas). Los '(coach)' con puntos se revisan partido a partido (probable error de transcripción).
 3. **Motes que cambian de persona según el año** (Alex, Santi): resueltos por temporada abajo. Alex = Suárez hasta 23/24, Bujaldón desde 24/25. Santi = Calvo (fundador) en años viejos, Pazo desde 17/18.
-4. **Dos Víctor distintos**: 'Wall' = Víctor Pérez Núñez; 'Víctor' = Víctor Martínez.
+4. **Dos Víctor distintos**: 'Wall' = Víctor Pérez Núñez; 'Víctor' = Víctor Martínez Martínez (en 21/22 la tabla lo escribía sólo como "Martínez, Víctor"; unificado el 04/08/2026 al nombre completo para que sea una única identidad).
 5. **Dos Iván en 24/25**: 'Iván V.' = Villaescusa; 'Iván Rodríguez' = Rodríguez Pérez (NO es el capitán).
 
 ## ⚠️ Único cabo suelto pendiente
@@ -182,7 +182,7 @@
 | `Luis` | Varas García, Luis Alberto |
 | `Fer` | Tejeiro Pérez de Agreda, Fernando |
 | `Iván` | Villaescusa Silva, Iván |
-| `Víctor` | Martínez, Víctor |
+| `Víctor` | Martínez Martínez, Víctor |
 | `Ramón` | Mora-Gil Jiménez, Ramón |
 | `NS` | [NO IDENTIFICADO] |
 

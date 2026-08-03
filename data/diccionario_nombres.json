@@ -1,0 +1,1003 @@
+{
+  "_fuente": "docs/DICCIONARIO_NOMBRES_maccabis.md (cerrado por Iván, 03/08/2026)",
+  "_generado_por": "scripts/parse_diccionario.js",
+  "_nota_mda": "El diccionario cubre las estadísticas MdL 2013–2025. Los motes de las hojas MdA (23/24 y 24/25) que no aparezcan en la temporada correspondiente quedan SIN CATALOGAR: no se les asigna nombre.",
+  "personas": [
+    {
+      "person_id": "ballesteros-fuentes-roberto",
+      "nombre": "BALLESTEROS FUENTES, ROBERTO",
+      "display": "Roberto Ballesteros Fuentes",
+      "formal": "Ballesteros Fuentes, Roberto"
+    },
+    {
+      "person_id": "blazquez-lopez-juan-carlos",
+      "nombre": "BLÁZQUEZ LÓPEZ, JUAN CARLOS",
+      "display": "Juan Carlos Blázquez López",
+      "formal": "Blázquez López, Juan Carlos"
+    },
+    {
+      "person_id": "bonetto-aram",
+      "nombre": "BONETTO, ARAM",
+      "display": "Aram Bonetto",
+      "formal": "Bonetto, Aram"
+    },
+    {
+      "person_id": "bujaldon-rodriguez-alejandro",
+      "nombre": "BUJALDÓN RODRÍGUEZ, ALEJANDRO",
+      "display": "Alejandro Bujaldón Rodríguez",
+      "formal": "Bujaldón Rodríguez, Alejandro"
+    },
+    {
+      "person_id": "cabanas-de-pablo-ignacio",
+      "nombre": "CABAÑAS DE PABLO, IGNACIO",
+      "display": "Ignacio Cabañas de Pablo",
+      "formal": "Cabañas de Pablo, Ignacio"
+    },
+    {
+      "person_id": "calahorro-sanchez-manuel",
+      "nombre": "CALAHORRO SÁNCHEZ, MANUEL",
+      "display": "Manuel Calahorro Sánchez",
+      "formal": "Calahorro Sánchez, Manuel"
+    },
+    {
+      "person_id": "calvo-gonzalez-santiago",
+      "nombre": "CALVO GONZÁLEZ, SANTIAGO",
+      "display": "Santiago Calvo González",
+      "formal": "Calvo González, Santiago"
+    },
+    {
+      "person_id": "carrera-carranza-julian",
+      "nombre": "CARRERA CARRANZA, JULIÁN",
+      "display": "Julián Carrera Carranza",
+      "formal": "Carrera Carranza, Julián"
+    },
+    {
+      "person_id": "castro-mayo-henry-luis",
+      "nombre": "CASTRO MAYO, HENRY LUIS",
+      "display": "Henry Luis Castro Mayo",
+      "formal": "Castro Mayo, Henry Luis"
+    },
+    {
+      "person_id": "cuadrado-marinas-diego",
+      "nombre": "CUADRADO MARIÑAS, DIEGO",
+      "display": "Diego Cuadrado Mariñas",
+      "formal": "Cuadrado Mariñas, Diego"
+    },
+    {
+      "person_id": "de-carvalho-rodrigues-julio-cesar",
+      "nombre": "DE CARVALHO RODRIGUES, JULIO CÉSAR",
+      "display": "Julio César De Carvalho Rodrigues",
+      "formal": "De Carvalho Rodrigues, Julio César"
+    },
+    {
+      "person_id": "de-maria-sanchez-jaime",
+      "nombre": "DE MARÍA SÁNCHEZ, JAIME",
+      "display": "Jaime De María Sánchez",
+      "formal": "De María Sánchez, Jaime"
+    },
+    {
+      "person_id": "diaz-hernandez-jose-ignacio",
+      "nombre": "DÍAZ HERNÁNDEZ, JOSÉ IGNACIO",
+      "display": "José Ignacio Díaz Hernández",
+      "formal": "Díaz Hernández, José Ignacio"
+    },
+    {
+      "person_id": "diaz-iglesias-aguilar-juan",
+      "nombre": "DÍAZ-IGLESIAS AGUILAR, JUAN",
+      "display": "Juan Díaz-Iglesias Aguilar",
+      "formal": "Díaz-Iglesias Aguilar, Juan"
+    },
+    {
+      "person_id": "esteban-jon",
+      "nombre": "ESTEBAN, JON",
+      "display": "Jon Esteban",
+      "formal": "Esteban, Jon"
+    },
+    {
+      "person_id": "fernandez-del-rio-alvaro",
+      "nombre": "FERNÁNDEZ DEL RÍO, ÁLVARO",
+      "display": "Álvaro Fernández del Río",
+      "formal": "Fernández del Río, Álvaro"
+    },
+    {
+      "person_id": "ferrando-del-rincon-ignacio",
+      "nombre": "FERRANDO DEL RINCÓN, IGNACIO",
+      "display": "Ignacio Ferrando del Rincón",
+      "formal": "Ferrando del Rincón, Ignacio"
+    },
+    {
+      "person_id": "galan-domingo-guillermo",
+      "nombre": "GALÁN DOMINGO, GUILLERMO",
+      "display": "Guillermo Galán Domingo",
+      "formal": "Galán Domingo, Guillermo"
+    },
+    {
+      "person_id": "gil-delgado-heriberto",
+      "nombre": "GIL DELGADO, HERIBERTO",
+      "display": "Heriberto Gil Delgado",
+      "formal": "Gil Delgado, Heriberto"
+    },
+    {
+      "person_id": "herrera-benzan-adan",
+      "nombre": "HERRERA BENZÁN, ADÁN",
+      "display": "Adán Herrera Benzán",
+      "formal": "Herrera Benzán, Adán"
+    },
+    {
+      "person_id": "klein-patrick-hennesey",
+      "nombre": "KLEIN, PATRICK HENNESEY",
+      "display": "Patrick Hennesey Klein",
+      "formal": "Klein, Patrick Hennesey"
+    },
+    {
+      "person_id": "lopez-de-ayala-alcantara-eduardo",
+      "nombre": "LÓPEZ DE AYALA ALCÁNTARA, EDUARDO",
+      "display": "Eduardo López de Ayala Alcántara",
+      "formal": "López de Ayala Alcántara, Eduardo"
+    },
+    {
+      "person_id": "lopez-lucero-alfredo-david",
+      "nombre": "LÓPEZ LUCERO, ALFREDO DAVID",
+      "display": "Alfredo David López Lucero",
+      "formal": "López Lucero, Alfredo David"
+    },
+    {
+      "person_id": "mar-calvo-borja",
+      "nombre": "MAR CALVO, BORJA",
+      "display": "Borja Mar Calvo",
+      "formal": "Mar Calvo, Borja"
+    },
+    {
+      "person_id": "martin-lopez-adrian",
+      "nombre": "MARTÍN LÓPEZ, ADRIÁN",
+      "display": "Adrián Martín López",
+      "formal": "Martín López, Adrián"
+    },
+    {
+      "person_id": "martin-ortega-rico-eduardo",
+      "nombre": "MARTÍN-ORTEGA RICO, EDUARDO",
+      "display": "Eduardo Martín-Ortega Rico",
+      "formal": "Martín-Ortega Rico, Eduardo"
+    },
+    {
+      "person_id": "martinez-martinez-victor",
+      "nombre": "MARTÍNEZ MARTÍNEZ, VÍCTOR",
+      "display": "Víctor Martínez Martínez",
+      "formal": "Martínez Martínez, Víctor"
+    },
+    {
+      "person_id": "martinez-victor",
+      "nombre": "MARTÍNEZ, VÍCTOR",
+      "display": "Víctor Martínez",
+      "formal": "Martínez, Víctor"
+    },
+    {
+      "person_id": "mateos-aparicio-ignacio",
+      "nombre": "MATEOS APARICIO, IGNACIO",
+      "display": "Ignacio Mateos Aparicio",
+      "formal": "Mateos Aparicio, Ignacio"
+    },
+    {
+      "person_id": "mileo-ignacio-agustin",
+      "nombre": "MILEO, IGNACIO AGUSTÍN",
+      "display": "Ignacio Agustín Mileo",
+      "formal": "Mileo, Ignacio Agustín"
+    },
+    {
+      "person_id": "mora-gil-jimenez-ramon",
+      "nombre": "MORA-GIL JIMÉNEZ, RAMÓN",
+      "display": "Ramón Mora-Gil Jiménez",
+      "formal": "Mora-Gil Jiménez, Ramón"
+    },
+    {
+      "person_id": "moral-cacho-enrique",
+      "nombre": "MORAL CACHO, ENRIQUE",
+      "display": "Enrique Moral Cacho",
+      "formal": "Moral Cacho, Enrique"
+    },
+    {
+      "person_id": "morali-leonardo",
+      "nombre": "MORALI, LEONARDO",
+      "display": "Leonardo Morali",
+      "formal": "Morali, Leonardo"
+    },
+    {
+      "person_id": "ortega-delgado-pablo",
+      "nombre": "ORTEGA DELGADO, PABLO",
+      "display": "Pablo Ortega Delgado",
+      "formal": "Ortega Delgado, Pablo"
+    },
+    {
+      "person_id": "paez-garcia-javier",
+      "nombre": "PÁEZ GARCÍA, JAVIER",
+      "display": "Javier Páez García",
+      "formal": "Páez García, Javier"
+    },
+    {
+      "person_id": "pazo-pascual-santiago",
+      "nombre": "PAZO PASCUAL, SANTIAGO",
+      "display": "Santiago Pazo Pascual",
+      "formal": "Pazo Pascual, Santiago"
+    },
+    {
+      "person_id": "peco-ruiz-alberto",
+      "nombre": "PECO RUIZ, ALBERTO",
+      "display": "Alberto Peco Ruiz",
+      "formal": "Peco Ruiz, Alberto"
+    },
+    {
+      "person_id": "perez-lardiez-jorge",
+      "nombre": "PÉREZ LARDIEZ, JORGE",
+      "display": "Jorge Pérez Lardiez",
+      "formal": "Pérez Lardiez, Jorge"
+    },
+    {
+      "person_id": "perez-nunez-carlos",
+      "nombre": "PÉREZ NÚÑEZ, CARLOS",
+      "display": "Carlos Pérez Núñez",
+      "formal": "Pérez Núñez, Carlos"
+    },
+    {
+      "person_id": "perez-nunez-raul",
+      "nombre": "PÉREZ NÚÑEZ, RAÚL",
+      "display": "Raúl Pérez Núñez",
+      "formal": "Pérez Núñez, Raúl"
+    },
+    {
+      "person_id": "perez-nunez-victor",
+      "nombre": "PÉREZ NÚÑEZ, VÍCTOR",
+      "display": "Víctor Pérez Núñez",
+      "formal": "Pérez Núñez, Víctor"
+    },
+    {
+      "person_id": "porras-calzada-jose-maria",
+      "nombre": "PORRAS CALZADA, JOSÉ MARÍA",
+      "display": "José María Porras Calzada",
+      "formal": "Porras Calzada, José María"
+    },
+    {
+      "person_id": "rodriguez-perez-ivan",
+      "nombre": "RODRÍGUEZ PÉREZ, IVÁN",
+      "display": "Iván Rodríguez Pérez",
+      "formal": "Rodríguez Pérez, Iván"
+    },
+    {
+      "person_id": "rogaia-samuele",
+      "nombre": "ROGAIA, SAMUELE",
+      "display": "Samuele Rogaia",
+      "formal": "Rogaia, Samuele"
+    },
+    {
+      "person_id": "romero-barrueco-alonso",
+      "nombre": "ROMERO BARRUECO, ALONSO",
+      "display": "Alonso Romero Barrueco",
+      "formal": "Romero Barrueco, Alonso"
+    },
+    {
+      "person_id": "sanchez-herrero-rafael",
+      "nombre": "SÁNCHEZ HERRERO, RAFAEL",
+      "display": "Rafael Sánchez Herrero",
+      "formal": "Sánchez Herrero, Rafael"
+    },
+    {
+      "person_id": "suarez-cobos-alejandro",
+      "nombre": "SUÁREZ COBOS, ALEJANDRO",
+      "display": "Alejandro Suárez Cobos",
+      "formal": "Suárez Cobos, Alejandro"
+    },
+    {
+      "person_id": "tejeiro-perez-de-agreda-fernando",
+      "nombre": "TEJEIRO PÉREZ DE AGREDA, FERNANDO",
+      "display": "Fernando Tejeiro Pérez de Agreda",
+      "formal": "Tejeiro Pérez de Agreda, Fernando"
+    },
+    {
+      "person_id": "tosta-queiroz-gilberto",
+      "nombre": "TOSTA QUEIROZ, GILBERTO",
+      "display": "Gilberto Tosta Queiroz",
+      "formal": "Tosta Queiroz, Gilberto"
+    },
+    {
+      "person_id": "vallesi-daniele",
+      "nombre": "VALLESI, DANIELE",
+      "display": "Daniele Vallesi",
+      "formal": "Vallesi, Daniele"
+    },
+    {
+      "person_id": "varas-garcia-luis-alberto",
+      "nombre": "VARAS GARCÍA, LUIS ALBERTO",
+      "display": "Luis Alberto Varas García",
+      "formal": "Varas García, Luis Alberto"
+    },
+    {
+      "person_id": "venegas-lamamie-de-clairac-alan",
+      "nombre": "VENEGAS LAMAMIE DE CLAIRAC, ALAN",
+      "display": "Alan Venegas Lamamie de Clairac",
+      "formal": "Venegas Lamamie de Clairac, Alan"
+    },
+    {
+      "person_id": "victor-sanchez-francisco",
+      "nombre": "VÍCTOR SÁNCHEZ, FRANCISCO",
+      "display": "Francisco Víctor Sánchez",
+      "formal": "Víctor Sánchez, Francisco"
+    },
+    {
+      "person_id": "villaescusa-silva-ivan",
+      "nombre": "VILLAESCUSA SILVA, IVÁN",
+      "display": "Iván Villaescusa Silva",
+      "formal": "Villaescusa Silva, Iván"
+    },
+    {
+      "person_id": "yamin-squicciarini-nicolas",
+      "nombre": "YAMIN SQUICCIARINI, NICOLÁS",
+      "display": "Nicolás Yamin Squicciarini",
+      "formal": "Yamin Squicciarini, Nicolás"
+    }
+  ],
+  "resolucion_por_temporada": {
+    "2013-14": {
+      "Alex": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Adrián": {
+        "tipo": "jugador",
+        "person_id": "martin-lopez-adrian"
+      },
+      "Iván": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Juan": {
+        "tipo": "jugador",
+        "person_id": "diaz-iglesias-aguilar-juan"
+      },
+      "Leo": {
+        "tipo": "jugador",
+        "person_id": "morali-leonardo"
+      },
+      "Álvaro": {
+        "tipo": "jugador",
+        "person_id": "fernandez-del-rio-alvaro"
+      },
+      "Henry": {
+        "tipo": "jugador",
+        "person_id": "castro-mayo-henry-luis"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "calvo-gonzalez-santiago"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "Patrick": {
+        "tipo": "jugador",
+        "person_id": "klein-patrick-hennesey"
+      },
+      "Raúl": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-raul"
+      },
+      "Alan": {
+        "tipo": "jugador",
+        "person_id": "venegas-lamamie-de-clairac-alan"
+      },
+      "Carlos": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-carlos"
+      },
+      "No sabemos": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      }
+    },
+    "2014-15": {
+      "Alex": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Iván": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Álvaro": {
+        "tipo": "jugador",
+        "person_id": "fernandez-del-rio-alvaro"
+      },
+      "Leo": {
+        "tipo": "jugador",
+        "person_id": "morali-leonardo"
+      },
+      "Carlos": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-carlos"
+      },
+      "Adrián": {
+        "tipo": "jugador",
+        "person_id": "martin-lopez-adrian"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "calvo-gonzalez-santiago"
+      },
+      "Patrick": {
+        "tipo": "jugador",
+        "person_id": "klein-patrick-hennesey"
+      },
+      "Paco": {
+        "tipo": "jugador",
+        "person_id": "victor-sanchez-francisco"
+      },
+      "Raúl": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-raul"
+      },
+      "Juan": {
+        "tipo": "jugador",
+        "person_id": "diaz-iglesias-aguilar-juan"
+      },
+      "No sabemos": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      },
+      "No sabemos (coach)": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      }
+    },
+    "2015-16": {
+      "Alex": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Iván": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Álvaro": {
+        "tipo": "jugador",
+        "person_id": "fernandez-del-rio-alvaro"
+      },
+      "Paco": {
+        "tipo": "jugador",
+        "person_id": "victor-sanchez-francisco"
+      },
+      "Alan": {
+        "tipo": "jugador",
+        "person_id": "venegas-lamamie-de-clairac-alan"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "Juan Carlos": {
+        "tipo": "jugador",
+        "person_id": "blazquez-lopez-juan-carlos"
+      },
+      "Carlos": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-carlos"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "calvo-gonzalez-santiago"
+      },
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "Patrick": {
+        "tipo": "jugador",
+        "person_id": "klein-patrick-hennesey"
+      },
+      "Borja": {
+        "tipo": "jugador",
+        "person_id": "mar-calvo-borja"
+      },
+      "Raúl": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-raul"
+      },
+      "NS (coach)": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      }
+    },
+    "2017-18": {
+      "Quique": {
+        "tipo": "jugador",
+        "person_id": "moral-cacho-enrique"
+      },
+      "Jorge": {
+        "tipo": "jugador",
+        "person_id": "perez-lardiez-jorge"
+      },
+      "Nacho": {
+        "tipo": "jugador",
+        "person_id": "cabanas-de-pablo-ignacio"
+      },
+      "Iván": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Patrick": {
+        "tipo": "jugador",
+        "person_id": "klein-patrick-hennesey"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "pazo-pascual-santiago"
+      },
+      "Alex": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "Julián": {
+        "tipo": "jugador",
+        "person_id": "carrera-carranza-julian"
+      },
+      "Manu": {
+        "tipo": "jugador",
+        "person_id": "calahorro-sanchez-manuel"
+      },
+      "Fernando": {
+        "tipo": "jugador",
+        "person_id": "tejeiro-perez-de-agreda-fernando"
+      },
+      "Eric": {
+        "tipo": "sin_catalogar",
+        "nota": "[NO IDENTIFICADO — jugador de paso, sin apellido]"
+      },
+      "Paco": {
+        "tipo": "jugador",
+        "person_id": "victor-sanchez-francisco"
+      },
+      "Henry": {
+        "tipo": "jugador",
+        "person_id": "castro-mayo-henry-luis"
+      },
+      "Adán": {
+        "tipo": "jugador",
+        "person_id": "herrera-benzan-adan"
+      },
+      "Borja": {
+        "tipo": "jugador",
+        "person_id": "mar-calvo-borja"
+      },
+      "Wall": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-victor"
+      },
+      "Alejandro": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Diego": {
+        "tipo": "jugador",
+        "person_id": "cuadrado-marinas-diego"
+      },
+      "Raúl": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-raul"
+      },
+      "NS": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      }
+    },
+    "2018-19": {
+      "Quique": {
+        "tipo": "jugador",
+        "person_id": "moral-cacho-enrique"
+      },
+      "Heriberto": {
+        "tipo": "jugador",
+        "person_id": "gil-delgado-heriberto"
+      },
+      "Alejandro": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Adán": {
+        "tipo": "jugador",
+        "person_id": "herrera-benzan-adan"
+      },
+      "Roberto": {
+        "tipo": "jugador",
+        "person_id": "ballesteros-fuentes-roberto"
+      },
+      "Alan": {
+        "tipo": "jugador",
+        "person_id": "venegas-lamamie-de-clairac-alan"
+      },
+      "Jorge": {
+        "tipo": "jugador",
+        "person_id": "perez-lardiez-jorge"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "Alex": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "pazo-pascual-santiago"
+      },
+      "Manu": {
+        "tipo": "jugador",
+        "person_id": "calahorro-sanchez-manuel"
+      },
+      "Patrick": {
+        "tipo": "jugador",
+        "person_id": "klein-patrick-hennesey"
+      },
+      "Iván": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Julián": {
+        "tipo": "jugador",
+        "person_id": "carrera-carranza-julian"
+      },
+      "Álvaro": {
+        "tipo": "jugador",
+        "person_id": "fernandez-del-rio-alvaro"
+      },
+      "Wall": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-victor"
+      },
+      "Henry": {
+        "tipo": "jugador",
+        "person_id": "castro-mayo-henry-luis"
+      },
+      "NS": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      }
+    },
+    "2019-20": {
+      "Gilberto": {
+        "tipo": "jugador",
+        "person_id": "tosta-queiroz-gilberto"
+      },
+      "Quique": {
+        "tipo": "jugador",
+        "person_id": "moral-cacho-enrique"
+      },
+      "Heriberto": {
+        "tipo": "jugador",
+        "person_id": "gil-delgado-heriberto"
+      },
+      "Alejandro": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Roberto": {
+        "tipo": "jugador",
+        "person_id": "ballesteros-fuentes-roberto"
+      },
+      "Aram": {
+        "tipo": "jugador",
+        "person_id": "bonetto-aram"
+      },
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "Henry": {
+        "tipo": "jugador",
+        "person_id": "castro-mayo-henry-luis"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "pazo-pascual-santiago"
+      },
+      "Lonchas": {
+        "tipo": "sin_catalogar",
+        "nota": "[NO IDENTIFICADO — 'Carlos', jugador de paso]"
+      },
+      "Wall": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-victor"
+      },
+      "Julián": {
+        "tipo": "jugador",
+        "person_id": "carrera-carranza-julian"
+      },
+      "NS": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      }
+    },
+    "2020-21": {
+      "Alejandro": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Quique": {
+        "tipo": "jugador",
+        "person_id": "moral-cacho-enrique"
+      },
+      "Aram": {
+        "tipo": "jugador",
+        "person_id": "bonetto-aram"
+      },
+      "Guillermo": {
+        "tipo": "jugador",
+        "person_id": "galan-domingo-guillermo"
+      },
+      "Heriberto": {
+        "tipo": "jugador",
+        "person_id": "gil-delgado-heriberto"
+      },
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "José": {
+        "tipo": "jugador",
+        "person_id": "porras-calzada-jose-maria"
+      },
+      "Roberto": {
+        "tipo": "jugador",
+        "person_id": "ballesteros-fuentes-roberto"
+      },
+      "Wall": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-victor"
+      },
+      "Javier": {
+        "tipo": "jugador",
+        "person_id": "paez-garcia-javier"
+      },
+      "Víctor": {
+        "tipo": "jugador",
+        "person_id": "martinez-martinez-victor"
+      },
+      "NS": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      }
+    },
+    "2021-22": {
+      "Julio": {
+        "tipo": "jugador",
+        "person_id": "de-carvalho-rodrigues-julio-cesar"
+      },
+      "Alex": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Nacho": {
+        "tipo": "jugador",
+        "person_id": "diaz-hernandez-jose-ignacio"
+      },
+      "Manu": {
+        "tipo": "jugador",
+        "person_id": "calahorro-sanchez-manuel"
+      },
+      "Paco": {
+        "tipo": "jugador",
+        "person_id": "victor-sanchez-francisco"
+      },
+      "Leo": {
+        "tipo": "jugador",
+        "person_id": "morali-leonardo"
+      },
+      "Dani": {
+        "tipo": "jugador",
+        "person_id": "vallesi-daniele"
+      },
+      "Alberto": {
+        "tipo": "jugador",
+        "person_id": "peco-ruiz-alberto"
+      },
+      "Santiago": {
+        "tipo": "jugador",
+        "person_id": "pazo-pascual-santiago"
+      },
+      "Luis": {
+        "tipo": "jugador",
+        "person_id": "varas-garcia-luis-alberto"
+      },
+      "Fer": {
+        "tipo": "jugador",
+        "person_id": "tejeiro-perez-de-agreda-fernando"
+      },
+      "Iván": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Víctor": {
+        "tipo": "jugador",
+        "person_id": "martinez-victor"
+      },
+      "Ramón": {
+        "tipo": "jugador",
+        "person_id": "mora-gil-jimenez-ramon"
+      },
+      "NS": {
+        "tipo": "ruido",
+        "nota": "[NO IDENTIFICADO]"
+      }
+    },
+    "2023-24": {
+      "Pablo": {
+        "tipo": "jugador",
+        "person_id": "ortega-delgado-pablo"
+      },
+      "Manu": {
+        "tipo": "jugador",
+        "person_id": "calahorro-sanchez-manuel"
+      },
+      "Julio": {
+        "tipo": "jugador",
+        "person_id": "de-carvalho-rodrigues-julio-cesar"
+      },
+      "Nacho S.": {
+        "tipo": "jugador",
+        "person_id": "mateos-aparicio-ignacio"
+      },
+      "Iván": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Alex": {
+        "tipo": "jugador",
+        "person_id": "suarez-cobos-alejandro"
+      },
+      "Alejandro": {
+        "tipo": "jugador",
+        "person_id": "bujaldon-rodriguez-alejandro"
+      },
+      "Fernando": {
+        "tipo": "jugador",
+        "person_id": "tejeiro-perez-de-agreda-fernando"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "pazo-pascual-santiago"
+      },
+      "Nacho C.": {
+        "tipo": "jugador",
+        "person_id": "ferrando-del-rincon-ignacio"
+      },
+      "Leo": {
+        "tipo": "jugador",
+        "person_id": "morali-leonardo"
+      },
+      "Luis": {
+        "tipo": "jugador",
+        "person_id": "varas-garcia-luis-alberto"
+      },
+      "Ramón": {
+        "tipo": "jugador",
+        "person_id": "mora-gil-jimenez-ramon"
+      },
+      "Víctor": {
+        "tipo": "jugador",
+        "person_id": "martinez-martinez-victor"
+      },
+      "Eduardo": {
+        "tipo": "jugador",
+        "person_id": "lopez-de-ayala-alcantara-eduardo"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "Paco": {
+        "tipo": "jugador",
+        "person_id": "victor-sanchez-francisco"
+      },
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "Rafa": {
+        "tipo": "jugador",
+        "person_id": "sanchez-herrero-rafael"
+      }
+    },
+    "2024-25": {
+      "Iván Rodríguez": {
+        "tipo": "jugador",
+        "person_id": "rodriguez-perez-ivan"
+      },
+      "Julio": {
+        "tipo": "jugador",
+        "person_id": "de-carvalho-rodrigues-julio-cesar"
+      },
+      "Sam": {
+        "tipo": "jugador",
+        "person_id": "rogaia-samuele"
+      },
+      "Alejandro": {
+        "tipo": "jugador",
+        "person_id": "bujaldon-rodriguez-alejandro"
+      },
+      "Nacho S.": {
+        "tipo": "jugador",
+        "person_id": "mateos-aparicio-ignacio"
+      },
+      "Nacho Arg.": {
+        "tipo": "jugador",
+        "person_id": "mileo-ignacio-agustin"
+      },
+      "Manu": {
+        "tipo": "jugador",
+        "person_id": "calahorro-sanchez-manuel"
+      },
+      "Iván V.": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Fernando": {
+        "tipo": "jugador",
+        "person_id": "tejeiro-perez-de-agreda-fernando"
+      },
+      "Nico": {
+        "tipo": "jugador",
+        "person_id": "yamin-squicciarini-nicolas"
+      },
+      "Víctor": {
+        "tipo": "jugador",
+        "person_id": "martinez-martinez-victor"
+      },
+      "David": {
+        "tipo": "jugador",
+        "person_id": "lopez-lucero-alfredo-david"
+      },
+      "Jaime": {
+        "tipo": "jugador",
+        "person_id": "de-maria-sanchez-jaime"
+      },
+      "Jon": {
+        "tipo": "jugador",
+        "person_id": "esteban-jon"
+      },
+      "Luis": {
+        "tipo": "jugador",
+        "person_id": "varas-garcia-luis-alberto"
+      },
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "Alonso": {
+        "tipo": "jugador",
+        "person_id": "romero-barrueco-alonso"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "maccabis-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Dashboard de estadísticas del club de baloncesto Maccabis (web estática + scripts de generación de datos)",
+  "scripts": {
+    "diccionario": "node scripts/parse_diccionario.js",
+    "historico": "node scripts/build_historico.js",
+    "build:datos": "npm run diccionario && npm run historico"
+  },
+  "devDependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

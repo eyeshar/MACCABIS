@@ -11251,9 +11251,10 @@
     "pts_min": 0.36,
     "asist_partidos": 17,
     "asist_entrenos": 22,
-    "catalogado": false,
-    "display": "Jon",
-    "tipo": "sin_catalogar_mda",
+    "person_id": "esteban-jon",
+    "display": "Jon Esteban",
+    "nombre": "ESTEBAN, JON",
+    "catalogado": true,
     "sospechoso": [
      "p3"
     ]
@@ -11271,9 +11272,10 @@
     "pts_min": 0.4,
     "asist_partidos": 16,
     "asist_entrenos": 17,
-    "catalogado": false,
-    "display": "Lukas",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "rausse-lukas",
+    "display": "Lukas Rausse",
+    "nombre": "RAUSSE, LUKAS",
+    "catalogado": true
    },
    {
     "mote": "Jorge",
@@ -11288,9 +11290,10 @@
     "min": 319,
     "asist_partidos": 11,
     "asist_entrenos": 3,
-    "catalogado": false,
-    "display": "Jorge",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "hernandez-faura-jorge",
+    "display": "Jorge Hernández Faura",
+    "nombre": "HERNÁNDEZ FAURA, JORGE",
+    "catalogado": true
    },
    {
     "mote": "Sergi",
@@ -11305,9 +11308,10 @@
     "pts_min": 0.29,
     "asist_partidos": 13,
     "asist_entrenos": 13,
-    "catalogado": false,
-    "display": "Sergi",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "jorba-lopez-sergi",
+    "display": "Sergi Jorba López",
+    "nombre": "JORBA LÓPEZ, SERGI",
+    "catalogado": true
    },
    {
     "mote": "Fernando",
@@ -11340,9 +11344,10 @@
     "avg_tl": 0.2,
     "avg_p3": 0.8,
     "pts_min": 0.15,
-    "catalogado": false,
-    "display": "Alonso",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "romero-barrueco-alonso",
+    "display": "Alonso Romero Barrueco",
+    "nombre": "ROMERO BARRUECO, ALONSO",
+    "catalogado": true
    },
    {
     "mote": "Rafa",
@@ -11375,9 +11380,10 @@
     "avg_tl": 0.1,
     "avg_p3": 0.8,
     "pts_min": 0.16,
-    "catalogado": false,
-    "display": "Edwin",
-    "tipo": "sin_catalogar_mda",
+    "person_id": "villa-guerrero-edwin",
+    "display": "Edwin Villa Guerrero",
+    "nombre": "VILLA GUERRERO, EDWIN",
+    "catalogado": true,
     "sospechoso": [
      "tl"
     ]
@@ -11431,9 +11437,10 @@
     "avg_tl": 0.3,
     "avg_p3": 0.5,
     "pts_min": 0.19,
-    "catalogado": false,
-    "display": "Guille",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "galan-domingo-guillermo",
+    "display": "Guillermo Galán Domingo",
+    "nombre": "GALÁN DOMINGO, GUILLERMO",
+    "catalogado": true
    },
    {
     "mote": "Daniele",
@@ -11448,9 +11455,10 @@
     "avg_tl": 0.3,
     "avg_p3": 0.1,
     "pts_min": 0.11,
-    "catalogado": false,
-    "display": "Daniele",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "vallesi-daniele",
+    "display": "Daniele Vallesi",
+    "nombre": "VALLESI, DANIELE",
+    "catalogado": true
    },
    {
     "mote": "Edu",
@@ -11501,9 +11509,10 @@
     "avg_tl": 0.3,
     "avg_p3": 0.3,
     "pts_min": 0.09,
-    "catalogado": false,
-    "display": "J. Perchín",
-    "tipo": "sin_catalogar_mda",
+    "person_id": "perchin-garcia-javier",
+    "display": "Javier Perchín García",
+    "nombre": "PERCHÍN GARCÍA, JAVIER",
+    "catalogado": true,
     "sospechoso": [
      "tl"
     ]
@@ -11521,9 +11530,10 @@
     "avg_tl": 0,
     "avg_p3": 0,
     "pts_min": 0.01,
-    "catalogado": false,
-    "display": "Wall",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "perez-nunez-victor",
+    "display": "Víctor Pérez Núñez",
+    "nombre": "PÉREZ NÚÑEZ, VÍCTOR",
+    "catalogado": true
    },
    {
     "mote": "Santi",
@@ -11556,9 +11566,10 @@
     "avg_tl": 0,
     "avg_p3": 0,
     "pts_min": 0,
-    "catalogado": false,
-    "display": "Henry",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "castro-mayo-henry-luis",
+    "display": "Henry Luis Castro Mayo",
+    "nombre": "CASTRO MAYO, HENRY LUIS",
+    "catalogado": true
    }
   ],
   "cuartos": [

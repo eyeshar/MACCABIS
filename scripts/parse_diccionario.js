@@ -9,6 +9,13 @@
  *     resolucion_por_temporada: { "2013-14": { "<mote>": { tipo, person_id? } } }
  *   }
  *
+ * Claves de temporada:
+ *   "2023-24"      -> sección "### 2023/24"        (estadísticas MdL)
+ *   "2023-24-MdA"  -> sección "### 2023/24 (MdA)"  (estadísticas MdA)
+ * Un mismo mote puede ser dos personas distintas según la ficha (p.ej. en 23/24
+ * "Iván" es Villaescusa en ambas, pero "Santi" o "Jorge" sólo existen en el MdA),
+ * por eso cada ficha tiene su propia tabla y NUNCA se usa una como respaldo de la otra.
+ *
  * tipo:
  *   - "jugador"        -> tiene ficha individual y entra en rankings
  *   - "ruido"          -> NS / "No sabemos" / "(coach)". Sus puntos cuentan en el
@@ -49,8 +56,14 @@ function parse() {
   let temporada = null;
 
   for (const line of lines) {
-    const h = line.match(/^###\s+(\d{4})\/(\d{2})\s*$/);
-    if (h) { temporada = `${h[1]}-${h[2]}`; resolucion[temporada] = {}; continue; }
+    // "### 2023/24" o "### 2023/24 (MdA)"
+    const h = line.match(/^###\s+(\d{4})\/(\d{2})(?:\s*\(\s*(MdA|MdL)\s*\))?\s*$/i);
+    if (h) {
+      const ficha = h[3] ? h[3].toUpperCase() : null;
+      temporada = `${h[1]}-${h[2]}` + (ficha === 'MDA' ? '-MdA' : '');
+      resolucion[temporada] = resolucion[temporada] || {};
+      continue;
+    }
     if (!temporada) continue;
     if (!line.trim().startsWith('|')) continue;
 

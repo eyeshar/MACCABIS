@@ -12,6 +12,7 @@ _Última actualización: 04/08/2026 — bloque "histórico de temporadas" (rama 
 - **Fuente:** los Excel de estadísticas de Carlos (`Estadisticas_YYYY_YYYY.xls` + los MdA `.xlsx` de 23/24 y 24/25). Están en `~/Downloads`, **no** en el repositorio.
 - **Pipeline reproducible en Node** (`npm run build:datos`): `scripts/parse_diccionario.js` + `scripts/build_historico.js`.
 - **Validación:** los 171 partidos con estadística individual disponible cuadran con el marcador del acta. Además, el total por jugador se contrasta con la columna TOTAL de la propia hoja: 0 discrepancias.
+- **Nombres del MdA cerrados** (04/08/2026): el diccionario tiene tabla propia por ficha (`### 2023/24 (MdA)`), con clave `2023-24-MdA` en el JSON. Ningún mote queda sin catalogar en el MdA.
 - Informe completo en `docs/INFORME_HISTORICO.md`.
 
 | Temporada | Partidos | Balance | Jugadores | Minutos | MdA agregado |
@@ -24,8 +25,8 @@ _Última actualización: 04/08/2026 — bloque "histórico de temporadas" (rama 
 | 2019/20 | 16 | 8-8 | 12 | no | — |
 | 2020/21 | 13 | 2-11 | 12 | no | — |
 | 2021/22 | 18 (9 sin stats) | 12-6 | 14 | no | — |
-| 2023/24 | 20 | 16-4 | 19 | **sí** | 18 jugadores |
-| 2024/25 | 20 | 17-3 | 17 | **sí** | 19 jugadores |
+| 2023/24 | 20 | 16-4 | 19 | **sí** | 18 jugadores (todos identificados) |
+| 2024/25 | 20 | 17-3 | 17 | **sí** | 19 jugadores (todos identificados) |
 
 > No hay estadísticas de 2016/17 ni de 2022/23: no existen en la fuente, no se han inventado.
 
@@ -47,8 +48,8 @@ Equipo (balance, racha, tabla de partidos con boxscore desplegable al clic) · J
 
 ## Cabos sueltos del histórico (pendientes de Iván, ninguno bloquea)
 
-1. **Ignacio Mateos Aparicio ("Nacho S.", 23/24 y 24/25)** — incluido como jugador normal (107 y 87 puntos), pero **no consta en las fichas MdL disponibles**. Sigue pendiente verificar en qué ficha o equipo estaba.
-2. **Diccionario de nombres del MdA** — el diccionario cubre sólo el MdL. Los motes del MdA que no aparecen en la tabla de esa temporada se muestran con el mote tal cual y la marca "sin catalogar": 11 en 23/24 (Jon, Jorge, Lukas, Edwin, Sergi, Alonso, Wall, Guille, Daniele, J. Perchín, Henry) y 10 en 24/25 (Jorge, Guille, Wall, Sergi, Lukas, Edwin, Daniele, J. Perchín, Rafa, Santi). **No se ha deducido ningún nombre.**
+1. **Ignacio Mateos Aparicio ("Nacho S.", 23/24 y 24/25)** — incluido como jugador normal (107 y 87 puntos en MdL, 36 en el MdA de 23/24). La tabla MdA del diccionario confirma que **jugaba en las dos fichas**, pero sigue sin constar en las fichas de inscripción MdL disponibles. Queda pendiente localizar su ficha.
+2. ~~**Diccionario de nombres del MdA**~~ — **RESUELTO (04/08/2026).** Iván cerró las tablas `### 2023/24 (MdA)` y `### 2024/25 (MdA)`. Los 18 motes de 23/24 y los 19 de 24/25 resuelven a persona real; **no queda ninguno sin catalogar**. Cada ficha tiene su propia tabla y no se usa una como respaldo de la otra, porque un mismo mote puede ser otra persona según el equipo (p.ej. "Santi" o "Jorge").
 3. **Motes sueltos sin entrada en el diccionario** (tratados como "sin catalogar", sus puntos siguen contando en el equipo):
    - 14/15: `Paaco` y `Coach` — sin puntos, sólo aparecen en faltas/tiros libres. Probables erratas de `Paco` y de la etiqueta de entrenador.
    - 17/18: `Víctor` — **6 puntos**. La regla 4 del diccionario dice que "Víctor" = Víctor Martínez, pero la tabla de 17/18 no lo lista, así que no se ha aplicado.

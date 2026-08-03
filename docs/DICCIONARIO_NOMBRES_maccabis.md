@@ -250,3 +250,57 @@
 | 2024/25 | Sí | 45 JDM | SÍ |
 
 > Recordatorio: en las 8 temporadas sin minutos, las medias se calculan **por partido jugado** (NJ excluidos del denominador), no por minuto. Decisión de Iván.
+
+---
+
+## Sección MdA (Maccabi de Acostar) — temporadas 23/24 y 24/25
+
+> El MdA es la segunda ficha del club. Estos motes aplican a las estadísticas MdA (formato agregado). Cerrado por Iván.
+
+### 2023/24 (MdA)
+
+| Mote | Nombre formal |
+|---|---|
+| `Rafa` | Sánchez Herrero, Rafael |
+| `Edu` | Martín-Ortega Rico, Eduardo |
+| `Edwin` | Villa Guerrero, Edwin |
+| `Jon` | Esteban, Jon |
+| `Alonso` | Romero Barrueco, Alonso |
+| `Lukas` | Rausse, Lukas |
+| `Wall` | Pérez Núñez, Víctor |
+| `Fernando` | Tejeiro Pérez de Agreda, Fernando |
+| `Sergi` | Jorba López, Sergi |
+| `Guille` | Galán Domingo, Guillermo |
+| `Daniele` | Vallesi, Daniele |
+| `Jorge` | Hernández Faura, Jorge |
+| `Nacho S.` | Mateos Aparicio, Ignacio |
+| `J. Perchín` | Perchín García, Javier |
+| `Iván` | Villaescusa Silva, Iván |
+| `Pablo` | Ortega Delgado, Pablo |
+| `Henry` | Castro Mayo, Henry Luis |
+| `Santi` | Pazo Pascual, Santiago |
+
+### 2024/25 (MdA)
+
+| Mote | Nombre formal |
+|---|---|
+| `Edu` | Martín-Ortega Rico, Eduardo |
+| `Alonso` | Romero Barrueco, Alonso |
+| `Guille` | Galán Domingo, Guillermo |
+| `Jon` | Esteban, Jon |
+| `Wall` | Pérez Núñez, Víctor |
+| `Fernando` | Tejeiro Pérez de Agreda, Fernando |
+| `Jorge` | Hernández Faura, Jorge |
+| `Edwin` | Villa Guerrero, Edwin |
+| `Nico` | Yamin Squicciarini, Nicolás |
+| `Daniele` | Vallesi, Daniele |
+| `J. Perchín` | Perchín García, Javier |
+| `Sergi` | Jorba López, Sergi |
+| `Iván V.` | Villaescusa Silva, Iván |
+| `Rafa` | Sánchez Herrero, Rafael |
+| `Lukas` | Rausse, Lukas |
+| `Iván Rodríguez` | Rodríguez Pérez, Iván |
+| `Alejandro` | Bujaldón Rodríguez, Alejandro |
+| `Santi` | Pazo Pascual, Santiago |
+| `Nacho Arg.` | Mileo, Ignacio Agustín |
+

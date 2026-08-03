@@ -118,10 +118,22 @@
       "formal": "Gil Delgado, Heriberto"
     },
     {
+      "person_id": "hernandez-faura-jorge",
+      "nombre": "HERNÁNDEZ FAURA, JORGE",
+      "display": "Jorge Hernández Faura",
+      "formal": "Hernández Faura, Jorge"
+    },
+    {
       "person_id": "herrera-benzan-adan",
       "nombre": "HERRERA BENZÁN, ADÁN",
       "display": "Adán Herrera Benzán",
       "formal": "Herrera Benzán, Adán"
+    },
+    {
+      "person_id": "jorba-lopez-sergi",
+      "nombre": "JORBA LÓPEZ, SERGI",
+      "display": "Sergi Jorba López",
+      "formal": "Jorba López, Sergi"
     },
     {
       "person_id": "klein-patrick-hennesey",
@@ -226,6 +238,12 @@
       "formal": "Peco Ruiz, Alberto"
     },
     {
+      "person_id": "perchin-garcia-javier",
+      "nombre": "PERCHÍN GARCÍA, JAVIER",
+      "display": "Javier Perchín García",
+      "formal": "Perchín García, Javier"
+    },
+    {
       "person_id": "perez-lardiez-jorge",
       "nombre": "PÉREZ LARDIEZ, JORGE",
       "display": "Jorge Pérez Lardiez",
@@ -254,6 +272,12 @@
       "nombre": "PORRAS CALZADA, JOSÉ MARÍA",
       "display": "José María Porras Calzada",
       "formal": "Porras Calzada, José María"
+    },
+    {
+      "person_id": "rausse-lukas",
+      "nombre": "RAUSSE, LUKAS",
+      "display": "Lukas Rausse",
+      "formal": "Rausse, Lukas"
     },
     {
       "person_id": "rodriguez-perez-ivan",
@@ -320,6 +344,12 @@
       "nombre": "VÍCTOR SÁNCHEZ, FRANCISCO",
       "display": "Francisco Víctor Sánchez",
       "formal": "Víctor Sánchez, Francisco"
+    },
+    {
+      "person_id": "villa-guerrero-edwin",
+      "nombre": "VILLA GUERRERO, EDWIN",
+      "display": "Edwin Villa Guerrero",
+      "formal": "Villa Guerrero, Edwin"
     },
     {
       "person_id": "villaescusa-silva-ivan",
@@ -997,6 +1027,158 @@
       "Alonso": {
         "tipo": "jugador",
         "person_id": "romero-barrueco-alonso"
+      }
+    },
+    "2023-24-MdA": {
+      "Rafa": {
+        "tipo": "jugador",
+        "person_id": "sanchez-herrero-rafael"
+      },
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "Edwin": {
+        "tipo": "jugador",
+        "person_id": "villa-guerrero-edwin"
+      },
+      "Jon": {
+        "tipo": "jugador",
+        "person_id": "esteban-jon"
+      },
+      "Alonso": {
+        "tipo": "jugador",
+        "person_id": "romero-barrueco-alonso"
+      },
+      "Lukas": {
+        "tipo": "jugador",
+        "person_id": "rausse-lukas"
+      },
+      "Wall": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-victor"
+      },
+      "Fernando": {
+        "tipo": "jugador",
+        "person_id": "tejeiro-perez-de-agreda-fernando"
+      },
+      "Sergi": {
+        "tipo": "jugador",
+        "person_id": "jorba-lopez-sergi"
+      },
+      "Guille": {
+        "tipo": "jugador",
+        "person_id": "galan-domingo-guillermo"
+      },
+      "Daniele": {
+        "tipo": "jugador",
+        "person_id": "vallesi-daniele"
+      },
+      "Jorge": {
+        "tipo": "jugador",
+        "person_id": "hernandez-faura-jorge"
+      },
+      "Nacho S.": {
+        "tipo": "jugador",
+        "person_id": "mateos-aparicio-ignacio"
+      },
+      "J. Perchín": {
+        "tipo": "jugador",
+        "person_id": "perchin-garcia-javier"
+      },
+      "Iván": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Pablo": {
+        "tipo": "jugador",
+        "person_id": "ortega-delgado-pablo"
+      },
+      "Henry": {
+        "tipo": "jugador",
+        "person_id": "castro-mayo-henry-luis"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "pazo-pascual-santiago"
+      }
+    },
+    "2024-25-MdA": {
+      "Edu": {
+        "tipo": "jugador",
+        "person_id": "martin-ortega-rico-eduardo"
+      },
+      "Alonso": {
+        "tipo": "jugador",
+        "person_id": "romero-barrueco-alonso"
+      },
+      "Guille": {
+        "tipo": "jugador",
+        "person_id": "galan-domingo-guillermo"
+      },
+      "Jon": {
+        "tipo": "jugador",
+        "person_id": "esteban-jon"
+      },
+      "Wall": {
+        "tipo": "jugador",
+        "person_id": "perez-nunez-victor"
+      },
+      "Fernando": {
+        "tipo": "jugador",
+        "person_id": "tejeiro-perez-de-agreda-fernando"
+      },
+      "Jorge": {
+        "tipo": "jugador",
+        "person_id": "hernandez-faura-jorge"
+      },
+      "Edwin": {
+        "tipo": "jugador",
+        "person_id": "villa-guerrero-edwin"
+      },
+      "Nico": {
+        "tipo": "jugador",
+        "person_id": "yamin-squicciarini-nicolas"
+      },
+      "Daniele": {
+        "tipo": "jugador",
+        "person_id": "vallesi-daniele"
+      },
+      "J. Perchín": {
+        "tipo": "jugador",
+        "person_id": "perchin-garcia-javier"
+      },
+      "Sergi": {
+        "tipo": "jugador",
+        "person_id": "jorba-lopez-sergi"
+      },
+      "Iván V.": {
+        "tipo": "jugador",
+        "person_id": "villaescusa-silva-ivan"
+      },
+      "Rafa": {
+        "tipo": "jugador",
+        "person_id": "sanchez-herrero-rafael"
+      },
+      "Lukas": {
+        "tipo": "jugador",
+        "person_id": "rausse-lukas"
+      },
+      "Iván Rodríguez": {
+        "tipo": "jugador",
+        "person_id": "rodriguez-perez-ivan"
+      },
+      "Alejandro": {
+        "tipo": "jugador",
+        "person_id": "bujaldon-rodriguez-alejandro"
+      },
+      "Santi": {
+        "tipo": "jugador",
+        "person_id": "pazo-pascual-santiago"
+      },
+      "Nacho Arg.": {
+        "tipo": "jugador",
+        "person_id": "mileo-ignacio-agustin"
       }
     }
   }

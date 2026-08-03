@@ -463,7 +463,14 @@ function buildMdaResumen(season, dicc, warn) {
   if (!fs.existsSync(file)) { warn(`No encuentro el MdA ${file}`); return null; }
   const wb = X.readFile(file);
   const rows = aoa(wb, wb.SheetNames[0]);
-  const res = dicc.resolucion_por_temporada[season.id] || {};
+  // El MdA tiene su propia tabla de motes en el diccionario ("2023-24-MdA"): un mismo
+  // mote puede ser otra persona en la otra ficha, así que NO se usa la del MdL como
+  // respaldo. Sin tabla propia, todos los motes quedan sin catalogar.
+  const claveMda = season.id + '-MdA';
+  const res = dicc.resolucion_por_temporada[claveMda] || {};
+  if (!dicc.resolucion_por_temporada[claveMda]) {
+    warn(`MdA ${season.id}: no hay sección "${season.id.replace('-', '/')} (MdA)" en el diccionario; ningún mote se podrá catalogar.`);
+  }
   const personas = new Map(dicc.personas.map(p => [p.person_id, p]));
 
   // cabecera: fila que contiene "PARTIDOS" y "ENTRENOS"
@@ -547,7 +554,7 @@ function buildMdaResumen(season, dicc, warn) {
   }
 
   if (sinCatalogar.length) {
-    warn(`MdA ${season.id}: motes sin entrada en el diccionario (el diccionario sólo cubre MdL) -> se conserva el mote sin asignar nombre: ${sinCatalogar.join(', ')}`);
+    warn(`MdA ${season.id}: motes sin entrada en la tabla MdA del diccionario -> se conserva el mote sin asignar nombre: ${sinCatalogar.join(', ')}`);
   }
 
   // puntos por cuarto

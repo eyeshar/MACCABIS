@@ -10482,9 +10482,10 @@
     "min": 338,
     "asist_partidos": 11,
     "asist_entrenos": 0,
-    "catalogado": false,
-    "display": "Jorge",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "hernandez-faura-jorge",
+    "display": "Jorge Hernández Faura",
+    "nombre": "HERNÁNDEZ FAURA, JORGE",
+    "catalogado": true
    },
    {
     "mote": "Fernando",
@@ -10541,9 +10542,10 @@
     "avg_pm": 14.1,
     "asist_partidos": 7,
     "asist_entrenos": 7,
-    "catalogado": false,
-    "display": "Sergi",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "jorba-lopez-sergi",
+    "display": "Sergi Jorba López",
+    "nombre": "JORBA LÓPEZ, SERGI",
+    "catalogado": true
    },
    {
     "mote": "Guille",
@@ -10560,9 +10562,10 @@
     "avg_min": 24.5,
     "pts_min": 0.14,
     "avg_pm": 12.5,
-    "catalogado": false,
-    "display": "Guille",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "galan-domingo-guillermo",
+    "display": "Guillermo Galán Domingo",
+    "nombre": "GALÁN DOMINGO, GUILLERMO",
+    "catalogado": true
    },
    {
     "mote": "Nico",
@@ -10599,9 +10602,10 @@
     "min": 103,
     "asist_partidos": 4,
     "asist_entrenos": 7,
-    "catalogado": false,
-    "display": "Lukas",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "rausse-lukas",
+    "display": "Lukas Rausse",
+    "nombre": "RAUSSE, LUKAS",
+    "catalogado": true
    },
    {
     "mote": "Iván Rodríguez",
@@ -10658,9 +10662,10 @@
     "avg_min": 18,
     "pts_min": 0.29,
     "avg_pm": 10.6,
-    "catalogado": false,
-    "display": "J. Perchín",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "perchin-garcia-javier",
+    "display": "Javier Perchín García",
+    "nombre": "PERCHÍN GARCÍA, JAVIER",
+    "catalogado": true
    },
    {
     "mote": "Edu",
@@ -10697,9 +10702,10 @@
     "avg_min": 24.3,
     "pts_min": 0.19,
     "avg_pm": 14,
-    "catalogado": false,
-    "display": "Daniele",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "vallesi-daniele",
+    "display": "Daniele Vallesi",
+    "nombre": "VALLESI, DANIELE",
+    "catalogado": true
    },
    {
     "mote": "Edwin",
@@ -10716,9 +10722,10 @@
     "avg_min": 26.3,
     "pts_min": 0.11,
     "avg_pm": 9.6,
-    "catalogado": false,
-    "display": "Edwin",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "villa-guerrero-edwin",
+    "display": "Edwin Villa Guerrero",
+    "nombre": "VILLA GUERRERO, EDWIN",
+    "catalogado": true
    },
    {
     "mote": "No presentado",
@@ -10748,9 +10755,10 @@
     "avg_min": 31.6,
     "pts_min": 0.09,
     "avg_pm": 4.8,
-    "catalogado": false,
-    "display": "Rafa",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "sanchez-herrero-rafael",
+    "display": "Rafael Sánchez Herrero",
+    "nombre": "SÁNCHEZ HERRERO, RAFAEL",
+    "catalogado": true
    },
    {
     "mote": "Alejandro",
@@ -10807,9 +10815,10 @@
     "avg_min": 23.1,
     "pts_min": 0.01,
     "avg_pm": 10.9,
-    "catalogado": false,
-    "display": "Wall",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "perez-nunez-victor",
+    "display": "Víctor Pérez Núñez",
+    "nombre": "PÉREZ NÚÑEZ, VÍCTOR",
+    "catalogado": true
    },
    {
     "mote": "Santi",
@@ -10826,9 +10835,10 @@
     "avg_min": 16.5,
     "pts_min": 0,
     "avg_pm": -1,
-    "catalogado": false,
-    "display": "Santi",
-    "tipo": "sin_catalogar_mda"
+    "person_id": "pazo-pascual-santiago",
+    "display": "Santiago Pazo Pascual",
+    "nombre": "PAZO PASCUAL, SANTIAGO",
+    "catalogado": true
    }
   ],
   "cuartos": [

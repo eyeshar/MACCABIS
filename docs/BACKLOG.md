@@ -14,8 +14,8 @@
 
 ### Pendiente del histórico (cabos sueltos, ninguno bloquea)
 
-- [ ] **Verificar la ficha de Ignacio Mateos Aparicio** ("Nacho S.", 23/24 y 24/25): juega y anota, pero no aparece en las fichas MdL disponibles. ¿Estaba en el MdA?
-- [ ] **Ampliar el diccionario de nombres al MdA**: 11 motes sin catalogar en 23/24 y 10 en 24/25 (Jon, Jorge, Lukas, Edwin, Sergi, Alonso, Wall, Guille, Daniele, J. Perchín, Henry, Rafa, Santi). Ahora se muestran con el mote tal cual. Al añadirlos al .md basta con volver a lanzar `npm run build:datos`.
+- [ ] **Verificar la ficha de Ignacio Mateos Aparicio** ("Nacho S.", 23/24 y 24/25): la tabla MdA confirma que jugaba en las dos fichas (36 puntos en el MdA de 23/24), pero sigue sin aparecer en las fichas de inscripción MdL. Falta localizar en qué ficha constaba.
+- [x] **Ampliar el diccionario de nombres al MdA** — HECHO (04/08/2026). Iván cerró las tablas `### 2023/24 (MdA)` y `### 2024/25 (MdA)`; los 37 motes resuelven a persona real y no queda ninguno sin catalogar.
 - [ ] **Resolver 3 motes sueltos del MdL**: `Paaco` y `Coach` (14/15, sin puntos) y `Víctor` (17/18, **6 puntos**). No se han deducido: hace falta una fila explícita en el diccionario.
 - [ ] **Unificar el `person_id` de Víctor Martínez** (aparece como "Martínez Martínez, Víctor" y como "Martínez, Víctor" según la temporada). Importante antes de cualquier ranking histórico entre temporadas.
 - [ ] **Revisar 3 celdas del MdA 23/24** con decimales donde debería haber enteros (marcadas con "?" en el dashboard).

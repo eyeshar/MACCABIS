@@ -54,9 +54,8 @@ _Generado por `scripts/build_historico.js` a partir de los Excel de estadística
 ### 2023 / 24
 
 - MdA 2023-24: 3 celda(s) con valor decimal en una columna que debería ser entera (se transcriben tal cual, pendientes de revisar): Jon/p3=1.875, Edwin/tl=1.875, J. Perchín/tl=1.4285714285714286
-- MdA 2023-24: motes sin entrada en el diccionario (el diccionario sólo cubre MdL) -> se conserva el mote sin asignar nombre: Jon, Jorge, Lukas, Edwin, Sergi, Alonso, Wall, Guille, Daniele, J. Perchín, Henry
 
 ### 2024 / 25
 
-- MdA 2024-25: motes sin entrada en el diccionario (el diccionario sólo cubre MdL) -> se conserva el mote sin asignar nombre: Jorge, Guille, Wall, Sergi, Lukas, Edwin, Daniele, J. Perchín, Rafa, Santi
+- Sin incidencias.
 

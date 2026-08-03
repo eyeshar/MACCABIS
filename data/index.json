@@ -1,6 +1,56 @@
 {
   "seasons": [
     {
+      "id": "2013-14",
+      "label": "2013 / 14",
+      "file": "data/season_2013-14.json"
+    },
+    {
+      "id": "2014-15",
+      "label": "2014 / 15",
+      "file": "data/season_2014-15.json"
+    },
+    {
+      "id": "2015-16",
+      "label": "2015 / 16",
+      "file": "data/season_2015-16.json"
+    },
+    {
+      "id": "2017-18",
+      "label": "2017 / 18",
+      "file": "data/season_2017-18.json"
+    },
+    {
+      "id": "2018-19",
+      "label": "2018 / 19",
+      "file": "data/season_2018-19.json"
+    },
+    {
+      "id": "2019-20",
+      "label": "2019 / 20",
+      "file": "data/season_2019-20.json"
+    },
+    {
+      "id": "2020-21",
+      "label": "2020 / 21",
+      "file": "data/season_2020-21.json"
+    },
+    {
+      "id": "2021-22",
+      "label": "2021 / 22",
+      "file": "data/season_2021-22.json"
+    },
+    {
+      "id": "2023-24",
+      "label": "2023 / 24",
+      "file": "data/season_2023-24.json"
+    },
+    {
+      "id": "2024-25",
+      "label": "2024 / 25",
+      "file": "data/season_2024-25.json"
+    },
+    {
       "id": "2025-26",
       "label": "2025 / 26",
       "file": "data/season_2025-26.json"

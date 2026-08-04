@@ -2,10 +2,11 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 04/08/2026 — bloque "interfaz de la Historia" (rama `feat/historia-club-ui`, sin mergear)._
+_Última actualización: 04/08/2026 — bloque "2016/17 y orden por incorporación" (rama `feat/historia-club-ui`, sin mergear)._
 
 ### Interfaz de la Historia: pestaña "El Club" (rama `feat/historia-club-ui`)
 - **Transversal a las temporadas**: se carga una vez desde `data/personas.json` y `data/historia_club.json`; no depende del selector ni lo altera.
+- **Dos modos de orden excluyentes en la rejilla** (decisión de Iván, ver D22): por **veteranía** (con agrupación en tramos, es el de por defecto) o por **año de incorporación** (lista plana, sin tramos). La cifra dorada de cada fila cambia en consecuencia: nº de temporadas o temporada de debut.
 - **Rejilla maestra**: 84 personas × 13 temporadas + la 26/27 prevista. Cada trayectoria es una barra continua; naranja = temporada con estadísticas, morado = sólo presencia. Cabecera y columna de nombre fijas, agrupación por tramos de veteranía, buscador y filtro con/sin estadísticas. Entrenador en sección propia.
 - **Tira temporal**: una tarjeta por temporada con plantilla, altas y bajas. La 26/27 aparte, marcada como no empezada.
 - **Ficha de persona**: al pinchar una fila. Temporadas, debut, veteranía y presencia año a año.
@@ -24,7 +25,8 @@ _Última actualización: 04/08/2026 — bloque "interfaz de la Historia" (rama `
 ## Hecho y funcionando
 
 ### Historia del club: matriz de presencia 2013→2026 (rama `feat/historia-club-datos`)
-- **84 personas** con sus temporadas de presencia en el club, en `data/historia_club.json`. **Cubre 2013-2025 sin huecos.** (cerrado por Iván el 04/08/2026 a partir de `Historia_de_los_Maccabi.xlsx` + SportEasy).
+- **84 personas** con sus temporadas de presencia en el club, en `data/historia_club.json`. **Cubre 2013-2025 sin huecos.**
+- **2016/17 completada de verdad (04/08/2026).** El bloque anterior dio esa temporada por integrada, pero un filtro obsoleto en `completar_historia.js` impedía aplicar las hojas: los 4 jugadores que aportaba la hoja de Torneos 2017 nunca llegaron a la matriz. Corregido y verificado: **24 personas** constan ya en 2016/17, entre ellas las 20 de la hoja. (cerrado por Iván el 04/08/2026 a partir de `Historia_de_los_Maccabi.xlsx` + SportEasy).
 - **Sólo datos**: la interfaz visual (rejilla, tira temporal, fichas) es el bloque siguiente y NO está construida.
 - **Registro único de identidades** en `data/personas.json` (80 personas): fuente de verdad de los `person_id` que comparten la Historia y las estadísticas. Ver DECISIONS D13-D15.
 - **Completada y verificada (04/08/2026)** contra las otras dos fuentes, con esta jerarquía: estadísticas (actas) > hojas de inscripción > matriz. La matriz sólo se completa; nunca se quita a nadie ni se recorta un año.
@@ -106,10 +108,11 @@ Equipo (balance, racha, tabla de partidos con boxscore desplegable al clic) · J
 8. ~~**Seis nombres en hojas sin identificar**~~ — **RESUELTO (04/08/2026)**: los 5 confirmados por Iván se crearon como personas; ya no queda ningún nombre de hoja oficial sin identificar.
 9. ~~**Cinco correspondencias dudosas en fichas**~~ — **RESUELTO (04/08/2026)**: dos eran erratas de nombre (corregidas) y las otras tres se confirmaron como alias.
 10. ~~**Cinco hojas de "Torneos Municipales" sin aplicar**~~ — **RESUELTO (04/08/2026)**: Iván fijó la regla y las cinco están aplicadas.
-11. **Adán Herrera Benzán jugó 3 partidos en 2017/18 sin constar en ninguna hoja de esa temporada** (sí en 2018/19, 2021/22 y 2022/23). O falta su hoja, o se inscribió fuera de plazo. Anomalía de la fuente.
-12. **Las 4 hojas transcritas por visión conviene repasarlas** (2013/14 MdL, 2014/15 MdL y las dos de 2017/18): son escaneos sin capa de texto, leídos de la imagen. Están en `docs/fichas_transcritas.json`.
-13. ~~**Cuatro personas con estadísticas que no están en la matriz de historia**~~ — Ignacio Ferrando del Rincón (23/24), Ramón Mora-Gil Jiménez (21/22 y 23/24), Javier Páez García (20/21) y Daniele Vallesi (21/22, 23/24, 24/25). **No se han fusionado con nadie**: había parecidos superficiales (otro Ramón, otro Javier, otro Ignacio) que son personas distintas. Falta decidir si se añaden a la matriz o si su ausencia es intencionada. `npm run check:personas` los avisa en cada ejecución.
-14. **Partidos sin estadística individual**: 3 en 15/16 (5, 11 y 18) y 9 en 21/22 (10 al 18). El marcador sí consta; el boxscore no se ha fabricado y salen marcados como "sin stats".
+11. **"Pupo" (2016/17) sigue sin identificar** — investigado el 04/08/2026 y **no resuelto a propósito**: su única traza es la fila del Excel de la Historia. No aparece en ninguno de los 17 Excel de estadísticas (2016/17 es la única temporada sin ellos) ni en ninguna hoja de inscripción. Los 20 nombres de la hoja de Torneos 2017 están todos identificados y cada uno tiene su propia fila en la matriz. **Falta la hoja de la liga de 2016/17 (37 JDM)**, que no está entre los PDF: es la vía con más recorrido para identificarlo.
+12. **Adán Herrera Benzán jugó 3 partidos en 2017/18 sin constar en ninguna hoja de esa temporada** (sí en 2018/19, 2021/22 y 2022/23). O falta su hoja, o se inscribió fuera de plazo. Anomalía de la fuente.
+13. **Las 4 hojas transcritas por visión conviene repasarlas** (2013/14 MdL, 2014/15 MdL y las dos de 2017/18): son escaneos sin capa de texto, leídos de la imagen. Están en `docs/fichas_transcritas.json`.
+14. ~~**Cuatro personas con estadísticas que no están en la matriz de historia**~~ — Ignacio Ferrando del Rincón (23/24), Ramón Mora-Gil Jiménez (21/22 y 23/24), Javier Páez García (20/21) y Daniele Vallesi (21/22, 23/24, 24/25). **No se han fusionado con nadie**: había parecidos superficiales (otro Ramón, otro Javier, otro Ignacio) que son personas distintas. Falta decidir si se añaden a la matriz o si su ausencia es intencionada. `npm run check:personas` los avisa en cada ejecución.
+15. **Partidos sin estadística individual**: 3 en 15/16 (5, 11 y 18) y 9 en 21/22 (10 al 18). El marcador sí consta; el boxscore no se ha fabricado y salen marcados como "sin stats".
 
 ## En curso / decidido pero no empezado
 

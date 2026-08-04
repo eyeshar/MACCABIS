@@ -70,7 +70,7 @@
 **Decisión:** los PDF de `docs/Fichas` no se versionan (`.gitignore`). De ellos se extrae únicamente temporada, equipo y nombre, y eso es lo que vive en `data/fichas_inscripcion.json`.
 **Por qué:** las hojas traen DNI, fecha de nacimiento, teléfono y email de cada jugador, y el repositorio es **público**. La regla del proyecto es que los datos personales sensibles nunca salen a la zona pública (ver D3). El nombre y el año de inscripción no son sensibles: ya se publican en las estadísticas.
 
-## D18 — Las hojas de "Torneos Municipales" no se aplican
+## D18 — ~~Las hojas de "Torneos Municipales" no se aplican~~ (DEROGADA por D19, ver D23)
 **Decisión:** las hojas cuya cabecera es "TORNEOS MUNICIPALES <año>" quedan registradas con `aplicable: false` y no añaden años a nadie.
 **Por qué:** a diferencia de los JDM (donde la edición identifica la temporada sin ambigüedad: 34 JDM = 2013/14), un torneo de primavera puede pertenecer a la temporada que termina o a la que empieza. El propio diccionario de la matriz es ambiguo al respecto. Elegir un año a ciegas metería datos falsos en la fuente de pertenencia; dejarlas marcadas cuesta una decisión de Iván y no pierde nada.
 
@@ -86,3 +86,13 @@
 ## D21 — El pipeline se ordena por dependencia de datos, no por comodidad
 **Decisión:** `npm run build:datos` va: diccionario → histórico → fichas → completar historia → personas. `completar_historia.js` lee los `season_*.json` **directamente**, nunca el índice de `personas.json`.
 **Por qué:** `personas.json` se genera al final, así que leerlo desde un paso anterior arrastra los `person_id` de la ejecución previa. Al corregir dos nombres, eso creó dos identidades fantasma en la matriz. Leer la fuente real en cada paso rompe la circularidad y hace el pipeline idempotente: dos ejecuciones seguidas producen ficheros idénticos.
+
+
+## D22 — Los dos modos de orden de la rejilla son excluyentes
+**Decisión:** la rejilla de la Historia se puede ordenar por **veteranía** (agrupada en tramos: históricos, veteranos, de varias temporadas, de una sola) o por **año de incorporación** (lista plana, **sin** tramos). Nunca las dos cosas a la vez. La cifra dorada de cada fila acompaña al criterio activo: nº de temporadas en el primer modo, temporada de debut en el segundo. El cuerpo técnico se mantiene en su propia sección en ambos modos.
+**Por qué:** decisión de Iván. Mezclar los tramos de veteranía con un orden cronológico produce grupos que se leen como saltos hacia atrás en el tiempo y hacen ilegible el criterio. Separar el cuerpo técnico no es una agrupación por veteranía: Barreiro debutó en 2013/14 y aparecería entre las incorporaciones fundacionales pese a no haber jugado nunca.
+
+## D23 — D18 queda formalmente derogada por D19, y el código deja de arrastrarla
+**Decisión:** **D18 ("las hojas de Torneos Municipales no se aplican") queda derogada.** La sustituye D19: un torneo cierra la temporada que termina ese año y su plantilla se suma a la de la liga. En consecuencia se ha retirado el filtro `if (!f.aplicable) continue` de `scripts/completar_historia.js`, y **no se repone el campo `aplicable`** en `consolidar_fichas.js`.
+**Por qué:** el campo nació con D18, cuando el año de un torneo se consideraba ambiguo. Al adoptar D19, `consolidar_fichas.js` dejó de generarlo, pero el filtro siguió en pie: como ninguna hoja traía ya el campo, la condición pasó a excluirlas **todas**. El síntoma fue que 2016/17 —la temporada que D19 venía justamente a rescatar— se quedó sin sus 4 jugadores nuevos. Reponer el campo habría restaurado el comportamiento de D18; retirar el filtro es lo que deja el código alineado con la decisión vigente.
+**Lección operativa:** una decisión derogada no se cierra hasta que el código deja de implementarla. Al cambiar D18 por D19 se cambió el generador pero no el consumidor, y la incoherencia sobrevivió a dos verificaciones porque el efecto era una **ausencia** de datos, no un dato erróneo. Los informes de esos bloques describían lo que la fuente aportaba, no lo que acababa en la matriz; conviene que las verificaciones comparen siempre el resultado final contra el estado anterior.

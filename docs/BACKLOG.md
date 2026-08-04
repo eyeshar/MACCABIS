@@ -21,7 +21,9 @@
 - [x] **4 personas con estadísticas ausentes de la matriz** — HECHO (04/08/2026): añadidas en los años que confirman las actas.
 - [x] **Identificar los nombres de hojas de inscripción** — HECHO (04/08/2026): 5 personas creadas y el "Alejandro de Alicante" unificado.
 - [x] **Confirmar las correspondencias dudosas** — HECHO (04/08/2026): dos eran erratas de nombre y tres se confirmaron como alias.
-- [x] **Fijar el criterio de los "Torneos Municipales"** — HECHO (04/08/2026): pertenecen a la temporada que termina en ese año; liga y torneo se suman.
+- [x] **Fijar el criterio de los "Torneos Municipales"** — HECHO (04/08/2026): pertenecen a la temporada que termina en ese año; liga y torneo se suman (D19).
+- [x] **Aplicar de verdad las hojas de torneo a la matriz** — HECHO (04/08/2026): retirado el filtro obsoleto que las excluía todas; 2016/17 pasa de 20 a 24 personas (D23).
+- [ ] **Identificar a "Pupo" (2016/17)** — investigado el 04/08/2026 sin resultado: no aparece en ninguna estadística ni en ninguna hoja conservada. La vía es **localizar la hoja de inscripción de la liga 2016/17 (37 JDM)**, que falta en `docs/Fichas`; si aparece, el nombre que no esté en ninguna otra será Pupo. Alternativa: preguntar a Carlos o a quien jugara ese año.
 - [ ] **Repasar las 4 hojas transcritas por visión** (2013/14 MdL, 2014/15 MdL y las dos de 2017/18): son escaneos sin texto, leídos de la imagen. En `docs/fichas_transcritas.json`.
 - [ ] **Aclarar el caso de Adán Herrera Benzán**: jugó 3 partidos en 2017/18 sin constar en ninguna hoja de esa temporada.
 - [ ] **Cabos del diccionario de la matriz** (`docs/HISTORIA_diccionario_matriz.md`): desambiguar 'Sam' (Rogaia vs Gruppo) por año, repartir 'Ignacio' entre Ferrando/Mileo/Mateos, y confirmar 'Jose' 2020 = Gil Fernández (confianza media).

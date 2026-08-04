@@ -31,13 +31,20 @@
      "motivo": "El acta de 25/26 recoge el nombre legal completo (\"Fernando Antonio\"); se conserva como alias del id canónico de la matriz."
     }
    ]
+  },
+  "completado": {
+   "fecha": "2026-08-04",
+   "script": "scripts/completar_historia.js",
+   "regla": "La matriz se completa con lo que confirman las estadísticas y las hojas de inscripción; nunca se quita a nadie ni se recorta un año.",
+   "anios_anadidos": 0,
+   "personas_anadidas": 0
   }
  },
  "personas": [
   {
-   "person_id": "villaescusa-silva-ivan",
-   "formal": "Villaescusa Silva, Iván",
-   "display": "Iván Villaescusa Silva",
+   "person_id": "lopez-lucero-alfredo-david",
+   "formal": "López Lucero, Alfredo David",
+   "display": "Alfredo David López Lucero",
    "temporadas_jugadas": [
     "2013",
     "2014",
@@ -59,9 +66,9 @@
    "es_entrenador": false
   },
   {
-   "person_id": "lopez-lucero-alfredo-david",
-   "formal": "López Lucero, Alfredo David",
-   "display": "Alfredo David López Lucero",
+   "person_id": "villaescusa-silva-ivan",
+   "formal": "Villaescusa Silva, Iván",
+   "display": "Iván Villaescusa Silva",
    "temporadas_jugadas": [
     "2013",
     "2014",
@@ -104,6 +111,29 @@
    "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": true
+  },
+  {
+   "person_id": "martin-ortega-rico-eduardo",
+   "formal": "Martín-Ortega Rico, Eduardo",
+   "display": "Eduardo Martín-Ortega Rico",
+   "temporadas_jugadas": [
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "n_temporadas": 12,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
   },
   {
    "person_id": "calvo-gonzalez-santiago",
@@ -151,24 +181,23 @@
    "es_entrenador": false
   },
   {
-   "person_id": "martin-ortega-rico-eduardo",
-   "formal": "Martín-Ortega Rico, Eduardo",
-   "display": "Eduardo Martín-Ortega Rico",
+   "person_id": "castro-mayo-henry-luis",
+   "formal": "Castro Mayo, Henry Luis",
+   "display": "Henry Luis Castro Mayo",
    "temporadas_jugadas": [
+    "2013",
+    "2014",
     "2015",
     "2016",
     "2017",
     "2018",
     "2019",
-    "2020",
     "2021",
     "2022",
-    "2023",
-    "2024",
-    "2025"
+    "2023"
    ],
-   "n_temporadas": 11,
-   "previsto_2627": true,
+   "n_temporadas": 10,
+   "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -194,22 +223,43 @@
    "es_entrenador": false
   },
   {
-   "person_id": "perez-nunez-raul",
-   "formal": "Pérez Núñez, Raúl",
-   "display": "Raúl Pérez Núñez",
+   "person_id": "vallesi-daniele",
+   "formal": "Vallesi, Daniele",
+   "display": "Daniele Vallesi",
    "temporadas_jugadas": [
-    "2013",
-    "2014",
-    "2015",
-    "2016",
     "2017",
     "2018",
     "2019",
     "2020",
-    "2021"
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
    ],
    "n_temporadas": 9,
    "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Añadida a la matriz el 04/08/2026 al cruzarla con estadísticas."
+  },
+  {
+   "person_id": "tejeiro-perez-de-agreda-fernando",
+   "formal": "Tejeiro Pérez de Agreda, Fernando",
+   "display": "Fernando Tejeiro Pérez de Agreda",
+   "temporadas_jugadas": [
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "n_temporadas": 9,
+   "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -254,13 +304,33 @@
    "es_entrenador": false
   },
   {
-   "person_id": "tejeiro-perez-de-agreda-fernando",
-   "formal": "Tejeiro Pérez de Agreda, Fernando",
-   "display": "Fernando Tejeiro Pérez de Agreda",
+   "person_id": "perez-nunez-raul",
+   "formal": "Pérez Núñez, Raúl",
+   "display": "Raúl Pérez Núñez",
    "temporadas_jugadas": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
     "2017",
     "2018",
     "2019",
+    "2020",
+    "2021"
+   ],
+   "n_temporadas": 9,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "martinez-martinez-victor",
+   "formal": "Martínez Martínez, Víctor",
+   "display": "Víctor Martínez Martínez",
+   "temporadas_jugadas": [
+    "2016",
+    "2017",
+    "2018",
     "2020",
     "2021",
     "2022",
@@ -293,17 +363,17 @@
    "es_entrenador": false
   },
   {
-   "person_id": "castro-mayo-henry-luis",
-   "formal": "Castro Mayo, Henry Luis",
-   "display": "Henry Luis Castro Mayo",
+   "person_id": "morali-leonardo",
+   "formal": "Morali, Leonardo",
+   "display": "Leonardo Morali",
    "temporadas_jugadas": [
     "2013",
-    "2016",
-    "2017",
-    "2018",
+    "2014",
     "2019",
+    "2020",
     "2021",
-    "2022"
+    "2022",
+    "2023"
    ],
    "n_temporadas": 7,
    "previsto_2627": false,
@@ -311,11 +381,11 @@
    "es_entrenador": false
   },
   {
-   "person_id": "martinez-martinez-victor",
-   "formal": "Martínez Martínez, Víctor",
-   "display": "Víctor Martínez Martínez",
+   "person_id": "varas-garcia-luis-alberto",
+   "formal": "Varas García, Luis Alberto",
+   "display": "Luis Alberto Varas García",
    "temporadas_jugadas": [
-    "2016",
+    "2019",
     "2020",
     "2021",
     "2022",
@@ -329,35 +399,19 @@
    "es_entrenador": false
   },
   {
-   "person_id": "klein-patrick-hennesey",
-   "formal": "Klein, Patrick Hennesey",
-   "display": "Patrick Hennesey Klein",
+   "person_id": "pazo-pascual-santiago",
+   "formal": "Pazo Pascual, Santiago",
+   "display": "Santiago Pazo Pascual",
    "temporadas_jugadas": [
-    "2013",
-    "2014",
-    "2015",
-    "2016",
     "2017",
-    "2018"
-   ],
-   "n_temporadas": 6,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "morali-leonardo",
-   "formal": "Morali, Leonardo",
-   "display": "Leonardo Morali",
-   "temporadas_jugadas": [
-    "2013",
-    "2014",
+    "2018",
     "2019",
     "2021",
     "2022",
-    "2023"
+    "2023",
+    "2024"
    ],
-   "n_temporadas": 6,
+   "n_temporadas": 7,
    "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
@@ -380,50 +434,18 @@
    "es_entrenador": false
   },
   {
-   "person_id": "varas-garcia-luis-alberto",
-   "formal": "Varas García, Luis Alberto",
-   "display": "Luis Alberto Varas García",
+   "person_id": "klein-patrick-hennesey",
+   "formal": "Klein, Patrick Hennesey",
+   "display": "Patrick Hennesey Klein",
    "temporadas_jugadas": [
-    "2019",
-    "2020",
-    "2022",
-    "2023",
-    "2024",
-    "2025"
-   ],
-   "n_temporadas": 6,
-   "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "perez-lardiez-jorge",
-   "formal": "Pérez Lardiez, Jorge",
-   "display": "Jorge Pérez Lardiez",
-   "temporadas_jugadas": [
+    "2013",
+    "2014",
+    "2015",
     "2016",
     "2017",
-    "2018",
-    "2019",
-    "2022"
+    "2018"
    ],
-   "n_temporadas": 5,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "moral-cacho-enrique",
-   "formal": "Moral Cacho, Enrique",
-   "display": "Enrique Moral Cacho",
-   "temporadas_jugadas": [
-    "2017",
-    "2018",
-    "2019",
-    "2020",
-    "2021"
-   ],
-   "n_temporadas": 5,
+   "n_temporadas": 6,
    "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
@@ -445,6 +467,38 @@
    "es_entrenador": false
   },
   {
+   "person_id": "martinez-martinez-andres",
+   "formal": "Martínez Martínez, Andrés",
+   "display": "Andrés Martínez Martínez",
+   "temporadas_jugadas": [
+    "2016",
+    "2017",
+    "2018",
+    "2020",
+    "2025"
+   ],
+   "n_temporadas": 5,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "moral-cacho-enrique",
+   "formal": "Moral Cacho, Enrique",
+   "display": "Enrique Moral Cacho",
+   "temporadas_jugadas": [
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "n_temporadas": 5,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
    "person_id": "galan-domingo-guillermo",
    "formal": "Galán Domingo, Guillermo",
    "display": "Guillermo Galán Domingo",
@@ -457,6 +511,83 @@
    ],
    "n_temporadas": 5,
    "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "perez-lardiez-jorge",
+   "formal": "Pérez Lardiez, Jorge",
+   "display": "Jorge Pérez Lardiez",
+   "temporadas_jugadas": [
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2022"
+   ],
+   "n_temporadas": 5,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "ortega-delgado-pablo",
+   "formal": "Ortega Delgado, Pablo",
+   "display": "Pablo Ortega Delgado",
+   "temporadas_jugadas": [
+    "2020",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "n_temporadas": 5,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "venegas-lamamie-de-clairac-alan",
+   "formal": "Venegas Lamamie de Clairac, Alan",
+   "display": "Alan Venegas Lamamie de Clairac",
+   "temporadas_jugadas": [
+    "2013",
+    "2015",
+    "2016",
+    "2018"
+   ],
+   "n_temporadas": 4,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "peco-ruiz-alberto",
+   "formal": "Peco Ruiz, Alberto",
+   "display": "Alberto Peco Ruiz",
+   "temporadas_jugadas": [
+    "2016",
+    "2018",
+    "2021",
+    "2022"
+   ],
+   "n_temporadas": 4,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "romero-barrueco-alonso",
+   "formal": "Romero Barrueco, Alonso",
+   "display": "Alonso Romero Barrueco",
+   "temporadas_jugadas": [
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "n_temporadas": 4,
+   "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -491,74 +622,14 @@
    "es_entrenador": false
   },
   {
-   "person_id": "peco-ruiz-alberto",
-   "formal": "Peco Ruiz, Alberto",
-   "display": "Alberto Peco Ruiz",
+   "person_id": "perez-nunez-carlos",
+   "formal": "Pérez Núñez, Carlos",
+   "display": "Carlos Pérez Núñez",
    "temporadas_jugadas": [
-    "2016",
-    "2018",
-    "2021",
-    "2022"
-   ],
-   "n_temporadas": 4,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "gil-delgado-heriberto",
-   "formal": "Gil Delgado, Heriberto",
-   "display": "Heriberto Gil Delgado",
-   "temporadas_jugadas": [
-    "2018",
-    "2019",
-    "2020",
-    "2021"
-   ],
-   "n_temporadas": 4,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "ortega-delgado-pablo",
-   "formal": "Ortega Delgado, Pablo",
-   "display": "Pablo Ortega Delgado",
-   "temporadas_jugadas": [
-    "2020",
-    "2022",
-    "2023",
-    "2024"
-   ],
-   "n_temporadas": 4,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "perchin-garcia-javier",
-   "formal": "Perchín García, Javier",
-   "display": "Javier Perchín García",
-   "temporadas_jugadas": [
-    "2022",
-    "2023",
-    "2024",
-    "2025"
-   ],
-   "n_temporadas": 4,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "hernandez-faura-jorge",
-   "formal": "Hernández Faura, Jorge",
-   "display": "Jorge Hernández Faura",
-   "temporadas_jugadas": [
-    "2022",
-    "2023",
-    "2024",
-    "2025"
+    "2013",
+    "2014",
+    "2015",
+    "2016"
    ],
    "n_temporadas": 4,
    "previsto_2627": false,
@@ -581,6 +652,36 @@
    "es_entrenador": false
   },
   {
+   "person_id": "gil-delgado-heriberto",
+   "formal": "Gil Delgado, Heriberto",
+   "display": "Heriberto Gil Delgado",
+   "temporadas_jugadas": [
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "n_temporadas": 4,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "perchin-garcia-javier",
+   "formal": "Perchín García, Javier",
+   "display": "Javier Perchín García",
+   "temporadas_jugadas": [
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "n_temporadas": 4,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
    "person_id": "esteban-jon",
    "formal": "Esteban, Jon",
    "display": "Jon Esteban",
@@ -592,6 +693,21 @@
    ],
    "n_temporadas": 4,
    "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "hernandez-faura-jorge",
+   "formal": "Hernández Faura, Jorge",
+   "display": "Jorge Hernández Faura",
+   "temporadas_jugadas": [
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "n_temporadas": 4,
+   "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -611,100 +727,16 @@
    "es_entrenador": false
   },
   {
-   "person_id": "romero-barrueco-alonso",
-   "formal": "Romero Barrueco, Alonso",
-   "display": "Alonso Romero Barrueco",
-   "temporadas_jugadas": [
-    "2022",
-    "2023",
-    "2024",
-    "2025"
-   ],
-   "n_temporadas": 4,
-   "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "diaz-iglesias-aguilar-juan",
-   "formal": "Díaz-Iglesias Aguilar, Juan",
-   "display": "Juan Díaz-Iglesias Aguilar",
-   "temporadas_jugadas": [
-    "2013",
-    "2014",
-    "2015"
-   ],
-   "n_temporadas": 3,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "perez-nunez-carlos",
-   "formal": "Pérez Núñez, Carlos",
-   "display": "Carlos Pérez Núñez",
-   "temporadas_jugadas": [
-    "2014",
-    "2015",
-    "2016"
-   ],
-   "n_temporadas": 3,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "venegas-lamamie-de-clairac-alan",
-   "formal": "Venegas Lamamie de Clairac, Alan",
-   "display": "Alan Venegas Lamamie de Clairac",
-   "temporadas_jugadas": [
-    "2015",
-    "2016",
-    "2018"
-   ],
-   "n_temporadas": 3,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "martinez-martinez-andres",
-   "formal": "Martínez Martínez, Andrés",
-   "display": "Andrés Martínez Martínez",
-   "temporadas_jugadas": [
-    "2016",
-    "2018",
-    "2025"
-   ],
-   "n_temporadas": 3,
-   "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "carrera-carranza-julian",
-   "formal": "Carrera Carranza, Julián",
-   "display": "Julián Carrera Carranza",
-   "temporadas_jugadas": [
-    "2017",
-    "2018",
-    "2019"
-   ],
-   "n_temporadas": 3,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
    "person_id": "ballesteros-fuentes-roberto",
    "formal": "Ballesteros Fuentes, Roberto",
    "display": "Roberto Ballesteros Fuentes",
    "temporadas_jugadas": [
+    "2017",
     "2018",
     "2019",
     "2020"
    ],
-   "n_temporadas": 3,
+   "n_temporadas": 4,
    "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false,
@@ -725,9 +757,23 @@
    "es_entrenador": false
   },
   {
-   "person_id": "pazo-pascual-santiago",
-   "formal": "Pazo Pascual, Santiago",
-   "display": "Santiago Pazo Pascual",
+   "person_id": "osaer-dimitri",
+   "formal": "Osaer, Dimitri",
+   "display": "Dimitri Osaer",
+   "temporadas_jugadas": [
+    "2018",
+    "2019",
+    "2020"
+   ],
+   "n_temporadas": 3,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "lopez-de-ayala-alcantara-eduardo",
+   "formal": "López de Ayala Alcántara, Eduardo",
+   "display": "Eduardo López de Ayala Alcántara",
    "temporadas_jugadas": [
     "2021",
     "2022",
@@ -753,6 +799,48 @@
    "es_entrenador": false
   },
   {
+   "person_id": "trave-de-la-vega-ignacio-manuel",
+   "formal": "Trave de la Vega, Ignacio Manuel",
+   "display": "Ignacio Manuel Trave de la Vega",
+   "temporadas_jugadas": [
+    "2021",
+    "2022",
+    "2023"
+   ],
+   "n_temporadas": 3,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "diaz-iglesias-aguilar-juan",
+   "formal": "Díaz-Iglesias Aguilar, Juan",
+   "display": "Juan Díaz-Iglesias Aguilar",
+   "temporadas_jugadas": [
+    "2013",
+    "2014",
+    "2015"
+   ],
+   "n_temporadas": 3,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "carrera-carranza-julian",
+   "formal": "Carrera Carranza, Julián",
+   "display": "Julián Carrera Carranza",
+   "temporadas_jugadas": [
+    "2017",
+    "2018",
+    "2019"
+   ],
+   "n_temporadas": 3,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
    "person_id": "sanchez-herrero-rafael",
    "formal": "Sánchez Herrero, Rafael",
    "display": "Rafael Sánchez Herrero",
@@ -760,6 +848,35 @@
     "2022",
     "2023",
     "2024"
+   ],
+   "n_temporadas": 3,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "mora-gil-jimenez-ramon",
+   "formal": "Mora-Gil Jiménez, Ramón",
+   "display": "Ramón Mora-Gil Jiménez",
+   "temporadas_jugadas": [
+    "2020",
+    "2021",
+    "2023"
+   ],
+   "n_temporadas": 3,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Añadida a la matriz el 04/08/2026 al cruzarla con estadísticas."
+  },
+  {
+   "person_id": "davis-robert-blake",
+   "formal": "Davis, Robert Blake",
+   "display": "Robert Blake Davis",
+   "temporadas_jugadas": [
+    "2018",
+    "2019",
+    "2020"
    ],
    "n_temporadas": 3,
    "previsto_2627": false,
@@ -794,12 +911,105 @@
    "es_entrenador": false
   },
   {
-   "person_id": "guerrero-de-la-riva-miguel",
-   "formal": "Guerrero de la Riva, Miguel",
-   "display": "Miguel Guerrero de la Riva",
+   "person_id": "espinola-fernando-abel",
+   "formal": "Espínola, Fernando Abel",
+   "display": "Fernando Abel Espínola",
    "temporadas_jugadas": [
-    "2013",
+    "2017",
+    "2021"
+   ],
+   "n_temporadas": 2,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "mileo-ignacio-agustin",
+   "formal": "Mileo, Ignacio Agustín",
+   "display": "Ignacio Agustín Mileo",
+   "temporadas_jugadas": [
+    "2024",
     "2025"
+   ],
+   "n_temporadas": 2,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "cabanas-de-pablo-ignacio",
+   "formal": "Cabañas de Pablo, Ignacio",
+   "display": "Ignacio Cabañas de Pablo",
+   "temporadas_jugadas": [
+    "2016",
+    "2017"
+   ],
+   "n_temporadas": 2,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "ferrando-del-rincon-ignacio",
+   "formal": "Ferrando del Rincón, Ignacio",
+   "display": "Ignacio Ferrando del Rincón",
+   "temporadas_jugadas": [
+    "2022",
+    "2023"
+   ],
+   "n_temporadas": 2,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Añadida a la matriz el 04/08/2026 al cruzarla con estadísticas."
+  },
+  {
+   "person_id": "mateos-aparicio-ignacio",
+   "formal": "Mateos Aparicio, Ignacio",
+   "display": "Ignacio Mateos Aparicio",
+   "temporadas_jugadas": [
+    "2023",
+    "2024"
+   ],
+   "n_temporadas": 2,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "de-maria-sanchez-jaime",
+   "formal": "De María Sánchez, Jaime",
+   "display": "Jaime De María Sánchez",
+   "temporadas_jugadas": [
+    "2024",
+    "2025"
+   ],
+   "n_temporadas": 2,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "paez-garcia-javier",
+   "formal": "Páez García, Javier",
+   "display": "Javier Páez García",
+   "temporadas_jugadas": [
+    "2015",
+    "2020"
+   ],
+   "n_temporadas": 2,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Añadida a la matriz el 04/08/2026 al cruzarla con estadísticas."
+  },
+  {
+   "person_id": "porras-calzada-jose-maria",
+   "formal": "Porras Calzada, José María",
+   "display": "José María Porras Calzada",
+   "temporadas_jugadas": [
+    "2019",
+    "2020"
    ],
    "n_temporadas": 2,
    "previsto_2627": false,
@@ -820,38 +1030,12 @@
    "es_entrenador": false
   },
   {
-   "person_id": "cabanas-de-pablo-ignacio",
-   "formal": "Cabañas de Pablo, Ignacio",
-   "display": "Ignacio Cabañas de Pablo",
+   "person_id": "gomez-pradal-luis",
+   "formal": "Gómez Pradal, Luis",
+   "display": "Luis Gómez Pradal",
    "temporadas_jugadas": [
-    "2016",
-    "2017"
-   ],
-   "n_temporadas": 2,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "davis-robert-blake",
-   "formal": "Davis, Robert Blake",
-   "display": "Robert Blake Davis",
-   "temporadas_jugadas": [
-    "2018",
-    "2019"
-   ],
-   "n_temporadas": 2,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "porras-calzada-jose-maria",
-   "formal": "Porras Calzada, José María",
-   "display": "José María Porras Calzada",
-   "temporadas_jugadas": [
-    "2019",
-    "2020"
+    "2020",
+    "2021"
    ],
    "n_temporadas": 2,
    "previsto_2627": false,
@@ -872,41 +1056,15 @@
    "es_entrenador": false
   },
   {
-   "person_id": "trave-de-la-vega-ignacio-manuel",
-   "formal": "Trave de la Vega, Ignacio Manuel",
-   "display": "Ignacio Manuel Trave de la Vega",
+   "person_id": "guerrero-de-la-riva-miguel",
+   "formal": "Guerrero de la Riva, Miguel",
+   "display": "Miguel Guerrero de la Riva",
    "temporadas_jugadas": [
-    "2022",
-    "2023"
-   ],
-   "n_temporadas": 2,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "mateos-aparicio-ignacio",
-   "formal": "Mateos Aparicio, Ignacio",
-   "display": "Ignacio Mateos Aparicio",
-   "temporadas_jugadas": [
-    "2023",
-    "2024"
-   ],
-   "n_temporadas": 2,
-   "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "mileo-ignacio-agustin",
-   "formal": "Mileo, Ignacio Agustín",
-   "display": "Ignacio Agustín Mileo",
-   "temporadas_jugadas": [
-    "2024",
+    "2013",
     "2025"
    ],
    "n_temporadas": 2,
-   "previsto_2627": true,
+   "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -937,6 +1095,43 @@
    "es_entrenador": false
   },
   {
+   "person_id": "gianatti-adriano",
+   "formal": "Gianatti, Adriano",
+   "display": "Adriano Gianatti",
+   "temporadas_jugadas": [
+    "2025"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "alejandro",
+   "formal": "[SOLO MOTE: Alejandro]",
+   "display": "Alejandro",
+   "temporadas_jugadas": [
+    "2017"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": false,
+   "solo_mote": true,
+   "es_entrenador": false,
+   "nota": "se fue a Alicante"
+  },
+  {
+   "person_id": "banos-gallego-carlos",
+   "formal": "Baños Gallego, Carlos",
+   "display": "Carlos Baños Gallego",
+   "temporadas_jugadas": [
+    "2025"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
    "person_id": "nieto-moreno-cesar",
    "formal": "Nieto Moreno, César",
    "display": "César Nieto Moreno",
@@ -946,18 +1141,6 @@
    "n_temporadas": 1,
    "previsto_2627": false,
    "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "pupo",
-   "formal": "[SOLO MOTE: Pupo]",
-   "display": "Pupo",
-   "temporadas_jugadas": [
-    "2016"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": false,
-   "solo_mote": true,
    "es_entrenador": false
   },
   {
@@ -985,48 +1168,35 @@
    "es_entrenador": false
   },
   {
-   "person_id": "alejandro",
-   "formal": "[SOLO MOTE: Alejandro]",
-   "display": "Alejandro",
-   "temporadas_jugadas": [
-    "2017"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": false,
-   "solo_mote": true,
-   "es_entrenador": false,
-   "nota": "se fue a Alicante"
-  },
-  {
-   "person_id": "osaer-dimitri",
-   "formal": "Osaer, Dimitri",
-   "display": "Dimitri Osaer",
-   "temporadas_jugadas": [
-    "2018"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "gruppo-samuel-henry",
-   "formal": "Gruppo, Samuel Henry",
-   "display": "Samuel Henry Gruppo",
-   "temporadas_jugadas": [
-    "2018"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
    "person_id": "tosta-queiroz-gilberto",
    "formal": "Tosta Queiroz, Gilberto",
    "display": "Gilberto Tosta Queiroz",
    "temporadas_jugadas": [
     "2019"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "rodriguez-perez-ivan",
+   "formal": "Rodríguez Pérez, Iván",
+   "display": "Iván Rodríguez Pérez",
+   "temporadas_jugadas": [
+    "2024"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "fernandez-cobos-jaime",
+   "formal": "Fernández Cobos, Jaime",
+   "display": "Jaime Fernández Cobos",
+   "temporadas_jugadas": [
+    "2022"
    ],
    "n_temporadas": 1,
    "previsto_2627": false,
@@ -1058,30 +1228,6 @@
    "es_entrenador": false
   },
   {
-   "person_id": "gomez-pradal-luis",
-   "formal": "Gómez Pradal, Luis",
-   "display": "Luis Gómez Pradal",
-   "temporadas_jugadas": [
-    "2021"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "espinola-fernando-abel",
-   "formal": "Espínola, Fernando Abel",
-   "display": "Fernando Abel Espínola",
-   "temporadas_jugadas": [
-    "2021"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
    "person_id": "diaz-hernandez-jose-ignacio",
    "formal": "Díaz Hernández, José Ignacio",
    "display": "José Ignacio Díaz Hernández",
@@ -1094,15 +1240,15 @@
    "es_entrenador": false
   },
   {
-   "person_id": "fernandez-cobos-jaime",
-   "formal": "Fernández Cobos, Jaime",
-   "display": "Jaime Fernández Cobos",
+   "person_id": "pupo",
+   "formal": "[SOLO MOTE: Pupo]",
+   "display": "Pupo",
    "temporadas_jugadas": [
-    "2022"
+    "2016"
    ],
    "n_temporadas": 1,
    "previsto_2627": false,
-   "solo_mote": false,
+   "solo_mote": true,
    "es_entrenador": false
   },
   {
@@ -1118,62 +1264,14 @@
    "es_entrenador": false
   },
   {
-   "person_id": "lopez-de-ayala-alcantara-eduardo",
-   "formal": "López de Ayala Alcántara, Eduardo",
-   "display": "Eduardo López de Ayala Alcántara",
+   "person_id": "gruppo-samuel-henry",
+   "formal": "Gruppo, Samuel Henry",
+   "display": "Samuel Henry Gruppo",
    "temporadas_jugadas": [
-    "2023"
+    "2018"
    ],
    "n_temporadas": 1,
    "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "rodriguez-perez-ivan",
-   "formal": "Rodríguez Pérez, Iván",
-   "display": "Iván Rodríguez Pérez",
-   "temporadas_jugadas": [
-    "2024"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "banos-gallego-carlos",
-   "formal": "Baños Gallego, Carlos",
-   "display": "Carlos Baños Gallego",
-   "temporadas_jugadas": [
-    "2025"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "gianatti-adriano",
-   "formal": "Gianatti, Adriano",
-   "display": "Adriano Gianatti",
-   "temporadas_jugadas": [
-    "2025"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "de-maria-sanchez-jaime",
-   "formal": "De María Sánchez, Jaime",
-   "display": "Jaime De María Sánchez",
-   "temporadas_jugadas": [
-    "2025"
-   ],
-   "n_temporadas": 1,
-   "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false
   }

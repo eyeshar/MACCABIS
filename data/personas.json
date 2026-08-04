@@ -277,7 +277,7 @@
    "es_entrenador": false,
    "solo_mote": false,
    "alias_ids": [],
-   "en_historia": false,
+   "en_historia": true,
    "en_estadisticas": true
   },
   {
@@ -511,7 +511,7 @@
    "es_entrenador": false,
    "solo_mote": false,
    "alias_ids": [],
-   "en_historia": false,
+   "en_historia": true,
    "en_estadisticas": true
   },
   {
@@ -571,7 +571,7 @@
    "es_entrenador": false,
    "solo_mote": false,
    "alias_ids": [],
-   "en_historia": false,
+   "en_historia": true,
    "en_estadisticas": true
   },
   {
@@ -761,7 +761,7 @@
    "es_entrenador": false,
    "solo_mote": false,
    "alias_ids": [],
-   "en_historia": false,
+   "en_historia": true,
    "en_estadisticas": true
   },
   {

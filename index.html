@@ -253,6 +253,7 @@ th.hprev{color:var(--dim)}
   <div class="controls">
     <div class="ctl"><label>Vista</label><div class="segment" id="segHVista"><button data-v="rejilla" class="on">Rejilla</button><button data-v="tira">Por temporada</button></div></div>
     <div class="ctl"><label>Buscar persona</label><input type="text" id="hBuscar" placeholder="nombre o apellido…" style="background:var(--bg);color:var(--chalk);border:1px solid var(--line2);border-radius:9px;padding:9px 12px;font-family:'Barlow';font-size:15px;min-width:230px"></div>
+    <div class="ctl"><label>Ordenar por</label><div class="segment" id="segHOrden"><button data-o="veterania" class="on">Veteranía</button><button data-o="debut">Año de incorporación</button></div></div>
     <div class="ctl"><label>Quién</label><div class="segment" id="segHQuien"><button data-q="ALL" class="on">Todos</button><button data-q="STATS">Con estadísticas</button><button data-q="NOSTATS">Sólo presencia</button></div></div>
   </div>
 
@@ -266,7 +267,7 @@ th.hprev{color:var(--dim)}
       <span><i style="background:linear-gradient(180deg,var(--grape2),var(--grape))"></i>En el club, sin estadísticas de ese año</span>
       <span><i style="background:repeating-linear-gradient(45deg,rgba(148,143,176,.5),rgba(148,143,176,.5) 3px,transparent 3px,transparent 6px)"></i>Prevista 26/27</span>
     </div>
-    <p class="note">Ordenado por veteranía. Pincha en cualquier fila para ver su ficha y saltar a sus estadísticas.</p>
+    <p class="note" id="hNotaOrden"></p>
   </div>
 
   <div id="hVistaTira" style="display:none">
@@ -599,7 +600,7 @@ renderTeam();renderPlayers();renderCard();renderRankings();renderQuarters();rend
 // Transversal a las temporadas: se carga UNA vez y no depende del selector.
 // Lee data/personas.json (identidades) y data/historia_club.json (presencia).
 let HREG=null,HHIST=null;
-const hs={vista:'rejilla',buscar:'',quien:'ALL'};
+const hs={vista:'rejilla',buscar:'',quien:'ALL',orden:'veterania'};
 const H_ANIOS=['2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'];
 const hLabel=y=>String(y).slice(2)+'/'+String(+y+1).slice(2);
 const hSeason=y=>y+'-'+String(+y+1).slice(2);
@@ -623,6 +624,9 @@ async function initHistoria(){
     hs.vista=e.target.dataset.v;
     document.getElementById('hVistaRejilla').style.display=hs.vista==='rejilla'?'':'none';
     document.getElementById('hVistaTira').style.display=hs.vista==='tira'?'':'none';};
+  document.getElementById('segHOrden').onclick=e=>{if(!e.target.dataset.o)return;
+    [...e.currentTarget.children].forEach(b=>b.classList.remove('on'));e.target.classList.add('on');
+    hs.orden=e.target.dataset.o;renderRejilla();};
   document.getElementById('segHQuien').onclick=e=>{if(!e.target.dataset.q)return;
     [...e.currentTarget.children].forEach(b=>b.classList.remove('on'));e.target.classList.add('on');
     hs.quien=e.target.dataset.q;renderRejilla();};
@@ -671,7 +675,7 @@ const H_TRAMOS=[
 function renderRejilla(){
   const P=hPersonas();
   // cabecera
-  let th='<tr><th class="hname">Persona</th>';
+  let th='<tr><th class="hname">Persona<span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0"> · '+(hs.orden==='debut'?'por año de incorporación':'por veteranía')+'</span></th>';
   H_ANIOS.forEach(y=>{th+='<th title="Temporada '+hLabel(y)+'">'+hLabel(y)+'</th>';});
   th+='<th class="hgap"></th><th class="hprev" title="Temporada 2026/27 prevista: aún no ha empezado">26/27</th><th class="hfill"></th></tr>';
   document.getElementById('hHead').innerHTML=th;
@@ -690,7 +694,8 @@ function renderRejilla(){
       '<span class="hdisp" title="'+(p.formal||p.display)+'">'+p.display+'</span>'+
       (p.solo_mote?'<span class="hchip mote">de paso</span>':'')+
       (p.es_entrenador?'<span class="hchip coach">entrenador</span>':'')+
-      '<span class="hveter">'+p.n_temporadas+'</span></div></td>';
+      '<span class="hveter" title="'+(hs.orden==='debut'?'Se incorporó en la temporada '+hLabel(p.temporadas_jugadas[0]||''):p.n_temporadas+' temporadas en el club')+'">'+
+      (hs.orden==='debut'?(p.temporadas_jugadas.length?hLabel(p.temporadas_jugadas[0]):'—'):p.n_temporadas)+'</span></div></td>';
     H_ANIOS.forEach((y,k)=>{
       if(!p.anios.has(y)){td+='<td class="hcell"></td>';return;}
       const ini=k===0||!p.anios.has(H_ANIOS[k-1]);
@@ -704,11 +709,19 @@ function renderRejilla(){
   };
 
   let html='',n=0;
-  for(const t of H_TRAMOS){
-    const grupo=jug.filter(p=>p.n_temporadas>=t.min&&(H_TRAMOS.indexOf(t)===0||p.n_temporadas<H_TRAMOS[H_TRAMOS.indexOf(t)-1].min));
-    if(!grupo.length)continue;
-    html+='<tr class="hsep"><td colspan="'+(H_ANIOS.length+4)+'">'+t.tit+' <span style="color:var(--dim);font-weight:400">· '+grupo.length+'</span></td></tr>';
-    grupo.forEach(p=>{html+=fila(p,++n);});
+  if(hs.orden==='debut'){
+    // Orden por año de incorporación: LISTA PLANA, sin tramos de veteranía (los dos
+    // modos son excluyentes). A igual debut, primero quien más temporadas acumuló.
+    jug.sort((a,b)=>(a.temporadas_jugadas[0]||'9999').localeCompare(b.temporadas_jugadas[0]||'9999')
+      ||b.n_temporadas-a.n_temporadas||a.display.localeCompare(b.display));
+    jug.forEach(p=>{html+=fila(p,++n);});
+  }else{
+    for(const t of H_TRAMOS){
+      const grupo=jug.filter(p=>p.n_temporadas>=t.min&&(H_TRAMOS.indexOf(t)===0||p.n_temporadas<H_TRAMOS[H_TRAMOS.indexOf(t)-1].min));
+      if(!grupo.length)continue;
+      html+='<tr class="hsep"><td colspan="'+(H_ANIOS.length+4)+'">'+t.tit+' <span style="color:var(--dim);font-weight:400">· '+grupo.length+'</span></td></tr>';
+      grupo.forEach(p=>{html+=fila(p,++n);});
+    }
   }
   if(tec.length){
     html+='<tr class="hsep"><td colspan="'+(H_ANIOS.length+4)+'">Cuerpo técnico · nunca jugó</td></tr>';
@@ -716,6 +729,10 @@ function renderRejilla(){
   }
   document.getElementById('hBody').innerHTML=html||'<tr><td class="empty" colspan="'+(H_ANIOS.length+4)+'">Nadie coincide con el filtro.</td></tr>';
   document.getElementById('hTagRejilla').textContent=(jug.length+tec.length)+' de '+P.length+' personas';
+  document.getElementById('hNotaOrden').innerHTML=(hs.orden==='debut'
+    ? 'Ordenado por <b>año de incorporación</b>, del más antiguo al más reciente: la cifra dorada es la temporada de debut. Lista plana, sin tramos de veteranía.'
+    : 'Ordenado por <b>veteranía</b> y agrupado por tramos: la cifra dorada es el número de temporadas.')+
+    ' El cuerpo técnico va siempre en su propia sección. Pincha en cualquier fila para ver su ficha y saltar a sus estadísticas.';
   document.querySelectorAll('#hBody tr[data-pid]').forEach(tr=>tr.onclick=()=>abrirFicha(tr.dataset.pid));
 }
 

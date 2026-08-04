@@ -2,9 +2,17 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 04/08/2026 — bloque "2016/17 y orden por incorporación" (rama `feat/historia-club-ui`, sin mergear)._
+_Última actualización: 04/08/2026 — **la Historia del club queda EN PRODUCCIÓN**: `feat/historia-club-ui` mergeada a `main` y publicada._
 
-### Interfaz de la Historia: pestaña "El Club" (rama `feat/historia-club-ui`)
+### Interfaz de la Historia: pestaña "El Club" — **EN PRODUCCIÓN desde el 04/08/2026**
+- **Publicada en** https://eyeshar.github.io/MACCABIS/?p=historia — mergeada a `main` (merge `--no-ff`, conservando el histórico de los 17 commits de la rama).
+- **Qué incluye:**
+  - **Rejilla maestra de 84 personas** × 13 temporadas (2013/14 → 2025/26) más la 26/27 prevista, con la trayectoria de cada una como barra continua: naranja donde hay estadísticas, morado donde sólo consta presencia.
+  - **Ficha de trayectoria** al pinchar una fila, con **puente a las estadísticas por `person_id`**: las temporadas con datos abren la vista de jugador de ese año.
+  - **Dos modos de orden excluyentes**: veteranía (agrupada en tramos) o año de incorporación (lista plana).
+  - **Tira temporal** con plantilla, altas y bajas de cada temporada.
+  - **2016/17 completa con 24 personas**, recuperada de la hoja de Torneos 2017: era el único año sin estadísticas ni hoja propia.
+- **Verificado antes del merge**: `check:personas` 84 identidades sin incidencias, cuadre de actas 171/171, `build:datos` idempotente y las dos suites de pruebas sin errores de JS.
 - **Transversal a las temporadas**: se carga una vez desde `data/personas.json` y `data/historia_club.json`; no depende del selector ni lo altera.
 - **Dos modos de orden excluyentes en la rejilla** (decisión de Iván, ver D22): por **veteranía** (con agrupación en tramos, es el de por defecto) o por **año de incorporación** (lista plana, sin tramos). La cifra dorada de cada fila cambia en consecuencia: nº de temporadas o temporada de debut.
 - **Rejilla maestra**: 84 personas × 13 temporadas + la 26/27 prevista. Cada trayectoria es una barra continua; naranja = temporada con estadísticas, morado = sólo presencia. Cabecera y columna de nombre fijas, agrupación por tramos de veteranía, buscador y filtro con/sin estadísticas. Entrenador en sección propia.
@@ -17,7 +25,7 @@ _Última actualización: 04/08/2026 — bloque "2016/17 y orden por incorporaci�
 ## Repositorio y publicación
 
 - **Remoto:** `https://github.com/eyeshar/MACCABIS.git` (público). Conectado el 04/08/2026.
-- **Ramas publicadas:** `main` (es la que sirve GitHub Pages) y `feat/historico-temporadas` (idéntica, queda para revisión).
+- **Ramas publicadas:** `main` (es la que sirve GitHub Pages).
 - El repositorio local **no estaba bajo git**; se inicializó en este bloque. El remoto tenía un único commit de subida manual (`45b31d9`) con una versión anterior del proyecto. Las dos historias estaban desconectadas y se unieron con `--allow-unrelated-histories`: **el commit `45b31d9` se conserva** como segundo padre del merge `b42576b`. Ningún archivo suyo se perdió.
 - Hay una etiqueta local `pre-merge-remoto` (= `99e52d3`) como punto de retorno anterior a esa unión.
 - **URL pública:** https://eyeshar.github.io/MACCABIS/

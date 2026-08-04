@@ -54,8 +54,14 @@ function confirmar(person_id, anio, fuente) {
 }
 
 // ---------------------------------------------------------------- 1) estadísticas
-for (const [id, temporadas] of Object.entries(reg.indice_stats)) {
-  for (const a of [...new Set(temporadas.map(t => t.slice(0, 4)))]) confirmar(id, a, 'estadísticas');
+// Se leen los season_*.json DIRECTAMENTE, no el índice de personas.json: ese fichero se
+// genera después que éste, así que usarlo arrastraría los person_id del run anterior.
+const seasons = JSON.parse(fs.readFileSync(path.join(DATA, 'index.json'), 'utf8')).seasons;
+for (const s of seasons) {
+  const d = JSON.parse(fs.readFileSync(path.join(DATA, `season_${s.id}.json`), 'utf8'));
+  const anio = s.id.slice(0, 4);
+  for (const pl of d.players || []) if (pl.person_id) confirmar(pl.person_id, anio, 'estadísticas');
+  for (const j of (d.mda_resumen ? d.mda_resumen.jugadores : [])) if (j.person_id) confirmar(j.person_id, anio, 'estadísticas');
 }
 
 // ---------------------------------------------------------------- 2) fichas oficiales

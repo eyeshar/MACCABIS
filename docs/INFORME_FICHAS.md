@@ -1,82 +1,79 @@
 # Informe de las hojas de inscripción oficiales
 
-_Cruce de `docs/Fichas` contra la matriz de historia, 04/08/2026._
+_Actualizado el 04/08/2026 con la regla definitiva de los Torneos Municipales._
 
 > Los PDF originales **no están versionados** (`.gitignore`): contienen DNI, fecha de nacimiento,
-> teléfono y email. De ellos sólo se ha extraído año, equipo y nombre, en `data/fichas_inscripcion.json`.
+> teléfono y email. De ellos sólo se extrae año, equipo y nombre, en `data/fichas_inscripcion.json`.
 
-## Ficha usada por año y equipo
+## Cómo se mapea cada hoja a una temporada
 
-Cuando hay varias hojas del mismo año y equipo vale siempre **la que más jugadores tiene** (regla de Iván).
+- **`N JUEGOS DEPORTIVOS MUNICIPALES`** → temporada `(N+1979)/(N+1980)`. 34 JDM = 2013/14.
+- **`TORNEOS MUNICIPALES AAAA`** → eran copas jugadas **al final** de la temporada, así que
+  pertenecen a la temporada que **termina** en AAAA: Torneos 2017 → 2016/17, Torneos 2018 → 2017/18,
+  Torneos 2019 → 2018/19. Dejaron de jugarse hacia 2018/19.
+- Liga y torneo del mismo periodo son **una sola temporada**: sus plantillas se **suman**.
+  La regla de "la hoja con más jugadores manda" se aplica al comparar versiones de la *misma* hoja.
 
-| Temporada | Equipo | Jugadores | Fichero usado | Lectura | Descartadas por tener menos |
-|---|---|---|---|---|---|
-| 2013/14 | MdL | 14 | `Ficha_equipo_sellada_13-14.pdf` | **visión** (escaneo sin texto) | — |
-| 2014/15 | MdL | 16 | `Ficha_equipo (1).pdf` | **visión** (escaneo sin texto) | — |
-| 2015/16 | MdL | 17 | `Ficha_equipo (2).pdf` | texto | Hoja_2015-2016 (1).pdf (15) |
-| 2017/18 | MdA | 20 | `Ficha_Equipo_MDA.pdf` | **visión** (escaneo sin texto) | Hoja De inscripción Maccabi de Acostar (1).pdf (15) |
-| 2017/18 | MdL | 18 | `Ficha_Equipo_MDL.pdf` | **visión** (escaneo sin texto) | — |
-| 2018/19 | MdA | 19 | `Ficha_Equipo_MDA (1).pdf` | texto | Hoja MdA.pdf (16)<br>Inscripción MdA 2.pdf (14)<br>Inscripción MdA 3 (1).pdf (18) |
-| 2018/19 | MdL | 18 | `Ficha_Equipo_MDL (1).pdf` | texto | Hoja MdL.pdf (17)<br>Inscripción MdL (2).pdf (13) |
-| 2019/20 | MdA | 13 | `Ficha_Equipo_MDA (2).pdf` | texto | Hoja MdA (1).pdf (10) |
-| 2019/20 | MdL | 15 | `Ficha_Equipo_MDL (2).pdf` | texto | Hoja MdL (1).pdf (9) |
-| 2020/21 | MdA | 14 | `Ficha_MDA.pdf` | texto | — |
-| 2020/21 | MdL | 16 | `Ficha_MDL.pdf` | texto | — |
-| 2021/22 | MdA | 14 | `Hoja_MDA.pdf` | texto | — |
-| 2021/22 | MdL | 17 | `Hoja_MDL.pdf` | texto | — |
-| 2022/23 | MdA | 15 | `Ficha_MdA_Jon.pdf` | texto | — |
-| 2022/23 | MdL | 17 | `MdL_NACHO.pdf` | texto | — |
-| 2023/24 | MdA | 16 | `MdA con doblajes (1).pdf` | texto | — |
-| 2023/24 | MdL | 15 | `Ficha MDL 2023 Completa.pdf` | texto | — |
-| 2024/25 | MdA | 19 | `MdA con Alex.pdf` | texto | — |
-| 2024/25 | MdL | 10 | `MdL 2025.pdf` | texto | — |
-| 2025/26 | MdA | 22 | `MdA con Lukas (1).pdf` | texto | — |
-| 2025/26 | MdL | 21 | `MdL con todos.pdf` | texto | — |
+## Plantilla por temporada y equipo
 
-## Hojas NO aplicadas: año ambiguo
-
-Las hojas de "Torneos Municipales" llevan el año del torneo, que **no identifica la temporada sin ambigüedad**
-(un torneo de primavera puede pertenecer a la temporada que termina o a la que empieza). No se han aplicado a
-ningún año; quedan registradas para que Iván decida.
-
-| Torneo | Equipo | Personas | Fichero |
+| Temporada | Equipo | Personas | Hojas sumadas |
 |---|---|---|---|
-| 2014 | MdL | 14 | `Ficha de equipo liga marca.pdf` |
-| 2017 | MdL | 20 | `Hoja de inscripción Marca Valdebernardo (1).pdf` |
-| 2018 | MdL | 17 | `MDL.pdf` |
-| 2019 | MdA | 15 | `Inscripción MdA.pdf` |
-| 2019 | MdL | 18 | `Inscripción MdL (1).pdf` |
+| 2013/14 | MdL | 24 | Torneos 2014 — `Ficha de equipo liga marca.pdf` (14)<br>34 JDM — `Ficha_equipo_sellada_13-14.pdf` (14, **visión**) |
+| 2014/15 | MdL | 16 | 35 JDM — `Ficha_equipo (1).pdf` (16, **visión**) |
+| 2015/16 | MdL | 17 | 36 JDM — `Ficha_equipo (2).pdf` (17) |
+| 2016/17 | MdL | 20 | Torneos 2017 — `Hoja de inscripción Marca Valdebernardo (1).pdf` (20) |
+| 2017/18 | MdA | 20 | 38 JDM — `Ficha_Equipo_MDA.pdf` (20, **visión**) |
+| 2017/18 | MdL | 29 | 38 JDM — `Ficha_Equipo_MDL.pdf` (18, **visión**)<br>Torneos 2018 — `MDL.pdf` (17) |
+| 2018/19 | MdA | 19 | 39 JDM — `Ficha_Equipo_MDA (1).pdf` (19)<br>Torneos 2019 — `Inscripción MdA.pdf` (15) |
+| 2018/19 | MdL | 18 | 39 JDM — `Ficha_Equipo_MDL (1).pdf` (18)<br>Torneos 2019 — `Inscripción MdL (1).pdf` (18) |
+| 2019/20 | MdA | 13 | 40 JDM — `Ficha_Equipo_MDA (2).pdf` (13) |
+| 2019/20 | MdL | 15 | 40 JDM — `Ficha_Equipo_MDL (2).pdf` (15) |
+| 2020/21 | MdA | 14 | 41 JDM — `Ficha_MDA.pdf` (14) |
+| 2020/21 | MdL | 16 | 41 JDM — `Ficha_MDL.pdf` (16) |
+| 2021/22 | MdA | 14 | 42 JDM — `Hoja_MDA.pdf` (14) |
+| 2021/22 | MdL | 17 | 42 JDM — `Hoja_MDL.pdf` (17) |
+| 2022/23 | MdA | 15 | 43 JDM — `Ficha_MdA_Jon.pdf` (15) |
+| 2022/23 | MdL | 17 | 43 JDM — `MdL_NACHO.pdf` (17) |
+| 2023/24 | MdA | 16 | 44 JDM — `MdA con doblajes (1).pdf` (16) |
+| 2023/24 | MdL | 15 | 44 JDM — `Ficha MDL 2023 Completa.pdf` (15) |
+| 2024/25 | MdA | 19 | 45 JDM — `MdA con Alex.pdf` (19) |
+| 2024/25 | MdL | 10 | 45 JDM — `MdL 2025.pdf` (10) |
+| 2025/26 | MdA | 22 | 46 JDM — `MdA con Lukas (1).pdf` (22) |
+| 2025/26 | MdL | 21 | 46 JDM — `MdL con todos.pdf` (21) |
 
-## Personas en ficha SIN identificar
+## Hojas descartadas
 
-Aparecen en una hoja oficial pero no casan con ninguna persona del registro. **No se ha inventado ninguna identidad**:
-no se han añadido a la matriz. Requieren decisión humana.
+Otra versión de la misma hoja (mismo año, equipo y competición) con menos jugadores.
 
-| Nombre en la ficha | Dónde aparece |
-|---|---|
-| Alvarez Marquez, Ivan | 2018 MdL, torneo 2019 MdL |
-| García Jiménez, Hugo | 2014 MdL |
-| Hernandez Gomez, Alejandro | torneo 2018 MdL |
-| Hernández Gómez, Alejandro | 2017 MdA, 2017 MdL |
-| Puertas Domingo, Carlos | 2019 MdA |
-| RANZ CASADO, JORGE | 2022 MdL |
+| Temporada | Equipo | Personas | Fichero |
+|---|---|---|---|
+| 2015 | MdL | 15 | `Hoja_2015-2016 (1).pdf` |
+| 2017 | MdA | 15 | `Hoja De inscripción Maccabi de Acostar (1).pdf` |
+| 2018 | MdA | 16 | `Hoja MdA.pdf` |
+| 2018 | MdL | 17 | `Hoja MdL.pdf` |
+| 2018 | MdA | 14 | `Inscripción MdA 2.pdf` |
+| 2018 | MdA | 18 | `Inscripción MdA 3 (1).pdf` |
+| 2018 | MdL | 13 | `Inscripción MdL (2).pdf` |
+| 2019 | MdA | 10 | `Hoja MdA (1).pdf` |
+| 2019 | MdL | 9 | `Hoja MdL (1).pdf` |
 
-## Correspondencias dudosas (NO aplicadas)
+## Estado de la lectura
 
-El nombre de la ficha se parece a alguien del registro pero **difiere en un apellido**. No se han aplicado:
-basta con confirmar o desmentir cada una para incorporarlas.
+- **22 plantillas** reconstruidas, de 13 temporadas (2013/14 → 2025/26).
+- **9 hojas descartadas** por ser versiones más cortas.
+- **0 hojas ilegibles.**
+- **4 hojas eran escaneos sin capa de texto** y están transcritas leyendo la imagen en `docs/fichas_transcritas.json`: 2013/14 MdL, 2014/15 MdL y las dos de 2017/18. **Conviene repasarlas.**
+- Un PDF traía el texto mal codificado ("RodrÃ-guez"); se repara antes de parsear.
+- **0 nombres sin identificar.** Todos los de hojas oficiales resuelven ya a una persona del registro.
 
-| Nombre en la ficha | Se parece a | Dónde |
-|---|---|---|
-| ABEL ESPINOSA, FERNANDO | `espinola-fernando-abel` | 2021 MdA |
-| CASTRO MOYA, HENRY | `castro-mayo-henry-luis` | 2021 MdA, 2022 MdA, 2023 MdA |
-| Hennessey Klein, Patrick | `klein-patrick-hennesey` | 2017 MdA, 2017 MdL, 2018 MdA, torneo 2018 MdL |
-| Martin Calvo, Borja | `mar-calvo-borja` | 2018 MdA, torneo 2017 MdL |
-| Martín Calvo, Borja | `mar-calvo-borja` | 2017 MdA |
+## Hallazgo: la temporada 2016/17
 
-## Cobertura
+La hoja de **Torneos 2017** resultó ser la plantilla de **2016/17**, la única temporada del club
+sin ninguna hoja propia (tampoco hay estadísticas de ese año). Aporta 20 personas, de las que 5
+no tenían registrado 2016: Roberto Ballesteros, Carlos José Barreiro, Julián Carrera, Enrique Moral
+y el propio grupo ya conocido. Con ella, la matriz cubre los 13 años de 2013 a 2025 sin huecos.
 
-- **21 hojas aplicadas**, de 12 temporadas distintas.
-- **Sin hoja disponible:** 2016/17 (no hay ninguna) y el MdA de 2013/14, 2014/15 y 2015/16 (el MdA se creó después).
-- **4 hojas eran escaneos sin capa de texto** y se transcribieron leyendo la imagen: 2013/14 MdL, 2014/15 MdL y las dos de 2017/18.
-- **Ninguna hoja quedó sin procesar.** Un PDF traía el texto mal codificado ("RodrÃ-guez"); se repara antes de parsear.
+## Anomalía pendiente
+
+**Adán Herrera Benzán** jugó 3 partidos en 2017/18 pero no consta en ninguna hoja de esa temporada
+(sí en las de 2018/19, 2021/22 y 2022/23). O falta su hoja, o se inscribió fuera de plazo.

@@ -1,6 +1,10 @@
 # Sondeo del portal de datos abiertos de Madrid (JDM) — Fase 0
 
-> **Veredicto: PARADA.** El dataset **sí contiene** los partidos del club y se ha verificado
+> **[SUPERADO el 04/08/2026]** Iván decidió identificar por Nº EQUIPO de ficha; el resultado
+> está en `docs/RIVALES_JDM.md` y `data/rivales_jdm.json`. Se conserva este sondeo como registro
+> del método y de los detalles técnicos.
+>
+> **Veredicto original: PARADA.** El dataset **sí contiene** los partidos del club y se ha verificado
 > con coincidencia exacta, pero **no hay un identificador estable de club** y el nombre es
 > errático. Antes de montar la descarga masiva hace falta que Iván fije un criterio de
 > desambiguación. Ver "Qué hay que decidir" al final.
@@ -164,3 +168,19 @@ el histórico propio, no había forma de saberlo desde el dataset.
 - **`Campo` (sede) viene vacío** en las temporadas antiguas y en las filas de descanso.
 - El CSV tiene **saltos de línea dentro de campos** (`Observaciones`), así que hay que
   parsearlo con un parser real, no por líneas.
+
+
+---
+
+## Resolución (04/08/2026)
+
+- **Identificación por Nº EQUIPO de ficha.** Funcionó: descartó automáticamente el club rival
+  `MACCABI #95466` de 2014/15 y los homónimos de otros distritos.
+- **2020/21 resuelto por ficha**: `Ficha_MDL.pdf` da **#149302** y `Ficha_MDA.pdf` **#149303**.
+  El tercer equipo, **#149233 "MACCABI DE LEVANTAR", NO es nuestro** (0 de 13 marcadores
+  coinciden con el histórico propio).
+- **Las dos hojas de Torneos 2017 eran dos torneos distintos**: `#119823` jugó en **Vicálvaro**
+  (3 partidos) y `#120202` en **Moratalaz** (3 partidos). Eso explica los dos Nº EQUIPO y
+  confirma que filtrar por distrito habría perdido partidos de torneo.
+- **El MdA no se puede validar por marcador** en las temporadas antiguas: el histórico propio
+  sólo trae partido a partido del MdL. Se acepta por nombre inequívoco dentro de Moratalaz.

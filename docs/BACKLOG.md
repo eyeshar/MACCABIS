@@ -38,20 +38,12 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 (licencia CC BY 4.0, republicable citando la fuente). Cubre **10 temporadas**: 2014/15,
 2015/16, 2016/17, 2017/18, 2018/19, 2020/21, 2021/22, 2022/23, 2023/24 y 2024/25.
 
-- [ ] **DECIDIR el criterio de identificación del club — BLOQUEA la descarga masiva.** La
-  Fase 0 (04/08/2026, ver `docs/SONDEO_JDM_FASE0.md`) confirmó que el dataset **sí trae
-  nuestros partidos** (8 de 8 jornadas de 2014/15 coinciden en rival y marcador exacto con el
-  histórico propio), pero **no hay identificador estable de club**: el nombre tiene más de 8
-  variantes y el `Codigo_equipo` cambia por temporada y por inscripción. Dos ambigüedades
-  concretas a resolver:
-  - **2014/15**: existe un club RIVAL llamado `MACCABI` (#95466) que un filtro por nombre
-    capturaría como si fuera nuestro.
-  - **2020/21**: tres equipos con 14 partidos (`MDL`, `MDA` y `MACCABI DE LEVANTAR`) y no se
-    sabe cuál es cuál.
-  - Propuesta pendiente de luz verde: validar cada código candidato contra el histórico propio
-    (rival + marcador). Implica cruzar con `season_*.json`, que el bloque de sondeo prohibía.
-- [ ] **Partidos de rivales (Fases 1 y 2)**: descargar y filtrar las 10 temporadas y guardar
-  una fuente nueva e independiente (`data/rivales_jdm.json`). En espera de la decisión anterior.
+- [x] **Criterio de identificación del club** — RESUELTO (04/08/2026): por **Nº EQUIPO de la hoja de inscripción**, que es el `Codigo_equipo` del dataset. Descarta solo el club rival `MACCABI` de 2014/15 y los homónimos.
+- [x] **Partidos de rivales** — HECHO (04/08/2026): `data/rivales_jdm.json` con **328 partidos** de 10 temporadas, informe en `docs/RIVALES_JDM.md`. Fuente independiente, sin cruzar con el histórico propio.
+- [x] **2020/21, el tercer equipo** — RESUELTO por ficha: nuestros son #149302 (MdL) y #149303 (MdA); **#149233 no es del club**.
+- [ ] **Decidir sobre 20 pares de nombres de rival** que podrían ser el mismo equipo escrito de dos formas (`SETTAS`/`CAFÉ HNOS. VELASCO SETTAS`, `CDCEBE`/`CD CEBE`, `SUIZA`/`SUIZA B.C`/`CARPASION SUIZA`…). **No se han fusionado**: la fuente guarda el nombre literal. Ver `docs/RIVALES_JDM.md`.
+- [ ] **Revisar 3 recuentos que no cuadran** con el histórico propio: 2014/15 (18 vs 20), 2015/16 (18 vs 20) y 2018/19 (21 vs 16).
+- [ ] **Confirmar 2016/17 y 2022/23**: son las dos temporadas sin histórico propio con el que validar, así que su código se aceptó sólo por nombre dentro de Moratalaz.
 - [ ] **Clasificaciones**: no se han tocado en el sondeo. Criterio ya acordado: la clasificación
   **de la fase donde acabó Maccabi** cada año. Los recursos de clasificaciones del dataset son
   los n impares (1, 5, 9, 13, 16, 20, 24, 28, 32).

@@ -18,7 +18,10 @@
 - [x] **Ampliar el diccionario de nombres al MdA** — HECHO (04/08/2026). Iván cerró las tablas `### 2023/24 (MdA)` y `### 2024/25 (MdA)`; los 37 motes resuelven a persona real y no queda ninguno sin catalogar.
 - [ ] **Resolver 3 motes sueltos del MdL**: `Paaco` y `Coach` (14/15, sin puntos) y `Víctor` (17/18, **6 puntos**). No se han deducido: hace falta una fila explícita en el diccionario.
 - [x] **Unificar el `person_id` de Víctor Martínez** — HECHO (04/08/2026). Unificado a `martinez-martinez-victor` en todos los datos.
-- [ ] **Decidir sobre 4 personas con estadísticas ausentes de la matriz de historia**: Ferrando del Rincón, Mora-Gil Jiménez, Páez García y Vallesi. ¿Se añaden a la matriz o su ausencia es intencionada? No se han fusionado con nadie por seguridad.
+- [x] **4 personas con estadísticas ausentes de la matriz** — HECHO (04/08/2026): añadidas en los años que confirman las actas.
+- [ ] **Identificar 6 nombres de hojas de inscripción**: Hugo García Jiménez (2014), Alejandro Hernández Gómez (2017), Iván Álvarez Márquez (2018), Carlos Puertas Domingo (2019), Jorge Ranz Casado (2022). ¿Son personas nuevas del club o variantes de alguien ya registrado?
+- [ ] **Confirmar 5 correspondencias dudosas de fichas**: "Castro Moya"=Castro Mayo, "Martín Calvo"=Mar Calvo, "Abel Espinosa"=Espínola, "Hennessey Klein"=Klein. Confirmarlas añade años a la matriz automáticamente.
+- [ ] **Fijar el criterio de las hojas de "Torneos Municipales"**: ¿el torneo de año N pertenece a la temporada (N-1)/N o a N/(N+1)? Hay 5 hojas sin aplicar esperando esa decisión.
 - [ ] **Cabos del diccionario de la matriz** (`docs/HISTORIA_diccionario_matriz.md`): desambiguar 'Sam' (Rogaia vs Gruppo) por año, repartir 'Ignacio' entre Ferrando/Mileo/Mateos, y confirmar 'Jose' 2020 = Gil Fernández (confianza media).
 - [ ] **Revisar 3 celdas del MdA 23/24** con decimales donde debería haber enteros (marcadas con "?" en el dashboard).
 - [ ] **Recuperar, si existen, las actas de los partidos sin estadística individual**: 15/16 (5, 11, 18) y 21/22 (10 al 18).
@@ -26,7 +29,7 @@
 
 ## Siguiente (bloque 2: historia del club)
 
-- [x] **Datos de la Historia integrados y reconciliados** — HECHO (04/08/2026, rama `feat/historia-club-datos`): `data/historia_club.json` (76 personas) + `data/personas.json` (registro único de identidades).
+- [x] **Datos de la Historia integrados, reconciliados y completados** — HECHO (04/08/2026, rama `feat/historia-club-datos`): `data/historia_club.json` (80 personas), `data/personas.json` (registro único de identidades) y `data/fichas_inscripcion.json` (21 hojas oficiales cruzadas).
 - [ ] **Sección visual "Historia de los Maccabis"** — SIGUIENTE BLOQUE. Los datos ya están listos:
   - Matriz de 80 personas × 14 temporadas (2013→2026), con dorsal y nº de temporadas en activo por persona.
   - Idea: línea temporal del club, quién estuvo cada año, veteranía, "since 2013". Diseño visual y bonito.

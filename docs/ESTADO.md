@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 04/08/2026 — bloque "histórico de temporadas", **publicado en GitHub Pages**._
+_Última actualización: 04/08/2026 — bloque "completar y verificar la Historia" (rama `feat/historia-club-datos`, sin mergear)._
 
 ## Repositorio y publicación
 
@@ -15,9 +15,13 @@ _Última actualización: 04/08/2026 — bloque "histórico de temporadas", **pub
 ## Hecho y funcionando
 
 ### Historia del club: matriz de presencia 2013→2026 (rama `feat/historia-club-datos`)
-- **76 personas** con sus temporadas de presencia en el club, en `data/historia_club.json` (cerrado por Iván el 04/08/2026 a partir de `Historia_de_los_Maccabi.xlsx` + SportEasy).
+- **80 personas** con sus temporadas de presencia en el club, en `data/historia_club.json` (cerrado por Iván el 04/08/2026 a partir de `Historia_de_los_Maccabi.xlsx` + SportEasy).
 - **Sólo datos**: la interfaz visual (rejilla, tira temporal, fichas) es el bloque siguiente y NO está construida.
 - **Registro único de identidades** en `data/personas.json` (80 personas): fuente de verdad de los `person_id` que comparten la Historia y las estadísticas. Ver DECISIONS D13-D15.
+- **Completada y verificada (04/08/2026)** contra las otras dos fuentes, con esta jerarquía: estadísticas (actas) > hojas de inscripción > matriz. La matriz sólo se completa; nunca se quita a nadie ni se recorta un año.
+  - **4 personas añadidas** desde las estadísticas: Javier Páez García, Daniele Vallesi, Ramón Mora-Gil Jiménez e Ignacio Ferrando del Rincón. Ya no queda nadie con estadísticas fuera de la matriz.
+  - **43 pares persona-año añadidos** sobre 22 personas. El caso mayor: Santiago Pazo Pascual, que tenía 3 temporadas y las actas confirman 4 más (2017, 2018, 2019 y 2024) — probable resto de la fila "Santi" fundida con Calvo González en el Excel original.
+  - **21 hojas de inscripción oficiales** procesadas (`data/fichas_inscripcion.json`), de 12 temporadas. Informe en `docs/INFORME_FICHAS.md`.
 - Validado contra sus propias reglas: `n_temporadas` cuadra con los años jugados 2013-2025 en las 76; ninguna tiene 2026 como jugada (22 la tienen como **prevista** 26/27, que no cuenta en veteranía); sin ids duplicados.
 - `npm run check:personas` valida las identidades y las reglas sin escribir nada.
 
@@ -83,8 +87,12 @@ Equipo (balance, racha, tabla de partidos con boxscore desplegable al clic) · J
 4. ~~**Dos `person_id` para Víctor Martínez**~~ — **RESUELTO (04/08/2026).** Unificado a `martinez-martinez-victor` en el `.md` fuente y en las cuatro temporadas donde aparece (20/21, 21/22, 23/24, 24/25). El id retirado queda anotado en `alias_ids`.
 5. **Tres celdas corruptas en el MdA 23/24** — valores decimales donde debería haber enteros (Jon/triples = 1,875; Edwin/TL = 1,875; J. Perchín/TL = 1,43). Se transcriben tal cual y salen marcadas con "?" en el dashboard.
 6. **Dos jugadores con 2P no derivables en 20/21** (partido 10: Heriberto Gil 11 puntos y Alfredo David López 3, ambos sin triples ni tiros libres registrados). El dato de la fuente es incompleto; se deja ausente.
-7. **Cuatro personas con estadísticas que no están en la matriz de historia** — Ignacio Ferrando del Rincón (23/24), Ramón Mora-Gil Jiménez (21/22 y 23/24), Javier Páez García (20/21) y Daniele Vallesi (21/22, 23/24, 24/25). **No se han fusionado con nadie**: había parecidos superficiales (otro Ramón, otro Javier, otro Ignacio) que son personas distintas. Falta decidir si se añaden a la matriz o si su ausencia es intencionada. `npm run check:personas` los avisa en cada ejecución.
-8. **Partidos sin estadística individual**: 3 en 15/16 (5, 11 y 18) y 9 en 21/22 (10 al 18). El marcador sí consta; el boxscore no se ha fabricado y salen marcados como "sin stats".
+7. ~~**Cuatro personas con estadísticas que no están en la matriz**~~ — **RESUELTO (04/08/2026)**: añadidas a la matriz en los años que confirman las actas.
+8. **Seis nombres en hojas de inscripción sin identificar** — aparecen en una hoja oficial pero no casan con nadie del registro: Hugo García Jiménez (2014), Alejandro Hernández Gómez (2017 MdL y MdA), Iván Álvarez Márquez (2018), Carlos Puertas Domingo (2019), Jorge Ranz Casado (2022). **No se ha inventado ninguna identidad.** Ver `docs/INFORME_FICHAS.md`.
+9. **Cinco correspondencias dudosas en fichas** — se parecen a alguien del registro pero difieren en un apellido: "Castro Moya"/"Castro Mayo", "Martín Calvo"/"Mar Calvo", "Abel Espinosa"/"Espínola", "Hennessey Klein"/"Klein Hennesey". No aplicadas, sólo reportadas.
+10. **Cinco hojas de "Torneos Municipales" sin aplicar** — el año del torneo no identifica la temporada sin ambigüedad. Falta que Iván fije el criterio.
+11. ~~**Cuatro personas con estadísticas que no están en la matriz de historia**~~ — Ignacio Ferrando del Rincón (23/24), Ramón Mora-Gil Jiménez (21/22 y 23/24), Javier Páez García (20/21) y Daniele Vallesi (21/22, 23/24, 24/25). **No se han fusionado con nadie**: había parecidos superficiales (otro Ramón, otro Javier, otro Ignacio) que son personas distintas. Falta decidir si se añaden a la matriz o si su ausencia es intencionada. `npm run check:personas` los avisa en cada ejecución.
+12. **Partidos sin estadística individual**: 3 en 15/16 (5, 11 y 18) y 9 en 21/22 (10 al 18). El marcador sí consta; el boxscore no se ha fabricado y salen marcados como "sin stats".
 
 ## En curso / decidido pero no empezado
 

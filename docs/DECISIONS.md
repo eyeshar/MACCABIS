@@ -61,3 +61,15 @@
 ## D15 — Lo que no se puede confirmar no se fusiona: se reporta
 **Decisión:** cuatro personas con estadísticas (Ferrando del Rincón, Mora-Gil Jiménez, Páez García y Vallesi) no aparecen en la matriz de historia. No se han inventado filas ni se han fusionado con nadie parecido: quedan en el registro como identidades propias, marcadas `en_historia: false`, y el script las avisa en cada ejecución.
 **Por qué:** había candidatos superficialmente parecidos (otro Ramón, otro Javier, otro Ignacio) que son personas distintas. Fusionar por similitud de nombre habría atribuido estadísticas a quien no las jugó. Un aviso recurrente es más barato que un dato falso.
+
+## D16 — Jerarquía de fuentes sobre quién estuvo en el club
+**Decisión:** ante desacuerdo manda, por este orden: (1) **estadísticas** de `season_*.json`, que salen de actas oficiales — si alguien tiene ficha de estadísticas en una temporada, estuvo ese año y no se discute; (2) **hojas de inscripción** oficiales, como límite inferior fiable; (3) **matriz** de `historia_club.json`, que es un registro manual y el único que puede tener olvidos. La matriz se completa con 1 y 2, **nunca al revés**, y nunca se quita a nadie ni se recorta un año. Cuando hay varias hojas del mismo año y equipo vale siempre la que más jugadores tiene.
+**Por qué:** las tres fuentes se contradicen a veces, y sin una jerarquía explícita cada cruce sería una decisión ad hoc. Que la matriz sólo crezca hace la operación segura y repetible: `npm run completar:historia` se puede relanzar sin miedo a perder nada.
+
+## D17 — De los PDF de inscripción sólo sale el nombre
+**Decisión:** los PDF de `docs/Fichas` no se versionan (`.gitignore`). De ellos se extrae únicamente temporada, equipo y nombre, y eso es lo que vive en `data/fichas_inscripcion.json`.
+**Por qué:** las hojas traen DNI, fecha de nacimiento, teléfono y email de cada jugador, y el repositorio es **público**. La regla del proyecto es que los datos personales sensibles nunca salen a la zona pública (ver D3). El nombre y el año de inscripción no son sensibles: ya se publican en las estadísticas.
+
+## D18 — Las hojas de "Torneos Municipales" no se aplican
+**Decisión:** las hojas cuya cabecera es "TORNEOS MUNICIPALES <año>" quedan registradas con `aplicable: false` y no añaden años a nadie.
+**Por qué:** a diferencia de los JDM (donde la edición identifica la temporada sin ambigüedad: 34 JDM = 2013/14), un torneo de primavera puede pertenecer a la temporada que termina o a la que empieza. El propio diccionario de la matriz es ambiguo al respecto. Elegir un año a ciegas metería datos falsos en la fuente de pertenencia; dejarlas marcadas cuesta una decisión de Iván y no pierde nada.

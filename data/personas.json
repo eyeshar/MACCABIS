@@ -19,11 +19,11 @@
  },
  "personas": [
   {
-   "person_id": "alejandro",
-   "formal": "[SOLO MOTE: Alejandro]",
-   "display": "Alejandro",
+   "person_id": "alvarez-marquez-ivan",
+   "formal": "Álvarez Márquez, Iván",
+   "display": "Iván Álvarez Márquez",
    "es_entrenador": false,
-   "solo_mote": true,
+   "solo_mote": false,
    "alias_ids": [],
    "en_historia": true,
    "en_estadisticas": false
@@ -151,12 +151,14 @@
    "en_estadisticas": false
   },
   {
-   "person_id": "castro-mayo-henry-luis",
-   "formal": "Castro Mayo, Henry Luis",
-   "display": "Henry Luis Castro Mayo",
+   "person_id": "castro-moya-henry-luis",
+   "formal": "Castro Moya, Henry Luis",
+   "display": "Henry Luis Castro Moya",
    "es_entrenador": false,
    "solo_mote": false,
-   "alias_ids": [],
+   "alias_ids": [
+    "castro-mayo-henry-luis"
+   ],
    "en_historia": true,
    "en_estadisticas": true
   },
@@ -291,6 +293,16 @@
    "en_estadisticas": true
   },
   {
+   "person_id": "garcia-jimenez-hugo",
+   "formal": "García Jiménez, Hugo",
+   "display": "Hugo García Jiménez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
    "person_id": "gianatti-adriano",
    "formal": "Gianatti, Adriano",
    "display": "Adriano Gianatti",
@@ -361,6 +373,18 @@
    "en_estadisticas": true
   },
   {
+   "person_id": "hernandez-gomez-alejandro",
+   "formal": "Hernández Gómez, Alejandro",
+   "display": "Alejandro Hernández Gómez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [
+    "alejandro"
+   ],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
    "person_id": "herrera-benzan-adan",
    "formal": "Herrera Benzán, Adán",
    "display": "Adán Herrera Benzán",
@@ -421,12 +445,14 @@
    "en_estadisticas": false
   },
   {
-   "person_id": "mar-calvo-borja",
-   "formal": "Mar Calvo, Borja",
-   "display": "Borja Mar Calvo",
+   "person_id": "martin-calvo-borja",
+   "formal": "Martín Calvo, Borja",
+   "display": "Borja Martín Calvo",
    "es_entrenador": false,
    "solo_mote": false,
-   "alias_ids": [],
+   "alias_ids": [
+    "mar-calvo-borja"
+   ],
    "en_historia": true,
    "en_estadisticas": true
   },
@@ -655,11 +681,31 @@
    "en_estadisticas": true
   },
   {
+   "person_id": "puertas-domingo-carlos",
+   "formal": "Puertas Domingo, Carlos",
+   "display": "Carlos Puertas Domingo",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
    "person_id": "pupo",
    "formal": "[SOLO MOTE: Pupo]",
    "display": "Pupo",
    "es_entrenador": false,
    "solo_mote": true,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "ranz-casado-jorge",
+   "formal": "Ranz Casado, Jorge",
+   "display": "Jorge Ranz Casado",
+   "es_entrenador": false,
+   "solo_mote": false,
    "alias_ids": [],
    "en_historia": true,
    "en_estadisticas": false
@@ -868,7 +914,7 @@
    "2015-16",
    "2018-19"
   ],
-  "castro-mayo-henry-luis": [
+  "castro-moya-henry-luis": [
    "2013-14",
    "2017-18",
    "2018-19",
@@ -935,7 +981,7 @@
    "2024-25",
    "2025-26"
   ],
-  "mar-calvo-borja": [
+  "martin-calvo-borja": [
    "2015-16",
    "2017-18"
   ],

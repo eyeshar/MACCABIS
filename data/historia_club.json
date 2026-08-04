@@ -38,7 +38,21 @@
    "regla": "La matriz se completa con lo que confirman las estadísticas y las hojas de inscripción; nunca se quita a nadie ni se recorta un año.",
    "anios_anadidos": 0,
    "personas_anadidas": 0
-  }
+  },
+  "correcciones_nombre": [
+   {
+    "de": "Castro Mayo, Henry Luis",
+    "a": "Castro Moya, Henry Luis",
+    "fecha": "2026-08-04",
+    "motivo": "Errata confirmada por Iván; \"Moya\" es el apellido correcto."
+   },
+   {
+    "de": "Mar Calvo, Borja",
+    "a": "Martín Calvo, Borja",
+    "fecha": "2026-08-04",
+    "motivo": "Errata confirmada por Iván, aunque la hoja de inscripción de 2015 escriba \"Mar Calvo\"."
+   }
+  ]
  },
  "personas": [
   {
@@ -181,9 +195,9 @@
    "es_entrenador": false
   },
   {
-   "person_id": "castro-mayo-henry-luis",
-   "formal": "Castro Mayo, Henry Luis",
-   "display": "Henry Luis Castro Mayo",
+   "person_id": "castro-moya-henry-luis",
+   "formal": "Castro Moya, Henry Luis",
+   "display": "Henry Luis Castro Moya",
    "temporadas_jugadas": [
     "2013",
     "2014",
@@ -199,7 +213,8 @@
    "n_temporadas": 10,
    "previsto_2627": false,
    "solo_mote": false,
-   "es_entrenador": false
+   "es_entrenador": false,
+   "nota": "Nombre corregido el 04/08/2026: antes figuraba como \"castro mayo\" (errata confirmada por Iván)."
   },
   {
    "person_id": "perez-nunez-victor",
@@ -607,9 +622,9 @@
    "es_entrenador": false
   },
   {
-   "person_id": "mar-calvo-borja",
-   "formal": "Mar Calvo, Borja",
-   "display": "Borja Mar Calvo",
+   "person_id": "martin-calvo-borja",
+   "formal": "Martín Calvo, Borja",
+   "display": "Borja Martín Calvo",
    "temporadas_jugadas": [
     "2015",
     "2016",
@@ -619,7 +634,8 @@
    "n_temporadas": 4,
    "previsto_2627": false,
    "solo_mote": false,
-   "es_entrenador": false
+   "es_entrenador": false,
+   "nota": "Nombre corregido el 04/08/2026: antes figuraba como \"mar\" (errata confirmada por Iván)."
   },
   {
    "person_id": "perez-nunez-carlos",
@@ -1107,17 +1123,17 @@
    "es_entrenador": false
   },
   {
-   "person_id": "alejandro",
-   "formal": "[SOLO MOTE: Alejandro]",
-   "display": "Alejandro",
+   "person_id": "hernandez-gomez-alejandro",
+   "formal": "Hernández Gómez, Alejandro",
+   "display": "Alejandro Hernández Gómez",
    "temporadas_jugadas": [
     "2017"
    ],
    "n_temporadas": 1,
    "previsto_2627": false,
-   "solo_mote": true,
+   "solo_mote": false,
    "es_entrenador": false,
-   "nota": "se fue a Alicante"
+   "nota": "Iván confirmó el 04/08/2026 que el \"Alejandro\" de 2017 que la matriz tenía como solo mote (\"se fue a Alicante\") es la persona que las hojas de inscripción de 2017 registran como Hernández Gómez, Alejandro. Deja de ser solo_mote."
   },
   {
    "person_id": "banos-gallego-carlos",
@@ -1130,6 +1146,19 @@
    "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false
+  },
+  {
+   "person_id": "puertas-domingo-carlos",
+   "formal": "Puertas Domingo, Carlos",
+   "display": "Carlos Puertas Domingo",
+   "temporadas_jugadas": [
+    "2019"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Identificado en la hoja de inscripción de 2019/20 (MdA)."
   },
   {
    "person_id": "nieto-moreno-cesar",
@@ -1180,6 +1209,32 @@
    "es_entrenador": false
   },
   {
+   "person_id": "garcia-jimenez-hugo",
+   "formal": "García Jiménez, Hugo",
+   "display": "Hugo García Jiménez",
+   "temporadas_jugadas": [
+    "2014"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Identificado en la hoja de inscripción de 2014/15 (MdL)."
+  },
+  {
+   "person_id": "alvarez-marquez-ivan",
+   "formal": "Álvarez Márquez, Iván",
+   "display": "Iván Álvarez Márquez",
+   "temporadas_jugadas": [
+    "2018"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Identificado en la hoja de inscripción de 2018/19 (MdL). Es un TERCER Iván del club, distinto de Villaescusa Silva y de Rodríguez Pérez."
+  },
+  {
    "person_id": "rodriguez-perez-ivan",
    "formal": "Rodríguez Pérez, Iván",
    "display": "Iván Rodríguez Pérez",
@@ -1214,6 +1269,19 @@
    "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
+  },
+  {
+   "person_id": "ranz-casado-jorge",
+   "formal": "Ranz Casado, Jorge",
+   "display": "Jorge Ranz Casado",
+   "temporadas_jugadas": [
+    "2022"
+   ],
+   "n_temporadas": 1,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Identificado en la hoja de inscripción de 2022/23 (MdL). Es el TERCER Jorge del club, junto a Pérez Lardiez y Hernández Faura."
   },
   {
    "person_id": "gil-fernandez-jose-antonio",

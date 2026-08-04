@@ -1,6 +1,9 @@
 # Contraste entre el portal de datos abiertos y el histórico propio
 
 > Diagnóstico del 04/08/2026 · rama `feat/rivales-jdm`.
+> **[AMPLIADO el mismo día]** La hipótesis sobre MdL/MdA quedó **verificada con evidencia
+> interna de los Excel**: ver `docs/DIAGNOSTICO_MDL_MDA.md`. Allí también se corrige la
+> conclusión de que `#149233` (2020/21) "no era del club": sí lo era.
 > **Sólo investigación: no se ha modificado ningún dato**, ni de `rivales_jdm.json` ni de
 > `season_*.json`. Lo que aquí se propone queda para un bloque futuro y decisión de Iván.
 

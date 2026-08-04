@@ -19,9 +19,11 @@
 - [ ] **Resolver 3 motes sueltos del MdL**: `Paaco` y `Coach` (14/15, sin puntos) y `Víctor` (17/18, **6 puntos**). No se han deducido: hace falta una fila explícita en el diccionario.
 - [x] **Unificar el `person_id` de Víctor Martínez** — HECHO (04/08/2026). Unificado a `martinez-martinez-victor` en todos los datos.
 - [x] **4 personas con estadísticas ausentes de la matriz** — HECHO (04/08/2026): añadidas en los años que confirman las actas.
-- [ ] **Identificar 6 nombres de hojas de inscripción**: Hugo García Jiménez (2014), Alejandro Hernández Gómez (2017), Iván Álvarez Márquez (2018), Carlos Puertas Domingo (2019), Jorge Ranz Casado (2022). ¿Son personas nuevas del club o variantes de alguien ya registrado?
-- [ ] **Confirmar 5 correspondencias dudosas de fichas**: "Castro Moya"=Castro Mayo, "Martín Calvo"=Mar Calvo, "Abel Espinosa"=Espínola, "Hennessey Klein"=Klein. Confirmarlas añade años a la matriz automáticamente.
-- [ ] **Fijar el criterio de las hojas de "Torneos Municipales"**: ¿el torneo de año N pertenece a la temporada (N-1)/N o a N/(N+1)? Hay 5 hojas sin aplicar esperando esa decisión.
+- [x] **Identificar los nombres de hojas de inscripción** — HECHO (04/08/2026): 5 personas creadas y el "Alejandro de Alicante" unificado.
+- [x] **Confirmar las correspondencias dudosas** — HECHO (04/08/2026): dos eran erratas de nombre y tres se confirmaron como alias.
+- [x] **Fijar el criterio de los "Torneos Municipales"** — HECHO (04/08/2026): pertenecen a la temporada que termina en ese año; liga y torneo se suman.
+- [ ] **Repasar las 4 hojas transcritas por visión** (2013/14 MdL, 2014/15 MdL y las dos de 2017/18): son escaneos sin texto, leídos de la imagen. En `docs/fichas_transcritas.json`.
+- [ ] **Aclarar el caso de Adán Herrera Benzán**: jugó 3 partidos en 2017/18 sin constar en ninguna hoja de esa temporada.
 - [ ] **Cabos del diccionario de la matriz** (`docs/HISTORIA_diccionario_matriz.md`): desambiguar 'Sam' (Rogaia vs Gruppo) por año, repartir 'Ignacio' entre Ferrando/Mileo/Mateos, y confirmar 'Jose' 2020 = Gil Fernández (confianza media).
 - [ ] **Revisar 3 celdas del MdA 23/24** con decimales donde debería haber enteros (marcadas con "?" en el dashboard).
 - [ ] **Recuperar, si existen, las actas de los partidos sin estadística individual**: 15/16 (5, 11, 18) y 21/22 (10 al 18).
@@ -30,7 +32,7 @@
 ## Siguiente (bloque 2: historia del club)
 
 - [x] **Datos de la Historia integrados, reconciliados y completados** — HECHO (04/08/2026, rama `feat/historia-club-datos`): `data/historia_club.json` (80 personas), `data/personas.json` (registro único de identidades) y `data/fichas_inscripcion.json` (21 hojas oficiales cruzadas).
-- [ ] **Sección visual "Historia de los Maccabis"** — SIGUIENTE BLOQUE. Los datos ya están listos:
+- [ ] **Sección visual "Historia de los Maccabis"** — SIGUIENTE BLOQUE. **Los datos están cerrados** (84 personas, 2013-2025 sin huecos):
   - Matriz de 80 personas × 14 temporadas (2013→2026), con dorsal y nº de temporadas en activo por persona.
   - Idea: línea temporal del club, quién estuvo cada año, veteranía, "since 2013". Diseño visual y bonito.
   - Nota: el Excel tiene hojas "Equipo", "Copy of Equipo" (ordenada por dorsal) y "Sheet2". Usar la principal.

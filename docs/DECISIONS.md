@@ -73,3 +73,16 @@
 ## D18 — Las hojas de "Torneos Municipales" no se aplican
 **Decisión:** las hojas cuya cabecera es "TORNEOS MUNICIPALES <año>" quedan registradas con `aplicable: false` y no añaden años a nadie.
 **Por qué:** a diferencia de los JDM (donde la edición identifica la temporada sin ambigüedad: 34 JDM = 2013/14), un torneo de primavera puede pertenecer a la temporada que termina o a la que empieza. El propio diccionario de la matriz es ambiguo al respecto. Elegir un año a ciegas metería datos falsos en la fuente de pertenencia; dejarlas marcadas cuesta una decisión de Iván y no pierde nada.
+
+
+## D19 — Los Torneos Municipales cierran la temporada, no la abren
+**Decisión:** una hoja de "TORNEOS MUNICIPALES AAAA" pertenece a la temporada que **termina** en AAAA (año de matriz `AAAA-1`): Torneos 2017 → 2016/17, Torneos 2018 → 2017/18, Torneos 2019 → 2018/19. Liga y torneo del mismo periodo son **una sola temporada** y sus plantillas se **suman**; la regla de "la hoja con más jugadores manda" se aplica sólo al comparar versiones de la misma hoja. Dejaron de jugarse hacia 2018/19.
+**Por qué:** eran copas que se disputaban al final del curso, después de la liga regular. Sin esta regla las cinco hojas de torneo quedaban sin aplicar (sustituye a D18). Con ella aparece la plantilla de **2016/17**, el único año del que no había ni hoja propia ni estadísticas, y la matriz pasa a cubrir 2013-2025 sin huecos.
+
+## D20 — Un nombre mal escrito en una fuente oficial sigue siendo un nombre mal escrito
+**Decisión:** "Castro Mayo, Henry Luis" y "Mar Calvo, Borja" eran erratas; los nombres correctos son **"Castro Moya, Henry Luis"** y **"Martín Calvo, Borja"**. Se corrigen en el `.md` fuente y se propagan a todo lo generado. Los `person_id` antiguos quedan en `alias_ids`.
+**Por qué:** la hoja de inscripción de 2015 escribe "Mar Calvo" y varias escriben "Castro Mayo", pero Iván confirma que son erratas de transcripción del propio ayuntamiento. Que una fuente sea oficial no la hace infalible en la ortografía de un apellido. Los alias garantizan que ningún enlace anterior se rompa.
+
+## D21 — El pipeline se ordena por dependencia de datos, no por comodidad
+**Decisión:** `npm run build:datos` va: diccionario → histórico → fichas → completar historia → personas. `completar_historia.js` lee los `season_*.json` **directamente**, nunca el índice de `personas.json`.
+**Por qué:** `personas.json` se genera al final, así que leerlo desde un paso anterior arrastra los `person_id` de la ejecución previa. Al corregir dos nombres, eso creó dos identidades fantasma en la matriz. Leer la fuente real en cada paso rompe la circularidad y hace el pipeline idempotente: dos ejecuciones seguidas producen ficheros idénticos.

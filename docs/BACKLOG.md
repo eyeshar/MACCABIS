@@ -17,17 +17,34 @@
 - [ ] **Verificar la ficha de Ignacio Mateos Aparicio** ("Nacho S.", 23/24 y 24/25): la tabla MdA confirma que jugaba en las dos fichas (36 puntos en el MdA de 23/24), pero sigue sin aparecer en las fichas de inscripción MdL. Falta localizar en qué ficha constaba.
 - [x] **Ampliar el diccionario de nombres al MdA** — HECHO (04/08/2026). Iván cerró las tablas `### 2023/24 (MdA)` y `### 2024/25 (MdA)`; los 37 motes resuelven a persona real y no queda ninguno sin catalogar.
 - [ ] **Resolver 3 motes sueltos del MdL**: `Paaco` y `Coach` (14/15, sin puntos) y `Víctor` (17/18, **6 puntos**). No se han deducido: hace falta una fila explícita en el diccionario.
-- [ ] **Unificar el `person_id` de Víctor Martínez** (aparece como "Martínez Martínez, Víctor" y como "Martínez, Víctor" según la temporada). Importante antes de cualquier ranking histórico entre temporadas.
+- [x] **Unificar el `person_id` de Víctor Martínez** — HECHO (04/08/2026). Unificado a `martinez-martinez-victor` en todos los datos.
+- [x] **4 personas con estadísticas ausentes de la matriz** — HECHO (04/08/2026): añadidas en los años que confirman las actas.
+- [x] **Identificar los nombres de hojas de inscripción** — HECHO (04/08/2026): 5 personas creadas y el "Alejandro de Alicante" unificado.
+- [x] **Confirmar las correspondencias dudosas** — HECHO (04/08/2026): dos eran erratas de nombre y tres se confirmaron como alias.
+- [x] **Fijar el criterio de los "Torneos Municipales"** — HECHO (04/08/2026): pertenecen a la temporada que termina en ese año; liga y torneo se suman (D19).
+- [x] **Aplicar de verdad las hojas de torneo a la matriz** — HECHO (04/08/2026): retirado el filtro obsoleto que las excluía todas; 2016/17 pasa de 20 a 24 personas (D23).
+- [x] **Segunda hoja de Torneos Municipales 2017 (Nº EQUIPO 120202, MdL, 17 jugadores)** — **DESCARTADA (04/08/2026)**. Iván la comparó con la 119823: misma competición y mismo equipo, y sus 17 nombres son un **subconjunto** de los 20 de la 119823 (le faltan Ballesteros, Carrera y Moral). **No aporta ninguna persona nueva**, así que no se integra: el pipeline ya se queda con la hoja de más jugadores y descartarla no pierde nada. La matriz de 2016/17 (24 personas) queda intacta y correcta. No existe PDF de esa hoja ni en el repositorio ni en el equipo de Iván —su única traza es una captura—, así que **no hay que seguir buscándolo**.
+- [ ] **Identificar a "Pupo" (2016/17)** — investigado el 04/08/2026 sin resultado: no aparece en ninguna estadística ni en ninguna hoja conservada. Se planteó que la hoja 120202 pudiera contenerlo; al resolverse que es un subconjunto de la 119823, **esa vía queda descartada**. Pupo y los otros tres con 2016 que no salen en ninguna hoja (Alan Venegas, Carlos Pérez Núñez y Juan Carlos Blázquez) siguen viniendo sólo del Excel de la Historia. La vía que queda es **localizar la hoja de inscripción de la liga 2016/17 (37 JDM)**, que falta en `docs/Fichas`; si aparece, el nombre que no esté en ninguna otra será Pupo. Alternativa: preguntar a Carlos o a quien jugara ese año.
+- [ ] **Repasar las 4 hojas transcritas por visión** (2013/14 MdL, 2014/15 MdL y las dos de 2017/18): son escaneos sin texto, leídos de la imagen. En `docs/fichas_transcritas.json`.
+- [ ] **Aclarar el caso de Adán Herrera Benzán**: jugó 3 partidos en 2017/18 sin constar en ninguna hoja de esa temporada.
+- [ ] **Cabos del diccionario de la matriz** (`docs/HISTORIA_diccionario_matriz.md`): desambiguar 'Sam' (Rogaia vs Gruppo) por año, repartir 'Ignacio' entre Ferrando/Mileo/Mateos, y confirmar 'Jose' 2020 = Gil Fernández (confianza media).
 - [ ] **Revisar 3 celdas del MdA 23/24** con decimales donde debería haber enteros (marcadas con "?" en el dashboard).
 - [ ] **Recuperar, si existen, las actas de los partidos sin estadística individual**: 15/16 (5, 11, 18) y 21/22 (10 al 18).
 - [ ] **Enriquecer las históricas** si aparecen las fuentes: fechas de partido, dorsales, parciales por cuarto del MdL y asistencia. Hoy no existen y por eso esas columnas y pestañas ni se muestran.
 
 ## Siguiente (bloque 2: historia del club)
 
-- [ ] **Sección visual "Historia de los Maccabis"** a partir de `Historia_de_los_Maccabi.xlsx`:
+- [x] **Datos de la Historia integrados, reconciliados y completados** — HECHO (04/08/2026, rama `feat/historia-club-datos`): `data/historia_club.json` (80 personas), `data/personas.json` (registro único de identidades) y `data/fichas_inscripcion.json` (21 hojas oficiales cruzadas).
+- [x] **Sección visual "Historia de los Maccabis"** — HECHO (04/08/2026, rama `feat/historia-club-ui`): pestaña "El Club" con rejilla maestra, tira temporal y ficha de persona enlazada con las estadísticas.
+- [ ] **Arreglar el desbordamiento horizontal en móvil** del dashboard (previo a la Historia: afecta también a las pestañas antiguas).
+- [ ] ~~Sección visual "Historia de los Maccabis"~~ — detalle original:
   - Matriz de 80 personas × 14 temporadas (2013→2026), con dorsal y nº de temporadas en activo por persona.
   - Idea: línea temporal del club, quién estuvo cada año, veteranía, "since 2013". Diseño visual y bonito.
   - Nota: el Excel tiene hojas "Equipo", "Copy of Equipo" (ordenada por dorsal) y "Sheet2". Usar la principal.
+
+## Mejoras técnicas (prioridad baja, sin urgencia)
+
+- [ ] **Agrupar las hojas de inscripción también por Nº de equipo** en `scripts/consolidar_fichas.js`. Hoy agrupa por año + equipo + competición y dentro de cada grupo se queda con la hoja de más jugadores; dos inscripciones distintas del mismo torneo caen en la misma clave y la más corta se descarta entera. Si algún año apareciera un caso donde la hoja corta tuviera a alguien que la larga no, se perdería en silencio. **Hoy no ocurre** —el único caso conocido, la 120202 de 2017, es subconjunto de la 119823 y no tiene exclusivos—, así que no corre prisa. El arreglo es incluir el Nº de equipo en la clave para que dos inscripciones **sumen**, igual que ya suman liga y torneo. No hay riesgo de doble conteo: la unión de nombres deduplica.
 
 ## Después (bloque 3: gestión — requiere login)
 

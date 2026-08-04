@@ -1,0 +1,99 @@
+{
+ "_nota": "Las 4 hojas de inscripción que son escaneos sin capa de texto. Transcritas leyendo la imagen (vienen en columnas Nombre | Apellido1 | Apellido2, al revés que las hojas con texto). Sólo nombre, año y equipo: ningún dato personal.",
+ "Ficha_equipo_sellada_13-14.pdf": {
+  "jdm": 34,
+  "anio": "2013",
+  "equipo": "MdL",
+  "nombres": [
+   "Barreiro Carballal, Carlos José",
+   "Calvo González, Santiago de Jesús",
+   "Castro Mayo, Henry Luis",
+   "Díaz-Iglesias Aguilar, Juan Esteban",
+   "Fernández del Río, Álvaro",
+   "Guerrero de la Riva, Miguel",
+   "Klein, Patrick Hennesey",
+   "López Lucero, Alfredo David",
+   "Martín López, Adrián",
+   "Morali, Leonardo Rubén",
+   "Nieto Moreno, César",
+   "Pérez Núñez, Raúl",
+   "Suárez Cobos, Alejandro",
+   "Villaescusa Silva, Iván"
+  ]
+ },
+ "Ficha_equipo (1).pdf": {
+  "jdm": 35,
+  "anio": "2014",
+  "equipo": "MdL",
+  "nombres": [
+   "Barreiro Carballal, Carlos",
+   "Calvo González, Santiago de Jesús",
+   "Castro Mayo, Henry Luis",
+   "Díaz-Iglesias Aguilar, Juan",
+   "Fernández del Río, Álvaro",
+   "García Jiménez, Hugo",
+   "Klein, Patrick Hennesey",
+   "López Lucero, Alfredo David",
+   "Martín López, Adrián",
+   "Martín Ortega, Eduardo",
+   "Morali, Leonardo Rubén",
+   "Pérez Núñez, Raúl",
+   "Pérez Núñez, Carlos",
+   "Suárez Cobos, Alejandro",
+   "Víctor Sánchez, Francisco",
+   "Villaescusa Silva, Iván"
+  ]
+ },
+ "Ficha_Equipo_MDL.pdf": {
+  "jdm": 38,
+  "anio": "2017",
+  "equipo": "MdL",
+  "nombres": [
+   "Ballesteros Fuentes, Roberto",
+   "Cabañas de Pablo, Ignacio",
+   "Calahorro Sánchez, Manuel M",
+   "Castro Mayo, Henry Luis",
+   "Espínola, Fernando Abel",
+   "Hennessey Klein, Patrick",
+   "Hernández Gómez, Alejandro",
+   "Martínez Martínez, Víctor",
+   "Martínez Martínez, Andrés",
+   "Martín-Ortega Rico, Eduardo",
+   "Pazo Pascual, Santiago",
+   "Pérez Lardiez, Jorge",
+   "Pérez Núñez, Raúl",
+   "Suárez Cobos, Alejandro",
+   "Tejeiro Pérez de agreda, Fernando",
+   "Vallesi, Daniele",
+   "Víctor Sánchez, Francisco",
+   "Villaescusa Silva, Iván"
+  ]
+ },
+ "Ficha_Equipo_MDA.pdf": {
+  "jdm": 38,
+  "anio": "2017",
+  "equipo": "MdA",
+  "nombres": [
+   "Cabañas de Pablo, Ignacio",
+   "Calahorro Sánchez, Manuel M",
+   "Calvo González, Santiago",
+   "Carrera Carranza, Julián",
+   "Castro Mayo, Henry Luis",
+   "Cuadrado Mariñas, Diego",
+   "Espínola, Fernando Abel",
+   "Hennessey Klein, Patrick",
+   "Hernández Gómez, Alejandro",
+   "López Lucero, Alfredo David",
+   "Martín Calvo, Borja",
+   "Martínez Martínez, Víctor",
+   "Martín-Ortega Rico, Eduardo",
+   "Moral Cacho, Enrique",
+   "Pérez Lardiez, Jorge",
+   "Pérez Núñez, Víctor",
+   "Pérez Núñez, Raúl",
+   "Suárez Cobos, Alejandro",
+   "Víctor Sánchez, Francisco",
+   "Villaescusa Silva, Iván"
+  ]
+ }
+}

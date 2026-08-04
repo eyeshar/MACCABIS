@@ -52,10 +52,10 @@
       "formal": "Carrera Carranza, Julián"
     },
     {
-      "person_id": "castro-mayo-henry-luis",
-      "nombre": "CASTRO MAYO, HENRY LUIS",
-      "display": "Henry Luis Castro Mayo",
-      "formal": "Castro Mayo, Henry Luis"
+      "person_id": "castro-moya-henry-luis",
+      "nombre": "CASTRO MOYA, HENRY LUIS",
+      "display": "Henry Luis Castro Moya",
+      "formal": "Castro Moya, Henry Luis"
     },
     {
       "person_id": "cuadrado-marinas-diego",
@@ -154,10 +154,10 @@
       "formal": "López Lucero, Alfredo David"
     },
     {
-      "person_id": "mar-calvo-borja",
-      "nombre": "MAR CALVO, BORJA",
-      "display": "Borja Mar Calvo",
-      "formal": "Mar Calvo, Borja"
+      "person_id": "martin-calvo-borja",
+      "nombre": "MARTÍN CALVO, BORJA",
+      "display": "Borja Martín Calvo",
+      "formal": "Martín Calvo, Borja"
     },
     {
       "person_id": "martin-lopez-adrian",
@@ -176,12 +176,6 @@
       "nombre": "MARTÍNEZ MARTÍNEZ, VÍCTOR",
       "display": "Víctor Martínez Martínez",
       "formal": "Martínez Martínez, Víctor"
-    },
-    {
-      "person_id": "martinez-victor",
-      "nombre": "MARTÍNEZ, VÍCTOR",
-      "display": "Víctor Martínez",
-      "formal": "Martínez, Víctor"
     },
     {
       "person_id": "mateos-aparicio-ignacio",
@@ -392,7 +386,7 @@
       },
       "Henry": {
         "tipo": "jugador",
-        "person_id": "castro-mayo-henry-luis"
+        "person_id": "castro-moya-henry-luis"
       },
       "Santi": {
         "tipo": "jugador",
@@ -528,7 +522,7 @@
       },
       "Borja": {
         "tipo": "jugador",
-        "person_id": "mar-calvo-borja"
+        "person_id": "martin-calvo-borja"
       },
       "Raúl": {
         "tipo": "jugador",
@@ -598,7 +592,7 @@
       },
       "Henry": {
         "tipo": "jugador",
-        "person_id": "castro-mayo-henry-luis"
+        "person_id": "castro-moya-henry-luis"
       },
       "Adán": {
         "tipo": "jugador",
@@ -606,7 +600,7 @@
       },
       "Borja": {
         "tipo": "jugador",
-        "person_id": "mar-calvo-borja"
+        "person_id": "martin-calvo-borja"
       },
       "Wall": {
         "tipo": "jugador",
@@ -700,7 +694,7 @@
       },
       "Henry": {
         "tipo": "jugador",
-        "person_id": "castro-mayo-henry-luis"
+        "person_id": "castro-moya-henry-luis"
       },
       "NS": {
         "tipo": "ruido",
@@ -738,7 +732,7 @@
       },
       "Henry": {
         "tipo": "jugador",
-        "person_id": "castro-mayo-henry-luis"
+        "person_id": "castro-moya-henry-luis"
       },
       "David": {
         "tipo": "jugador",
@@ -870,7 +864,7 @@
       },
       "Víctor": {
         "tipo": "jugador",
-        "person_id": "martinez-victor"
+        "person_id": "martinez-martinez-victor"
       },
       "Ramón": {
         "tipo": "jugador",
@@ -1096,7 +1090,7 @@
       },
       "Henry": {
         "tipo": "jugador",
-        "person_id": "castro-mayo-henry-luis"
+        "person_id": "castro-moya-henry-luis"
       },
       "Santi": {
         "tipo": "jugador",

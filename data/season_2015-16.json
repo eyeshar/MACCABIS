@@ -4199,11 +4199,11 @@
    "asist_entr": null
   },
   {
-   "person_id": "mar-calvo-borja",
+   "person_id": "martin-calvo-borja",
    "motes": [
     "Borja"
    ],
-   "nombre": "MAR CALVO, BORJA",
+   "nombre": "MARTÍN CALVO, BORJA",
    "dorsales": [],
    "equipos": [
     "MDL"
@@ -4544,7 +4544,7 @@
    "p3_pct": null,
    "pm_total": null,
    "ppm": null,
-   "display": "Borja Mar Calvo",
+   "display": "Borja Martín Calvo",
    "asist_part": null,
    "asist_entr": null
   },
@@ -6459,7 +6459,7 @@
    },
    {
     "num": null,
-    "nombre": "MAR CALVO, BORJA",
+    "nombre": "MARTÍN CALVO, BORJA",
     "sec": null,
     "pts": 7,
     "p2a": 1,
@@ -6471,8 +6471,8 @@
     "fc": 3,
     "val": null,
     "pm": null,
-    "display": "Borja Mar Calvo",
-    "person_id": "mar-calvo-borja"
+    "display": "Borja Martín Calvo",
+    "person_id": "martin-calvo-borja"
    },
    {
     "num": null,
@@ -7029,7 +7029,7 @@
    },
    {
     "num": null,
-    "nombre": "MAR CALVO, BORJA",
+    "nombre": "MARTÍN CALVO, BORJA",
     "sec": null,
     "pts": 0,
     "p2a": 0,
@@ -7041,8 +7041,8 @@
     "fc": 2,
     "val": null,
     "pm": null,
-    "display": "Borja Mar Calvo",
-    "person_id": "mar-calvo-borja"
+    "display": "Borja Martín Calvo",
+    "person_id": "martin-calvo-borja"
    }
   ],
   "17_MDL": [
@@ -7099,7 +7099,7 @@
    },
    {
     "num": null,
-    "nombre": "MAR CALVO, BORJA",
+    "nombre": "MARTÍN CALVO, BORJA",
     "sec": null,
     "pts": 5,
     "p2a": 2,
@@ -7111,8 +7111,8 @@
     "fc": 2,
     "val": null,
     "pm": null,
-    "display": "Borja Mar Calvo",
-    "person_id": "mar-calvo-borja"
+    "display": "Borja Martín Calvo",
+    "person_id": "martin-calvo-borja"
    },
    {
     "num": null,

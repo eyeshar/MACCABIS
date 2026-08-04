@@ -1,0 +1,1194 @@
+{
+ "_meta": {
+  "descripcion": "Registro único de identidades del club. Fuente de verdad de los person_id que comparten la Historia y las estadísticas.",
+  "generado_por": "scripts/build_personas.js",
+  "fuentes": [
+   "data/diccionario_nombres.json",
+   "data/historia_club.json",
+   "data/season_*.json"
+  ],
+  "regla_person_id": "slug del nombre formal: normalización NFD sin diacríticos, minúsculas, todo lo no alfanumérico a \"-\".",
+  "contrato": [
+   "Este fichero NO guarda temporadas ni estadísticas: sólo identidad y flags.",
+   "La pertenencia al club por temporada vive en data/historia_club.json.",
+   "El rendimiento deportivo vive en data/season_*.json.",
+   "Ambos referencian el person_id de aquí.",
+   "alias_ids recoge escrituras antiguas del mismo id, ya retiradas de los datos; sirve para no repetir la reconciliación."
+  ],
+  "indice_stats": "Índice DERIVADO (no es fuente): en qué temporadas tiene ficha de estadísticas cada persona."
+ },
+ "personas": [
+  {
+   "person_id": "alvarez-marquez-ivan",
+   "formal": "Álvarez Márquez, Iván",
+   "display": "Iván Álvarez Márquez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "ballesteros-fuentes-roberto",
+   "formal": "Ballesteros Fuentes, Roberto",
+   "display": "Roberto Ballesteros Fuentes",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [
+    "ballesteros-fuentes-robert"
+   ],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "banos-gallego-carlos",
+   "formal": "Baños Gallego, Carlos",
+   "display": "Carlos Baños Gallego",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "barreiro-carballal-carlos-jose",
+   "formal": "Barreiro Carballal, Carlos José",
+   "display": "Carlos José Barreiro Carballal",
+   "es_entrenador": true,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "blazquez-lopez-juan-carlos",
+   "formal": "Blázquez López, Juan Carlos",
+   "display": "Juan Carlos Blázquez López",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "bonetto-aram",
+   "formal": "Bonetto, Aram",
+   "display": "Aram Bonetto",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "bujaldon-rodriguez-alejandro",
+   "formal": "Bujaldón Rodríguez, Alejandro",
+   "display": "Alejandro Bujaldón Rodríguez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "cabanas-de-pablo-ignacio",
+   "formal": "Cabañas de Pablo, Ignacio",
+   "display": "Ignacio Cabañas de Pablo",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "calahorro-sanchez-manuel",
+   "formal": "Calahorro Sánchez, Manuel",
+   "display": "Manuel Calahorro Sánchez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "calvo-gonzalez-santiago",
+   "formal": "Calvo González, Santiago",
+   "display": "Santiago Calvo González",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "campos-hernandez-miguel",
+   "formal": "Campos Hernández, Miguel",
+   "display": "Miguel Campos Hernández",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "carrera-carranza-julian",
+   "formal": "Carrera Carranza, Julián",
+   "display": "Julián Carrera Carranza",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "castillo-martinez-javier",
+   "formal": "Castillo Martínez, Javier",
+   "display": "Javier Castillo Martínez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "castro-moya-henry-luis",
+   "formal": "Castro Moya, Henry Luis",
+   "display": "Henry Luis Castro Moya",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [
+    "castro-mayo-henry-luis"
+   ],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "cuadrado-marinas-diego",
+   "formal": "Cuadrado Mariñas, Diego",
+   "display": "Diego Cuadrado Mariñas",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "davis-robert-blake",
+   "formal": "Davis, Robert Blake",
+   "display": "Robert Blake Davis",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "de-carvalho-rodrigues-julio-cesar",
+   "formal": "De Carvalho Rodrigues, Julio César",
+   "display": "Julio César De Carvalho Rodrigues",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "de-maria-sanchez-jaime",
+   "formal": "De María Sánchez, Jaime",
+   "display": "Jaime De María Sánchez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "diaz-hernandez-jose-ignacio",
+   "formal": "Díaz Hernández, José Ignacio",
+   "display": "José Ignacio Díaz Hernández",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "diaz-iglesias-aguilar-juan",
+   "formal": "Díaz-Iglesias Aguilar, Juan",
+   "display": "Juan Díaz-Iglesias Aguilar",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "eric",
+   "formal": "[SOLO MOTE: Eric]",
+   "display": "Eric",
+   "es_entrenador": false,
+   "solo_mote": true,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "espinola-fernando-abel",
+   "formal": "Espínola, Fernando Abel",
+   "display": "Fernando Abel Espínola",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "esteban-jon",
+   "formal": "Esteban, Jon",
+   "display": "Jon Esteban",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "fernandez-cobos-jaime",
+   "formal": "Fernández Cobos, Jaime",
+   "display": "Jaime Fernández Cobos",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "fernandez-del-rio-alvaro",
+   "formal": "Fernández del Río, Álvaro",
+   "display": "Álvaro Fernández del Río",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "ferrando-del-rincon-ignacio",
+   "formal": "Ferrando del Rincón, Ignacio",
+   "display": "Ignacio Ferrando del Rincón",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "galan-domingo-guillermo",
+   "formal": "Galán Domingo, Guillermo",
+   "display": "Guillermo Galán Domingo",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "garcia-jimenez-hugo",
+   "formal": "García Jiménez, Hugo",
+   "display": "Hugo García Jiménez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "gianatti-adriano",
+   "formal": "Gianatti, Adriano",
+   "display": "Adriano Gianatti",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "gil-delgado-heriberto",
+   "formal": "Gil Delgado, Heriberto",
+   "display": "Heriberto Gil Delgado",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "gil-fernandez-jose-antonio",
+   "formal": "Gil Fernández, José Antonio",
+   "display": "José Antonio Gil Fernández",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "gomez-pradal-luis",
+   "formal": "Gómez Pradal, Luis",
+   "display": "Luis Gómez Pradal",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "gruppo-samuel-henry",
+   "formal": "Gruppo, Samuel Henry",
+   "display": "Samuel Henry Gruppo",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "guerrero-de-la-riva-miguel",
+   "formal": "Guerrero de la Riva, Miguel",
+   "display": "Miguel Guerrero de la Riva",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "hernandez-faura-jorge",
+   "formal": "Hernández Faura, Jorge",
+   "display": "Jorge Hernández Faura",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "hernandez-gomez-alejandro",
+   "formal": "Hernández Gómez, Alejandro",
+   "display": "Alejandro Hernández Gómez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [
+    "alejandro"
+   ],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "herrera-benzan-adan",
+   "formal": "Herrera Benzán, Adán",
+   "display": "Adán Herrera Benzán",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "jorba-lopez-sergi",
+   "formal": "Jorba López, Sergi",
+   "display": "Sergi Jorba López",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "klein-patrick-hennesey",
+   "formal": "Klein, Patrick Hennesey",
+   "display": "Patrick Hennesey Klein",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "lopez-de-ayala-alcantara-eduardo",
+   "formal": "López de Ayala Alcántara, Eduardo",
+   "display": "Eduardo López de Ayala Alcántara",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "lopez-lucero-alfredo-david",
+   "formal": "López Lucero, Alfredo David",
+   "display": "Alfredo David López Lucero",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "lopez-rodero-ramon",
+   "formal": "López Rodero, Ramón",
+   "display": "Ramón López Rodero",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "martin-calvo-borja",
+   "formal": "Martín Calvo, Borja",
+   "display": "Borja Martín Calvo",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [
+    "mar-calvo-borja"
+   ],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "martin-lopez-adrian",
+   "formal": "Martín López, Adrián",
+   "display": "Adrián Martín López",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "martin-ortega-rico-eduardo",
+   "formal": "Martín-Ortega Rico, Eduardo",
+   "display": "Eduardo Martín-Ortega Rico",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "martinez-martinez-andres",
+   "formal": "Martínez Martínez, Andrés",
+   "display": "Andrés Martínez Martínez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "martinez-martinez-victor",
+   "formal": "Martínez Martínez, Víctor",
+   "display": "Víctor Martínez Martínez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [
+    "martinez-victor"
+   ],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "mateos-aparicio-ignacio",
+   "formal": "Mateos Aparicio, Ignacio",
+   "display": "Ignacio Mateos Aparicio",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "mendez-escandon-fernando",
+   "formal": "Méndez Escandón, Fernando",
+   "display": "Fernando Méndez Escandón",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [
+    "mendez-escandon-fernando-antonio"
+   ],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "mileo-ignacio-agustin",
+   "formal": "Mileo, Ignacio Agustín",
+   "display": "Ignacio Agustín Mileo",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "mora-gil-jimenez-ramon",
+   "formal": "Mora-Gil Jiménez, Ramón",
+   "display": "Ramón Mora-Gil Jiménez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "moral-cacho-enrique",
+   "formal": "Moral Cacho, Enrique",
+   "display": "Enrique Moral Cacho",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "morali-leonardo",
+   "formal": "Morali, Leonardo",
+   "display": "Leonardo Morali",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "nieto-moreno-cesar",
+   "formal": "Nieto Moreno, César",
+   "display": "César Nieto Moreno",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "ortega-delgado-pablo",
+   "formal": "Ortega Delgado, Pablo",
+   "display": "Pablo Ortega Delgado",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "osaer-dimitri",
+   "formal": "Osaer, Dimitri",
+   "display": "Dimitri Osaer",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "paez-garcia-javier",
+   "formal": "Páez García, Javier",
+   "display": "Javier Páez García",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "pazo-pascual-santiago",
+   "formal": "Pazo Pascual, Santiago",
+   "display": "Santiago Pazo Pascual",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "peco-ruiz-alberto",
+   "formal": "Peco Ruiz, Alberto",
+   "display": "Alberto Peco Ruiz",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "perchin-garcia-javier",
+   "formal": "Perchín García, Javier",
+   "display": "Javier Perchín García",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "perez-lardiez-jorge",
+   "formal": "Pérez Lardiez, Jorge",
+   "display": "Jorge Pérez Lardiez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "perez-nunez-carlos",
+   "formal": "Pérez Núñez, Carlos",
+   "display": "Carlos Pérez Núñez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "perez-nunez-raul",
+   "formal": "Pérez Núñez, Raúl",
+   "display": "Raúl Pérez Núñez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "perez-nunez-victor",
+   "formal": "Pérez Núñez, Víctor",
+   "display": "Víctor Pérez Núñez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "porras-calzada-jose-maria",
+   "formal": "Porras Calzada, José María",
+   "display": "José María Porras Calzada",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "puertas-domingo-carlos",
+   "formal": "Puertas Domingo, Carlos",
+   "display": "Carlos Puertas Domingo",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "pupo",
+   "formal": "[SOLO MOTE: Pupo]",
+   "display": "Pupo",
+   "es_entrenador": false,
+   "solo_mote": true,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "ranz-casado-jorge",
+   "formal": "Ranz Casado, Jorge",
+   "display": "Jorge Ranz Casado",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "rausse-lukas",
+   "formal": "Rausse, Lukas",
+   "display": "Lukas Rausse",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "rodriguez-perez-ivan",
+   "formal": "Rodríguez Pérez, Iván",
+   "display": "Iván Rodríguez Pérez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "rogaia-samuele",
+   "formal": "Rogaia, Samuele",
+   "display": "Samuele Rogaia",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "romero-barrueco-alonso",
+   "formal": "Romero Barrueco, Alonso",
+   "display": "Alonso Romero Barrueco",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "sanchez-herrero-rafael",
+   "formal": "Sánchez Herrero, Rafael",
+   "display": "Rafael Sánchez Herrero",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "suarez-cobos-alejandro",
+   "formal": "Suárez Cobos, Alejandro",
+   "display": "Alejandro Suárez Cobos",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "tejeiro-perez-de-agreda-fernando",
+   "formal": "Tejeiro Pérez de Agreda, Fernando",
+   "display": "Fernando Tejeiro Pérez de Agreda",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "tosta-queiroz-gilberto",
+   "formal": "Tosta Queiroz, Gilberto",
+   "display": "Gilberto Tosta Queiroz",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "trave-de-la-vega-ignacio-manuel",
+   "formal": "Trave de la Vega, Ignacio Manuel",
+   "display": "Ignacio Manuel Trave de la Vega",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
+   "person_id": "vallesi-daniele",
+   "formal": "Vallesi, Daniele",
+   "display": "Daniele Vallesi",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "varas-garcia-luis-alberto",
+   "formal": "Varas García, Luis Alberto",
+   "display": "Luis Alberto Varas García",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "venegas-lamamie-de-clairac-alan",
+   "formal": "Venegas Lamamie de Clairac, Alan",
+   "display": "Alan Venegas Lamamie de Clairac",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "victor-sanchez-francisco",
+   "formal": "Víctor Sánchez, Francisco",
+   "display": "Francisco Víctor Sánchez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "villa-guerrero-edwin",
+   "formal": "Villa Guerrero, Edwin",
+   "display": "Edwin Villa Guerrero",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "villaescusa-silva-ivan",
+   "formal": "Villaescusa Silva, Iván",
+   "display": "Iván Villaescusa Silva",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  },
+  {
+   "person_id": "yamin-squicciarini-nicolas",
+   "formal": "Yamin Squicciarini, Nicolás",
+   "display": "Nicolás Yamin Squicciarini",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": true
+  }
+ ],
+ "indice_stats": {
+  "suarez-cobos-alejandro": [
+   "2013-14",
+   "2014-15",
+   "2015-16",
+   "2017-18",
+   "2018-19",
+   "2019-20",
+   "2020-21",
+   "2021-22",
+   "2023-24"
+  ],
+  "martin-lopez-adrian": [
+   "2013-14",
+   "2014-15"
+  ],
+  "villaescusa-silva-ivan": [
+   "2013-14",
+   "2014-15",
+   "2015-16",
+   "2017-18",
+   "2018-19",
+   "2021-22",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "diaz-iglesias-aguilar-juan": [
+   "2013-14",
+   "2014-15"
+  ],
+  "morali-leonardo": [
+   "2013-14",
+   "2014-15",
+   "2021-22",
+   "2023-24"
+  ],
+  "fernandez-del-rio-alvaro": [
+   "2013-14",
+   "2014-15",
+   "2015-16",
+   "2018-19"
+  ],
+  "castro-moya-henry-luis": [
+   "2013-14",
+   "2017-18",
+   "2018-19",
+   "2019-20",
+   "2023-24"
+  ],
+  "calvo-gonzalez-santiago": [
+   "2013-14",
+   "2014-15",
+   "2015-16"
+  ],
+  "lopez-lucero-alfredo-david": [
+   "2013-14",
+   "2014-15",
+   "2015-16",
+   "2017-18",
+   "2018-19",
+   "2019-20",
+   "2020-21",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "venegas-lamamie-de-clairac-alan": [
+   "2013-14",
+   "2015-16",
+   "2018-19"
+  ],
+  "klein-patrick-hennesey": [
+   "2013-14",
+   "2014-15",
+   "2015-16",
+   "2017-18",
+   "2018-19"
+  ],
+  "perez-nunez-raul": [
+   "2013-14",
+   "2014-15",
+   "2015-16",
+   "2017-18"
+  ],
+  "perez-nunez-carlos": [
+   "2013-14",
+   "2014-15",
+   "2015-16"
+  ],
+  "victor-sanchez-francisco": [
+   "2014-15",
+   "2015-16",
+   "2017-18",
+   "2021-22",
+   "2023-24"
+  ],
+  "blazquez-lopez-juan-carlos": [
+   "2015-16"
+  ],
+  "martin-ortega-rico-eduardo": [
+   "2015-16",
+   "2017-18",
+   "2018-19",
+   "2019-20",
+   "2020-21",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "martin-calvo-borja": [
+   "2015-16",
+   "2017-18"
+  ],
+  "moral-cacho-enrique": [
+   "2017-18",
+   "2018-19",
+   "2019-20",
+   "2020-21"
+  ],
+  "perez-lardiez-jorge": [
+   "2017-18",
+   "2018-19"
+  ],
+  "cabanas-de-pablo-ignacio": [
+   "2017-18"
+  ],
+  "pazo-pascual-santiago": [
+   "2017-18",
+   "2018-19",
+   "2019-20",
+   "2021-22",
+   "2023-24",
+   "2024-25"
+  ],
+  "carrera-carranza-julian": [
+   "2017-18",
+   "2018-19",
+   "2019-20"
+  ],
+  "calahorro-sanchez-manuel": [
+   "2017-18",
+   "2018-19",
+   "2021-22",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "tejeiro-perez-de-agreda-fernando": [
+   "2017-18",
+   "2021-22",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "herrera-benzan-adan": [
+   "2017-18",
+   "2018-19"
+  ],
+  "cuadrado-marinas-diego": [
+   "2017-18"
+  ],
+  "gil-delgado-heriberto": [
+   "2018-19",
+   "2019-20",
+   "2020-21"
+  ],
+  "ballesteros-fuentes-roberto": [
+   "2018-19",
+   "2019-20",
+   "2020-21"
+  ],
+  "perez-nunez-victor": [
+   "2018-19",
+   "2019-20",
+   "2020-21",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "tosta-queiroz-gilberto": [
+   "2019-20"
+  ],
+  "bonetto-aram": [
+   "2019-20",
+   "2020-21"
+  ],
+  "galan-domingo-guillermo": [
+   "2020-21",
+   "2023-24",
+   "2024-25"
+  ],
+  "porras-calzada-jose-maria": [
+   "2020-21"
+  ],
+  "paez-garcia-javier": [
+   "2020-21"
+  ],
+  "martinez-martinez-victor": [
+   "2020-21",
+   "2021-22",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "de-carvalho-rodrigues-julio-cesar": [
+   "2021-22",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "peco-ruiz-alberto": [
+   "2021-22"
+  ],
+  "vallesi-daniele": [
+   "2021-22",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "varas-garcia-luis-alberto": [
+   "2021-22",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "mora-gil-jimenez-ramon": [
+   "2021-22",
+   "2023-24"
+  ],
+  "diaz-hernandez-jose-ignacio": [
+   "2021-22"
+  ],
+  "ortega-delgado-pablo": [
+   "2023-24"
+  ],
+  "mateos-aparicio-ignacio": [
+   "2023-24",
+   "2024-25"
+  ],
+  "bujaldon-rodriguez-alejandro": [
+   "2023-24",
+   "2024-25"
+  ],
+  "ferrando-del-rincon-ignacio": [
+   "2023-24"
+  ],
+  "lopez-de-ayala-alcantara-eduardo": [
+   "2023-24"
+  ],
+  "sanchez-herrero-rafael": [
+   "2023-24",
+   "2024-25"
+  ],
+  "esteban-jon": [
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "rausse-lukas": [
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "hernandez-faura-jorge": [
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "jorba-lopez-sergi": [
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "romero-barrueco-alonso": [
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "villa-guerrero-edwin": [
+   "2023-24",
+   "2024-25"
+  ],
+  "perchin-garcia-javier": [
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "rodriguez-perez-ivan": [
+   "2024-25"
+  ],
+  "rogaia-samuele": [
+   "2024-25",
+   "2025-26"
+  ],
+  "mileo-ignacio-agustin": [
+   "2024-25",
+   "2025-26"
+  ],
+  "yamin-squicciarini-nicolas": [
+   "2024-25",
+   "2025-26"
+  ],
+  "de-maria-sanchez-jaime": [
+   "2024-25",
+   "2025-26"
+  ],
+  "gianatti-adriano": [
+   "2025-26"
+  ],
+  "martinez-martinez-andres": [
+   "2025-26"
+  ],
+  "mendez-escandon-fernando": [
+   "2025-26"
+  ],
+  "banos-gallego-carlos": [
+   "2025-26"
+  ]
+ }
+}

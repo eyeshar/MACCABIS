@@ -6,9 +6,14 @@
   "scripts": {
     "diccionario": "node scripts/parse_diccionario.js",
     "historico": "node scripts/build_historico.js",
-    "build:datos": "npm run diccionario && npm run historico"
+    "build:datos": "npm run diccionario && npm run historico && npm run fichas && npm run completar:historia && npm run personas",
+    "personas": "node scripts/build_personas.js",
+    "check:personas": "node scripts/build_personas.js --check",
+    "completar:historia": "node scripts/completar_historia.js",
+    "fichas": "node scripts/consolidar_fichas.js"
   },
   "devDependencies": {
+    "pdf-parse": "^2.4.5",
     "xlsx": "^0.18.5"
   }
 }

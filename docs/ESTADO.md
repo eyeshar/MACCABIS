@@ -2,7 +2,17 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 04/08/2026 — bloque "histórico de temporadas", **publicado en GitHub Pages**._
+_Última actualización: 04/08/2026 — bloque "2016/17 y orden por incorporación" (rama `feat/historia-club-ui`, sin mergear)._
+
+### Interfaz de la Historia: pestaña "El Club" (rama `feat/historia-club-ui`)
+- **Transversal a las temporadas**: se carga una vez desde `data/personas.json` y `data/historia_club.json`; no depende del selector ni lo altera.
+- **Dos modos de orden excluyentes en la rejilla** (decisión de Iván, ver D22): por **veteranía** (con agrupación en tramos, es el de por defecto) o por **año de incorporación** (lista plana, sin tramos). La cifra dorada de cada fila cambia en consecuencia: nº de temporadas o temporada de debut.
+- **Rejilla maestra**: 84 personas × 13 temporadas + la 26/27 prevista. Cada trayectoria es una barra continua; naranja = temporada con estadísticas, morado = sólo presencia. Cabecera y columna de nombre fijas, agrupación por tramos de veteranía, buscador y filtro con/sin estadísticas. Entrenador en sección propia.
+- **Tira temporal**: una tarjeta por temporada con plantilla, altas y bajas. La 26/27 aparte, marcada como no empezada.
+- **Ficha de persona**: al pinchar una fila. Temporadas, debut, veteranía y presencia año a año.
+- **Puente con las estadísticas**: desde la ficha, las temporadas con datos cargan esa temporada y abren la ficha de jugador de esa persona (enlace por `person_id`). También por URL: `?t=2023-24&p=jugador&j=<person_id>`.
+- Sin librerías nuevas y sin almacenamiento del navegador. Las demás pestañas quedan intactas.
+- **Pendiente conocido**: el dashboard tiene desbordamiento horizontal en pantallas estrechas. **Es previo a este bloque** (se reproduce igual en la versión anterior); la rejilla de la Historia lleva su propio scroll contenido.
 
 ## Repositorio y publicación
 
@@ -13,6 +23,36 @@ _Última actualización: 04/08/2026 — bloque "histórico de temporadas", **pub
 - **URL pública:** https://eyeshar.github.io/MACCABIS/
 
 ## Hecho y funcionando
+
+### Historia del club: matriz de presencia 2013→2026 (rama `feat/historia-club-datos`)
+- **84 personas** con sus temporadas de presencia en el club, en `data/historia_club.json`. **Cubre 2013-2025 sin huecos.**
+- **2016/17 completada de verdad (04/08/2026).** El bloque anterior dio esa temporada por integrada, pero un filtro obsoleto en `completar_historia.js` impedía aplicar las hojas: los 4 jugadores que aportaba la hoja de Torneos 2017 nunca llegaron a la matriz. Corregido y verificado: **24 personas** constan ya en 2016/17, entre ellas las 20 de la hoja. (cerrado por Iván el 04/08/2026 a partir de `Historia_de_los_Maccabi.xlsx` + SportEasy).
+- **Sólo datos**: la interfaz visual (rejilla, tira temporal, fichas) es el bloque siguiente y NO está construida.
+- **Registro único de identidades** en `data/personas.json` (80 personas): fuente de verdad de los `person_id` que comparten la Historia y las estadísticas. Ver DECISIONS D13-D15.
+- **Completada y verificada (04/08/2026)** contra las otras dos fuentes, con esta jerarquía: estadísticas (actas) > hojas de inscripción > matriz. La matriz sólo se completa; nunca se quita a nadie ni se recorta un año.
+  - **4 personas añadidas** desde las estadísticas: Javier Páez García, Daniele Vallesi, Ramón Mora-Gil Jiménez e Ignacio Ferrando del Rincón. Ya no queda nadie con estadísticas fuera de la matriz.
+  - **43 pares persona-año añadidos** sobre 22 personas. El caso mayor: Santiago Pazo Pascual, que tenía 3 temporadas y las actas confirman 4 más (2017, 2018, 2019 y 2024) — probable resto de la fila "Santi" fundida con Calvo González en el Excel original.
+  - **21 hojas de inscripción oficiales** procesadas (`data/fichas_inscripcion.json`), de 12 temporadas. Informe en `docs/INFORME_FICHAS.md`.
+- **Cierre de datos (04/08/2026)**, con las decisiones de Iván aplicadas:
+  - **Dos nombres canónicos corregidos**: "Castro Mayo" → **"Castro Moya, Henry Luis"** y "Mar Calvo" → **"Martín Calvo, Borja"**. Cambian su `person_id`; los antiguos quedan en `alias_ids`.
+  - **5 personas identificadas** desde hojas oficiales: Iván Álvarez Márquez (2018), Carlos Puertas Domingo (2019), Jorge Ranz Casado (2022), Hugo García Jiménez (2014) y **Alejandro Hernández Gómez (2017)**, que era el solo_mote "Alejandro, el de Alicante". Sólo quedan 2 solo_mote: Pupo y Eric.
+  - **Regla de los Torneos Municipales**: eran copas del final de temporada, así que "Torneos AAAA" es la temporada que **termina** en AAAA. Liga y torneo del mismo periodo son una temporada y sus plantillas se suman.
+  - **Temporada 2016/17 recuperada** de la hoja de Torneos 2017 (20 personas). Era el único año sin hoja propia ni estadísticas.
+  - **Revisión de 2017/18**: ningún nombre se había resuelto contra la hoja equivocada.
+- Validado contra sus propias reglas: `n_temporadas` cuadra con los años jugados 2013-2025 en las 76; ninguna tiene 2026 como jugada (22 la tienen como **prevista** 26/27, que no cuenta en veteranía); sin ids duplicados.
+- `npm run check:personas` valida las identidades y las reglas sin escribir nada.
+
+#### Reconciliación de identidades (04/08/2026)
+- **55** personas coincidían de id exactamente entre Historia y estadísticas.
+- **3 unificadas**, cada una confirmada por apellidos Y coincidencia de temporadas:
+  | Antes | Después | Dónde se corrigió |
+  |---|---|---|
+  | `martinez-victor` | `martinez-martinez-victor` | `.md` del diccionario (21/22) + temporadas regeneradas |
+  | `ballesteros-fuentes-robert` | `ballesteros-fuentes-roberto` | `data/historia_club.json` |
+  | `mendez-escandon-fernando-antonio` | `mendez-escandon-fernando` | alias; el acta 25/26 trae el nombre legal completo |
+- **21** personas sólo en la Historia, sin estadísticas: es lo esperado (el entrenador, los 3 `solo_mote` y quienes jugaron años sin actas o sólo en el MdA).
+- **4** personas con estadísticas que **no aparecen en la matriz** — pendientes de revisión humana, ver cabos sueltos.
+- La 25/26 era la única temporada sin `person_id` (venía del pipeline antiguo): estampado en sus 24 jugadores y 382 filas de boxscore, sin alterar ningún dato deportivo.
 
 ### Histórico completo: 10 temporadas 2013/14 → 2024/25 (rama `feat/historico-temporadas`)
 - **11 temporadas en el dashboard** (13/14 → 25/26) con selector operativo. La 25/26 sigue siendo la temporada por defecto y **no ha cambiado**.
@@ -61,10 +101,18 @@ Equipo (balance, racha, tabla de partidos con boxscore desplegable al clic) · J
 3. **Motes sueltos sin entrada en el diccionario** (tratados como "sin catalogar", sus puntos siguen contando en el equipo):
    - 14/15: `Paaco` y `Coach` — sin puntos, sólo aparecen en faltas/tiros libres. Probables erratas de `Paco` y de la etiqueta de entrenador.
    - 17/18: `Víctor` — **6 puntos**. La regla 4 del diccionario dice que "Víctor" = Víctor Martínez, pero la tabla de 17/18 no lo lista, así que no se ha aplicado.
-4. **Dos `person_id` para Víctor Martínez** — el diccionario lo escribe "Martínez Martínez, Víctor" en 20/21 y 23/24 y "Martínez, Víctor" en 21/22. Sin efecto dentro de cada temporada, pero conviene unificarlo antes de cruzar temporadas.
+4. ~~**Dos `person_id` para Víctor Martínez**~~ — **RESUELTO (04/08/2026).** Unificado a `martinez-martinez-victor` en el `.md` fuente y en las cuatro temporadas donde aparece (20/21, 21/22, 23/24, 24/25). El id retirado queda anotado en `alias_ids`.
 5. **Tres celdas corruptas en el MdA 23/24** — valores decimales donde debería haber enteros (Jon/triples = 1,875; Edwin/TL = 1,875; J. Perchín/TL = 1,43). Se transcriben tal cual y salen marcadas con "?" en el dashboard.
 6. **Dos jugadores con 2P no derivables en 20/21** (partido 10: Heriberto Gil 11 puntos y Alfredo David López 3, ambos sin triples ni tiros libres registrados). El dato de la fuente es incompleto; se deja ausente.
-7. **Partidos sin estadística individual**: 3 en 15/16 (5, 11 y 18) y 9 en 21/22 (10 al 18). El marcador sí consta; el boxscore no se ha fabricado y salen marcados como "sin stats".
+7. ~~**Cuatro personas con estadísticas que no están en la matriz**~~ — **RESUELTO (04/08/2026)**: añadidas a la matriz en los años que confirman las actas.
+8. ~~**Seis nombres en hojas sin identificar**~~ — **RESUELTO (04/08/2026)**: los 5 confirmados por Iván se crearon como personas; ya no queda ningún nombre de hoja oficial sin identificar.
+9. ~~**Cinco correspondencias dudosas en fichas**~~ — **RESUELTO (04/08/2026)**: dos eran erratas de nombre (corregidas) y las otras tres se confirmaron como alias.
+10. ~~**Cinco hojas de "Torneos Municipales" sin aplicar**~~ — **RESUELTO (04/08/2026)**: Iván fijó la regla y las cinco están aplicadas.
+11. **"Pupo" (2016/17) sigue sin identificar** — investigado el 04/08/2026 y **no resuelto a propósito**: su única traza es la fila del Excel de la Historia. No aparece en ninguno de los 17 Excel de estadísticas (2016/17 es la única temporada sin ellos) ni en ninguna hoja de inscripción. Los 20 nombres de la hoja de Torneos 2017 están todos identificados y cada uno tiene su propia fila en la matriz. **Falta la hoja de la liga de 2016/17 (37 JDM)**, que no está entre los PDF: es la vía con más recorrido para identificarlo.
+12. **Adán Herrera Benzán jugó 3 partidos en 2017/18 sin constar en ninguna hoja de esa temporada** (sí en 2018/19, 2021/22 y 2022/23). O falta su hoja, o se inscribió fuera de plazo. Anomalía de la fuente.
+13. **Las 4 hojas transcritas por visión conviene repasarlas** (2013/14 MdL, 2014/15 MdL y las dos de 2017/18): son escaneos sin capa de texto, leídos de la imagen. Están en `docs/fichas_transcritas.json`.
+14. ~~**Cuatro personas con estadísticas que no están en la matriz de historia**~~ — Ignacio Ferrando del Rincón (23/24), Ramón Mora-Gil Jiménez (21/22 y 23/24), Javier Páez García (20/21) y Daniele Vallesi (21/22, 23/24, 24/25). **No se han fusionado con nadie**: había parecidos superficiales (otro Ramón, otro Javier, otro Ignacio) que son personas distintas. Falta decidir si se añaden a la matriz o si su ausencia es intencionada. `npm run check:personas` los avisa en cada ejecución.
+15. **Partidos sin estadística individual**: 3 en 15/16 (5, 11 y 18) y 9 en 21/22 (10 al 18). El marcador sí consta; el boxscore no se ha fabricado y salen marcados como "sin stats".
 
 ## En curso / decidido pero no empezado
 

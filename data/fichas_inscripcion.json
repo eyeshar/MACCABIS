@@ -1,0 +1,2064 @@
+{
+ "_meta": {
+  "descripcion": "Hojas de inscripción oficiales. Límite inferior fiable de pertenencia: quien aparece en la hoja de un año, estuvo ese año.",
+  "fuente": "PDFs en docs/Fichas (NO versionados: contienen DNI, fecha de nacimiento, teléfono y email). Aquí sólo año, equipo y nombre.",
+  "generado_por": "scripts/consolidar_fichas.js",
+  "reglas": [
+   "JDM N = temporada (N+1979)/(N+1980): 34 JDM = 2013/14.",
+   "TORNEOS MUNICIPALES AAAA = copa del final de temporada: pertenece a la temporada que TERMINA en AAAA (año de matriz AAAA-1). Liga y torneo del mismo periodo son una sola temporada y sus plantillas se suman.",
+   "Cuando hay varias hojas del mismo año y equipo vale SIEMPRE la que más jugadores tiene.",
+   "match:\"parcial\" o \"alias\" = el nombre de la hoja no es idéntico al del registro pero se ha confirmado que es la misma persona.",
+   "person_id:null = nombre que no casa con nadie conocido; NO se inventa identidad."
+  ]
+ },
+ "fichas": [
+  {
+   "anio": "2013",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Ficha de equipo liga marca.pdf",
+     "jdm": null,
+     "torneo": 2014,
+     "metodo": "texto",
+     "n": 14
+    },
+    {
+     "fichero": "Ficha_equipo_sellada_13-14.pdf",
+     "jdm": 34,
+     "torneo": null,
+     "metodo": "vision",
+     "n": 14
+    }
+   ],
+   "n": 24,
+   "personas": [
+    {
+     "nombre": "Barreiro Carballal, Carlos jose",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "Calvo González, Santiago de Jesús",
+     "person_id": "calvo-gonzalez-santiago",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Castro Mayo, Henry Luis",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "Díaz-Iglesias Aguilar, Juan Esteban",
+     "person_id": "diaz-iglesias-aguilar-juan",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Fernández del Río, Alvaro",
+     "person_id": "fernandez-del-rio-alvaro"
+    },
+    {
+     "nombre": "Klein, Patrick Hennesey",
+     "person_id": "klein-patrick-hennesey"
+    },
+    {
+     "nombre": "Lopéz Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martín López, Adrian",
+     "person_id": "martin-lopez-adrian"
+    },
+    {
+     "nombre": "Morali, Leonardo Ruben",
+     "person_id": "morali-leonardo",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Pérez Nuñez, Raúl",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Pérez Nuñez, Carlos",
+     "person_id": "perez-nunez-carlos"
+    },
+    {
+     "nombre": "Suarez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Venegas Lamamie, Alan Noel",
+     "person_id": "venegas-lamamie-de-clairac-alan",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Villaescusa Silva, Ivan",
+     "person_id": "villaescusa-silva-ivan"
+    },
+    {
+     "nombre": "Barreiro Carballal, Carlos José",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "Fernández del Río, Álvaro",
+     "person_id": "fernandez-del-rio-alvaro"
+    },
+    {
+     "nombre": "Guerrero de la Riva, Miguel",
+     "person_id": "guerrero-de-la-riva-miguel"
+    },
+    {
+     "nombre": "López Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martín López, Adrián",
+     "person_id": "martin-lopez-adrian"
+    },
+    {
+     "nombre": "Morali, Leonardo Rubén",
+     "person_id": "morali-leonardo",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Nieto Moreno, César",
+     "person_id": "nieto-moreno-cesar"
+    },
+    {
+     "nombre": "Pérez Núñez, Raúl",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Suárez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Villaescusa Silva, Iván",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2014",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Ficha_equipo (1).pdf",
+     "jdm": 35,
+     "torneo": null,
+     "metodo": "vision",
+     "n": 16
+    }
+   ],
+   "n": 16,
+   "personas": [
+    {
+     "nombre": "Barreiro Carballal, Carlos",
+     "person_id": "barreiro-carballal-carlos-jose",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Calvo González, Santiago de Jesús",
+     "person_id": "calvo-gonzalez-santiago",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Castro Mayo, Henry Luis",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "Díaz-Iglesias Aguilar, Juan",
+     "person_id": "diaz-iglesias-aguilar-juan"
+    },
+    {
+     "nombre": "Fernández del Río, Álvaro",
+     "person_id": "fernandez-del-rio-alvaro"
+    },
+    {
+     "nombre": "García Jiménez, Hugo",
+     "person_id": "garcia-jimenez-hugo"
+    },
+    {
+     "nombre": "Klein, Patrick Hennesey",
+     "person_id": "klein-patrick-hennesey"
+    },
+    {
+     "nombre": "López Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martín López, Adrián",
+     "person_id": "martin-lopez-adrian"
+    },
+    {
+     "nombre": "Martín Ortega, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Morali, Leonardo Rubén",
+     "person_id": "morali-leonardo",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Pérez Núñez, Raúl",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Pérez Núñez, Carlos",
+     "person_id": "perez-nunez-carlos"
+    },
+    {
+     "nombre": "Suárez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Víctor Sánchez, Francisco",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "Villaescusa Silva, Iván",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2015",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Ficha_equipo (2).pdf",
+     "jdm": 36,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 17
+    }
+   ],
+   "n": 17,
+   "personas": [
+    {
+     "nombre": "BARREIRO CARBALLAL, CARLOS",
+     "person_id": "barreiro-carballal-carlos-jose",
+     "match": "parcial"
+    },
+    {
+     "nombre": "BLAZQUEZ LOPEZ, JUAN CARLOS",
+     "person_id": "blazquez-lopez-juan-carlos"
+    },
+    {
+     "nombre": "CALVO GONZALEZ, SANTIAGO DE JESUS",
+     "person_id": "calvo-gonzalez-santiago",
+     "match": "parcial"
+    },
+    {
+     "nombre": "CASTRO MAYO, HENRY LUIS",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "DIAZ-IGLESIAS AGUILAR, JUAN",
+     "person_id": "diaz-iglesias-aguilar-juan"
+    },
+    {
+     "nombre": "FERNANDEZ DEL RIO, ALVARO",
+     "person_id": "fernandez-del-rio-alvaro"
+    },
+    {
+     "nombre": "KLEIN, PATRICK HENNESEY",
+     "person_id": "klein-patrick-hennesey"
+    },
+    {
+     "nombre": "LOPEZ LUCERO, ALFREDO DAVID",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "MAR CALVO, BORJA",
+     "person_id": "martin-calvo-borja",
+     "match": "alias"
+    },
+    {
+     "nombre": "MARTIN ORTEGA, EDUARDO",
+     "person_id": "martin-ortega-rico-eduardo",
+     "match": "parcial"
+    },
+    {
+     "nombre": "PAEZ GARCIA, JAVIER",
+     "person_id": "paez-garcia-javier"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, RAUL",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, CARLOS",
+     "person_id": "perez-nunez-carlos"
+    },
+    {
+     "nombre": "SUAREZ COBOS, ALEJANDRO",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "VENEGAS LAMAMIE DE CLAIRAC, ALAN",
+     "person_id": "venegas-lamamie-de-clairac-alan"
+    },
+    {
+     "nombre": "VICTOR SANCHEZ, FRANCISCO",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2016",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Hoja de inscripción Marca Valdebernardo (1).pdf",
+     "jdm": null,
+     "torneo": 2017,
+     "metodo": "texto",
+     "n": 20
+    }
+   ],
+   "n": 20,
+   "personas": [
+    {
+     "nombre": "Ballesteros Fuentes, Roberto",
+     "person_id": "ballesteros-fuentes-roberto"
+    },
+    {
+     "nombre": "Barreiro Carballal, Carlos",
+     "person_id": "barreiro-carballal-carlos-jose",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Cabañas de Pablo, ignacio",
+     "person_id": "cabanas-de-pablo-ignacio"
+    },
+    {
+     "nombre": "Calvo Gonzalez, Santiago de Jesus",
+     "person_id": "calvo-gonzalez-santiago",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Carrera Carranza, Julian",
+     "person_id": "carrera-carranza-julian"
+    },
+    {
+     "nombre": "Castro Mayo, Henry Luis",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "Klein, Patrick Hennesey",
+     "person_id": "klein-patrick-hennesey"
+    },
+    {
+     "nombre": "Lopez Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martin Ortega, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Martin Calvo, Borja",
+     "person_id": "martin-calvo-borja"
+    },
+    {
+     "nombre": "Martinez Martinez, Victor",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "Martinez Martinez, Andres",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "Moral Cacho, Enrique",
+     "person_id": "moral-cacho-enrique"
+    },
+    {
+     "nombre": "Peco Ruiz, Alberto",
+     "person_id": "peco-ruiz-alberto"
+    },
+    {
+     "nombre": "Perez Lardiez, Jorge",
+     "person_id": "perez-lardiez-jorge"
+    },
+    {
+     "nombre": "Perez Nuñez, Raul",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Perez Nuñez, Victor",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "Suarez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Victor Sanchez, Francisco",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "Villaescusa Silva, Ivan",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2017",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "Ficha_Equipo_MDA.pdf",
+     "jdm": 38,
+     "torneo": null,
+     "metodo": "vision",
+     "n": 20
+    }
+   ],
+   "n": 20,
+   "personas": [
+    {
+     "nombre": "Cabañas de Pablo, Ignacio",
+     "person_id": "cabanas-de-pablo-ignacio"
+    },
+    {
+     "nombre": "Calahorro Sánchez, Manuel M",
+     "person_id": "calahorro-sanchez-manuel",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Calvo González, Santiago",
+     "person_id": "calvo-gonzalez-santiago"
+    },
+    {
+     "nombre": "Carrera Carranza, Julián",
+     "person_id": "carrera-carranza-julian"
+    },
+    {
+     "nombre": "Castro Mayo, Henry Luis",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "Cuadrado Mariñas, Diego",
+     "person_id": "cuadrado-marinas-diego"
+    },
+    {
+     "nombre": "Espínola, Fernando Abel",
+     "person_id": "espinola-fernando-abel"
+    },
+    {
+     "nombre": "Hennessey Klein, Patrick",
+     "person_id": "klein-patrick-hennesey",
+     "match": "alias"
+    },
+    {
+     "nombre": "Hernández Gómez, Alejandro",
+     "person_id": "hernandez-gomez-alejandro"
+    },
+    {
+     "nombre": "López Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martín Calvo, Borja",
+     "person_id": "martin-calvo-borja"
+    },
+    {
+     "nombre": "Martínez Martínez, Víctor",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "Martín-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Moral Cacho, Enrique",
+     "person_id": "moral-cacho-enrique"
+    },
+    {
+     "nombre": "Pérez Lardiez, Jorge",
+     "person_id": "perez-lardiez-jorge"
+    },
+    {
+     "nombre": "Pérez Núñez, Víctor",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "Pérez Núñez, Raúl",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Suárez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Víctor Sánchez, Francisco",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "Villaescusa Silva, Iván",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2017",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Ficha_Equipo_MDL.pdf",
+     "jdm": 38,
+     "torneo": null,
+     "metodo": "vision",
+     "n": 18
+    },
+    {
+     "fichero": "MDL.pdf",
+     "jdm": null,
+     "torneo": 2018,
+     "metodo": "texto",
+     "n": 17
+    }
+   ],
+   "n": 29,
+   "personas": [
+    {
+     "nombre": "Ballesteros Fuentes, Roberto",
+     "person_id": "ballesteros-fuentes-roberto"
+    },
+    {
+     "nombre": "Cabañas de Pablo, Ignacio",
+     "person_id": "cabanas-de-pablo-ignacio"
+    },
+    {
+     "nombre": "Calahorro Sánchez, Manuel M",
+     "person_id": "calahorro-sanchez-manuel",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Castro Mayo, Henry Luis",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "Espínola, Fernando Abel",
+     "person_id": "espinola-fernando-abel"
+    },
+    {
+     "nombre": "Hennessey Klein, Patrick",
+     "person_id": "klein-patrick-hennesey",
+     "match": "alias"
+    },
+    {
+     "nombre": "Hernández Gómez, Alejandro",
+     "person_id": "hernandez-gomez-alejandro"
+    },
+    {
+     "nombre": "Martínez Martínez, Víctor",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "Martínez Martínez, Andrés",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "Martín-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Pazo Pascual, Santiago",
+     "person_id": "pazo-pascual-santiago"
+    },
+    {
+     "nombre": "Pérez Lardiez, Jorge",
+     "person_id": "perez-lardiez-jorge"
+    },
+    {
+     "nombre": "Pérez Núñez, Raúl",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Suárez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Tejeiro Pérez de agreda, Fernando",
+     "person_id": "tejeiro-perez-de-agreda-fernando"
+    },
+    {
+     "nombre": "Vallesi, Daniele",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "Víctor Sánchez, Francisco",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "Villaescusa Silva, Iván",
+     "person_id": "villaescusa-silva-ivan"
+    },
+    {
+     "nombre": "Calahorro Sanchez, Manuel",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "Espinola, Fernando Abel",
+     "person_id": "espinola-fernando-abel"
+    },
+    {
+     "nombre": "Hernandez Gomez, Alejandro",
+     "person_id": "hernandez-gomez-alejandro"
+    },
+    {
+     "nombre": "Martinez Martinez, Victor",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "Martinez Martinez, Andres",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "Martin-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Perez Lardiez, Jorge",
+     "person_id": "perez-lardiez-jorge"
+    },
+    {
+     "nombre": "Perez Nuñez, Raul",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Suarez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Victor Sanchez, Francisco",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "Villaescusa Silva, Ivan",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2018",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "Ficha_Equipo_MDA (1).pdf",
+     "jdm": 39,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 19
+    },
+    {
+     "fichero": "Inscripción MdA.pdf",
+     "jdm": null,
+     "torneo": 2019,
+     "metodo": "texto",
+     "n": 15
+    }
+   ],
+   "n": 19,
+   "personas": [
+    {
+     "nombre": "Ballesteros Fuentes, Roberto",
+     "person_id": "ballesteros-fuentes-roberto"
+    },
+    {
+     "nombre": "Bujaldon Rodríguez, Alejandro",
+     "person_id": "bujaldon-rodriguez-alejandro"
+    },
+    {
+     "nombre": "Calahorro Sanchez, Manuel",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "Calvo Gonzalez, Santiago",
+     "person_id": "calvo-gonzalez-santiago"
+    },
+    {
+     "nombre": "Carrera Carranza, Julian",
+     "person_id": "carrera-carranza-julian"
+    },
+    {
+     "nombre": "Davis, Blake Robert",
+     "person_id": "davis-robert-blake",
+     "match": "parcial"
+    },
+    {
+     "nombre": "FERNANDEZ DEL RIO, Alvaro",
+     "person_id": "fernandez-del-rio-alvaro"
+    },
+    {
+     "nombre": "Gil, Heriberto",
+     "person_id": "gil-delgado-heriberto",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Hennessey Klein, Patrick",
+     "person_id": "klein-patrick-hennesey",
+     "match": "alias"
+    },
+    {
+     "nombre": "Herrera Benzan, Adan Israel",
+     "person_id": "herrera-benzan-adan",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Lopez Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martin Calvo, Borja",
+     "person_id": "martin-calvo-borja"
+    },
+    {
+     "nombre": "Martin-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Moral Cacho, Enrique",
+     "person_id": "moral-cacho-enrique"
+    },
+    {
+     "nombre": "Perez Lardiez, Jorge",
+     "person_id": "perez-lardiez-jorge"
+    },
+    {
+     "nombre": "Perez Nuñez, Victor",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "Suarez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "VENEGAS LAMAMIE DE CLAIRAC, ALAN",
+     "person_id": "venegas-lamamie-de-clairac-alan"
+    },
+    {
+     "nombre": "Villaescusa Silva, Ivan",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2018",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Ficha_Equipo_MDL (1).pdf",
+     "jdm": 39,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 18
+    },
+    {
+     "fichero": "Inscripción MdL (1).pdf",
+     "jdm": null,
+     "torneo": 2019,
+     "metodo": "texto",
+     "n": 18
+    }
+   ],
+   "n": 18,
+   "personas": [
+    {
+     "nombre": "Alvarez Marquez, Ivan",
+     "person_id": "alvarez-marquez-ivan"
+    },
+    {
+     "nombre": "Ballesteros Fuentes, Roberto",
+     "person_id": "ballesteros-fuentes-roberto"
+    },
+    {
+     "nombre": "Bujaldon Rodríguez, Alejandro",
+     "person_id": "bujaldon-rodriguez-alejandro"
+    },
+    {
+     "nombre": "Calahorro Sanchez, Manuel",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "Castro Mayo, Henry Luis",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "Davis, Blake Robert",
+     "person_id": "davis-robert-blake",
+     "match": "parcial"
+    },
+    {
+     "nombre": "de Carvalho Rodrigues, Julio César",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "Gruppo, Samuel Henry",
+     "person_id": "gruppo-samuel-henry"
+    },
+    {
+     "nombre": "Martinez Martinez, Victor",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "Martinez Martinez, Andres",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "Martin-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Osaer, Dimitri",
+     "person_id": "osaer-dimitri"
+    },
+    {
+     "nombre": "Peco Ruiz, Alberto",
+     "person_id": "peco-ruiz-alberto"
+    },
+    {
+     "nombre": "Perez Nuñez, Raul",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Perez Lardiez, Jorge",
+     "person_id": "perez-lardiez-jorge"
+    },
+    {
+     "nombre": "Suarez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Vallesi, Daniele",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "Villaescusa Silva, Ivan",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2019",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "Ficha_Equipo_MDA (2).pdf",
+     "jdm": 40,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 13
+    }
+   ],
+   "n": 13,
+   "personas": [
+    {
+     "nombre": "Ballesteros Fuentes, Roberto",
+     "person_id": "ballesteros-fuentes-roberto"
+    },
+    {
+     "nombre": "Barreiro Carballal, Carlos",
+     "person_id": "barreiro-carballal-carlos-jose",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Bonetto Perez, Aram",
+     "person_id": "bonetto-aram",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Bujaldon Rodríguez, Alejandro",
+     "person_id": "bujaldon-rodriguez-alejandro"
+    },
+    {
+     "nombre": "Calvo Gonzalez, Santiago",
+     "person_id": "calvo-gonzalez-santiago"
+    },
+    {
+     "nombre": "Carrera Carranza, Julián",
+     "person_id": "carrera-carranza-julian"
+    },
+    {
+     "nombre": "Castro Mayo, Henry Luis",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "Gil, Heriberto",
+     "person_id": "gil-delgado-heriberto",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Lopez Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martin-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Moral Cacho, Enrique",
+     "person_id": "moral-cacho-enrique"
+    },
+    {
+     "nombre": "Perez Nuñez, Victor",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "Puertas Domingo, Carlos",
+     "person_id": "puertas-domingo-carlos"
+    }
+   ]
+  },
+  {
+   "anio": "2019",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Ficha_Equipo_MDL (2).pdf",
+     "jdm": 40,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 15
+    }
+   ],
+   "n": 15,
+   "personas": [
+    {
+     "nombre": "Calahorro Sanchez, Manuel",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "Castro Mayo, Henry Luis",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "de Carvalho Rodrigues, Julio César",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "Morali, Leonardo",
+     "person_id": "morali-leonardo"
+    },
+    {
+     "nombre": "Osaer, Dimitri",
+     "person_id": "osaer-dimitri"
+    },
+    {
+     "nombre": "Perez Lardiez, Jorge",
+     "person_id": "perez-lardiez-jorge"
+    },
+    {
+     "nombre": "Perez Nuñez, Victor",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "Perez Nuñez, Raul",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Porras Calzada, Jose Maria",
+     "person_id": "porras-calzada-jose-maria"
+    },
+    {
+     "nombre": "Robert Davis, Blake",
+     "person_id": "davis-robert-blake",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Suarez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Vallesi, Daniele",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "Varas Garcia, Luis Alberto",
+     "person_id": "varas-garcia-luis-alberto"
+    },
+    {
+     "nombre": "Victor Sánchez, Francisco",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "Villaescusa Silva, Ivan",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2020",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "Ficha_MDA.pdf",
+     "jdm": 41,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 14
+    }
+   ],
+   "n": 14,
+   "personas": [
+    {
+     "nombre": "Ballesteros Fuentes, Roberto",
+     "person_id": "ballesteros-fuentes-roberto"
+    },
+    {
+     "nombre": "Barreiro Carballal, Carlos José",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "Bonetto Perez, Aram",
+     "person_id": "bonetto-aram",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Bujaldon Rodríguez, Alejandro",
+     "person_id": "bujaldon-rodriguez-alejandro"
+    },
+    {
+     "nombre": "Calvo González, Santiago",
+     "person_id": "calvo-gonzalez-santiago"
+    },
+    {
+     "nombre": "Castillo Martínez, Javier",
+     "person_id": "castillo-martinez-javier"
+    },
+    {
+     "nombre": "Galán Domingo, Guillermo",
+     "person_id": "galan-domingo-guillermo"
+    },
+    {
+     "nombre": "Gil, Heriberto",
+     "person_id": "gil-delgado-heriberto",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Gil Fernandez, Jose Antonio",
+     "person_id": "gil-fernandez-jose-antonio"
+    },
+    {
+     "nombre": "López Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martínez Martínez, Victor",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "Martín-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Moral Cacho, Enrique",
+     "person_id": "moral-cacho-enrique"
+    },
+    {
+     "nombre": "Pérez Nuñez, Víctor",
+     "person_id": "perez-nunez-victor"
+    }
+   ]
+  },
+  {
+   "anio": "2020",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Ficha_MDL.pdf",
+     "jdm": 41,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 16
+    }
+   ],
+   "n": 16,
+   "personas": [
+    {
+     "nombre": "Barreiro Carballal, Carlos José",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "Calahorro Sánchez, Manuel",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "de Carvalho Rodrigues, Julio César",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "Gomez Pradal, Luis Alfonso",
+     "person_id": "gomez-pradal-luis",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Martinez Martinez, Andres",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "Mora-Gil Jiménez, Ramón",
+     "person_id": "mora-gil-jimenez-ramon"
+    },
+    {
+     "nombre": "Morali, Leonardo",
+     "person_id": "morali-leonardo"
+    },
+    {
+     "nombre": "Osaer, Dimitri",
+     "person_id": "osaer-dimitri"
+    },
+    {
+     "nombre": "Perez Nuñez, Raúl",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "Porras Calzada, José María",
+     "person_id": "porras-calzada-jose-maria"
+    },
+    {
+     "nombre": "Robert Davis, Blake",
+     "person_id": "davis-robert-blake",
+     "match": "parcial"
+    },
+    {
+     "nombre": "Suarez Cobos, Alejandro",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "Vallesi, Daniele",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "Varas García, Luis Alberto",
+     "person_id": "varas-garcia-luis-alberto"
+    },
+    {
+     "nombre": "Víctor Sánchez, Francisco",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "Villaescusa Silva, Iván",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2021",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "Hoja_MDA.pdf",
+     "jdm": 42,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 14
+    }
+   ],
+   "n": 14,
+   "personas": [
+    {
+     "nombre": "MARTIN-ORTEGA RICO, EDUARDO",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, RAUL",
+     "person_id": "perez-nunez-raul"
+    },
+    {
+     "nombre": "ABEL ESPINOSA, FERNANDO",
+     "person_id": "espinola-fernando-abel",
+     "match": "alias"
+    },
+    {
+     "nombre": "BONETTO, ARAM",
+     "person_id": "bonetto-aram"
+    },
+    {
+     "nombre": "BUJALDON RODRIGUEZ, ALEJANDRO",
+     "person_id": "bujaldon-rodriguez-alejandro"
+    },
+    {
+     "nombre": "CALVO GONZALEZ, SANTIAGO",
+     "person_id": "calvo-gonzalez-santiago"
+    },
+    {
+     "nombre": "CAMPOS HERNANDEZ, MIGUEL",
+     "person_id": "campos-hernandez-miguel"
+    },
+    {
+     "nombre": "CASTRO MOYA, HENRY",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "GALAN DOMINGO, GUILLERMO",
+     "person_id": "galan-domingo-guillermo"
+    },
+    {
+     "nombre": "GIL DELGADO, HERIBERTO SEGUNDO",
+     "person_id": "gil-delgado-heriberto",
+     "match": "parcial"
+    },
+    {
+     "nombre": "LOPEZ DE AYALA ALCANTARA, EDUARDO",
+     "person_id": "lopez-de-ayala-alcantara-eduardo"
+    },
+    {
+     "nombre": "LOPEZ LUCERO, ALFREDO DAVID",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "MORAL CACHO, ENRIQUE",
+     "person_id": "moral-cacho-enrique"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, VICTOR",
+     "person_id": "perez-nunez-victor"
+    }
+   ]
+  },
+  {
+   "anio": "2021",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Hoja_MDL.pdf",
+     "jdm": 42,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 17
+    }
+   ],
+   "n": 17,
+   "personas": [
+    {
+     "nombre": "BARREIRO CARBALLAL, CARLOS JOSE",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    },
+    {
+     "nombre": "CALAHORRO SANCHEZ, MANUEL",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "DE CARVALHO RODRIGUES, JULIO CESAR",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "DIAZ HERNANDEZ, JOSE IGNACIO",
+     "person_id": "diaz-hernandez-jose-ignacio"
+    },
+    {
+     "nombre": "HERRERA BENZAN, ADAN",
+     "person_id": "herrera-benzan-adan"
+    },
+    {
+     "nombre": "MARTINEZ, VICTOR",
+     "person_id": "martinez-martinez-victor",
+     "match": "parcial"
+    },
+    {
+     "nombre": "MORA-GIL JIMENEZ, RAMON",
+     "person_id": "mora-gil-jimenez-ramon"
+    },
+    {
+     "nombre": "MORALI, LEONARDO",
+     "person_id": "morali-leonardo"
+    },
+    {
+     "nombre": "PAZO PASCUAL, SANTIAGO",
+     "person_id": "pazo-pascual-santiago"
+    },
+    {
+     "nombre": "PECO RUIZ, ALBERTO",
+     "person_id": "peco-ruiz-alberto"
+    },
+    {
+     "nombre": "SUAREZ COBOS, ALEJANDRO",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "TEJEIRO PEREZ DE AGREDA, FERNANDO",
+     "person_id": "tejeiro-perez-de-agreda-fernando"
+    },
+    {
+     "nombre": "TRAVE DE LA VEGA, IGNACIO MANUEL",
+     "person_id": "trave-de-la-vega-ignacio-manuel"
+    },
+    {
+     "nombre": "VALLESI, DANIELE",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "VARAS GARCIA, LUIS ALBERTO",
+     "person_id": "varas-garcia-luis-alberto"
+    },
+    {
+     "nombre": "VICTOR SANCHEZ, FRANCISCO",
+     "person_id": "victor-sanchez-francisco"
+    }
+   ]
+  },
+  {
+   "anio": "2022",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "Ficha_MdA_Jon.pdf",
+     "jdm": 43,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 15
+    }
+   ],
+   "n": 15,
+   "personas": [
+    {
+     "nombre": "GALAN DOMINGO, GUILLERMO",
+     "person_id": "galan-domingo-guillermo"
+    },
+    {
+     "nombre": "MARTIN-ORTEGA RICO, EDUARDO",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "CALVO GONZALEZ, SANTIAGO",
+     "person_id": "calvo-gonzalez-santiago"
+    },
+    {
+     "nombre": "CAMPOS HERNANDEZ, MIGUEL",
+     "person_id": "campos-hernandez-miguel"
+    },
+    {
+     "nombre": "CASTRO MOYA, HENRY",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "ESTEBAN, JON",
+     "person_id": "esteban-jon"
+    },
+    {
+     "nombre": "HERNANDEZ FAURA, JORGE",
+     "person_id": "hernandez-faura-jorge"
+    },
+    {
+     "nombre": "HERRERA BENZAN, ADAN",
+     "person_id": "herrera-benzan-adan"
+    },
+    {
+     "nombre": "MENDEZ ESCANDON, FERNANDO ANTONIO",
+     "person_id": "mendez-escandon-fernando",
+     "match": "parcial"
+    },
+    {
+     "nombre": "PERCHIN GARCIA, JAVIER",
+     "person_id": "perchin-garcia-javier"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, VICTOR",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "RAUSSE, LUKAS",
+     "person_id": "rausse-lukas"
+    },
+    {
+     "nombre": "SANCHEZ HERRERO, RAFAEL",
+     "person_id": "sanchez-herrero-rafael"
+    },
+    {
+     "nombre": "VALLESI, DANIELE",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "VILLA GUERRERO, EDWIN",
+     "person_id": "villa-guerrero-edwin"
+    }
+   ]
+  },
+  {
+   "anio": "2022",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "MdL_NACHO.pdf",
+     "jdm": 43,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 17
+    }
+   ],
+   "n": 17,
+   "personas": [
+    {
+     "nombre": "BARREIRO CARBALLAL, CARLOS JOSE",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    },
+    {
+     "nombre": "CALAHORRO SANCHEZ, MANUEL",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "DE CARVALHO RODRIGUES, JULIO CESAR",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "FERRANDO DEL RINCON, IGNACIO",
+     "person_id": "ferrando-del-rincon-ignacio"
+    },
+    {
+     "nombre": "LOPEZ DE AYALA ALCANTARA, EDUARDO",
+     "person_id": "lopez-de-ayala-alcantara-eduardo"
+    },
+    {
+     "nombre": "LOPEZ LUCERO, ALFREDO DAVID",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "MARTINEZ MARTINEZ, VICTOR",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "MORALI, LEONARDO",
+     "person_id": "morali-leonardo"
+    },
+    {
+     "nombre": "ORTEGA DELGADO, PABLO",
+     "person_id": "ortega-delgado-pablo"
+    },
+    {
+     "nombre": "PAZO PASCUAL, SANTIAGO",
+     "person_id": "pazo-pascual-santiago"
+    },
+    {
+     "nombre": "PECO RUIZ, ALBERTO",
+     "person_id": "peco-ruiz-alberto"
+    },
+    {
+     "nombre": "RANZ CASADO, JORGE",
+     "person_id": "ranz-casado-jorge"
+    },
+    {
+     "nombre": "SUAREZ COBOS, ALEJANDRO",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "TEJEIRO PEREZ DE AGREDA, FERNANDO",
+     "person_id": "tejeiro-perez-de-agreda-fernando"
+    },
+    {
+     "nombre": "VARAS GARCIA, LUIS ALBERTO",
+     "person_id": "varas-garcia-luis-alberto"
+    },
+    {
+     "nombre": "VICTOR SANCHEZ, FRANCISCO",
+     "person_id": "victor-sanchez-francisco"
+    }
+   ]
+  },
+  {
+   "anio": "2023",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "MdA con doblajes (1).pdf",
+     "jdm": 44,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 16
+    }
+   ],
+   "n": 16,
+   "personas": [
+    {
+     "nombre": "GALAN DOMINGO, GUILLERMO",
+     "person_id": "galan-domingo-guillermo"
+    },
+    {
+     "nombre": "MARTIN-ORTEGA RICO, EDUARDO",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "CALVO GONZALEZ, SANTIAGO",
+     "person_id": "calvo-gonzalez-santiago"
+    },
+    {
+     "nombre": "CASTRO MOYA, HENRY",
+     "person_id": "castro-moya-henry-luis",
+     "match": "alias"
+    },
+    {
+     "nombre": "ESTEBAN, JON",
+     "person_id": "esteban-jon"
+    },
+    {
+     "nombre": "JORBA LÓPEZ, SERGI",
+     "person_id": "jorba-lopez-sergi"
+    },
+    {
+     "nombre": "MENDEZ ESCANDON, FERNANDO ANTONIO",
+     "person_id": "mendez-escandon-fernando",
+     "match": "parcial"
+    },
+    {
+     "nombre": "ORTEGA DELGADO, PABLO",
+     "person_id": "ortega-delgado-pablo"
+    },
+    {
+     "nombre": "PERCHIN GARCIA, JAVIER",
+     "person_id": "perchin-garcia-javier"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, VICTOR",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "RAUSSE, LUKAS",
+     "person_id": "rausse-lukas"
+    },
+    {
+     "nombre": "ROMERO BARRUECO, ALONSO",
+     "person_id": "romero-barrueco-alonso"
+    },
+    {
+     "nombre": "SANCHEZ HERRERO, RAFAEL",
+     "person_id": "sanchez-herrero-rafael"
+    },
+    {
+     "nombre": "VALLESI, DANIELE",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "VILLA GUERRERO, EDWIN",
+     "person_id": "villa-guerrero-edwin"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2023",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "Ficha MDL 2023 Completa.pdf",
+     "jdm": 44,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 15
+    }
+   ],
+   "n": 15,
+   "personas": [
+    {
+     "nombre": "BARREIRO CARBALLAL, CARLOS JOSE",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "BUJALDON RODRIGUEZ, ALEJANDRO",
+     "person_id": "bujaldon-rodriguez-alejandro"
+    },
+    {
+     "nombre": "CALAHORRO SANCHEZ, MANUEL",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "DE CARVALHO RODRIGUES, JULIO CESAR",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "FERRANDO DEL RINCON, IGNACIO",
+     "person_id": "ferrando-del-rincon-ignacio"
+    },
+    {
+     "nombre": "LOPEZ LUCERO, ALFREDO DAVID",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "MARTINEZ MARTINEZ, VICTOR",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "MORALI, LEONARDO",
+     "person_id": "morali-leonardo"
+    },
+    {
+     "nombre": "ORTEGA DELGADO, PABLO",
+     "person_id": "ortega-delgado-pablo"
+    },
+    {
+     "nombre": "PAZO PASCUAL, SANTIAGO",
+     "person_id": "pazo-pascual-santiago"
+    },
+    {
+     "nombre": "SUAREZ COBOS, ALEJANDRO",
+     "person_id": "suarez-cobos-alejandro"
+    },
+    {
+     "nombre": "TEJEIRO PEREZ DE AGREDA, FERNANDO",
+     "person_id": "tejeiro-perez-de-agreda-fernando"
+    },
+    {
+     "nombre": "VARAS GARCIA, LUIS ALBERTO",
+     "person_id": "varas-garcia-luis-alberto"
+    },
+    {
+     "nombre": "VICTOR SANCHEZ, FRANCISCO",
+     "person_id": "victor-sanchez-francisco"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2024",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "MdA con Alex.pdf",
+     "jdm": 45,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 19
+    }
+   ],
+   "n": 19,
+   "personas": [
+    {
+     "nombre": "GALAN DOMINGO, GUILLERMO",
+     "person_id": "galan-domingo-guillermo"
+    },
+    {
+     "nombre": "MARTIN-ORTEGA RICO, EDUARDO",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "BUJALDON RODRIGUEZ, ALEJANDRO",
+     "person_id": "bujaldon-rodriguez-alejandro"
+    },
+    {
+     "nombre": "CALVO GONZALEZ, SANTIAGO",
+     "person_id": "calvo-gonzalez-santiago"
+    },
+    {
+     "nombre": "ESTEBAN, JON",
+     "person_id": "esteban-jon"
+    },
+    {
+     "nombre": "HERNANDEZ FAURA, JORGE",
+     "person_id": "hernandez-faura-jorge"
+    },
+    {
+     "nombre": "JORBA LÓPEZ, SERGI",
+     "person_id": "jorba-lopez-sergi"
+    },
+    {
+     "nombre": "MENDEZ ESCANDON, FERNANDO ANTONIO",
+     "person_id": "mendez-escandon-fernando",
+     "match": "parcial"
+    },
+    {
+     "nombre": "MILEO, IGNACIO AGUSTIN",
+     "person_id": "mileo-ignacio-agustin"
+    },
+    {
+     "nombre": "PERCHIN GARCIA, JAVIER",
+     "person_id": "perchin-garcia-javier"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, VICTOR",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "RAUSSE, LUKAS",
+     "person_id": "rausse-lukas"
+    },
+    {
+     "nombre": "RODRIGUEZ PEREZ, IVAN",
+     "person_id": "rodriguez-perez-ivan"
+    },
+    {
+     "nombre": "ROMERO BARRUECO, ALONSO",
+     "person_id": "romero-barrueco-alonso"
+    },
+    {
+     "nombre": "SANCHEZ HERRERO, RAFAEL",
+     "person_id": "sanchez-herrero-rafael"
+    },
+    {
+     "nombre": "VALLESI, DANIELE",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "VILLA GUERRERO, EDWIN",
+     "person_id": "villa-guerrero-edwin"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    },
+    {
+     "nombre": "YAMIN SQUICCIARINI, NICOLÁS",
+     "person_id": "yamin-squicciarini-nicolas"
+    }
+   ]
+  },
+  {
+   "anio": "2024",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "MdL 2025.pdf",
+     "jdm": 45,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 10
+    }
+   ],
+   "n": 10,
+   "personas": [
+    {
+     "nombre": "BARREIRO CARBALLAL, CARLOS JOSE",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    },
+    {
+     "nombre": "BUJALDON RODRIGUEZ, ALEJANDRO",
+     "person_id": "bujaldon-rodriguez-alejandro"
+    },
+    {
+     "nombre": "CALAHORRO SANCHEZ, MANUEL",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "DE CARVALHO RODRIGUES, JULIO CESAR",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "LOPEZ LUCERO, ALFREDO DAVID",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "MARTINEZ MARTINEZ, VICTOR",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "MILEO, IGNACIO AGUSTIN",
+     "person_id": "mileo-ignacio-agustin"
+    },
+    {
+     "nombre": "TEJEIRO PEREZ DE AGREDA, FERNANDO",
+     "person_id": "tejeiro-perez-de-agreda-fernando"
+    },
+    {
+     "nombre": "VARAS GARCIA, LUIS ALBERTO",
+     "person_id": "varas-garcia-luis-alberto"
+    }
+   ]
+  },
+  {
+   "anio": "2025",
+   "equipo": "MdA",
+   "hojas": [
+    {
+     "fichero": "MdA con Lukas (1).pdf",
+     "jdm": 46,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 22
+    }
+   ],
+   "n": 22,
+   "personas": [
+    {
+     "nombre": "BARREIRO CARBALLAL, CARLOS JOSE",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "MARTIN-ORTEGA RICO, EDUARDO",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    },
+    {
+     "nombre": "BAÑOS GALLEGO, CARLOS",
+     "person_id": "banos-gallego-carlos"
+    },
+    {
+     "nombre": "CALAHORRO SANCHEZ, MANUEL",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "DE CARVALHO RODRIGUES, JULIO CESAR",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "DE MARIA SANCHEZ, JAIME",
+     "person_id": "de-maria-sanchez-jaime"
+    },
+    {
+     "nombre": "ESTEBAN, JON",
+     "person_id": "esteban-jon"
+    },
+    {
+     "nombre": "GIANATTI, ADRIANO",
+     "person_id": "gianatti-adriano"
+    },
+    {
+     "nombre": "HERNANDEZ FAURA, JORGE",
+     "person_id": "hernandez-faura-jorge"
+    },
+    {
+     "nombre": "JORBA LÓPEZ, SERGI",
+     "person_id": "jorba-lopez-sergi"
+    },
+    {
+     "nombre": "LOPEZ LUCERO, ALFREDO DAVID",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "MARTINEZ MARTINEZ, ANDRES",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "MARTINEZ MARTINEZ, VICTOR",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "MENDEZ ESCANDON, FERNANDO ANTONIO",
+     "person_id": "mendez-escandon-fernando",
+     "match": "parcial"
+    },
+    {
+     "nombre": "MILEO, IGNACIO AGUSTIN",
+     "person_id": "mileo-ignacio-agustin"
+    },
+    {
+     "nombre": "ORTEGA DELGADO, PABLO",
+     "person_id": "ortega-delgado-pablo"
+    },
+    {
+     "nombre": "PERCHIN GARCIA, JAVIER",
+     "person_id": "perchin-garcia-javier"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, VICTOR",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "RAUSSE, LUKAS",
+     "person_id": "rausse-lukas"
+    },
+    {
+     "nombre": "VALLESI, DANIELE",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "YAMIN SQUICCIARINI, NICOLÁS",
+     "person_id": "yamin-squicciarini-nicolas"
+    }
+   ]
+  },
+  {
+   "anio": "2025",
+   "equipo": "MdL",
+   "hojas": [
+    {
+     "fichero": "MdL con todos.pdf",
+     "jdm": 46,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 21
+    }
+   ],
+   "n": 21,
+   "personas": [
+    {
+     "nombre": "BARREIRO CARBALLAL, CARLOS JOSE",
+     "person_id": "barreiro-carballal-carlos-jose"
+    },
+    {
+     "nombre": "DE CARVALHO RODRIGUES, JULIO CESAR",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "VILLAESCUSA SILVA, IVAN",
+     "person_id": "villaescusa-silva-ivan"
+    },
+    {
+     "nombre": "CALAHORRO SANCHEZ, MANUEL",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "ESTEBAN, JON",
+     "person_id": "esteban-jon"
+    },
+    {
+     "nombre": "GIANATTI, ADRIANO",
+     "person_id": "gianatti-adriano"
+    },
+    {
+     "nombre": "JORBA LÓPEZ, SERGI",
+     "person_id": "jorba-lopez-sergi"
+    },
+    {
+     "nombre": "LOPEZ LUCERO, ALFREDO DAVID",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "MARTINEZ MARTINEZ, ANDRES",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "MARTINEZ MARTINEZ, VICTOR",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "MARTIN-ORTEGA RICO, EDUARDO",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "MENDEZ ESCANDON, FERNANDO ANTONIO",
+     "person_id": "mendez-escandon-fernando",
+     "match": "parcial"
+    },
+    {
+     "nombre": "MILEO, IGNACIO AGUSTIN",
+     "person_id": "mileo-ignacio-agustin"
+    },
+    {
+     "nombre": "PERCHIN GARCIA, JAVIER",
+     "person_id": "perchin-garcia-javier"
+    },
+    {
+     "nombre": "PEREZ NUÑEZ, VICTOR",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "ROGAIA, SAMUELE",
+     "person_id": "rogaia-samuele"
+    },
+    {
+     "nombre": "ROMERO BARRUECO, ALONSO",
+     "person_id": "romero-barrueco-alonso"
+    },
+    {
+     "nombre": "TEJEIRO PEREZ DE AGREDA, FERNANDO",
+     "person_id": "tejeiro-perez-de-agreda-fernando"
+    },
+    {
+     "nombre": "VALLESI, DANIELE",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "VARAS GARCIA, LUIS ALBERTO",
+     "person_id": "varas-garcia-luis-alberto"
+    },
+    {
+     "nombre": "YAMIN SQUICCIARINI, NICOLÁS",
+     "person_id": "yamin-squicciarini-nicolas"
+    }
+   ]
+  }
+ ],
+ "descartadas": [
+  {
+   "anio": "2017",
+   "equipo": "MdA",
+   "fichero": "Hoja De inscripción Maccabi de Acostar (1).pdf",
+   "n": 15,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  },
+  {
+   "anio": "2019",
+   "equipo": "MdA",
+   "fichero": "Hoja MdA (1).pdf",
+   "n": 10,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  },
+  {
+   "anio": "2018",
+   "equipo": "MdA",
+   "fichero": "Hoja MdA.pdf",
+   "n": 16,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  },
+  {
+   "anio": "2019",
+   "equipo": "MdL",
+   "fichero": "Hoja MdL (1).pdf",
+   "n": 9,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  },
+  {
+   "anio": "2018",
+   "equipo": "MdL",
+   "fichero": "Hoja MdL.pdf",
+   "n": 17,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  },
+  {
+   "anio": "2015",
+   "equipo": "MdL",
+   "fichero": "Hoja_2015-2016 (1).pdf",
+   "n": 15,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  },
+  {
+   "anio": "2018",
+   "equipo": "MdA",
+   "fichero": "Inscripción MdA 2.pdf",
+   "n": 14,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  },
+  {
+   "anio": "2018",
+   "equipo": "MdA",
+   "fichero": "Inscripción MdA 3 (1).pdf",
+   "n": 18,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  },
+  {
+   "anio": "2018",
+   "equipo": "MdL",
+   "fichero": "Inscripción MdL (2).pdf",
+   "n": 13,
+   "motivo": "otra hoja del mismo año y equipo tiene más jugadores"
+  }
+ ],
+ "ilegibles": [],
+ "sin_identificar": []
+}

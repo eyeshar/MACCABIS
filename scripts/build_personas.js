@@ -41,6 +41,13 @@ const ALIAS = {
   'martinez-victor': 'martinez-martinez-victor',
   // El acta de 25/26 recoge el nombre legal completo ("Fernando Antonio").
   'mendez-escandon-fernando-antonio': 'mendez-escandon-fernando',
+  // Erratas de nombre corregidas el 04/08/2026 (confirmadas por Iván). Se mantienen
+  // como alias para que cualquier enlace antiguo siga resolviendo.
+  'castro-mayo-henry-luis': 'castro-moya-henry-luis',
+  'mar-calvo-borja': 'martin-calvo-borja',
+  // El "Alejandro" que la matriz tenía como solo_mote ('el de Alicante', 2017) resultó
+  // ser la persona que las hojas de 2017 registran con nombre formal.
+  'alejandro': 'hernandez-gomez-alejandro',
 };
 const canon = id => ALIAS[id] || id;
 

@@ -13,6 +13,11 @@
 4. **Dos Víctor distintos**: 'Wall' = Víctor Pérez Núñez; 'Víctor' = Víctor Martínez Martínez (en 21/22 la tabla lo escribía sólo como "Martínez, Víctor"; unificado el 04/08/2026 al nombre completo para que sea una única identidad).
 5. **Dos Iván en 24/25**: 'Iván V.' = Villaescusa; 'Iván Rodríguez' = Rodríguez Pérez (NO es el capitán).
 
+## Correcciones de nombre aplicadas
+
+- **04/08/2026** — "Castro Mayo, Henry Luis" era errata: el nombre correcto es **"Castro Moya, Henry Luis"** (confirmado por Iván; así consta en las hojas de inscripción recientes).
+- **04/08/2026** — "Mar Calvo, Borja" era errata: el correcto es **"Martín Calvo, Borja"** (confirmado por Iván, aunque la hoja de 2015 escriba "Mar Calvo").
+
 ## ⚠️ Único cabo suelto pendiente
 
 - **Ignacio Mateos Aparicio** ('Nacho S.', temporadas 23/24 y 24/25): identificado por nombre, pero NO aparece en las fichas MdL disponibles. Verificar en qué ficha/equipo (¿MdA?) consta antes de dar por buena la regla 'nadie juega sin ficha'.
@@ -31,7 +36,7 @@
 | `Juan` | Díaz-Iglesias Aguilar, Juan |
 | `Leo` | Morali, Leonardo |
 | `Álvaro` | Fernández del Río, Álvaro |
-| `Henry` | Castro Mayo, Henry Luis |
+| `Henry` | Castro Moya, Henry Luis |
 | `Santi` | Calvo González, Santiago |
 | `David` | López Lucero, Alfredo David |
 | `Patrick` | Klein, Patrick Hennesey |
@@ -74,7 +79,7 @@
 | `Santi` | Calvo González, Santiago |
 | `Edu` | Martín-Ortega Rico, Eduardo |
 | `Patrick` | Klein, Patrick Hennesey |
-| `Borja` | Mar Calvo, Borja |
+| `Borja` | Martín Calvo, Borja |
 | `Raúl` | Pérez Núñez, Raúl |
 | `NS (coach)` | [NO IDENTIFICADO] |
 
@@ -96,9 +101,9 @@
 | `Fernando` | Tejeiro Pérez de Agreda, Fernando |
 | `Eric` | [NO IDENTIFICADO — jugador de paso, sin apellido] |
 | `Paco` | Víctor Sánchez, Francisco |
-| `Henry` | Castro Mayo, Henry Luis |
+| `Henry` | Castro Moya, Henry Luis |
 | `Adán` | Herrera Benzán, Adán |
-| `Borja` | Mar Calvo, Borja |
+| `Borja` | Martín Calvo, Borja |
 | `Wall` | Pérez Núñez, Víctor |
 | `Alejandro` | Suárez Cobos, Alejandro |
 | `Diego` | Cuadrado Mariñas, Diego |
@@ -126,7 +131,7 @@
 | `Julián` | Carrera Carranza, Julián |
 | `Álvaro` | Fernández del Río, Álvaro |
 | `Wall` | Pérez Núñez, Víctor |
-| `Henry` | Castro Mayo, Henry Luis |
+| `Henry` | Castro Moya, Henry Luis |
 | `NS` | [NO IDENTIFICADO] |
 
 ### 2019/20
@@ -140,7 +145,7 @@
 | `Roberto` | Ballesteros Fuentes, Roberto |
 | `Aram` | Bonetto, Aram |
 | `Edu` | Martín-Ortega Rico, Eduardo |
-| `Henry` | Castro Mayo, Henry Luis |
+| `Henry` | Castro Moya, Henry Luis |
 | `David` | López Lucero, Alfredo David |
 | `Santi` | Pazo Pascual, Santiago |
 | `Lonchas` | [NO IDENTIFICADO — 'Carlos', jugador de paso] |
@@ -277,7 +282,7 @@
 | `J. Perchín` | Perchín García, Javier |
 | `Iván` | Villaescusa Silva, Iván |
 | `Pablo` | Ortega Delgado, Pablo |
-| `Henry` | Castro Mayo, Henry Luis |
+| `Henry` | Castro Moya, Henry Luis |
 | `Santi` | Pazo Pascual, Santiago |
 
 ### 2024/25 (MdA)

@@ -32,6 +32,37 @@
 - [ ] **Recuperar, si existen, las actas de los partidos sin estadística individual**: 15/16 (5, 11, 18) y 21/22 (10 al 18).
 - [ ] **Enriquecer las históricas** si aparecen las fuentes: fechas de partido, dorsales, parciales por cuarto del MdL y asistencia. Hoy no existen y por eso esas columnas y pestañas ni se muestran.
 
+## Rivales y clasificaciones desde datos abiertos (JDM)
+
+Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madrid
+(licencia CC BY 4.0, republicable citando la fuente). Cubre **10 temporadas**: 2014/15,
+2015/16, 2016/17, 2017/18, 2018/19, 2020/21, 2021/22, 2022/23, 2023/24 y 2024/25.
+
+- [ ] **DECIDIR el criterio de identificación del club — BLOQUEA la descarga masiva.** La
+  Fase 0 (04/08/2026, ver `docs/SONDEO_JDM_FASE0.md`) confirmó que el dataset **sí trae
+  nuestros partidos** (8 de 8 jornadas de 2014/15 coinciden en rival y marcador exacto con el
+  histórico propio), pero **no hay identificador estable de club**: el nombre tiene más de 8
+  variantes y el `Codigo_equipo` cambia por temporada y por inscripción. Dos ambigüedades
+  concretas a resolver:
+  - **2014/15**: existe un club RIVAL llamado `MACCABI` (#95466) que un filtro por nombre
+    capturaría como si fuera nuestro.
+  - **2020/21**: tres equipos con 14 partidos (`MDL`, `MDA` y `MACCABI DE LEVANTAR`) y no se
+    sabe cuál es cuál.
+  - Propuesta pendiente de luz verde: validar cada código candidato contra el histórico propio
+    (rival + marcador). Implica cruzar con `season_*.json`, que el bloque de sondeo prohibía.
+- [ ] **Partidos de rivales (Fases 1 y 2)**: descargar y filtrar las 10 temporadas y guardar
+  una fuente nueva e independiente (`data/rivales_jdm.json`). En espera de la decisión anterior.
+- [ ] **Clasificaciones**: no se han tocado en el sondeo. Criterio ya acordado: la clasificación
+  **de la fase donde acabó Maccabi** cada año. Los recursos de clasificaciones del dataset son
+  los n impares (1, 5, 9, 13, 16, 20, 24, 28, 32).
+- [ ] **Cruzar la fuente JDM con el histórico propio** (`season_*.json`, `personas.json`, la
+  matriz): bloque futuro, sólo cuando la fuente JDM esté cerrada.
+- [ ] **Tapar 2013/14, 2019/20 y 2025/26 desde las actas propias**: no están en el histórico
+  del portal (2025/26 vive en el dataset 211549 de temporada en curso).
+- [ ] **Vía de cruce descubierta**: el `Nº EQUIPO` de las hojas de inscripción es el
+  `Codigo_equipo` de este dataset (verificado con #119823 y #120202 de Torneos 2017). Sirve
+  para enlazar hojas y partidos sin depender del nombre.
+
 ## Siguiente (bloque 2: historia del club)
 
 - [x] **Datos de la Historia integrados, reconciliados y completados** — HECHO (04/08/2026, rama `feat/historia-club-datos`): `data/historia_club.json` (80 personas), `data/personas.json` (registro único de identidades) y `data/fichas_inscripcion.json` (21 hojas oficiales cruzadas).

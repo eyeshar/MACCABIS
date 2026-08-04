@@ -2,7 +2,16 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 04/08/2026 — bloque "cierre de datos de la Historia" (rama `feat/historia-club-datos`, sin mergear). **Los datos de la Historia quedan cerrados; falta el diseño visual.**_
+_Última actualización: 04/08/2026 — bloque "interfaz de la Historia" (rama `feat/historia-club-ui`, sin mergear)._
+
+### Interfaz de la Historia: pestaña "El Club" (rama `feat/historia-club-ui`)
+- **Transversal a las temporadas**: se carga una vez desde `data/personas.json` y `data/historia_club.json`; no depende del selector ni lo altera.
+- **Rejilla maestra**: 84 personas × 13 temporadas + la 26/27 prevista. Cada trayectoria es una barra continua; naranja = temporada con estadísticas, morado = sólo presencia. Cabecera y columna de nombre fijas, agrupación por tramos de veteranía, buscador y filtro con/sin estadísticas. Entrenador en sección propia.
+- **Tira temporal**: una tarjeta por temporada con plantilla, altas y bajas. La 26/27 aparte, marcada como no empezada.
+- **Ficha de persona**: al pinchar una fila. Temporadas, debut, veteranía y presencia año a año.
+- **Puente con las estadísticas**: desde la ficha, las temporadas con datos cargan esa temporada y abren la ficha de jugador de esa persona (enlace por `person_id`). También por URL: `?t=2023-24&p=jugador&j=<person_id>`.
+- Sin librerías nuevas y sin almacenamiento del navegador. Las demás pestañas quedan intactas.
+- **Pendiente conocido**: el dashboard tiene desbordamiento horizontal en pantallas estrechas. **Es previo a este bloque** (se reproduce igual en la versión anterior); la rejilla de la Historia lleva su propio scroll contenido.
 
 ## Repositorio y publicación
 

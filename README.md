@@ -4,14 +4,19 @@ Panel de estadísticas del club Maccabis (JDM Distrito Moratalaz), temporada a t
 
 ## Cómo se ve
 Abre la URL de GitHub Pages. El panel tiene pestañas de Equipo, Jugadores, Ficha de jugador,
-Rankings, Por cuartos, Asistencia y MdA, con selector de temporada arriba.
+Rankings, Por cuartos, Asistencia, MdA y **El Club**, con selector de temporada arriba.
 
 Hay **11 temporadas**: de 2013/14 a 2025/26 (no existen datos de 16/17 ni de 22/23).
 Cada temporada muestra **sólo las métricas que la liga registraba ese año**: antes de
 2023/24 no hay minutos, y nunca hubo valoración, +/−, intentos de tiro de campo, fechas
 ni parciales por cuarto del MdL. Esas columnas y pestañas no se pintan vacías: se ocultan.
 
-Puedes enlazar a una temporada y pestaña concretas: `index.html?t=2013-14&p=jugadores`.
+La pestaña **El Club** es transversal a las temporadas: la rejilla de quién ha pasado por el club
+(2013/14 → 25/26 más la 26/27 prevista), la evolución temporada a temporada con altas y bajas, y la
+ficha de cada persona. Desde la ficha se salta a sus estadísticas del año que elijas.
+
+Puedes enlazar a una temporada y pestaña concretas: `index.html?t=2013-14&p=jugadores`, y a la ficha
+de una persona: `index.html?t=2023-24&p=jugador&j=villaescusa-silva-ivan`.
 
 ## Estructura del repositorio
 - `index.html` — el panel (código; no se toca salvo mejoras de diseño).

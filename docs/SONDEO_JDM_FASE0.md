@@ -180,7 +180,10 @@ el histórico propio, no había forma de saberlo desde el dataset.
   El tercer equipo, **#149233 "MACCABI DE LEVANTAR", NO es nuestro** (0 de 13 marcadores
   coinciden con el histórico propio).
 - **Las dos hojas de Torneos 2017 eran dos torneos distintos**: `#119823` jugó en **Vicálvaro**
-  (3 partidos) y `#120202` en **Moratalaz** (3 partidos). Eso explica los dos Nº EQUIPO y
-  confirma que filtrar por distrito habría perdido partidos de torneo.
+  (CDM Valdebernardo, vs Sáinz de Vicuña B / Amazonia / VBA) y `#120202` en **Moratalaz**
+  (vs Inmsershore / Mistery Men / Fontarrón), los mismos tres días de 2017. Eso explica los dos
+  Nº EQUIPO y confirma que filtrar por distrito habría perdido partidos de torneo. Corrige la
+  descripción que el bloque de la Historia había dado ("misma competición, hoja más corta"):
+  la plantilla sí se solapaba, pero las competiciones eran distintas.
 - **El MdA no se puede validar por marcador** en las temporadas antiguas: el histórico propio
   sólo trae partido a partido del MdL. Se acepta por nombre inequívoco dentro de Moratalaz.

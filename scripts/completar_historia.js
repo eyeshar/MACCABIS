@@ -65,9 +65,13 @@ for (const s of seasons) {
 }
 
 // ---------------------------------------------------------------- 2) fichas oficiales
+// Todas las hojas se aplican, incluidas las de torneo. Antes había aquí un filtro
+// `if (!f.aplicable) continue` heredado de D18, cuando el año de un torneo se
+// consideraba ambiguo. D19 lo resolvió (un torneo cierra la temporada que termina ese
+// año, y liga y torneo suman plantilla), así que consolidar_fichas.js ya no marca
+// ninguna hoja como inaplicable y el filtro sólo servía para excluir 2016/17.
 if (fichas) {
   for (const f of fichas.fichas) {
-    if (!f.aplicable) continue;                    // torneos: año ambiguo
     for (const p of f.personas) {
       if (!p.person_id) continue;                  // nombre sin identificar: no se inventa
       if (p.match === 'dudoso') continue;          // parecido insuficiente: sólo se reporta

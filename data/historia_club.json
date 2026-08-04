@@ -80,6 +80,30 @@
    "es_entrenador": false
   },
   {
+   "person_id": "barreiro-carballal-carlos-jose",
+   "formal": "Barreiro Carballal, Carlos José",
+   "display": "Carlos José Barreiro Carballal",
+   "temporadas_jugadas": [
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "n_temporadas": 13,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": true
+  },
+  {
    "person_id": "villaescusa-silva-ivan",
    "formal": "Villaescusa Silva, Iván",
    "display": "Iván Villaescusa Silva",
@@ -102,29 +126,6 @@
    "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false
-  },
-  {
-   "person_id": "barreiro-carballal-carlos-jose",
-   "formal": "Barreiro Carballal, Carlos José",
-   "display": "Carlos José Barreiro Carballal",
-   "temporadas_jugadas": [
-    "2013",
-    "2014",
-    "2015",
-    "2017",
-    "2018",
-    "2019",
-    "2020",
-    "2021",
-    "2022",
-    "2023",
-    "2024",
-    "2025"
-   ],
-   "n_temporadas": 12,
-   "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": true
   },
   {
    "person_id": "martin-ortega-rico-eduardo",
@@ -449,6 +450,23 @@
    "es_entrenador": false
   },
   {
+   "person_id": "moral-cacho-enrique",
+   "formal": "Moral Cacho, Enrique",
+   "display": "Enrique Moral Cacho",
+   "temporadas_jugadas": [
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021"
+   ],
+   "n_temporadas": 6,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
    "person_id": "klein-patrick-hennesey",
    "formal": "Klein, Patrick Hennesey",
    "display": "Patrick Hennesey Klein",
@@ -494,22 +512,6 @@
    ],
    "n_temporadas": 5,
    "previsto_2627": true,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "moral-cacho-enrique",
-   "formal": "Moral Cacho, Enrique",
-   "display": "Enrique Moral Cacho",
-   "temporadas_jugadas": [
-    "2017",
-    "2018",
-    "2019",
-    "2020",
-    "2021"
-   ],
-   "n_temporadas": 5,
-   "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -560,6 +562,23 @@
    "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
+  },
+  {
+   "person_id": "ballesteros-fuentes-roberto",
+   "formal": "Ballesteros Fuentes, Roberto",
+   "display": "Roberto Ballesteros Fuentes",
+   "temporadas_jugadas": [
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020"
+   ],
+   "n_temporadas": 5,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "La matriz lo escribía \"Robert\"; unificado a \"Roberto\", que es la forma del diccionario de nombres (fichas FBM/JDM). Sus 3 temporadas (2018-2020) coinciden exactamente con sus 3 fichas de estadísticas."
   },
   {
    "person_id": "venegas-lamamie-de-clairac-alan",
@@ -728,6 +747,21 @@
    "es_entrenador": false
   },
   {
+   "person_id": "carrera-carranza-julian",
+   "formal": "Carrera Carranza, Julián",
+   "display": "Julián Carrera Carranza",
+   "temporadas_jugadas": [
+    "2016",
+    "2017",
+    "2018",
+    "2019"
+   ],
+   "n_temporadas": 4,
+   "previsto_2627": false,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
    "person_id": "rausse-lukas",
    "formal": "Rausse, Lukas",
    "display": "Lukas Rausse",
@@ -741,22 +775,6 @@
    "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false
-  },
-  {
-   "person_id": "ballesteros-fuentes-roberto",
-   "formal": "Ballesteros Fuentes, Roberto",
-   "display": "Roberto Ballesteros Fuentes",
-   "temporadas_jugadas": [
-    "2017",
-    "2018",
-    "2019",
-    "2020"
-   ],
-   "n_temporadas": 4,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false,
-   "nota": "La matriz lo escribía \"Robert\"; unificado a \"Roberto\", que es la forma del diccionario de nombres (fichas FBM/JDM). Sus 3 temporadas (2018-2020) coinciden exactamente con sus 3 fichas de estadísticas."
   },
   {
    "person_id": "bonetto-aram",
@@ -836,20 +854,6 @@
     "2013",
     "2014",
     "2015"
-   ],
-   "n_temporadas": 3,
-   "previsto_2627": false,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
-   "person_id": "carrera-carranza-julian",
-   "formal": "Carrera Carranza, Julián",
-   "display": "Julián Carrera Carranza",
-   "temporadas_jugadas": [
-    "2017",
-    "2018",
-    "2019"
    ],
    "n_temporadas": 3,
    "previsto_2627": false,

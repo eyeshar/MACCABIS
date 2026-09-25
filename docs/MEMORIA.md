@@ -9,12 +9,14 @@
 - **MdA** — Maccabi de Acostar (creado después). Grupo G3 (6 JDM MOR DOM MAÑ BC SEN MAS G3).
 - **En 2026/27 (47 JDM) cambian los grupos:** MdA en **G1** (`3 JDM MOR DOM MAÑ BC SEN MAS G1`) y MdL en **G2** (`4 JDM MOR DOM MAÑ BC SEN MAS G2`). Confirmado por Iván; el histórico no cambia.
 - **Doble ficha 26/27 (D33):** se puede jugar con los dos equipos el mismo domingo sólo si los horarios no se solapan. Delegado de ambos equipos en 26/27: Carlos Barreiro.
+- **2026/27 empieza el domingo 4/10/2026** en Moratalaz (D38), antes que el resto de la competición sénior (17/10). Plantilla confirmada de 24 (`docs/PLANTILLA_26-27.md`).
 
 Mucha gente tiene **doble ficha** (juega en los dos equipos); algunos solo en uno. La plantilla combinada es de ~24 jugadores por temporada.
 
 - **Liga:** Liga Municipal de Moratalaz (Juegos Deportivos Municipales, JDM), categoría Sénior Masculino. Distrito Moratalaz, Madrid.
 - **Partidos:** domingos por la mañana.
 - **Entrenamientos:** miércoles 20:30–22:30 en Valdebernardo.
+- **SportEasy Premium** (Iván): los recordatorios a quien no contesta los hace SportEasy (D37).
 - **Federación / plataforma de actas:** Afición FBM / Gesdeportiva (Indalweb). Cambió en 25/26; antes (24/25) usaban SWISH.
 
 ## Las personas (organización — los 3 gestores)
@@ -70,6 +72,8 @@ Igual que TCPC (ahora justificado por la necesidad de login real):
 - Staging antes de producción para cambios de esquema/datos.
 - Cierre de bloque exhaustivo: nada flotando en el chat, todo a los docs.
 - Privacidad (de adultos, aquí) como criterio de primer orden. No pasar credenciales por el chat.
+- **Niveles A/B/C confidenciales** (D39): sólo Iván, Carlos y Eduardo; viven en `privado/` (fuera de git) hasta que haya zona de gestión con login.
+- **Nunca sobrescribir una fuente** (D41): copiar siempre con `scripts/lib/copia_segura.js`. Carpetas fuera de git: `docs/Fichas/`, `docs/estadisticas/`, `fuentes_fbm/`, `privado/`, `data/raw/`.
 - No inventar datos deportivos.
 
 ## Nombre de la sesión de Claude Code

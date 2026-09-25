@@ -88,10 +88,35 @@ _25/09/2026. Sólo investigación: no se ha montado nada, no se ha iniciado sesi
 3. **Calendario y marcadores** desde el 211549 (semanal o con botón), que además sirve de control cruzado del marcador del acta.
 4. **Opcional:** escribir a la FBM (o a Gesdeportiva) pidiendo permiso o un acceso tipo feed para los partidos del club. Si lo dan, el paso 2 se automatiza entero.
 
+## 6. Sondeo complementario: ¿datos abiertos POR JUGADOR? (25/09/2026)
+
+**Pregunta:** ¿algún dataset del portal de datos abiertos del Ayuntamiento sobre los Juegos Deportivos Municipales trae datos por jugador de baloncesto (anotadores, puntos individuales)? Sería la vía 100 % automática y legal para las estadísticas individuales.
+
+**Método:** sólo rutas que el `robots.txt` permite (el `sitemap.xml`, la página de cada dataset y sus metadatos `.rdf`), con 10 s entre peticiones, y un buscador web. No se ha descargado ningún fichero de datos para esto: la ruta de descarga está vetada a bots.
+
+**Datasets de deporte que existen** (sitemap, 25/09/2026): 211549 (competiciones colectivas, temporada en curso), 300257 (ídem, temporadas anteriores), **300043 (inscripción de participantes en JDM colectivos e individuales, temporada en curso)** y 300534 (su histórico), escuelas de promoción deportiva (300042, 300258), carreras urbanas (300261, 300302, 300305), instalaciones, tarifas, ocupación, encuestas y listas de espera. Otros cuatro (208734, 208743, 217479, 300085) respondían "En mantenimiento".
+
+| Dataset | ¿Datos por jugador? | Qué trae | Cobertura | Actualización | Licencia |
+|---|---|---|---|---|---|
+| **211549** / **300257** | **No** | Partidos (fecha, hora, pista, equipos, resultado, estado, jornada, grupo) y clasificaciones | Todos los distritos, **incluido JDM Moratalaz sénior** (2014/15 → 2025/26; la 26/27 aún no está) | 211549 semanal en teoría (la última es del 11/09 y sigue siendo la 25/26); 300257 anual | CC BY 4.0 |
+| **300043** (+ 300534) | **No, en lo que se puede ver** | "Participantes inscritos en juegos colectivos" y "…individuales" (CSV `deportes_colectivos_AAAAMMDD.csv`) | Toda la ciudad | Mensual (última: 02/09/2026) | CC BY 4.0 |
+
+- **Ninguno trae anotadores, puntos individuales ni estadística por jugador.** 211549 y 300257 sólo recogen partidos y clasificaciones (su estructura ya se revisó en `SONDEO_JDM_FASE0.md`).
+- **300043 es de inscripciones**, no de competición: aunque tuviera una fila por persona, no llevaría puntos. Su documento de estructura está en la ruta de descarga vetada a bots y **no se ha abierto**; por la escala (~120.000 participantes) y la protección de datos, lo esperable son recuentos por deporte, categoría y distrito. Si algún día interesa, Iván puede abrirlo en el navegador.
+- **Webs no oficiales** (jdmmadrid.es, munimad.es) se alimentan de estos mismos datos abiertos: tampoco tienen estadística individual.
+
+**Conclusión y recomendación:** la vía 100 % automática y legal **no existe hoy** para las estadísticas individuales. Lo que sí es automático y legal (calendario, horas, pistas y marcadores) queda preparado en la rama `feat/calendario-automatico`. Para los puntos por jugador se mantiene la **descarga manual de Iván en un solo gesto** (actas y hojas desde la app, sin renombrar) y el pipeline hace el resto (`npm run jornada`, rama `feat/pipeline-estadisticas`). **No se pide permiso a la FBM** (D35). Alternativa legal y autónoma que queda abierta: sugerir al Ayuntamiento, por su buzón de datos abiertos, que publique los anotadores de las actas digitales. Es una sugerencia ciudadana, no una dependencia.
+
+## 7. Novedades del portal detectadas el 25/09/2026
+
+- **El 300257 migró a CKAN y renumeró todos sus recursos**, y ya incluye la **2025/26** (recursos 42-45). `scripts/build_rivales_2026_27.py` tiene la tabla nueva (`PORTAL_300257`) y regenera exactamente lo mismo: los tamaños de los 20 ficheros coinciden con los que declara el portal, y uno descargado de la URL nueva tiene el mismo MD5 que la copia local.
+- **El 211549 sigue con la 2025/26** (`partidos_20260629.csv`, modificado el 11/09/2026). El nombre del CSV cambia en cada actualización: hay que leerlo de los metadatos.
+- **El robots.txt de datos.madrid.es** permite páginas y metadatos (`.rdf`) y veta a bots `/api/`, `/dataset/*/resource/*` (las descargas) y cualquier URL con `?`, con `Crawl-delay: 10`. Por eso el workflow del calendario sólo mira metadatos de forma programada, y la descarga va con botón (`docs/CALENDARIO.md`, en su rama).
+
 ## Qué tiene que confirmar Iván
 - ¿Acepta el "un solo gesto" semanal (descargar 4 ficheros desde la app) como solución para actas y estadísticas?
 - ¿Dónde prefiere dejar los ficheros (carpeta local / Drive / subida a GitHub)?
-- ¿Escribimos a la FBM y/o al portal de datos abiertos pidiendo permiso? (Borrador a preparar por Code si dice que sí.)
+- ~~¿Escribimos a la FBM y/o al portal de datos abiertos pidiendo permiso?~~ **Decidido (25/09/2026, D35): no se pide permiso a la FBM por ahora.** Descarga manual de Iván con un solo gesto.
 - La Action de datos abiertos: ¿automática cada lunes, o con botón?
 
 ## Fuentes

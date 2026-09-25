@@ -1,7 +1,7 @@
 # SPORTEASY — Conocimiento sobre la plataforma
 
 > Todo lo que sabemos de SportEasy y cómo nos relacionamos con ella. Equivale a FEDERACION.md de TCPC.
-> _Última actualización: 25/09/2026, con el sondeo de documentación pública (sección al final)._
+> _Última actualización: 25/09/2026 (bloque "Cierre del sondeo y cimientos 26/27"): cláusula literal de acceso automatizado, Premium y prueba de exportación._
 
 ## Qué es para Maccabis
 
@@ -30,13 +30,14 @@ SportEasy **no permite dividir un equipo en dos**. Como Maccabis juega con dos f
 
 - La plataforma que construimos "bebe" de SportEasy vía **export Excel manual** (Iván exporta → sube a la plataforma → la plataforma hace el trabajo de cruce que hoy hace a mano).
 - La plataforma **genera**: mensajes de WhatsApp listos para copiar/pegar. NO envía ni sincroniza sola.
-- **Carga del calendario 26/27:** agente supervisado sobre una tabla limpia preparada por Code, con piloto de 2 partidos (D31).
-- **Recordatorios a quien no ha contestado:** SportEasy los hace de serie en Premium (relance automática); la plataforma no tiene que generarlos en 26/27.
+- **Carga del calendario 26/27 — vía principal: la plantilla Excel que da el soporte de SportEasy** (D36). Code prepara la tabla limpia (`data/sporteasy_calendario_2026-27.csv`, rama `feat/calendario-automatico`) y se copian las columnas a su plantilla. **Plan B:** el agente supervisado de D31, **pendiente de que Iván lea la cláusula de abajo** y decida si lo mantiene.
+- **Recordatorios a quien no ha contestado: los cubre SportEasy.** Iván tiene **Premium**, que incluye la relance automática y el recordatorio manual (silbato). **No los construimos** (D37).
 - **Extracción automatizada (scraping o API interna): descartada** por las condiciones de uso (ver sondeo).
 
 ## Tareas relacionadas
 
-- **Iván:** probar el export de Asistencias con eventos futuros (pregunta clave, ver sondeo). 5 minutos.
+- **Iván — prueba pendiente:** comprobar si **"Asistencias → Por eventos → exportar"** incluye **eventos futuros con sus respuestas** (por ejemplo, el amistoso del 27/09). Ver "Indicio del 25/09/2026" más abajo.
+- **Iván:** pedir al soporte de SportEasy la **plantilla Excel de importación del calendario** (vía principal, D36).
 - **Iván:** comprobar en "Campeonatos" si aparece la liga JDM Moratalaz (casi seguro que no).
 - **Code:** preparar la tabla limpia del calendario 26/27 (fecha, hora, pista, rival, local/visitante, campeonato) cuando se publique.
 
@@ -100,3 +101,35 @@ Sin iniciar sesión: sólo centro de ayuda (FR/ES/EN), condiciones de uso, pági
 13. https://api2.sporteasy.net/
 14. https://sporteasy.zendesk.com/hc/en-gb/requests/new
 15. https://www.sporteasy.net/fr/blog/lappli/choisissez-exactement-qui-est-convoque-a-chaque-evenement-sur-sporteasy/
+
+## Cláusula sobre acceso automatizado — texto literal (25/09/2026)
+
+Condiciones de uso de SportEasy, versión en vigor desde el **18/09/2025**: https://www.sporteasy.net/en/terms-of-use/ (la versión francesa, original: https://www.sporteasy.net/fr/terms-of-use/). Texto copiado de la versión inglesa.
+
+**No hay ninguna cláusula que hable de scraping, de bots que naveguen, de scripts ni de acceso automatizado a la plataforma en general.** La única que nombra a los robots es sobre el **registro de cuentas**:
+
+> **2.4.** "Any registration request generated automatically by a robot, or by any other method, will be refused."
+
+Las que más se acercan a un agente que maneja la web son las de uso del contenido y la de cierre de cuenta:
+
+> **11.2.** "The User must not in any way sell, resell, or exploit in any way and for any purpose whatsoever all or part of the content available on the Platform."
+
+> **11.7.** "The User shall also refrain, without SportEasy's prior written authorization and without limitation, from the following:
+> - using the Platform for promotional purposes and in general to offer products and services remunerating it directly or indirectly;
+> - creating archive files from the content shown on the Platform;
+> - reproducing, representing, using, referencing (particularly in search engine metawords), all or part of the content, brands, logos, and distinctive signs appearing on the Platform."
+
+> **17.2.** "Any copy, reproduction, representation, adaptation, alteration, modification, unauthorized dissemination, in whole or in part, of the services and/or the content of the Platform, whether it concerns the content belonging to SportEasy, a User, an Organization or a third party, is unlawful and may incur the criminal and civil liability of the offender."
+
+> **9.2.** "Without prejudice to any damages that SportEasy may request, SportEasy reserves the right to close, without notice or compensation, temporarily or permanently, a User's account in the event, in particular, of:
+> - a breach of these ToU;
+> - providing false information at the time of registration;
+> - actions contrary to SportEasy's commercial interests."
+
+**Lectura (para que Iván decida):** un agente que **introduce** los partidos del propio club, una vez, desde la sesión de Iván y a ritmo humano, no vende, no archiva ni reproduce contenido de SportEasy: no choca con la letra de 11.2, 11.7 ni 17.2. El riesgo que queda es 9.2 ("actions contrary to SportEasy's commercial interests"), que es discrecional. Con la plantilla del soporte ese riesgo desaparece; por eso es la vía principal. _(La numeración cambió respecto al sondeo anterior: la cláusula de robots aparece ahora como 2.4.)_
+
+## Indicio del 25/09/2026 sobre eventos futuros en el export
+
+En Descargas hay un export de hoy, `bilan_presence_maccabis (10).xlsx` (hojas de julio, agosto y septiembre de 2026). **El último evento que trae es del 23/09/2026** (un entrenamiento): no aparece ningún evento posterior al día del export. Si el amistoso del 27/09 ya estaba creado y con respuestas al descargarlo, esto indica que **el export del balance no incluye eventos futuros**. Falta que Iván lo confirme y pruebe la exportación "Por eventos". De ello depende la decisión pendiente del BACKLOG sobre sustituir ya la confirmación de disponibilidad.
+
+Formato del export (útil para el pipeline): una hoja por mes; fila 1 = fechas, fila 2 = tipo de evento ("Entrenamiento", "Partido amistoso", "Torneo", "Partido entre nosotros"…), después una fila por miembro con "A tiempo", "Con excusa", "Sin excusa", "No convocado" o "Lesionado", y los totales al final. El pipeline de estadísticas (rama `feat/pipeline-estadisticas`) ya lo lee.

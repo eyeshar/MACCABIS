@@ -152,6 +152,7 @@ Ninguna otra variante está confirmada. En particular **no** lo están `CARPASIO
 3. El agente trabaja sobre una **tabla limpia preparada por Code** (fecha, hora, pista, rival, local/visitante, campeonato). **No interpreta el calendario**: sólo transcribe filas ya validadas.
 **Por qué:** crear ~44 eventos a mano es exactamente el trabajo de pegamento que se quiere quitar a Iván, y la importación por Excel de SportEasy no es autoservicio (hay que pedir plantilla a soporte). Un agente que transcribe una tabla ya revisada es auditable fila a fila; uno que interpreta un calendario no lo es.
 **Riesgo anotado:** las condiciones de uso de SportEasy sobre acceso automatizado se revisaron en el sondeo de `docs/SPORTEASY.md`; el agente actúa en la sesión de Iván, a ritmo humano y una sola vez.
+**Matizada por D36 (25/09/2026):** el agente pasa a **plan B**; la vía principal es la plantilla Excel del soporte de SportEasy.
 
 ## D32 — La migración a Next.js sigue, por detrás de actas automáticas y convocatorias (Iván, 25/09/2026)
 **Decisión:** la migración del dashboard a Next.js + Supabase + Vercel **continúa**, pero con prioridad **por detrás** de (1) la descarga automática de actas y estadísticas y (2) las convocatorias con doble ficha. Modifica el orden de D6 para la temporada 26/27.
@@ -165,3 +166,39 @@ Ninguna otra variante está confirmada. En particular **no** lo están `CARPASIO
 ## D34 — La convocatoria nueva entra en la jornada 3 (Iván, 25/09/2026)
 **Decisión:** el flujo nuevo de convocatoria se estrena en la **jornada 3 (aprox. 18/10/2026)**. Las jornadas 1 y 2 se convocan **como hasta ahora**.
 **Por qué:** da margen para fijar las reglas de convocatoria, tener el calendario con horas y probar el flujo sin arriesgar el arranque de la liga.
+
+## D35 — Actas y estadísticas: descarga manual de Iván con un solo gesto; no se pide permiso a la FBM (Iván, 25/09/2026)
+**Decisión:** las actas (PDF) y las hojas de estadística (XLSX) las descarga Iván desde la app Afición FBM, **sin renombrar nada**, y el pipeline hace el resto (`npm run jornada`: copia a `fuentes_fbm/`, valida contra el marcador, genera y resume). **No se pedirá permiso a la FBM por ahora.** Se investigó la vía de datos abiertos por jugador: **no existe** (ver `docs/SONDEO_ACTAS_FASE0.md`, apartado 6).
+**Por qué:** Iván no quiere depender de un permiso de la FBM. La descarga automática de la app va contra el robots.txt y los avisos legales de la FBM, y los datos abiertos del Ayuntamiento no traen estadística individual. Un gesto semanal de Iván es la única vía legal y autónoma para los puntos por jugador.
+
+## D36 — Calendario en SportEasy: plantilla del soporte como vía principal; agente supervisado como plan B (Iván, 25/09/2026)
+**Decisión:** el calendario de 26/27 se carga en SportEasy con **la plantilla Excel que da su soporte**, rellenada con la tabla limpia que genera Code (`data/sporteasy_calendario_2026-27.csv`). El **agente supervisado** de D31 queda como **plan B**, pendiente de que Iván lea el texto literal de la cláusula (copiado en `docs/SPORTEASY.md`) y decida si lo mantiene. Matiza D31.
+**Por qué:** la plantilla del soporte no tiene ningún riesgo con las condiciones de uso; el agente sí tiene uno discrecional (9.2, "actions contrary to SportEasy's commercial interests").
+
+## D37 — Los recordatorios a quien no contesta los cubre SportEasy Premium (Iván, 25/09/2026)
+**Decisión:** Iván tiene SportEasy **Premium**, que incluye la relance automática y el recordatorio manual. **No se construyen recordatorios propios.**
+**Por qué:** ya están pagados y funcionan; duplicarlos sólo daría dos avisos al mismo jugador.
+
+## D38 — La liga de Moratalaz empieza el 4/10/2026 (Iván, 25/09/2026)
+**Decisión:** la jornada 1 de 2026/27 es el **domingo 4/10/2026**, antes que el resto de la competición sénior (17/10). Todo lo necesario para la jornada 1 (plantilla, pipeline de estadísticas) tiene que estar listo antes.
+**Consecuencia:** es probable que el dataset abierto 211549 no publique nuestro grupo a tiempo. El calendario tiene un plan B manual (`data/calendario_manual_2026-27.csv`) y el pipeline no depende del calendario para funcionar.
+
+## D39 — Los niveles A/B/C son confidenciales (Iván, 25/09/2026)
+**Decisión:** los niveles de jugador (A titular / B / C) sólo los ven **Iván, Carlos Barreiro y Eduardo Martín-Ortega**. Hasta que exista la zona de gestión con login real (D1), viven **sólo en `privado/`**, fuera de git. Nunca entran en el repositorio público ni se copian a `data/`. Lo mismo para posición, base secundario, si dobla y si entrena.
+**Por qué:** es información sobre personas que puede herir y que un jugador no debe ver. El repositorio es público y la web estática no puede proteger nada (D1).
+
+## D40 — Reglas de convocatoria v0 documentadas; se validan con las jornadas 1 y 2 (Iván, 25/09/2026)
+**Decisión:** las reglas de convocatoria quedan escritas en `docs/REGLAS_CONVOCATORIA.md` (v0, sin nombres ni niveles). Las jornadas 1 y 2 las convoca Iván **con ayuda del chat de diseño, aplicando estas reglas a mano**; lo que falle o falte se anota para la v1. No se construye nada hasta entonces (la convocatoria nueva entra en la jornada 3, D34).
+**Por qué:** automatizar reglas que nadie ha probado sólo automatiza errores. Dos jornadas reales dicen qué regla se queda corta.
+
+## D41 — Las fuentes nunca se sobrescriben y el pipeline de fichas falla antes que perder una hoja (25/09/2026)
+**Decisión:** (1) Nada copia a una carpeta de fuentes (`docs/Fichas/`, `docs/estadisticas/`, `fuentes_fbm/`) sin comprobar antes, **sin distinguir mayúsculas**, si ya existe el nombre: si existe y es distinto, se para (`scripts/lib/copia_segura.js`). (2) `consolidar_fichas.js` **falla sin escribir** si falta el PDF de una hoja registrada o si el PDF con ese nombre ya es otra hoja. (3) Las hojas cuyo PDF se perdió de verdad se **congelan** en `docs/fichas_sin_pdf.json` (decisión de Iván, nunca un apaño): así la de **Torneos 2018 del MdL**, sobrescrita el 25/09/2026, con sus 17 nombres recuperados del historial de git. (4) La **fecha de alta** de las hojas de 26/27 no se publica (D17).
+**Por qué:** Windows no distingue mayúsculas, y copiar `MdL.pdf` borró `MDL.pdf` sin avisar. Un script que borra en silencio lo que ya no encuentra convierte un despiste en pérdida de datos.
+
+## D42 — Calendario desde datos abiertos: por código de equipo y con descarga a botón (25/09/2026)
+**Decisión:** el calendario y los marcadores salen del dataset 211549 identificando MdA y MdL **por `Codigo_equipo`**, que se confirma cada temporada (con `--descubrir` y el acta de la jornada 1). El workflow de GitHub **programado sólo lee metadatos** (permitido por el robots.txt) y avisa si hay datos nuevos; **la descarga del CSV la lanza una persona** con un botón. Rama `feat/calendario-automatico`, sin mergear.
+**Por qué:** el robots.txt de datos.madrid.es veta a los bots la ruta de descarga; una descarga semanal programada lo incumpliría. Los nombres no sirven de identificador (homónimos, D26).
+
+## D43 — Pipeline de estadísticas en Node; la 2025/26 publicada no se regenera (25/09/2026)
+**Decisión:** el pipeline vive en `scripts/estadisticas/` (Node), lee de `fuentes_fbm/<temporada>/` (fuera de git) y forma parte de `npm run build:datos`. Reproduce `data/season_2025-26.json` (test de regresión: sólo difiere en hora y pista, nuevas, y en tres correcciones del pipeline antiguo). **La 2025/26 publicada no se regenera**: de sus 41 hojas XLSX sólo queda una en el equipo (las demás se subieron al chat); el generador se niega a dejar una temporada con menos partidos o boxscores de los que tiene. Rama `feat/pipeline-estadisticas`, sin mergear.
+**Por qué:** el pipeline de 25/26 leía de una carpeta del chat de Claude y no era reproducible. Los ficheros de la FBM traen datos de terceros (rivales, árbitros) y nunca van al repositorio público.

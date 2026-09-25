@@ -11,9 +11,11 @@
    - [x] Esqueleto Next.js en `plataforma/` + migraciones con RLS en todas las tablas + semilla de la plantilla 26/27 y enlaces.
    - [x] Zona personal `/j/<enlace>`, pedido de ropa (VIVE), zona de gestión (jugadores y enlaces, pedidos, Excel para VIVE).
    - [x] Pruebas de extremo a extremo (`npm run pruebas`, 81 comprobaciones OK).
-   - [ ] **Iván:** crear Supabase y Vercel y dar de alta a los 3 gestores (`plataforma/LEEME.md`), revisar en la URL de Vercel y aprobar. Hasta entonces **no se comparte nada con los jugadores**.
-   - [ ] **Iván:** confirmar los nombres visibles de quien no tenía mote en `PLANTILLA_26-27.md` (p. ej. "Carlos Baños" / "Carlos Barreiro", "Julio César", "Luis Alberto"); se cambian desde "Jugadores y enlaces".
-   - [ ] **Iván:** decidir si un familiar puede repetir el dorsal del jugador (D56).
+   - [x] Supabase real creado por Iván, migraciones y semilla aplicadas, Iván gestor; verificación de seguridad contra el proyecto real 42/42 OK (26/09/2026).
+   - [x] Nombres visibles confirmados (D61). Dorsal libre en pedidos para familiares (D60).
+   - [ ] **Iván:** configurar Vercel (carpeta raíz `plataforma`, 2 variables públicas) y revisar la **vista previa** de `feat/plataforma-v0` con la lista de comprobación. Hasta entonces **no se comparte nada con los jugadores**.
+   - [ ] **Iván:** en Supabase, Authentication → URL Configuration → Site URL = la URL de Vercel (para "He olvidado la contraseña").
+   - [ ] Dar de alta como gestores a Carlos y Edu cuando tengan su usuario (`npm run db:gestor`).
    - [ ] Merge a `main` tras la verificación de Iván.
 2. **Bloque siguiente, para la J2 (11/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
 3. **Motor de convocatoria v0.1 para la J3 (18/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
@@ -25,7 +27,8 @@
 **Además:**
 - [ ] **Exportar el balance de asistencias de SportEasy antes de apagarlo** (noviembre), para conservar los eventos de 26/27.
 - [ ] **Una única consulta a Indalweb** (soporte@gesdeportiva.es) sobre una exportación oficial de actas y estadísticas; si dicen que no, se cierra (D49).
-- [ ] **Mergear `feat/pipeline-estadisticas` antes del 5/10** para procesar la J1 (su test de regresión da OK el 26/09; no se ha mergeado porque no han aparecido hojas nuevas de 25/26 con las que contrastar). Después, `feat/calendario-automatico` (que pasa a ser detector de cambios, D47).
+- [x] ~~Mergear `feat/pipeline-estadisticas`~~ — HECHO (26/09/2026, `f69a39f`), test de regresión OK en `main`. Listo para la J1 (5/10).
+- [ ] `feat/calendario-automatico`: revisar y mergear como detector de cambios (D47), dentro del bloque de la J2.
 
 ---
 

@@ -2,18 +2,29 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 26/09/2026 — **bloque "Plataforma v0: identidad, zona personal y pedido de ropa"** (rama `feat/plataforma-v0`, sin mergear). Detalle justo debajo; lo anterior sigue valiendo._
+_Última actualización: 26/09/2026 (tarde) — **base de datos real cargada y pipeline en producción.** La plataforma sigue en la rama `feat/plataforma-v0` (sin mergear), pendiente de la vista previa de Vercel y de la revisión de Iván._
 
-## Plataforma v0 — rama `feat/plataforma-v0` (26/09/2026, NO mergeada, NO desplegada)
+## Supabase real — CARGADO (26/09/2026)
+- Proyecto de Iván (región Europa), con "Automatically expose new tables" **desmarcado**, sin "Enable automatic RLS" y con el registro libre **desactivado**. Migraciones aplicadas: `20260926100000_plataforma_v0` y `20260926110000_permisos_rls_automatica_dorsal_familiar` (permisos explícitos D58, RLS automática D59, dorsal libre para familiares D60).
+- Semilla: **25 jugadores, 25 enlaces vivos, 1 campaña "Ropa 2026/27" cerrada, 0 pedidos.** Nombres visibles según D61.
+- **Gestores: solo Iván** (su único usuario, confirmado). Carlos y Edu, más adelante: `npm run db:gestor -- <correo> <nombre>` después de crearlos en Supabase.
+- **Verificación contra el proyecto real (`node pruebas/verificar_real.mjs`): 42/42 OK.** Todas las tablas con RLS; tabla de prueba creada y borrada nace con RLS; `anon` sin permisos sobre tablas y solo con las 4 funciones de enlace; por HTTPS con la clave pública un anónimo no lee ni escribe nada; con la identidad de Iván la base le reconoce como gestor y le deja ver los 25; login real de Supabase Auth con dos usuarios temporales (un gestor ve todo, uno que no lo es no ve nada); un jugador solo ve y toca lo suyo; familiar con dorsal repetido aceptado; campaña cerrada y enlace anulado rechazados. Todo lo temporal se borró (estado final: 1 usuario, 1 gestor, 25/25, 1 campaña cerrada, 0 pedidos).
+- `.env.local`: la URL del proyecto venía con `/rest/v1/` al final; se quitó (la app necesita la URL base). **En Vercel, la URL sin `/rest/v1/`.**
+
+## Pipeline de estadísticas — EN PRODUCCIÓN (26/09/2026)
+- `feat/pipeline-estadisticas` mergeada a `main` con `--no-ff` (merge `f69a39f`) por orden de Iván. `npm run test:regresion` en `main`: **"RESULTADO: OK"**. La web publicada no cambia (mismo `index.html`, `data/index.json` y `season_2025-26.json`; solo se añade `season_2026-27.json`, que no está en el índice). Lista para la jornada 1 (`docs/PROCEDIMIENTO_JORNADA.md`).
+- `main` se ha traído a `feat/plataforma-v0` (merge `92de691`), sin conflictos. `feat/calendario-automatico` sigue sin mergear.
+
+
+## Plataforma v0 — rama `feat/plataforma-v0` (26/09/2026, NO mergeada; vista previa de Vercel pendiente)
 - **Qué hay:** app Next.js 16 en `plataforma/` (la web de GitHub Pages no cambia). Base de datos Supabase definida en `plataforma/supabase/migrations/20260926100000_plataforma_v0.sql`: `jugadores`, `enlaces`, `gestores`, `campanas_ropa`, `pedidos_ropa`, RLS en todas, sin políticas para anónimos; los jugadores solo usan 4 funciones que reciben su enlace (D55). Guía de puesta en marcha en `plataforma/LEEME.md`.
 - **Zona personal `/j/<enlace>`:** saludo con su nombre visible; pedido de ropa activo con su estado; mis pedidos (modificar y anular mientras esté abierto); enlace a su ficha del dashboard; "Mi semana" y "Próximos partidos" como próximamente. Manifiesto propio para guardarla en la pantalla de inicio.
 - **Pedido de ropa (VIVE):** para mí o para un familiar; nombre completo, nombre en la ropa (mayúsculas, máx. 15), dorsal 0–99; camiseta, pantalón, cubre (con la nota de la equipación amarilla) y sudadera, cada una con su imagen (extraídas del PDF de `privado/`, publicadas en `plataforma/public/ropa/`), lo que lleva impreso, precio orientativo "por confirmar" y talla VIVE. Resumen en tabla siempre visible; no se envía si falta una talla. Dorsal cogido: "Ese dorsal ya está cogido", sin nombres (D56). Guía de tallas en `/guia-tallas`.
 - **Gestión `/gestion` (login):** jugadores y enlaces (copiar mensaje de bienvenida, WhatsApp si hay teléfono, regenerar, anular, editar nombre visible, teléfono, fichas, rol, entrena, activo); pedido de ropa (abrir/cerrar, fecha límite, precios, dorsales repetidos con nombres, recuento por prenda y talla, pedidos editables y borrables, alta manual) y **"Descargar Excel para VIVE"**, idéntico en estructura a la plantilla 24/25 (D57).
 - **Semilla:** 25 personas (24 de la plantilla confirmada + Carlos Barreiro como entrenador), con los motes de `PLANTILLA_26-27.md` ("Fernando T." y "Fernando M."); quien no tenía mote lleva su nombre de pila. Sin niveles ni posiciones. Sin teléfonos. Campaña "Ropa 2026/27" creada **cerrada**.
-- **Pruebas (`npm run pruebas`): 81/81 OK** contra Postgres 17 y PostgREST reales con las migraciones, la app compilada y Chrome a 375 px: enlace válido, anulado e inventado; RLS explícita (anónimo, usuario no gestor, jugador contra jugador); pedido válido, talla inválida, campaña cerrada y fecha pasada, dorsal repetido sin nombre, modificar, familiar; Excel celda a celda "IGUAL" con la plantilla. El login de gestores se prueba con un doble de Supabase Auth.
-- **Sin desplegar:** el token de Vercel del entorno no es válido y no hay proyecto de Supabase. Pasos de Iván en `plataforma/LEEME.md`.
-- **Pipeline de actas:** no hay hojas XLSX nuevas de 25/26 en Descargas → **no se mergea** `feat/pipeline-estadisticas`. Su test de regresión sigue en "RESULTADO: OK" (26/09, con `data/raw/` presente). Procedimiento semanal en `docs/PROCEDIMIENTO_JORNADA.md`.
-- **Decisiones:** D44–D57. SportEasy sale de la operativa desde la J2 (D44).
+- **Pruebas locales (`npm run pruebas`): 84/84 OK** (con la misma configuración de permisos que el proyecto real) contra Postgres 17 y PostgREST reales con las migraciones, la app compilada y Chrome a 375 px: enlace válido, anulado e inventado; RLS explícita (anónimo, usuario no gestor, jugador contra jugador); pedido válido, talla inválida, campaña cerrada y fecha pasada, dorsal repetido sin nombre, modificar, familiar; Excel celda a celda "IGUAL" con la plantilla. El login de gestores se prueba con un doble de Supabase Auth.
+- **Vercel:** lo configura Iván (carpeta raíz `plataforma`, 2 variables públicas). Pasos en `plataforma/LEEME.md`.
+- **Decisiones:** D44–D61. SportEasy sale de la operativa desde la J2 (D44).
 
 ---
 

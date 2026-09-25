@@ -259,3 +259,18 @@ _D44–D54: decisiones (a)–(k) de Iván en el chat de diseño, tras contrastar
 
 ## D57 — Excel para VIVE idéntico a la plantilla 24/25 (Code, 26/09/2026)
 **Decisión:** el Excel reproduce celda a celda el formato de `privado/LISTADO MACCABIS 2024 (revisado).xlsx` (comparador automático: 196 celdas, "IGUAL"), incluidas la fila vacía con bordes del final y el relleno blanco de las celdas vacías de la columna E, restos de edición a mano. La talla se escribe como en la lista de VIVE ("3XL"), aunque la plantilla antigua ponía "XXXL". De la plantilla solo se copia el formato; nunca sus datos, y no entra en git.
+
+## D58 — Proyecto Supabase sin permisos automáticos: todo explícito y mínimo (Iván + Code, 26/09/2026)
+**Contexto:** Iván creó el proyecto (región Europa) **desmarcando "Automatically expose new tables"** y **sin "Enable automatic RLS"**, con el registro libre de usuarios desactivado.
+**Decisión:** la migración `20260926110000_…` da los permisos a mano y solo los necesarios: `authenticated` lee y escribe `jugadores`, `campanas_ropa` y `pedidos_ropa` y lee `enlaces`, `gestores` y la vista de dorsales repetidos (siempre filtrado por RLS + `is_gestor()`); `anon` **no tiene ningún permiso sobre tablas** y solo puede ejecutar las 4 funciones que exigen enlace (`zona_jugador`, `guardar_pedido`, `anular_pedido`, `dorsal_cogido`). Las funciones nuevas de `public` ya no nacen ejecutables por cualquiera (`alter default privileges`).
+**Evidencia (proyecto real, 26/09/2026):** `information_schema.role_table_grants` no devuelve nada para `anon`; `has_function_privilege('anon', …)` solo es cierto para esas 4.
+
+## D59 — RLS automática con un event trigger (Iván + Code, 26/09/2026)
+**Decisión:** equivalente propio de "Enable automatic RLS": el event trigger `rls_automatica` activa RLS en cualquier tabla que se cree en `public` (`CREATE TABLE`, `CREATE TABLE AS`, `SELECT INTO`). Así una tabla futura nunca nace abierta aunque alguien olvide activarla.
+**Evidencia:** en el proyecto real se creó y se borró `public.prueba_rls_automatica`: nació con RLS.
+
+## D60 — Dorsal: único solo entre pedidos de jugadores; el del familiar es libre (Iván, 26/09/2026) — MODIFICA D56
+**Decisión:** los dorsales solo tienen que ser únicos entre los pedidos **para el propio jugador** (`para = 'yo'`). En un pedido **para un familiar** el dorsal es libre: no se comprueba, no avisa y no aparece en "Dorsales repetidos" de los gestores. Lo demás de D56 sigue: al jugador, "Ese dorsal ya está cogido" sin decir de quién; el gestor puede forzarlo con aviso.
+
+## D61 — Nombres visibles confirmados (Iván, 26/09/2026)
+**Decisión:** "Julio" (De Carvalho), "Luis" (Varas) y "Carlos (entrenador)" (Barreiro). El resto, los motes de `docs/PLANTILLA_26-27.md`; quien no tiene mote, su nombre de pila (Carlos Baños queda como "Carlos"). Se cambian desde "Jugadores y enlaces".

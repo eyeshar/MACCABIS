@@ -29,8 +29,7 @@ _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se proce
 - **Un nombre nuevo que no reconozco**: te pregunto quién es antes de publicar.
 - **Descargaste dos veces el mismo fichero** (`(1)` en el nombre): no pasa nada, detecto los duplicados.
 
-## Importante antes del 5/10
+## Estado
 
-La herramienta (`npm run jornada`) está en la rama `feat/pipeline-estadisticas`, **todavía sin
-pasar a `main`**. Su prueba de regresión con toda la 2025/26 da "RESULTADO: OK" (comprobado el
-26/09/2026). Para la jornada 1 hace falta que me digas "mergea el pipeline" antes del lunes 5/10.
+La herramienta (`npm run jornada`) está en `main` desde el 26/09/2026 (merge `f69a39f`) y su
+prueba de regresión con toda la 2025/26 da "RESULTADO: OK". Lista para la jornada 1.

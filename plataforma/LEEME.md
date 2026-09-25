@@ -26,7 +26,7 @@ Las claves **nunca** se escriben en el chat ni se suben a git: van en `plataform
    Ojo: el plan gratuito permite **2 proyectos activos**. Si tu cuenta ya tiene los dos de Tres Cantos, crea una cuenta nueva para el club (por ejemplo con un correo del club); así además tendrás sitio para el staging del bloque siguiente (D53).
 2. **New project** → nombre `maccabis`, región **West EU (Ireland)** o la más cercana, y una contraseña de base de datos larga (guárdala en tu gestor de contraseñas).
 3. Cuando termine de crearse, ve a **Project Settings**:
-   - **API**: copia la *Project URL* y la clave **publishable** (o *anon*, según cómo la llame tu panel).
+   - **API**: copia la *Project URL* (sin `/rest/v1/` al final) y la clave **publishable** (o *anon*, según cómo la llame tu panel).
    - **Database → Connection string → Session pooler**: copia la URI y sustituye `[YOUR-PASSWORD]` por tu contraseña.
 4. En el ordenador, copia `plataforma/.env.example` como `plataforma/.env.local` y pega ahí los tres valores.
 5. **Authentication → Sign In / Providers → Email**: deja activado el correo y **desactiva "Allow new users to sign up"** (nadie se puede registrar solo).

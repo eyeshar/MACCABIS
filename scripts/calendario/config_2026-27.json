@@ -1,0 +1,11 @@
+{
+ "_nota": "Códigos de equipo del portal (Codigo_equipo) de nuestros dos equipos en 2026/27. Cambian cada temporada y las hojas de inscripción de 2026/27 no los traen: se proponen con --descubrir y se confirman con el acta de la jornada 1 antes de escribirlos aquí. Grupos según las hojas del 47 JDM.",
+ "temporada": "2026-27",
+ "competicion": "47 JUEGOS DEPORTIVOS MUNICIPALES",
+ "equipos": {
+  "MDA": { "grupo": "JDM MOR DOM MAÑ BC SEN MAS G1", "codigos": [] },
+  "MDL": { "grupo": "JDM MOR DOM MAÑ BC SEN MAS G2", "codigos": [] }
+ },
+ "nombres_para_descubrir": { "MDA": ["MDA", "MdA", "MACCABI DE ACOSTAR"], "MDL": ["MDL", "MdL", "MACCABI DE LEVANTAR"] },
+ "campeonato_sporteasy": { "MDA": "MdA 26/27", "MDL": "MdL 26/27" }
+}

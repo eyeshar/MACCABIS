@@ -1,0 +1,11 @@
+{
+ "_nota": "Sólo para probar el script con la temporada pasada (códigos ya validados en build_rivales_2026_27.py).",
+ "temporada": "2025-26",
+ "competicion": "46 JUEGOS DEPORTIVOS MUNICIPALES",
+ "equipos": {
+  "MDA": { "grupo": "JDM MOR DOM MAÑ BC SEN MAS G3", "codigos": ["178977", "190128"] },
+  "MDL": { "grupo": "JDM MOR DOM MAÑ BC SEN MAS G1", "codigos": ["177542"] }
+ },
+ "nombres_para_descubrir": { "MDA": ["MDA", "MdA", "MACCABI DE ACOSTAR"], "MDL": ["MDL", "MdL", "MACCABI DE LEVANTAR"] },
+ "campeonato_sporteasy": { "MDA": "MdA 25/26", "MDL": "MdL 25/26" }
+}

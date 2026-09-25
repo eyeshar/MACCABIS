@@ -1,0 +1,20 @@
+{
+ "temporada": "2026-27",
+ "fuente": {
+  "dataset": "211549 (datos.madrid.es), Ayuntamiento de Madrid, CC BY 4.0",
+  "fichero": "211549_partidos_20260925.csv",
+  "modificado_portal": null,
+  "manual": null
+ },
+ "equipos": {
+  "MDA": {
+   "grupo": "JDM MOR DOM MAÑ BC SEN MAS G1",
+   "codigos": []
+  },
+  "MDL": {
+   "grupo": "JDM MOR DOM MAÑ BC SEN MAS G2",
+   "codigos": []
+  }
+ },
+ "partidos": []
+}

@@ -1,0 +1,63 @@
+# Calendario y marcadores de MdA y MdL desde datos abiertos (dataset 211549, CC BY 4.0).
+#
+# - Cada lunes (programado) SÓLO mira los metadatos del dataset (.rdf, ruta que el robots.txt
+#   del portal permite). Si hay una versión nueva, abre un aviso (issue) para Iván.
+# - El botón "Run workflow" (lanzado por una persona) descarga el CSV, regenera
+#   data/calendario_<t>.json y data/sporteasy_calendario_<t>.csv y los sube.
+#   La descarga no va programada porque el robots.txt del portal veta a los bots la ruta
+#   /dataset/*/resource/* (ver docs/CALENDARIO.md).
+# Coste: cero (Actions es gratis en repositorios públicos). Sin secretos ni logins.
+name: Calendario JDM (datos abiertos)
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'      # lunes 07:00 UTC (09:00 en Madrid en verano)
+  workflow_dispatch:
+    inputs:
+      temporada:
+        description: 'Temporada (p. ej. 2026-27)'
+        default: '2026-27'
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  comprobar:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - id: meta
+        run: node scripts/calendario/actualizar_calendario.js --comprobar
+      - if: steps.meta.outputs.nuevo == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITULO="Calendario: hay datos nuevos en el portal (${{ steps.meta.outputs.modificado }})"
+          if [ -z "$(gh issue list --state open --search "in:title \"$TITULO\"" --json number --jq '.[].number')" ]; then
+            gh issue create --title "$TITULO" --body "El dataset 211549 del portal de datos abiertos se ha actualizado. Para traer el calendario y los marcadores: pestaña Actions → 'Calendario JDM (datos abiertos)' → Run workflow. Cierra este aviso después."
+          fi
+
+  actualizar:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: node scripts/calendario/actualizar_calendario.js --descargar
+      - run: node scripts/calendario/actualizar_calendario.js --descubrir || true
+      - run: node scripts/calendario/actualizar_calendario.js --temporada "${{ inputs.temporada }}"
+      - name: Subir el calendario si ha cambiado (nunca los CSV brutos, D25)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "data/calendario_${{ inputs.temporada }}.json" "data/sporteasy_calendario_${{ inputs.temporada }}.csv"
+          if git diff --cached --quiet; then echo "Sin cambios."; else
+            git commit -m "datos: calendario ${{ inputs.temporada }} desde datos abiertos (211549)"
+            git push
+          fi

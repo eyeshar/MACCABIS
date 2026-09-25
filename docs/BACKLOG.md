@@ -23,7 +23,12 @@
 - [x] **Confirmar las correspondencias dudosas** — HECHO (04/08/2026): dos eran erratas de nombre y tres se confirmaron como alias.
 - [x] **Fijar el criterio de los "Torneos Municipales"** — HECHO (04/08/2026): pertenecen a la temporada que termina en ese año; liga y torneo se suman (D19).
 - [x] **Aplicar de verdad las hojas de torneo a la matriz** — HECHO (04/08/2026): retirado el filtro obsoleto que las excluía todas; 2016/17 pasa de 20 a 24 personas (D23).
-- [x] **Segunda hoja de Torneos Municipales 2017 (Nº EQUIPO 120202, MdL, 17 jugadores)** — **DESCARTADA (04/08/2026)**. Iván la comparó con la 119823: misma competición y mismo equipo, y sus 17 nombres son un **subconjunto** de los 20 de la 119823 (le faltan Ballesteros, Carrera y Moral). **No aporta ninguna persona nueva**, así que no se integra: el pipeline ya se queda con la hoja de más jugadores y descartarla no pierde nada. La matriz de 2016/17 (24 personas) queda intacta y correcta. No existe PDF de esa hoja ni en el repositorio ni en el equipo de Iván —su única traza es una captura—, así que **no hay que seguir buscándolo**.
+- [x] **Las dos hojas de Torneos Municipales 2017 (#119823 y #120202)** — **ACLARADO (04/08/2026), corrigiendo la descripción anterior.** Eran **DOS TORNEOS DISTINTOS**, no dos versiones de la misma inscripción: el dataset del Ayuntamiento demuestra que cada código tiene sus propios partidos, en sedes y distritos distintos y contra rivales distintos, los mismos tres días (23/04, 07/05 y 14/05 de 2017):
+  - `#119823` → **Vicálvaro** (CDM Valdebernardo): vs Sáinz de Vicuña B, Amazonia y VBA.
+  - `#120202` → **Moratalaz** (pabellones 1 y 2): vs Inmsershore, Mistery Men y Fontarrón.
+  - **Para la MATRIZ DE PERSONAS la conclusión anterior sigue siendo válida**: la plantilla de la 120202 es un subconjunto de la de la 119823 (jugaron casi los mismos), así que **no entró nadie nuevo y la matriz de 2016/17 no cambia** (24 personas). Lo que estaba mal era la descripción: no era "la misma competición con una hoja más corta", eran dos torneos con plantilla solapada.
+  - **Los 6 partidos SÍ constan** en `data/rivales_jdm.json`, etiquetados con `fase: "torneo"`.
+  - Del PDF de la 120202 sigue sin haber copia (sólo una captura), pero ya no hace falta: sus partidos están en el portal.
 - [ ] **Identificar a "Pupo" (2016/17)** — investigado el 04/08/2026 sin resultado: no aparece en ninguna estadística ni en ninguna hoja conservada. Se planteó que la hoja 120202 pudiera contenerlo; al resolverse que es un subconjunto de la 119823, **esa vía queda descartada**. Pupo y los otros tres con 2016 que no salen en ninguna hoja (Alan Venegas, Carlos Pérez Núñez y Juan Carlos Blázquez) siguen viniendo sólo del Excel de la Historia. La vía que queda es **localizar la hoja de inscripción de la liga 2016/17 (37 JDM)**, que falta en `docs/Fichas`; si aparece, el nombre que no esté en ninguna otra será Pupo. Alternativa: preguntar a Carlos o a quien jugara ese año.
 - [ ] **Repasar las 4 hojas transcritas por visión** (2013/14 MdL, 2014/15 MdL y las dos de 2017/18): son escaneos sin texto, leídos de la imagen. En `docs/fichas_transcritas.json`.
 - [ ] **Aclarar el caso de Adán Herrera Benzán**: jugó 3 partidos en 2017/18 sin constar en ninguna hoja de esa temporada.
@@ -31,6 +36,33 @@
 - [ ] **Revisar 3 celdas del MdA 23/24** con decimales donde debería haber enteros (marcadas con "?" en el dashboard).
 - [ ] **Recuperar, si existen, las actas de los partidos sin estadística individual**: 15/16 (5, 11, 18) y 21/22 (10 al 18).
 - [ ] **Enriquecer las históricas** si aparecen las fuentes: fechas de partido, dorsales, parciales por cuarto del MdL y asistencia. Hoy no existen y por eso esas columnas y pestañas ni se muestran.
+
+## Rivales y clasificaciones desde datos abiertos (JDM)
+
+Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madrid
+(licencia CC BY 4.0, republicable citando la fuente). Cubre **10 temporadas**: 2014/15,
+2015/16, 2016/17, 2017/18, 2018/19, 2020/21, 2021/22, 2022/23, 2023/24 y 2024/25.
+
+- [x] **Criterio de identificación del club** — RESUELTO (04/08/2026): por **Nº EQUIPO de la hoja de inscripción**, que es el `Codigo_equipo` del dataset. Descarta solo el club rival `MACCABI` de 2014/15 y los homónimos.
+- [x] **Partidos de rivales** — HECHO (04/08/2026): `data/rivales_jdm.json` con **328 partidos** de 10 temporadas, informe en `docs/RIVALES_JDM.md`. Fuente independiente, sin cruzar con el histórico propio.
+- [x] **2020/21, el tercer equipo** — RESUELTO por ficha: nuestros son #149302 (MdL) y #149303 (MdA); **#149233 no es del club**.
+- [ ] **Diccionario de nombres de rival** (bloque futuro, no ahora): decidir sobre 20 pares de nombres que podrían ser el mismo equipo escrito de dos formas (`SETTAS`/`CAFÉ HNOS. VELASCO SETTAS`, `CDCEBE`/`CD CEBE`, `SUIZA`/`SUIZA B.C`/`CARPASION SUIZA`…). **No se han fusionado**: la fuente guarda el nombre literal. Ver `docs/RIVALES_JDM.md`.
+- [x] **Los 3 recuentos que no cuadraban** — **DIAGNOSTICADOS (04/08/2026)**, ver `docs/CONTRASTE_JDM_HISTORICO.md`. No hay error en ninguna de las dos fuentes: recogen cosas distintas. 2014/15 y 2015/16 → el portal **no publica la fase MARCA** (3 y 2 partidos) y añade una **incomparecencia 2-0** que el club no anotó. 2018/19 → el portal incluye 3 partidos de **torneo** que el histórico propio no recoge.
+- [ ] **BLOQUE FUTURO — Corregir la etiqueta MdL/MdA de 2017/18, 2018/19 y 2020/21, y documentar los huecos.** **VERIFICADO con evidencia interna de los Excel** (04/08/2026, ver `docs/DIAGNOSTICO_MDL_MDA.md`): esas tres temporadas llevan etiqueta `equipo: "MDL"` pero contienen las estadísticas del equipo que compitió como **Maccabi de Acostar**. Pruebas: la hoja `Clasificaciones` de cada fichero sitúa al MdA en el grupo cuyos rivales anota el Excel, y en 2020/21 el Excel **anota partidos contra `MDL` y contra `MACCABI DE LEVANTAR`** — nadie juega contra sí mismo. Confirmado también en sentido inverso: 2014/15, 2015/16 y 2021/22 sí son MdL.
+  - **Huecos reales**: del MdL oficial de esas tres temporadas **no hay estadísticas de jugadores** en ninguna fuente del club, sólo su clasificación final. Sus partidos y marcadores sí están en `data/rivales_jdm.json`.
+  - **Pendiente de decidir por Iván**: (a) si se corrige la etiqueta o si el club usa la convención "MdL = el equipo del que llevamos estadísticas"; (b) qué hacer con los huecos. **El rendimiento de los jugadores no cambia en ningún caso**: sólo bajo qué ficha se cuenta.
+- [x] ~~**Añadir a `rivales_jdm.json` el tercer equipo de 2020/21 (`#149233`).** El bloque de rivales lo descartó por 0 % de coincidencia de marcadores, pero eso sólo probaba que no era el equipo del Excel: **la clasificación interna del Excel lo lista junto a `MDL` y `MDA` en el mismo grupo, así que sí era del club**. Faltan sus 14 partidos.~~ **CANCELADO (25/09/2026):** #149233 **no es del club**, es un rival. Lo resuelve la regla del nombre confirmada por Iván (D26): en 2020/21 ya existe `MDL`, así que el `MACCABI DE LEVANTAR` de ese año es otro equipo. `rivales_jdm.json` ya estaba bien.
+- [ ] **Confirmar 2022/23** (bloque futuro): es la única temporada que quedó **sin validar** —no hay `season_2022-23.json` con el que contrastar—, así que su código se aceptó sólo por nombre dentro de Moratalaz. La 2016/17 sí quedó respaldada por los códigos de ficha.
+- [ ] **Clasificaciones**: no se han tocado en el sondeo. Criterio ya acordado: la clasificación
+  **de la fase donde acabó Maccabi** cada año. Los recursos de clasificaciones del dataset son
+  los n impares (1, 5, 9, 13, 16, 20, 24, 28, 32).
+- [ ] **Cruzar la fuente JDM con el histórico propio** (`season_*.json`, `personas.json`, la
+  matriz): bloque futuro, sólo cuando la fuente JDM esté cerrada.
+- [ ] **Tapar 2013/14, 2019/20 y 2025/26 desde las actas propias**: no están en el histórico
+  del portal (2025/26 vive en el dataset 211549 de temporada en curso).
+- [ ] **Vía de cruce descubierta**: el `Nº EQUIPO` de las hojas de inscripción es el
+  `Codigo_equipo` de este dataset (verificado con #119823 y #120202 de Torneos 2017). Sirve
+  para enlazar hojas y partidos sin depender del nombre.
 
 ## Siguiente (bloque 2: historia del club)
 
@@ -64,6 +96,16 @@
   - PRESIONAR por vías de sacar/subir datos de SportEasy más allá del Excel (deseo de Iván). Si no sale nada, Excel plan B.
 
 ## Temporada 26/27 (cuando arranque y se defina)
+
+- [x] **Decidir los candidatos a mismo equipo** — HECHO en parte (25/09/2026): Iván confirmó 7 alias (D27) y descartó SPORTING DE VALLECAS (y variantes) y GSD VALLECAS como VALLEKAS BASKET.
+- [ ] **Candidatos que siguen sin confirmar** (7, en `docs/RIVALES_2026-27.md`): ENFERMOS DEL BASKET, LITROS DE MAU, Litros de Pahou, JVK - Jugones ValleKas, THE RED BOYS, PONENOS, RH PROPERTIES PONENOS.
+- [ ] **Regla del nombre del club fuera de Moratalaz** (D26): se ha aplicado dentro del distrito del club. Leída para todo Madrid chocaría con las fichas de 16/17, 17/18 y 18/19, porque había otro equipo "MDL" en Retiro. Confirmar que el ámbito es el distrito del club.
+- [ ] **Pelota Naranja 08/03/2026 (MdL)**: el portal da 20-0 por incomparecencia y `season_2025-26.json` 0-0. Decidir si se corrige el histórico propio (bloque aparte, staging).
+- [ ] **2019/20**: `season_2019-20.json` (etiqueta MDL) anota un partido contra "MDL" → probablemente es el MdA. Revisar junto con la decisión pendiente de DIAGNOSTICO_MDL_MDA (17/18, 18/19, 20/21).
+- [ ] **Refrescar el 211549** cuando arranque la 26/27: el dataset "temporada en curso" pasará a la nueva temporada y la 2025/26 debería aparecer en el histórico 300257. Guardar antes otra copia bruta con fecha.
+- [ ] **Aprobar la pestaña "Rivales 26/27"** con las capturas de `docs/capturas/rivales/` y, si vale, mergear `feat/rivales-2026-27` a `main` (lleva dentro `feat/rivales-jdm`).
+- [ ] **Regenerar la pestaña de rivales cada temporada cuando salgan los grupos**: actualizar `RIVALES` en `scripts/build_rivales_2026_27.py` (y el nombre de la temporada), descargar el 211549 y el 300257, correr el script de Python y después `npm run build:rivales`.
+- [ ] Añadir un `favicon.ico` (el único error de consola del sitio es su 404).
 
 - [ ] Crear entrada de temporada 26/27 y cargar partido a partido.
 - [ ] Preparar calendario 26/27 para SportEasy.

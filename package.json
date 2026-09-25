@@ -10,7 +10,8 @@
     "personas": "node scripts/build_personas.js",
     "check:personas": "node scripts/build_personas.js --check",
     "completar:historia": "node scripts/completar_historia.js",
-    "fichas": "node scripts/consolidar_fichas.js"
+    "fichas": "node scripts/consolidar_fichas.js",
+    "build:rivales": "node scripts/build_rivales_web.js"
   },
   "devDependencies": {
     "pdf-parse": "^2.4.5",

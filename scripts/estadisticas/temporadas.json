@@ -1,0 +1,70 @@
+{
+ "_nota": "Configuración por temporada del pipeline de estadísticas. carpeta = dónde deja Iván los ficheros de la FBM (fuera de git). calendario = de dónde sacar la jornada de un acta sin hoja y el ganador de una incomparecencia.",
+ "2025-26": {
+  "label": "2025 / 26",
+  "carpeta": "fuentes_fbm/2025-26",
+  "jornadas_liga": 22,
+  "nombres_club": {
+   "MDA": [
+    "MDA",
+    "MdA"
+   ],
+   "MDL": [
+    "MDL",
+    "MdL"
+   ]
+  },
+  "codigos_equipo": {
+   "177542": "MDL",
+   "178977": "MDA",
+   "190128": "MDA"
+  },
+  "calendario": [
+   {
+    "formato": "csv",
+    "fichero": "data/raw/211549_partidos_20260925.csv"
+   }
+  ],
+  "alias_nombres": {
+   "DE CARVLHO, JULIO CESAR": "DE CARVALHO RODRIGUES, JULIO CESAR"
+  },
+  "asistencia": {
+   "formato": "compuesto",
+   "fichero": "asistencia/Asistencia MAccabis 2025 2026.xlsx"
+  },
+  "inicio": "2025-09-01",
+  "etiqueta_fbm": "25/26"
+ },
+ "2026-27": {
+  "label": "2026 / 27",
+  "carpeta": "fuentes_fbm/2026-27",
+  "jornadas_liga": 22,
+  "nombres_club": {
+   "MDA": [
+    "MDA",
+    "MdA"
+   ],
+   "MDL": [
+    "MDL",
+    "MdL"
+   ]
+  },
+  "codigos_equipo": {},
+  "calendario": [
+   {
+    "formato": "json",
+    "fichero": "data/calendario_2026-27.json"
+   }
+  ],
+  "jornadas_manuales": {},
+  "resultados_manuales": {},
+  "asistencia": {
+   "formato": "sporteasy",
+   "ultimo_de": "asistencia"
+  },
+  "plantilla_fichas": "2026",
+  "regenerar_en_build": true,
+  "inicio": "2026-09-01",
+  "etiqueta_fbm": "26/27"
+ }
+}

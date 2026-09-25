@@ -6,12 +6,15 @@
   "scripts": {
     "diccionario": "node scripts/parse_diccionario.js",
     "historico": "node scripts/build_historico.js",
-    "build:datos": "npm run diccionario && npm run historico && npm run fichas && npm run completar:historia && npm run personas",
+    "build:datos": "npm run diccionario && npm run historico && npm run estadisticas && npm run fichas && npm run completar:historia && npm run personas",
     "personas": "node scripts/build_personas.js",
     "check:personas": "node scripts/build_personas.js --check",
     "completar:historia": "node scripts/completar_historia.js",
     "fichas": "node scripts/consolidar_fichas.js",
-    "build:rivales": "node scripts/build_rivales_web.js"
+    "build:rivales": "node scripts/build_rivales_web.js",
+    "estadisticas": "node scripts/estadisticas/generar_temporada.js --build",
+    "jornada": "node scripts/estadisticas/procesar_jornada.js 2026-27",
+    "test:regresion": "node scripts/estadisticas/test_regresion_2025_26.js"
   },
   "devDependencies": {
     "pdf-parse": "^2.4.5",

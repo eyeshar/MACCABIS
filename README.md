@@ -76,28 +76,26 @@ o si un PDF con ese nombre ya es otra hoja. Las hojas cuyo PDF se perdió de ver
 en el registro, que `n_temporadas` cuadre con los años jugados y que 2026 (temporada 26/27,
 prevista) no cuente como jugada. Devuelve código 1 si algo falla.
 
-## Cómo añadir partidos / una temporada nueva
-1. Exporta de la app **Afición FBM** las hojas de estadística de cada partido (XLSX).
-2. Exporta de **SportEasy** el Excel de asistencia (partidos y entrenamientos).
-3. Descarga las **actas PDF** de los partidos (para los parciales por cuarto).
-4. Genera el JSON de la temporada con el script (o pídelo actualizado).
-5. Sube el nuevo `data/season_AAAA-AA.json` y, si es temporada nueva, añádela a `data/index.json`.
-6. GitHub Pages se actualiza solo en 1-2 minutos.
+## Cómo añadir partidos (temporada 2026/27 en adelante)
 
-## Publicado en GitHub Pages
+Cada semana, después de la jornada:
 
-**https://eyeshar.github.io/MACCABIS/**
+1. En la app **Afición FBM**, descarga el **acta** (`Acta-Partido-<nº>.pdf`) y la **hoja de
+   estadística** (`estadisticaPartido….xlsx`) de cada partido. No hace falta renombrarlas.
+2. (Opcional) En **SportEasy**, Asistencias → balance → exportar (`bilan_presence….xlsx`).
+3. Pide a Claude Code "procesar jornada", o ejecuta `npm run jornada`
+   (`npm run jornada -- --desde <carpeta>` si no están en Descargas; `-- --dry` para simular).
 
-Se sirve desde la rama `main`, carpeta raíz del repositorio `eyeshar/MACCABIS`.
-Cada push a `main` redespliega solo en 1-2 minutos. Como es una web estática que
-lee los JSON por `fetch`, para actualizar datos basta con subir el
-`data/season_AAAA-AA.json` correspondiente.
+El comando copia los ficheros nuevos a `fuentes_fbm/<temporada>/` (**fuera de git**: los ficheros
+de la FBM nunca entran en el repositorio), valida que los puntos de cada hoja sumen el marcador del
+acta y que los parciales sumen el resultado, regenera `data/season_<temporada>.json` y resume la
+jornada. Si algo no cuadra, **no escribe nada**. Publicar es un paso aparte (commit y push de
+`data/season_<temporada>.json` y `data/index.json`).
 
-## Notas de datos
-- Columnas siempre a cero (rebotes, asistencias, robos…) se descartan porque la liga no las registra.
-- Todos los puntos están verificados contra el marcador de cada acta.
-- **Con minutos** (23/24 en adelante): las medias se calculan sólo sobre partidos con minutos jugados (los DNP no cuentan).
-- **Sin minutos** (13/14 – 22/23): las medias son por partido jugado; los "NJ" (No Jugó) cuentan como convocatoria pero no entran en el denominador.
-- Las canastas de 2 de las temporadas antiguas son **derivadas**: `(PTS − 3·3P − TL anotados) / 2`. No hay intentos de tiro de campo en la fuente.
-- Las filas "No identificado" y "Sin catalgar" de un boxscore son puntos que constan en el acta pero que no se pueden atribuir a una persona. Cuentan para el marcador del equipo; nunca para rankings ni fichas individuales.
-- Algunos partidos aparecen marcados como **"sin stats"**: el marcador consta, pero no se conserva la estadística individual. No se ha inventado ninguna.
+- Pipeline: `scripts/estadisticas/` (Node). Configuración por temporada en `temporadas.json`.
+- `npm run test:regresion` comprueba que el pipeline reproduce la 2025/26 publicada.
+- `npm run build:datos` incluye el paso `estadisticas` (sólo regenera las temporadas marcadas y
+  sólo si sus ficheros están en este equipo; nunca deja una temporada con menos partidos o
+  boxscores de los que tenía).
+- Los scripts de Python `parse_stats.py`, `consolidate.py` y `generar_temporada.py` quedan como
+  referencia histórica del pipeline de 2025/26; ya no se usan.

@@ -21,6 +21,7 @@
 ## D5 — WhatsApp y SportEasy se mantienen; la plataforma sustituye a los Excel
 **Decisión:** no crear una "cuarta herramienta" que competir con las existentes. WhatsApp (día a día) y SportEasy (registro oficial) siguen. La plataforma reemplaza el trabajo manual en Excel y se convierte en el centro de mando.
 **Por qué:** si la plataforma no se integrara en el ecosistema, Iván tendría MÁS herramientas que gestionar, no menos. El valor está en matar el Excel manual, no en añadir otra cosa.
+**Matiz (25/09/2026, ver D30):** vale para la temporada 2026/27. Para 2027/28 la plataforma se construye como **sustituto de SportEasy**; WhatsApp sigue sin tocarse.
 
 ## D6 — Orden de construcción: lo público primero, convocatorias al final
 **Decisión:** construir en este orden: (1) zona pública estadísticas → (2) histórico del club → (3) login + zona de gestión → (4) convocatorias.
@@ -138,3 +139,29 @@ Ninguna otra variante está confirmada. En particular **no** lo están `CARPASIO
 - Si en 2025/26 un rival tiene derrotas por incomparecencia (estado "N" en el portal) y explican exactamente la diferencia PJ − (G + P), la tarjeta dice **"N incomparecencias"** junto al puesto, con el aviso *"No presentarse resta puntos: la clasificación oficial es real, pero su balance en pista es G-P"*. El ⚠ de "clasificación que no cuadra" se reserva para lo que las incomparecencias **no** explican (p. ej. MEJORADA 2012 C.B., de un grupo sin partidos en el portal con el que contrastar).
 - Las tarjetas de la pestaña se ordenan por **% de victorias en partidos jugados, G/(G+P), en 2025/26**; si empatan, por el puesto oficial; los que no tienen rastro, al final. El puesto que se muestra sigue siendo el oficial.
 **Caso de control:** 28500, 13-5 en pista y 11º/11 oficial por 2 incomparecencias, pasa a 3º del grupo del MdL en el orden de la pestaña.
+
+## D30 — SportEasy se mantiene en 26/27; la plataforma se construye para sustituirlo en 27/28 (Iván, 25/09/2026)
+**Decisión:** la suscripción de SportEasy de 2026/27 ya está pagada, así que esta temporada **se mantiene y se aprovecha al máximo** (calendario, disponibilidad, asistencia). En paralelo, la plataforma se construye con el objetivo de **sustituir a SportEasy en 2027/28**. **Matiza D5** a partir de esa fecha: D5 ("WhatsApp y SportEasy se mantienen") sigue vigente durante 26/27; WhatsApp no se sustituye nunca.
+**Por qué:** SportEasy no resuelve la doble ficha (dos campeonatos por año), no tiene API pública y obliga a Iván a hacer de pegamento manual. Pagar una temporada más y exprimirla da tiempo a construir el sustituto con pantallas reales delante, sin dejar al equipo sin herramienta a mitad de curso.
+**Primera función candidata a sustituir:** la confirmación de disponibilidad (ver BACKLOG).
+
+## D31 — Carga masiva del calendario en SportEasy con un agente supervisado (Iván, 25/09/2026)
+**Decisión:** se aprueba usar un **agente supervisado** (control del navegador) para la carga **única** del calendario de 26/27 en SportEasy: ~44 partidos en **dos campeonatos** (uno por ficha). Condiciones:
+1. **Antes**, Iván comprueba si la liga JDM Moratalaz está en la sección **"Campeonatos"** de SportEasy. Si está y trae el calendario, el agente no hace falta.
+2. **Piloto previo de 2 partidos** (uno por campeonato) revisado por Iván antes de cargar el resto.
+3. El agente trabaja sobre una **tabla limpia preparada por Code** (fecha, hora, pista, rival, local/visitante, campeonato). **No interpreta el calendario**: sólo transcribe filas ya validadas.
+**Por qué:** crear ~44 eventos a mano es exactamente el trabajo de pegamento que se quiere quitar a Iván, y la importación por Excel de SportEasy no es autoservicio (hay que pedir plantilla a soporte). Un agente que transcribe una tabla ya revisada es auditable fila a fila; uno que interpreta un calendario no lo es.
+**Riesgo anotado:** las condiciones de uso de SportEasy sobre acceso automatizado se revisaron en el sondeo de `docs/SPORTEASY.md`; el agente actúa en la sesión de Iván, a ritmo humano y una sola vez.
+
+## D32 — La migración a Next.js sigue, por detrás de actas automáticas y convocatorias (Iván, 25/09/2026)
+**Decisión:** la migración del dashboard a Next.js + Supabase + Vercel **continúa**, pero con prioridad **por detrás** de (1) la descarga automática de actas y estadísticas y (2) las convocatorias con doble ficha. Modifica el orden de D6 para la temporada 26/27.
+**Por qué:** con la liga a punto de empezar, lo que ahorra horas a Iván cada semana son las actas y las convocatorias. La web estática actual sigue funcionando y publicada.
+
+## D33 — Regla de negocio de la doble ficha en 26/27 (Iván, 25/09/2026)
+**Decisión:** un jugador inscrito en las dos fichas **puede jugar con el MdA y con el MdL el mismo domingo sólo si los horarios de los dos partidos no se solapan**. La convocatoria la decide Iván con criterios propios, que **se documentarán como reglas explícitas** antes de automatizar nada (ver BACKLOG, "Reglas de convocatoria").
+**Consecuencia técnica:** la hora de cada partido es un dato **imprescindible**; sin ella no se puede aplicar la regla. El calendario que se prepare para 26/27 tiene que traer fecha, **hora** y pista de cada partido. Qué se considera "solapar" (duración de un partido, margen entre pistas) es una de las reglas que Iván tiene que fijar.
+**Contexto:** 22 de los 24 deportistas de 26/27 están inscritos en las dos fichas (ver `docs/PLANTILLA_26-27.md`).
+
+## D34 — La convocatoria nueva entra en la jornada 3 (Iván, 25/09/2026)
+**Decisión:** el flujo nuevo de convocatoria se estrena en la **jornada 3 (aprox. 18/10/2026)**. Las jornadas 1 y 2 se convocan **como hasta ahora**.
+**Por qué:** da margen para fijar las reglas de convocatoria, tener el calendario con horas y probar el flujo sin arriesgar el arranque de la liga.

@@ -58,13 +58,19 @@ anotada en `alias_ids` para no repetir la reconciliación.
 ```bash
 npm install
 npm run build:datos          # diccionario + histórico + registro de personas
-npm run historico -- --src "ruta/a/los/excel"   # los Excel se buscan en ~/Downloads por defecto
+npm run historico -- --src "ruta/a/los/excel"   # por defecto, docs/estadisticas/ (fuera de git)
 npm run check:personas       # sólo valida identidades y reglas; no escribe nada
 ```
 
 `build:datos` reconstruye el diccionario desde el `.md`, regenera las 10 temporadas históricas
 y vuelve a construir el registro de personas. Es idempotente: dos ejecuciones seguidas producen
-exactamente los mismos ficheros. Los Excel de origen **no** están en el repositorio.
+exactamente los mismos ficheros. Los Excel de origen **no** están en el repositorio: viven en
+`docs/estadisticas/`, que está en `.gitignore`.
+
+`npm run fichas` falla (y no escribe nada) si falta el PDF de una hoja de inscripción ya registrada
+o si un PDF con ese nombre ya es otra hoja. Las hojas cuyo PDF se perdió de verdad se congelan en
+`docs/fichas_sin_pdf.json`. Para copiar ficheros a una carpeta de fuentes sin pisar nada:
+`node scripts/lib/copia_segura.js <origen> <carpeta>`.
 
 `check:personas` valida que todos los `person_id` de la Historia y de las estadísticas existan
 en el registro, que `n_temporadas` cuadre con los años jugados y que 2026 (temporada 26/27,

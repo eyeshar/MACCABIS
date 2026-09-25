@@ -8,7 +8,9 @@
    "TORNEOS MUNICIPALES AAAA = copa del final de temporada: pertenece a la temporada que TERMINA en AAAA (año de matriz AAAA-1). Liga y torneo del mismo periodo son una sola temporada y sus plantillas se suman.",
    "Cuando hay varias hojas del mismo año y equipo vale SIEMPRE la que más jugadores tiene.",
    "match:\"parcial\" o \"alias\" = el nombre de la hoja no es idéntico al del registro pero se ha confirmado que es la misma persona.",
-   "person_id:null = nombre que no casa con nadie conocido; NO se inventa identidad."
+   "person_id:null = nombre que no casa con nadie conocido; NO se inventa identidad.",
+   "Desde 2026/27 (47 JDM): sólo filas \"Deportista\" (los \"Delegado/a\" no son jugadores), con el grupo. La fecha de alta NO se publica (D17: de las hojas sólo sale temporada, equipo y nombre). person_id sólo cuando el nombre casa EXACTAMENTE con el registro (o con un alias_id ya confirmado); el resto queda null con match \"pendiente_de_ivan\".",
+   "sin_pdf:true = hoja cuyo PDF se perdió y es irrecuperable; sus nombres vienen de docs/fichas_sin_pdf.json (congelada). Si falta el PDF de cualquier otra hoja registrada, el script falla y no escribe nada."
   ]
  },
  "fichas": [
@@ -526,7 +528,8 @@
      "jdm": null,
      "torneo": 2018,
      "metodo": "texto",
-     "n": 17
+     "n": 17,
+     "sin_pdf": true
     }
    ],
    "n": 29,
@@ -1990,6 +1993,228 @@
     {
      "nombre": "YAMIN SQUICCIARINI, NICOLÁS",
      "person_id": "yamin-squicciarini-nicolas"
+    }
+   ]
+  },
+  {
+   "anio": "2026",
+   "equipo": "MdA",
+   "temporada": "2026/27",
+   "grupo": "3 JDM MOR DOM MAÑ BC SEN MAS G1",
+   "hojas": [
+    {
+     "fichero": "MdA.pdf",
+     "jdm": 47,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 24
+    }
+   ],
+   "n": 24,
+   "personas": [
+    {
+     "nombre": "Baños Gallego, Carlos",
+     "person_id": "banos-gallego-carlos"
+    },
+    {
+     "nombre": "Calahorro Sanchez, Manuel",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "de Carvalho Rodrigues, Julio Cesar",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "de Maria Sanchez, Jaime",
+     "person_id": "de-maria-sanchez-jaime"
+    },
+    {
+     "nombre": "Esteban, Jon",
+     "person_id": "esteban-jon"
+    },
+    {
+     "nombre": "Galan Domingo, Guillermo",
+     "person_id": "galan-domingo-guillermo"
+    },
+    {
+     "nombre": "Garcia Gijon, Eduardo",
+     "person_id": "garcia-gijon-eduardo"
+    },
+    {
+     "nombre": "Gianatti, Adriano",
+     "person_id": "gianatti-adriano"
+    },
+    {
+     "nombre": "Jorba López, Sergi",
+     "person_id": "jorba-lopez-sergi"
+    },
+    {
+     "nombre": "Lopez Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martinez Martinez, Andres",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "Martinez Martinez, Victor",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "Martin-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Mendez Escandon, Fernando Antonio",
+     "person_id": "mendez-escandon-fernando",
+     "match": "alias"
+    },
+    {
+     "nombre": "Mileo, Ignacio Agustin",
+     "person_id": "mileo-ignacio-agustin"
+    },
+    {
+     "nombre": "Perez Nuñez, Victor",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "Romero Barrueco, Alonso",
+     "person_id": "romero-barrueco-alonso"
+    },
+    {
+     "nombre": "Santos Artiles, Enyel Geuris",
+     "person_id": "santos-artiles-enyel-geuris"
+    },
+    {
+     "nombre": "Tejeiro Perez de Agreda, Fernando",
+     "person_id": "tejeiro-perez-de-agreda-fernando"
+    },
+    {
+     "nombre": "Teruel Fernández, Tomas",
+     "person_id": "teruel-fernandez-tomas"
+    },
+    {
+     "nombre": "Vallesi, Daniele",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "Varas Garcia, Luis Alberto",
+     "person_id": "varas-garcia-luis-alberto"
+    },
+    {
+     "nombre": "Villa Guerrero, Edwin",
+     "person_id": "villa-guerrero-edwin"
+    },
+    {
+     "nombre": "Villaescusa Silva, Ivan",
+     "person_id": "villaescusa-silva-ivan"
+    }
+   ]
+  },
+  {
+   "anio": "2026",
+   "equipo": "MdL",
+   "temporada": "2026/27",
+   "grupo": "4 JDM MOR DOM MAÑ BC SEN MAS G2",
+   "hojas": [
+    {
+     "fichero": "MDL.pdf",
+     "jdm": 47,
+     "torneo": null,
+     "metodo": "texto",
+     "n": 22
+    }
+   ],
+   "n": 22,
+   "personas": [
+    {
+     "nombre": "Baños Gallego, Carlos",
+     "person_id": "banos-gallego-carlos"
+    },
+    {
+     "nombre": "Calahorro Sanchez, Manuel",
+     "person_id": "calahorro-sanchez-manuel"
+    },
+    {
+     "nombre": "de Carvalho Rodrigues, Julio Cesar",
+     "person_id": "de-carvalho-rodrigues-julio-cesar"
+    },
+    {
+     "nombre": "de Maria Sanchez, Jaime",
+     "person_id": "de-maria-sanchez-jaime"
+    },
+    {
+     "nombre": "Esteban, Jon",
+     "person_id": "esteban-jon"
+    },
+    {
+     "nombre": "Garcia Gijon, Eduardo",
+     "person_id": "garcia-gijon-eduardo"
+    },
+    {
+     "nombre": "Gianatti, Adriano",
+     "person_id": "gianatti-adriano"
+    },
+    {
+     "nombre": "Jorba López, Sergi",
+     "person_id": "jorba-lopez-sergi"
+    },
+    {
+     "nombre": "Lopez Lucero, Alfredo David",
+     "person_id": "lopez-lucero-alfredo-david"
+    },
+    {
+     "nombre": "Martinez Martinez, Andres",
+     "person_id": "martinez-martinez-andres"
+    },
+    {
+     "nombre": "Martinez Martinez, Victor",
+     "person_id": "martinez-martinez-victor"
+    },
+    {
+     "nombre": "Martin-Ortega Rico, Eduardo",
+     "person_id": "martin-ortega-rico-eduardo"
+    },
+    {
+     "nombre": "Mendez Escandon, Fernando Antonio",
+     "person_id": "mendez-escandon-fernando",
+     "match": "alias"
+    },
+    {
+     "nombre": "Mileo, Ignacio Agustin",
+     "person_id": "mileo-ignacio-agustin"
+    },
+    {
+     "nombre": "Perez Nuñez, Victor",
+     "person_id": "perez-nunez-victor"
+    },
+    {
+     "nombre": "Romero Barrueco, Alonso",
+     "person_id": "romero-barrueco-alonso"
+    },
+    {
+     "nombre": "Santos Artiles, Enyel Geuris",
+     "person_id": "santos-artiles-enyel-geuris"
+    },
+    {
+     "nombre": "Tejeiro Perez de Agreda, Fernando",
+     "person_id": "tejeiro-perez-de-agreda-fernando"
+    },
+    {
+     "nombre": "Teruel Fernández, Tomas",
+     "person_id": "teruel-fernandez-tomas"
+    },
+    {
+     "nombre": "Vallesi, Daniele",
+     "person_id": "vallesi-daniele"
+    },
+    {
+     "nombre": "Villa Guerrero, Edwin",
+     "person_id": "villa-guerrero-edwin"
+    },
+    {
+     "nombre": "Villaescusa Silva, Ivan",
+     "person_id": "villaescusa-silva-ivan"
     }
    ]
   }

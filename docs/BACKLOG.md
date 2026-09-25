@@ -1,8 +1,44 @@
 # BACKLOG — Proyecto Maccabis
 
 > Lo pendiente, por prioridad. Se reordena según urgencia y decisiones.
+> _Reordenado el 25/09/2026 (D30–D34): arranque de la 26/27 primero; actas automáticas y convocatorias por delante de la migración a Next.js._
 
-## Ahora (bloque 1: arranque + zona pública)
+## Ahora — arranque de la temporada 2026/27
+
+### 0. Pendiente de Iván (desbloquea lo demás)
+- [ ] **Confirmar `docs/PLANTILLA_26-27.md`**: 3 personas nuevas (García Gijón, Santos Artiles, Teruel Fernández), actualizar `previsto_2627`, y corregir el delegado del MdA (Varas → Barreiro; Barreiro también en el MdL).
+- [ ] **Recuperar la hoja de Torneos 2018 del MdL** (antiguo `docs/Fichas/MDL.pdf`), sobrescrita al copiar la hoja de 26/27. Guardarla con otro nombre. Hasta entonces **no ejecutar `npm run fichas` ni `npm run build:datos`** (ver PLANTILLA_26-27).
+- [ ] **Probar el export de Asistencias de SportEasy con eventos futuros** (pregunta clave, `docs/SPORTEASY.md`). Decide cómo se obtiene la disponibilidad cada lunes.
+- [ ] **Comprobar si la liga JDM Moratalaz está en "Campeonatos"** de SportEasy (D31; casi seguro que no).
+- [ ] **Decidir sobre el sondeo de actas** (`docs/SONDEO_ACTAS_FASE0.md`): aceptar el "un solo gesto" semanal, dónde se dejan los ficheros, si se pide permiso a la FBM / al portal, y si la Action de datos abiertos va sola o con botón.
+- [ ] **Definir las reglas de convocatoria** (ver abajo).
+
+### 1. Calendario 26/27 con horas + carga en SportEasy (antes de la jornada 1, ~17/10)
+- [ ] **Tabla limpia del calendario 26/27** (Code): fecha, **hora**, pista, rival, local/visitante, campeonato (MdA G1 / MdL G2). Fuente: CSV del dataset 211549 en cuanto se publique; plan B, el calendario que reciban los delegados. La hora es imprescindible (D33).
+- [ ] **Carga en SportEasy con agente supervisado** (D31): ~44 partidos, dos campeonatos, **piloto de 2 partidos** revisado por Iván antes del resto. El agente sólo transcribe la tabla limpia.
+- [ ] **Arreglar la URL del 300257** en `scripts/build_rivales_2026_27.py`: `…/egob/catalogo/300257-{n}-…csv` ahora redirige a otra numeración de recursos (sondeo de actas, punto 4). Localizar el CSV desde la página del dataset.
+- [ ] Refrescar el 211549 y regenerar la pestaña de rivales con los grupos definitivos (MdA en G1, MdL en G2).
+
+### 2. Actas y estadísticas automáticas (primera prioridad de construcción, D32)
+- [ ] **Pipeline local reproducible** (`generar_temporada`): hoy `parse_stats.py` lee de `/mnt/user-data/uploads` y `generar_temporada.py` es un esqueleto. Reconstruirlo y probarlo contra las 42 actas y 41 hojas de 2025/26 hasta reproducir `season_2025-26.json`. Guardar además **hora y pista** del acta.
+- [ ] **"Un solo gesto" semanal**: Iván deja las 2 actas + 2 hojas de la jornada en un sitio fijo y el pipeline verifica y publica. Actas y estadísticas **no** se pueden descargar solas de forma legítima (robots.txt y avisos legales de la FBM).
+- [ ] **Calendario y marcadores desde datos abiertos** (211549) con GitHub Actions: semanal o con botón. Sin login ni secretos. Riesgos en el sondeo.
+- [ ] Opcional: carta a la FBM / Gesdeportiva pidiendo permiso o un acceso tipo feed.
+- [ ] Tabla 2026/27 del diccionario de nombres (ojo: dos "Eduardo" en la plantilla).
+
+### 3. Convocatorias con doble ficha (estreno en la jornada 3, ~18/10, D34)
+- [ ] **Flujo semanal objetivo:**
+  - **Lunes:** disponibles para el entrenamiento del miércoles y el partido del domingo; recordatorio a quien no ha contestado (SportEasy lo hace de serie en Premium con la relance automática).
+  - **Lunes–martes:** propuesta de reparto MdA/MdL según las reglas de convocatoria y los horarios de los dos partidos (D33); Iván ajusta.
+  - **Martes:** mensaje de convocatoria de WhatsApp generado, listo para copiar y pegar.
+  - **Domingo noche:** actas y estadísticas procesadas y publicadas (con el "un solo gesto" de Iván, ver bloque 2).
+- [ ] **Reglas de convocatoria (pendiente de que Iván las defina):** hoy son criterio propio de Iván. Hay que escribirlas como reglas explícitas antes de automatizar el reparto. Mínimo: qué es "solapar" (duración de partido, margen entre pistas), prioridades entre fichas, mínimos y máximos por partido, cómo cuentan asistencia a entrenamientos y rotación, quién no puede doblar. D33 fija la única regla ya cerrada: doblar sólo si los horarios no se solapan.
+- [ ] Jornadas 1 y 2: se convocan como hasta ahora (D34).
+
+### 4. Hacia 27/28: sustituir SportEasy (D30)
+- [ ] **Confirmación de disponibilidad: primera función candidata a sustituir SportEasy en 27/28.** Es la que alimenta el flujo semanal y la que peor se extrae de SportEasy (no hay API y no consta que el export traiga eventos futuros).
+
+## Después — migración a Next.js (continúa, por detrás de lo anterior, D32)
 
 - [ ] **Arrancar el proyecto en Claude Code** (repositorio, Next.js base, conectar Supabase + Vercel). Iván debe crear cuentas gratuitas de Supabase y Vercel (credenciales NUNCA por chat; se manejan en Claude Code).
 - [ ] Elegir **nombre para la sesión de Claude Code** (TCPC usa "Fable").
@@ -84,9 +120,9 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [ ] Diseñar la zona de gestión con pantallas reales (no en abstracto).
 - [ ] **Tesorería / cuentas** (Eduardo). Datos sensibles → zona protegida.
 
-## Más adelante (bloque 4: convocatorias — esperar a octubre)
+## ~~Más adelante (bloque 4: convocatorias — esperar a octubre)~~ → subido a "Ahora", punto 3 (25/09/2026)
 
-- [ ] **Convocatorias con doble ficha MdA/MdL** — el mayor dolor, pero espera al inicio de liga (octubre).
+- [ ] **Convocatorias con doble ficha MdA/MdL** — el mayor dolor. _Ver el flujo semanal y las reglas en "Ahora", punto 3._
   - Cruzar disponibilidad (de export SportEasy) para decidir quién juega en cada ficha.
   - Generar mensaje de WhatsApp de convocatoria listo para copiar/pegar.
   - Generar recordatorio para quien no ha contestado.
@@ -107,8 +143,10 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [ ] **Regenerar la pestaña de rivales cada temporada cuando salgan los grupos**: actualizar `RIVALES` en `scripts/build_rivales_2026_27.py` (y el nombre de la temporada), descargar el 211549 y el 300257, correr el script de Python y después `npm run build:rivales`.
 - [ ] Añadir un `favicon.ico` (el único error de consola del sitio es su 404).
 
-- [ ] Crear entrada de temporada 26/27 y cargar partido a partido.
-- [ ] Preparar calendario 26/27 para SportEasy.
+- [ ] Crear entrada de temporada 26/27 y cargar partido a partido. _(Ver "Ahora", puntos 1 y 2.)_
+- [x] ~~Preparar calendario 26/27 para SportEasy.~~ → "Ahora", punto 1 (tabla limpia + agente supervisado, D31).
+- [x] **Plantilla 26/27 extraída** (25/09/2026): 24 deportistas, 22 en ambas fichas; en `data/fichas_inscripcion.json` y `docs/PLANTILLA_26-27.md`. Falta la confirmación de Iván (punto 0).
+- [ ] **Adaptar `consolidar_fichas.js` a 26/27** tras la confirmación: filtrar "Delegado/a" (no son jugadores), guardar grupo y fecha de alta, y no perder la hoja de Torneos 2018.
 
 ## Notas de datos disponibles (ya subidos por Iván en el chat de arranque)
 

@@ -293,6 +293,16 @@
    "en_estadisticas": true
   },
   {
+   "person_id": "garcia-gijon-eduardo",
+   "formal": "García Gijón, Eduardo",
+   "display": "Eduardo García Gijón",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
    "person_id": "garcia-jimenez-hugo",
    "formal": "García Jiménez, Hugo",
    "display": "Hugo García Jiménez",
@@ -761,6 +771,16 @@
    "en_estadisticas": true
   },
   {
+   "person_id": "santos-artiles-enyel-geuris",
+   "formal": "Santos Artiles, Enyel Geuris",
+   "display": "Enyel Geuris Santos Artiles",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
    "person_id": "suarez-cobos-alejandro",
    "formal": "Suárez Cobos, Alejandro",
    "display": "Alejandro Suárez Cobos",
@@ -779,6 +799,16 @@
    "alias_ids": [],
    "en_historia": true,
    "en_estadisticas": true
+  },
+  {
+   "person_id": "teruel-fernandez-tomas",
+   "formal": "Teruel Fernández, Tomás",
+   "display": "Tomás Teruel Fernández",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
   },
   {
    "person_id": "tosta-queiroz-gilberto",

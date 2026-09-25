@@ -19,8 +19,22 @@
  *     Liga y torneo del mismo periodo son UNA temporada: sus plantillas se suman.
  *     Dejaron de jugarse hacia 2018/19; no hay torneos posteriores.
  *
+ * FORMATO 2026/27 EN ADELANTE (47 JDM+)
+ *   Sólo cuentan las filas "Deportista": los "Delegado/a" no son jugadores. Se guarda
+ *   además el grupo (dato del equipo). La fecha de alta se lee pero NO se publica (D17). El person_id sólo se asigna si el nombre casa
+ *   EXACTAMENTE con el registro o con un alias ya confirmado; si no, queda null con
+ *   match "pendiente_de_ivan" (nunca parecido de nombre). Las hojas antiguas siguen
+ *   con sus reglas de siempre para no alterar ningún dato histórico.
+ *
+ * PROTECCIÓN DE LAS FUENTES
+ *   Antes de escribir se compara con el data/fichas_inscripcion.json anterior. Si falta
+ *   el PDF de una hoja registrada, o el fichero con ese nombre ya no es la misma hoja
+ *   (otro año, equipo o competición: señal de que se sobrescribió), el script FALLA y
+ *   no escribe nada. Las hojas cuyo PDF se perdió de verdad se congelan en
+ *   docs/fichas_sin_pdf.json (decisión de Iván) y salen con sin_pdf:true.
+ *
  * USO:  node scripts/consolidar_fichas.js
- * Requiere los PDF en docs/Fichas. Si no están, no toca nada y avisa.
+ * Requiere los PDF en docs/Fichas. Si no está la carpeta, no toca nada y avisa.
  */
 const fs = require('fs');
 const path = require('path');
@@ -61,9 +75,37 @@ function equipoDe(t) {
   return null;
 }
 
+const JDM_FORMATO_NUEVO = 47;   // 2026/27
+
+// "DE CARVALHO RODRIGUES, JULIO CESAR" -> "de Carvalho Rodrigues, Julio Cesar"
+const PARTICULAS = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
+const titulo = s => s.toLowerCase().split(' ').map(w => PARTICULAS.has(w) ? w
+  : w.split('-').map(x => x.charAt(0).toUpperCase() + x.slice(1)).join('-')).join(' ');
+
+/** Hoja del 47 JDM en adelante: sólo filas "Deportista", más el grupo. */
+function parseNuevo(t) {
+  const grupo = (t.match(/Grupo:\s*(.+?)\s+Distrito:/) || [])[1] || null;
+  const personas = [], vistos = new Set();
+  const re = /^Deportista\s+([A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ'.\- ]+,\s*[A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ'.\- ]*?)\s+[0-9XYZ][0-9]{6,8}[A-Za-z]\s/gm;
+  let m;
+  while ((m = re.exec(t))) {
+    const [ap, no] = limpia(m[1]).split(/\s*,\s*/);
+    const nombre = titulo(ap) + ', ' + titulo(no);
+    if (vistos.has(nombre.toUpperCase())) continue;
+    vistos.add(nombre.toUpperCase());
+    personas.push(nombre);
+  }
+  return { grupo, personas };
+}
+
 function parse(txt) {
   const t = repararMojibake(String(txt).replace(/\r/g, ''));
   const jdm = t.match(/Competici[oó]n:\s*(\d+)\s*JUEGOS/i) || t.match(/(\d+)\s+JUEGOS DEPORTIVOS MUNICIPALES/i);
+  if (jdm && +jdm[1] >= JDM_FORMATO_NUEVO) {
+    const n = parseNuevo(t);
+    return { jdm: +jdm[1], torneo: null, anio: String(anioDeJDM(+jdm[1])), equipo: equipoDe(t),
+      nombres: n.personas, grupo: n.grupo, nuevo: true };
+  }
   const tor = t.match(/TORNEOS MUNICIPALES(?:\s*-\s*MARCA)?\s+(20\d{2})/i);
   const filas = [];
   const reNuevo = /(Deportista|Delegado\/a|Entrenador\/a)\s+([A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ'.\- ]+,\s*[A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ'.\- ]*?)\s+(?=[0-9XYZ][0-9]{6,8}[A-Za-z]|[0-9]{2}\/[0-9]{2}\/[0-9]{4})/g;
@@ -114,24 +156,73 @@ function resolver(nombre, ids) {
   return { id: null, modo: 'sin_identificar' };
 }
 
+/**
+ * Comprueba que cada hoja del JSON anterior sigue teniendo su PDF y que ese PDF sigue
+ * siendo la misma hoja. Devuelve la lista de errores (vacía si todo está bien).
+ */
+function verificarFuentes(anterior, leidos, congeladas) {
+  if (!anterior) return [];
+  const esCongelada = r => congeladas.some(c => c.fichero === r.fichero && c.anio === r.anio &&
+    c.equipo === r.equipo && (c.torneo || null) === (r.torneo || null));
+  const registradas = [];
+  for (const f of anterior.fichas || []) for (const h of f.hojas || [])
+    registradas.push({ fichero: h.fichero, anio: f.anio, equipo: f.equipo, torneo: h.torneo || null, conTorneo: true });
+  for (const d of anterior.descartadas || [])
+    registradas.push({ fichero: d.fichero, anio: d.anio, equipo: d.equipo, conTorneo: false });
+  const errores = [];
+  for (const r of registradas) {
+    if (esCongelada(r)) continue;
+    const p = leidos.get(r.fichero);           // nombre exacto, tal como lo lista la carpeta
+    const hoja = r.anio + ' ' + r.equipo + (r.torneo ? ' (Torneos ' + r.torneo + ')' : '');
+    if (!p) { errores.push('Falta el PDF "' + r.fichero + '" de la hoja ' + hoja + '.'); continue; }
+    if (p.anio !== r.anio || p.equipo !== r.equipo || (r.conTorneo && (p.torneo || null) !== r.torneo))
+      errores.push('"' + r.fichero + '" ya no es la hoja ' + hoja + ': ahora es ' + p.anio + ' ' + p.equipo +
+        (p.torneo ? ' (Torneos ' + p.torneo + ')' : '') + '. ¿Se ha sobrescrito?');
+  }
+  return errores;
+}
+
 async function main() {
   if (!fs.existsSync(DIR)) { console.log('No existe docs/Fichas: no se regenera nada.'); return; }
   const { PDFParse } = require('pdf-parse');
+  const { ALIAS } = require('./build_personas.js');
   const transcritas = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs', 'fichas_transcritas.json'), 'utf8'));
+  const congeladas = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs', 'fichas_sin_pdf.json'), 'utf8')).hojas;
+  const salidaPath = path.join(DATA, 'fichas_inscripcion.json');
+  const anterior = fs.existsSync(salidaPath) ? JSON.parse(fs.readFileSync(salidaPath, 'utf8')) : null;
   const ids = cargarIdentidades();
 
-  const files = fs.readdirSync(DIR).filter(f => /\.pdf$/i.test(f)).sort();
-  const seen = new Map(), fichas = [];
-  for (const f of files) {
+  const files = fs.readdirSync(DIR).filter(f => /\.pdf$/i.test(f));
+  // las congeladas entran en el mismo orden alfabético que si su PDF existiera
+  const entradas = [...files.map(f => ({ f })), ...congeladas.map(c => ({ f: c.fichero, congelada: c }))]
+    .sort((a, b) => (a.f < b.f ? -1 : a.f > b.f ? 1 : 0));
+  const seen = new Map(), leidos = new Map(), fichas = [];
+  for (const { f, congelada } of entradas) {
+    if (congelada) {
+      const c = congelada;
+      fichas.push({ fichero: c.fichero, jdm: c.jdm, torneo: c.torneo, anio: c.anio, equipo: c.equipo,
+        nombres: c.nombres, metodo: c.metodo, sin_pdf: true });
+      continue;
+    }
     const buf = fs.readFileSync(path.join(DIR, f));
     const h = crypto.createHash('md5').update(buf).digest('hex');
-    if (seen.has(h)) continue;                       // mismo PDF con otro nombre
+    if (seen.has(h)) { leidos.set(f, leidos.get(seen.get(h))); continue; }   // mismo PDF con otro nombre
     seen.set(h, f);
-    if (transcritas[f]) { const v = transcritas[f]; fichas.push({ fichero: f, ...v, metodo: 'vision' }); continue; }
+    if (transcritas[f]) { const v = transcritas[f]; leidos.set(f, v); fichas.push({ fichero: f, ...v, metodo: 'vision' }); continue; }
     const r = await new PDFParse({ data: buf }).getText();
     const p = parse(r.text || '');
+    leidos.set(f, p);
     if (!p.nombres.length || !p.anio || !p.equipo) { fichas.push({ fichero: f, ...p, metodo: 'texto', ilegible: true }); continue; }
     fichas.push({ fichero: f, ...p, metodo: 'texto' });
+  }
+
+  const errores = verificarFuentes(anterior, leidos, congeladas);
+  if (errores.length) {
+    console.error('\nERROR: las fuentes de docs/Fichas no cuadran con data/fichas_inscripcion.json.');
+    errores.forEach(e => console.error('  X ' + e));
+    console.error('\nNo se ha escrito nada. Recupera el PDF (con otro nombre si hace falta) o, si es');
+    console.error('irrecuperable y Iván lo decide, congela la hoja en docs/fichas_sin_pdf.json.');
+    process.exit(1);
   }
 
   // "La hoja con más jugadores manda" se aplica al comparar VERSIONES de la misma hoja,
@@ -150,16 +241,27 @@ async function main() {
   for (const f of mejor.values()) {
     const k = f.anio + '_' + f.equipo;
     const g = porTemporada.get(k) || { anio: f.anio, equipo: f.equipo, hojas: [], nombres: [] };
-    g.hojas.push({ fichero: f.fichero, jdm: f.jdm || null, torneo: f.torneo || null, metodo: f.metodo, n: f.nombres.length });
+    const hoja = { fichero: f.fichero, jdm: f.jdm || null, torneo: f.torneo || null, metodo: f.metodo, n: f.nombres.length };
+    if (f.sin_pdf) hoja.sin_pdf = true;
+    g.hojas.push(hoja);
+    if (f.nuevo) { g.nuevo = true; g.grupo = f.grupo; }
     for (const n of f.nombres) if (!g.nombres.some(x => x.toUpperCase() === n.toUpperCase())) g.nombres.push(n);
     porTemporada.set(k, g);
   }
   mejor.clear();
   for (const [k, g] of porTemporada) mejor.set(k, g);
 
-  const sinId = [], dudosos = [];
+  const sinId = [];
   for (const f of mejor.values()) {
     f.personas = f.nombres.map(n => {
+      if (f.nuevo) {
+        // 2026/27+: sólo casamiento exacto o alias ya confirmado; nunca parecido de nombre
+        const s0 = slug(n), s = ALIAS[s0] || s0;
+        const o = { nombre: n, person_id: ids.has(s) ? s : null };
+        if (o.person_id && s !== s0) o.match = 'alias';
+        if (!o.person_id) { o.match = 'pendiente_de_ivan'; sinId.push({ ficha: f.hojas[0].fichero, anio: f.anio, equipo: f.equipo, nombre: n, modo: o.match }); }
+        return o;
+      }
       const r = resolver(n, ids);
       const o = { nombre: n, person_id: r.id };
       if (r.modo !== 'exacto') o.match = r.modo;
@@ -179,19 +281,23 @@ async function main() {
         'Cuando hay varias hojas del mismo año y equipo vale SIEMPRE la que más jugadores tiene.',
         'match:"parcial" o "alias" = el nombre de la hoja no es idéntico al del registro pero se ha confirmado que es la misma persona.',
         'person_id:null = nombre que no casa con nadie conocido; NO se inventa identidad.',
+        'Desde 2026/27 (47 JDM): sólo filas "Deportista" (los "Delegado/a" no son jugadores), con el grupo. La fecha de alta NO se publica (D17: de las hojas sólo sale temporada, equipo y nombre). person_id sólo cuando el nombre casa EXACTAMENTE con el registro (o con un alias_id ya confirmado); el resto queda null con match "pendiente_de_ivan".',
+        'sin_pdf:true = hoja cuyo PDF se perdió y es irrecuperable; sus nombres vienen de docs/fichas_sin_pdf.json (congelada). Si falta el PDF de cualquier otra hoja registrada, el script falla y no escribe nada.',
       ],
     },
     fichas: [...mejor.values()].sort((a, b) => a.anio.localeCompare(b.anio) || a.equipo.localeCompare(b.equipo))
-      .map(f => ({ anio: f.anio, equipo: f.equipo, hojas: f.hojas, n: f.nombres.length, personas: f.personas })),
+      .map(f => f.nuevo
+        ? { anio: f.anio, equipo: f.equipo, temporada: f.anio + '/' + String((+f.anio + 1) % 100).padStart(2, '0'), grupo: f.grupo, hojas: f.hojas, n: f.nombres.length, personas: f.personas }
+        : { anio: f.anio, equipo: f.equipo, hojas: f.hojas, n: f.nombres.length, personas: f.personas }),
     descartadas: descartadas.map(f => ({ anio: f.anio, equipo: f.equipo, fichero: f.fichero, n: f.nombres.length, motivo: 'otra hoja del mismo año y equipo tiene más jugadores' })),
     ilegibles: ilegibles.map(f => ({ fichero: f.fichero, motivo: 'no se pudo extraer temporada, equipo o jugadores' })),
     sin_identificar: sinId,
   };
-  fs.writeFileSync(path.join(DATA, 'fichas_inscripcion.json'), JSON.stringify(salida, null, 1) + '\n', 'utf8');
+  fs.writeFileSync(salidaPath, JSON.stringify(salida, null, 1) + '\n', 'utf8');
 
   console.log('=== HOJAS USADAS (una por año y equipo, la de más jugadores) ===');
   salida.fichas.forEach(f => console.log('  ' + f.anio + ' ' + f.equipo.padEnd(4) + String(f.n).padStart(3) + ' pers  ' +
-    f.hojas.map(h => (h.torneo ? 'torneo ' + h.torneo : h.jdm + ' JDM') + ' (' + h.n + (h.metodo === 'vision' ? ', visión' : '') + ')').join(' + ')));
+    f.hojas.map(h => (h.torneo ? 'torneo ' + h.torneo : h.jdm + ' JDM') + ' (' + h.n + (h.metodo === 'vision' ? ', visión' : '') + (h.sin_pdf ? ', SIN PDF: congelada' : '') + ')').join(' + ')));
   console.log('\ndescartadas: ' + salida.descartadas.length + ' | ilegibles: ' + salida.ilegibles.length);
   console.log('\n=== SIN IDENTIFICAR ===');
   if (!sinId.length) console.log('  ninguno');

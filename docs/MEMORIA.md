@@ -7,6 +7,8 @@
 **Maccabis** — club de baloncesto amateur, fundado en 2013 ("since 2013"). Un solo equipo humano dividido en **dos fichas** para que pueda jugar todo el mundo:
 - **MdL** — Maccabi de Levantar (el equipo original). Grupo G1 (3 JDM MOR DOM MAÑ BC SEN MAS G1).
 - **MdA** — Maccabi de Acostar (creado después). Grupo G3 (6 JDM MOR DOM MAÑ BC SEN MAS G3).
+- **En 2026/27 (47 JDM) cambian los grupos:** MdA en **G1** (`3 JDM MOR DOM MAÑ BC SEN MAS G1`) y MdL en **G2** (`4 JDM MOR DOM MAÑ BC SEN MAS G2`). Confirmado por Iván; el histórico no cambia.
+- **Doble ficha 26/27 (D33):** se puede jugar con los dos equipos el mismo domingo sólo si los horarios no se solapan. Delegado de ambos equipos en 26/27: Carlos Barreiro.
 
 Mucha gente tiene **doble ficha** (juega en los dos equipos); algunos solo en uno. La plantilla combinada es de ~24 jugadores por temporada.
 

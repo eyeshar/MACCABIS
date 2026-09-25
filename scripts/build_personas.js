@@ -186,4 +186,6 @@ function main() {
   else console.log('\nCoherencia OK: todos los person_id de la Historia y de las estadísticas existen en el registro.');
 }
 
-main();
+// Se puede requerir para reutilizar ALIAS sin generar nada (consolidar_fichas.js).
+if (require.main === module) main();
+module.exports = { ALIAS };

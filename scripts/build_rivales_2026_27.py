@@ -5,10 +5,13 @@ Scouting de los rivales de 2026/27: trayectoria completa en los Juegos Deportivo
 (baloncesto, sénior masculino, TODOS los distritos) y cara a cara con el club.
 
 Fuente: Ayuntamiento de Madrid, portal de datos abiertos, licencia CC BY 4.0.
-  - 300257 "Deportes colectivos - histórico" (2014/15 - 2024/25), descarga directa
-    https://datos.madrid.es/egob/catalogo/300257-{n}-deportes-colectivos-historico.csv
-      partidos        n = 3, 7, 11, 15, 19, 22, 26, 30, 34, 38
-      clasificaciones n = 1, 5, 9, 13, 16, 20, 24, 28, 32, 36
+  - 300257 "Deportes colectivos - histórico" (2014/15 - 2024/25). El portal migró a CKAN y
+    RENUMERÓ todos los recursos (comprobado el 25/09/2026 en los metadatos del dataset,
+    https://datos.madrid.es/dataset/300257-0-deportes-colectivos-historico.rdf). La URL
+    antigua .../egob/catalogo/300257-{n}-...csv ya no apunta al mismo fichero. Las URL
+    vigentes están en PORTAL_300257 (abajo) y se generan con URL_300257.
+    Las copias locales conservan su nombre antiguo (p{n}.csv / c{n}.csv con la numeración
+    de 2026-08) porque esas rutas se publican en rivales_2026-27.json.
   - 211549 "Juegos deportivos - temporada en curso" (2025/26), copia bruta en data/raw/.
 
 NO toca season_*.json, personas.json ni el dashboard: sólo los lee.
@@ -17,6 +20,10 @@ Salidas: data/rivales_2026-27.json y docs/RIVALES_2026-27.md.
 
 USO:  python scripts/build_rivales_2026_27.py [--csv .cache-jdm]
       En --csv deben estar p{n}.csv (partidos) y c{n}.csv (clasificaciones) del 300257.
+      python scripts/build_rivales_2026_27.py --descargar
+      Descarga SÓLO los CSV que falten, desde las URL vigentes, con 10 s entre peticiones
+      (Crawl-delay del portal). Nunca sobrescribe. Lánzalo a mano: el robots.txt del
+      portal no admite bots en /dataset/*/resource/*.
 """
 import csv, io, json, os, re, sys, glob, unicodedata, difflib, collections
 
@@ -37,6 +44,40 @@ RECURSOS = {
     '2015-16': (11, 9), '2014-15': (15, 13),
 }
 TEMPORADAS = list(RECURSOS)                      # la 2025/26 primero ("temporada pasada")
+
+# Numeración VIGENTE del portal (25/09/2026): temporada -> (partidos, clasificaciones).
+# Verificado: el tamaño en bytes que declaran los metadatos coincide exactamente con las 20
+# copias locales. Si el portal vuelve a renumerar, se rehace esta tabla desde el .rdf.
+PORTAL_300257 = {
+    '2024-25': (14, 1), '2023-24': (37, 36), '2022-23': (15, 2), '2021-22': (16, 0),
+    '2020-21': (41, 4), '2018-19': (30, 11), '2017-18': (25, 13), '2016-17': (26, 12),
+    '2015-16': (32, 34), '2014-15': (27, 33),
+}
+URL_300257 = ('https://datos.madrid.es/dataset/300257-0-deportes-colectivos-historico/resource/'
+              '300257-{n}-deportes-colectivos-historico-csv/download/300257-{n}-deportes-colectivos-historico-csv.csv')
+
+
+def descargar_faltan():
+    """Descarga a CSVDIR los CSV del 300257 que falten, con el nombre local de siempre."""
+    import time, urllib.request
+    os.makedirs(CSVDIR, exist_ok=True)
+    existentes = {f.lower() for f in os.listdir(CSVDIR)}
+    pendientes = []
+    for t, (np_, nc) in RECURSOS.items():
+        if np_ is None:
+            continue
+        pp, pc = PORTAL_300257[t]
+        pendientes += [(f'p{np_}.csv', pp, t, 'partidos'), (f'c{nc}.csv', pc, t, 'clasificaciones')]
+    for local, n, t, que in pendientes:
+        if local.lower() in existentes:          # sin distinguir mayúsculas: nunca se pisa nada
+            print(f'  ya está  {local}  ({que} {t})')
+            continue
+        url = URL_300257.format(n=n)
+        print(f'  descarga {local}  ({que} {t})  <- recurso {n}')
+        req = urllib.request.Request(url, headers={'User-Agent': 'Maccabis (descarga manual CC BY 4.0)'})
+        with urllib.request.urlopen(req, timeout=120) as r, open(os.path.join(CSVDIR, local), 'xb') as f:
+            f.write(r.read())
+        time.sleep(10)                            # Crawl-delay: 10
 HUECOS = {
     '2013-14': 'No existe en el portal de datos abiertos.',
     '2019-20': 'No existe en el portal de datos abiertos.',
@@ -1216,4 +1257,7 @@ def informe(o):
 
 
 if __name__ == '__main__':
-    main()
+    if '--descargar' in args:
+        descargar_faltan()
+    else:
+        main()

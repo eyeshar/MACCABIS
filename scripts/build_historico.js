@@ -27,7 +27,9 @@ const DATA = path.join(ROOT, 'data');
 
 const args = process.argv.slice(2);
 const argVal = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const SRC = argVal('--src', path.join(process.env.USERPROFILE || process.env.HOME || '', 'Downloads'));
+// Los Excel de Carlos viven en docs/estadisticas/ (fuera de git, ver .gitignore). Antes se
+// leían de ~/Downloads; allí quedan las copias originales.
+const SRC = argVal('--src', path.join(ROOT, 'docs', 'estadisticas'));
 const REPORT_PATH = argVal('--report', path.join(ROOT, 'docs', 'INFORME_HISTORICO.md'));
 
 // temporada -> { mdl: fichero, mda: fichero|null, label }

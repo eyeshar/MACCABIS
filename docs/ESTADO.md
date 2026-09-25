@@ -2,7 +2,34 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 25/09/2026 — **la pestaña "Rivales 26/27" queda EN PRODUCCIÓN**: `feat/rivales-2026-27` mergeada a `main` y publicada en https://eyeshar.github.io/MACCABIS/?p=rivales&g=MdL. Antes: 04/08/2026, la Historia del club pasa a producción._
+_Última actualización: 25/09/2026 (tarde) — **bloque "Arranque 26/27: verificación, plantilla y sondeos"**: repositorio verificado, plantilla 26/27 extraída (pendiente de confirmar), sondeos de actas y de SportEasy, decisiones D30–D34. Antes, el mismo día: la pestaña "Rivales 26/27" pasa a producción._
+
+### Verificación del repositorio (25/09/2026)
+- **Todo está en `main`.** `main` = `origin/main` = `3d0867b`. Las seis ramas locales (`feat/historico-temporadas`, `feat/historia-club-datos`, `feat/historia-club-ui`, `feat/rivales-jdm`, `feat/rivales-2026-27`, `master`) son **ancestros de `main`** (0 commits por delante): no queda trabajo sin mergear. Rivales 26/27 entró con el merge `1c383de` (`--no-ff` de `feat/rivales-2026-27`, que arrastra `feat/rivales-jdm`).
+- **Publicado:** https://eyeshar.github.io/MACCABIS/ responde 200 y sirve la pestaña de rivales; `data/rivales_2026-27_web.json` responde 200 (74 KB).
+- **Ramas en origin:** `main`, `feat/historico-temporadas`, `feat/rivales-jdm`, `feat/rivales-2026-27` (todas mergeadas). `feat/historia-club-*` y `master` sólo existen en local.
+- Sin cambios sin commitear salvo `docs/estadisticas/` (Excel de estadísticas de Carlos, **sin versionar**; no está en `.gitignore`, conviene añadirlo).
+- **Privacidad:** `docs/Fichas/` está en `.gitignore` y **ningún PDF, XLS ni XLSX aparece en todo el historial de git** (`git log --all --name-only`); los únicos binarios versionados son las 6 capturas PNG de rivales.
+
+### Plantilla 2026/27 — extraída, **pendiente de confirmar por Iván** (25/09/2026)
+- Hojas del **47 JDM**: MdA en **G1** (`3 JDM MOR DOM MAÑ BC SEN MAS G1`), MdL en **G2** (`4 JDM … G2`). Cambio respecto a temporadas anteriores (MdL era G1): registrado sólo en las fichas 2026.
+- **24 deportistas distintos, 22 en ambas fichas; Galán Domingo y Varas García sólo en el MdA.** Coincide con la lectura previa. Los "Delegado/a" no cuentan como jugadores; Varas como delegado es un error de la hoja (el delegado será Barreiro).
+- En `data/fichas_inscripcion.json` (`anio: "2026"`: grupo, nombre, fecha de alta). 21 casan exactamente con `personas.json`; **3 nuevas sin rastro** con `person_id: null`. **No se ha escrito ninguna identidad ni fusión.** Informe: `docs/PLANTILLA_26-27.md`.
+- ⚠ **`docs/Fichas/MDL.pdf` (Torneos 2018 del MdL) fue sobrescrito** por la hoja de 26/27 al copiarla (Windows no distingue mayúsculas). Sus 17 nombres siguen en el JSON, pero **no ejecutar `npm run fichas` / `build:datos`** hasta recuperarla.
+
+### Sondeo de actas y estadísticas (25/09/2026) — `docs/SONDEO_ACTAS_FASE0.md`
+- **Actas PDF y hojas XLSX: no viable** descargarlas solas de forma legítima (robots.txt de fbm.es veta todos los bots; avisos legales de FBM y de la app prohíben reproducir; sin URL ni API pública). Se proponen como "un solo gesto" semanal de Iván + pipeline automático.
+- **Calendario con fecha, hora y pista, y marcadores: viable sin login** desde el dataset 211549 (CSV semanal, CC BY 4.0). La 26/27 aún no está publicada; la liga sénior empieza el 17/10/2026.
+- Origen reconstruido: actas = acta digital de **Indalweb, instancia "JDM Madrid"** (`Acta-Partido-<nº>.pdf`, traen hora y pista); XLSX = app **Afición FBM**, descargadas por Iván en el móvil (`estadisticaPartido_<jornada>_<eq>.xlsx`).
+- ⚠ **El pipeline de 25/26 no es reproducible desde el repo**: `parse_stats.py` lee de `/mnt/user-data/uploads` y `generar_temporada.py` es un esqueleto.
+- ⚠ La URL `…/egob/catalogo/300257-{n}-…csv` que usa `build_rivales_2026_27.py` ahora redirige a otra numeración.
+
+### Sondeo de SportEasy (25/09/2026) — `docs/SPORTEASY.md`
+- **Exportar confirmaciones de eventos futuros: no consta** en la documentación pública; sólo el Excel de balance de Asistencias (Premium/Club), sin decir si trae el futuro. **Lo tiene que probar Iván en la app.**
+- Sin API pública; condiciones de uso contrarias a la extracción automatizada (descartada). iCal no trae respuestas. Recordatorios automáticos de serie en Premium. Import de calendario sólo para federaciones francesas; import de miembros por Excel sí es autoservicio.
+
+### Decisiones del bloque
+D30 (SportEasy en 26/27, sustituto en 27/28; matiza D5) · D31 (agente supervisado para la carga del calendario) · D32 (Next.js detrás de actas y convocatorias) · D33 (doblar sólo sin solape de horarios) · D34 (convocatoria nueva desde la jornada 3).
 
 ### Pestaña "Rivales 26/27" — **EN PRODUCCIÓN desde el 25/09/2026**
 - **Publicada en** https://eyeshar.github.io/MACCABIS/?p=rivales&g=MdL (y `&g=MdA`, `&r=<id-rival>`). Iván aprobó las capturas; merge `--no-ff` de `feat/rivales-2026-27` a `main`, que arrastra `feat/rivales-jdm`. Ramas conservadas. Comprobado en producción con Chrome a 375 px: carga la pestaña con el grupo MdL, sin errores de JS y sin desbordamiento.
@@ -151,7 +178,8 @@ Equipo (balance, racha, tabla de partidos con boxscore desplegable al clic) · J
 ## En curso / decidido pero no empezado
 
 - **Migración al stack Next.js + Supabase + Vercel.** Arquitectura aprobada. No iniciada.
-- **Orden acordado:** (1) zona pública (estadísticas + histórico) primero; (2) histórico del club; (3) login + zona de gestión; (4) convocatorias (esperan a octubre, inicio de liga — lo menos urgente).
+- ~~**Orden acordado:** (1) zona pública (estadísticas + histórico) primero; (2) histórico del club; (3) login + zona de gestión; (4) convocatorias (esperan a octubre, inicio de liga — lo menos urgente).~~
+- **Orden vigente (25/09/2026, D32):** (1) calendario 26/27 con horas y carga en SportEasy; (2) actas y estadísticas automáticas; (3) convocatorias con doble ficha (estreno en la jornada 3, D34); después, la migración a Next.js y la zona de gestión.
 
 ## Reglas de negocio ya establecidas (de las estadísticas)
 

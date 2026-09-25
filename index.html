@@ -703,7 +703,7 @@ function hPersonas(){
 function renderHistoria(){renderKpis();renderRejilla();renderTira();}
 
 function renderKpis(){
-  const P=hPersonas(),jug=P.filter(p=>!p.es_entrenador);
+  const P=hPersonas(),jug=P.filter(p=>!p.es_entrenador&&p.n_temporadas>0);   // quien llega en 26/27 aún no ha vestido la camiseta
   const kc=(l,v,f,c)=>'<div class="kpi '+(c||'')+'"><div class="strip"></div><div class="lab">'+l+'</div><div class="val">'+v+'</div><div class="foot">'+(f||'')+'</div></div>';
   const top=jug[0];
   const media=Math.round(H_ANIOS.reduce((a,y)=>a+jug.filter(p=>p.anios.has(y)).length,0)/H_ANIOS.length);
@@ -723,6 +723,7 @@ const H_TRAMOS=[
   {min:5,tit:'Veteranos · 5 a 9 temporadas'},
   {min:2,tit:'De varias temporadas · 2 a 4'},
   {min:1,tit:'De una sola temporada'},
+  {min:0,tit:'Llegan en 26/27 · aún sin temporadas'},
 ];
 
 function renderRejilla(){
@@ -825,7 +826,8 @@ function abrirFicha(pid){
     return '<span class="hy jug'+(con?' stats':'')+'"'+(con?' data-season="'+sid+'"':'')+
       ' title="'+(con?'Ver sus estadísticas de '+hLabel(y):'Estuvo en el club, sin estadísticas de ese año')+'">'+hLabel(y)+(con?' ›':'')+'</span>';
   }).join('');
-  const motivo=p.es_entrenador?'Es el entrenador: nunca jugó, así que no tiene estadísticas de jugador.'
+  const motivo=!p.n_temporadas&&p.previsto_2627?'Se incorpora al club en la temporada 2026/27: todavía no ha jugado.'
+    :p.es_entrenador?'Es el entrenador: nunca jugó, así que no tiene estadísticas de jugador.'
     :p.solo_mote?'Jugador de paso del que sólo se conserva el mote, sin ficha ni estadísticas.'
     :'De las temporadas en que estuvo en el club no se conservan estadísticas suyas (años sin actas, o jugó en la ficha que no las registraba).';
   const html='<div class="hmodal" id="hModal"><div class="hbox">'+

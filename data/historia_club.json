@@ -254,7 +254,7 @@
     "2025"
    ],
    "n_temporadas": 9,
-   "previsto_2627": false,
+   "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false,
    "nota": "Añadida a la matriz el 04/08/2026 al cruzarla con estadísticas."
@@ -527,7 +527,7 @@
     "2024"
    ],
    "n_temporadas": 5,
-   "previsto_2627": false,
+   "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -772,7 +772,7 @@
     "2025"
    ],
    "n_temporadas": 4,
-   "previsto_2627": true,
+   "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -828,7 +828,7 @@
     "2024"
    ],
    "n_temporadas": 3,
-   "previsto_2627": false,
+   "previsto_2627": true,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -992,7 +992,7 @@
     "2024"
    ],
    "n_temporadas": 2,
-   "previsto_2627": true,
+   "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -1246,7 +1246,7 @@
     "2024"
    ],
    "n_temporadas": 1,
-   "previsto_2627": true,
+   "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
   },
@@ -1346,6 +1346,39 @@
    "previsto_2627": false,
    "solo_mote": false,
    "es_entrenador": false
+  },
+  {
+   "person_id": "garcia-gijon-eduardo",
+   "formal": "García Gijón, Eduardo",
+   "display": "Eduardo García Gijón",
+   "temporadas_jugadas": [],
+   "n_temporadas": 0,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Primera temporada en el club: 2026/27 (47 JDM, fichas MdA y MdL). Confirmado por Iván el 25/09/2026."
+  },
+  {
+   "person_id": "santos-artiles-enyel-geuris",
+   "formal": "Santos Artiles, Enyel Geuris",
+   "display": "Enyel Geuris Santos Artiles",
+   "temporadas_jugadas": [],
+   "n_temporadas": 0,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Primera temporada en el club: 2026/27 (47 JDM, fichas MdA y MdL). Confirmado por Iván el 25/09/2026."
+  },
+  {
+   "person_id": "teruel-fernandez-tomas",
+   "formal": "Teruel Fernández, Tomás",
+   "display": "Tomás Teruel Fernández",
+   "temporadas_jugadas": [],
+   "n_temporadas": 0,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Primera temporada en el club: 2026/27 (47 JDM, fichas MdA y MdL). Confirmado por Iván el 25/09/2026."
   }
  ]
 }

@@ -5,3 +5,11 @@ docs/Fichas/
 data/raw/
 .cache-jdm/
 __pycache__/
+
+# Excel de estadísticas de Carlos (fuente de build_historico.js). Datos del club, no se publican.
+docs/estadisticas/
+# Datos privados de gestión (niveles, posiciones, quién dobla...). NUNCA a git ni a data/.
+privado/
+# Actas PDF y hojas XLSX de la FBM que deja Iván cada jornada (entrada del pipeline de
+# estadísticas). Los originales de la FBM nunca entran en el repositorio: sólo lo derivado.
+fuentes_fbm/

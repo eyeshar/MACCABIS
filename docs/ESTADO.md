@@ -2,9 +2,21 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 25/09/2026 — **scouting de rivales 2026/27** (rama `feat/rivales-2026-27`, sólo datos + informe, sin merge). Antes: 04/08/2026, la Historia del club pasa a producción._
+_Última actualización: 25/09/2026 (tarde) — **scouting 2026/27: datos cerrados y pestaña "Rivales 26/27" construida, PENDIENTE DE APROBACIÓN de Iván** (rama `feat/rivales-2026-27`, sin merge). Antes: 04/08/2026, la Historia del club pasa a producción._
 
-### Scouting de rivales 2026/27 — rama `feat/rivales-2026-27` (25/09/2026, NO mergeada)
+### Pestaña "Rivales 26/27" — CONSTRUIDA, pendiente de aprobación de Iván (25/09/2026)
+- En `index.html`, rama `feat/rivales-2026-27`. **No está en `main`**: se mergea cuando Iván apruebe las capturas de `docs/capturas/rivales/`.
+- Selector Grupo MdA / Grupo MdL, "Lo esencial", tarjetas por rival ordenadas por puesto relativo 2025/26 y ficha con gráfico de trayectoria (SVG propio, D28), tabla temporada a temporada y cara a cara. Enlace `?p=rivales&g=MdA&r=<id>`.
+- Datos: `data/rivales_2026-27_web.json` (74 KB) con `npm run build:rivales`, generado de `data/rivales_2026-27.json`.
+- Probado con Chrome sin interfaz: sin errores de JS (sólo el 404 de `favicon.ico`, que no existe en el sitio), 70/70 combinaciones temporada×pestaña correctas, **sin desbordamiento horizontal a 375 px**, y los números cuadran con `docs/RIVALES_2026-27.md` en los 18 rivales con rastro.
+
+### Datos del scouting 2026/27 — CERRADOS (25/09/2026)
+- **Regla del nombre del club (D26):** #149233 "MACCABI DE LEVANTAR" (2020/21) es un **rival**, no un tercer equipo. `DIAGNOSTICO_MDL_MDA.md` marcado como corregido.
+- **7 alias confirmados (D27)** aplicados a todo; SPORTING DE VALLECAS y GSD VALLECAS descartados; quedan 7 candidatos sin confirmar.
+- Cara a cara: 410 partidos, **0 contados dos veces**; las 5 cifras que esperaba Iván cuadran (Suanzes Motor 11G-2P, LOS KHINKIS RUSOS 15G-6P, NABUCO TD 0G-2P, VALLEKAS BASKET y F.T. FLOPPERS nunca).
+- `feat/rivales-jdm` está mergeada en esta rama (no en `main`).
+
+### Scouting de rivales 2026/27 — rama `feat/rivales-2026-27` (25/09/2026, NO mergeada) — primera versión
 - **Qué hay:** `data/rivales_2026-27.json` + `docs/RIVALES_2026-27.md`, generados por `scripts/build_rivales_2026_27.py` (Python). Trayectoria en los JDM de los **20 rivales** de 2026/27 (baloncesto sénior masculino, **todos los distritos**, 2014/15–2025/26, liga, segundas fases, fase de distrito, fase final de Madrid y torneos municipales) y **cara a cara** con el club.
 - **Fuente:** portal de datos abiertos del Ayuntamiento de Madrid (CC BY 4.0). 300257 (histórico) + **211549 descargado el 25/09/2026, que aún trae la 2025/26 completa** (no la 26/27). Copias brutas en `data/raw/` y `.cache-jdm/`, **no versionadas** (D25).
 - **Resultado:** 17 rivales con rastro en los JDM; **sin rastro: Craps, F.T. FLOPPERS y Quinto Tiempo**. Alias confirmados aplicados (D24). **23 candidatos** a mismo equipo pendientes de Iván, sin fusionar.

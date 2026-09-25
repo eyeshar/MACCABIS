@@ -128,3 +128,7 @@ Ninguna otra variante está confirmada. En particular **no** lo están `CARPASIO
 **Descartados por Iván:** SPORTING DE VALLECAS (y todas sus variantes: SPORTING DE VALLEKAS, SPORTING VALLECAS, SPORT. DE VALLECAS, SPORTING) y GSD VALLECAS **no** son VALLEKAS BASKET.
 **Siguen sin confirmar:** ENFERMOS DEL BASKET, LITROS DE MAU, Litros de Pahou, JVK - Jugones ValleKas, THE RED BOYS, PONENOS y RH PROPERTIES PONENOS.
 **Corrección:** el informe anterior etiquetaba algunos candidatos como "señalado por Iván como posible". Era falso: Iván no señaló ninguno; los propuso el asistente en el chat. La etiqueta pasa a "propuesto en el chat".
+
+## D28 — La pestaña de rivales dibuja su gráfico sin librerías
+**Decisión:** el gráfico de trayectoria de "Rivales 26/27" es un SVG generado en el propio `index.html`. No se añade Chart.js ni ninguna otra librería.
+**Por qué:** el bloque decía "sin librerías nuevas (Chart.js ya está)", pero **Chart.js no está** en el dashboard: los gráficos existentes (por cuartos, rejilla de la Historia) son CSS. Añadirlo habría sido una librería nueva. Un SVG basta para un gráfico de puntos con huecos sin interpolar, y funciona sin conexión.

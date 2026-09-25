@@ -103,7 +103,9 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [ ] **Pelota Naranja 08/03/2026 (MdL)**: el portal da 20-0 por incomparecencia y `season_2025-26.json` 0-0. Decidir si se corrige el histórico propio (bloque aparte, staging).
 - [ ] **2019/20**: `season_2019-20.json` (etiqueta MDL) anota un partido contra "MDL" → probablemente es el MdA. Revisar junto con la decisión pendiente de DIAGNOSTICO_MDL_MDA (17/18, 18/19, 20/21).
 - [ ] **Refrescar el 211549** cuando arranque la 26/27: el dataset "temporada en curso" pasará a la nueva temporada y la 2025/26 debería aparecer en el histórico 300257. Guardar antes otra copia bruta con fecha.
-- [ ] Decidir si `feat/rivales-jdm` y `feat/rivales-2026-27` se mergean a `main` (hoy sólo datos + informe; el dashboard no los usa).
+- [ ] **Aprobar la pestaña "Rivales 26/27"** con las capturas de `docs/capturas/rivales/` y, si vale, mergear `feat/rivales-2026-27` a `main` (lleva dentro `feat/rivales-jdm`).
+- [ ] **Regenerar la pestaña de rivales cada temporada cuando salgan los grupos**: actualizar `RIVALES` en `scripts/build_rivales_2026_27.py` (y el nombre de la temporada), descargar el 211549 y el 300257, correr el script de Python y después `npm run build:rivales`.
+- [ ] Añadir un `favicon.ico` (el único error de consola del sitio es su 404).
 
 - [ ] Crear entrada de temporada 26/27 y cargar partido a partido.
 - [ ] Preparar calendario 26/27 para SportEasy.

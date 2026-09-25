@@ -65,6 +65,12 @@
 
 ## Temporada 26/27 (cuando arranque y se defina)
 
+- [ ] **Decidir los candidatos a mismo equipo** de `docs/RIVALES_2026-27.md` (23, sin fusionar). Los que Iván confirme pasan a `ALIAS_CONFIRMADOS` del script y a DECISIONS. Destacan: NABUCO = NABUCO TD, SPORTING DE VALLECAS / GSD VALLECAS = VALLEKAS BASKET, LOS KINKIS RUSOS / KHINKIS RUSOS = LOS KHINKIS RUSOS, CARPASION SUIZA / SUIZA B.C = Suanzes Motor, PONENOS = VANNER, EL CASTAÑAZO = CASTAÑAZO, FLOPPERS = F.T. FLOPPERS.
+- [ ] **Pelota Naranja 08/03/2026 (MdL)**: el portal da 20-0 por incomparecencia y `season_2025-26.json` 0-0. Decidir si se corrige el histórico propio (bloque aparte, staging).
+- [ ] **2019/20**: `season_2019-20.json` (etiqueta MDL) anota un partido contra "MDL" → probablemente es el MdA. Revisar junto con la decisión pendiente de DIAGNOSTICO_MDL_MDA (17/18, 18/19, 20/21).
+- [ ] **Refrescar el 211549** cuando arranque la 26/27: el dataset "temporada en curso" pasará a la nueva temporada y la 2025/26 debería aparecer en el histórico 300257. Guardar antes otra copia bruta con fecha.
+- [ ] Decidir si `feat/rivales-jdm` y `feat/rivales-2026-27` se mergean a `main` (hoy sólo datos + informe; el dashboard no los usa).
+
 - [ ] Crear entrada de temporada 26/27 y cargar partido a partido.
 - [ ] Preparar calendario 26/27 para SportEasy.
 

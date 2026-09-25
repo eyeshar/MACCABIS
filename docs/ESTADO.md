@@ -2,7 +2,17 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 04/08/2026 — **la Historia del club queda EN PRODUCCIÓN**: `feat/historia-club-ui` mergeada a `main` y publicada._
+_Última actualización: 25/09/2026 — **scouting de rivales 2026/27** (rama `feat/rivales-2026-27`, sólo datos + informe, sin merge). Antes: 04/08/2026, la Historia del club pasa a producción._
+
+### Scouting de rivales 2026/27 — rama `feat/rivales-2026-27` (25/09/2026, NO mergeada)
+- **Qué hay:** `data/rivales_2026-27.json` + `docs/RIVALES_2026-27.md`, generados por `scripts/build_rivales_2026_27.py` (Python). Trayectoria en los JDM de los **20 rivales** de 2026/27 (baloncesto sénior masculino, **todos los distritos**, 2014/15–2025/26, liga, segundas fases, fase de distrito, fase final de Madrid y torneos municipales) y **cara a cara** con el club.
+- **Fuente:** portal de datos abiertos del Ayuntamiento de Madrid (CC BY 4.0). 300257 (histórico) + **211549 descargado el 25/09/2026, que aún trae la 2025/26 completa** (no la 26/27). Copias brutas en `data/raw/` y `.cache-jdm/`, **no versionadas** (D25).
+- **Resultado:** 17 rivales con rastro en los JDM; **sin rastro: Craps, F.T. FLOPPERS y Quinto Tiempo**. Alias confirmados aplicados (D24). **23 candidatos** a mismo equipo pendientes de Iván, sin fusionar.
+- **Cara a cara:** 423 partidos del club combinados (portal 300257 vía `rivales_jdm.json` de `feat/rivales-jdm`, 14 del tercer equipo 2020/21 #149233 aparte, portal 211549 para 2025/26 y los `season_*.json`), deduplicados por fecha+marcador o temporada+marcador.
+- **Verificación:** 2025/26 portal vs `season_2025-26.json`: **41/42** casan; el que no, **Pelota Naranja 08/03/2026**: portal 20-0 (incomparecencia), histórico propio 0-0. Clasificaciones: 528 filas con PJ ≠ G+P (418 son incomparecencias que el portal cuenta en PJ pero no en G/P; 56 sin explicar) y 48 grupos con ΣPF ≠ ΣPC. Informado, no corregido.
+- **Hallazgos:** `season_2019-20.json` (etiqueta MDL) anota un partido **contra "MDL"** → probablemente es el MdA, como 17/18, 18/19 y 20/21 (no se ha tocado). Codificación CP850 en los CSV antiguos reparada (`CASTA¥AZO` → CASTAÑAZO). En 2025/26 hay 13 grupos con clasificación pero sin partidos en el portal (Hortaleza, Retiro, Vicálvaro…). Homónimo no incluido: #179099 "Maccabi de levantar" (Vicálvaro, 2025/26).
+- **Depende de** `feat/rivales-jdm` (lee `data/rivales_jdm.json` de esa rama con `git show` si no está en local). Ambas ramas publicadas en origin, ninguna mergeada.
+
 
 ### Interfaz de la Historia: pestaña "El Club" — **EN PRODUCCIÓN desde el 04/08/2026**
 - **Publicada en** https://eyeshar.github.io/MACCABIS/?p=historia — mergeada a `main` (merge `--no-ff`, conservando el histórico de los 17 commits de la rama).
@@ -25,7 +35,7 @@ _Última actualización: 04/08/2026 — **la Historia del club queda EN PRODUCCI
 ## Repositorio y publicación
 
 - **Remoto:** `https://github.com/eyeshar/MACCABIS.git` (público). Conectado el 04/08/2026.
-- **Ramas publicadas:** `main` (es la que sirve GitHub Pages).
+- **Ramas publicadas:** `main` (es la que sirve GitHub Pages), `feat/rivales-jdm` y `feat/rivales-2026-27` (25/09/2026, sin merge).
 - El repositorio local **no estaba bajo git**; se inicializó en este bloque. El remoto tenía un único commit de subida manual (`45b31d9`) con una versión anterior del proyecto. Las dos historias estaban desconectadas y se unieron con `--allow-unrelated-histories`: **el commit `45b31d9` se conserva** como segundo padre del merge `b42576b`. Ningún archivo suyo se perdió.
 - Hay una etiqueta local `pre-merge-remoto` (= `99e52d3`) como punto de retorno anterior a esa unión.
 - **URL pública:** https://eyeshar.github.io/MACCABIS/

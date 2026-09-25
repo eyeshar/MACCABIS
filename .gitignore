@@ -1,2 +1,7 @@
 node_modules/
 docs/Fichas/
+
+# Datos brutos del portal de datos abiertos (ver D25)
+data/raw/
+.cache-jdm/
+__pycache__/

@@ -195,6 +195,7 @@ th.hprev{color:var(--dim)}
 .rvfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-family:'JetBrains Mono';font-size:11.5px;color:var(--dim)}
 .rvfoot span{min-width:0;overflow-wrap:anywhere}
 .rvwarn{color:var(--gold);cursor:help;font-style:normal}
+.rvincomp{color:var(--ball2);cursor:help;font-style:normal;border-bottom:1px dotted var(--ball2);white-space:nowrap}
 .rvtag{font-family:'Barlow Condensed';font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:5px;background:var(--line);color:var(--dim);display:inline-block;margin-top:10px}
 .rvfuente{margin-top:26px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);font-family:'JetBrains Mono';font-size:12px;color:var(--dim);overflow-wrap:anywhere}
 .hmodal .hbox.rvbox{max-width:880px}
@@ -326,7 +327,7 @@ th.hprev{color:var(--dim)}
   <div class="rvesencial" id="rvEsencial"></div>
   <div class="sec-h"><h2>Rivales</h2><span class="tag" id="rvTag"></span><span class="rule"></span></div>
   <div class="rvgrid" id="rvGrid"></div>
-  <p class="note">Ordenados por su puesto relativo en la liga de 2025/26 (los que no tienen rastro, al final). Pincha en una tarjeta para ver su trayectoria y el cara a cara completo. El cara a cara suma las dos fichas del club (MdL + MdA).</p>
+  <p class="note">Ordenados por su porcentaje de victorias en partidos jugados en la liga de 2025/26 (si empatan, por su puesto oficial; los que no tienen rastro, al final). El puesto que se muestra es el de la clasificación oficial, que resta puntos por las incomparecencias. Pincha en una tarjeta para ver su trayectoria y el cara a cara completo. El cara a cara suma las dos fichas del club (MdL + MdA).</p>
   <div id="rvFicha"></div>
   <div class="rvfuente">Fuente: Ayuntamiento de Madrid, datos abiertos (datos.madrid.es), CC BY 4.0</div>
 </div>
@@ -872,6 +873,8 @@ const rvEsc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt
 const rvT=t=>t.slice(2,4)+'/'+t.slice(5,7);
 const rvFecha=f=>f?f.slice(8,10)+'/'+f.slice(5,7)+'/'+f.slice(0,4):'';
 const rvWarn=txt=>txt?' <i class="rvwarn" title="'+rvEsc(txt)+'">⚠</i>':'';
+// Incomparecencias: la clasificación oficial es real (no presentarse resta puntos), pero el balance en pista es G-P
+const rvIncomp=(n,g,p)=>n?' · <i class="rvincomp" title="'+rvEsc('No presentarse resta puntos: la clasificación oficial es real, pero su balance en pista es '+g+'-'+p)+'">'+n+' incomparecencia'+(n>1?'s':'')+'</i>':'';
 const rvChip=f=>'<span class="teamchip '+rvEsc(String(f).toUpperCase())+'">'+rvEsc(f)+'</span>';
 
 function rvUrl(r){
@@ -889,6 +892,11 @@ async function initRivales(){
   }
   const qs=new URLSearchParams(location.search);
   if(qs.get('g')==='MdL'||qs.get('g')==='MdA')rvs.grupo=qs.get('g');
+  // el selector de temporada no aplica a esta pestaña: se oculta mientras está activa
+  const bRv=document.querySelector('.tab[data-p="rivales"]'), barra=document.querySelector('.seasonbar');
+  const syncSel=()=>{barra.style.display=bRv.classList.contains('on')?'none':'';};
+  new MutationObserver(syncSel).observe(bRv,{attributes:true,attributeFilter:['class']});
+  syncSel();
   const seg=document.getElementById('segRvGrupo');
   seg.onclick=e=>{const g=e.target.dataset.g;if(!g)return;rvs.grupo=g;rvUrl();rvRender();};
   rvRender();
@@ -901,10 +909,10 @@ async function initRivales(){
 function rvOrden(a,b){
   const ka=a.sin_rastro?2:(a.t2526?0:1), kb=b.sin_rastro?2:(b.t2526?0:1);
   if(ka!==kb)return ka-kb;
+  // % de victorias en partidos jugados en 2025/26; empate: puesto oficial (D29)
   if(a.t2526&&b.t2526){
-    if(b.t2526.rel!==a.t2526.rel)return b.t2526.rel-a.t2526.rel;
-    const wa=a.t2526.g/((a.t2526.g+a.t2526.p)||1), wb=b.t2526.g/((b.t2526.g+b.t2526.p)||1);
-    return wb-wa;
+    if(b.t2526.pct!==a.t2526.pct)return b.t2526.pct-a.t2526.pct;
+    return a.t2526.pos-b.t2526.pos;
   }
   return a.nombre.localeCompare(b.nombre,'es');
 }
@@ -944,7 +952,7 @@ function rvCard(r){
       '<div class="rvdonde">Equipo nuevo, cambio de nombre o competición externa.</div>'+rvBalanceH2H(r.h2h)+'</div>';
   }
   const t=r.t2526;
-  const donde=t?'<div class="rvdonde">2025/26: <b>'+t.pos+'º/'+t.n+'</b> · '+t.g+'-'+t.p+rvWarn(t.aviso)+' · '+rvEsc(t.distrito)+'<br>'+rvEsc(t.grupo)+
+  const donde=t?'<div class="rvdonde">2025/26: <b>'+t.pos+'º/'+t.n+'</b>'+rvIncomp(t.incomparecencias,t.g,t.p)+' · '+t.g+'-'+t.p+rvWarn(t.aviso)+' · '+rvEsc(t.distrito)+'<br>'+rvEsc(t.grupo)+
       (t.extra.length?'<br>'+rvEsc(t.extra.join(' · ')):'')+'</div>'
     :'<div class="rvdonde">No jugó en 2025/26.</div>';
   return '<div class="rvcard'+(t&&t.pos<=3?' top':'')+'" data-id="'+rvEsc(r.id)+'" tabindex="0" role="button" aria-label="Ver ficha de '+rvEsc(r.nombre)+'">'+
@@ -981,7 +989,7 @@ function rvAbrir(id){
   const h=r.h2h;
   const tray=r.trayectoria.map(f=>'<tr><td class="mono">'+rvT(f.t)+(f.t==='2025-26'?' <span class="po">pasada</span>':'')+'</td>'+
     '<td>'+rvEsc(f.nombre)+'</td><td>'+rvEsc(f.distrito)+'</td><td>'+rvEsc(f.fase)+'</td><td>'+rvEsc(f.grupo)+(f.calculado?' <i class="rvnota" title="Sin fila en la clasificación oficial: balance calculado de los partidos">¹</i>':'')+'</td>'+
-    '<td class="mono">'+(f.pos?f.pos+'º/'+f.n:'—')+rvWarn(f.aviso)+'</td>'+
+    '<td class="mono">'+(f.pos?f.pos+'º/'+f.n:'—')+rvWarn(f.aviso)+(f.incomparecencias?rvIncomp(f.incomparecencias,f.g,f.p).replace(' · ',' '):'')+'</td>'+
     '<td class="mono">'+(f.pj==null?'—':f.pj)+'</td><td class="mono">'+(f.g==null?'—':f.g+'-'+f.p)+'</td>'+
     '<td class="mono">'+(f.pf==null?'—':f.pf+'-'+f.pc)+'</td><td>'+rvEsc(f.hasta||'')+'</td></tr>').join('');
   const partidos=h.partidos.map(p=>'<tr><td class="mono">'+(p.fecha?rvFecha(p.fecha):rvT(p.t))+'</td><td>'+rvChip(p.ficha)+'</td>'+

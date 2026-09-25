@@ -590,7 +590,8 @@
       "p": 9,
       "pf": 917,
       "pc": 851,
-      "dif": 66
+      "dif": 66,
+      "incomparecencias": null
      }
     ]
    },
@@ -711,7 +712,8 @@
       "p": 9,
       "pf": 769,
       "pc": 743,
-      "dif": 26
+      "dif": 26,
+      "incomparecencias": null
      }
     ]
    },
@@ -814,7 +816,8 @@
          "p": 12,
          "pf": 685,
          "pc": 881,
-         "dif": -196
+         "dif": -196,
+         "incomparecencias": 1
         }
        ]
       }
@@ -928,7 +931,8 @@
       "p": 5,
       "pf": 1039,
       "pc": 857,
-      "dif": 182
+      "dif": 182,
+      "incomparecencias": null
      }
     ]
    },
@@ -997,7 +1001,8 @@
          "p": 11,
          "pf": 835,
          "pc": 923,
-         "dif": -88
+         "dif": -88,
+         "incomparecencias": 1
         }
        ]
       }
@@ -1099,7 +1104,8 @@
          "p": 17,
          "pf": 654,
          "pc": 895,
-         "dif": -241
+         "dif": -241,
+         "incomparecencias": 1
         }
        ]
       }
@@ -1181,7 +1187,8 @@
          "p": 0,
          "pf": 0,
          "pc": 0,
-         "dif": 0
+         "dif": 0,
+         "incomparecencias": 1
         }
        ]
       }
@@ -1385,7 +1392,8 @@
       "p": 18,
       "pf": 520,
       "pc": 890,
-      "dif": -370
+      "dif": -370,
+      "incomparecencias": null
      }
     ]
    },
@@ -1597,7 +1605,8 @@
       "p": 16,
       "pf": 765,
       "pc": 1292,
-      "dif": -527
+      "dif": -527,
+      "incomparecencias": null
      }
     ]
    },
@@ -1666,7 +1675,8 @@
          "p": 13,
          "pf": 785,
          "pc": 1101,
-         "dif": -316
+         "dif": -316,
+         "incomparecencias": 1
         }
        ]
       }
@@ -2079,7 +2089,8 @@
       "p": 13,
       "pf": 660,
       "pc": 826,
-      "dif": -166
+      "dif": -166,
+      "incomparecencias": null
      }
     ]
    },
@@ -2182,7 +2193,8 @@
          "p": 13,
          "pf": 669,
          "pc": 781,
-         "dif": -112
+         "dif": -112,
+         "incomparecencias": 1
         }
        ]
       }
@@ -2379,7 +2391,8 @@
          "p": 0,
          "pf": 0,
          "pc": 0,
-         "dif": 0
+         "dif": 0,
+         "incomparecencias": 1
         }
        ]
       }
@@ -3025,7 +3038,8 @@
       "p": 2,
       "pf": 1125,
       "pc": 827,
-      "dif": 298
+      "dif": 298,
+      "incomparecencias": null
      },
      {
       "fase": "Fase de distrito",
@@ -3039,6 +3053,7 @@
       "pf": null,
       "pc": null,
       "dif": null,
+      "incomparecencias": null,
       "eliminatoria": "Eliminado en semifinales (40-61)"
      }
     ]
@@ -3318,7 +3333,8 @@
       "p": 6,
       "pf": 948,
       "pc": 733,
-      "dif": 215
+      "dif": 215,
+      "incomparecencias": null
      }
     ]
    },
@@ -3485,7 +3501,8 @@
          "p": 7,
          "pf": 809,
          "pc": 717,
-         "dif": 92
+         "dif": 92,
+         "incomparecencias": 2
         }
        ]
       }
@@ -3519,7 +3536,8 @@
          "p": 5,
          "pf": 558,
          "pc": 503,
-         "dif": 55
+         "dif": 55,
+         "incomparecencias": 2
         }
        ]
       }
@@ -3846,7 +3864,8 @@
       "p": 18,
       "pf": 780,
       "pc": 1215,
-      "dif": -435
+      "dif": -435,
+      "incomparecencias": null
      }
     ]
    },
@@ -3949,7 +3968,8 @@
          "p": 9,
          "pf": 836,
          "pc": 829,
-         "dif": 7
+         "dif": 7,
+         "incomparecencias": 1
         }
        ]
       }
@@ -4024,7 +4044,8 @@
       "p": 20,
       "pf": 660,
       "pc": 1178,
-      "dif": -518
+      "dif": -518,
+      "incomparecencias": null
      }
     ]
    },
@@ -4281,7 +4302,8 @@
          "p": 7,
          "pf": 332,
          "pc": 401,
-         "dif": -69
+         "dif": -69,
+         "incomparecencias": 1
         },
         {
          "tipo": "distrito",
@@ -4607,7 +4629,8 @@
       "p": 5,
       "pf": 889,
       "pc": 707,
-      "dif": 182
+      "dif": 182,
+      "incomparecencias": 2
      }
     ]
    },
@@ -4642,7 +4665,8 @@
          "p": 5,
          "pf": 889,
          "pc": 707,
-         "dif": 182
+         "dif": 182,
+         "incomparecencias": 2
         }
        ]
       }
@@ -4676,7 +4700,8 @@
          "p": 7,
          "pf": 852,
          "pc": 738,
-         "dif": 114
+         "dif": 114,
+         "incomparecencias": 1
         }
        ]
       }
@@ -4792,7 +4817,8 @@
       "p": 2,
       "pf": 1290,
       "pc": 772,
-      "dif": 518
+      "dif": 518,
+      "incomparecencias": null
      }
     ]
    },
@@ -5630,7 +5656,8 @@
       "p": 9,
       "pf": 925,
       "pc": 859,
-      "dif": 66
+      "dif": 66,
+      "incomparecencias": null
      }
     ]
    },
@@ -5699,7 +5726,8 @@
          "p": 9,
          "pf": 711,
          "pc": 762,
-         "dif": -51
+         "dif": -51,
+         "incomparecencias": 2
         }
        ]
       }
@@ -5801,7 +5829,8 @@
          "p": 9,
          "pf": 683,
          "pc": 754,
-         "dif": -71
+         "dif": -71,
+         "incomparecencias": 1
         }
        ]
       }
@@ -6096,7 +6125,8 @@
       "p": 7,
       "pf": 948,
       "pc": 787,
-      "dif": 161
+      "dif": 161,
+      "incomparecencias": null
      }
     ]
    },
@@ -6233,7 +6263,8 @@
          "p": 11,
          "pf": 861,
          "pc": 899,
-         "dif": -38
+         "dif": -38,
+         "incomparecencias": 1
         }
        ]
       }
@@ -6459,7 +6490,8 @@
       "p": 9,
       "pf": 792,
       "pc": 857,
-      "dif": -65
+      "dif": -65,
+      "incomparecencias": null
      }
     ]
    },
@@ -6562,7 +6594,8 @@
          "p": 9,
          "pf": 829,
          "pc": 736,
-         "dif": 93
+         "dif": 93,
+         "incomparecencias": 1
         }
        ]
       }
@@ -6596,7 +6629,8 @@
          "p": 15,
          "pf": 547,
          "pc": 749,
-         "dif": -202
+         "dif": -202,
+         "incomparecencias": 2
         }
        ]
       }
@@ -6630,7 +6664,8 @@
          "p": 8,
          "pf": 531,
          "pc": 498,
-         "dif": 33
+         "dif": 33,
+         "incomparecencias": 1
         }
        ]
       }
@@ -6664,7 +6699,8 @@
          "p": 13,
          "pf": 413,
          "pc": 765,
-         "dif": -352
+         "dif": -352,
+         "incomparecencias": 1
         },
         {
          "tipo": "liga_2",
@@ -6776,7 +6812,8 @@
       "p": 11,
       "pf": 835,
       "pc": 867,
-      "dif": -32
+      "dif": -32,
+      "incomparecencias": null
      }
     ]
    },
@@ -6947,7 +6984,8 @@
          "p": 6,
          "pf": 758,
          "pc": 690,
-         "dif": 68
+         "dif": 68,
+         "incomparecencias": 1
         }
        ]
       }
@@ -7076,7 +7114,8 @@
          "p": 3,
          "pf": 102,
          "pc": 141,
-         "dif": -39
+         "dif": -39,
+         "incomparecencias": 1
         }
        ]
       }
@@ -7582,7 +7621,8 @@
       "p": 5,
       "pf": 1020,
       "pc": 857,
-      "dif": 163
+      "dif": 163,
+      "incomparecencias": 1
      }
     ]
    },
@@ -7617,7 +7657,8 @@
          "p": 5,
          "pf": 1020,
          "pc": 857,
-         "dif": 163
+         "dif": 163,
+         "incomparecencias": 1
         }
        ]
       }
@@ -7660,7 +7701,8 @@
       "p": 12,
       "pf": 876,
       "pc": 1091,
-      "dif": -215
+      "dif": -215,
+      "incomparecencias": null
      }
     ]
    },
@@ -8630,7 +8672,8 @@
          "p": 11,
          "pf": 855,
          "pc": 996,
-         "dif": -141
+         "dif": -141,
+         "incomparecencias": 1
         }
        ]
       }
@@ -8664,7 +8707,8 @@
          "p": 14,
          "pf": 716,
          "pc": 1090,
-         "dif": -374
+         "dif": -374,
+         "incomparecencias": 1
         }
        ]
       }
@@ -8790,7 +8834,8 @@
          "p": 3,
          "pf": 43,
          "pc": 67,
-         "dif": -24
+         "dif": -24,
+         "incomparecencias": 2
         }
        ]
       }

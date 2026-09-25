@@ -132,3 +132,9 @@ Ninguna otra variante está confirmada. En particular **no** lo están `CARPASIO
 ## D28 — La pestaña de rivales dibuja su gráfico sin librerías
 **Decisión:** el gráfico de trayectoria de "Rivales 26/27" es un SVG generado en el propio `index.html`. No se añade Chart.js ni ninguna otra librería.
 **Por qué:** el bloque decía "sin librerías nuevas (Chart.js ya está)", pero **Chart.js no está** en el dashboard: los gráficos existentes (por cuartos, rejilla de la Historia) son CSS. Añadirlo habría sido una librería nueva. Un SVG basta para un gráfico de puntos con huecos sin interpolar, y funciona sin conexión.
+
+## D29 — Incomparecencias: la clasificación es real, pero el scouting ordena por balance en pista (Iván, 25/09/2026)
+**Decisión:** no presentarse a un partido **resta puntos** en la clasificación de los JDM, así que la clasificación oficial es **real** aunque PJ ≠ G + P. Para el scouting importa más el balance de los partidos jugados:
+- Si en 2025/26 un rival tiene derrotas por incomparecencia (estado "N" en el portal) y explican exactamente la diferencia PJ − (G + P), la tarjeta dice **"N incomparecencias"** junto al puesto, con el aviso *"No presentarse resta puntos: la clasificación oficial es real, pero su balance en pista es G-P"*. El ⚠ de "clasificación que no cuadra" se reserva para lo que las incomparecencias **no** explican (p. ej. MEJORADA 2012 C.B., de un grupo sin partidos en el portal con el que contrastar).
+- Las tarjetas de la pestaña se ordenan por **% de victorias en partidos jugados, G/(G+P), en 2025/26**; si empatan, por el puesto oficial; los que no tienen rastro, al final. El puesto que se muestra sigue siendo el oficial.
+**Caso de control:** 28500, 13-5 en pista y 11º/11 oficial por 2 incomparecencias, pasa a 3º del grupo del MdL en el orden de la pestaña.

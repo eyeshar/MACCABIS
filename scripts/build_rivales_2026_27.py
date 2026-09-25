@@ -234,6 +234,19 @@ def ronda_de(idx_t, r):
     return RONDAS.get(n, f'Ronda {r["Jornada"]}')
 
 
+def incomparecencias_perdidas(idx_t, cod, grupo):
+    """Partidos del grupo que el equipo perdió por no presentarse (estado "N" y marcador en contra).
+    El portal los cuenta en PJ pero no en G ni en P, y restan puntos (D29)."""
+    n = 0
+    for r in idx_t['grupo'].get(grupo, []):
+        if r['Estado'] != 'N' or cod not in (r['Codigo_equipo1'], r['Codigo_equipo2']):
+            continue
+        a, b = num(r['Resultado1']) or 0, num(r['Resultado2']) or 0
+        if a != b and (a < b) == (r['Codigo_equipo1'] == cod):
+            n += 1
+    return n
+
+
 def recorrido_eliminatoria(idx_t, cod, grupo):
     """Hasta dónde llegó un equipo en un cuadro de eliminatorias (sistema COPA)."""
     ps = [r for r in idx_t['grupo'][grupo] if cod in (r['Codigo_equipo1'], r['Codigo_equipo2'])]
@@ -308,6 +321,9 @@ def trayectoria(nombres_norm, P, C, idx, cods):
                 f = {'tipo': clave, 'fase': etiqueta, 'competicion': r['Nombre_competicion'],
                      'nombre_fase': r['Nombre_fase'], 'grupo': r['Nombre_grupo'], 'distrito': r['Nombre_distrito'],
                      'codigo_grupo': g, 'fuente': 'clasificacion', **fila_clas(r, n_grupo[t][g])}
+                n_np = incomparecencias_perdidas(idx[t], cod, g)
+                if n_np:
+                    f['incomparecencias'] = n_np
                 if idx[t]['sistema'].get(g) == 'COPA':
                     f['eliminatoria'] = recorrido_eliminatoria(idx[t], cod, g)
                 fases.append(f)
@@ -809,7 +825,8 @@ def main():
                 'nombres_anteriores_confirmados': alias, 'apodos_historico_propio': apodos,
                 'temporadas_en_jdm': len(tray), 'temporadas_disponibles': len(TEMPORADAS),
                 'temporada_pasada_2025_26': ({'nombre': ', '.join(ult['nombres']), 'fases': [
-                    {k: f.get(k) for k in ('fase', 'distrito', 'grupo', 'posicion', 'equipos_en_grupo', 'pj', 'g', 'p', 'pf', 'pc', 'dif')}
+                    {k: f.get(k) for k in ('fase', 'distrito', 'grupo', 'posicion', 'equipos_en_grupo', 'pj', 'g', 'p', 'pf', 'pc', 'dif',
+                                           'incomparecencias')}
                     | ({'eliminatoria': f['eliminatoria']['texto']} if f.get('eliminatoria') else {})
                     for i in ult['inscripciones'] for f in i['fases']]} if ult else None),
                 'mejor_resultado': mejor_resultado(tray),

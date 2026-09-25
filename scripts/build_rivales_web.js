@@ -27,8 +27,11 @@ const slug = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase
   .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 const esLiga = f => f.tipo === 'liga' || f.tipo === 'liga_2';
-const descuadre = f => f.pj != null && f.g != null && f.pj !== f.g + f.p
+// PJ ≠ G+P: si la diferencia son incomparecencias perdidas, la clasificación es real (no presentarse
+// resta puntos, D29) y no es un descuadre. Sólo lo que no explican las incomparecencias lleva ⚠.
+const descuadre = f => f.pj != null && f.g != null && f.pj !== f.g + f.p + (f.incomparecencias || 0)
   ? `La clasificación oficial no cuadra: PJ ${f.pj} ≠ G+P ${f.g + f.p}. Se muestra tal cual, sin corregir.` : null;
+const incomp = f => f.incomparecencias && f.pj === f.g + f.p + f.incomparecencias ? f.incomparecencias : undefined;
 
 /** Puesto relativo en una liga: 1 = primero, 0 = último. */
 const relativo = (pos, n) => pos === 1 ? 1 : (n > 1 ? (n - pos) / (n - 1) : 0);
@@ -40,7 +43,7 @@ function fila(s, i, f) {
     pj: f.pj, g: f.g, p: f.p, pf: f.pf, pc: f.pc,
     hasta: f.eliminatoria ? f.eliminatoria.texto : null,
     calculado: f.fuente !== 'clasificacion' || undefined,
-    aviso: descuadre(f) || undefined,
+    aviso: descuadre(f) || undefined, incomparecencias: incomp(f),
   };
 }
 
@@ -79,7 +82,8 @@ function main() {
       t2526: l ? {
         nombre: tp.nombre, distrito: l.distrito, grupo: l.grupo, pos: l.posicion, n: l.equipos_en_grupo,
         g: l.g, p: l.p, pf: l.pf, pc: l.pc, rel: +relativo(l.posicion, l.equipos_en_grupo).toFixed(4),
-        aviso: descuadre(l) || undefined,
+        aviso: descuadre(l) || undefined, incomparecencias: incomp(l),
+        pct: +(l.g / ((l.g + l.p) || 1)).toFixed(4),
         extra: tp.fases.filter(f => f.eliminatoria).map(f => `${f.fase}: ${f.eliminatoria}`),
       } : null,
       h2h: {

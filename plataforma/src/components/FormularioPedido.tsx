@@ -52,12 +52,14 @@ export default function FormularioPedido(p: Props) {
   const hacenFaltaNombre = marcadas.some((x) => x.llevaNombre);
   const hacenFaltaDorsal = marcadas.some((x) => x.llevaDorsal);
   const dorsalNum = /^\d{1,2}$/.test(dorsal) ? Number(dorsal) : null;
+  // El dorsal solo es unico entre pedidos de jugadores; el de un familiar es libre (D59).
+  const compruebaDorsal = hacenFaltaDorsal && para === "yo";
 
   // Comprobacion del dorsal en vivo (solo dice si esta cogido, nunca de quien).
   useEffect(() => {
     // Al cambiar el dorsal se quita el aviso anterior; la base de datos lo vuelve a comprobar al guardar.
     setDorsalCogido(false);
-    if (dorsalNum === null || !hacenFaltaDorsal) return;
+    if (dorsalNum === null || !compruebaDorsal) return;
     let vivo = true;
     const t = setTimeout(async () => {
       const cogido = await p.comprobarDorsal(dorsalNum, p.inicial?.id ?? null);
@@ -68,7 +70,7 @@ export default function FormularioPedido(p: Props) {
       clearTimeout(t);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dorsalNum, hacenFaltaDorsal]);
+  }, [dorsalNum, compruebaDorsal]);
 
   const problemas = useMemo(() => {
     const lista: string[] = [];
@@ -78,9 +80,9 @@ export default function FormularioPedido(p: Props) {
     for (const x of marcadas) if (!tallas[x.id]) lista.push(`Falta la talla de: ${x.nombre.toLowerCase()}.`);
     if (hacenFaltaNombre && !nombreRopa.trim()) lista.push("Falta el nombre que va en la ropa.");
     if (hacenFaltaDorsal && dorsalNum === null) lista.push("Falta el dorsal (del 0 al 99).");
-    if (hacenFaltaDorsal && dorsalCogido && p.modo === "jugador") lista.push(ERRORES_PEDIDO.dorsal_cogido);
+    if (compruebaDorsal && dorsalCogido && p.modo === "jugador") lista.push(ERRORES_PEDIDO.dorsal_cogido);
     return lista;
-  }, [p.modo, jugadorId, nombreCompleto, marcadas, tallas, hacenFaltaNombre, nombreRopa, hacenFaltaDorsal, dorsalNum, dorsalCogido]);
+  }, [p.modo, jugadorId, nombreCompleto, marcadas, tallas, hacenFaltaNombre, nombreRopa, hacenFaltaDorsal, compruebaDorsal, dorsalNum, dorsalCogido]);
 
   function cambiarPara(v: "yo" | "familiar") {
     setPara(v);
@@ -171,9 +173,9 @@ export default function FormularioPedido(p: Props) {
           <label htmlFor="dorsal">Dorsal</label>
           <input id="dorsal" type="number" inputMode="numeric" min={0} max={99} value={dorsal}
             onChange={(e) => setDorsal(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            aria-invalid={(intentado && hacenFaltaDorsal && dorsalNum === null) || dorsalCogido} aria-describedby="ayuda-dorsal" />
+            aria-invalid={(intentado && hacenFaltaDorsal && dorsalNum === null) || (compruebaDorsal && dorsalCogido)} aria-describedby="ayuda-dorsal" />
           <p className="ayuda" id="ayuda-dorsal">Del 0 al 99. Va en la camiseta, el pantalón y el cubre.</p>
-          {dorsalCogido && hacenFaltaDorsal && (
+          {dorsalCogido && compruebaDorsal && (
             <p className="aviso aviso-error" role="status" style={{ margin: "6px 0 0" }}>
               {p.modo === "jugador" ? "Ese dorsal ya está cogido." : "Ese dorsal ya está en otro pedido de esta campaña. Puedes guardar igualmente."}
             </p>

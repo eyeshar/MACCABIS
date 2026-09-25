@@ -33,6 +33,8 @@ grant usage on schema auth to anon, authenticated, service_role;
 grant execute on all functions in schema auth to anon, authenticated, service_role;
 
 grant usage on schema public to anon, authenticated, service_role;
-alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+-- Igual que el proyecto real (D58): "Automatically expose new tables" DESACTIVADO,
+-- asi que las tablas nuevas NO dan permisos a anon/authenticated por defecto.
+-- Las funciones si (comportamiento por defecto de Postgres + Supabase), para
+-- comprobar que las migraciones los retiran.
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
-alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;

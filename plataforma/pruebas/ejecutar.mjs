@@ -86,6 +86,12 @@ try {
     r = await rpc(f, args);
     ok(r.status >= 400, `anonimo NO puede ejecutar ${f}()`, `status ${r.status}`);
   }
+  await sql`create table public.prueba_rls_automatica (id int)`;
+  const [rlsNueva] = await sql`select relrowsecurity from pg_class where oid = 'public.prueba_rls_automatica'::regclass`;
+  await sql`drop table public.prueba_rls_automatica`;
+  ok(rlsNueva?.relrowsecurity === true, 'una tabla nueva en public nace con RLS activada (event trigger)');
+  const sinRls = await sql`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity`;
+  ok(sinRls.length === 0, 'todas las tablas de public tienen RLS', sinRls.map((x) => x.relname).join(','));
   r = await rpc('zona_jugador', { p_token: 'f'.repeat(64) });
   ok(r.status === 200 && r.datos === null, 'enlace inventado: zona_jugador devuelve null');
   for (const t of ['jugadores', 'enlaces', 'pedidos_ropa']) {
@@ -258,13 +264,15 @@ try {
   ok(await pA.getByLabel('Nombre completo del familiar').inputValue() === '', 'al elegir familiar se vacia el nombre completo');
   await pA.getByLabel('Nombre completo del familiar').fill('Lucía Calahorro');
   await pA.getByLabel('Nombre en la ropa').fill('LUCIA');
-  await pA.getByLabel('Dorsal').fill('70');
+  await pA.getByLabel('Dorsal').fill('7'); // el mismo que el suyo: en un familiar el dorsal es libre (D59)
   await pA.locator('.prenda', { has: pA.getByRole('heading', { name: 'Camiseta de juego', exact: true }) }).getByLabel('La quiero').check();
   await pA.locator('.prenda', { has: pA.getByRole('heading', { name: 'Camiseta de juego', exact: true }) }).getByLabel('Talla').selectOption('10');
+  await pA.waitForTimeout(800);
+  ok(!(await pA.getByText('Ese dorsal ya está cogido.').isVisible()), 'familiar con el mismo dorsal (7) que un jugador: sin aviso');
   await pA.getByRole('button', { name: 'Enviar pedido' }).click();
   await pA.waitForURL(/guardado=1/);
   const fam = await sql`select * from public.pedidos_ropa where jugador_id = ${A.id} and para = 'familiar'`;
-  ok(fam.length === 1 && fam[0].nombre_completo === 'Lucía Calahorro' && fam[0].talla_camiseta === '10', 'pedido para un familiar guardado a nombre de A');
+  ok(fam.length === 1 && fam[0].nombre_completo === 'Lucía Calahorro' && fam[0].talla_camiseta === '10' && fam[0].dorsal === 7, 'pedido para un familiar guardado a nombre de A, con dorsal 7');
   ok(await pA.getByRole('heading', { name: 'Para Lucía Calahorro' }).isVisible(), 'A ve el pedido del familiar en "Mis pedidos"');
   await captura(pA, '06-mis-pedidos');
 
@@ -311,7 +319,7 @@ try {
   await pG.getByRole('button', { name: 'Enviar pedido' }).click();
   await pG.waitForURL(/gestion\/ropa\?c=.*guardado=1/);
   const repetidos = await pG.locator('section', { has: pG.getByRole('heading', { name: 'Dorsales repetidos' }) }).innerText();
-  ok(/7: .*Manuel Calahorro Sánchez.*Sergi Jorba López/s.test(repetidos), 'el gestor ve el dorsal 7 repetido con los dos nombres', repetidos);
+  ok(/7: .*Manuel Calahorro Sánchez.*Sergi Jorba López/s.test(repetidos) && !repetidos.includes('Lucía'), 'el gestor ve el dorsal 7 repetido con los dos jugadores (el familiar no cuenta)', repetidos);
   const recuento = await pG.locator('section', { has: pG.getByRole('heading', { name: 'Recuento por prenda y talla' }) }).innerText();
   ok(/Cubre[\s\S]*\b2\b/.test(recuento), 'recuento por prenda y talla visible');
   await captura(pG, '08-gestion-ropa');

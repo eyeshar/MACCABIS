@@ -121,7 +121,7 @@ export async function guardarPedidoGestor(datos: DatosPedido): Promise<Resultado
 
 export async function comprobarDorsalGestor(campana: string, dorsal: number, pedido: string | null): Promise<boolean> {
   const { supabase } = await exigirGestor();
-  let q = supabase.from("pedidos_ropa").select("id, talla_camiseta, talla_pantalon, talla_cubre").eq("campana_id", campana).eq("dorsal", dorsal);
+  let q = supabase.from("pedidos_ropa").select("id, talla_camiseta, talla_pantalon, talla_cubre").eq("campana_id", campana).eq("dorsal", dorsal).eq("para", "yo");
   if (pedido) q = q.neq("id", pedido);
   const { data } = await q;
   return (data ?? []).some((p) => p.talla_camiseta || p.talla_pantalon || p.talla_cubre);

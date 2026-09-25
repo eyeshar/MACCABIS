@@ -202,3 +202,60 @@ Ninguna otra variante está confirmada. En particular **no** lo están `CARPASIO
 ## D43 — Pipeline de estadísticas en Node; la 2025/26 publicada no se regenera (25/09/2026)
 **Decisión:** el pipeline vive en `scripts/estadisticas/` (Node), lee de `fuentes_fbm/<temporada>/` (fuera de git) y forma parte de `npm run build:datos`. Reproduce `data/season_2025-26.json` (test de regresión: sólo difiere en hora y pista, nuevas, y en tres correcciones del pipeline antiguo). **La 2025/26 publicada no se regenera**: de sus 41 hojas XLSX sólo queda una en el equipo (las demás se subieron al chat); el generador se niega a dejar una temporada con menos partidos o boxscores de los que tiene. Rama `feat/pipeline-estadisticas`, sin mergear.
 **Por qué:** el pipeline de 25/26 leía de una carpeta del chat de Claude y no era reproducible. Los ficheros de la FBM traen datos de terceros (rivales, árbitros) y nunca van al repositorio público.
+
+---
+## Bloque "Plataforma v0: identidad, zona personal y pedido de ropa" (26/09/2026)
+_D44–D54: decisiones (a)–(k) de Iván en el chat de diseño, tras contrastarlas con otras dos IA. D55–D57: decisiones técnicas de Code en este bloque._
+
+## D44 — SportEasy sale de la operativa desde la jornada 2 (Iván, 26/09/2026) — SUSTITUYE a D30 y deja sin efecto D31 y D36
+**Decisión:** desde la **jornada 2 (11/10/2026)** la disponibilidad (partidos y entrenos) y la convocatoria van **solo por nuestra web**. En SportEasy **no se crean los partidos de liga ni se pide respuesta**; queda como **respaldo dormido hasta noviembre**, cuando se decide si se apaga. No se carga el calendario en SportEasy: ni plantilla del soporte (D36) ni agente supervisado (D31).
+**Por qué:** dos sistemas pidiendo lo mismo al jugador duplican el trabajo de Iván, que es justo lo que se quiere quitar; y la doble ficha no encaja en SportEasy.
+**Consecuencia:** D37 (recordatorios de SportEasy Premium) deja de aplicarse cuando SportEasy se duerma; el recordatorio pasa a ser un mensaje de WhatsApp que prepara la plataforma (bloque siguiente). Antes de apagarlo hay que exportar el balance de asistencias (BACKLOG).
+
+## D45 — Identidad: enlace personal secreto para jugadores; login real para los 3 gestores (Iván, 26/09/2026)
+**Decisión:** cada jugador tiene un **enlace personal secreto** (`/j/<token>`, token largo, revocable y regenerable) que hace de inicio de sesión: le da acceso a su zona personal y **solo le deja modificar lo suyo**. Los gestores (Iván, Carlos Barreiro, Eduardo Martín-Ortega) entran con **login real de Supabase Auth**. Cierra la "Decisión pendiente" del BACKLOG a favor de la opción (b).
+**Por qué:** cero fricción para 24 adultos (sin contraseñas que olvidar) y control real para los gestores. El riesgo (si se reenvía, otro entra por él) se asume y se mitiga: el mensaje de bienvenida pide no reenviarlo y el botón "Regenerar" anula el viejo al momento.
+
+## D46 — Qué ven los jugadores (Iván, 26/09/2026)
+**Decisión:** en cada evento los jugadores ven **quién va, quién no va y quién falta por contestar**, solo con nombres. **Nunca** niveles, posiciones, motivos de ausencia ni nada del motor de convocatoria. **Disponibilidad y convocatoria son conceptos distintos** (estar disponible no es estar convocado).
+
+## D47 — El calendario propio es la fuente de verdad (Iván, 26/09/2026)
+**Decisión:** el calendario lo cargan los gestores en la plataforma. Las fuentes externas (Ayuntamiento, datos abiertos) **solo detectan cambios y los proponen** con Aceptar/Ignorar. **Ningún cambio externo se aplica solo** y todo cambio queda registrado (qué, fuente, quién lo aceptó y cuándo). Matiza D42: el calendario de datos abiertos pasa a ser un **detector de cambios**, no la fuente.
+
+## D48 — Motor de convocatoria determinista y por fases (Iván, 26/09/2026)
+**Decisión:** en la **J3** el motor aplica **solo restricciones duras** (fichas, doblaje sin solapes, mínimos por posición, topes). **Nivel frente al rival y rotación** entran entre la **J4 y la J6**. Cada ajuste manual del gestor queda registrado con su motivo. Mismas entradas, misma propuesta.
+
+## D49 — SportMember descartado; una sola consulta a Indalweb (Iván, 26/09/2026)
+**Decisión:** SportMember queda descartado (salvo que se echen mucho de menos los recordatorios automáticos). Se hace **una única consulta** a Indalweb (soporte@gesdeportiva.es) sobre una exportación oficial; si dicen que no, el tema se cierra y sigue D35.
+
+## D50 — Qué se replica de SportEasy y qué no (Iván, 26/09/2026)
+**No se replica:** alineación en pista, tareas, foro, mensaje del entrenador y sus estadísticas.
+**Sí se replica:** calendario **único** para MdA y MdL (una sola competición con la etiqueta de equipo en cada partido); eventos (entreno recurrente, liga, amistoso, torneo, otro) con rival, jornada, hora, hora y lugar de quedada, pista y casa/fuera; disponibilidad con estado "sin responder"; **pase de lista** posterior (a tiempo, retraso, con excusa, sin excusa, lesionado; por defecto se copia la respuesta); balance de asistencia; plantilla con roles; iCal. Los gestores crean y editan eventos.
+
+## D51 — Sanciones: estado manual del jugador (Iván, 26/09/2026)
+**Decisión:** "sancionado hasta la jornada X" es un estado manual que pone un gestor; el motor no convoca a un sancionado. Salvo que aparezca una fuente fija (ver `docs/SONDEO_CALENDARIO_AYTO.md`).
+
+## D52 — Tesorería futura: solo registro de cuentas (Iván, 26/09/2026)
+**Decisión:** sin cobros por la web. Tampoco en el pedido de ropa: el precio se muestra como orientativo, "por confirmar".
+
+## D53 — Excepción temporal a "staging antes de producción" (Iván, 26/09/2026)
+**Decisión:** mientras no haya datos que romper, **un solo proyecto de Supabase**. El staging se crea con el bloque de calendario y disponibilidad (J2).
+
+## D54 — El pedido de ropa es el primer uso real de la plataforma (Iván, 26/09/2026)
+**Decisión:** el pedido de ropa (proveedor VIVE) estrena la plataforma y sirve para **repartir los enlaces personales**. Prendas y lo que llevan impreso (confirmado por Iván): camiseta de juego (nombre + dorsal + talla), pantalón (dorsal + talla), cubre (nombre + dorsal + talla; vale como segunda camiseta de juego), sudadera/chaqueta (nombre + talla).
+
+## D55 — Arquitectura de la plataforma v0 (Code, 26/09/2026)
+1. La app Next.js vive en **`plataforma/`**, dentro del mismo repositorio. La web de GitHub Pages (raíz: `index.html` + `data/`) **no cambia**. Vercel apunta a `plataforma/` (Root Directory).
+2. **RLS en todas las tablas y ninguna política para anónimos.** Los jugadores no tocan tablas: usan 4 funciones de la base de datos (`zona_jugador`, `guardar_pedido`, `anular_pedido`, `dorsal_cogido`) que reciben el token, localizan a SU jugador y solo devuelven o cambian lo suyo. El aislamiento entre jugadores lo garantiza la base de datos, no el código de la web.
+3. Los gestores trabajan con su sesión y políticas `is_gestor()`. **La service role key no se usa en la app** (ni está en Vercel); los scripts locales usan la cadena de conexión de `plataforma/.env.local`, fuera de git.
+4. Token de 64 caracteres hexadecimales (244 bits aleatorios), guardado en claro porque los gestores tienen que poder copiar el mensaje en cualquier momento; solo ellos pueden leerlo (RLS).
+5. Cabeceras `Referrer-Policy: no-referrer` (el enlace no viaja a otras webs, p. ej. al pulsar "Ver mi ficha") y `noindex` en todo.
+6. Migraciones versionadas en `plataforma/supabase/migrations/`, registradas en la misma tabla que usa la CLI de Supabase.
+**Por qué:** así "un jugador solo toca lo suyo" es verificable con pruebas contra la base de datos real (`npm run pruebas`).
+
+## D56 — Dorsal repetido: el jugador no puede; el gestor sí, con aviso (Code, 26/09/2026)
+**Decisión:** dentro de una campaña, si un dorsal ya está en otro pedido que lleva número (camiseta, pantalón o cubre), al **jugador** se le dice solo "Ese dorsal ya está cogido" y **no puede enviar** con él (la base de datos lo rechaza, sin decir de quién). Los **gestores** pueden guardar un dorsal repetido (con aviso) y ven la lista de repetidos **con nombres**. Un pedido solo de sudadera no lleva dorsal.
+**Pendiente de Iván:** si quiere que un familiar pueda llevar el mismo dorsal que el jugador (p. ej. un hijo con el número del padre), hoy tiene que añadirlo un gestor.
+
+## D57 — Excel para VIVE idéntico a la plantilla 24/25 (Code, 26/09/2026)
+**Decisión:** el Excel reproduce celda a celda el formato de `privado/LISTADO MACCABIS 2024 (revisado).xlsx` (comparador automático: 196 celdas, "IGUAL"), incluidas la fila vacía con bordes del final y el relleno blanco de las celdas vacías de la columna E, restos de edición a mano. La talla se escribe como en la lista de VIVE ("3XL"), aunque la plantilla antigua ponía "XXXL". De la plantilla solo se copia el formato; nunca sus datos, y no entra en git.

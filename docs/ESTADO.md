@@ -2,7 +2,22 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 25/09/2026 (noche) — **bloque "Cierre del sondeo y cimientos 26/27"**: plantilla confirmada, protección de las fuentes, URL de rivales, pipeline de estadísticas y calendario automático (en ramas sin mergear), sondeo de datos por jugador, cláusula de SportEasy, reglas de convocatoria v0 y decisiones D35–D43. La liga empieza el **4/10/2026** (D38)._
+_Última actualización: 26/09/2026 — **bloque "Plataforma v0: identidad, zona personal y pedido de ropa"** (rama `feat/plataforma-v0`, sin mergear). Detalle justo debajo; lo anterior sigue valiendo._
+
+## Plataforma v0 — rama `feat/plataforma-v0` (26/09/2026, NO mergeada, NO desplegada)
+- **Qué hay:** app Next.js 16 en `plataforma/` (la web de GitHub Pages no cambia). Base de datos Supabase definida en `plataforma/supabase/migrations/20260926100000_plataforma_v0.sql`: `jugadores`, `enlaces`, `gestores`, `campanas_ropa`, `pedidos_ropa`, RLS en todas, sin políticas para anónimos; los jugadores solo usan 4 funciones que reciben su enlace (D55). Guía de puesta en marcha en `plataforma/LEEME.md`.
+- **Zona personal `/j/<enlace>`:** saludo con su nombre visible; pedido de ropa activo con su estado; mis pedidos (modificar y anular mientras esté abierto); enlace a su ficha del dashboard; "Mi semana" y "Próximos partidos" como próximamente. Manifiesto propio para guardarla en la pantalla de inicio.
+- **Pedido de ropa (VIVE):** para mí o para un familiar; nombre completo, nombre en la ropa (mayúsculas, máx. 15), dorsal 0–99; camiseta, pantalón, cubre (con la nota de la equipación amarilla) y sudadera, cada una con su imagen (extraídas del PDF de `privado/`, publicadas en `plataforma/public/ropa/`), lo que lleva impreso, precio orientativo "por confirmar" y talla VIVE. Resumen en tabla siempre visible; no se envía si falta una talla. Dorsal cogido: "Ese dorsal ya está cogido", sin nombres (D56). Guía de tallas en `/guia-tallas`.
+- **Gestión `/gestion` (login):** jugadores y enlaces (copiar mensaje de bienvenida, WhatsApp si hay teléfono, regenerar, anular, editar nombre visible, teléfono, fichas, rol, entrena, activo); pedido de ropa (abrir/cerrar, fecha límite, precios, dorsales repetidos con nombres, recuento por prenda y talla, pedidos editables y borrables, alta manual) y **"Descargar Excel para VIVE"**, idéntico en estructura a la plantilla 24/25 (D57).
+- **Semilla:** 25 personas (24 de la plantilla confirmada + Carlos Barreiro como entrenador), con los motes de `PLANTILLA_26-27.md` ("Fernando T." y "Fernando M."); quien no tenía mote lleva su nombre de pila. Sin niveles ni posiciones. Sin teléfonos. Campaña "Ropa 2026/27" creada **cerrada**.
+- **Pruebas (`npm run pruebas`): 81/81 OK** contra Postgres 17 y PostgREST reales con las migraciones, la app compilada y Chrome a 375 px: enlace válido, anulado e inventado; RLS explícita (anónimo, usuario no gestor, jugador contra jugador); pedido válido, talla inválida, campaña cerrada y fecha pasada, dorsal repetido sin nombre, modificar, familiar; Excel celda a celda "IGUAL" con la plantilla. El login de gestores se prueba con un doble de Supabase Auth.
+- **Sin desplegar:** el token de Vercel del entorno no es válido y no hay proyecto de Supabase. Pasos de Iván en `plataforma/LEEME.md`.
+- **Pipeline de actas:** no hay hojas XLSX nuevas de 25/26 en Descargas → **no se mergea** `feat/pipeline-estadisticas`. Su test de regresión sigue en "RESULTADO: OK" (26/09, con `data/raw/` presente). Procedimiento semanal en `docs/PROCEDIMIENTO_JORNADA.md`.
+- **Decisiones:** D44–D57. SportEasy sale de la operativa desde la J2 (D44).
+
+---
+
+_Actualización anterior: 25/09/2026 (noche) — **bloque "Cierre del sondeo y cimientos 26/27"**: plantilla confirmada, protección de las fuentes, URL de rivales, pipeline de estadísticas y calendario automático (en ramas sin mergear), sondeo de datos por jugador, cláusula de SportEasy, reglas de convocatoria v0 y decisiones D35–D43. La liga empieza el **4/10/2026** (D38)._
 
 ### Ramas pendientes de verificar con Iván (NO mergeadas)
 | Rama | Qué trae | Cómo se comprueba |

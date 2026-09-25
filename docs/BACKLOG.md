@@ -3,7 +3,33 @@
 > Lo pendiente, por prioridad. Se reordena según urgencia y decisiones.
 > _Reordenado el 25/09/2026 (D30–D34) y actualizado el mismo día al cerrar el bloque "Cierre del sondeo y cimientos 26/27" (D35–D43)._
 
-## Ahora — arranque de la temporada 2026/27 (jornada 1: domingo 4/10, D38)
+## ORDEN VIGENTE (26/09/2026, bloque "Plataforma v0", D44–D57)
+
+> Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
+
+1. **[ESTE BLOQUE] Plataforma v0: identidad, zona personal y pedido de ropa** — rama `feat/plataforma-v0`, **sin mergear**.
+   - [x] Esqueleto Next.js en `plataforma/` + migraciones con RLS en todas las tablas + semilla de la plantilla 26/27 y enlaces.
+   - [x] Zona personal `/j/<enlace>`, pedido de ropa (VIVE), zona de gestión (jugadores y enlaces, pedidos, Excel para VIVE).
+   - [x] Pruebas de extremo a extremo (`npm run pruebas`, 81 comprobaciones OK).
+   - [ ] **Iván:** crear Supabase y Vercel y dar de alta a los 3 gestores (`plataforma/LEEME.md`), revisar en la URL de Vercel y aprobar. Hasta entonces **no se comparte nada con los jugadores**.
+   - [ ] **Iván:** confirmar los nombres visibles de quien no tenía mote en `PLANTILLA_26-27.md` (p. ej. "Carlos Baños" / "Carlos Barreiro", "Julio César", "Luis Alberto"); se cambian desde "Jugadores y enlaces".
+   - [ ] **Iván:** decidir si un familiar puede repetir el dorsal del jugador (D56).
+   - [ ] Merge a `main` tras la verificación de Iván.
+2. **Bloque siguiente, para la J2 (11/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
+3. **Motor de convocatoria v0.1 para la J3 (18/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
+4. **Subida de actas desde la zona de gestión** (hoy: `npm run jornada`, `docs/PROCEDIMIENTO_JORNADA.md`).
+5. **Migración del dashboard** a la plataforma.
+6. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
+7. **Tesorería** (solo registro de cuentas, D52).
+
+**Además:**
+- [ ] **Exportar el balance de asistencias de SportEasy antes de apagarlo** (noviembre), para conservar los eventos de 26/27.
+- [ ] **Una única consulta a Indalweb** (soporte@gesdeportiva.es) sobre una exportación oficial de actas y estadísticas; si dicen que no, se cierra (D49).
+- [ ] **Mergear `feat/pipeline-estadisticas` antes del 5/10** para procesar la J1 (su test de regresión da OK el 26/09; no se ha mergeado porque no han aparecido hojas nuevas de 25/26 con las que contrastar). Después, `feat/calendario-automatico` (que pasa a ser detector de cambios, D47).
+
+---
+
+## Ahora — arranque de la temporada 2026/27 (jornada 1: domingo 4/10, D38) — _histórico; ver "Orden vigente" arriba_
 
 ### 0. Pendiente de Iván (desbloquea lo demás)
 - [ ] **Verificar con Claude Code la rama `feat/pipeline-estadisticas`** y decidir si se mergea **antes del 4/10**. Es lo que procesa la jornada 1 (ver punto 2).

@@ -3,6 +3,8 @@
 > Todo lo que sabemos de SportEasy y cómo nos relacionamos con ella. Equivale a FEDERACION.md de TCPC.
 > _Última actualización: 25/09/2026 (bloque "Cierre del sondeo y cimientos 26/27"): cláusula literal de acceso automatizado, Premium y prueba de exportación._
 
+> **26/09/2026 — D44:** desde la jornada 2 (11/10) SportEasy **sale de la operativa**: disponibilidad y convocatoria solo por la plataforma propia; no se crean los partidos de liga ni se pide respuesta en SportEasy. Queda como respaldo dormido hasta noviembre. La carga del calendario (plantilla del soporte o agente, D31/D36) **se cancela**. Antes de apagarlo: exportar el balance de asistencias. Lo de abajo queda como histórico.
+
 ## Qué es para Maccabis
 
 Plataforma de gestión de equipo que Maccabis usa y paga (suscripción de equipo). Es el **registro oficial**: calendario/eventos, asistencia (partidos y entrenamientos), plantel.

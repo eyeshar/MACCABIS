@@ -1,0 +1,45 @@
+{
+  "name": "maccabis-plataforma",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma Maccabis: zona personal de cada jugador (enlace secreto) y zona de gestion (login). Next.js + Supabase.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:migrar": "node scripts/db.mjs migrar",
+    "db:semilla": "node scripts/db.mjs semilla",
+    "db:gestor": "node scripts/db.mjs gestor",
+    "db:estado": "node scripts/db.mjs estado",
+    "pruebas:pila": "node pruebas/pila.mjs",
+    "pruebas": "node pruebas/ejecutar.mjs",
+    "imagenes:ropa": "python scripts/extraer_imagenes_ropa.py"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.110.1",
+    "exceljs": "^4.4.0",
+    "next": "^16.3.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^16.4.5",
+    "embedded-postgres": "17.10.0-beta.17",
+    "jose": "^6.0.0",
+    "playwright": "^1.61.1",
+    "postgres": "^3.4.5",
+    "typescript": "^5"
+  },
+  "allowScripts": {
+    "@embedded-postgres/windows-x64@17.10.0-beta.17": true
+  }
+}

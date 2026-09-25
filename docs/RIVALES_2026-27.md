@@ -6,14 +6,41 @@ _Generado por `scripts/build_rivales_2026_27.py` el 25/09/2026 · datos en `data
 >
 > **Alcance:** baloncesto, sénior masculino, **todos los distritos**, temporadas 2014/15–2025/26 (2013/14 y 2019/20 no están en el portal). Liga, segundas fases, fase de distrito, fase final de Madrid y torneos municipales.
 >
-> **Emparejamiento:** sólo nombre **exacto** tras normalizar mayúsculas, tildes y signos, más los dos alias confirmados por Iván. Los parecidos **no se fusionan**: van a la tabla de candidatos del final.
+> **Emparejamiento:** sólo nombre **exacto** tras normalizar mayúsculas, tildes y signos, más los alias confirmados por Iván. Los parecidos sin confirmar **no se fusionan**: van a la tabla de candidatos del final.
+
+## Lo esencial
+
+**Grupo del MdA**
+
+- NABUCO TD: 1º de 11 en 2025/26 (18-2, 1125-827), Moratalaz.
+- CHUPITIMANGUIS: 2º de 12 en 2025/26 (17-5, 1039-857), Hortaleza.
+- Chavalitros: 4º de 11 en 2025/26 (11-9, 769-743), Moratalaz.
+- Nunca nos hemos enfrentado a: Enfermos del Aro, RIF, VALLEKAS BASKET.
+- Balance total del club contra el grupo: 44 partidos, 35G-9P (2164-1574).
+- Rival más repetido: LOS KHINKIS RUSOS, 21 partidos (15G-6P).
+- Nunca nos han ganado: "TROPICALEROS", CHUPITIMANGUIS, LITROS DE MAHOU, WILD BOYS.
+
+**Grupo del MdL**
+
+- CASTAÑAZO: 2º de 11 en 2025/26 (18-2, 1290-772), Moratalaz.
+- TRASCENDEDORES C.B.: 3º de 11 en 2025/26 (14-5, 1020-857), Moratalaz.
+- La Cancha Roja: 4º de 11 en 2025/26 (13-7, 948-787), Moratalaz.
+- Sin rastro en los JDM: Craps, Quinto Tiempo.
+- Nunca nos hemos enfrentado a: Craps, F.T. FLOPPERS, MEJORADA 2012 C.B., Quinto Tiempo, TRASCENDEDORES C.B.
+- Balance total del club contra el grupo: 39 partidos, 27G-12P (1872-1568).
+- Rival más repetido: Suanzes Motor, 13 partidos (11G-2P).
 
 ## Alias confirmados por Iván
 
-| Rival 2026/27 | Nombre anterior | Confirmado |
-|---|---|---|
-| Suanzes Motor | SUIZA | Iván, 25/09/2026 |
-| VANNER | VANNER PONENOS | Iván, 25/09/2026 |
+| Rival 2026/27 | Nombres anteriores | Apodos del histórico propio | Confirmado |
+|---|---|---|---|
+| Suanzes Motor | SUIZA, CARPASION SUIZA, CARPASION, SUIZA B.C. | — | Iván, 25/09/2026 |
+| VANNER | VANNER PONENOS | — | Iván, 25/09/2026 |
+| NABUCO TD | NABUCO | — | Iván, 25/09/2026 |
+| LOS KHINKIS RUSOS | LOS KINKIS RUSOS, KHINKIS RUSOS | KINKIS | Iván, 25/09/2026 |
+| F.T. FLOPPERS | FLOPPERS | — | Iván, 25/09/2026 |
+| CASTAÑAZO | EL CASTAÑAZO | — | Iván, 25/09/2026 |
+| VALLEKAS BASKET | VALLEKAS BASKET THUNDERS | — | Iván, 25/09/2026 |
 
 ## Cómo leer las tablas
 
@@ -21,46 +48,45 @@ _Generado por `scripts/build_rivales_2026_27.py` el 25/09/2026 · datos en `data
 - **Temporadas en los JDM** cuenta las temporadas con alguna inscripción bajo el nombre actual o un alias confirmado, de las 11 que hay en el portal.
 - **Mejor resultado**: fase final de Madrid > final de Madrid del torneo municipal > cuadro de eliminatorias de la fase de distrito > mejor puesto en liga, relativo al tamaño del grupo (una fase de distrito en formato liga cuenta como liga). No distingue divisiones: un 1º en 2ª división cuenta igual que un 1º en 1ª.
 - ⚠ marca las filas en que la clasificación oficial no cuadra (PJ ≠ G + P); se muestran tal cual, sin corregir.
-- **Cara a cara**: partidos oficiales del club (MdL + MdA). El tercer equipo de 2020/21 (#149233) va aparte.
+- **Cara a cara**: partidos oficiales del club, **sumando las dos fichas (MdL + MdA)**, de más reciente a más antiguo. #149233 "MACCABI DE LEVANTAR" (2020/21) es un **rival**, no del club (regla del nombre, D26).
 - Un mismo nombre en **otro distrito** cuenta como coincidencia exacta (así lo pide el criterio), pero puede ser otro equipo: se avisa con ⚠ cuando en una misma temporada hay ligas en varios distritos.
 
 ## Grupo del MdA — resumen
 
-| Rival (nombres anteriores) | 2025/26: dónde | 2025/26: puesto y balance | Temporadas en JDM | Mejor resultado histórico | Cara a cara |
-|---|---|---|---|---|---|
-| "TROPICALEROS" | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G1 | 5º/11 · 11-9 (917-851, +66) | 1 de 11 | 5º de 11 en JDM MOR DOM MAÑ BC SEN MAS G1 (Moratalaz), 2025/26 | 2 PJ: 2G-0P |
-| Chavalitros | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G1 | 4º/11 · 11-9 (769-743, +26) | 3 de 11 | 4º de 11 en JDM MOR DOM MAÑ BC SEN MAS G1 (Moratalaz), 2025/26 | 4 PJ: 3G-1P |
-| CHUPITIMANGUIS | Hortaleza · JDM HOR DOM MAÑ BC SEN MAS GR.2 | 2º/12 · 17-5 (1039-857, +182) | 9 de 11 | Eliminado en cuartos (55-121) en la fase de distrito (Hortaleza), 2017/18 | 2 PJ: 2G-0P |
-| Enfermos del Aro | Moratalaz · JDM MOR DOM TAR BC SEN MAS | 10º/11 · 2-18 (520-890, -370) | 5 de 11 | 6º de 10 en JDM MOR DOM TAR BC SEN MAS GR-6 (Moratalaz), 2021/22 | nunca |
-| LITROS DE MAHOU | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G3 | 9º/11 · 4-16 (765-1292, -527) | 8 de 11 | 3º en BC SR MAS DOMINGO G3 (torneo municipal), 2018/19 | 4 PJ: 4G-0P |
-| LOS KHINKIS RUSOS | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 7º/11 · 7-13 (660-826, -166) | 10 de 11 | 1º de 5 en BCESTO SEN-MASC D/M GR- B (Moratalaz), 2020/21 | 20 PJ: 15G-5P (+ tercer equipo 20/21: 1G-1P) |
-| NABUCO TD | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 1º/11 · 18-2 (1125-827, +298) · Fase de distrito: Eliminado en semifinales (40-61) | 2 de 11 | Eliminado en semifinales (40-61) en la fase de distrito (Moratalaz), 2025/26 | nunca |
-| RIF | Ciudad Lineal · JDM CIU DOM BC SEN MAS | 4º/11 · 14-6 (948-733, +215) | 10 de 11 | Subcampeón en la fase de distrito (Ciudad Lineal), 2024/25 | nunca |
-| VALLEKAS BASKET | Puente de Vallecas · JDM VAL BC SEN MAS | 12º/12 · 4-18 (780-1215, -435) | 1 de 11 | 12º de 12 en JDM VAL BC SEN MAS (Puente de Vallecas), 2025/26 | nunca |
-| WILD BOYS | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 10º/11 · 0-20 (660-1178, -518) | 10 de 11 | 4º de 10 en BCESTO SEN.MASC D/M GR-C (Moratalaz), 2015/16 | 9 PJ: 9G-0P |
+| Rival (nombres anteriores) | 2025/26: dónde | 2025/26: puesto y balance | Temporadas en JDM | Mejor resultado histórico | Cara a cara | Último enfrentamiento |
+|---|---|---|---|---|---|---|
+| "TROPICALEROS" | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G1 | 5º/11 · 11-9 (917-851, +66) | 1 de 11 | 5º de 11 en JDM MOR DOM MAÑ BC SEN MAS G1 (Moratalaz), 2025/26 | 2 PJ: 2G-0P | 2026-03-22, MdL, 60-37 (G) |
+| Chavalitros | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G1 | 4º/11 · 11-9 (769-743, +26) | 3 de 11 | 4º de 11 en JDM MOR DOM MAÑ BC SEN MAS G1 (Moratalaz), 2025/26 | 4 PJ: 3G-1P | 2026-05-10, MdL, 43-46 (P) |
+| CHUPITIMANGUIS | Hortaleza · JDM HOR DOM MAÑ BC SEN MAS GR.2 | 2º/12 · 17-5 (1039-857, +182) | 9 de 11 | Eliminado en cuartos (55-121) en la fase de distrito (Hortaleza), 2017/18 | 2 PJ: 2G-0P | 2025-02-16, MdA, 53-41 (G) |
+| Enfermos del Aro | Moratalaz · JDM MOR DOM TAR BC SEN MAS | 10º/11 · 2-18 (520-890, -370) | 5 de 11 | 6º de 10 en JDM MOR DOM TAR BC SEN MAS GR-6 (Moratalaz), 2021/22 | nunca | — |
+| LITROS DE MAHOU | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G3 | 9º/11 · 4-16 (765-1292, -527) | 8 de 11 | 3º en BC SR MAS DOMINGO G3 (torneo municipal), 2018/19 | 4 PJ: 4G-0P | 2026-02-01, MdA, 89-30 (G) |
+| LOS KHINKIS RUSOS (antes LOS KINKIS RUSOS, KHINKIS RUSOS) | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 7º/11 · 7-13 (660-826, -166) | 11 de 11 | 1º de 5 en BCESTO SEN-MASC D/M GR- B (Moratalaz), 2020/21 | 21 PJ: 15G-6P | 2025-03-09, MdA, 37-24 (G) |
+| NABUCO TD (antes NABUCO) | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 1º/11 · 18-2 (1125-827, +298) · Fase de distrito: Eliminado en semifinales (40-61) | 3 de 11 | Eliminado en semifinales (40-61) en la fase de distrito (Moratalaz), 2025/26 | 2 PJ: 0G-2P | 2025-04-27, MdL, 42-47 (P) |
+| RIF | Ciudad Lineal · JDM CIU DOM BC SEN MAS | 4º/11 · 14-6 (948-733, +215) | 10 de 11 | Subcampeón en la fase de distrito (Ciudad Lineal), 2024/25 | nunca | — |
+| VALLEKAS BASKET (antes VALLEKAS BASKET THUNDERS) | Puente de Vallecas · JDM VAL BC SEN MAS | 12º/12 · 4-18 (780-1215, -435) | 4 de 11 | 2º de 12 en JDM VAL DOM MAÑ BC SEN MAS (Puente de Vallecas), 2022/23 | nunca | — |
+| WILD BOYS | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 10º/11 · 0-20 (660-1178, -518) | 10 de 11 | 4º de 10 en BCESTO SEN.MASC D/M GR-C (Moratalaz), 2015/16 | 9 PJ: 9G-0P | 2025-03-02, MdL, 76-43 (G) |
 
 ## Grupo del MdL — resumen
 
-| Rival (nombres anteriores) | 2025/26: dónde | 2025/26: puesto y balance | Temporadas en JDM | Mejor resultado histórico | Cara a cara |
-|---|---|---|---|---|---|
-| 28500 | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G1 | 11º/11 · 13-5 (889-707, +182) ⚠ PJ 20 ≠ G+P | 2 de 11 | 4º de 10 en JDM MOR DOM MAÑ BC SEN MAS G1 (Moratalaz), 2023/24 | 4 PJ: 3G-1P |
-| CASTAÑAZO | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G3 | 2º/11 · 18-2 (1290-772, +518) | 8 de 11 | Eliminado en semifinales (61-67) en la fase final de Madrid, 2022/23 | 4 PJ: 3G-1P |
-| Craps | — | — | 0 | sin rastro en los JDM (equipo nuevo, cambio de nombre o competición externa) | nunca |
-| F.T. FLOPPERS | — | — | 0 | sin rastro en los JDM (equipo nuevo, cambio de nombre o competición externa) | nunca |
-| La Cancha Roja | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G3 | 4º/11 · 13-7 (948-787, +161) | 6 de 11 | 3º de 11 en JDM MOR DOM MAÑ BC SEN MAS G2 (Moratalaz), 2024/25 | 6 PJ: 5G-1P |
-| MEJORADA 2012 C.B. | Hortaleza · JDM HOR DOM MAÑ BC SEN MAS GR.2 | 6º/12 · 12-9 (792-857, -65) ⚠ PJ 22 ≠ G+P | 6 de 11 | 6º de 12 en JDM HOR DOM MAÑ BC SEN MAS GR.2 (Hortaleza), 2025/26 | nunca |
-| Quinto Tiempo | — | — | 0 | sin rastro en los JDM (equipo nuevo, cambio de nombre o competición externa) | nunca |
-| Suanzes Motor (antes SUIZA) | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 5º/11 · 9-11 (835-867, -32) | 6 de 11 | 4º de 9 en JDM MOR DOM MAÑ BC SEN MAS G3 (Moratalaz), 2023/24 | 7 PJ: 7G-0P |
-| TRASCENDEDORES C.B. | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 3º/11 · 14-5 (1020-857, +163) ⚠ PJ 20 ≠ G+P | 1 de 11 | 3º de 11 en JDM MOR DOM MAÑ BC SEN MAS G2 (Moratalaz), 2025/26 | nunca |
-| VANNER (antes VANNER PONENOS) | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G3 | 6º/11 · 8-12 (876-1091, -215) | 9 de 11 | 1º de 14 en BCESTO SEN-MASC DOM/M GR-4 (Moratalaz), 2016/17 | 12 PJ: 5G-7P |
+| Rival (nombres anteriores) | 2025/26: dónde | 2025/26: puesto y balance | Temporadas en JDM | Mejor resultado histórico | Cara a cara | Último enfrentamiento |
+|---|---|---|---|---|---|---|
+| 28500 | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G1 | 11º/11 · 13-5 (889-707, +182) ⚠ PJ 20 ≠ G+P | 2 de 11 | 4º de 10 en JDM MOR DOM MAÑ BC SEN MAS G1 (Moratalaz), 2023/24 | 4 PJ: 3G-1P | 2026-04-12, MdL, 34-31 (G) |
+| CASTAÑAZO (antes EL CASTAÑAZO) | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G3 | 2º/11 · 18-2 (1290-772, +518) | 10 de 11 | Eliminado en semifinales (61-67) en la fase final de Madrid, 2022/23 | 4 PJ: 3G-1P | 2026-03-22, MdA, 46-42 (G) |
+| Craps | — | — | 0 | sin rastro en los JDM (equipo nuevo, cambio de nombre o competición externa) | nunca | — |
+| F.T. FLOPPERS (antes FLOPPERS) | Chamberí · JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G2 | 5º/11 · 11-9 (925-859, +66) | 10 de 11 | 4º de 18 en BC SENIOR-M DT 3 (Salamanca), 2015/16 | nunca | — |
+| La Cancha Roja | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G3 | 4º/11 · 13-7 (948-787, +161) | 6 de 11 | 3º de 11 en JDM MOR DOM MAÑ BC SEN MAS G2 (Moratalaz), 2024/25 | 6 PJ: 5G-1P | 2026-05-10, MdA, 55-28 (G) |
+| MEJORADA 2012 C.B. | Hortaleza · JDM HOR DOM MAÑ BC SEN MAS GR.2 | 6º/12 · 12-9 (792-857, -65) ⚠ PJ 22 ≠ G+P | 6 de 11 | 6º de 12 en JDM HOR DOM MAÑ BC SEN MAS GR.2 (Hortaleza), 2025/26 | nunca | — |
+| Quinto Tiempo | — | — | 0 | sin rastro en los JDM (equipo nuevo, cambio de nombre o competición externa) | nunca | — |
+| Suanzes Motor (antes SUIZA, CARPASION SUIZA, CARPASION, SUIZA B.C.) | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 5º/11 · 9-11 (835-867, -32) | 11 de 11 | 3º de 10 en BCESTO SEN-MASC. D/M GR-B (Moratalaz), 2017/18 | 13 PJ: 11G-2P | 2023-05-07, MdL, 49-29 (G) |
+| TRASCENDEDORES C.B. | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G2 | 3º/11 · 14-5 (1020-857, +163) ⚠ PJ 20 ≠ G+P | 1 de 11 | 3º de 11 en JDM MOR DOM MAÑ BC SEN MAS G2 (Moratalaz), 2025/26 | nunca | — |
+| VANNER (antes VANNER PONENOS) | Moratalaz · JDM MOR DOM MAÑ BC SEN MAS G3 | 6º/11 · 8-12 (876-1091, -215) | 9 de 11 | 1º de 14 en BCESTO SEN-MASC DOM/M GR-4 (Moratalaz), 2016/17 | 12 PJ: 5G-7P | 2026-03-15, MdA, 78-41 (G) |
 
 ## Fichas por rival
 
 ¹ Grupo sin fila en la clasificación oficial: balance calculado de los partidos.  
-² Tercer equipo del club en 2020/21 (#149233), aparte del balance.  
-³ Partido que sólo está en el histórico propio (`season_*.json`); el nombre del rival es el que anotó el club.  
-⁴ Incomparecencia: resultado administrativo según el portal (estado "N").  
-⁵ Ficha dudosa: el histórico propio de esa temporada anota un partido contra el propio club (ver Huecos).
+² Partido que sólo está en el histórico propio (`season_*.json`); el nombre del rival es el que anotó el club.  
+³ Incomparecencia: resultado administrativo según el portal (estado "N").  
+⁴ Ficha dudosa: el histórico propio de esa temporada anota un partido contra el propio club (ver Huecos).
 
 ### "TROPICALEROS" — grupo del MdA
 
@@ -168,7 +194,9 @@ _Sin enfrentamientos registrados con el club._
 
 ### LOS KHINKIS RUSOS — grupo del MdA
 
-10 temporadas en los JDM. Mejor resultado: 1º de 5 en BCESTO SEN-MASC D/M GR- B (Moratalaz), 2020/21.
+Nombres anteriores confirmados: **LOS KINKIS RUSOS, KHINKIS RUSOS**.
+
+11 temporadas en los JDM. Mejor resultado: 1º de 5 en BCESTO SEN-MASC D/M GR- B (Moratalaz), 2020/21.
 
 | Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -181,6 +209,7 @@ _Sin enfrentamientos registrados con el club._
 | 2020/21 | LOS KHINKIS RUSOS | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR- B | 1º/5 | 4 | 4 | 0 | 213 | 126 | +87 |  |
 | 2018/19 | LOS KHINKIS RUSOS | Moratalaz | Liga: 1ª fase | BCESTO SEN. MASC. DOM/MAÑANA GR-3 | 4º/9 | 8 | 5 | 3 | 321 | 294 | +27 |  |
 | 2018/19 | LOS KHINKIS RUSOS | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR B | 5º/9 | 8 | 4 | 4 | 329 | 336 | -7 |  |
+| 2018/19 | KHINKIS RUSOS | Moratalaz | Torneo municipal: grupos | BCESTO MASC. DOM-MAÑANA GR-5 | 4º/4 | 0 | 0 | 0 | 0 | 0 | +0 |  |
 | 2017/18 | LOS KHINKIS RUSOS | Moratalaz | Liga: fase de grupos | BCESTO SEN-MASC DOM-MAÑANA GR-5 | 4º/14 | 9 | 5 | 4 | 314 | 382 | -68 |  |
 | 2017/18 | LOS KHINKIS RUSOS | Moratalaz | Fase de distrito | BCESTO SEN-MASC. D/M GR-B | 9º/10 | 9 | 2 | 7 | 376 | 401 | -25 |  |
 | 2017/18 | LOS KHINKIS RUSOS | Moratalaz | Torneo municipal: grupos | BCESTO SEN.MASC DOM MAÑ. GR-6 | 2º/4 | 3 | 2 | 1 | 136 | 107 | +29 |  |
@@ -189,8 +218,10 @@ _Sin enfrentamientos registrados con el club._
 | 2016/17 | LOS KHINKIS RUSOS | Moratalaz | Torneo municipal: grupos | BALONCESTOSENIOR191 DOM-MAÑANA-5 | 2º/4 | 3 | 2 | 1 | 158 | 114 | +44 |  |
 | 2015/16 | LOS KHINKIS RUSOS | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC. GR-3 DM | 5º/10 | 9 | 5 | 4 | 323 | 328 | -5 |  |
 | 2015/16 | LOS KHINKIS RUSOS | Moratalaz | Liga: 2ª fase | BCESTO SEN.MASC D/M GR-B | 7º/10 | 9 | 3 | 6 | 341 | 378 | -37 |  |
+| 2014/15 | LOS KINKIS RUSOS | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC. DOM/M GR-4 | 5º/10 | 9 | 6 | 3 | 394 | 368 | +26 |  |
+| 2014/15 | LOS KINKIS RUSOS | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC DOM-M GR-B | 6º/10 | 9 | 3 | 6 | 349 | 374 | -25 |  |
 
-**Cara a cara con el club:** 20 PJ: 15G-5P (+ tercer equipo 20/21: 1G-1P).
+**Cara a cara con el club:** 21 PJ: 15G-6P.
 
 | Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
 |---|---|---|---|---|---|---|
@@ -207,8 +238,6 @@ _Sin enfrentamientos registrados con el club._
 | 2021/22 | 2022-01-23 | MdA | LOS KHINKIS RUSOS | Liga: fase de grupos | 28-36 | P |
 | 2021/22 | 2021-11-07 | MdL | LOS KHINKIS RUSOS | Liga: fase de grupos | 41-25 | G |
 | 2020/21 | 2021-04-18 | MdA | LOS KHINKIS RUSOS | Liga: 2ª fase | 34-46 | P |
-| 2020/21 | 2021-04-11 | tercer equipo ² | LOS KHINKIS RUSOS | Liga: 2ª fase | 18-62 | P |
-| 2020/21 | 2021-01-31 | tercer equipo ² | LOS KHINKIS RUSOS | Liga: 1ª fase | 56-46 | G |
 | 2020/21 | 2021-01-24 | MdL | LOS KHINKIS RUSOS | Liga: 1ª fase | 46-25 | G |
 | 2020/21 | 2020-12-13 | MdA | LOS KHINKIS RUSOS | Liga: 1ª fase | 32-41 | P |
 | 2018/19 | 2019-03-24 | MdA | LOS KHINKIS RUSOS | Liga: 2ª fase | 39-36 | G |
@@ -216,21 +245,29 @@ _Sin enfrentamientos registrados con el club._
 | 2017/18 | 2018-05-06 | MdA | LOS KHINKIS RUSOS | Torneo municipal: grupos | 40-42 | P |
 | 2017/18 | 2018-01-28 | MdA | LOS KHINKIS RUSOS | Fase de distrito | 30-24 | G |
 | 2015/16 | 2016-02-28 | MdL | LOS KHINKIS RUSOS | Liga: 2ª fase | 37-31 | G |
+| 2014/15 | 2014-10-12 | MdL | LOS KINKIS RUSOS | Liga: 1ª fase | 44-48 | P |
 
 ### NABUCO TD — grupo del MdA
 
-2 temporadas en los JDM. Mejor resultado: Eliminado en semifinales (40-61) en la fase de distrito (Moratalaz), 2025/26.
+Nombres anteriores confirmados: **NABUCO**.
+
+3 temporadas en los JDM. Mejor resultado: Eliminado en semifinales (40-61) en la fase de distrito (Moratalaz), 2025/26.
 
 | Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2025/26 **(temporada pasada)** | Nabuco td | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G2 | 1º/11 | 20 | 18 | 2 | 1125 | 827 | +298 |  |
 | 2025/26 **(temporada pasada)** | Nabuco td | Moratalaz | Fase de distrito | JDM MOR BC SEN MAS FASE FINAL DISTRITO | — |  |  |  |  |  |  | Eliminado en semifinales (40-61) |
+| 2024/25 | NABUCO | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G2 | 1º/11 | 20 | 17 | 3 | 1053 | 756 | +297 |  |
+| 2024/25 | NABUCO | Moratalaz | Fase de distrito | JDM MOR BC SEN MAS FASE FINAL DISTRITO | — |  |  |  |  |  |  | Eliminado en cuartos (53-56) |
 | 2023/24 | Nabuco TD | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G3 | 1º/9 | 18 | 17 | 1 | 1033 | 705 | +328 |  |
 | 2023/24 | Nabuco TD | Moratalaz | Fase de distrito | JDM MOR BC SEN MAS FASE FINAL DISTRITO | — |  |  |  |  |  |  | Eliminado en semifinales (47-61) |
 
-**Cara a cara con el club:** nunca.
+**Cara a cara con el club:** 2 PJ: 0G-2P.
 
-_Sin enfrentamientos registrados con el club._
+| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
+|---|---|---|---|---|---|---|
+| 2024/25 | 2025-04-27 | MdL | NABUCO | Liga: fase de grupos | 42-47 | P |
+| 2024/25 | 2025-01-19 | MdL | NABUCO | Liga: fase de grupos | 47-54 | P |
 
 ### RIF — grupo del MdA
 
@@ -261,11 +298,16 @@ _Sin enfrentamientos registrados con el club._
 
 ### VALLEKAS BASKET — grupo del MdA
 
-1 temporada en los JDM. Mejor resultado: 12º de 12 en JDM VAL BC SEN MAS (Puente de Vallecas), 2025/26.
+Nombres anteriores confirmados: **VALLEKAS BASKET THUNDERS**.
+
+4 temporadas en los JDM. Mejor resultado: 2º de 12 en JDM VAL DOM MAÑ BC SEN MAS (Puente de Vallecas), 2022/23.
 
 | Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2025/26 **(temporada pasada)** | VALLEKAS BASKET | Puente de Vallecas | Liga: fase de grupos | JDM VAL BC SEN MAS | 12º/12 | 22 | 4 | 18 | 780 | 1215 | -435 |  |
+| 2024/25 | VALLEKAS BASKET THUNDERS | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G3 | 8º/11 | 20 | 6 | 14 | 769 | 1015 | -246 |  |
+| 2023/24 | VALLEKAS BASKET THUNDERS | Puente de Vallecas | Liga: fase de grupos | JDM VAL DOM MAÑ BC SEN MAS | 6º/12 ⚠ | 22 | 12 | 9 | 836 | 829 | +7 |  |
+| 2022/23 | VALLEKAS BASKET THUNDERS | Puente de Vallecas | Liga: fase de grupos | JDM VAL DOM MAÑ BC SEN MAS | 2º/12 | 22 | 19 | 3 | 1002 | 767 | +235 |  |
 
 **Cara a cara con el club:** nunca.
 
@@ -302,8 +344,8 @@ _Sin enfrentamientos registrados con el club._
 | 2022/23 | 2022-11-27 | MdL | WILD BOYS | Liga: fase de grupos | 88-22 | G |
 | 2022/23 | 2022-11-06 | MdA | WILD BOYS | Liga: fase de grupos | 58-34 | G |
 | 2018/19 | 2018-10-28 | MdA | WILD BOYS | Liga: 1ª fase | 42-29 | G |
-| 2013/14 | — | MdL | WILD BOYS ³ | PRIMERA FASE | 39-34 | G |
-| 2013/14 | — | MdL | WILD BOYS ³ | SEGUNDA FASE | 41-23 | G |
+| 2013/14 | — | MdL | WILD BOYS ² | PRIMERA FASE | 39-34 | G |
+| 2013/14 | — | MdL | WILD BOYS ² | SEGUNDA FASE | 41-23 | G |
 
 ### 28500 — grupo del MdL
 
@@ -325,7 +367,9 @@ _Sin enfrentamientos registrados con el club._
 
 ### CASTAÑAZO — grupo del MdL
 
-8 temporadas en los JDM. Mejor resultado: Eliminado en semifinales (61-67) en la fase final de Madrid, 2022/23.
+Nombres anteriores confirmados: **EL CASTAÑAZO**.
+
+10 temporadas en los JDM. Mejor resultado: Eliminado en semifinales (61-67) en la fase final de Madrid, 2022/23.
 
 | Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -338,12 +382,20 @@ _Sin enfrentamientos registrados con el club._
 | 2021/22 | CASTAÑAZO | Barajas | Liga: fase de grupos | JDM BAR SAB MAÑ BC SEN MAS 1ª | 2º/7 | 12 | 9 | 3 | 718 | 605 | +113 |  |
 | 2021/22 | CASTAÑAZO | Barajas | Fase de distrito | JDM BAR SAB MAÑ BC SEN MAS 1ª Grupo1 playoff | 1º/4 | 3 | 2 | 1 | 184 | 174 | +10 |  |
 | 2021/22 | CASTAÑAZO | Dirección General de Deporte | Fase final de Madrid | JDM DGD BC SEN MAS Final Madrid | — |  |  |  |  |  |  | Eliminado en cuartos (29-56) |
+| 2018/19 | EL CASTAÑAZO | Centro | Liga: 1ª fase | B/C SENIOR SÁB.M | 2º/12 | 11 | 10 | 1 | 624 | 354 | +270 |  |
+| 2018/19 | EL CASTAÑAZO | Centro | Liga: 2ª fase | B/C SENIOR SÁB.M-1 | 2º/6 | 5 | 4 | 1 | 293 | 267 | +26 |  |
 | 2018/19 | CASTAÑAZO | Centro | Torneo municipal: grupos | G1 ESTACION SUR SM 01 | 1º/3 | 2 | 2 | 0 | 104 | 89 | +15 |  |
 | 2018/19 | CASTAÑAZO | Centro | Torneo municipal: eliminatorias | CUADRO 5 B/C SENIOR | — | 2 | 1 | 1 | 78 | 71 | +7 | Eliminado en ronda 2 (34-44) |
+| 2017/18 | EL CASTAÑAZO | Centro | Liga: 1ª fase | G1 SABADO MAÑANA | 4º/15 | 14 | 11 | 3 | 815 | 562 | +253 |  |
+| 2017/18 | EL CASTAÑAZO | Centro | Liga: 2ª fase | G1 SABADO MAÑANA-2 | 1º/3 | 2 | 2 | 0 | 114 | 104 | +10 |  |
+| 2017/18 | EL CASTAÑAZO | Centro | Torneo municipal: grupos | G2 ESTACION SUR SM 02 | 1º/4 | 3 | 3 | 0 | 192 | 113 | +79 |  |
+| 2017/18 | EL CASTAÑAZO | Centro | Torneo municipal: eliminatorias | CUADRO 5 B/C SENIOR | — | 3 | 2 | 1 | 127 | 130 | -3 | Eliminado en ronda 3 (38-51) |
 | 2016/17 | CASTAÑAZO | Centro | Liga: 1ª fase | B/C SENIOR S M G1 | 2º/12 | 11 | 9 | 2 | 607 | 363 | +244 |  |
 | 2016/17 | CASTAÑAZO | Centro | Liga: 2ª fase | B/C SENIOR S M G1-1 | 2º/6 | 5 | 3 | 2 | 237 | 195 | +42 |  |
 | 2016/17 | CASTAÑAZO | Centro | Torneo municipal: grupos | G2 ESTACION SUR SM 02 | 1º/4 | 3 | 3 | 0 | 182 | 121 | +61 |  |
 | 2016/17 | CASTAÑAZO | Centro | Torneo municipal: eliminatorias | CUADRO 5 B/C SENIOR | — | 3 | 2 | 1 | 164 | 175 | -11 | Subcampeón |
+| 2015/16 | EL CASTAÑAZO | Centro | Liga: 1ª fase | G1 SABADO MAÑANA | 2º/12 | 11 | 9 | 2 | 581 | 351 | +230 |  |
+| 2015/16 | EL CASTAÑAZO | Centro | Liga: 2ª fase | G1 SABADO MAÑANA-1 | 2º/6 | 5 | 4 | 1 | 240 | 186 | +54 |  |
 | 2014/15 | CASTAÑAZO | Centro | Liga: 1ª fase | SAB M BALONCESTO SENIOR | 2º/15 | 14 | 13 | 1 | 782 | 459 | +323 |  |
 | 2014/15 | CASTAÑAZO | Centro | Liga: 2ª fase | SAB M BALONCESTO SENIOR-1 | 2º/3 | 2 | 1 | 1 | 91 | 128 | -37 |  |
 
@@ -366,7 +418,25 @@ _Sin enfrentamientos registrados con el club._
 
 ### F.T. FLOPPERS — grupo del MdL
 
-**Sin rastro en los JDM (equipo nuevo, cambio de nombre o competición externa).**
+Nombres anteriores confirmados: **FLOPPERS**.
+
+10 temporadas en los JDM. Mejor resultado: 4º de 18 en BC SENIOR-M DT 3 (Salamanca), 2015/16.
+
+| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2025/26 **(temporada pasada)** | Floppers | Chamberí | Liga: fase de grupos | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G2 | 5º/11 | 20 | 11 | 9 | 925 | 859 | +66 |  |
+| 2024/25 | Floppers | Chamberí | Liga: fase de grupos | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G3 | 6º/11 ⚠ | 20 | 9 | 9 | 711 | 762 | -51 |  |
+| 2023/24 | Floppers | Chamberí | Liga: fase de grupos | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G4 | 4º/11 | 20 | 10 | 10 | 787 | 853 | -66 |  |
+| 2022/23 | Floppers | Chamberí | Liga: fase de grupos | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G3 | 4º/8 | 17 | 9 | 8 | 847 | 787 | +60 |  |
+| 2021/22 | Floppers | Chamberí | Liga: fase de grupos | JDM CHB G2 DOM TAR BC SEN MAS VALLEGOFIT | 7º/10 ⚠ | 18 | 8 | 9 | 683 | 754 | -71 |  |
+| 2018/19 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DT 3 | 3º/10 | 18 | 13 | 5 | 872 | 595 | +277 |  |
+| 2018/19 | FLOPPERS | Salamanca | Torneo municipal: grupos | BC SENIOR-MAS S-T 1 | 4º/4 | 3 | 0 | 3 | 112 | 148 | -36 |  |
+| 2017/18 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DT 3 | 3º/10 | 18 | 15 | 3 | 888 | 589 | +299 |  |
+| 2017/18 | FLOPPERS | Salamanca | Torneo municipal: grupos | BC SENIOR-M D-T 4 | 2º/4 | 3 | 2 | 1 | 123 | 99 | +24 |  |
+| 2016/17 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DT 3 | 5º/10 | 18 | 10 | 8 | 733 | 717 | +16 |  |
+| 2016/17 | FLOPPERS | Salamanca | Torneo municipal: grupos | BC SENIOR-M S-T 1 | — | 3 | 2 | 1 | 135 | 92 | +43 | Ganó cuartos (54-25); la ronda siguiente no tiene resultado en el portal |
+| 2015/16 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DT 3 | — | 18 | 11 | 7 | 635 | 594 | +41 | Eliminado en ronda 18 (25-41) |
+| 2014/15 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DM 3 | 7º/10 | 18 | 6 | 12 | 592 | 669 | -77 |  |
 
 **Cara a cara con el club:** nunca.
 
@@ -425,9 +495,9 @@ _Sin enfrentamientos registrados con el club._
 
 ### Suanzes Motor — grupo del MdL
 
-Nombres anteriores confirmados: **SUIZA**.
+Nombres anteriores confirmados: **SUIZA, CARPASION SUIZA, CARPASION, SUIZA B.C.**.
 
-6 temporadas en los JDM. Mejor resultado: 4º de 9 en JDM MOR DOM MAÑ BC SEN MAS G3 (Moratalaz), 2023/24.
+11 temporadas en los JDM. Mejor resultado: 3º de 10 en BCESTO SEN-MASC. D/M GR-B (Moratalaz), 2017/18.
 
 | Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -436,10 +506,23 @@ Nombres anteriores confirmados: **SUIZA**.
 | 2023/24 | SUIZA | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G3 | 4º/9 | 18 | 8 | 10 | 761 | 764 | -3 |  |
 | 2022/23 | SUIZA | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G2 | 6º/12 | 22 | 11 | 11 | 992 | 973 | +19 |  |
 | 2021/22 | SUIZA | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G-5 | 7º/10 ⚠ | 18 | 11 | 6 | 758 | 690 | +68 |  |
+| 2020/21 | CARPASION | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC D/M GR-4 | 5º/10 | 9 | 5 | 4 | 369 | 288 | +81 |  |
+| 2020/21 | CARPASION | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR- A | 5º/5 | 4 | 1 | 3 | 142 | 156 | -14 |  |
+| 2018/19 | SUIZA B.C | Moratalaz | Liga: 1ª fase | BCESTO SEN. MASC. DOM/MAÑANA GR-5 | 3º/9 | 8 | 5 | 3 | 403 | 353 | +50 |  |
+| 2018/19 | SUIZA B.C | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR A | 8º/9 | 7 | 0 | 7 | 286 | 429 | -143 |  |
+| 2018/19 | CARPASION SUIZA | Ciudad Lineal | Torneo municipal: grupos | BC SR MAS DOMINGO G4 | 4º/4 | 3 | 0 | 3 | 102 | 141 | -39 |  |
+| 2017/18 | CARPASION SUIZA | Moratalaz | Liga: fase de grupos | BCESTO SEN-MASC DOM-MAÑANA GR-4 | 6º/14 | 9 | 4 | 5 | 374 | 414 | -40 |  |
+| 2017/18 | CARPASION SUIZA | Moratalaz | Fase de distrito | BCESTO SEN-MASC. D/M GR-B | 3º/10 | 9 | 6 | 3 | 412 | 383 | +29 |  |
+| 2017/18 | CARPASION SUIZA | Ciudad Lineal | Torneo municipal: grupos | BC TM DOMINGO MAS G4 | 2º/4 | 3 | 2 | 1 | 184 | 130 | +54 |  |
+| 2016/17 | SUIZA B. C. | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC DOM/M GR-3 | 9º/14 | 9 | 2 | 7 | 348 | 490 | -142 |  |
+| 2016/17 | SUIZA B. C. | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR-C | 3º/10 | 9 | 7 | 2 | 418 | 394 | +24 |  |
+| 2016/17 | SUIZA B.C. | Ciudad Lineal | Torneo municipal: grupos | BC SR MASC DOMINGO G-1 | 2º/4 | 3 | 2 | 1 | 100 | 74 | +26 |  |
 | 2015/16 | SUIZA | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC. GR-5 DM | 7º/10 | 9 | 3 | 6 | 391 | 430 | -39 |  |
 | 2015/16 | SUIZA | Moratalaz | Liga: 2ª fase | BCESTO SEN.MASC D/M GR-B | 10º/10 | 9 | 0 | 9 | 321 | 417 | -96 |  |
+| 2014/15 | SUIZA B. C. | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC. DOM/T GR-6 | 5º/9 | 8 | 4 | 4 | 345 | 271 | +74 |  |
+| 2014/15 | SUIZA B. C. | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC DOM-T GR-A | 6º/9 | 8 | 2 | 6 | 353 | 477 | -124 |  |
 
-**Cara a cara con el club:** 7 PJ: 7G-0P.
+**Cara a cara con el club:** 13 PJ: 11G-2P.
 
 | Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
 |---|---|---|---|---|---|---|
@@ -447,7 +530,13 @@ Nombres anteriores confirmados: **SUIZA**.
 | 2022/23 | 2023-04-23 | MdA | SUIZA | Liga: fase de grupos | 60-42 | G |
 | 2022/23 | 2023-01-29 | MdL | SUIZA | Liga: fase de grupos | 56-44 | G |
 | 2022/23 | 2023-01-22 | MdA | SUIZA | Liga: fase de grupos | 58-38 | G |
-| 2019/20 | — | MdL ⁵ | SUIZA ³ | SEGUNDA FASE | 44-34 | G |
+| 2020/21 | 2021-03-21 | MdL | CARPASION | Liga: 2ª fase | 35-29 | G |
+| 2020/21 | 2021-02-07 | MdL | CARPASION | Liga: 1ª fase | 40-33 | G |
+| 2020/21 | 2020-12-20 | MdA | CARPASION | Liga: 1ª fase | 20-24 | P |
+| 2019/20 | — | MdL ⁴ | SUIZA ² | SEGUNDA FASE | 44-34 | G |
+| 2018/19 | 2019-03-31 | MdL | SUIZA B.C | Liga: 2ª fase | 83-57 | G |
+| 2017/18 | 2018-03-04 | MdA | CARPASION SUIZA | Fase de distrito | 35-42 | P |
+| 2017/18 | 2017-10-08 | MdL | CARPASION SUIZA | Liga: fase de grupos | 48-28 | G |
 | 2015/16 | 2016-01-10 | MdL | SUIZA | Liga: 2ª fase | 52-47 | G |
 | 2015/16 | 2015-11-22 | MdL | SUIZA | Liga: 1ª fase | 50-39 | G |
 
@@ -503,36 +592,20 @@ Nombres anteriores confirmados: **VANNER PONENOS**.
 | 2017/18 | 2017-10-08 | MdA | VANNER PONENOS | Liga: fase de grupos | 40-53 | P |
 | 2016/17 | 2016-11-13 | MdL | VANNER PONENOS | Liga: 1ª fase | 53-67 | P |
 | 2015/16 | 2016-03-06 | MdL | VANNER PONENOS | Liga: 2ª fase | 47-50 | P |
-| 2015/16 | — | MdL | VANNER ³ | MARCA | 25-53 | P |
+| 2015/16 | — | MdL | VANNER ² | MARCA | 25-53 | P |
 
 ## Candidatos a mismo equipo — decide Iván
 
-Nombres **no idénticos** que podrían ser el mismo equipo. **No se han fusionado**: su trayectoria y su cara a cara van por separado. Regla de búsqueda: un nombre contiene al otro, o son muy parecidos, o comparten una palabra significativa **y** han jugado en el mismo distrito; más los que Iván señaló.
+Nombres **no idénticos** que podrían ser el mismo equipo. **No se han fusionado**: su trayectoria y su cara a cara van por separado. Regla de búsqueda: un nombre contiene al otro, o son muy parecidos, o comparten una palabra significativa **y** han jugado en el mismo distrito; más los propuestos en el chat (por el asistente, no por Iván).
 
 | Rival 2026/27 | Candidato | Variantes | Motivo | Temporadas | Cara a cara |
 |---|---|---|---|---|---|
 | Enfermos del Aro | ENFERMOS DEL BASKET | ENFERMOS DEL BASKET | comparte palabra ENFERMOS y distrito | 2014/15, 2015/16, 2016/17 | nunca |
 | LITROS DE MAHOU | LITROS DE MAU | LITROS DE MAU | comparte palabra LITROS y distrito; nombres muy parecidos | 2014/15 | nunca |
 | LITROS DE MAHOU | Litros de Pahou | Litros de Pahou | comparte palabra LITROS y distrito; nombres muy parecidos | 2022/23, 2023/24 | nunca |
-| LOS KHINKIS RUSOS | KHINKIS RUSOS | KHINKIS RUSOS | comparte palabra KHINKIS, RUSOS y distrito; nombres muy parecidos; un nombre contiene al otro | 2018/19 | nunca |
-| LOS KHINKIS RUSOS | KINKIS |  | señalado por Iván como posible | sólo como apodo en el histórico propio, en partidos que casan con el portal bajo otro nombre | nunca |
-| LOS KHINKIS RUSOS | LOS KINKIS RUSOS | LOS KINKIS RUSOS | comparte palabra RUSOS y distrito; nombres muy parecidos; señalado por Iván como posible | 2014/15 | 1 PJ: 0G-1P |
-| NABUCO TD | NABUCO | NABUCO | comparte palabra NABUCO y distrito; nombres muy parecidos; señalado por Iván como posible; un nombre contiene al otro | 2024/25 | 2 PJ: 0G-2P |
-| VALLEKAS BASKET | GSD VALLECAS | GSD VALLECAS, GSD Vallecas | señalado por Iván como posible | 2013/14, 2021/22 | 5 PJ: 2G-3P |
 | VALLEKAS BASKET | JVK - Jugones ValleKas | JVK - Jugones ValleKas | comparte palabra VALLEKAS y distrito | 2021/22 | nunca |
-| VALLEKAS BASKET | SPORT. DE VALLECAS | SPORT. DE VALLECAS | señalado por Iván como posible | 2013/14 | 1 PJ: 0G-1P |
-| VALLEKAS BASKET | SPORTING | SPORTING | señalado por Iván como posible | 2014/15, 2019/20 | 2 PJ: 0G-2P |
-| VALLEKAS BASKET | SPORTING DE VALLECAS | SPORTING DE VALLECAS | señalado por Iván como posible | 2016/17, 2017/18, 2018/19, 2020/21, 2021/22, 2024/25 | 4 PJ: 3G-1P (+ tercer equipo 20/21: 0G-1P) |
-| VALLEKAS BASKET | SPORTING DE VALLEKAS | SPORTING DE VALLEKAS | señalado por Iván como posible | 2014/15, 2018/19 | 3 PJ: 1G-2P |
-| VALLEKAS BASKET | SPORTING VALLECAS | SPORTING VALLECAS | señalado por Iván como posible | 2015/16 | 1 PJ: 1G-0P |
-| VALLEKAS BASKET | VALLEKAS BASKET THUNDERS | VALLEKAS BASKET THUNDERS | comparte palabra VALLEKAS y distrito; un nombre contiene al otro | 2022/23, 2023/24, 2024/25 | nunca |
 | WILD BOYS | THE RED BOYS | THE RED BOYS | comparte palabra BOYS y distrito | 2018/19 | 1 PJ: 1G-0P |
-| CASTAÑAZO | EL CASTAÑAZO | EL CASTAÑAZO | comparte palabra CASTANAZO y distrito; nombres muy parecidos; un nombre contiene al otro | 2015/16, 2017/18, 2018/19 | nunca |
-| F.T. FLOPPERS | FLOPPERS | FLOPPERS, Floppers | nombres muy parecidos; sólo comparte palabra FLOPPERS; un nombre contiene al otro | 2014/15, 2015/16, 2016/17, 2017/18, 2018/19, 2021/22, 2022/23, 2023/24, 2024/25, 2025/26 | nunca |
-| Suanzes Motor | CARPASION | CARPASION | señalado por Iván como posible | 2020/21 | 3 PJ: 2G-1P (+ tercer equipo 20/21: 0G-1P) |
-| Suanzes Motor | CARPASION SUIZA | CARPASION SUIZA | comparte palabra SUIZA y distrito; señalado por Iván como posible; un nombre contiene al otro | 2017/18, 2018/19 | 2 PJ: 1G-1P |
-| Suanzes Motor | SUIZA B. C. | SUIZA B. C., SUIZA B.C, SUIZA B.C. | comparte palabra SUIZA y distrito; nombres muy parecidos; señalado por Iván como posible; un nombre contiene al otro | 2014/15, 2016/17, 2018/19 | 1 PJ: 1G-0P |
-| VANNER | PONENOS | PONENOS | señalado por Iván como posible; sólo comparte palabra PONENOS; un nombre contiene al otro | 2013/14 | 1 PJ: 0G-1P |
+| VANNER | PONENOS | PONENOS | propuesto en el chat; sólo comparte palabra PONENOS; un nombre contiene al otro | 2013/14 | 1 PJ: 0G-1P |
 | VANNER | RH PROPERTIES PONENOS | RH PROPERTIES PONENOS | comparte palabra PONENOS y distrito | 2014/15 | nunca |
 
 ### Candidato: ENFERMOS DEL BASKET (¿= Enfermos del Aro?)
@@ -571,152 +644,11 @@ _Sin enfrentamientos registrados con el club._
 
 _Sin enfrentamientos registrados con el club._
 
-### Candidato: KHINKIS RUSOS (¿= LOS KHINKIS RUSOS?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2018/19 | KHINKIS RUSOS | Moratalaz | Torneo municipal: grupos | BCESTO MASC. DOM-MAÑANA GR-5 | 4º/4 | 0 | 0 | 0 | 0 | 0 | +0 |  |
-
-**Cara a cara:** nunca.
-
-_Sin enfrentamientos registrados con el club._
-
-### Candidato: LOS KINKIS RUSOS (¿= LOS KHINKIS RUSOS?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2014/15 | LOS KINKIS RUSOS | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC. DOM/M GR-4 | 5º/10 | 9 | 6 | 3 | 394 | 368 | +26 |  |
-| 2014/15 | LOS KINKIS RUSOS | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC DOM-M GR-B | 6º/10 | 9 | 3 | 6 | 349 | 374 | -25 |  |
-
-**Cara a cara:** 1 PJ: 0G-1P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2014/15 | 2014-10-12 | MdL | LOS KINKIS RUSOS | Liga: 1ª fase | 44-48 | P |
-
-### Candidato: NABUCO (¿= NABUCO TD?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2024/25 | NABUCO | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G2 | 1º/11 | 20 | 17 | 3 | 1053 | 756 | +297 |  |
-| 2024/25 | NABUCO | Moratalaz | Fase de distrito | JDM MOR BC SEN MAS FASE FINAL DISTRITO | — |  |  |  |  |  |  | Eliminado en cuartos (53-56) |
-
-**Cara a cara:** 2 PJ: 0G-2P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2024/25 | 2025-04-27 | MdL | NABUCO | Liga: fase de grupos | 42-47 | P |
-| 2024/25 | 2025-01-19 | MdL | NABUCO | Liga: fase de grupos | 47-54 | P |
-
-### Candidato: GSD VALLECAS (¿= VALLEKAS BASKET?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2021/22 | GSD Vallecas | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G-4 | 6º/10 | 18 | 7 | 11 | 732 | 764 | -32 |  |
-
-**Cara a cara:** 5 PJ: 2G-3P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2021/22 | 2022-03-06 | MdL | GSD Vallecas | Liga: fase de grupos | 47-41 | G |
-| 2021/22 | 2022-01-30 | MdA | GSD Vallecas | Liga: fase de grupos | 28-46 | P |
-| 2021/22 | 2021-11-28 | MdL | GSD Vallecas | Liga: fase de grupos | 48-32 | G |
-| 2021/22 | 2021-10-24 | MdA | GSD Vallecas | Liga: fase de grupos | 45-49 | P |
-| 2013/14 | — | MdL | GSD VALLECAS ³ | PRIMERA FASE | 34-59 | P |
-
 ### Candidato: JVK - Jugones ValleKas (¿= VALLEKAS BASKET?)
 
 | Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2021/22 | JVK - Jugones ValleKas | Puente de Vallecas | Liga: fase de grupos | JDM VAL DOM MAÑ BC SEN MAS | 3º/10 | 18 | 13 | 5 | 766 | 635 | +131 |  |
-
-**Cara a cara:** nunca.
-
-_Sin enfrentamientos registrados con el club._
-
-### Candidato: SPORT. DE VALLECAS (¿= VALLEKAS BASKET?)
-
-**Cara a cara:** 1 PJ: 0G-1P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2013/14 | — | MdL | SPORT. DE VALLECAS ³ | PRIMERA FASE | 50-59 | P |
-
-### Candidato: SPORTING (¿= VALLEKAS BASKET?)
-
-**Cara a cara:** 2 PJ: 0G-2P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2019/20 | — | MdL ⁵ | SPORTING ³ | PRIMERA FASE | 42-70 | P |
-| 2014/15 | — | MdL | SPORTING ³ | MARCA | 34-59 | P |
-
-### Candidato: SPORTING DE VALLECAS (¿= VALLEKAS BASKET?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2024/25 | SPORTING DE VALLECAS | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G3 | 3º/11 | 20 | 15 | 5 | 956 | 786 | +170 |  |
-| 2021/22 | SPORTING DE VALLECAS | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G-5 | 2º/10 | 18 | 13 | 5 | 807 | 596 | +211 |  |
-| 2020/21 | SPORTING DE VALLECAS | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC D/M GR-4 | 3º/10 | 9 | 7 | 2 | 386 | 310 | +76 |  |
-| 2020/21 | SPORTING DE VALLECAS | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR- A | 3º/5 | 4 | 1 | 3 | 147 | 156 | -9 |  |
-| 2018/19 | SPORTING DE VALLECAS | Moratalaz | Torneo municipal: grupos | BCESTO MASC. DOM-MAÑANA GR-5 | 1º/4 | 2 | 2 | 0 | 113 | 62 | +51 |  |
-| 2018/19 | SPORTING DE VALLECAS | Moratalaz | Torneo municipal: eliminatorias | CUADRO 1 BCESTO | — | 1 | 0 | 1 | 34 | 44 | -10 | Eliminado en cuartos (34-44) |
-| 2017/18 | SPORTING DE VALLECAS | Moratalaz | Liga: fase de grupos | BCESTO SEN-MASC DOM-MAÑANA GR-5 | 3º/14 | 9 | 6 | 3 | 388 | 391 | -3 |  |
-| 2017/18 | SPORTING DE VALLECAS | Moratalaz | Fase de distrito | BCESTO SEN-MASC. D/M GR-A | 8º/10 | 9 | 2 | 7 | 379 | 456 | -77 |  |
-| 2017/18 | SPORTING DE VALLECAS | Moratalaz | Torneo municipal: grupos | BCESTO SEN.MASC DOM MAÑ. GR-10 | 1º/13 | 3 | 3 | 0 | 199 | 131 | +68 |  |
-| 2017/18 | SPORTING DE VALLECAS | Moratalaz | Torneo municipal: eliminatorias | BALONCESTOSENIOR5 | — | 1 | 0 | 1 | 39 | 46 | -7 | Eliminado en ronda 1 (39-46) |
-| 2016/17 | SPORTING DE VALLECAS | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC DOM/M GR-3 | 3º/14 | 9 | 7 | 2 | 520 | 361 | +159 |  |
-| 2016/17 | SPORTING DE VALLECAS | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR-A | 5º/10 | 9 | 4 | 5 | 443 | 402 | +41 |  |
-| 2016/17 | SPORTING DE VALLECAS | Moratalaz | Torneo municipal: grupos | BALONCESTOSENIOR189 DOM-MAÑANA-3 | 1º/4 | 3 | 2 | 1 | 167 | 126 | +41 |  |
-| 2016/17 | SPORTING DE VALLECAS | Moratalaz | Torneo municipal: eliminatorias | CUADRO 1 BALONCESTO MASC. | — | 2 | 1 | 1 | 95 | 93 | +2 | Eliminado en octavos (36-45) |
-
-**Cara a cara:** 4 PJ: 3G-1P (+ tercer equipo 20/21: 0G-1P).
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2020/21 | 2021-04-18 | MdL | SPORTING DE VALLECAS | Liga: 2ª fase | 48-39 | G |
-| 2020/21 | 2021-02-07 | tercer equipo ² | SPORTING DE VALLECAS | Liga: 1ª fase | 28-50 | P |
-| 2020/21 | 2021-01-24 | MdA | SPORTING DE VALLECAS | Liga: 1ª fase | 29-38 | P |
-| 2020/21 | 2020-12-13 | MdL | SPORTING DE VALLECAS | Liga: 1ª fase | 52-30 | G |
-| 2017/18 | 2018-03-11 | MdL | SPORTING DE VALLECAS | Fase de distrito | 44-40 | G |
-
-### Candidato: SPORTING DE VALLEKAS (¿= VALLEKAS BASKET?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2018/19 | SPORTING DE VALLEKAS | Moratalaz | Liga: 1ª fase | BCESTO SEN. MASC. DOM/MAÑANA GR-3 | 6º/9 | 8 | 4 | 4 | 373 | 331 | +42 |  |
-| 2018/19 | SPORTING DE VALLEKAS | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR B | 2º/9 | 8 | 6 | 2 | 352 | 319 | +33 |  |
-| 2014/15 | SPORTING DE VALLEKAS | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC. DOM/M GR-4 | 2º/10 | 9 | 6 | 3 | 418 | 412 | +6 |  |
-| 2014/15 | SPORTING DE VALLEKAS | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC DOM-M GR-A | 7º/10 | 9 | 5 | 4 | 469 | 481 | -12 |  |
-
-**Cara a cara:** 3 PJ: 1G-2P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2018/19 | 2019-03-31 | MdA | SPORTING DE VALLEKAS | Liga: 2ª fase | 36-41 | P |
-| 2018/19 | 2018-11-04 | MdL | SPORTING DE VALLEKAS | Liga: 1ª fase | 45-39 | G |
-| 2014/15 | 2014-11-16 | MdL | SPORTING DE VALLEKAS | Liga: 1ª fase | 36-53 | P |
-
-### Candidato: SPORTING VALLECAS (¿= VALLEKAS BASKET?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2015/16 | SPORTING VALLECAS | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC. GR-3 DM | 6º/10 | 9 | 4 | 5 | 360 | 361 | -1 |  |
-| 2015/16 | SPORTING VALLECAS | Moratalaz | Liga: 2ª fase | BCESTO SEN.MASC D/M GR-B | 4º/10 | 9 | 7 | 2 | 429 | 379 | +50 |  |
-
-**Cara a cara:** 1 PJ: 1G-0P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2015/16 | 2016-01-24 | MdL | SPORTING VALLECAS | Liga: 2ª fase | 47-27 | G |
-
-### Candidato: VALLEKAS BASKET THUNDERS (¿= VALLEKAS BASKET?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2024/25 | VALLEKAS BASKET THUNDERS | Moratalaz | Liga: fase de grupos | JDM MOR DOM MAÑ BC SEN MAS G3 | 8º/11 | 20 | 6 | 14 | 769 | 1015 | -246 |  |
-| 2023/24 | VALLEKAS BASKET THUNDERS | Puente de Vallecas | Liga: fase de grupos | JDM VAL DOM MAÑ BC SEN MAS | 6º/12 ⚠ | 22 | 12 | 9 | 836 | 829 | +7 |  |
-| 2022/23 | VALLEKAS BASKET THUNDERS | Puente de Vallecas | Liga: fase de grupos | JDM VAL DOM MAÑ BC SEN MAS | 2º/12 | 22 | 19 | 3 | 1002 | 767 | +235 |  |
 
 **Cara a cara:** nunca.
 
@@ -732,96 +664,7 @@ _Sin enfrentamientos registrados con el club._
 
 | Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
 |---|---|---|---|---|---|---|
-| 2018/19 | 2019-05-26 | MdA | THE RED BOYS | Torneo municipal: grupos | 2-0 ⁴ | G |
-
-### Candidato: EL CASTAÑAZO (¿= CASTAÑAZO?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2018/19 | EL CASTAÑAZO | Centro | Liga: 1ª fase | B/C SENIOR SÁB.M | 2º/12 | 11 | 10 | 1 | 624 | 354 | +270 |  |
-| 2018/19 | EL CASTAÑAZO | Centro | Liga: 2ª fase | B/C SENIOR SÁB.M-1 | 2º/6 | 5 | 4 | 1 | 293 | 267 | +26 |  |
-| 2017/18 | EL CASTAÑAZO | Centro | Liga: 1ª fase | G1 SABADO MAÑANA | 4º/15 | 14 | 11 | 3 | 815 | 562 | +253 |  |
-| 2017/18 | EL CASTAÑAZO | Centro | Liga: 2ª fase | G1 SABADO MAÑANA-2 | 1º/3 | 2 | 2 | 0 | 114 | 104 | +10 |  |
-| 2017/18 | EL CASTAÑAZO | Centro | Torneo municipal: grupos | G2 ESTACION SUR SM 02 | 1º/4 | 3 | 3 | 0 | 192 | 113 | +79 |  |
-| 2017/18 | EL CASTAÑAZO | Centro | Torneo municipal: eliminatorias | CUADRO 5 B/C SENIOR | — | 3 | 2 | 1 | 127 | 130 | -3 | Eliminado en ronda 3 (38-51) |
-| 2015/16 | EL CASTAÑAZO | Centro | Liga: 1ª fase | G1 SABADO MAÑANA | 2º/12 | 11 | 9 | 2 | 581 | 351 | +230 |  |
-| 2015/16 | EL CASTAÑAZO | Centro | Liga: 2ª fase | G1 SABADO MAÑANA-1 | 2º/6 | 5 | 4 | 1 | 240 | 186 | +54 |  |
-
-**Cara a cara:** nunca.
-
-_Sin enfrentamientos registrados con el club._
-
-### Candidato: FLOPPERS (¿= F.T. FLOPPERS?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2025/26 **(temporada pasada)** | Floppers | Chamberí | Liga: fase de grupos | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G2 | 5º/11 | 20 | 11 | 9 | 925 | 859 | +66 |  |
-| 2024/25 | Floppers | Chamberí | Liga: fase de grupos | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G3 | 6º/11 ⚠ | 20 | 9 | 9 | 711 | 762 | -51 |  |
-| 2023/24 | Floppers | Chamberí | Liga: fase de grupos | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G4 | 4º/11 | 20 | 10 | 10 | 787 | 853 | -66 |  |
-| 2022/23 | Floppers | Chamberí | Liga: fase de grupos | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G3 | 4º/8 | 17 | 9 | 8 | 847 | 787 | +60 |  |
-| 2021/22 | Floppers | Chamberí | Liga: fase de grupos | JDM CHB G2 DOM TAR BC SEN MAS VALLEGOFIT | 7º/10 ⚠ | 18 | 8 | 9 | 683 | 754 | -71 |  |
-| 2018/19 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DT 3 | 3º/10 | 18 | 13 | 5 | 872 | 595 | +277 |  |
-| 2018/19 | FLOPPERS | Salamanca | Torneo municipal: grupos | BC SENIOR-MAS S-T 1 | 4º/4 | 3 | 0 | 3 | 112 | 148 | -36 |  |
-| 2017/18 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DT 3 | 3º/10 | 18 | 15 | 3 | 888 | 589 | +299 |  |
-| 2017/18 | FLOPPERS | Salamanca | Torneo municipal: grupos | BC SENIOR-M D-T 4 | 2º/4 | 3 | 2 | 1 | 123 | 99 | +24 |  |
-| 2016/17 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DT 3 | 5º/10 | 18 | 10 | 8 | 733 | 717 | +16 |  |
-| 2016/17 | FLOPPERS | Salamanca | Torneo municipal: grupos | BC SENIOR-M S-T 1 | — | 3 | 2 | 1 | 135 | 92 | +43 | Ganó cuartos (54-25); la ronda siguiente no tiene resultado en el portal |
-| 2015/16 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DT 3 | — | 18 | 11 | 7 | 635 | 594 | +41 | Eliminado en ronda 18 (25-41) |
-| 2014/15 | FLOPPERS | Salamanca | Liga: fase de grupos | BC SENIOR-M DM 3 | 7º/10 | 18 | 6 | 12 | 592 | 669 | -77 |  |
-
-**Cara a cara:** nunca.
-
-_Sin enfrentamientos registrados con el club._
-
-### Candidato: CARPASION (¿= Suanzes Motor?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2020/21 | CARPASION | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC D/M GR-4 | 5º/10 | 9 | 5 | 4 | 369 | 288 | +81 |  |
-| 2020/21 | CARPASION | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR- A | 5º/5 | 4 | 1 | 3 | 142 | 156 | -14 |  |
-
-**Cara a cara:** 3 PJ: 2G-1P (+ tercer equipo 20/21: 0G-1P).
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2020/21 | 2021-03-21 | MdL | CARPASION | Liga: 2ª fase | 35-29 | G |
-| 2020/21 | 2021-02-07 | MdL | CARPASION | Liga: 1ª fase | 40-33 | G |
-| 2020/21 | 2021-01-24 | tercer equipo ² | CARPASION | Liga: 1ª fase | 21-47 | P |
-| 2020/21 | 2020-12-20 | MdA | CARPASION | Liga: 1ª fase | 20-24 | P |
-
-### Candidato: CARPASION SUIZA (¿= Suanzes Motor?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2018/19 | CARPASION SUIZA | Ciudad Lineal | Torneo municipal: grupos | BC SR MAS DOMINGO G4 | 4º/4 | 3 | 0 | 3 | 102 | 141 | -39 |  |
-| 2017/18 | CARPASION SUIZA | Moratalaz | Liga: fase de grupos | BCESTO SEN-MASC DOM-MAÑANA GR-4 | 6º/14 | 9 | 4 | 5 | 374 | 414 | -40 |  |
-| 2017/18 | CARPASION SUIZA | Moratalaz | Fase de distrito | BCESTO SEN-MASC. D/M GR-B | 3º/10 | 9 | 6 | 3 | 412 | 383 | +29 |  |
-| 2017/18 | CARPASION SUIZA | Ciudad Lineal | Torneo municipal: grupos | BC TM DOMINGO MAS G4 | 2º/4 | 3 | 2 | 1 | 184 | 130 | +54 |  |
-
-**Cara a cara:** 2 PJ: 1G-1P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2017/18 | 2018-03-04 | MdA | CARPASION SUIZA | Fase de distrito | 35-42 | P |
-| 2017/18 | 2017-10-08 | MdL | CARPASION SUIZA | Liga: fase de grupos | 48-28 | G |
-
-### Candidato: SUIZA B. C. (¿= Suanzes Motor?)
-
-| Temporada | Nombre | Distrito | Competición / fase | Grupo | Puesto | PJ | G | P | PF | PC | Dif | Hasta dónde |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2018/19 | SUIZA B.C | Moratalaz | Liga: 1ª fase | BCESTO SEN. MASC. DOM/MAÑANA GR-5 | 3º/9 | 8 | 5 | 3 | 403 | 353 | +50 |  |
-| 2018/19 | SUIZA B.C | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR A | 8º/9 | 7 | 0 | 7 | 286 | 429 | -143 |  |
-| 2016/17 | SUIZA B. C. | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC DOM/M GR-3 | 9º/14 | 9 | 2 | 7 | 348 | 490 | -142 |  |
-| 2016/17 | SUIZA B. C. | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC D/M GR-C | 3º/10 | 9 | 7 | 2 | 418 | 394 | +24 |  |
-| 2016/17 | SUIZA B.C. | Ciudad Lineal | Torneo municipal: grupos | BC SR MASC DOMINGO G-1 | 2º/4 | 3 | 2 | 1 | 100 | 74 | +26 |  |
-| 2014/15 | SUIZA B. C. | Moratalaz | Liga: 1ª fase | BCESTO SEN-MASC. DOM/T GR-6 | 5º/9 | 8 | 4 | 4 | 345 | 271 | +74 |  |
-| 2014/15 | SUIZA B. C. | Moratalaz | Liga: 2ª fase | BCESTO SEN-MASC DOM-T GR-A | 6º/9 | 8 | 2 | 6 | 353 | 477 | -124 |  |
-
-**Cara a cara:** 1 PJ: 1G-0P.
-
-| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
-|---|---|---|---|---|---|---|
-| 2018/19 | 2019-03-31 | MdL | SUIZA B.C | Liga: 2ª fase | 83-57 | G |
+| 2018/19 | 2019-05-26 | MdA | THE RED BOYS | Torneo municipal: grupos | 2-0 ³ | G |
 
 ### Candidato: PONENOS (¿= VANNER?)
 
@@ -829,7 +672,7 @@ _Sin enfrentamientos registrados con el club._
 
 | Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |
 |---|---|---|---|---|---|---|
-| 2013/14 | — | MdL | PONENOS ³ | MARCA | 45-54 | P |
+| 2013/14 | — | MdL | PONENOS ² | MARCA | 45-54 | P |
 
 ### Candidato: RH PROPERTIES PONENOS (¿= VANNER?)
 
@@ -842,6 +685,19 @@ _Sin enfrentamientos registrados con el club._
 
 _Sin enfrentamientos registrados con el club._
 
+### Descartados por Iván
+
+Iván confirmó el 25/09/2026 que **no** son el mismo equipo. No cuentan para nada.
+
+| Rival 2026/27 | Nombre descartado | Temporadas en que aparece |
+|---|---|---|
+| VALLEKAS BASKET | SPORTING DE VALLECAS | 2016/17, 2017/18, 2018/19, 2020/21, 2021/22, 2024/25 |
+| VALLEKAS BASKET | SPORTING DE VALLEKAS | 2014/15, 2018/19 |
+| VALLEKAS BASKET | SPORTING VALLECAS | 2015/16 |
+| VALLEKAS BASKET | SPORT. DE VALLECAS | 2013/14 |
+| VALLEKAS BASKET | SPORTING | 2014/15, 2019/20 |
+| VALLEKAS BASKET | GSD VALLECAS | 2013/14, 2021/22 |
+
 ### Coincidencias débiles, no consideradas candidatas
 
 Sólo comparten una palabra y nunca coinciden en distrito. Se listan por transparencia.
@@ -850,6 +706,10 @@ Sólo comparten una palabra y nunca coinciden en distrito. Se listan por transpa
 |---|---|---|---|---|
 | Enfermos del Aro | LOS ENFERMOS | sólo comparte palabra ENFERMOS | RETIRO, Retiro, TETUAN, Tetuán | 2022/23, 2023/24, 2024/25 |
 | VALLEKAS BASKET | Puerto de Vallekas | sólo comparte palabra VALLEKAS | Retiro | 2025/26 |
+| VALLEKAS BASKET | ARAVACA CITY THUNDERS | sólo comparte palabra THUNDERS | CHAMBERI, Chamberí, LATINA, Latina | 2016/17, 2021/22, 2022/23 |
+| VALLEKAS BASKET | ALUCHE CITY THUNDERS | sólo comparte palabra THUNDERS | LATINA, Latina | 2018/19, 2020/21 |
+| VALLEKAS BASKET | ARAVAKA CITY THUNDERS | sólo comparte palabra THUNDERS | MONCLOA, Moncloa | 2016/17 |
+| VALLEKAS BASKET | HORTALEZA CITY THUNDERS | sólo comparte palabra THUNDERS | HORTALEZA, Hortaleza | 2016/17 |
 | VALLEKAS BASKET | GENERACION X VALLEKAS | sólo comparte palabra VALLEKAS | DGD, VALLECAS, Vallecas | 2014/15 |
 | WILD BOYS | THE BOYS | sólo comparte palabra BOYS | , DGD, MONCLOA, Moncloa, Moncloa - Aravaca, Moncloa-Aravaca | 2020/21, 2021/22, 2022/23, 2023/24, 2024/25, 2025/26 |
 | WILD BOYS | SMP BAD BOYS | sólo comparte palabra BOYS | RETIRO | 2024/25 |
@@ -861,6 +721,18 @@ Sólo comparten una palabra y nunca coinciden en distrito. Se listan por transpa
 | Quinto Tiempo | TIEMPO MUERTO | sólo comparte palabra TIEMPO | — | 2013/14 |
 
 ## Verificación
+
+**Partidos contados dos veces tras las fusiones:** 0 (revisados 410 partidos del club: ninguna clave del portal repetida, ningún partido del histórico propio con el mismo marcador que uno del portal en la misma temporada, y ningún partido asignado a dos rivales).
+
+**Cara a cara esperado por Iván frente a lo que dan los datos:**
+
+| Rival | Esperado | Datos | |
+|---|---|---|---|
+| LOS KHINKIS RUSOS | 15G-6P | 15G-6P | cuadra |
+| NABUCO TD | 0G-2P | 0G-2P | cuadra |
+| VALLEKAS BASKET | nunca | nunca | cuadra |
+| F.T. FLOPPERS | nunca | nunca | cuadra |
+| Suanzes Motor | 11G-2P | 11G-2P | cuadra |
 
 **Partidos 2025/26 del portal contra `season_2025-26.json`:** 41 de 42 casan en fecha y marcador (el portal atribuye 42 partidos con resultado a los códigos del club: #177542 MdL, #178977 MdA, #190128 MdA).
 
@@ -931,9 +803,13 @@ Los que afectan a grupos donde jugó algún rival de 2026/27:
 
 | Temporada | Fase | Grupo | Distrito | Σ PF | Σ PC | Dif |
 |---|---|---|---|---|---|---|
+| 2025/26 | FASE GRUPO 46 JDM | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G2 | Chamberí | 10553 | 10593 | -40 |
+| 2024/25 | FASE GRUPO 45 JDM | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G3 | Chamberí | 8609 | 8649 | -40 |
+| 2023/24 | FASE GRUPO 44 JDM | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G4 | Chamberí | 9143 | 9183 | -40 |
 | 2023/24 | FASE GRUPO 44 JDM | JDM MOR DOM MAÑ BC SEN MAS G1 | Moratalaz | 8144 | 7906 | +238 |
 | 2023/24 | FASE GRUPO 44 JDM | JDM MOR DOM MAÑ BC SEN MAS G3 | Moratalaz | 6735 | 6737 | -2 |
 | 2022/23 | FASE GRUPO 43 JDM | JDM HOR BC SEN MAS GR.4 | Hortaleza | 7059 | 7095 | -36 |
+| 2022/23 | FASE GRUPO 43 JDM | JDM CHB DOM TAR BC SEN MAS VALLEGOFIT G3 | Chamberí | 6544 | 6402 | +142 |
 | 2022/23 | FASE GRUPO 43 JDM | JDM MOR DOM TAR BC SEN MAS | Moratalaz | 8557 | 8611 | -54 |
 | 2021/22 | FASE GRUPO | JDM MOR DOM TAR BC SEN MAS GR-6 | Moratalaz | 7273 | 7353 | -80 |
 | 2021/22 | FASE GRUPO | BC SEN MAS GR.5 | Hortaleza | 4493 | 4346 | +147 |
@@ -946,6 +822,8 @@ Los que afectan a grupos donde jugó algún rival de 2026/27:
 - El 211549 **no trae torneos municipales** de baloncesto sénior en 2025/26: sólo los JDM.
 - Cara a cara: 185 partidos del histórico propio casaron con el portal y se fusionaron; 40 sólo están en el histórico propio. Emparejamientos ambiguos (mismo marcador dos veces en la temporada): 1, detallados en el JSON.
 - **2019/20:** season_2019-20.json (etiqueta MDL) anota partidos contra MDL: no puede ser ese equipo (misma prueba que DIAGNOSTICO_MDL_MDA.md). No se ha cambiado la etiqueta; decide Iván.
+- **Regla del nombre del club (D26), aplicada sólo como comprobación.** Dentro de Moratalaz **no contradice ninguna ficha de inscripción**: "MDL" aparece en el distrito del club por primera vez en 2020/21, y ese año el "MACCABI DE LEVANTAR" (#149233) no viene de ninguna ficha. Si la regla se leyera para todo Madrid, chocaría con las fichas de 2016/17, 2017/18, 2018/19: esas temporadas ya existía **otro equipo llamado "MDL"** en otro distrito (2016/17: #114286 en Retiro; 2016/17: #119914 en Retiro; 2017/18: #123743 en Retiro; 2017/18: #129740 en Retiro; 2018/19: #132915 en Retiro; 2018/19: #139573 en Retiro) mientras nuestras fichas se llamaban MACCABI DE LEVANTAR. No se ha cambiado nada; **decide Iván** si la regla es sólo para el distrito del club, como se ha aplicado.
+- #149233 "MACCABI DE LEVANTAR" (2020/21) cuenta como **rival** del club: 3 partidos, 1G-2P. No es uno de los 20 de 2026/27: no tiene ficha aquí.
 - **No es el club** y no se ha incluido: #179099 "Maccabi de levantar" (Vicálvaro, JDM VIC DOM MAÑ BC SEN MAS Faustina 3).
 
 ---

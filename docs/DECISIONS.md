@@ -97,7 +97,7 @@
 **Por qué:** el campo nació con D18, cuando el año de un torneo se consideraba ambiguo. Al adoptar D19, `consolidar_fichas.js` dejó de generarlo, pero el filtro siguió en pie: como ninguna hoja traía ya el campo, la condición pasó a excluirlas **todas**. El síntoma fue que 2016/17 —la temporada que D19 venía justamente a rescatar— se quedó sin sus 4 jugadores nuevos. Reponer el campo habría restaurado el comportamiento de D18; retirar el filtro es lo que deja el código alineado con la decisión vigente.
 **Lección operativa:** una decisión derogada no se cierra hasta que el código deja de implementarla. Al cambiar D18 por D19 se cambió el generador pero no el consumidor, y la incoherencia sobrevivió a dos verificaciones porque el efecto era una **ausencia** de datos, no un dato erróneo. Los informes de esos bloques describían lo que la fuente aportaba, no lo que acababa en la matriz; conviene que las verificaciones comparen siempre el resultado final contra el estado anterior.
 
-## D24 — Alias de rivales confirmados por Iván (25/09/2026)
+## D24 — Alias de rivales confirmados por Iván (25/09/2026) — AMPLIADA por D27
 **Decisión:** a todos los efectos (trayectoria en los JDM y cara a cara) se tratan como el mismo equipo:
 - **Suanzes Motor = SUIZA**
 - **VANNER = VANNER PONENOS**
@@ -108,3 +108,23 @@ Ninguna otra variante está confirmada. En particular **no** lo están `CARPASIO
 ## D25 — La copia bruta del 211549 no se versiona
 **Decisión:** `data/raw/` (copias brutas con fecha del dataset 211549) y `.cache-jdm/` (CSV del 300257) quedan en `.gitignore`. Al repositorio sólo va lo que se extrae: nombres de equipo, clasificaciones y marcadores de baloncesto sénior masculino.
 **Por qué:** el CSV completo del 211549 incluye todos los deportes, y en pádel los "equipos" se llaman con **nombre y apellidos de personas** (p. ej. "NOMBRE APELLIDO - NOMBRE APELLIDO"). El repositorio es público (D3/D17) y el cierre del bloque exige subir sólo nombres de equipos y marcadores. Los ficheros se regeneran en local descargándolos del portal (URLs en la cabecera del script).
+
+## D26 — Regla del nombre del club (confirmada por Iván, 25/09/2026)
+**Decisión:** "El club compitió como MACCABI DE LEVANTAR hasta que otro grupo se quedó con ese nombre. En cuanto aparece MDL en una temporada, el equipo llamado MACCABI DE LEVANTAR de esa temporada NO es el club. MdL y MdA son el mismo club: el cara a cara siempre suma las dos fichas."
+**Consecuencia:** `#149233` "MACCABI DE LEVANTAR" (2020/21) **no es del club: es un rival**. La hipótesis del "tercer equipo" de `DIAGNOSTICO_MDL_MDA.md` queda superada, y la conclusión original del bloque de rivales ("#149233 no es del club") era la correcta. Sus partidos contra MdL/MdA cuentan como partidos contra un rival llamado MACCABI DE LEVANTAR.
+**Ámbito aplicado:** el distrito del club (Moratalaz), donde "MDL" aparece por primera vez en 2020/21. Leída para todo Madrid, la regla chocaría con las fichas de 2016/17, 2017/18 y 2018/19, porque esas temporadas ya existía otro equipo llamado "MDL" en Retiro. No se ha cambiado nada por eso; queda anotado en Huecos de `docs/RIVALES_2026-27.md` para que Iván lo confirme.
+**Por qué:** es conocimiento del club que no está en ninguna fuente de datos. El 0 % de marcadores coincidentes de #149233 con el histórico propio ya apuntaba a lo mismo; la clasificación interna del Excel sólo demostraba que jugaba en el mismo grupo.
+
+## D27 — Alias de rivales ampliados (confirmados por Iván, 25/09/2026)
+**Decisión:** amplía D24. Son el mismo equipo a todos los efectos (trayectoria, temporadas en los JDM, mejor resultado y cara a cara):
+- **Suanzes Motor** = SUIZA = CARPASION SUIZA = CARPASION = SUIZA B.C. (y SUIZA B. C., SUIZA B.C)
+- **VANNER** = VANNER PONENOS (ya estaba en D24)
+- **NABUCO TD** = NABUCO
+- **LOS KHINKIS RUSOS** = LOS KINKIS RUSOS = KHINKIS RUSOS, más el apodo "KINKIS" del histórico propio (sólo para el cara a cara: no se busca en el portal, donde podría ser otro equipo)
+- **F.T. FLOPPERS** = FLOPPERS (y Floppers)
+- **CASTAÑAZO** = EL CASTAÑAZO
+- **VALLEKAS BASKET** = VALLEKAS BASKET THUNDERS
+
+**Descartados por Iván:** SPORTING DE VALLECAS (y todas sus variantes: SPORTING DE VALLEKAS, SPORTING VALLECAS, SPORT. DE VALLECAS, SPORTING) y GSD VALLECAS **no** son VALLEKAS BASKET.
+**Siguen sin confirmar:** ENFERMOS DEL BASKET, LITROS DE MAU, Litros de Pahou, JVK - Jugones ValleKas, THE RED BOYS, PONENOS y RH PROPERTIES PONENOS.
+**Corrección:** el informe anterior etiquetaba algunos candidatos como "señalado por Iván como posible". Era falso: Iván no señaló ninguno; los propuso el asistente en el chat. La etiqueta pasa a "propuesto en el chat".

@@ -18,7 +18,7 @@ Salidas: data/rivales_2026-27.json y docs/RIVALES_2026-27.md.
 USO:  python scripts/build_rivales_2026_27.py [--csv .cache-jdm]
       En --csv deben estar p{n}.csv (partidos) y c{n}.csv (clasificaciones) del 300257.
 """
-import csv, io, json, os, re, sys, glob, subprocess, unicodedata, difflib, collections, datetime
+import csv, io, json, os, re, sys, glob, unicodedata, difflib, collections
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -49,26 +49,42 @@ RIVALES = {
     'MdL': ['28500', 'CASTAÑAZO', 'Craps', 'F.T. FLOPPERS', 'La Cancha Roja', 'MEJORADA 2012 C.B.',
             'Quinto Tiempo', 'Suanzes Motor', 'TRASCENDEDORES C.B.', 'VANNER'],
 }
-# Nombres antiguos CONFIRMADOS por Iván: el mismo equipo a todos los efectos.
+# Nombres antiguos CONFIRMADOS por Iván (25/09/2026): el mismo equipo a todos los efectos
+# (trayectoria, temporadas en JDM, mejor resultado y cara a cara). La normalización ya cubre las
+# variantes de puntuación y mayúsculas (SUIZA B. C., SUIZA B.C., Floppers…).
+# `apodos` son nombres que sólo escribe el histórico propio: cuentan en el cara a cara, pero no se
+# buscan en el portal (un "KINKIS" de otro distrito no sería el mismo equipo).
 ALIAS_CONFIRMADOS = {
-    'Suanzes Motor': {'alias': ['SUIZA'], 'confirmado_por': 'Iván', 'fecha': HOY},
-    'VANNER': {'alias': ['VANNER PONENOS'], 'confirmado_por': 'Iván', 'fecha': HOY},
+    'Suanzes Motor': {'alias': ['SUIZA', 'CARPASION SUIZA', 'CARPASION', 'SUIZA B.C.']},
+    'VANNER': {'alias': ['VANNER PONENOS']},
+    'NABUCO TD': {'alias': ['NABUCO']},
+    'LOS KHINKIS RUSOS': {'alias': ['LOS KINKIS RUSOS', 'KHINKIS RUSOS'], 'apodos': ['KINKIS']},
+    'F.T. FLOPPERS': {'alias': ['FLOPPERS']},
+    'CASTAÑAZO': {'alias': ['EL CASTAÑAZO']},
+    'VALLEKAS BASKET': {'alias': ['VALLEKAS BASKET THUNDERS']},
 }
-# Candidatos que Iván nombró expresamente (no confirmados). El resto se buscan por regla.
-CANDIDATOS_NOMBRADOS = {
-    # + variantes de grafía de esos mismos nombres (portal) y apodos del histórico propio
-    'VALLEKAS BASKET': ['SPORTING DE VALLECAS', 'SPORTING DE VALLEKAS', 'SPORTING VALLECAS', 'SPORT. DE VALLECAS',
-                        'SPORTING', 'GSD VALLECAS'],
-    'NABUCO TD': ['NABUCO'],
-    'LOS KHINKIS RUSOS': ['LOS KINKIS RUSOS', 'KINKIS'],
-    'Suanzes Motor': ['CARPASION SUIZA', 'CARPASION', 'SUIZA B.C'],
+for _v in ALIAS_CONFIRMADOS.values():
+    _v.update({'confirmado_por': 'Iván', 'fecha': HOY})
+# Posibles alias que propuso el asistente en el chat (Iván no señaló ninguno). Siguen sin confirmar.
+CANDIDATOS_PROPUESTOS_EN_CHAT = {
     'VANNER': ['PONENOS'],
 }
+# Descartados expresamente por Iván (25/09/2026): no son el mismo equipo.
+DESCARTADOS_POR_IVAN = {
+    'VALLEKAS BASKET': ['SPORTING DE VALLECAS', 'SPORTING DE VALLEKAS', 'SPORTING VALLECAS', 'SPORT. DE VALLECAS',
+                        'SPORTING', 'GSD VALLECAS'],
+}
+# Regla del nombre del club, confirmada por Iván el 25/09/2026 (D26): en cuanto aparece "MDL" en
+# una temporada, el "MACCABI DE LEVANTAR" de esa temporada NO es el club. Por eso #149233 (2020/21)
+# es un rival, no un tercer equipo.
+REGLA_NOMBRE_CLUB = ('El club compitió como MACCABI DE LEVANTAR hasta que otro grupo se quedó con ese nombre. '
+                     'En cuanto aparece MDL en una temporada, el equipo llamado MACCABI DE LEVANTAR de esa temporada '
+                     'NO es el club. MdL y MdA son el mismo club: el cara a cara siempre suma las dos fichas.')
 
 # Códigos del club en 2025/26 (211549). Nombre inequívoco en Moratalaz; se validan por marcador
 # contra season_2025-26.json en la verificación.
 CLUB_2025_26 = {'177542': 'MdL', '178977': 'MdA', '190128': 'MdA'}
-TERCER_EQUIPO_2020_21 = '149233'
+RIVAL_MACCABI_2020_21 = '149233'   # "MACCABI DE LEVANTAR" de 2020/21: rival, no del club
 # En estas temporadas la etiqueta "MDL" de season_*.json es en realidad la ficha MdA
 # (docs/DIAGNOSTICO_MDL_MDA.md).
 ETIQUETA_MDL_ES_MDA = {'2017-18', '2018-19', '2020-21'}
@@ -380,12 +396,7 @@ def mejor_resultado(tray):
 
 # ------------------------------------------------------------------ cara a cara
 def leer_rivales_jdm():
-    local = os.path.join(DATA, 'rivales_jdm.json')
-    if os.path.exists(local):
-        return json.load(open(local, encoding='utf-8')), 'data/rivales_jdm.json'
-    txt = subprocess.run(['git', 'show', 'feat/rivales-jdm:data/rivales_jdm.json'], cwd=ROOT,
-                         capture_output=True, check=True).stdout.decode('utf-8')
-    return json.loads(txt), 'feat/rivales-jdm:data/rivales_jdm.json'
+    return json.load(open(os.path.join(DATA, 'rivales_jdm.json'), encoding='utf-8')), 'data/rivales_jdm.json'
 
 
 def partidos_de_codigo(t, cod, ficha, idx, origen, nota=None):
@@ -432,14 +443,9 @@ def construir_partidos_club(idx, P):
                      'pf': p['pf'], 'pc': p['pc'], 'res': 'G' if p['pf'] > p['pc'] else 'P',
                      'origen': 'rivales_jdm.json (portal 300257)',
                      **({'incomparecencia': True} if par & incomp.get(t, set()) else {})})
-    tercer = partidos_de_codigo('2020-21', TERCER_EQUIPO_2020_21, 'tercer equipo', idx, 'portal 300257',
-                                'Tercer equipo del club en 2020/21 (#149233 "MACCABI DE LEVANTAR"), ver DIAGNOSTICO_MDL_MDA.md')
-    for p in tercer:
-        p['tercer_equipo'] = True
-    club += tercer
     for cod, ficha in CLUB_2025_26.items():
         club += partidos_de_codigo('2025-26', cod, ficha, idx, 'portal 211549')
-    return club, rj_ruta, len(tercer)
+    return club, rj_ruta
 
 
 def leer_season(t):
@@ -474,13 +480,13 @@ def fusionar_historico_propio(club):
             if t in ETIQUETA_MDL_ES_MDA and ficha == 'MdL':
                 ficha = 'MdA'
             cands = [i for i, p in enumerate(club) if p['temporada'] == t and p['pf'] == q['pf'] and p['pc'] == q['pc']
-                     and i not in usados and not p.get('tercer_equipo')]
+                     and i not in usados]
             marcador_distinto = False
             if q.get('fecha'):
                 cands = [i for i in cands if club[i]['fecha'] == q['fecha']]
                 if not cands:
                     mismo_dia = [i for i, p in enumerate(club) if p['temporada'] == t and p['fecha'] == q['fecha']
-                                 and p['ficha'] == ficha and i not in usados and not p.get('tercer_equipo')]
+                                 and p['ficha'] == ficha and i not in usados]
                     if len(mismo_dia) == 1:
                         cands, marcador_distinto = mismo_dia, True
             if len(cands) > 1:
@@ -529,10 +535,11 @@ def resumen_h2h(ps):
 
 def h2h(nombres_norm, partidos):
     ps = [p for p in partidos if norm(p['rival']) in nombres_norm]
+    # de más reciente a más antiguo; sin fecha (histórico propio antiguo), al final de su temporada
     ps.sort(key=lambda p: (p['temporada'], p['fecha'] or ''), reverse=True)
-    ofi = [p for p in ps if not p.get('tercer_equipo')]
-    return {'resumen': resumen_h2h(ofi), 'resumen_tercer_equipo_2020_21': resumen_h2h([p for p in ps if p.get('tercer_equipo')]),
-            'partidos': ps}
+    u = ps[0] if ps else None
+    return {'resumen': resumen_h2h(ps), 'partidos': ps,
+            'ultimo': ({k: u[k] for k in ('temporada', 'fecha', 'ficha', 'rival', 'pf', 'pc', 'res')} if u else None)}
 
 
 # ------------------------------------------------------------------ candidatos
@@ -650,13 +657,125 @@ def cobertura(P, C):
     return out
 
 
+def comprobar_regla_nombre(P, C, rj):
+    """Aplica la regla del nombre SÓLO como comprobación (no cambia nada). Busca temporadas en que un
+    código del club que viene de ficha se llama MACCABI DE LEVANTAR y a la vez hay un "MDL"."""
+    club = collections.defaultdict(dict)
+    for p in rj['partidos']:
+        club[p['temporada']][p['codigo_equipo']] = (p['equipo'], p['identificado_por'])
+    for c, e in CLUB_2025_26.items():
+        club['2025-26'][c] = (e, 'nombre_en_distrito')
+    out = []
+    for t in TEMPORADAS:
+        nombres = collections.defaultdict(set)
+        for r in P[t]:
+            nombres[r['Codigo_equipo1']].add((r['Equipo_local'], r['Distrito']))
+            nombres[r['Codigo_equipo2']].add((r['Equipo_visitante'], r['Distrito']))
+        for r in C[t]:
+            nombres[r['Codigo_equipo']].add((r['Nombre_equipo'], r['Nombre_distrito']))
+        mdl = {c: sorted({norm(d): reparar(d) for e, d in sorted(v, key=lambda x: x[1]) if d}.values())
+               for c, v in nombres.items() if any(norm(e) == 'MDL' for e, _ in v)}
+        mdl_mor = {c for c, ds in mdl.items() if any(norm(d) == 'MORATALAZ' for d in ds)}
+        lev = sorted(c for c, v in nombres.items() if any(norm(e) == 'MACCABIDELEVANTAR' for e, _ in v))
+        entrada = {'temporada': t, 'mdl_en_moratalaz': sorted(mdl_mor),
+                   'mdl_en_otros_distritos': {c: ds for c, ds in mdl.items() if c not in mdl_mor},
+                   'maccabi_de_levantar': lev, 'conflictos': []}
+        for c, (eq, via) in club[t].items():
+            if c in lev and via == 'ficha' and mdl:
+                ambito = 'Moratalaz' if mdl_mor else 'sólo si la regla se lee para todo Madrid'
+                entrada['conflictos'].append({'codigo_club': c, 'ficha': eq, 'via': via, 'ambito': ambito,
+                                              'mdl': {k: mdl[k] for k in mdl}})
+        entrada['no_son_del_club_por_la_regla'] = [c for c in lev if mdl_mor and c not in club[t]]
+        out.append(entrada)
+    return out
+
+
+def comprobar_dobles(partidos, rivales):
+    """Tras las fusiones, ningún partido debe contar dos veces."""
+    problemas = []
+    vistos = collections.Counter((p['temporada'], p['codigo_equipo'], p['codigo_rival'], p['fecha'], p['pf'], p['pc'])
+                                 for p in partidos if p['codigo_equipo'])
+    problemas += [{'tipo': 'partido del portal repetido', 'clave': list(k)} for k, n in vistos.items() if n > 1]
+    portal = collections.Counter((p['temporada'], p['pf'], p['pc']) for p in partidos if p['codigo_equipo'])
+    for p in partidos:
+        if not p['codigo_equipo'] and portal[(p['temporada'], p['pf'], p['pc'])]:
+            problemas.append({'tipo': 'partido sólo del histórico propio con el mismo marcador que uno del portal',
+                              'temporada': p['temporada'], 'rival': p['rival'], 'marcador': f"{p['pf']}-{p['pc']}"})
+    dueno = collections.defaultdict(list)
+    for r in rivales:
+        for p in r['cara_a_cara']['partidos']:
+            dueno[id(p)].append(r['rival'])
+    problemas += [{'tipo': 'partido asignado a dos rivales', 'rivales': v} for v in dueno.values() if len(v) > 1]
+    return {'partidos_revisados': len(partidos), 'problemas': problemas}
+
+
+def puesto_relativo(r):
+    """Para ordenar: puesto relativo en la liga de 2025/26 (1 = primero, 0 = último); None si no jugó."""
+    tp = r['temporada_pasada_2025_26']
+    ligas = [f for f in (tp['fases'] if tp else []) if f['fase'].startswith('Liga') and f.get('posicion')]
+    if not ligas:
+        return None
+    f = ligas[0]
+    n = f['equipos_en_grupo'] or f['posicion']
+    return 1.0 if f['posicion'] == 1 else ((n - f['posicion']) / (n - 1) if n > 1 else 0.0)
+
+
+def lista(nombres):
+    return (', '.join(nombres)).rstrip('.') + '.'
+
+
+def lo_esencial(rivales, grupo):
+    rs = [r for r in rivales if r['grupo_club'] == grupo]
+    L = []
+    con = sorted([r for r in rs if puesto_relativo(r) is not None], key=lambda r: -puesto_relativo(r))
+    for r in con[:3]:
+        f = [x for x in r['temporada_pasada_2025_26']['fases'] if x['fase'].startswith('Liga')][0]
+        L.append(f"{r['rival']}: {f['posicion']}º de {f['equipos_en_grupo']} en 2025/26 ({f['g']}-{f['p']}, "
+                 f"{f['pf']}-{f['pc']}), {f['distrito']}.")
+    sin = [r['rival'] for r in rs if r['sin_rastro']]
+    if sin:
+        L.append('Sin rastro en los JDM: ' + lista(sin))
+    nunca = [r['rival'] for r in rs if not r['cara_a_cara']['resumen']['pj']]
+    if nunca:
+        L.append('Nunca nos hemos enfrentado a: ' + lista(nunca))
+    tot = resumen_h2h([p for r in rs for p in r['cara_a_cara']['partidos']])
+    L.append(f"Balance total del club contra el grupo: {tot['pj']} partidos, {tot['g']}G-{tot['p']}P "
+             f"({tot['pf']}-{tot['pc']}).")
+    mas = max(rs, key=lambda r: r['cara_a_cara']['resumen']['pj'])
+    rm = mas['cara_a_cara']['resumen']
+    L.append(f"Rival más repetido: {mas['rival']}, {rm['pj']} partidos ({rm['g']}G-{rm['p']}P).")
+    invictos = [r['rival'] for r in rs if r['cara_a_cara']['resumen']['pj'] and not r['cara_a_cara']['resumen']['p']]
+    if invictos:
+        L.append('Nunca nos han ganado: ' + lista(invictos))
+    return L[:10]
+
+
+# Cifras de cara a cara que Iván espera (A6). Se comprueban, no se fuerzan.
+ESPERADO = {'Suanzes Motor': (11, 2), 'LOS KHINKIS RUSOS': (15, 6), 'NABUCO TD': (0, 2),
+            'VALLEKAS BASKET': (0, 0), 'F.T. FLOPPERS': (0, 0)}
+
+
+def esperado(rivales):
+    out = []
+    for r in rivales:
+        if r['rival'] in ESPERADO:
+            g, p = ESPERADO[r['rival']]
+            res = r['cara_a_cara']['resumen']
+            out.append({'rival': r['rival'], 'esperado': f'{g}G-{p}P' if g + p else 'nunca',
+                        'datos': f"{res['g']}G-{res['p']}P" if res['pj'] else 'nunca',
+                        'cuadra': (res['g'], res['p']) == (g, p)})
+    return out
+
+
 # ------------------------------------------------------------------ principal
 def main():
     P, C, ficheros = cargar()
     idx = indices(P)
     cods = codigos_por_nombre(P, C)
-    club, rj_ruta, n_tercer = construir_partidos_club(idx, P)
+    club, rj_ruta = construir_partidos_club(idx, P)
     partidos, fusion = fusionar_historico_propio(club)
+    rj, _ = leer_rivales_jdm()
+    regla = comprobar_regla_nombre(P, C, rj)
 
     # universo de nombres para buscar candidatos: portal (todas las temporadas) + rivales del club
     universo = collections.defaultdict(lambda: {'nombres': set(), 'distritos': set(), 'temporadas': set()})
@@ -673,23 +792,21 @@ def main():
         u = universo[norm(p['rival'])]
         u['nombres'].add(p['rival']); u['temporadas'].add(p['temporada'])
 
-    rivales, candidatos, descartes = [], [], []
+    todos_alias = {norm(x) for v in ALIAS_CONFIRMADOS.values() for x in v['alias'] + v.get('apodos', [])}
+    rivales, candidatos, descartes, descartados_ivan = [], [], [], []
     vistos_cand = set()
     for grupo_club, lista in RIVALES.items():
         for nombre in lista:
-            alias = ALIAS_CONFIRMADOS.get(nombre, {}).get('alias', [])
+            conf = ALIAS_CONFIRMADOS.get(nombre, {})
+            alias, apodos = conf.get('alias', []), conf.get('apodos', [])
             exactos = [(x, norm(x)) for x in [nombre] + alias]
             nn = {n for _, n in exactos}
             tray = trayectoria(nn, P, C, idx, cods)
             ult = next((s for s in tray if s['temporada'] == '2025-26'), None)
-            liga_25 = []
-            if ult:
-                for i in ult['inscripciones']:
-                    liga_25 += [f for f in i['fases'] if f['tipo'] in ('liga', 'liga_2')]
-            cara = h2h(nn, partidos)
+            cara = h2h(nn | {norm(x) for x in apodos}, partidos)
             rivales.append({
-                'rival': nombre, 'grupo_2026_27': f'grupo del {grupo_club}',
-                'nombres_anteriores_confirmados': alias,
+                'rival': nombre, 'grupo_2026_27': f'grupo del {grupo_club}', 'grupo_club': grupo_club,
+                'nombres_anteriores_confirmados': alias, 'apodos_historico_propio': apodos,
                 'temporadas_en_jdm': len(tray), 'temporadas_disponibles': len(TEMPORADAS),
                 'temporada_pasada_2025_26': ({'nombre': ', '.join(ult['nombres']), 'fases': [
                     {k: f.get(k) for k in ('fase', 'distrito', 'grupo', 'posicion', 'equipos_en_grupo', 'pj', 'g', 'p', 'pf', 'pc', 'dif')}
@@ -701,35 +818,40 @@ def main():
             })
             distritos_obj = {clave_distrito(f['distrito']) for s in tray for i in s['inscripciones'] for f in i['fases']}
             fuertes, debiles = buscar_candidatos(nombre, exactos, universo, distritos_obj)
-            nombrados = [norm(x) for x in CANDIDATOS_NOMBRADOS.get(nombre, [])]
-            fuertes_d = dict(fuertes)
-            for m in nombrados:
-                fuertes_d.setdefault(m, [])
-                fuertes_d[m] = sorted(set(fuertes_d[m] + ['señalado por Iván como posible']))
+            descartados = {norm(x) for x in DESCARTADOS_POR_IVAN.get(nombre, [])}
+            for x in DESCARTADOS_POR_IVAN.get(nombre, []):
+                info = universo.get(norm(x))
+                descartados_ivan.append({'rival_2026_27': nombre, 'nombre': x, 'fecha': HOY,
+                                         'temporadas': sorted(info['temporadas']) if info else []})
+            fuertes_d = {m: v for m, v in fuertes if m not in descartados and m not in todos_alias}
+            for x in CANDIDATOS_PROPUESTOS_EN_CHAT.get(nombre, []):
+                m = norm(x)
+                fuertes_d[m] = sorted(set(fuertes_d.get(m, []) + ['propuesto en el chat']))
             for m, motivos in sorted(fuertes_d.items()):
                 if (nombre, m) in vistos_cand:
                     continue
                 vistos_cand.add((nombre, m))
                 info = universo.get(m)
-                tray_c = trayectoria({m}, P, C, idx, cods)
                 candidatos.append({
                     'rival_2026_27': nombre, 'candidato': sorted(info['nombres'])[0] if info else next(
-                        x for x in CANDIDATOS_NOMBRADOS[nombre] if norm(x) == m),
+                        x for x in CANDIDATOS_PROPUESTOS_EN_CHAT[nombre] if norm(x) == m),
                     'variantes': sorted(info['nombres']) if info else [], 'motivo': motivos,
                     'decide': 'Iván', 'encontrado': bool(info),
                     'solo_apodo_fusionado': (not info) and m in {norm(p.get('rival_historico_propio')) for p in partidos},
                     'temporadas': sorted(info['temporadas']) if info else [],
-                    'trayectoria': tray_c, 'cara_a_cara': h2h({m}, partidos),
+                    'trayectoria': trayectoria({m}, P, C, idx, cods), 'cara_a_cara': h2h({m}, partidos),
                 })
             for m, motivos in debiles:
-                if m in fuertes_d:
+                if m in fuertes_d or m in descartados or m in todos_alias:
                     continue
                 info = universo[m]
                 descartes.append({'rival_2026_27': nombre, 'nombre': sorted(info['nombres'])[0], 'motivo': motivos,
                                   'distritos': sorted(info['distritos']), 'temporadas': sorted(info['temporadas'])})
 
+    rival_maccabi = h2h({'MACCABIDELEVANTAR'}, [p for p in partidos if p['codigo_rival'] == RIVAL_MACCABI_2020_21])
     ver = {'partidos_2025_26': verificar_2025_26(partidos), 'clasificaciones': verificar_clasificaciones(C, idx),
-           'grupos_sin_partidos_en_el_portal': cobertura(P, C)}
+           'grupos_sin_partidos_en_el_portal': cobertura(P, C), 'dobles': comprobar_dobles(partidos, rivales),
+           'cara_a_cara_esperado': esperado(rivales)}
     homonimos_club_25 = [{'codigo': c, 'nombre': r['Nombre_equipo'], 'distrito': r['Nombre_distrito'], 'grupo': r['Nombre_grupo']}
                          for r in C['2025-26'] for c in [r['Codigo_equipo']]
                          if re.search(r'mac+abi|macabi', r['Nombre_equipo'], re.I) and c not in CLUB_2025_26]
@@ -744,15 +866,22 @@ def main():
                               'Todo lo demás va a candidatos.',
             'reparacion_codificacion': 'Detección UTF-8/latin-1 por fichero; en los CSV antiguos, caracteres CP850 '
                                        '(¥→Ñ, ¦→ª, §→º…) reparados.',
-            'cara_a_cara_fuentes': [rj_ruta, 'portal 300257 (tercer equipo 2020/21)', 'portal 211549 (2025/26)',
-                                    'data/season_*.json'],
-            'cara_a_cara_fusion': fusion, 'partidos_tercer_equipo_2020_21': n_tercer,
+            'cara_a_cara_fuentes': [rj_ruta, 'portal 211549 (2025/26)', 'data/season_*.json'],
+            'cara_a_cara_fusion': fusion,
             'codigos_club_2025_26': CLUB_2025_26,
             'homonimos_del_club_2025_26_no_incluidos': homonimos_club_25,
+            'regla_nombre_club': {'texto': REGLA_NOMBRE_CLUB, 'confirmada_por': 'Iván', 'fecha': HOY,
+                                  'comprobacion_por_temporada': regla},
+            'rivales_fuera_de_2026_27': [{
+                'codigo': RIVAL_MACCABI_2020_21, 'nombre': 'MACCABI DE LEVANTAR', 'temporada': '2020-21',
+                'que_es': 'Rival (regla del nombre del club). No es uno de los 20 de 2026/27: sin ficha.',
+                'cara_a_cara': rival_maccabi}],
         },
         'alias_confirmados': [{'rival': k, **v} for k, v in ALIAS_CONFIRMADOS.items()],
+        'lo_esencial': {g: lo_esencial(rivales, g) for g in RIVALES},
         'rivales': rivales,
         'candidatos_decide_ivan': candidatos,
+        'descartados_por_ivan': descartados_ivan,
         'coincidencias_debiles_descartadas': descartes,
         'verificacion': ver,
     }
@@ -763,8 +892,9 @@ def main():
     v = ver['partidos_2025_26']
     print(f"rivales: {len(rivales)} · candidatos: {len(candidatos)} · partidos cara a cara: {len(partidos)}")
     print(f"2025/26: {v['casan_fecha_y_marcador']}/{v['partidos_season_2025_26']} casan · "
-          f"filas PJ≠G+P: {len(ver['clasificaciones']['filas_pj_distinto_de_g_mas_p'])} · "
-          f"grupos PF≠PC: {len(ver['clasificaciones']['grupos_pf_distinto_de_pc'])}")
+          f"dobles: {len(ver['dobles']['problemas'])}")
+    for e in ver['cara_a_cara_esperado']:
+        print(f"  {e['rival']}: esperado {e['esperado']} · datos {e['datos']} · {'OK' if e['cuadra'] else 'DIFERENTE'}")
 
 
 # ------------------------------------------------------------------ informe
@@ -787,10 +917,14 @@ def txt_h2h(c):
         s = 'nunca'
     else:
         s = f"{r['pj']} PJ: {r['g']}G-{r['p']}P"
-    t3 = c['resumen_tercer_equipo_2020_21']
-    if t3['pj']:
-        s += f" (+ tercer equipo 20/21: {t3['g']}G-{t3['p']}P)"
     return s
+
+
+def txt_ultimo(c):
+    u = c.get('ultimo')
+    if not u:
+        return '—'
+    return f"{u['fecha'] or T(u['temporada'])}, {u['ficha']}, {u['pf']}-{u['pc']} ({u['res']})"
 
 
 def md_trayectoria(tray):
@@ -821,9 +955,9 @@ def md_h2h(c):
         return '_Sin enfrentamientos registrados con el club._'
     L = ['| Temporada | Fecha | Ficha del club | Rival jugó como | Fase | Marcador | |', '|---|---|---|---|---|---|---|']
     for p in c['partidos']:
-        ficha = p['ficha'] + (' ²' if p.get('tercer_equipo') else '') + (' ⁵' if p.get('aviso_ficha') else '')
-        orig = ' ³' if p['origen'].startswith('season_') else ''
-        marc = f"{p['pf']}-{p['pc']}" + (' ⁴' if p.get('incomparecencia') else '')
+        ficha = p['ficha'] + (' ⁴' if p.get('aviso_ficha') else '')
+        orig = ' ²' if p['origen'].startswith('season_') else ''
+        marc = f"{p['pf']}-{p['pc']}" + (' ³' if p.get('incomparecencia') else '')
         if p.get('marcador_historico_propio'):
             marc += f" (histórico propio: {p['marcador_historico_propio']})"
         L.append(f"| {T(p['temporada'])} | {p['fecha'] or '—'} | {ficha} | {p['rival']}{orig} | {p['fase'] or '—'} | "
@@ -842,15 +976,21 @@ def informe(o):
          '> **Alcance:** baloncesto, sénior masculino, **todos los distritos**, temporadas 2014/15–2025/26 '
          '(2013/14 y 2019/20 no están en el portal). Liga, segundas fases, fase de distrito, fase final de Madrid y torneos municipales.',
          '>',
-         '> **Emparejamiento:** sólo nombre **exacto** tras normalizar mayúsculas, tildes y signos, más los dos alias '
-         'confirmados por Iván. Los parecidos **no se fusionan**: van a la tabla de candidatos del final.',
+         '> **Emparejamiento:** sólo nombre **exacto** tras normalizar mayúsculas, tildes y signos, más los alias '
+         'confirmados por Iván. Los parecidos sin confirmar **no se fusionan**: van a la tabla de candidatos del final.',
          '',
-         '## Alias confirmados por Iván',
-         '',
-         '| Rival 2026/27 | Nombre anterior | Confirmado |',
-         '|---|---|---|']
+         '## Lo esencial', '']
+    for gc in RIVALES:
+        L += [f'**Grupo del {gc}**', '']
+        L += [f'- {x}' for x in o['lo_esencial'][gc]]
+        L.append('')
+    L += ['## Alias confirmados por Iván',
+          '',
+          '| Rival 2026/27 | Nombres anteriores | Apodos del histórico propio | Confirmado |',
+          '|---|---|---|---|']
     for a in o['alias_confirmados']:
-        L.append(f"| {a['rival']} | {', '.join(a['alias'])} | {a['confirmado_por']}, {HOY[8:10]}/{HOY[5:7]}/{HOY[:4]} |")
+        L.append(f"| {a['rival']} | {', '.join(a['alias'])} | {', '.join(a.get('apodos', [])) or '—'} | "
+                 f"{a['confirmado_por']}, {HOY[8:10]}/{HOY[5:7]}/{HOY[:4]} |")
     L += ['', '## Cómo leer las tablas', '',
           '- **Puesto** es `posición/equipos del grupo` según la clasificación oficial. En las eliminatorias no hay puesto: '
           'se indica **hasta dónde llegó**.',
@@ -860,20 +1000,21 @@ def informe(o):
           'fase de distrito > mejor puesto en liga, relativo al tamaño del grupo (una fase de distrito en formato liga cuenta '
           'como liga). No distingue divisiones: un 1º en 2ª división cuenta igual que un 1º en 1ª.',
           '- ⚠ marca las filas en que la clasificación oficial no cuadra (PJ ≠ G + P); se muestran tal cual, sin corregir.',
-          '- **Cara a cara**: partidos oficiales del club (MdL + MdA). El tercer equipo de 2020/21 (#149233) va aparte.',
+          '- **Cara a cara**: partidos oficiales del club, **sumando las dos fichas (MdL + MdA)**, de más reciente a más '
+          'antiguo. #149233 "MACCABI DE LEVANTAR" (2020/21) es un **rival**, no del club (regla del nombre, D26).',
           '- Un mismo nombre en **otro distrito** cuenta como coincidencia exacta (así lo pide el criterio), pero puede ser '
           'otro equipo: se avisa con ⚠ cuando en una misma temporada hay ligas en varios distritos.',
           '']
     for gc in ('MdA', 'MdL'):
         L += [f'## Grupo del {gc} — resumen', '',
-              '| Rival (nombres anteriores) | 2025/26: dónde | 2025/26: puesto y balance | Temporadas en JDM | Mejor resultado histórico | Cara a cara |',
-              '|---|---|---|---|---|---|']
+              '| Rival (nombres anteriores) | 2025/26: dónde | 2025/26: puesto y balance | Temporadas en JDM | Mejor resultado histórico | Cara a cara | Último enfrentamiento |',
+              '|---|---|---|---|---|---|---|']
         for r in o['rivales']:
             if r['grupo_2026_27'] != f'grupo del {gc}':
                 continue
             nom = r['rival'] + (f" (antes {', '.join(r['nombres_anteriores_confirmados'])})" if r['nombres_anteriores_confirmados'] else '')
             if r['sin_rastro']:
-                L.append(f"| {nom} | — | — | 0 | {r['sin_rastro']} | {txt_h2h(r['cara_a_cara'])} |")
+                L.append(f"| {nom} | — | — | 0 | {r['sin_rastro']} | {txt_h2h(r['cara_a_cara'])} | {txt_ultimo(r['cara_a_cara'])} |")
                 continue
             tp = r['temporada_pasada_2025_26']
             if tp:
@@ -887,14 +1028,13 @@ def informe(o):
             else:
                 donde, pb = 'no jugó en 2025/26', '—'
             L.append(f"| {nom} | {donde} | {pb} | {r['temporadas_en_jdm']} de {r['temporadas_disponibles']} | "
-                     f"{r['mejor_resultado']} | {txt_h2h(r['cara_a_cara'])} |")
+                     f"{r['mejor_resultado']} | {txt_h2h(r['cara_a_cara'])} | {txt_ultimo(r['cara_a_cara'])} |")
         L.append('')
     L += ['## Fichas por rival', '',
           '¹ Grupo sin fila en la clasificación oficial: balance calculado de los partidos.  ',
-          '² Tercer equipo del club en 2020/21 (#149233), aparte del balance.  ',
-          '³ Partido que sólo está en el histórico propio (`season_*.json`); el nombre del rival es el que anotó el club.  ',
-          '⁴ Incomparecencia: resultado administrativo según el portal (estado "N").  ',
-          '⁵ Ficha dudosa: el histórico propio de esa temporada anota un partido contra el propio club (ver Huecos).',
+          '² Partido que sólo está en el histórico propio (`season_*.json`); el nombre del rival es el que anotó el club.  ',
+          '³ Incomparecencia: resultado administrativo según el portal (estado "N").  ',
+          '⁴ Ficha dudosa: el histórico propio de esa temporada anota un partido contra el propio club (ver Huecos).',
           '']
     for r in o['rivales']:
         L += [f"### {r['rival']} — {r['grupo_2026_27']}", '']
@@ -910,7 +1050,8 @@ def informe(o):
     L += ['## Candidatos a mismo equipo — decide Iván', '',
           'Nombres **no idénticos** que podrían ser el mismo equipo. **No se han fusionado**: su trayectoria y su cara a '
           'cara van por separado. Regla de búsqueda: un nombre contiene al otro, o son muy parecidos, o comparten una '
-          'palabra significativa **y** han jugado en el mismo distrito; más los que Iván señaló.', '',
+          'palabra significativa **y** han jugado en el mismo distrito; más los propuestos en el chat (por el asistente, '
+          'no por Iván).', '',
           '| Rival 2026/27 | Candidato | Variantes | Motivo | Temporadas | Cara a cara |', '|---|---|---|---|---|---|']
     for c in o['candidatos_decide_ivan']:
         tem = ', '.join(T(t) for t in c['temporadas']) or (
@@ -926,6 +1067,13 @@ def informe(o):
         if c['trayectoria']:
             L += [md_trayectoria(c['trayectoria']), '']
         L += [f"**Cara a cara:** {txt_h2h(c['cara_a_cara'])}.", '', md_h2h(c['cara_a_cara']), '']
+    if o['descartados_por_ivan']:
+        L += ['### Descartados por Iván', '',
+              'Iván confirmó el 25/09/2026 que **no** son el mismo equipo. No cuentan para nada.', '',
+              '| Rival 2026/27 | Nombre descartado | Temporadas en que aparece |', '|---|---|---|']
+        for d in o['descartados_por_ivan']:
+            L.append(f"| {d['rival_2026_27']} | {d['nombre']} | {', '.join(T(t) for t in d['temporadas']) or '—'} |")
+        L.append('')
     if o['coincidencias_debiles_descartadas']:
         L += ['### Coincidencias débiles, no consideradas candidatas', '',
               'Sólo comparten una palabra y nunca coinciden en distrito. Se listan por transparencia.', '',
@@ -938,7 +1086,18 @@ def informe(o):
     v = o['verificacion']
     p26 = v['partidos_2025_26']
     cl = v['clasificaciones']
+    dob = v['dobles']
     L += ['## Verificación', '',
+          f"**Partidos contados dos veces tras las fusiones:** {len(dob['problemas'])} "
+          f"(revisados {dob['partidos_revisados']} partidos del club: ninguna clave del portal repetida, ningún partido "
+          'del histórico propio con el mismo marcador que uno del portal en la misma temporada, y ningún partido asignado a '
+          'dos rivales).' if not dob['problemas'] else
+          f"**Partidos contados dos veces tras las fusiones: {len(dob['problemas'])}.** Detalle en `verificacion.dobles`.", '',
+          '**Cara a cara esperado por Iván frente a lo que dan los datos:**', '',
+          '| Rival | Esperado | Datos | |', '|---|---|---|---|']
+    for e in v['cara_a_cara_esperado']:
+        L.append(f"| {e['rival']} | {e['esperado']} | {e['datos']} | {'cuadra' if e['cuadra'] else '**no cuadra**'} |")
+    L += ['',
           f"**Partidos 2025/26 del portal contra `season_2025-26.json`:** {p26['casan_fecha_y_marcador']} de "
           f"{p26['partidos_season_2025_26']} casan en fecha y marcador (el portal atribuye {p26['partidos_portal_club']} "
           f"partidos con resultado a los códigos del club: " + ', '.join(f"#{k} {v_}" for k, v_ in m['codigos_club_2025_26'].items()) + ').', '']
@@ -1014,6 +1173,24 @@ def informe(o):
              'detallados en el JSON.' if m['cara_a_cara_fusion']['ambiguos'] else '')]
     for a in m['cara_a_cara_fusion']['avisos_etiqueta']:
         L.append(f"- **{T(a['temporada'])}:** {a['aviso']}")
+    rg = m['regla_nombre_club']
+    conf = [(e['temporada'], c) for e in rg['comprobacion_por_temporada'] for c in e['conflictos']]
+    mor = [x for x in conf if x[1]['ambito'] == 'Moratalaz']
+    L.append('- **Regla del nombre del club (D26), aplicada sólo como comprobación.** '
+             + ('Dentro de Moratalaz **no contradice ninguna ficha de inscripción**: "MDL" aparece en el distrito del club '
+                'por primera vez en 2020/21, y ese año el "MACCABI DE LEVANTAR" (#149233) no viene de ninguna ficha. '
+                if not mor else f"**Contradice fichas en Moratalaz**: {mor}. ")
+             + ('Si la regla se leyera para todo Madrid, chocaría con las fichas de '
+                + ', '.join(sorted({T(t) for t, _ in conf}))
+                + ': esas temporadas ya existía **otro equipo llamado "MDL"** en otro distrito ('
+                + '; '.join(sorted({f"{T(e['temporada'])}: #{c} en {', '.join(ds)}" for e in rg['comprobacion_por_temporada']
+                                    for c, ds in e['mdl_en_otros_distritos'].items() if any(t == e['temporada'] for t, _ in conf)}))
+                + ') mientras nuestras fichas se llamaban MACCABI DE LEVANTAR. No se ha cambiado nada; **decide Iván** '
+                  'si la regla es sólo para el distrito del club, como se ha aplicado.' if conf else ''))
+    for e in m['rivales_fuera_de_2026_27']:
+        r_ = e['cara_a_cara']['resumen']
+        L.append(f"- #{e['codigo']} \"{e['nombre']}\" ({T(e['temporada'])}) cuenta como **rival** del club: "
+                 f"{r_['pj']} partidos, {r_['g']}G-{r_['p']}P. No es uno de los 20 de 2026/27: no tiene ficha aquí.")
     if m['homonimos_del_club_2025_26_no_incluidos']:
         L.append('- **No es el club** y no se ha incluido: ' + '; '.join(
             f"#{h['codigo']} \"{h['nombre']}\" ({h['distrito']}, {h['grupo']})" for h in m['homonimos_del_club_2025_26_no_incluidos']) + '.')

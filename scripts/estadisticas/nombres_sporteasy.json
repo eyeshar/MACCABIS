@@ -1,0 +1,38 @@
+{
+ "_nota": "Nombre con el que cada persona aparece en SportEasy -> person_id del registro (data/personas.json). Sólo personas del club; el resto de miembros de SportEasy se ignora. Confirmado con la tabla de motes de docs/PLANTILLA_26-27.md.",
+ "nombres": {
+  "Edu .": "martin-ortega-rico-eduardo",
+  "Carlos Baños Gallego": "banos-gallego-carlos",
+  "Manu Cala": "calahorro-sanchez-manuel",
+  "Jaime De María Sánchez": "de-maria-sanchez-jaime",
+  "Jon Adrian Esteban Peñas": "esteban-jon",
+  "Adriano Gianatti": "gianatti-adriano",
+  "Jorge Hernández": "hernandez-faura-jorge",
+  "Sergi Jorba": "jorba-lopez-sergi",
+  "David Lopez": "lopez-lucero-alfredo-david",
+  "Victor Martinez": "martinez-martinez-victor",
+  "Andres Martínez": "martinez-martinez-andres",
+  "Nacho Mileo": "mileo-ignacio-agustin",
+  "Fernando Méndez": "mendez-escandon-fernando",
+  "Javier Perchín García": "perchin-garcia-javier",
+  "Victor Perez": "perez-nunez-victor",
+  "Lukas Rausse": "rausse-lukas",
+  "Júlio Rodrigues": "de-carvalho-rodrigues-julio-cesar",
+  "Samuele Rogaia": "rogaia-samuele",
+  "Alonso Romero": "romero-barrueco-alonso",
+  "Fernando Tejeiro": "tejeiro-perez-de-agreda-fernando",
+  "Daniele Vallesi": "vallesi-daniele",
+  "Luis Varas": "varas-garcia-luis-alberto",
+  "Ivan Villaescusa": "villaescusa-silva-ivan",
+  "Nicolás Yamin": "yamin-squicciarini-nicolas",
+  "Ignacio Mateos-Aparicio": "mateos-aparicio-ignacio",
+  "Guillermo Galán Domingo": "galan-domingo-guillermo",
+  "Edwin Villa Guerrero": "villa-guerrero-edwin",
+  "Eduardo Garcia Gijon": "garcia-gijon-eduardo",
+  "Enyel Santos Artiles": "santos-artiles-enyel-geuris",
+  "Tomás Teruel Fernández": "teruel-fernandez-tomas"
+ },
+ "ignorar": {
+  "2026-27": ["yamin-squicciarini-nicolas", "perchin-garcia-javier", "mateos-aparicio-ignacio"]
+ }
+}

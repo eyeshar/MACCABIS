@@ -2,10 +2,14 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 25/09/2026 (tarde) — **scouting 2026/27: datos cerrados y pestaña "Rivales 26/27" construida, PENDIENTE DE APROBACIÓN de Iván** (rama `feat/rivales-2026-27`, sin merge). Antes: 04/08/2026, la Historia del club pasa a producción._
+_Última actualización: 25/09/2026 — **la pestaña "Rivales 26/27" queda EN PRODUCCIÓN**: `feat/rivales-2026-27` mergeada a `main` y publicada en https://eyeshar.github.io/MACCABIS/?p=rivales&g=MdL. Antes: 04/08/2026, la Historia del club pasa a producción._
 
-### Pestaña "Rivales 26/27" — CONSTRUIDA, pendiente de aprobación de Iván (25/09/2026)
-- En `index.html`, rama `feat/rivales-2026-27`. **No está en `main`**: se mergea cuando Iván apruebe las capturas de `docs/capturas/rivales/`.
+### Pestaña "Rivales 26/27" — **EN PRODUCCIÓN desde el 25/09/2026**
+- **Publicada en** https://eyeshar.github.io/MACCABIS/?p=rivales&g=MdL (y `&g=MdA`, `&r=<id-rival>`). Iván aprobó las capturas; merge `--no-ff` de `feat/rivales-2026-27` a `main`, que arrastra `feat/rivales-jdm`. Ramas conservadas. Comprobado en producción con Chrome a 375 px: carga la pestaña con el grupo MdL, sin errores de JS y sin desbordamiento.
+- **Retoques de la aprobación (D29):** "N incomparecencias" junto al puesto cuando explican PJ ≠ G+P (el ⚠ queda para lo que no explican); tarjetas ordenadas por % de victorias en partidos jugados en 2025/26 (28500 pasa de último a 3º del MdL); el selector de temporada se oculta mientras la pestaña está activa.
+
+#### Historial de la construcción
+- En `index.html`. Capturas aprobadas en `docs/capturas/rivales/`.
 - Selector Grupo MdA / Grupo MdL, "Lo esencial", tarjetas por rival ordenadas por puesto relativo 2025/26 y ficha con gráfico de trayectoria (SVG propio, D28), tabla temporada a temporada y cara a cara. Enlace `?p=rivales&g=MdA&r=<id>`.
 - Datos: `data/rivales_2026-27_web.json` (74 KB) con `npm run build:rivales`, generado de `data/rivales_2026-27.json`.
 - Probado con Chrome sin interfaz: sin errores de JS (sólo el 404 de `favicon.ico`, que no existe en el sitio), 70/70 combinaciones temporada×pestaña correctas, **sin desbordamiento horizontal a 375 px**, y los números cuadran con `docs/RIVALES_2026-27.md` en los 18 rivales con rastro.
@@ -47,7 +51,7 @@ _Última actualización: 25/09/2026 (tarde) — **scouting 2026/27: datos cerrad
 ## Repositorio y publicación
 
 - **Remoto:** `https://github.com/eyeshar/MACCABIS.git` (público). Conectado el 04/08/2026.
-- **Ramas publicadas:** `main` (es la que sirve GitHub Pages), `feat/rivales-jdm` y `feat/rivales-2026-27` (25/09/2026, sin merge).
+- **Ramas publicadas:** `main` (es la que sirve GitHub Pages), `feat/rivales-jdm` y `feat/rivales-2026-27` (mergeadas a `main` el 25/09/2026; se conservan).
 - El repositorio local **no estaba bajo git**; se inicializó en este bloque. El remoto tenía un único commit de subida manual (`45b31d9`) con una versión anterior del proyecto. Las dos historias estaban desconectadas y se unieron con `--allow-unrelated-histories`: **el commit `45b31d9` se conserva** como segundo padre del merge `b42576b`. Ningún archivo suyo se perdió.
 - Hay una etiqueta local `pre-merge-remoto` (= `99e52d3`) como punto de retorno anterior a esa unión.
 - **URL pública:** https://eyeshar.github.io/MACCABIS/

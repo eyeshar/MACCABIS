@@ -9,7 +9,6 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
@@ -57,32 +56,41 @@ try {
     return { status: r.status, datos };
   };
   const rpc = (f, args, token) => api(`/rpc/${f}`, { metodo: 'POST', cuerpo: args, token });
+  const auth = (ruta, cuerpo) => fetch(`${url}/auth/v1${ruta}`, {
+    method: 'POST', headers: { apikey: anonKey, 'content-type': 'application/json' }, body: JSON.stringify(cuerpo),
+  }).then(async (r) => ({ status: r.status, datos: await r.json().catch(() => null) }));
+  const codigoDe = async (email) => (await sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
 
-  // Datos de prueba: dos jugadores, un gestor y un usuario con sesion que NO es gestor.
-  const enlaceDe = async (personId) => (await sql`select e.token, j.id, j.nombre_visible from public.enlaces e join public.jugadores j on j.id = e.jugador_id where j.person_id = ${personId} and e.anulado_en is null`)[0];
-  const A = await enlaceDe('calahorro-sanchez-manuel'); // "Manu"
-  const B = await enlaceDe('jorba-lopez-sergi');        // "Sergi"
-  const C = await enlaceDe('esteban-jon');              // "Jon" (para el enlace anulado)
+  // Datos de prueba: tres jugadores (por correo, ya no por enlace) y un gestor.
+  const jugadorDe = async (personId, email) => {
+    await sql`update public.jugadores set email = ${email} where person_id = ${personId}`;
+    return (await sql`select id, nombre_visible from public.jugadores where person_id = ${personId}`)[0];
+  };
+  const A = { ...(await jugadorDe('calahorro-sanchez-manuel', 'manu@pruebas.local')), email: 'manu@pruebas.local' };
+  const B = { ...(await jugadorDe('jorba-lopez-sergi', 'sergi@pruebas.local')), email: 'sergi@pruebas.local' };
+  const C = { ...(await jugadorDe('esteban-jon', 'jon@pruebas.local')), email: 'jon@pruebas.local' };
   const [campana] = await sql`select id from public.campanas_ropa limit 1`;
-  const gestorEmail = 'gestor@pruebas.local', gestorClave = 'clave-de-pruebas-123';
-  const gestorId = await pila.crearUsuario(gestorEmail, gestorClave);
-  await sql`insert into public.gestores (user_id, nombre) values (${gestorId}, 'Gestor de pruebas')`;
-  const intrusoId = await pila.crearUsuario('intruso@pruebas.local', 'otra-clave-123456');
+  const gestorEmail = 'gestor@pruebas.local';
+  const gestorId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
+  await sql`insert into public.gestores (user_id, nombre, email) values (${gestorId}, 'Gestor de pruebas', ${gestorEmail})`;
+  const intrusoId = await pila.crearUsuario('intruso@pruebas.local', 'no-se-usa');
   const jwtGestor = await pila.firmar({ sub: gestorId, role: 'authenticated', email: gestorEmail });
   const jwtIntruso = await pila.firmar({ sub: intrusoId, role: 'authenticated', email: 'intruso@pruebas.local' });
+  const idA = await pila.crearUsuario(A.email, 'no-se-usa');
+  const jwtA = await pila.firmar({ sub: idA, role: 'authenticated', email: A.email });
 
-  // ------------------------------------------------------------------ RLS
+  // ------------------------------------------------------------------ RLS y lista blanca (API directa)
   seccion('RLS y permisos (API directa, como lo haria cualquiera con la clave publica)');
-  for (const t of ['jugadores', 'enlaces', 'gestores', 'campanas_ropa', 'pedidos_ropa', 'v_dorsales_repetidos']) {
+  for (const t of ['jugadores', 'gestores', 'campanas_ropa', 'pedidos_ropa', 'v_dorsales_repetidos']) {
     const r = await api(`/${t}?select=*`);
-    ok(r.status === 401 || r.status === 403 || (Array.isArray(r.datos) && r.datos.length === 0), `anonimo sin enlace NO lee ${t}`, `status ${r.status}`);
+    ok(r.status === 401 || r.status === 403 || (Array.isArray(r.datos) && r.datos.length === 0), `anonimo NO lee ${t}`, `status ${r.status}`);
   }
   let r = await api('/jugadores', { metodo: 'POST', cuerpo: { person_id: 'x', nombre_oficial: 'X', nombre_visible: 'X' } });
   ok(r.status >= 400, 'anonimo NO puede crear jugadores', `status ${r.status}`);
   r = await api('/pedidos_ropa', { metodo: 'POST', cuerpo: { campana_id: campana.id, jugador_id: A.id, nombre_completo: 'Hack', dorsal: 1, nombre_ropa: 'H', talla_camiseta: 'M' } });
   ok(r.status >= 400, 'anonimo NO puede insertar pedidos directamente en la tabla', `status ${r.status}`);
-  for (const f of ['_jugador_de_token', 'regenerar_enlace', 'anular_enlace', 'nuevo_token', '_dorsal_cogido']) {
-    const args = f === '_jugador_de_token' ? { p_token: A.token } : f.includes('enlace') ? { p_jugador: A.id } : f === '_dorsal_cogido' ? { p_campana: campana.id, p_dorsal: 1, p_excluir: null } : {};
+  for (const f of ['mi_zona', 'guardar_pedido', 'anular_pedido', 'dorsal_cogido', 'is_gestor']) {
+    const args = f === 'guardar_pedido' ? { p_pedido: {} } : f === 'anular_pedido' ? { p_pedido: campana.id } : f === 'dorsal_cogido' ? { p_campana: campana.id, p_dorsal: 1 } : {};
     r = await rpc(f, args);
     ok(r.status >= 400, `anonimo NO puede ejecutar ${f}()`, `status ${r.status}`);
   }
@@ -92,19 +100,54 @@ try {
   ok(rlsNueva?.relrowsecurity === true, 'una tabla nueva en public nace con RLS activada (event trigger)');
   const sinRls = await sql`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity`;
   ok(sinRls.length === 0, 'todas las tablas de public tienen RLS', sinRls.map((x) => x.relname).join(','));
-  r = await rpc('zona_jugador', { p_token: 'f'.repeat(64) });
-  ok(r.status === 200 && r.datos === null, 'enlace inventado: zona_jugador devuelve null');
-  for (const t of ['jugadores', 'enlaces', 'pedidos_ropa']) {
+  // Auditoria completa de permisos: ninguna funcion nueva debe heredar EXECUTE
+  // de PUBLIC por defecto (el fallo real: revocar solo "from anon" no basta
+  // si el grant lo tiene el pseudo-rol PUBLIC; hay que revocarlo tambien).
+  const anonFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
+  ok(anonFunciones.length === 0, 'anon no puede ejecutar NINGUNA funcion de public (D68)', anonFunciones.join(', '));
+  const authFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
+  ok(JSON.stringify(authFunciones) === JSON.stringify(['anular_pedido', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
+    'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
+
+  seccion('Lista blanca: quien puede entrar (D68)');
+  const [{ permitido_jugador }] = await sql`select public.correo_permitido(${A.email}) as permitido_jugador`;
+  ok(permitido_jugador === true, 'correo_permitido(): el correo de un jugador esta permitido');
+  const [{ permitido_desconocido }] = await sql`select public.correo_permitido('nadie@fuera.local') as permitido_desconocido`;
+  ok(permitido_desconocido === false, 'correo_permitido(): un correo desconocido NO esta permitido');
+  const [{ hook_ok }] = await sql`select (public.antes_de_crear_usuario(jsonb_build_object('user', jsonb_build_object('email', ${A.email}::text))) = '{}'::jsonb) as hook_ok`;
+  ok(hook_ok === true, 'antes_de_crear_usuario(): deja pasar un correo de la lista blanca');
+  const [{ hook_rechaza }] = await sql`select (public.antes_de_crear_usuario(jsonb_build_object('user', jsonb_build_object('email', 'nadie@fuera.local')))->'error'->>'http_code') as hook_rechaza`;
+  ok(hook_rechaza === '403', 'antes_de_crear_usuario(): rechaza un correo fuera de la lista, con error 403', String(hook_rechaza));
+  r = await auth('/otp', { email: A.email, create_user: true });
+  ok(r.status === 200, 'POST /otp con un correo permitido: manda el codigo', `status ${r.status}`);
+  r = await auth('/otp', { email: 'nadie@fuera.local', create_user: true });
+  ok(r.status === 400 && r.datos?.error_code === 'signup_disabled', 'POST /otp con un correo fuera de la lista: rechazado', JSON.stringify(r.datos));
+  await sql`delete from public._otp_pruebas where email = ${A.email}`; // no interfiere con el login real de A mas abajo
+
+  // Un gestor "reservado" solo por correo (sin usuario todavia) se vincula solo al entrar.
+  const gestor2Email = 'gestor2@pruebas.local';
+  await sql`insert into public.gestores (email, nombre) values (${gestor2Email}, 'Gestor reservado')`;
+  r = await auth('/otp', { email: gestor2Email, create_user: true });
+  const codigoG2 = await codigoDe(gestor2Email);
+  r = await auth('/verify', { email: gestor2Email, token: codigoG2, type: 'email' });
+  ok(r.status === 200 && r.datos?.user?.email === gestor2Email, 'gestor reservado por correo: entra por primera vez', JSON.stringify(r.datos)?.slice(0, 120));
+  const [g2] = await sql`select user_id from public.gestores where email = ${gestor2Email}`;
+  ok(g2?.user_id === r.datos?.user?.id, 'al entrar, su cuenta nueva se vincula sola a la plaza reservada (trigger)');
+
+  seccion('Sesiones de prueba y RLS por sesion');
+  for (const t of ['jugadores', 'gestores', 'pedidos_ropa']) {
     const x = await api(`/${t}?select=*`, { token: jwtIntruso });
-    ok(Array.isArray(x.datos) && x.datos.length === 0, `usuario con sesion que NO es gestor no ve ${t}`, JSON.stringify(x.datos)?.slice(0, 80));
+    ok(Array.isArray(x.datos) && x.datos.length === 0, `sesion sin jugador ni gestor no ve ${t}`, JSON.stringify(x.datos)?.slice(0, 80));
   }
-  r = await rpc('regenerar_enlace', { p_jugador: A.id }, jwtIntruso);
-  ok(r.status >= 400, 'usuario que NO es gestor no puede regenerar enlaces', `status ${r.status}`);
+  r = await rpc('mi_zona', {}, jwtIntruso);
+  ok(r.status === 200 && r.datos === null, 'mi_zona(): una sesion sin jugador asociado devuelve null (no error)');
+  r = await rpc('is_gestor', {}, jwtIntruso);
+  ok(r.status === 200 && r.datos === false, 'is_gestor(): una sesion normal no es gestor');
   r = await api('/jugadores?select=id', { token: jwtGestor });
   ok(Array.isArray(r.datos) && r.datos.length === 25, 'el gestor ve los 25 jugadores', `${r.datos?.length}`);
-  const zonaA = (await rpc('zona_jugador', { p_token: A.token })).datos;
+  const zonaA = (await rpc('mi_zona', {}, jwtA)).datos;
   ok(zonaA && !('telefono' in zonaA.jugador) && !('entrena' in zonaA.jugador) && !('rol' in zonaA.jugador),
-    'la zona del jugador no devuelve telefono, rol ni "entrena"', JSON.stringify(zonaA?.jugador));
+    'mi_zona() no devuelve telefono, rol ni "entrena"', JSON.stringify(zonaA?.jugador));
 
   // ------------------------------------------------------------------ App
   seccion('Compilacion de la app contra la pila local');
@@ -130,41 +173,64 @@ try {
   const captura = (p, n) => p.screenshot({ path: path.join(RES, `${n}.png`), fullPage: true });
   const sinDesbordar = async (p) => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
-  seccion('Enlaces personales');
-  await pA.goto(`${APP}/j/${A.token}`);
-  ok(await pA.getByRole('heading', { name: `Hola, ${A.nombre_visible}` }).isVisible(), 'enlace valido: abre la zona con su nombre');
-  ok(await sinDesbordar(pA), 'zona personal sin desbordamiento horizontal a 375 px');
-  const h = await (await fetch(`${APP}/j/${A.token}`)).headers;
-  ok(h.get('referrer-policy') === 'no-referrer', 'cabecera Referrer-Policy: no-referrer (el enlace no viaja a otras webs)');
-  ok((h.get('x-robots-tag') || '').includes('noindex'), 'cabecera X-Robots-Tag: noindex');
-  await captura(pA, '01-zona-jugador');
-  await pAnon.goto(`${APP}/j/${crypto.randomBytes(32).toString('hex')}`);
-  ok(await pAnon.getByRole('heading', { name: 'Enlace no válido' }).isVisible(), 'enlace inventado (64 hex al azar): "Enlace no valido"');
-  await pAnon.goto(`${APP}/j/hola`);
-  ok(await pAnon.getByRole('heading', { name: 'Enlace no válido' }).isVisible(), 'enlace inventado (texto corto): "Enlace no valido"');
-  await captura(pAnon, '02-enlace-no-valido');
+  // Entra por la UI con "codigo por correo" (Google no se puede probar sin una cuenta real).
+  async function entrarPorCodigo(p, email) {
+    await p.goto(`${APP}/entrar`);
+    await p.getByLabel('Recibir código por correo').fill(email);
+    await p.getByRole('button', { name: 'Enviarme un código' }).click();
+    await p.getByText('Código enviado a').waitFor({ timeout: 10000 });
+    const codigo = await codigoDe(email);
+    await p.getByLabel('Código de 6 dígitos').fill(codigo ?? '000000');
+    await p.getByRole('button', { name: 'Entrar', exact: true }).click();
+  }
 
-  seccion('Anonimo sin enlace');
+  seccion('Cabeceras y portada');
+  const h = await (await fetch(`${APP}/entrar`)).headers;
+  ok(h.get('referrer-policy') === 'no-referrer', 'cabecera Referrer-Policy: no-referrer');
+  ok((h.get('x-robots-tag') || '').includes('noindex'), 'cabecera X-Robots-Tag: noindex');
   await pAnon.goto(`${APP}/`);
   const portada = await pAnon.textContent('body');
-  ok(!portada.includes(A.nombre_visible) && !portada.includes('Calahorro'), 'la portada no muestra ningun dato de jugadores');
+  ok(!portada.includes('Calahorro') && !portada.includes(A.nombre_visible), 'la portada no muestra ningun dato de jugadores');
+
+  seccion('Anonimo sin sesion');
   await pAnon.goto(`${APP}/gestion`);
-  ok(pAnon.url().includes('/gestion/entrar'), '/gestion sin sesion manda a "Entrar"');
+  ok(pAnon.url().includes('/entrar'), '/gestion sin sesion manda a "Entrar"');
   await pAnon.goto(`${APP}/gestion/jugadores`);
-  ok(pAnon.url().includes('/gestion/entrar'), '/gestion/jugadores sin sesion manda a "Entrar"');
+  ok(pAnon.url().includes('/entrar'), '/gestion/jugadores sin sesion manda a "Entrar"');
+  await pAnon.goto(`${APP}/mi-zona`);
+  ok(pAnon.url().includes('/entrar'), '/mi-zona sin sesion manda a "Entrar"');
   const xl = await fetch(`${APP}/gestion/ropa/excel?c=${campana.id}`, { redirect: 'manual' });
   ok(xl.status === 401 || (xl.status >= 300 && xl.status < 400), 'el Excel no se descarga sin sesion', `status ${xl.status}`);
 
+  seccion('Entrar con un correo que no está en la lista blanca');
+  await pAnon.goto(`${APP}/entrar`);
+  await pAnon.getByLabel('Recibir código por correo').fill('nadie@fuera.local');
+  await pAnon.getByRole('button', { name: 'Enviarme un código' }).click();
+  await pAnon.getByText('No hemos podido mandar el código').waitFor({ timeout: 5000 }).catch(() => {});
+  ok(await pAnon.getByText('No hemos podido mandar el código').isVisible(),
+    'correo fuera de la lista blanca: aviso generico, sin confirmar que no esta dado de alta');
+  ok(!(await pAnon.getByLabel('Código de 6 dígitos').isVisible().catch(() => false)), 'no pasa al paso del codigo');
+
+  seccion('Entrar con código por correo (jugador A)');
+  await entrarPorCodigo(pA, A.email);
+  await pA.waitForURL(`${APP}/mi-zona`);
+  ok(await pA.getByRole('heading', { name: `Hola, ${A.nombre_visible}` }).isVisible(), 'codigo correcto: entra y abre su zona');
+  ok(await sinDesbordar(pA), 'zona personal sin desbordamiento horizontal a 375 px');
+  await captura(pA, '01-zona-jugador');
+
+  seccion('Código incorrecto');
+  await pAnon.goto(`${APP}/entrar`);
+  await pAnon.getByLabel('Recibir código por correo').fill(C.email);
+  await pAnon.getByRole('button', { name: 'Enviarme un código' }).click();
+  await pAnon.getByText('Código enviado a').waitFor({ timeout: 10000 });
+  await pAnon.getByLabel('Código de 6 dígitos').fill('000000');
+  await pAnon.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await pAnon.getByText('Código incorrecto o caducado.').waitFor({ timeout: 5000 }).catch(() => {});
+  ok(await pAnon.getByText('Código incorrecto o caducado.').isVisible(), 'codigo equivocado: rechazado, sigue sin sesion');
+  await captura(pAnon, '02-codigo-incorrecto');
+
   seccion('Gestor: entrar y abrir la campana');
-  await pG.goto(`${APP}/gestion/entrar`);
-  await pG.getByLabel('Correo').fill(gestorEmail);
-  await pG.getByLabel('Contraseña').fill('mal');
-  await pG.getByRole('button', { name: 'Entrar' }).click();
-  await pG.getByText('Correo o contraseña incorrectos.').waitFor({ timeout: 10000 }).catch(() => {});
-  ok(await pG.getByText('Correo o contraseña incorrectos.').isVisible(), 'contrasena erronea rechazada');
-  ok(await pG.getByLabel('Correo').inputValue() === gestorEmail, 'tras el error, el correo sigue escrito');
-  await pG.getByLabel('Contraseña').fill(gestorClave);
-  await pG.getByRole('button', { name: 'Entrar' }).click();
+  await entrarPorCodigo(pG, gestorEmail);
   await pG.waitForURL(`${APP}/gestion`);
   ok(await pG.getByRole('heading', { name: 'Panel de gestión' }).isVisible(), 'el gestor entra al panel');
   await pG.goto(`${APP}/gestion/ropa`);
@@ -177,7 +243,7 @@ try {
   ok(cam.estado === 'abierta' && new Date(cam.fecha_limite).toISOString() === '2026-12-31T22:59:59.000Z', 'campana abierta con fecha limite 31/12 a las 23:59 de Madrid', `${cam.estado} ${cam.fecha_limite?.toISOString?.()}`);
 
   seccion('Pedido del jugador A (valido)');
-  await pA.goto(`${APP}/j/${A.token}`);
+  await pA.goto(`${APP}/mi-zona`);
   await pA.getByRole('link', { name: 'Hacer mi pedido' }).click();
   await pA.waitForURL(/ropa\/nuevo/);
   ok(await sinDesbordar(pA), 'formulario sin desbordamiento horizontal a 375 px');
@@ -206,7 +272,9 @@ try {
   await captura(pA, '04-zona-con-pedido');
 
   seccion('Dorsal repetido (jugador B)');
-  await pB.goto(`${APP}/j/${B.token}/ropa/nuevo`);
+  await entrarPorCodigo(pB, B.email);
+  await pB.waitForURL(`${APP}/mi-zona`);
+  await pB.goto(`${APP}/mi-zona/ropa/nuevo`);
   await pB.getByLabel('Nombre en la ropa').fill('SERGI');
   await pB.getByLabel('Dorsal').fill('7');
   await pB.locator('.prenda', { has: pB.getByRole('heading', { name: 'Camiseta de juego', exact: true }) }).getByLabel('La quiero').check();
@@ -215,39 +283,40 @@ try {
   const cuerpoB = await pB.textContent('body');
   ok(!/Manu|Calahorro|MANU/.test(cuerpoB), 'avisa "Ese dorsal ya esta cogido" SIN decir de quien');
   await captura(pB, '05-dorsal-cogido');
-  r = await rpc('guardar_pedido', { p_token: B.token, p_pedido: { campana_id: campana.id, para: 'yo', nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 7, tallas: { camiseta: 'L' } } });
+  const jwtB = await pila.firmar({ sub: (await sql`select id from auth.users where lower(email) = ${B.email}`)[0].id, role: 'authenticated', email: B.email });
+  r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, para: 'yo', nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 7, tallas: { camiseta: 'L' } } }, jwtB);
   ok(r.datos?.ok === false && r.datos?.error === 'dorsal_cogido' && !JSON.stringify(r.datos).includes('MANU'), 'la base de datos tambien lo rechaza, sin nombres', JSON.stringify(r.datos));
-  r = await rpc('dorsal_cogido', { p_token: 'f'.repeat(64), p_campana: campana.id, p_dorsal: 7 });
-  ok(r.status >= 400, 'sin enlace valido no se puede preguntar por dorsales', `status ${r.status}`);
+  r = await rpc('dorsal_cogido', { p_campana: campana.id, p_dorsal: 7 });
+  ok(r.status >= 400, 'sin sesion no se puede preguntar por dorsales', `status ${r.status}`);
   await pB.getByLabel('Dorsal').fill('8');
   await pB.getByRole('button', { name: 'Enviar pedido' }).click();
   await pB.waitForURL(/guardado=1/);
   ok(true, 'con otro dorsal (8), el pedido de B se envia');
 
   seccion('Talla invalida y campos obligatorios (API)');
-  r = await rpc('guardar_pedido', { p_token: B.token, p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 9, tallas: { camiseta: 'XXXL' } } });
+  r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 9, tallas: { camiseta: 'XXXL' } } }, jwtB);
   ok(r.datos?.error === 'talla_invalida', 'talla "XXXL" (no existe en VIVE) rechazada', JSON.stringify(r.datos));
-  r = await rpc('guardar_pedido', { p_token: B.token, p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 9, tallas: { camiseta: '' } } });
+  r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 9, tallas: { camiseta: '' } } }, jwtB);
   ok(r.datos?.error === 'falta_talla', 'prenda marcada sin talla rechazada', JSON.stringify(r.datos));
-  r = await rpc('guardar_pedido', { p_token: B.token, p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 100, tallas: { camiseta: 'L' } } });
+  r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 100, tallas: { camiseta: 'L' } } }, jwtB);
   ok(r.datos?.error === 'dorsal_invalido', 'dorsal 100 rechazado', JSON.stringify(r.datos));
 
   seccion('Un jugador no puede ver ni tocar lo de otro');
-  const zonaB = (await rpc('zona_jugador', { p_token: B.token })).datos;
+  const zonaB = (await rpc('mi_zona', {}, jwtB)).datos;
   ok(zonaB.pedidos.length === 1 && zonaB.pedidos.every((p) => p.id !== pedA.id), 'la zona de B solo trae SU pedido');
-  await pB.goto(`${APP}/j/${B.token}`);
+  await pB.goto(`${APP}/mi-zona`);
   ok(!(await pB.textContent('body')).includes('MANU'), 'la pagina de B no muestra el pedido de A');
-  await pB.goto(`${APP}/j/${B.token}/ropa/${pedA.id}`);
+  await pB.goto(`${APP}/mi-zona/ropa/${pedA.id}`);
   ok(await pB.getByText('No encontramos ese pedido entre los tuyos.').isVisible(), 'B no puede abrir el pedido de A ni sabiendo su identificador');
-  r = await rpc('guardar_pedido', { p_token: B.token, p_pedido: { id: pedA.id, campana_id: campana.id, nombre_completo: 'Pirata', nombre_ropa: 'PIRATA', dorsal: 50, tallas: { camiseta: 'S' } } });
+  r = await rpc('guardar_pedido', { p_pedido: { id: pedA.id, campana_id: campana.id, nombre_completo: 'Pirata', nombre_ropa: 'PIRATA', dorsal: 50, tallas: { camiseta: 'S' } } }, jwtB);
   ok(r.datos?.error === 'no_encontrado', 'B no puede modificar el pedido de A (RPC con su id)', JSON.stringify(r.datos));
-  r = await rpc('anular_pedido', { p_token: B.token, p_pedido: pedA.id });
+  r = await rpc('anular_pedido', { p_pedido: pedA.id }, jwtB);
   ok(r.datos?.error === 'no_encontrado', 'B no puede anular el pedido de A', JSON.stringify(r.datos));
   const [pedA2] = await sql`select nombre_ropa, dorsal from public.pedidos_ropa where id = ${pedA.id}`;
   ok(pedA2?.nombre_ropa === 'MANU' && pedA2.dorsal === 7, 'el pedido de A sigue intacto');
 
   seccion('Modificar un pedido');
-  await pA.goto(`${APP}/j/${A.token}`);
+  await pA.goto(`${APP}/mi-zona`);
   await pA.getByRole('link', { name: 'Modificar' }).first().click();
   await pA.waitForURL(/ropa\/[0-9a-f-]{36}$/);
   await pA.locator('.prenda', { has: pA.getByRole('heading', { name: 'Pantalón', exact: true }) }).getByLabel('Talla').selectOption('XL');
@@ -264,7 +333,7 @@ try {
   ok(await pA.getByLabel('Nombre completo del familiar').inputValue() === '', 'al elegir familiar se vacia el nombre completo');
   await pA.getByLabel('Nombre completo del familiar').fill('Lucía Calahorro');
   await pA.getByLabel('Nombre en la ropa').fill('LUCIA');
-  await pA.getByLabel('Dorsal').fill('7'); // el mismo que el suyo: en un familiar el dorsal es libre (D59)
+  await pA.getByLabel('Dorsal').fill('7'); // el mismo que el suyo: en un familiar el dorsal es libre (D60)
   await pA.locator('.prenda', { has: pA.getByRole('heading', { name: 'Camiseta de juego', exact: true }) }).getByLabel('La quiero').check();
   await pA.locator('.prenda', { has: pA.getByRole('heading', { name: 'Camiseta de juego', exact: true }) }).getByLabel('Talla').selectOption('10');
   await pA.waitForTimeout(800);
@@ -276,36 +345,38 @@ try {
   ok(await pA.getByRole('heading', { name: 'Para Lucía Calahorro' }).isVisible(), 'A ve el pedido del familiar en "Mis pedidos"');
   await captura(pA, '06-mis-pedidos');
 
-  seccion('Enlace anulado y regenerado (gestor)');
+  seccion('Gestor: correo de un jugador (sustituye a los enlaces)');
   await pG.goto(`${APP}/gestion/jugadores`);
   const filaC = pG.locator(`li[data-person="esteban-jon"]`);
-  pG.once('dialog', (d) => d.accept());
-  await filaC.getByRole('button', { name: 'Anular' }).click();
-  await filaC.getByText('Sin enlace').waitFor();
-  await pAnon.goto(`${APP}/j/${C.token}`);
-  ok(await pAnon.getByRole('heading', { name: 'Enlace no válido' }).isVisible(), 'enlace anulado: "Enlace no valido"');
-  pG.once('dialog', (d) => d.accept());
-  await filaC.getByRole('button', { name: 'Crear enlace' }).click();
-  await filaC.getByText('Enlace activo').waitFor();
-  const [nuevoC] = await sql`select token from public.enlaces where jugador_id = ${C.id} and anulado_en is null`;
-  ok(nuevoC && nuevoC.token !== C.token, 'el gestor crea un enlace nuevo, distinto del anulado');
-  await pAnon.goto(`${APP}/j/${nuevoC.token}`);
-  ok(await pAnon.getByRole('heading', { name: 'Hola, Jon' }).isVisible(), 'el enlace nuevo funciona');
-  await pAnon.goto(`${APP}/j/${C.token}`);
-  ok(await pAnon.getByRole('heading', { name: 'Enlace no válido' }).isVisible(), 'el enlace viejo sigue sin funcionar');
-  const filaA = pG.locator(`li[data-person="calahorro-sanchez-manuel"]`);
-  await filaA.getByText('Editar datos').click();
-  await filaA.getByLabel('Teléfono (opcional, solo gestores)').fill('600 111 222');
-  await filaA.getByRole('button', { name: 'Guardar datos' }).click();
-  await filaA.getByText('Guardado.').waitFor();
+  ok(await filaC.getByText('Puede entrar').isVisible(), 'Jon ya tiene correo: "Puede entrar"');
+  await filaC.getByText('Editar datos').click();
+  await filaC.getByLabel('Teléfono (opcional, solo gestores)').fill('600 111 222');
+  await filaC.getByRole('button', { name: 'Guardar datos' }).click();
+  await filaC.getByText('Guardado.').waitFor();
   await pG.reload();
-  const wa = await pG.locator(`li[data-person="calahorro-sanchez-manuel"] a`, { hasText: 'Enviar por WhatsApp' }).getAttribute('href');
-  ok(wa?.startsWith('https://wa.me/34600111222?text=') && decodeURIComponent(wa).includes(`/j/${A.token}`), 'con telefono guardado aparece el enlace wa.me con su mensaje y su enlace');
+  const wa = await pG.locator(`li[data-person="esteban-jon"] a`, { hasText: 'Enviar por WhatsApp' }).getAttribute('href');
+  ok(wa?.startsWith('https://wa.me/34600111222?text=') && decodeURIComponent(wa).includes('/entrar') && decodeURIComponent(wa).includes(C.email), 'con telefono guardado aparece el enlace wa.me con el mensaje (correo y /entrar, sin token)');
   await ctxG.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: APP });
-  await pG.locator(`li[data-person="calahorro-sanchez-manuel"]`).getByRole('button', { name: 'Copiar mensaje' }).click();
+  await pG.locator(`li[data-person="esteban-jon"]`).getByRole('button', { name: 'Copiar mensaje' }).click();
   const copiado = await pG.evaluate(() => navigator.clipboard.readText());
-  ok(copiado.includes('Hola, Manu') && copiado.includes(`/j/${A.token}`) && copiado.includes('No lo reenvíes'), '"Copiar mensaje" copia el texto de bienvenida con su enlace');
+  ok(copiado.includes(`Hola, ${C.nombre_visible}`) && copiado.includes('/entrar') && copiado.includes(C.email), '"Copiar mensaje" copia el texto de bienvenida con el correo y el enlace de /entrar');
+
+  const filaSinCorreo = pG.locator(`li[data-person="de-maria-sanchez-jaime"]`);
+  ok(await filaSinCorreo.getByText('Sin correo: no puede entrar').isVisible(), 'un jugador sin correo se marca "Sin correo: no puede entrar"');
+  await filaSinCorreo.getByText('Editar datos').click();
+  await filaSinCorreo.getByLabel('Correo (para entrar)').fill('intruso@pruebas.local'); // ya en uso por otro usuario de pruebas, pero NO por otro jugador
+  await filaSinCorreo.getByRole('button', { name: 'Guardar datos' }).click();
+  await filaSinCorreo.getByText('Guardado.').waitFor();
+  await pG.reload();
+  ok(await pG.locator(`li[data-person="de-maria-sanchez-jaime"]`).getByText('Puede entrar').isVisible(), 'el gestor da de alta el correo de un jugador y pasa a "Puede entrar"');
   await captura(pG, '07-gestion-jugadores');
+
+  const filaDup = pG.locator(`li[data-person="esteban-jon"]`);
+  await filaDup.getByText('Editar datos').click();
+  await filaDup.getByLabel('Correo (para entrar)').fill('intruso@pruebas.local');
+  await filaDup.getByRole('button', { name: 'Guardar datos' }).click();
+  await filaDup.getByText('Ese correo ya está en uso por otro jugador.').waitFor({ timeout: 5000 }).catch(() => {});
+  ok(await filaDup.getByText('Ese correo ya está en uso por otro jugador.').isVisible(), 'dos jugadores no pueden compartir el mismo correo');
 
   seccion('Vista de gestores: dorsales repetidos CON nombres, recuento, alta manual');
   await pG.goto(`${APP}/gestion/ropa/nuevo?c=${campana.id}`);
@@ -339,20 +410,20 @@ try {
   await pG.getByLabel('Estado').selectOption('cerrada');
   await pG.getByRole('button', { name: 'Guardar campaña' }).click();
   await pG.getByText('Campaña guardada.').waitFor();
-  r = await rpc('guardar_pedido', { p_token: B.token, p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 30, tallas: { sudadera: 'M' } } });
+  r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 30, tallas: { sudadera: 'M' } } }, jwtB);
   ok(r.datos?.error === 'campana_cerrada', 'con la campana cerrada se rechaza un pedido nuevo', JSON.stringify(r.datos));
-  r = await rpc('guardar_pedido', { p_token: A.token, p_pedido: { id: pedA.id, nombre_completo: 'Manuel Calahorro Sánchez', nombre_ropa: 'MANU', dorsal: 7, tallas: { camiseta: 'S' } } });
+  r = await rpc('guardar_pedido', { p_pedido: { id: pedA.id, nombre_completo: 'Manuel Calahorro Sánchez', nombre_ropa: 'MANU', dorsal: 7, tallas: { camiseta: 'S' } } }, jwtA);
   ok(r.datos?.error === 'campana_cerrada', 'con la campana cerrada no se puede modificar', JSON.stringify(r.datos));
-  r = await rpc('anular_pedido', { p_token: A.token, p_pedido: pedA.id });
+  r = await rpc('anular_pedido', { p_pedido: pedA.id }, jwtA);
   ok(r.datos?.error === 'campana_cerrada', 'con la campana cerrada no se puede anular', JSON.stringify(r.datos));
-  await pA.goto(`${APP}/j/${A.token}`);
+  await pA.goto(`${APP}/mi-zona`);
   ok(await pA.getByText('Cerrado', { exact: true }).isVisible() && (await pA.getByRole('link', { name: /Hacer/ }).count()) === 0 && (await pA.getByRole('link', { name: 'Modificar' }).count()) === 0,
     'el jugador ve "Cerrado", sin boton de pedir ni de modificar');
-  await pA.goto(`${APP}/j/${A.token}/ropa/nuevo`);
+  await pA.goto(`${APP}/mi-zona/ropa/nuevo`);
   ok(await pA.getByText('El pedido de ropa está cerrado').isVisible(), 'el formulario de pedido dice que esta cerrado');
   // Plazo vencido con la campana "abierta": tambien rechaza.
   await sql`update public.campanas_ropa set estado = 'abierta', fecha_limite = now() - interval '1 minute' where id = ${campana.id}`;
-  r = await rpc('guardar_pedido', { p_token: B.token, p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 30, tallas: { sudadera: 'M' } } });
+  r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 30, tallas: { sudadera: 'M' } } }, jwtB);
   ok(r.datos?.error === 'campana_cerrada', 'con la fecha limite pasada tambien se rechaza', JSON.stringify(r.datos));
 
   seccion('Excel para VIVE (estructura celda a celda con la plantilla)');

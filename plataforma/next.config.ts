@@ -2,8 +2,8 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 // Cabeceras de seguridad para todas las rutas.
-// - Referrer-Policy no-referrer: las URL de la zona personal llevan el enlace
-//   secreto (/j/<token>); asi no viaja a otras webs al pulsar un enlace externo.
+// - Referrer-Policy no-referrer: nada de esta plataforma debe viajar a otras
+//   webs al pulsar un enlace externo (p. ej. "Ver mi ficha" al dashboard).
 // - X-Robots-Tag noindex: nada de esta plataforma debe salir en buscadores.
 const CSP = [
   "default-src 'self'",

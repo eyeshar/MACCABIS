@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { exigirGestor } from "@/lib/gestor";
+import { exigirGestor } from "@/lib/sesion";
 import { finDeDiaMadrid } from "@/lib/fechas";
 import { PRENDAS, TALLAS, type PrendaId } from "@/lib/ropa";
 import type { DatosPedido, Resultado } from "@/components/FormularioPedido";
@@ -10,29 +10,18 @@ import type { DatosPedido, Resultado } from "@/components/FormularioPedido";
 // Todas las acciones de gestion usan la sesion del gestor: la base de datos
 // (RLS + is_gestor) es quien decide si se puede. No se usa la service role key.
 
-// ---------- Jugadores y enlaces ----------
-export async function regenerarEnlace(jugadorId: string) {
-  const { supabase } = await exigirGestor();
-  const { error } = await supabase.rpc("regenerar_enlace", { p_jugador: jugadorId });
-  if (error) throw new Error(error.message);
-  revalidatePath("/gestion/jugadores");
-}
-
-export async function anularEnlace(jugadorId: string) {
-  const { supabase } = await exigirGestor();
-  const { error } = await supabase.rpc("anular_enlace", { p_jugador: jugadorId });
-  if (error) throw new Error(error.message);
-  revalidatePath("/gestion/jugadores");
-}
-
+// ---------- Jugadores ----------
 export async function guardarJugador(jugadorId: string, _prev: string | null, form: FormData): Promise<string | null> {
   const { supabase } = await exigirGestor();
   const telefono = String(form.get("telefono") ?? "").trim();
   if (telefono && !/^\+?[0-9 ]{9,16}$/.test(telefono)) return "El teléfono solo puede llevar números, espacios y un + delante.";
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return "Ese correo no tiene forma de correo.";
   const nombre = String(form.get("nombre_visible") ?? "").trim();
   if (!nombre) return "El nombre visible no puede quedar vacío.";
   const { error } = await supabase.from("jugadores").update({
     nombre_visible: nombre,
+    email: email || null,
     telefono: telefono || null,
     entrena: form.get("entrena") === "on",
     ficha_mda: form.get("ficha_mda") === "on",
@@ -40,7 +29,10 @@ export async function guardarJugador(jugadorId: string, _prev: string | null, fo
     activo: form.get("activo") === "on",
     rol: String(form.get("rol") ?? "jugador"),
   }).eq("id", jugadorId);
-  if (error) return `No se pudo guardar: ${error.message}`;
+  if (error) {
+    if (error.message.includes("jugadores_email_unico")) return "Ese correo ya está en uso por otro jugador.";
+    return `No se pudo guardar: ${error.message}`;
+  }
   revalidatePath("/gestion/jugadores");
   return "Guardado.";
 }
@@ -132,16 +124,4 @@ export async function borrarPedidoGestor(pedidoId: string) {
   const { error } = await supabase.from("pedidos_ropa").delete().eq("id", pedidoId);
   if (error) throw new Error(error.message);
   revalidatePath("/gestion/ropa");
-}
-
-// ---------- Cuenta ----------
-export async function cambiarContrasena(_prev: string | null, form: FormData): Promise<string | null> {
-  const { supabase } = await exigirGestor();
-  const a = String(form.get("nueva") ?? "");
-  const b = String(form.get("repetir") ?? "");
-  if (a.length < 10) return "La contraseña tiene que tener al menos 10 caracteres.";
-  if (a !== b) return "Las dos contraseñas no coinciden.";
-  const { error } = await supabase.auth.updateUser({ password: a });
-  if (error) return `No se pudo cambiar: ${error.message}`;
-  return "Contraseña cambiada.";
 }

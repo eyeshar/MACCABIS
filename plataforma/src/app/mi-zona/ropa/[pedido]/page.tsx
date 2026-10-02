@@ -1,18 +1,18 @@
 import Link from "next/link";
-import { cargarZona } from "../../datos";
+import { cargarMiZona } from "../../datos";
 import { guardarPedidoJugador, comprobarDorsalJugador } from "../../acciones";
 import FormularioPedido from "@/components/FormularioPedido";
-import EnlaceNoValido from "../../EnlaceNoValido";
+import SinZona from "../../SinZona";
 import { nombreNatural } from "@/lib/ropa";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Modificar pedido · Maccabis" };
 
-export default async function ModificarPedido({ params }: { params: Promise<{ token: string; pedido: string }> }) {
-  const { token, pedido: pedidoId } = await params;
-  const zona = await cargarZona(token);
-  if (!zona) return <EnlaceNoValido />;
-  const volver = `/j/${token}`;
+export default async function ModificarPedido({ params }: { params: Promise<{ pedido: string }> }) {
+  const { pedido: pedidoId } = await params;
+  const zona = await cargarMiZona();
+  if (!zona) return <SinZona />;
+  const volver = "/mi-zona";
   // Solo se encuentra entre SUS pedidos: la base de datos no le devuelve los de otros.
   const pedido = zona.pedidos.find((x) => x.id === pedidoId);
 
@@ -42,8 +42,8 @@ export default async function ModificarPedido({ params }: { params: Promise<{ to
             precios={zona.campana?.id === pedido.campana_id ? zona.campana.precios : {}}
             inicial={pedido}
             nombrePropio={nombreNatural(zona.jugador.nombre_oficial)}
-            guardar={guardarPedidoJugador.bind(null, token)}
-            comprobarDorsal={comprobarDorsalJugador.bind(null, token, pedido.campana_id)}
+            guardar={guardarPedidoJugador}
+            comprobarDorsal={comprobarDorsalJugador.bind(null, pedido.campana_id)}
             volverA={volver}
           />
         )}

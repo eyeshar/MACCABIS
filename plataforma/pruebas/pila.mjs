@@ -74,6 +74,9 @@ export async function arrancar({ log = () => {} } = {}) {
   await sql.unsafe(fs.readFileSync(path.join(AQUI, 'supabase_local.sql'), 'utf8'));
   await migrar(sql, { log });
   await semilla(sql, { log });
+  // Tabla SOLO de pruebas (no va en ninguna migracion): guarda los codigos de
+  // un solo uso que "manda" el doble de /otp, para que el test los lea.
+  await sql`create table if not exists public._otp_pruebas (email text primary key, codigo text not null, expira timestamptz not null)`;
 
   const exe = descargarPostgrest();
   const conf = path.join(dir, 'postgrest.conf');
@@ -126,6 +129,36 @@ export async function arrancar({ log = () => {} } = {}) {
         return json(200, await sesionPara(usr));
       }
       return json(400, { msg: 'grant no soportado en la pila local' });
+    }
+    // Doble de "Entrar con codigo por correo" (signInWithOtp / verifyOtp).
+    // La lista blanca la aplica aqui mismo, llamando a la MISMA funcion SQL
+    // (public.correo_permitido) que en el proyecto real aplica el hook
+    // "Before User Created" de GoTrue: es la pieza que se esta probando.
+    if (req.method === 'POST' && u.pathname === '/otp') {
+      const body = JSON.parse((await leerCuerpo(req)) || '{}');
+      const email = String(body.email || '').toLowerCase();
+      const [{ permitido }] = await sql`select public.correo_permitido(${email}) as permitido`;
+      if (!permitido) return json(400, { code: 400, error_code: 'signup_disabled', msg: 'Signups not allowed for this instance' });
+      const codigo = String(Math.floor(100000 + Math.random() * 900000));
+      await sql`insert into public._otp_pruebas (email, codigo, expira) values (${email}, ${codigo}, now() + interval '10 minutes')
+                on conflict (email) do update set codigo = excluded.codigo, expira = excluded.expira`;
+      return json(200, {});
+    }
+    if (req.method === 'POST' && u.pathname === '/verify') {
+      const body = JSON.parse((await leerCuerpo(req)) || '{}');
+      const email = String(body.email || '').toLowerCase();
+      const [fila] = await sql`select codigo, expira from public._otp_pruebas where email = ${email}`;
+      if (!fila || fila.codigo !== String(body.token || '') || new Date(fila.expira) < new Date()) {
+        return json(403, { code: 403, error_code: 'otp_expired', msg: 'Token has expired or is invalid' });
+      }
+      await sql`delete from public._otp_pruebas where email = ${email}`;
+      let [usr] = await sql`select id, email, created_at from auth.users where lower(email) = ${email}`;
+      if (!usr) {
+        // El INSERT real dispara los triggers de la migracion (p. ej. vincular
+        // gestor por correo), igual que en el proyecto real.
+        [usr] = await sql`insert into auth.users (email) values (${email}) returning id, email, created_at`;
+      }
+      return json(200, await sesionPara(usr));
     }
     if (u.pathname === '/user') {
       const usr = await usuarioDeBearer(req);
@@ -189,13 +222,15 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const pila = await arrancar({ log: console.log });
   const email = 'gestor@pruebas.local';
   const id = await pila.crearUsuario(email, 'pruebas-1234');
-  await pila.sql`insert into public.gestores (user_id, nombre) values (${id}, 'Gestor de pruebas')`;
-  const enlaces = await pila.sql`select j.nombre_visible, e.token from public.enlaces e join public.jugadores j on j.id = e.jugador_id where e.anulado_en is null order by j.nombre_visible limit 3`;
+  await pila.sql`insert into public.gestores (user_id, nombre, email) values (${id}, 'Gestor de pruebas', ${email})`;
+  const jugadores = await pila.sql`update public.jugadores set email = lower(replace(nombre_visible, ' ', '')) || '@pruebas.local'
+    where id in (select id from public.jugadores order by nombre_visible limit 3) returning nombre_visible, email`;
   console.log(`\nPila local lista en ${pila.url}`);
   console.log(`NEXT_PUBLIC_SUPABASE_URL=${pila.url}`);
   console.log(`NEXT_PUBLIC_SUPABASE_ANON_KEY=${pila.anonKey}`);
-  console.log(`Gestor de pruebas: ${email} / pruebas-1234`);
-  for (const e of enlaces) console.log(`  /j/${e.token}  (${e.nombre_visible})`);
+  console.log(`Gestor de pruebas (contraseña, solo en esta pila local): ${email} / pruebas-1234`);
+  console.log('Jugadores de prueba (entran por /entrar con "código por correo"; la pila no manda el correo de verdad: el código queda en public._otp_pruebas):');
+  for (const j of jugadores) console.log(`  ${j.nombre_visible}: ${j.email}`);
   const salir = async () => { await pila.parar(); process.exit(0); };
   process.on('SIGINT', salir);
   process.on('SIGTERM', salir);

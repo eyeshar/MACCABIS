@@ -2,7 +2,7 @@
   "name": "maccabis-plataforma",
   "version": "0.1.0",
   "private": true,
-  "description": "Plataforma Maccabis: zona personal de cada jugador (enlace secreto) y zona de gestion (login). Next.js + Supabase.",
+  "description": "Plataforma Maccabis: zona personal de cada jugador y zona de gestion, con login unico (Google o codigo por correo, D68). Next.js + Supabase.",
   "engines": {
     "node": ">=22"
   },
@@ -14,6 +14,7 @@
     "db:migrar": "node scripts/db.mjs migrar",
     "db:semilla": "node scripts/db.mjs semilla",
     "db:gestor": "node scripts/db.mjs gestor",
+    "db:correos": "node scripts/importar_correos.mjs",
     "db:estado": "node scripts/db.mjs estado",
     "pruebas:pila": "node pruebas/pila.mjs",
     "pruebas": "node pruebas/ejecutar.mjs",

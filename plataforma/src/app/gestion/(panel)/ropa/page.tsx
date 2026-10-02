@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { exigirGestor } from "@/lib/gestor";
+import { exigirGestor } from "@/lib/sesion";
 import { PRENDAS, TALLAS, type PrendaId } from "@/lib/ropa";
 import { fechaHora } from "@/lib/fechas";
 import BotonConfirmar from "@/components/BotonConfirmar";

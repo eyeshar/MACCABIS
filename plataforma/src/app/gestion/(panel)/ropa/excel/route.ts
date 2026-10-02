@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { clienteGestor, configurado } from "@/lib/supabase";
+import { clienteSesion, configurado } from "@/lib/supabase";
 import { excelVive, type FilaPedido } from "@/lib/excel";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 // Descarga el Excel para VIVE de una campana. Solo gestores (sesion + RLS).
 export async function GET(request: NextRequest) {
   if (!configurado()) return new NextResponse("Sin configurar", { status: 503 });
-  const supabase = await clienteGestor();
+  const supabase = await clienteSesion();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new NextResponse("No autorizado", { status: 401 });
   const { data: esGestor } = await supabase.rpc("is_gestor");

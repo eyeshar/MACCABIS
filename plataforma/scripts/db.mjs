@@ -3,9 +3,10 @@
 // (SUPABASE_DB_URL), que NUNCA se sube a git.
 //
 //   npm run db:migrar                  aplica las migraciones pendientes de supabase/migrations
-//   npm run db:semilla                 carga la plantilla 26/27, crea los enlaces y la campana de ropa
-//   npm run db:gestor -- <email> <nombre>   da de alta a un gestor (el usuario ya existe en Supabase Auth)
-//   npm run db:estado                  resumen (sin mostrar enlaces ni telefonos)
+//   npm run db:semilla                 carga la plantilla 26/27 y la campana de ropa
+//   npm run db:gestor -- <email> <nombre>   reserva o vincula una plaza de gestor por correo (D68)
+//   npm run db:correos -- <fichero>    importa los correos de SportEasy a jugadores.email (scripts/importar_correos.mjs)
+//   npm run db:estado                  resumen (sin mostrar telefonos)
 //
 // Las migraciones se registran en supabase_migrations.schema_migrations, la misma
 // tabla que usa la CLI de Supabase, para que las dos vias sean compatibles.
@@ -65,41 +66,41 @@ export async function semilla(sql, { log = console.log } = {}) {
       returning id`;
     nuevos += r.length;
   }
-  // Un enlace vivo para quien no lo tenga.
-  const enlaces = await sql`
-    insert into public.enlaces (jugador_id, token)
-    select j.id, public.nuevo_token() from public.jugadores j
-    where not exists (select 1 from public.enlaces e where e.jugador_id = j.id and e.anulado_en is null)
-    returning id`;
   const [{ n }] = await sql`select count(*)::int as n from public.campanas_ropa`;
   if (n === 0) {
     await sql`insert into public.campanas_ropa (nombre, proveedor, estado, precios, guia_tallas_url)
               values (${CAMPANA_INICIAL.nombre}, 'VIVE', 'cerrada', ${sql.json(CAMPANA_INICIAL.precios)}, ${CAMPANA_INICIAL.guia})`;
     log('  campana de ropa creada (cerrada: se abre desde la zona de gestion)');
   }
-  log(`Semilla: ${nuevos} jugadores nuevos, ${enlaces.length} enlaces creados.`);
+  log(`Semilla: ${nuevos} jugadores nuevos.`);
 }
 
+// Reserva (o vincula, si el usuario ya entro alguna vez) una plaza de gestor
+// por correo (D68): no hace falta que el usuario exista antes en Supabase Auth,
+// la vinculacion la hace sola el trigger vincular_gestor_nuevo_usuario() cuando
+// esa persona entre por primera vez.
 export async function altaGestor(sql, email, nombre, { log = console.log } = {}) {
+  const correo = email.trim().toLowerCase();
+  const [existente] = await sql`select id from auth.users where lower(email) = ${correo}`;
   const r = await sql`
-    insert into public.gestores (user_id, nombre)
-    select id, ${nombre} from auth.users where lower(email) = lower(${email})
-    on conflict (user_id) do update set nombre = excluded.nombre
+    insert into public.gestores (email, nombre, user_id)
+    values (${correo}, ${nombre}, ${existente?.id ?? null})
+    on conflict (lower(email)) do update set nombre = excluded.nombre,
+      user_id = coalesce(public.gestores.user_id, excluded.user_id)
     returning user_id`;
-  if (!r.length) {
-    log(`No existe ningun usuario con el correo ${email} en Supabase Auth. Crealo antes (Authentication > Users > Add user).`);
-    return false;
-  }
-  log(`Gestor dado de alta: ${nombre}.`);
-  return true;
+  log(existente
+    ? `Gestor dado de alta y vinculado a su cuenta ya existente: ${nombre} <${correo}>.`
+    : `Plaza de gestor reservada para ${nombre} <${correo}>. Se vinculará sola la primera vez que entre.`);
+  return Boolean(r.length);
 }
 
 async function estado(sql) {
   const q = async (t) => (await sql.unsafe(`select count(*)::int as n from ${t}`))[0].n;
   console.log({
     jugadores: await q('public.jugadores'),
-    enlaces_vivos: await q('public.enlaces where anulado_en is null'),
+    jugadores_con_correo: await q("public.jugadores where email is not null"),
     gestores: await q('public.gestores'),
+    gestores_vinculados: await q('public.gestores where user_id is not null'),
     campanas: await q('public.campanas_ropa'),
     pedidos: await q('public.pedidos_ropa'),
   });

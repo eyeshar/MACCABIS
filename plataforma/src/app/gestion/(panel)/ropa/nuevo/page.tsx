@@ -1,4 +1,4 @@
-import { exigirGestor } from "@/lib/gestor";
+import { exigirGestor } from "@/lib/sesion";
 import FormularioPedido from "@/components/FormularioPedido";
 import { guardarPedidoGestor, comprobarDorsalGestor } from "../../acciones";
 

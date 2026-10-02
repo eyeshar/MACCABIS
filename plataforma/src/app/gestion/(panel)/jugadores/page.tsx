@@ -1,42 +1,36 @@
-import { exigirGestor, origen } from "@/lib/gestor";
+import { exigirGestor, origen } from "@/lib/sesion";
 import { mensajeBienvenida } from "@/lib/mensajes";
 import FilaJugador, { type JugadorGestion } from "./FilaJugador";
 
-export const metadata = { title: "Jugadores y enlaces · Gestión Maccabis" };
+export const metadata = { title: "Jugadores · Gestión Maccabis" };
 
-export default async function JugadoresYEnlaces() {
+export default async function Jugadores() {
   const { supabase } = await exigirGestor();
-  const [{ data: jugadores, error }, { data: enlaces }] = await Promise.all([
-    supabase.from("jugadores").select("id, person_id, nombre_oficial, nombre_visible, ficha_mda, ficha_mdl, entrena, rol, telefono, activo").order("nombre_visible"),
-    supabase.from("enlaces").select("jugador_id, token, creado_en, ultimo_uso").is("anulado_en", null),
-  ]);
+  const { data: jugadores, error } = await supabase
+    .from("jugadores")
+    .select("id, person_id, nombre_oficial, nombre_visible, email, ficha_mda, ficha_mdl, entrena, rol, telefono, activo")
+    .order("nombre_visible");
   if (error) throw new Error(error.message);
   const base = await origen();
-  const porJugador = new Map((enlaces ?? []).map((e) => [e.jugador_id as string, e]));
-  const lista = (jugadores ?? []) as Omit<JugadorGestion, "enlace" | "mensaje" | "ultimoUso" | "creadoEn">[];
+  const urlEntrar = `${base}/entrar`;
+  const lista = (jugadores ?? []) as JugadorGestion[];
   const activos = lista.filter((j) => j.activo);
   const inactivos = lista.filter((j) => !j.activo);
 
-  const fila = (j: (typeof lista)[number]) => {
-    const e = porJugador.get(j.id);
-    const enlace = e ? `${base}/j/${e.token}` : null;
-    return (
-      <FilaJugador key={j.id} jugador={{
-        ...j,
-        enlace,
-        mensaje: enlace ? mensajeBienvenida(j.nombre_visible, enlace) : null,
-        ultimoUso: (e?.ultimo_uso as string | null) ?? null,
-        creadoEn: (e?.creado_en as string | null) ?? null,
-      }} />
-    );
-  };
+  const fila = (j: JugadorGestion) => (
+    <FilaJugador
+      key={j.id}
+      jugador={j}
+      mensaje={j.email ? mensajeBienvenida(j.nombre_visible, j.email, urlEntrar) : null}
+    />
+  );
 
   return (
     <>
-      <h1>Jugadores y enlaces</h1>
+      <h1>Jugadores</h1>
       <div className="aviso aviso-info">
-        Cada enlace es la llave de un jugador: quien lo tenga entra como él. Mándalo <strong>solo por privado</strong>.
-        Si alguien lo pierde o lo reenvía, pulsa <strong>Regenerar</strong>: el viejo deja de funcionar al momento.
+        Solo entra quien tiene aquí su correo (D68). Pon el correo exacto que usa en Google, o cualquiera al que
+        pueda recibir un código. Sin correo, esa persona no puede entrar.
       </div>
       <section className="tarjeta">
         <h2>Plantilla 2026/27 ({activos.length})</h2>

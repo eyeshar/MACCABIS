@@ -1,16 +1,17 @@
-// Mensaje de bienvenida que el gestor manda a cada jugador por privado, con su enlace.
-export function mensajeBienvenida(nombre: string, enlace: string) {
+// Mensaje de bienvenida que el gestor manda a cada jugador por privado, con
+// el correo que tenemos suyo (D68: login con Google o con un codigo a ese correo).
+export function mensajeBienvenida(nombre: string, email: string, urlEntrar: string) {
   return [
-    `Hola, ${nombre}. Esta es tu zona personal de Maccabis:`,
-    enlace,
+    `Hola, ${nombre}. Ya puedes entrar en la plataforma de Maccabis:`,
+    urlEntrar,
+    "",
+    `Entra con Google (con la cuenta de ${email}) o, si no usas Google, pide un código a ese mismo correo.`,
     "",
     "Desde ahí puedes hacer tu pedido de ropa y ver tus estadísticas. Muy pronto también podrás confirmar si vas a los partidos y a los entrenos, y ver las convocatorias.",
     "",
-    "El enlace es solo tuyo y funciona como una llave: quien lo tenga entra como tú. No lo reenvíes ni lo pongas en el grupo.",
-    "",
     "Guárdalo en la pantalla de inicio del móvil para tenerlo a mano: ábrelo y, en iPhone, pulsa Compartir y \"Añadir a pantalla de inicio\"; en Android, abre el menú del navegador y \"Añadir a pantalla de inicio\".",
     "",
-    "Si lo pierdes o crees que otra persona lo tiene, avísanos y te hacemos uno nuevo (el viejo deja de funcionar).",
+    "Si tu correo cambia o no te deja entrar, avísanos.",
   ].join("\n");
 }
 

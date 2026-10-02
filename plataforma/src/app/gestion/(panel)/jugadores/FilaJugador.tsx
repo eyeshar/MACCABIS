@@ -1,44 +1,35 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import BotonConfirmar from "@/components/BotonConfirmar";
 import { enlaceWhatsApp } from "@/lib/mensajes";
-import { regenerarEnlace, anularEnlace, guardarJugador } from "../acciones";
+import { guardarJugador } from "../acciones";
 
 export type JugadorGestion = {
   id: string;
   person_id: string;
   nombre_oficial: string;
   nombre_visible: string;
+  email: string | null;
   ficha_mda: boolean;
   ficha_mdl: boolean;
   entrena: boolean;
   rol: "jugador" | "solo_entreno" | "entrenador";
   telefono: string | null;
   activo: boolean;
-  enlace: string | null;
-  mensaje: string | null;
-  ultimoUso: string | null;
-  creadoEn: string | null;
 };
 
 const ROLES = { jugador: "Jugador", solo_entreno: "Solo entreno", entrenador: "Entrenador" } as const;
 
-function cuando(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-export default function FilaJugador({ jugador: j }: { jugador: JugadorGestion }) {
+export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorGestion; mensaje: string | null }) {
   const [copiado, setCopiado] = useState(false);
   const [aviso, accionGuardar, guardando] = useActionState(guardarJugador.bind(null, j.id), null);
 
   async function copiar() {
-    if (!j.mensaje) return;
+    if (!mensaje) return;
     try {
-      await navigator.clipboard.writeText(j.mensaje);
+      await navigator.clipboard.writeText(mensaje);
     } catch {
-      window.prompt("Copia el mensaje:", j.mensaje);
+      window.prompt("Copia el mensaje:", mensaje);
     }
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2500);
@@ -53,38 +44,23 @@ export default function FilaJugador({ jugador: j }: { jugador: JugadorGestion })
         {j.nombre_oficial} · {fichas} · {ROLES[j.rol]}{j.entrena ? " · entrena" : ""}
       </p>
       <p className="pequeno" style={{ marginBottom: 0 }}>
-        {j.enlace ? (
-          <>
-            <span className="etiqueta etiqueta-ok">Enlace activo</span>{" "}
-            {j.ultimoUso ? <span className="suave">Abierto por última vez: {cuando(j.ultimoUso)}</span> : <span className="suave">Aún no lo ha abierto</span>}
-          </>
+        {j.email ? (
+          <><span className="etiqueta etiqueta-ok">Puede entrar</span> <span className="suave">{j.email}</span></>
         ) : (
-          <span className="etiqueta etiqueta-mal">Sin enlace</span>
+          <span className="etiqueta etiqueta-mal">Sin correo: no puede entrar</span>
         )}
       </p>
 
       <div className="botones">
-        {j.mensaje && (
+        {mensaje && (
           <button type="button" className="boton boton-amarillo" onClick={copiar} aria-live="polite">
             {copiado ? "Mensaje copiado" : "Copiar mensaje"}
           </button>
         )}
-        {j.mensaje && j.telefono && (
-          <a className="boton" href={enlaceWhatsApp(j.telefono, j.mensaje)} target="_blank" rel="noopener noreferrer">
+        {mensaje && j.telefono && (
+          <a className="boton" href={enlaceWhatsApp(j.telefono, mensaje)} target="_blank" rel="noopener noreferrer">
             Enviar por WhatsApp
           </a>
-        )}
-        <form action={regenerarEnlace.bind(null, j.id)}>
-          <BotonConfirmar className="boton boton-claro" pregunta={`¿Regenerar el enlace de ${j.nombre_visible}? El que tiene ahora dejará de funcionar.`}>
-            {j.enlace ? "Regenerar" : "Crear enlace"}
-          </BotonConfirmar>
-        </form>
-        {j.enlace && (
-          <form action={anularEnlace.bind(null, j.id)}>
-            <BotonConfirmar className="boton boton-peligro" pregunta={`¿Anular el enlace de ${j.nombre_visible}? No podrá entrar hasta que le crees otro.`}>
-              Anular
-            </BotonConfirmar>
-          </form>
         )}
       </div>
 
@@ -94,6 +70,10 @@ export default function FilaJugador({ jugador: j }: { jugador: JugadorGestion })
           <div className="campo">
             <label htmlFor={`nv-${j.id}`}>Nombre visible</label>
             <input id={`nv-${j.id}`} name="nombre_visible" type="text" defaultValue={j.nombre_visible} maxLength={40} required />
+          </div>
+          <div className="campo">
+            <label htmlFor={`email-${j.id}`}>Correo (para entrar)</label>
+            <input id={`email-${j.id}`} name="email" type="email" defaultValue={j.email ?? ""} placeholder="nombre@correo.com" />
           </div>
           <div className="campo">
             <label htmlFor={`tel-${j.id}`}>Teléfono (opcional, solo gestores)</label>

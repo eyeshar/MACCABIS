@@ -13,17 +13,23 @@
    - [x] Pruebas de extremo a extremo (`npm run pruebas`, 81 comprobaciones OK).
    - [x] Supabase real creado por Iván, migraciones y semilla aplicadas, Iván gestor; verificación de seguridad contra el proyecto real 42/42 OK (26/09/2026).
    - [x] Nombres visibles confirmados (D61). Dorsal libre en pedidos para familiares (D60).
-   - [ ] **Iván:** configurar Vercel (carpeta raíz `plataforma`, 2 variables públicas) y revisar la **vista previa** de `feat/plataforma-v0` con la lista de comprobación. Hasta entonces **no se comparte nada con los jugadores**.
-   - [ ] **Iván:** en Supabase, Authentication → URL Configuration → Site URL = la URL de Vercel (para "He olvidado la contraseña").
-   - [ ] Dar de alta como gestores a Carlos y Edu cuando tengan su usuario (`npm run db:gestor`).
+   - [x] **Login único con Google o código por correo, con lista blanca** (D68, 02/10/2026) — sustituye a los enlaces `/j/<token>` (D45, derogada). Migración `20261002120000_login_google_lista_blanca.sql` aplicada en el proyecto real; `npm run pruebas` y `node pruebas/verificar_real.mjs` en TODO OK.
+   - [ ] **Iván:** configurar Google Cloud y Supabase para el login (`plataforma/LEEME.md`, apartados 2 y 3): proyecto de Google Cloud "Maccabis", pantalla de consentimiento, credenciales OAuth, activar el proveedor Google y el hook "Before User Created" en Supabase, revisar las Redirect URLs.
+   - [ ] **Iván o Code:** `npm run db:correos -- <export de SportEasy>` para rellenar `jugadores.email` (lista blanca); revisar los "sin casar" y "ambiguos" que liste el script.
+   - [ ] **Iván:** configurar Vercel (carpeta raíz `plataforma`, 2 variables públicas) y revisar la **vista previa** de `feat/plataforma-v0` con la lista de comprobación, incluido entrar de verdad con Google. Hasta entonces **no se comparte nada con los jugadores**.
+   - [ ] Dar de alta como gestores a Carlos y Edu por correo (`npm run db:gestor`): se vinculan solos la primera vez que entren.
    - [ ] Merge a `main` tras la verificación de Iván.
-2. **Bloque siguiente, para la J2 (11/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
-3. **Motor de convocatoria v0.1 para la J3 (18/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
-4. **Migración del dashboard** a la plataforma.
-5. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
-6. **Tesorería** (solo registro de cuentas, D52).
+2. **Rutinas semanales, Fase 1 "Aprendizaje" (D63, `docs/PLAN_TRABAJO_2026-27.md`):**
+   - [ ] **Lun 5/10:** primera ejecución real de `npm run jornada` con las actas y hojas de la J1 (rutina A: gesto manual de Iván desde el móvil, D35 — sin navegador).
+   - [ ] **Jue 8/10, 20:15:** sesión de aprendizaje de la rutina B (calendario, por navegador) con Iván.
+   - [ ] **Lun 12/10:** sesión de aprendizaje de la rutina C (disponibilidad y convocatoria, por navegador) con Iván, para la J2.
+4. **Bloque siguiente, para la J2 (11/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
+5. **Motor de convocatoria v0.1 para la J3 (18/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
+6. **Migración del dashboard** a la plataforma.
+7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
+8. **Tesorería** (solo registro de cuentas, D52).
 
-**Plan B (02/10/2026, D63):** **subida de actas desde la zona de gestión** (hoy: `npm run jornada` por la rutina A de navegador, `docs/PROCEDIMIENTO_JORNADA.md`). Solo se construye si la rutina A deja de ser viable (p. ej. si Afición FBM bloquea el acceso).
+**Plan B (02/10/2026, D63):** **subida de actas desde la zona de gestión** (hoy: `npm run jornada` con el gesto manual de Iván desde el móvil, D35, `docs/PROCEDIMIENTO_JORNADA.md`). Solo se construye si ese gesto deja de ser viable.
 
 **Además:**
 - [ ] **Exportar el balance de asistencias de SportEasy antes de apagarlo** (noviembre), para conservar los eventos de 26/27.

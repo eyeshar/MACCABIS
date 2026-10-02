@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { exigirGestor } from "@/lib/gestor";
+import { exigirGestor } from "@/lib/sesion";
 import FormularioPedido from "@/components/FormularioPedido";
 import type { Pedido, Tallas } from "@/lib/ropa";
 import { guardarPedidoGestor, comprobarDorsalGestor } from "../../../acciones";

@@ -1,20 +1,19 @@
 import Link from "next/link";
-import { cargarZona } from "../../datos";
+import { cargarMiZona } from "../../datos";
 import { guardarPedidoJugador, comprobarDorsalJugador } from "../../acciones";
 import FormularioPedido from "@/components/FormularioPedido";
-import EnlaceNoValido from "../../EnlaceNoValido";
+import SinZona from "../../SinZona";
 import { nombreNatural } from "@/lib/ropa";
 import { fechaCorta } from "@/lib/fechas";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Pedido de ropa · Maccabis" };
 
-export default async function NuevoPedido({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
-  const zona = await cargarZona(token);
-  if (!zona) return <EnlaceNoValido />;
+export default async function NuevoPedido() {
+  const zona = await cargarMiZona();
+  if (!zona) return <SinZona />;
   const { campana, jugador } = zona;
-  const volver = `/j/${token}`;
+  const volver = "/mi-zona";
 
   return (
     <>
@@ -42,8 +41,8 @@ export default async function NuevoPedido({ params }: { params: Promise<{ token:
               precios={campana.precios}
               inicial={null}
               nombrePropio={nombreNatural(jugador.nombre_oficial)}
-              guardar={guardarPedidoJugador.bind(null, token)}
-              comprobarDorsal={comprobarDorsalJugador.bind(null, token, campana.id)}
+              guardar={guardarPedidoJugador}
+              comprobarDorsal={comprobarDorsalJugador.bind(null, campana.id)}
               volverA={volver}
             />
           </>

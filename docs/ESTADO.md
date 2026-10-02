@@ -2,7 +2,19 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 02/10/2026 — **normas de trabajo y plan 2026/27 fijados (D63-D67); rama `feat/plataforma-v0` verificada de nuevo y empujada a origin.** Sigue sin mergear a `main`, a la espera de que Iván revise la vista previa de Vercel y dé el "OK vista previa"._
+_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68) sustituye a los enlaces personales; migración aplicada en el proyecto real.** Rama `feat/plataforma-v0` sigue sin mergear a `main`, a la espera de que Iván configure Google/Supabase (`plataforma/LEEME.md`) y dé el "OK vista previa"._
+
+## Login único: Google o código por correo, con lista blanca (02/10/2026, D68)
+- **Sustituye a los enlaces personales `/j/<token>` (D45, derogada).** Ahora: `/entrar` (Google o código de un solo uso por correo) → `/mi-zona` (jugador), `/gestion` (gestor) o `/entrar/elegir` si es las dos cosas. `anon` se queda sin ningún permiso (ni tablas ni funciones): todo exige sesión real.
+- **Lista blanca por correo:** solo entra quien tiene su correo en `jugadores.email` o `gestores.email`. Un correo desconocido nunca crea cuenta: lo bloquea el hook "Before User Created" de Supabase (`public.antes_de_crear_usuario`, **pendiente de registrar a mano** en el panel, ver `plataforma/LEEME.md`).
+- **Migración** `plataforma/supabase/migrations/20261002120000_login_google_lista_blanca.sql`, aplicada directamente en el proyecto real (D53, sin pedidos que proteger). Durante la verificación se encontró y corrigió un fallo real de permisos (funciones nuevas heredaban `EXECUTE` del pseudo-rol `PUBLIC` porque el `revoke` solo decía `from anon`, no `from public, anon, authenticated`); quedó corregido en el propio fichero de migración y re-sincronizado en el proyecto real.
+- **Resultados reales de la verificación:**
+  - `npm run pruebas` (plataforma, pila local sin Docker): **93/93 OK**, incluye lista blanca (`correo_permitido`, `antes_de_crear_usuario`, `POST /otp`), un gestor reservado solo por correo que se vincula solo al entrar (trigger), sesión sin jugador ni gestor, RLS, pedidos (propio y familiar), dorsal repetido, Excel para VIVE celda a celda igual a la plantilla.
+  - `node pruebas/verificar_real.mjs` (proyecto Supabase real): **TODO OK**, con limpieza completa (estado final: 1 usuario, 1 gestor, 25 jugadores, 1 campaña cerrada, 0 pedidos).
+- **Nuevo script `npm run db:correos`** (`plataforma/scripts/importar_correos.mjs`): importa correos desde una exportación de SportEasy (CSV o XLSX), casando por nombre exacto (prueba "Apellidos, Nombre" y "Nombre Apellidos"); lo que no case o case con más de un jugador se lista aparte, nunca se adivina. **Aún no se ha ejecutado contra un fichero real**: ningún jugador tiene correo todavía en el proyecto real (lo confirma `verificar_real.mjs`).
+- **Página pública `/privacidad`** (sin login): qué datos se guardan, para qué, quién los ve y cómo pedir el borrado.
+- **Pendiente de Iván** (`plataforma/LEEME.md`, apartados 2 y 3): crear el proyecto de Google Cloud "Maccabis" (nunca el de TCPC), activar el proveedor Google en Supabase, registrar el hook "Before User Created", revisar las Redirect URLs (ojo al patrón `https://maccabis-*-web-tcpc.vercel.app/**` que pedía el prompt: su nombre incluye "web-tcpc" y conviene comprobarlo contra la URL real de los despliegues de vista previa antes de guardarlo), y ejecutar `npm run db:correos` con la exportación de SportEasy.
+- **Pendiente, sin resolver:** `docs/RUTINAS/B_CALENDARIO.md` (procedimiento de la rutina B) iba a redactarse a partir de `claude/RUTINA_B_CALENDARIO.md`, un documento del Project de Claude.ai al que esta sesión no tiene acceso. Ver aviso al cierre de este bloque.
 
 ## Normas de trabajo y plan 2026/27 (02/10/2026)
 - `docs/NORMAS_DE_TRABAJO.md`, `docs/PLAN_TRABAJO_2026-27.md` y `docs/RUTINAS/` creados en su ubicación definitiva (antes vivían como copias provisionales fuera de `docs/`). D63-D67 registradas en `DECISIONS.md`. BACKLOG reordenado: la subida de actas desde la zona de gestión pasa a plan B.

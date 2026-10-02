@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cargarZona } from "./datos";
+import { exigirSesion } from "@/lib/sesion";
+import { cargarMiZona } from "./datos";
 import { anularPedidoJugador } from "./acciones";
+import { salir } from "@/app/entrar/acciones";
 import { PRENDAS, type PrendaId, type Pedido } from "@/lib/ropa";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { fechaCorta } from "@/lib/fechas";
 import { fichaEstadisticas } from "@/lib/mensajes";
-import EnlaceNoValido from "./EnlaceNoValido";
+import SinZona from "./SinZona";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
-  const { token } = await params;
-  const zona = await cargarZona(token);
+export async function generateMetadata(): Promise<Metadata> {
+  const zona = await cargarMiZona();
   return {
     title: zona ? `${zona.jugador.nombre_visible} · Maccabis` : "Maccabis",
-    manifest: zona ? `/j/${token}/manifest.webmanifest` : undefined,
+    manifest: zona ? "/mi-zona/manifest.webmanifest" : undefined,
     appleWebApp: { capable: true, title: "Maccabis", statusBarStyle: "black-translucent" },
   };
 }
@@ -43,14 +44,12 @@ function TablaPedido({ pedido }: { pedido: Pedido }) {
   );
 }
 
-export default async function ZonaJugador({ params, searchParams }: {
-  params: Promise<{ token: string }>;
-  searchParams: Promise<{ guardado?: string }>;
-}) {
-  const { token } = await params;
-  const { guardado } = await searchParams;
-  const zona = await cargarZona(token);
-  if (!zona) return <EnlaceNoValido />;
+export default async function MiZona({ searchParams }: { searchParams: Promise<{ guardado?: string; no_gestor?: string }> }) {
+  const { guardado, no_gestor } = await searchParams;
+  const { supabase } = await exigirSesion();
+  const zona = await cargarMiZona();
+  if (!zona) return <SinZona />;
+  const { data: esGestor } = await supabase.rpc("is_gestor");
 
   const { jugador, campana, pedidos } = zona;
   const deEstaCampana = pedidos.filter((x) => x.campana_id === campana?.id);
@@ -62,10 +61,15 @@ export default async function ZonaJugador({ params, searchParams }: {
         <div className="dentro">
           <div className="marca">Maccabis · tu zona</div>
           <h1>Hola, {jugador.nombre_visible}</h1>
+          <nav className="botones" style={{ marginTop: 10 }}>
+            {esGestor && <Link className="boton boton-claro" href="/gestion">Ir a gestión</Link>}
+            <form action={salir}><button className="boton boton-claro" type="submit">Salir</button></form>
+          </nav>
         </div>
       </header>
       <main className="pagina">
         {guardado && <div className="aviso aviso-ok" role="status">Pedido guardado. Puedes cambiarlo mientras el pedido siga abierto.</div>}
+        {no_gestor && <div className="aviso aviso-info" role="status">Tu cuenta no tiene permisos de gestión.</div>}
 
         {/* 1. Pedido de ropa activo */}
         <section className="tarjeta" aria-labelledby="t-ropa">
@@ -89,7 +93,7 @@ export default async function ZonaJugador({ params, searchParams }: {
                   <p className="pequeno suave">
                     Precios orientativos, por confirmar: {PRENDAS.filter((x) => campana.precios[x.id] != null).map((x) => `${x.nombre.toLowerCase()} unos ${campana.precios[x.id]} €`).join(", ")}. No se paga por aquí.
                   </p>
-                  <Link className="boton boton-amarillo boton-bloque" href={`/j/${token}/ropa/nuevo`}>
+                  <Link className="boton boton-amarillo boton-bloque" href="/mi-zona/ropa/nuevo">
                     {deEstaCampana.length ? "Hacer otro pedido" : "Hacer mi pedido"}
                   </Link>
                 </>
@@ -118,8 +122,8 @@ export default async function ZonaJugador({ params, searchParams }: {
               <TablaPedido pedido={x} />
               {x.campana_abierta && (
                 <div className="botones">
-                  <Link className="boton boton-claro" href={`/j/${token}/ropa/${x.id}`}>Modificar</Link>
-                  <form action={anularPedidoJugador.bind(null, token, x.id)}>
+                  <Link className="boton boton-claro" href={`/mi-zona/ropa/${x.id}`}>Modificar</Link>
+                  <form action={anularPedidoJugador.bind(null, x.id)}>
                     <BotonConfirmar className="boton boton-peligro" pregunta="¿Seguro que quieres anular este pedido?">Anular pedido</BotonConfirmar>
                   </form>
                 </div>
@@ -147,12 +151,8 @@ export default async function ZonaJugador({ params, searchParams }: {
           <p style={{ margin: 0 }}>Próximamente: calendario y convocatorias.</p>
         </section>
 
-        <p className="pie">
-          Este enlace es solo tuyo: no lo reenvíes. Guárdalo en la pantalla de inicio del móvil.
-          <br />¿Algo no cuadra? Habla con Iván, Carlos o Edu.
-        </p>
+        <p className="pie">¿Algo no cuadra? Habla con Iván, Carlos o Edu.</p>
       </main>
     </>
   );
 }
-

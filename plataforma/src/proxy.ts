@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-// Refresca la sesion de los gestores (cookies de Supabase Auth) en cada peticion a /gestion.
-// La zona de jugadores (/j/...) no usa sesion: no pasa por aqui.
+// Refresca la sesion (cookies de Supabase Auth) en cada peticion a /gestion y
+// /mi-zona: las dos zonas usan ahora sesion real (D68), ya no hay enlaces por token.
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -22,4 +22,4 @@ export async function proxy(request: NextRequest) {
   return respuesta;
 }
 
-export const config = { matcher: ["/gestion/:path*"] };
+export const config = { matcher: ["/gestion/:path*", "/mi-zona/:path*"] };

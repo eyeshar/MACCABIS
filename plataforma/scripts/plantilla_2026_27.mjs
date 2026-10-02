@@ -32,6 +32,11 @@ export const PLANTILLA_2026_27 = [
   { person_id: 'villaescusa-silva-ivan',            visible: 'Iván',           mda: true,  mdl: true,  rol: 'jugador' },
   // Entrenador y delegado de los dos equipos (no figura en las hojas como deportista).
   { person_id: 'barreiro-carballal-carlos-jose',    visible: 'Carlos (entrenador)', mda: false, mdl: false, rol: 'entrenador' },
+  // Entrenan con el club en 26/27 pero sin ficha de competicion: el motor nunca los
+  // convoca a partidos. Dados de alta por Ivan el 02/10/2026.
+  { person_id: 'feliz-gomez-edimil',                visible: 'Edimil',         mda: false, mdl: false, rol: 'solo_entreno' },
+  { person_id: 'mateos-aparicio-ignacio',            visible: 'Ignacio',       mda: false, mdl: false, rol: 'solo_entreno' },
+  { person_id: 'yamin-squicciarini-nicolas',         visible: 'Nicolás',       mda: false, mdl: false, rol: 'solo_entreno' },
 ];
 
 export const CAMPANA_INICIAL = {

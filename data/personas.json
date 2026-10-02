@@ -253,6 +253,16 @@
    "en_estadisticas": true
   },
   {
+   "person_id": "feliz-gomez-edimil",
+   "formal": "Feliz Gómez, Edimil",
+   "display": "Edimil Feliz Gómez",
+   "es_entrenador": false,
+   "solo_mote": false,
+   "alias_ids": [],
+   "en_historia": true,
+   "en_estadisticas": false
+  },
+  {
    "person_id": "fernandez-cobos-jaime",
    "formal": "Fernández Cobos, Jaime",
    "display": "Jaime Fernández Cobos",

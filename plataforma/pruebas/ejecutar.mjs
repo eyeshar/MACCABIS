@@ -144,7 +144,7 @@ try {
   r = await rpc('is_gestor', {}, jwtIntruso);
   ok(r.status === 200 && r.datos === false, 'is_gestor(): una sesion normal no es gestor');
   r = await api('/jugadores?select=id', { token: jwtGestor });
-  ok(Array.isArray(r.datos) && r.datos.length === 25, 'el gestor ve los 25 jugadores', `${r.datos?.length}`);
+  ok(Array.isArray(r.datos) && r.datos.length === 28, 'el gestor ve los 28 jugadores', `${r.datos?.length}`);
   const zonaA = (await rpc('mi_zona', {}, jwtA)).datos;
   ok(zonaA && !('telefono' in zonaA.jugador) && !('entrena' in zonaA.jugador) && !('rol' in zonaA.jugador),
     'mi_zona() no devuelve telefono, rol ni "entrena"', JSON.stringify(zonaA?.jugador));

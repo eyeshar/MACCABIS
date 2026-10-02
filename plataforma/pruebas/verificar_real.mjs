@@ -56,9 +56,13 @@ async function usuarioTemporal(email, clave) {
 const sufijo = crypto.randomBytes(4).toString('hex');
 const temporales = { usuarios: [], campana: null };
 let correosOriginales = [];
+// Jugadores de verdad del club: crece con el tiempo (altas en "Jugadores" o
+// db:correos/db:gestor), así que se compara contra el total real, no un numero fijo.
+let nJugadoresReales = null;
 
 try {
   const [{ n: nUsuariosAntes }] = await sql`select count(*)::int n from auth.users`;
+  nJugadoresReales = (await sql`select count(*)::int n from public.jugadores`)[0].n;
 
   seccion('Estructura en el proyecto real');
   const sinRls = await sql`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r','p') and not c.relrowsecurity`;
@@ -121,7 +125,7 @@ try {
     return { g, n };
   });
   const vi = await comoUsuario(ivan.user_id);
-  ok(vi.g === true && vi.n === 25, 'con la identidad de Iván: es gestor y ve los 25 jugadores', JSON.stringify(vi));
+  ok(vi.g === true && vi.n === nJugadoresReales, 'con la identidad de Iván: es gestor y ve todos los jugadores', JSON.stringify({ ...vi, esperados: nJugadoresReales }));
   const vx = await comoUsuario(crypto.randomUUID());
   ok(vx.g === false && vx.n === 0, 'con otra identidad cualquiera: no es gestor y no ve nada', JSON.stringify(vx));
 
@@ -140,7 +144,7 @@ try {
   const malo = await cliente().auth.signInWithPassword({ email: emailG, password: 'contraseña-mala' });
   ok(!!malo.error, 'con contraseña equivocada no entra');
   const jg = await cg.from('jugadores').select('id');
-  ok(jg.data?.length === 25, 'el gestor, con su sesion real, ve los 25 jugadores', jg.error?.message ?? `${jg.data?.length}`);
+  ok(jg.data?.length === nJugadoresReales, 'el gestor, con su sesion real, ve todos los jugadores', jg.error?.message ?? `${jg.data?.length} / ${nJugadoresReales}`);
   const cn = cliente();
   const ln = await cn.auth.signInWithPassword({ email: emailN, password: claveN });
   ok(!ln.error, 'un usuario que NO es gestor tambien puede iniciar sesion...', ln.error?.message);
@@ -212,7 +216,7 @@ try {
     (select count(*)::int from public.pedidos_ropa) as pedidos,
     (select string_agg(estado, ',') from public.campanas_ropa) as estado_campanas`;
   console.log('  estado final:', JSON.stringify(f));
-  ok(f.usuarios === 1 && f.gestores === 1 && f.jugadores === 25 && f.campanas === 1 && f.pedidos === 0 && f.estado_campanas === 'cerrada',
+  ok(f.usuarios === 1 && f.gestores === 1 && f.jugadores === nJugadoresReales && f.campanas === 1 && f.pedidos === 0 && f.estado_campanas === 'cerrada',
     'todo lo temporal borrado: queda solo lo de la semilla y tu usuario');
   await sql.end();
   console.log(`\nRESULTADO: ${fallos === 0 ? 'TODO OK' : `${fallos} FALLOS`}`);

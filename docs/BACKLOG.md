@@ -30,6 +30,12 @@
 - [x] ~~Mergear `feat/pipeline-estadisticas`~~ — HECHO (26/09/2026, `f69a39f`), test de regresión OK en `main`. Listo para la J1 (5/10).
 - [ ] `feat/calendario-automatico`: revisar y mergear como detector de cambios (D47), dentro del bloque de la J2.
 
+**SportEasy 26/27 (02/10/2026, D62):**
+- [ ] **Decidir si se mantiene el apagado de SportEasy en noviembre o se usa toda la temporada.**
+- [ ] **Borrar en SportEasy las 3 ubicaciones duplicadas "Moratalaz"** (dirección "Pista 1/2/3") que creó la carga en bloque; ya no las usa ningún partido.
+- [ ] **Jornadas 2 (18/10/2026) y 13 (07/02/2027):** MdA y MdL juegan a la misma hora (10:15); esos domingos los de doble ficha no pueden estar en los dos partidos. Tenerlo en cuenta en el motor de convocatorias.
+- [ ] **Pasar el calendario 26/27 a datos del repo** (p. ej. `data/calendario_2026-27.json`) para la futura web, si se mantiene el plan de calendario propio. Sin datos personales.
+
 ---
 
 ## Ahora — arranque de la temporada 2026/27 (jornada 1: domingo 4/10, D38) — _histórico; ver "Orden vigente" arriba_
@@ -169,8 +175,8 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
   - Generar mensaje de WhatsApp de convocatoria listo para copiar/pegar.
   - Generar recordatorio para quien no ha contestado.
 - [ ] **Puente con SportEasy**:
-  - Generar el Excel del calendario de la temporada en formato importable (evita crear ~20 eventos a mano por equipo). Preparar cuando salga el calendario 26/27.
-  - Investigar la sección "Campeonatos" de SportEasy para vincular la liga JDM y traer el calendario hecho.
+  - ~~Generar el Excel del calendario de la temporada en formato importable (evita crear ~20 eventos a mano por equipo).~~ — **OBSOLETO (02/10/2026):** resuelto con la creación en bloque de SportEasy más el agente de navegador (D62).
+  - ~~Investigar la sección "Campeonatos" de SportEasy para vincular la liga JDM y traer el calendario hecho.~~ — **OBSOLETO (02/10/2026):** resuelto con la creación en bloque más el agente (D62); la importación automática de calendario no cubre nuestra federación (ver SPORTEASY.md).
   - PRESIONAR por vías de sacar/subir datos de SportEasy más allá del Excel (deseo de Iván). Si no sale nada, Excel plan B.
 
 ## Temporada 26/27 (cuando arranque y se defina)
@@ -186,7 +192,7 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [ ] Añadir un `favicon.ico` (el único error de consola del sitio es su 404).
 
 - [x] **`data/season_2026-27.json` creado vacío con la plantilla** (rama `feat/pipeline-estadisticas`). Se carga partido a partido con `npm run jornada`.
-- [x] ~~Preparar calendario 26/27 para SportEasy.~~ → "Ahora", punto 1 (tabla limpia + agente supervisado, D31).
+- [x] ~~Preparar calendario 26/27 para SportEasy.~~ — **HECHO (02/10/2026):** 40 partidos cargados en SportEasy con un agente de navegador (D62).
 - [x] **Plantilla 26/27 confirmada** (25/09/2026): 24 deportistas, 22 en ambas fichas; 3 personas nuevas creadas. `docs/PLANTILLA_26-27.md`.
 - [x] **`consolidar_fichas.js` adaptado a 26/27** (25/09/2026): sólo "Deportista", con grupo (la fecha de alta no se publica); falla si falta un PDF registrado; Torneos 2018 congelada (D41).
 

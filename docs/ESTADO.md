@@ -4,6 +4,11 @@
 
 _Última actualización: 26/09/2026 (tarde) — **base de datos real cargada y pipeline en producción.** La plataforma sigue en la rama `feat/plataforma-v0` (sin mergear), pendiente de la vista previa de Vercel y de la revisión de Iván._
 
+## Temporada 2026/27 en SportEasy (02/10/2026)
+- **40 partidos de liga JDM cargados** con un agente de navegador (D62): **20 MdA** en el campeonato "Temporada MdA" (grupo G1) y **20 MdL** en "Temporada MdL" (grupo G2), 22 jornadas por equipo con 2 descansos cada uno (MdA en J4 y J15, MdL en J11 y J22).
+- **Todos con las inscripciones abiertas.**
+- **Verificados** contra el Excel `calendarios_maccabis.xlsx` de Iván (fecha, hora, jornada, rival, local/visitante, pista). El Excel **no está en el repositorio**.
+
 ## Supabase real — CARGADO (26/09/2026)
 - Proyecto de Iván (región Europa), con "Automatically expose new tables" **desmarcado**, sin "Enable automatic RLS" y con el registro libre **desactivado**. Migraciones aplicadas: `20260926100000_plataforma_v0` y `20260926110000_permisos_rls_automatica_dorsal_familiar` (permisos explícitos D58, RLS automática D59, dorsal libre para familiares D60).
 - Semilla: **25 jugadores, 25 enlaces vivos, 1 campaña "Ropa 2026/27" cerrada, 0 pedidos.** Nombres visibles según D61.

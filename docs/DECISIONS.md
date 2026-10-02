@@ -211,6 +211,7 @@ _D44–D54: decisiones (a)–(k) de Iván en el chat de diseño, tras contrastar
 **Decisión:** desde la **jornada 2 (11/10/2026)** la disponibilidad (partidos y entrenos) y la convocatoria van **solo por nuestra web**. En SportEasy **no se crean los partidos de liga ni se pide respuesta**; queda como **respaldo dormido hasta noviembre**, cuando se decide si se apaga. No se carga el calendario en SportEasy: ni plantilla del soporte (D36) ni agente supervisado (D31).
 **Por qué:** dos sistemas pidiendo lo mismo al jugador duplican el trabajo de Iván, que es justo lo que se quiere quitar; y la doble ficha no encaja en SportEasy.
 **Consecuencia:** D37 (recordatorios de SportEasy Premium) deja de aplicarse cuando SportEasy se duerma; el recordatorio pasa a ser un mensaje de WhatsApp que prepara la plataforma (bloque siguiente). Antes de apagarlo hay que exportar el balance de asistencias (BACKLOG).
+**Matizada por D62 (02/10/2026):** para 26/27 SportEasy vuelve a usarse a pleno rendimiento (calendario, convocatorias y asistencia de liga), cargado con un agente de navegador. El apagado de noviembre sigue sin decidirse.
 
 ## D45 — Identidad: enlace personal secreto para jugadores; login real para los 3 gestores (Iván, 26/09/2026)
 **Decisión:** cada jugador tiene un **enlace personal secreto** (`/j/<token>`, token largo, revocable y regenerable) que hace de inicio de sesión: le da acceso a su zona personal y **solo le deja modificar lo suyo**. Los gestores (Iván, Carlos Barreiro, Eduardo Martín-Ortega) entran con **login real de Supabase Auth**. Cierra la "Decisión pendiente" del BACKLOG a favor de la opción (b).
@@ -274,3 +275,8 @@ _D44–D54: decisiones (a)–(k) de Iván en el chat de diseño, tras contrastar
 
 ## D61 — Nombres visibles confirmados (Iván, 26/09/2026)
 **Decisión:** "Julio" (De Carvalho), "Luis" (Varas) y "Carlos (entrenador)" (Barreiro). El resto, los motes de `docs/PLANTILLA_26-27.md`; quien no tiene mote, su nombre de pila (Carlos Baños queda como "Carlos"). Se cambian desde "Jugadores y enlaces".
+
+## D62 — SportEasy 26/27 se usa a pleno rendimiento y se alimenta con un agente de navegador (Iván, 02/10/2026) — MATIZA D44
+**Decisión:** para la temporada 2026/27 SportEasy no queda como respaldo dormido. Calendario, convocatorias y asistencia de los partidos de liga viven en SportEasy, cargados por un agente de navegador que actúa con la sesión de Iván, y siempre con su aprobación explícita antes de crear o modificar nada. Se mantienen los dos campeonatos ("Temporada MdA" y "Temporada MdL").
+**Por qué:** SportEasy ya está pagado para 26/27 y crear unos 40 partidos a mano era justo el trabajo manual que el proyecto quiere eliminar. El agente lo hizo en una sesión, verificando cada partido.
+**Qué reabre:** el punto de D44 (26/09/2026) que sacaba a SportEasy de la operativa desde la jornada 2 y cancelaba la carga de calendario (D31/D36, agente y plantilla del soporte). El agente de navegador vuelve a estar en uso, esta vez ya ejecutado. **No queda derogado** el apagado de SportEasy en noviembre que planteaba D44: Iván no lo ha decidido; sigue pendiente (ver BACKLOG).

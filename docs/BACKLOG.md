@@ -19,7 +19,7 @@
    - [x] **Site URL y Redirect URLs** de Supabase (`plataforma/LEEME.md`, apartado 3, punto 5) — verificadas el 02/10/2026.
    - [x] `npm run db:correos` ejecutado (02/10/2026) con `SportEasy_maccabis (1).xlsx`: 8 correos casados por nombre exacto. Ampliado el mismo día: Edimil Feliz Gómez, Ignacio Mateos Aparicio y Nicolás Yamín Squicciarini dados de alta como jugadores `solo_entreno` (entrenan, sin ficha MdA/MdL, el motor no los convoca) con su correo. Total real: **28 jugadores, 11 con correo**.
    - [x] Las 17 correspondencias restantes (nombre de SportEasy ≠ nombre oficial exacto, p. ej. "Barrimelo Barreiro" = Carlos Barreiro), confirmadas por Iván (02/10/2026) y escritas. **28/28 jugadores con correo.**
-   - [x] **Iván:** Vercel configurado (carpeta raíz `plataforma`, 2 variables públicas) y **vista previa revisada y aprobada ("OK vista previa")**, incluido entrar de verdad con Google — 02/10/2026.
+   - [x] **Iván:** Vercel configurado (carpeta raíz `plataforma`, 2 variables públicas). **"OK vista previa"** dado el 02/10/2026, **después del merge** (`ad972df`): validado en el móvil sobre `maccabis.vercel.app` ya en producción, con "Entrar con Google" probado de verdad.
    - [ ] Dar de alta como gestores a Carlos y Edu por correo (`npm run db:gestor`): se vinculan solos la primera vez que entren.
    - [ ] **Abrir la campaña "Ropa 2026/27"** desde `/gestion`, fecha límite **domingo 18/10/2026** (decidido por Iván, 02/10/2026). La abre Claude (navegador) tras el merge, no Code; hasta entonces sigue cerrada.
    - [x] **Merge a `main`** (merge `--no-ff` `ad972df`, 02/10/2026) — verificado antes y después: `npm run pruebas` 93/93 OK, `node pruebas/verificar_real.mjs` 43/43 OK, en los dos casos. Empujado a origin.
@@ -27,8 +27,10 @@
    - [ ] **Lun 5/10:** aprendizaje de la rutina A con las actas de la J1 (Enlace Móvil de Windows + control del ordenador, D70 matiza D69; Iván solo tiene el móvil encendido, con wifi y cerca del PC).
    - [ ] **Jue 8/10, 20:15:** sesión de aprendizaje de la rutina B (calendario, por navegador) con Iván.
    - [ ] **Lun 12/10:** sesión de aprendizaje de la rutina C (disponibilidad y convocatoria, por navegador) con Iván, para la J2.
-4. **Bloque siguiente, para la J2 (18/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
-5. **Motor de convocatoria v0.1 para la J3 (18/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
+4. **J2 (18/10):** la disponibilidad y la convocatoria las cubre la **rutina C** (aprendizaje lunes 12/10, leyendo SportEasy — `docs/PLAN_TRABAJO_2026-27.md`), no la plataforma: ya no hace falta construir nada de esto para la J2.
+   - **Movidas a la Fase 3 (noviembre, `docs/PLAN_TRABAJO_2026-27.md`)** — venían de este punto 4, "Bloque siguiente, para la J2 (18/10)": **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
+   - **Staging de Supabase (D53)** se mantiene como requisito previo a la Fase 3, antes de tocar esquema o datos en producción.
+5. **Motor de convocatoria v0.1 para la J3 (25/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
 6. **Migración del dashboard** a la plataforma.
 7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
 8. **Tesorería** (solo registro de cuentas, D52).

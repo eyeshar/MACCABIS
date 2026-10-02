@@ -60,10 +60,10 @@ en los paneles de Supabase y Vercel.
    teclear en "Recibir código por correo".
 4. **Authentication → URL Configuration**:
    - **Site URL**: `https://maccabis.vercel.app`
-   - **Redirect URLs**: añade `https://maccabis.vercel.app/**` y `https://maccabis-*-web-tcpc.vercel.app/**`.
-     ⚠️ **Revisa este segundo patrón antes de guardarlo**: el nombre contiene "web-tcpc", que es el otro proyecto.
-     Compruébalo contra la URL real de tus despliegues de vista previa de Vercel para "maccabis" (Vercel →
-     proyecto `maccabis` → Deployments → copia una URL de Preview) y corrígelo si no coincide con el patrón real.
+   - **Redirect URLs**: añade `https://maccabis.vercel.app/**` y `https://maccabis-*-web-tcpc.vercel.app/**` (el
+     segundo es el patrón de las vistas previas: "web-tcpc" es el **slug del equipo de Vercel** de Iván, no del
+     proyecto "web" de Tres Cantos — comprobado con la vista previa real
+     `https://maccabis-git-feat-plataforma-v0-web-tcpc.vercel.app`).
 
 ### 4. Cargar la base de datos (me lo pides a mí, o lo haces tú)
 Desde `plataforma/`:

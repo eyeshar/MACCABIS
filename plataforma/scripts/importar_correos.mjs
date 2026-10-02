@@ -82,7 +82,7 @@ async function leerFichero(ruta) {
 const PATRON_EMAIL = /mail|correo/i;
 const PATRON_NOMBRE_COMPLETO = /^(nombre completo|full ?name|jugador|member|miembro|participante)$/i;
 const PATRON_NOMBRE = /^(nombre|first ?name|name)$/i;
-const PATRON_APELLIDOS = /^(apellidos?|last ?name|surname)$/i;
+const PATRON_APELLIDOS = /^(apellido|last ?name|surname)/i;
 
 function detectarColumnas(cabecera) {
   const idx = (patron) => cabecera.findIndex((c) => patron.test((c || '').trim()));

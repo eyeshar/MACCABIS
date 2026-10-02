@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68) sustituye a los enlaces personales; migración aplicada en el proyecto real.** Rama `feat/plataforma-v0` sigue sin mergear a `main`, a la espera de que Iván configure Google/Supabase (`plataforma/LEEME.md`) y dé el "OK vista previa"._
+_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68); rutina A por emulador Android (D69); calendario oficial 26/27 en `data/calendario_2026-27.json`.** Rama `feat/plataforma-v0` sigue sin mergear a `main`, a la espera de que Iván configure Google/Supabase (`plataforma/LEEME.md`) y dé el "OK vista previa"._
 
 ## Login único: Google o código por correo, con lista blanca (02/10/2026, D68)
 - **Sustituye a los enlaces personales `/j/<token>` (D45, derogada).** Ahora: `/entrar` (Google o código de un solo uso por correo) → `/mi-zona` (jugador), `/gestion` (gestor) o `/entrar/elegir` si es las dos cosas. `anon` se queda sin ningún permiso (ni tablas ni funciones): todo exige sesión real.
@@ -10,11 +10,25 @@ _Última actualización: 02/10/2026 — **login único con Google/código por co
 - **Migración** `plataforma/supabase/migrations/20261002120000_login_google_lista_blanca.sql`, aplicada directamente en el proyecto real (D53, sin pedidos que proteger). Durante la verificación se encontró y corrigió un fallo real de permisos (funciones nuevas heredaban `EXECUTE` del pseudo-rol `PUBLIC` porque el `revoke` solo decía `from anon`, no `from public, anon, authenticated`); quedó corregido en el propio fichero de migración y re-sincronizado en el proyecto real.
 - **Resultados reales de la verificación:**
   - `npm run pruebas` (plataforma, pila local sin Docker): **93/93 OK**, incluye lista blanca (`correo_permitido`, `antes_de_crear_usuario`, `POST /otp`), un gestor reservado solo por correo que se vincula solo al entrar (trigger), sesión sin jugador ni gestor, RLS, pedidos (propio y familiar), dorsal repetido, Excel para VIVE celda a celda igual a la plantilla.
-  - `node pruebas/verificar_real.mjs` (proyecto Supabase real): **TODO OK**, con limpieza completa (estado final: 1 usuario, 1 gestor, 25 jugadores, 1 campaña cerrada, 0 pedidos).
-- **Nuevo script `npm run db:correos`** (`plataforma/scripts/importar_correos.mjs`): importa correos desde una exportación de SportEasy (CSV o XLSX), casando por nombre exacto (prueba "Apellidos, Nombre" y "Nombre Apellidos"); lo que no case o case con más de un jugador se lista aparte, nunca se adivina. **Aún no se ha ejecutado contra un fichero real**: ningún jugador tiene correo todavía en el proyecto real (lo confirma `verificar_real.mjs`).
+  - `node pruebas/verificar_real.mjs` (proyecto Supabase real): **TODO OK**, con limpieza completa.
 - **Página pública `/privacidad`** (sin login): qué datos se guardan, para qué, quién los ve y cómo pedir el borrado.
-- **Pendiente de Iván** (`plataforma/LEEME.md`, apartados 2 y 3): crear el proyecto de Google Cloud "Maccabis" (nunca el de TCPC), activar el proveedor Google en Supabase, registrar el hook "Before User Created", revisar las Redirect URLs (ojo al patrón `https://maccabis-*-web-tcpc.vercel.app/**` que pedía el prompt: su nombre incluye "web-tcpc" y conviene comprobarlo contra la URL real de los despliegues de vista previa antes de guardarlo), y ejecutar `npm run db:correos` con la exportación de SportEasy.
-- **Pendiente, sin resolver:** `docs/RUTINAS/B_CALENDARIO.md` (procedimiento de la rutina B) iba a redactarse a partir de `claude/RUTINA_B_CALENDARIO.md`, un documento del Project de Claude.ai al que esta sesión no tiene acceso. Ver aviso al cierre de este bloque.
+- **La Redirect URL `https://maccabis-*-web-tcpc.vercel.app/**` es correcta** (confirmado por Iván): "web-tcpc" es el slug del **equipo de Vercel**, no del proyecto de Tres Cantos. Verificado con la vista previa real `https://maccabis-git-feat-plataforma-v0-web-tcpc.vercel.app`. El aviso ⚠️ se ha quitado de `plataforma/LEEME.md`.
+- **Pendiente de Iván** (`plataforma/LEEME.md`, apartados 2 y 3): crear el proyecto de Google Cloud "Maccabis" (nunca el de TCPC), activar el proveedor Google en Supabase, registrar el hook "Before User Created".
+
+### `npm run db:correos` — ejecutado (02/10/2026)
+- Fichero: `SportEasy_maccabis (1).xlsx` de Descargas (exportación de SportEasy del 02/10/2026; el `(1)` porque ya había una copia antigua de agosto).
+- Columnas detectadas solas: correo = "Correo electrónico", nombre = "Nombre" + "Apellido(s)".
+- **8 correos casados y escritos** (nombre exacto, sin adivinar). Estado real tras la importación: `{"jugadores":25,"jugadores_con_correo":8,"gestores":1,"gestores_vinculados":1,"campanas":1,"pedidos":0}`.
+- **20 filas del fichero sin casar** (nombre de SportEasy ≠ nombre oficial exacto) y **17 jugadores de la plantilla sin fila casada** — la mayoría son la misma persona escrita de otra forma en SportEasy (motes, orden nombre/apellido, apellidos incompletos), pero **no se ha fusionado ninguna a ojo**: decide Iván caso a caso, editando el correo a mano en "Jugadores" (`/gestion/jugadores`) o corrigiendo el nombre en SportEasy y repitiendo la importación. Lista completa en el informe de esta sesión.
+- Corregido en el camino: el detector de columnas no reconocía la cabecera real "Apellido(s)" (el patrón exigía "Apellido" o "Apellidos" exactos); ahora acepta cualquier cabecera que empiece por "apellido".
+
+## Rutina A (actas): emulador Android, no gesto manual (02/10/2026, D69 — matiza D35)
+- Corrige el bloque anterior: D63 (rutinas por navegador) **nunca incluyó la rutina A** porque Afición FBM no tiene web. Ahora D69 fija cómo se automatiza de verdad: Claude controla un **emulador Android** (Android Studio) en el ordenador de Iván, con su sesión de Google Play y Afición FBM iniciada una vez. `docs/PLAN_TRABAJO_2026-27.md`, `docs/NORMAS_DE_TRABAJO.md` §3 y `docs/BACKLOG.md` actualizados para reflejarlo.
+
+## Calendario oficial 2026/27 (02/10/2026)
+- `data/calendario_2026-27.json` creado con los 44 partidos (22 jornadas × 2 fichas) leídos en Deportes/web el 02/10/2026 (fuente: `fuente.origen`, sin datos personales). Esquema compatible con el que generará `feat/calendario-automatico` (`scripts/calendario/actualizar_calendario.js`, sin mergear) cuando el portal 211549 publique la 26/27.
+- Verificado por contraste cruzado: 2 descansos por equipo (MdA en J4 y J15, MdL en J11 y J22) y los dos domingos con las dos fichas a la misma hora (18/10 y 07/02, 10:15) coinciden exactamente con lo ya registrado en D62/ESTADO sobre la carga en SportEasy.
+- `docs/RUTINAS/B_CALENDARIO.md` escrito con el procedimiento de la rutina B (pasos en Deportes/web, comparación con SportEasy, hallazgos del 02/10).
 
 ## Normas de trabajo y plan 2026/27 (02/10/2026)
 - `docs/NORMAS_DE_TRABAJO.md`, `docs/PLAN_TRABAJO_2026-27.md` y `docs/RUTINAS/` creados en su ubicación definitiva (antes vivían como copias provisionales fuera de `docs/`). D63-D67 registradas en `DECISIONS.md`. BACKLOG reordenado: la subida de actas desde la zona de gestión pasa a plan B.

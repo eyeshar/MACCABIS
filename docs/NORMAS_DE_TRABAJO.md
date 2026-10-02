@@ -11,12 +11,12 @@
 - Los riesgos se dicen **una vez**, con su mitigación, y decide Iván. Después no se repiten.
 - Sigue vigente ser crítico: si una idea es mala se dice, pero siempre con la alternativa que sí funciona.
 
-## 3. Automatización por navegador ("me enseñas una vez, lo repito yo")
-- Las tareas recurrentes del club se automatizan con **Claude navegando el Chrome de Iván**, con su sesión iniciada, a ritmo humano y solo sobre datos del club. No se montan conexiones automáticas contra bases de datos ni APIs de terceros.
+## 3. Automatización por navegador y por emulador ("me enseñas una vez, lo repito yo")
+- Las tareas recurrentes del club se automatizan con **Claude navegando el Chrome de Iván** (calendario, convocatoria) o **controlando un emulador Android** en su ordenador para las apps que no tienen web (actas, Afición FBM, D69), con la sesión de Iván iniciada, a ritmo humano y solo sobre datos del club. No se montan conexiones automáticas contra bases de datos ni APIs de terceros.
 - Ciclo de cada rutina: (1) sesión de aprendizaje con Iván, (2) procedimiento escrito en `docs/RUTINAS/<rutina>.md`, (3) 2 ejecuciones supervisadas, (4) **tarea programada** que Claude ejecuta sola en el ordenador de Iván.
 - **Leer y descargar**: sin pedir permiso. **Crear, modificar o enviar algo en nombre de Iván** (SportEasy, WhatsApp, publicar en la web): con su OK explícito, salvo que una regla escrita lo autorice (p. ej. publicar estadísticas si todo cuadra, D66).
-- Requisito técnico: ordenador encendido, Chrome abierto con la extensión de Claude y la sesión de cada web iniciada.
-- **Alcance de las herramientas en el Chrome de Iván**: Claude solo las configura y usa dentro del proyecto Maccabis. Nunca toca nada del entorno de Tres Cantos (TCPC), aunque comparta el mismo Chrome (D67).
+- Requisito técnico: ordenador encendido; Chrome abierto con la extensión de Claude y la sesión de cada web iniciada; para la rutina A, Android Studio con el emulador y la sesión de Google Play/Afición FBM iniciada (D69).
+- **Alcance de las herramientas en el Chrome y el emulador de Iván**: Claude solo las configura y usa dentro del proyecto Maccabis. Nunca toca nada del entorno de Tres Cantos (TCPC), aunque comparta el mismo ordenador (D67).
 
 ## 4. Reparto de papeles
 | Quién | Hace |

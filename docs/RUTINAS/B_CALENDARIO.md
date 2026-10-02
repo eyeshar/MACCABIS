@@ -1,0 +1,14 @@
+# RUTINA B — Revisión del calendario (borrador v0, 02/10/2026)
+
+Cuándo: jueves desde las 20:15 (programación oficial a las 20:00 del jueves previo, Bases 47 JDM 4.2).
+
+Pasos (Deportes/web, sesión de Iván iniciada en su Chrome):
+
+1. https://deportesweb.madrid.es/DeportesWeb/ → Competiciones municipales → Consulta de partidos → centro Moratalaz.
+2. Filtros: Temporada 2026/2027 · BALONCESTO · SENIOR MASCULINO · Grupo "JDM MOR DOM MAÑ BC SEN MAS G1" (MdA) → Buscar; repetir con G2 (MdL). Cada filtro recarga la página: elegir uno, esperar, elegir el siguiente.
+3. Sale la temporada entera: nº de partido, local, visitante, fecha, hora y pista.
+4. Comparar con SportEasy (campeonatos "Temporada MdA" y "Temporada MdL") por la vista de Campeonatos, jornada a jornada (la lista del calendario carga por partes): fecha, hora, pista, rival y local/visitante.
+5. Proponer a Iván los cambios; aplicarlos en SportEasy solo con su OK.
+6. Pendiente: sanciones (Juegos Deportivos Municipales-Equipos → equipo → más opciones → sanciones).
+
+**Hallazgos del 02/10:** J1 MdA oficialmente visitante en la pista 2 (SportEasy la tenía como local; Iván avisó por WhatsApp y decidió no tocar el evento). Mismo domingo a la misma hora: 18/10 y 07/02 (10:15). J1–J3 coinciden en todo lo demás.

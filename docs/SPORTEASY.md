@@ -3,6 +3,18 @@
 > Todo lo que sabemos de SportEasy y cómo nos relacionamos con ella. Equivale a FEDERACION.md de TCPC.
 > _Última actualización: 25/09/2026 (bloque "Cierre del sondeo y cimientos 26/27"): cláusula literal de acceso automatizado, Premium y prueba de exportación._
 
+> **26/09/2026 — D44:** desde la jornada 2 (11/10) SportEasy **sale de la operativa**: disponibilidad y convocatoria solo por la plataforma propia; no se crean los partidos de liga ni se pide respuesta en SportEasy. Queda como respaldo dormido hasta noviembre. La carga del calendario (plantilla del soporte o agente, D31/D36) **se cancela**. Antes de apagarlo: exportar el balance de asistencias. Lo de abajo queda como histórico.
+>
+> **02/10/2026 — D62 (matiza D44):** SportEasy vuelve a usarse a pleno rendimiento para 26/27. El calendario completo (40 partidos de liga JDM, los dos campeonatos) se cargó con un agente de navegador que actúa con la sesión de Iván. Ver la sección "Cómo funciona por dentro (verificado 02/10/2026)" más abajo. El apagado de noviembre sigue sin decidirse.
+
+## Cómo funciona por dentro (verificado 02/10/2026)
+
+- **Convocatoria automática por campeonato:** Campeonatos → Ajustes → Convocatorias permite filtrar a los convocados por rol y por un campo personalizado del plantel. Configuración actual de los dos campeonatos: roles Jugador, Jugador-entrenador y Jugador ocasional + "Equipo inscrito contiene MdA" (o "MdL"). Se aplica a los partidos que se creen **después**, no a los que ya existen.
+- **Campo personalizado del plantel "Equipo inscrito":** "MdA MdL" para los 22 jugadores de doble ficha, "MdA" para Luis Varas y Guillermo Galán, y vacío para quien solo entrena (Edimil Feliz, Nicolás Yamin, Ignacio Mateos-Aparicio). Cambiar de ficha a alguien = cambiar este campo.
+- Los jugadores con rol "Jugador ocasional" (Alonso, Tejeiro, Luis) quedan fuera si no se marca ese rol en el filtro.
+- **Creación en bloque:** Campeonatos → Calendario/Resultados → "+ Añadir partidos" abre una tabla (Jornada, Adversario, Fecha DD/MM/AAAA, Hora hh:mm, Ubicación registrada, Dirección, Local/Fuera). Cuidado: rellenar "Dirección" crea una ubicación registrada **nueva** por cada valor distinto. No guarda hora de encuentro ni hora de fin, y crea los partidos con las inscripciones en **manual** (sin avisar a nadie hasta abrirlas).
+- **Formato de partido aplicado:** ubicación registrada "Moratalaz" (la original, C. de Valdebernardo 2), "Lugar de encuentro" = pista ("Pista 1/2/3"), encuentro 15 minutos antes y duración de 1 hora.
+
 ## Qué es para Maccabis
 
 Plataforma de gestión de equipo que Maccabis usa y paga (suscripción de equipo). Es el **registro oficial**: calendario/eventos, asistencia (partidos y entrenamientos), plantel.
@@ -13,11 +25,11 @@ Plataforma de gestión de equipo que Maccabis usa y paga (suscripción de equipo
 
 SportEasy **no permite dividir un equipo en dos**. Como Maccabis juega con dos fichas (MdA y MdL), Iván crea **dos campeonatos cada año**, uno por ficha. Esto complica la gestión: hay que duplicar eventos, convocatorias, etc. Es una de las fuentes principales de trabajo manual.
 
-## API: NO hay API pública
+## API: NO hay API pública ni sincronización desde fuera
 
-- SportEasy tiene una API **interna** que alimenta sus propias apps, pero **no es pública** ("contáctanos si tienes un club y quieres probarla").
-- No hay forma limpia y estable de que una plataforma externa lea en tiempo real los datos de SportEasy (p. ej. quién ha confirmado un evento).
-- **Conclusión:** NO se puede construir un panel que se sincronice en vivo con SportEasy. Prometerlo sería engañar. _(Confirmado por el sondeo del 25/09/2026.)_
+- SportEasy tiene una API **interna** que alimenta su propia web, pero **no es pública** ("contáctanos si tienes un club y quieres probarla"). **Verificado usándola (02/10/2026):** permite leer eventos, editar un evento y abrir inscripciones ("open-registration"); se usa **solo desde el navegador de Iván, con su sesión**, nunca desde la plataforma propia ni con credenciales guardadas.
+- Sigue sin haber forma limpia y estable de que una plataforma externa lea en tiempo real los datos de SportEasy (p. ej. quién ha confirmado un evento): esa API no está pensada para integraciones de terceros y usarla así seguiría dependiendo de la sesión de una persona.
+- **Conclusión:** NO se puede construir un panel que se sincronice en vivo con SportEasy. Prometerlo sería engañar. _(Confirmado por el sondeo del 25/09/2026 y por el uso real del 02/10/2026.)_
 
 ## Lo que SÍ se puede: exportación / importación por Excel
 

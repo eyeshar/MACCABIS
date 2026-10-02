@@ -1379,6 +1379,17 @@
    "solo_mote": false,
    "es_entrenador": false,
    "nota": "Primera temporada en el club: 2026/27 (47 JDM, fichas MdA y MdL). Confirmado por Iván el 25/09/2026."
+  },
+  {
+   "person_id": "feliz-gomez-edimil",
+   "formal": "Feliz Gómez, Edimil",
+   "display": "Edimil Feliz Gómez",
+   "temporadas_jugadas": [],
+   "n_temporadas": 0,
+   "previsto_2627": true,
+   "solo_mote": false,
+   "es_entrenador": false,
+   "nota": "Entrena con el club en 2026/27, sin ficha de competición (rol solo_entreno en la plataforma). Dado de alta por Ivan el 02/10/2026 desde la exportacion de SportEasy."
   }
  ]
 }

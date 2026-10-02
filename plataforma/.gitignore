@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+# Claves: NUNCA a git
+.env
+.env*.local
+.vercel
+# Binarios y resultados de la pila de pruebas local
+pruebas/.bin/
+pruebas/resultados/

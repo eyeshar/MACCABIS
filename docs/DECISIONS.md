@@ -202,3 +202,129 @@ Ninguna otra variante está confirmada. En particular **no** lo están `CARPASIO
 ## D43 — Pipeline de estadísticas en Node; la 2025/26 publicada no se regenera (25/09/2026)
 **Decisión:** el pipeline vive en `scripts/estadisticas/` (Node), lee de `fuentes_fbm/<temporada>/` (fuera de git) y forma parte de `npm run build:datos`. Reproduce `data/season_2025-26.json` (test de regresión: sólo difiere en hora y pista, nuevas, y en tres correcciones del pipeline antiguo). **La 2025/26 publicada no se regenera**: de sus 41 hojas XLSX sólo queda una en el equipo (las demás se subieron al chat); el generador se niega a dejar una temporada con menos partidos o boxscores de los que tiene. Rama `feat/pipeline-estadisticas`, sin mergear.
 **Por qué:** el pipeline de 25/26 leía de una carpeta del chat de Claude y no era reproducible. Los ficheros de la FBM traen datos de terceros (rivales, árbitros) y nunca van al repositorio público.
+
+---
+## Bloque "Plataforma v0: identidad, zona personal y pedido de ropa" (26/09/2026)
+_D44–D54: decisiones (a)–(k) de Iván en el chat de diseño, tras contrastarlas con otras dos IA. D55–D57: decisiones técnicas de Code en este bloque._
+
+## D44 — SportEasy sale de la operativa desde la jornada 2 (Iván, 26/09/2026) — SUSTITUYE a D30 y deja sin efecto D31 y D36
+**Decisión:** desde la **jornada 2 (11/10/2026)** la disponibilidad (partidos y entrenos) y la convocatoria van **solo por nuestra web**. En SportEasy **no se crean los partidos de liga ni se pide respuesta**; queda como **respaldo dormido hasta noviembre**, cuando se decide si se apaga. No se carga el calendario en SportEasy: ni plantilla del soporte (D36) ni agente supervisado (D31).
+**Por qué:** dos sistemas pidiendo lo mismo al jugador duplican el trabajo de Iván, que es justo lo que se quiere quitar; y la doble ficha no encaja en SportEasy.
+**Consecuencia:** D37 (recordatorios de SportEasy Premium) deja de aplicarse cuando SportEasy se duerma; el recordatorio pasa a ser un mensaje de WhatsApp que prepara la plataforma (bloque siguiente). Antes de apagarlo hay que exportar el balance de asistencias (BACKLOG).
+**Matizada por D62 (02/10/2026):** para 26/27 SportEasy vuelve a usarse a pleno rendimiento (calendario, convocatorias y asistencia de liga), cargado con un agente de navegador. El apagado de noviembre sigue sin decidirse.
+**Matizada también por `NORMAS_DE_TRABAJO.md` §8 / D64 (02/10/2026):** la pregunta de "si se apaga en noviembre" queda **cerrada**: SportEasy se mantiene **completo como respaldo hasta septiembre de 2027**, sin apagarlo antes; la plataforma lo sustituye función a función (3 jornadas seguidas sin arreglos a mano + aprobación de Iván).
+
+## D45 — ~~Identidad: enlace personal secreto para jugadores; login real para los 3 gestores~~ (Iván, 26/09/2026) — DEROGADA por D68
+**Decisión:** cada jugador tiene un **enlace personal secreto** (`/j/<token>`, token largo, revocable y regenerable) que hace de inicio de sesión: le da acceso a su zona personal y **solo le deja modificar lo suyo**. Los gestores (Iván, Carlos Barreiro, Eduardo Martín-Ortega) entran con **login real de Supabase Auth**. Cierra la "Decisión pendiente" del BACKLOG a favor de la opción (b).
+**Por qué:** cero fricción para 24 adultos (sin contraseñas que olvidar) y control real para los gestores. El riesgo (si se reenvía, otro entra por él) se asume y se mitiga: el mensaje de bienvenida pide no reenviarlo y el botón "Regenerar" anula el viejo al momento.
+**Derogada (02/10/2026, D68):** Iván decidió el 25/09/2026 sustituir los enlaces por un login único con Google (o código por correo), pero la decisión no llegó a escribirse en los docs a tiempo; D68 la recoge y la aplica. Los enlaces `/j/<token>` y la tabla `enlaces` se retiran del todo.
+
+## D46 — Qué ven los jugadores (Iván, 26/09/2026)
+**Decisión:** en cada evento los jugadores ven **quién va, quién no va y quién falta por contestar**, solo con nombres. **Nunca** niveles, posiciones, motivos de ausencia ni nada del motor de convocatoria. **Disponibilidad y convocatoria son conceptos distintos** (estar disponible no es estar convocado).
+
+## D47 — El calendario propio es la fuente de verdad (Iván, 26/09/2026)
+**Decisión:** el calendario lo cargan los gestores en la plataforma. Las fuentes externas (Ayuntamiento, datos abiertos) **solo detectan cambios y los proponen** con Aceptar/Ignorar. **Ningún cambio externo se aplica solo** y todo cambio queda registrado (qué, fuente, quién lo aceptó y cuándo). Matiza D42: el calendario de datos abiertos pasa a ser un **detector de cambios**, no la fuente.
+
+## D48 — Motor de convocatoria determinista y por fases (Iván, 26/09/2026)
+**Decisión:** en la **J3** el motor aplica **solo restricciones duras** (fichas, doblaje sin solapes, mínimos por posición, topes). **Nivel frente al rival y rotación** entran entre la **J4 y la J6**. Cada ajuste manual del gestor queda registrado con su motivo. Mismas entradas, misma propuesta.
+
+## D49 — SportMember descartado; una sola consulta a Indalweb (Iván, 26/09/2026)
+**Decisión:** SportMember queda descartado (salvo que se echen mucho de menos los recordatorios automáticos). Se hace **una única consulta** a Indalweb (soporte@gesdeportiva.es) sobre una exportación oficial; si dicen que no, el tema se cierra y sigue D35.
+
+## D50 — Qué se replica de SportEasy y qué no (Iván, 26/09/2026)
+**No se replica:** alineación en pista, tareas, foro, mensaje del entrenador y sus estadísticas.
+**Sí se replica:** calendario **único** para MdA y MdL (una sola competición con la etiqueta de equipo en cada partido); eventos (entreno recurrente, liga, amistoso, torneo, otro) con rival, jornada, hora, hora y lugar de quedada, pista y casa/fuera; disponibilidad con estado "sin responder"; **pase de lista** posterior (a tiempo, retraso, con excusa, sin excusa, lesionado; por defecto se copia la respuesta); balance de asistencia; plantilla con roles; iCal. Los gestores crean y editan eventos.
+
+## D51 — Sanciones: estado manual del jugador (Iván, 26/09/2026)
+**Decisión:** "sancionado hasta la jornada X" es un estado manual que pone un gestor; el motor no convoca a un sancionado. Salvo que aparezca una fuente fija (ver `docs/SONDEO_CALENDARIO_AYTO.md`).
+
+## D52 — Tesorería futura: solo registro de cuentas (Iván, 26/09/2026)
+**Decisión:** sin cobros por la web. Tampoco en el pedido de ropa: el precio se muestra como orientativo, "por confirmar".
+
+## D53 — Excepción temporal a "staging antes de producción" (Iván, 26/09/2026)
+**Decisión:** mientras no haya datos que romper, **un solo proyecto de Supabase**. El staging se crea con el bloque de calendario y disponibilidad (J2).
+
+## D54 — El pedido de ropa es el primer uso real de la plataforma (Iván, 26/09/2026)
+**Decisión:** el pedido de ropa (proveedor VIVE) estrena la plataforma y sirve para **repartir los enlaces personales**. Prendas y lo que llevan impreso (confirmado por Iván): camiseta de juego (nombre + dorsal + talla), pantalón (dorsal + talla), cubre (nombre + dorsal + talla; vale como segunda camiseta de juego), sudadera/chaqueta (nombre + talla).
+
+## D55 — Arquitectura de la plataforma v0 (Code, 26/09/2026)
+1. La app Next.js vive en **`plataforma/`**, dentro del mismo repositorio. La web de GitHub Pages (raíz: `index.html` + `data/`) **no cambia**. Vercel apunta a `plataforma/` (Root Directory).
+2. **RLS en todas las tablas y ninguna política para anónimos.** Los jugadores no tocan tablas: usan 4 funciones de la base de datos (`zona_jugador`, `guardar_pedido`, `anular_pedido`, `dorsal_cogido`) que reciben el token, localizan a SU jugador y solo devuelven o cambian lo suyo. El aislamiento entre jugadores lo garantiza la base de datos, no el código de la web.
+3. Los gestores trabajan con su sesión y políticas `is_gestor()`. **La service role key no se usa en la app** (ni está en Vercel); los scripts locales usan la cadena de conexión de `plataforma/.env.local`, fuera de git.
+4. Token de 64 caracteres hexadecimales (244 bits aleatorios), guardado en claro porque los gestores tienen que poder copiar el mensaje en cualquier momento; solo ellos pueden leerlo (RLS).
+5. Cabeceras `Referrer-Policy: no-referrer` (el enlace no viaja a otras webs, p. ej. al pulsar "Ver mi ficha") y `noindex` en todo.
+6. Migraciones versionadas en `plataforma/supabase/migrations/`, registradas en la misma tabla que usa la CLI de Supabase.
+**Por qué:** así "un jugador solo toca lo suyo" es verificable con pruebas contra la base de datos real (`npm run pruebas`).
+
+## D56 — Dorsal repetido: el jugador no puede; el gestor sí, con aviso (Code, 26/09/2026)
+**Decisión:** dentro de una campaña, si un dorsal ya está en otro pedido que lleva número (camiseta, pantalón o cubre), al **jugador** se le dice solo "Ese dorsal ya está cogido" y **no puede enviar** con él (la base de datos lo rechaza, sin decir de quién). Los **gestores** pueden guardar un dorsal repetido (con aviso) y ven la lista de repetidos **con nombres**. Un pedido solo de sudadera no lleva dorsal.
+**Pendiente de Iván:** si quiere que un familiar pueda llevar el mismo dorsal que el jugador (p. ej. un hijo con el número del padre), hoy tiene que añadirlo un gestor.
+
+## D57 — Excel para VIVE idéntico a la plantilla 24/25 (Code, 26/09/2026)
+**Decisión:** el Excel reproduce celda a celda el formato de `privado/LISTADO MACCABIS 2024 (revisado).xlsx` (comparador automático: 196 celdas, "IGUAL"), incluidas la fila vacía con bordes del final y el relleno blanco de las celdas vacías de la columna E, restos de edición a mano. La talla se escribe como en la lista de VIVE ("3XL"), aunque la plantilla antigua ponía "XXXL". De la plantilla solo se copia el formato; nunca sus datos, y no entra en git.
+
+## D58 — Proyecto Supabase sin permisos automáticos: todo explícito y mínimo (Iván + Code, 26/09/2026)
+**Contexto:** Iván creó el proyecto (región Europa) **desmarcando "Automatically expose new tables"** y **sin "Enable automatic RLS"**, con el registro libre de usuarios desactivado.
+**Decisión:** la migración `20260926110000_…` da los permisos a mano y solo los necesarios: `authenticated` lee y escribe `jugadores`, `campanas_ropa` y `pedidos_ropa` y lee `enlaces`, `gestores` y la vista de dorsales repetidos (siempre filtrado por RLS + `is_gestor()`); `anon` **no tiene ningún permiso sobre tablas** y solo puede ejecutar las 4 funciones que exigen enlace (`zona_jugador`, `guardar_pedido`, `anular_pedido`, `dorsal_cogido`). Las funciones nuevas de `public` ya no nacen ejecutables por cualquiera (`alter default privileges`).
+**Evidencia (proyecto real, 26/09/2026):** `information_schema.role_table_grants` no devuelve nada para `anon`; `has_function_privilege('anon', …)` solo es cierto para esas 4.
+
+## D59 — RLS automática con un event trigger (Iván + Code, 26/09/2026)
+**Decisión:** equivalente propio de "Enable automatic RLS": el event trigger `rls_automatica` activa RLS en cualquier tabla que se cree en `public` (`CREATE TABLE`, `CREATE TABLE AS`, `SELECT INTO`). Así una tabla futura nunca nace abierta aunque alguien olvide activarla.
+**Evidencia:** en el proyecto real se creó y se borró `public.prueba_rls_automatica`: nació con RLS.
+
+## D60 — Dorsal: único solo entre pedidos de jugadores; el del familiar es libre (Iván, 26/09/2026) — MODIFICA D56
+**Decisión:** los dorsales solo tienen que ser únicos entre los pedidos **para el propio jugador** (`para = 'yo'`). En un pedido **para un familiar** el dorsal es libre: no se comprueba, no avisa y no aparece en "Dorsales repetidos" de los gestores. Lo demás de D56 sigue: al jugador, "Ese dorsal ya está cogido" sin decir de quién; el gestor puede forzarlo con aviso.
+
+## D61 — Nombres visibles confirmados (Iván, 26/09/2026)
+**Decisión:** "Julio" (De Carvalho), "Luis" (Varas) y "Carlos (entrenador)" (Barreiro). El resto, los motes de `docs/PLANTILLA_26-27.md`; quien no tiene mote, su nombre de pila (Carlos Baños queda como "Carlos"). Se cambian desde "Jugadores y enlaces".
+
+## D62 — SportEasy 26/27 se usa a pleno rendimiento y se alimenta con un agente de navegador (Iván, 02/10/2026) — MATIZA D44
+**Decisión:** para la temporada 2026/27 SportEasy no queda como respaldo dormido. Calendario, convocatorias y asistencia de los partidos de liga viven en SportEasy, cargados por un agente de navegador que actúa con la sesión de Iván, y siempre con su aprobación explícita antes de crear o modificar nada. Se mantienen los dos campeonatos ("Temporada MdA" y "Temporada MdL").
+**Por qué:** SportEasy ya está pagado para 26/27 y crear unos 40 partidos a mano era justo el trabajo manual que el proyecto quiere eliminar. El agente lo hizo en una sesión, verificando cada partido.
+**Qué reabre:** el punto de D44 (26/09/2026) que sacaba a SportEasy de la operativa desde la jornada 2 y cancelaba la carga de calendario (D31/D36, agente y plantilla del soporte). El agente de navegador vuelve a estar en uso, esta vez ya ejecutado. **No queda derogado** el apagado de SportEasy en noviembre que planteaba D44: Iván no lo ha decidido; sigue pendiente (ver BACKLOG).
+
+---
+## Bloque "Normas de trabajo y plan 2026/27" (02/10/2026)
+
+## D63 — Rutinas semanales por navegador en el Chrome de Iván, salvo las actas (Iván, 02/10/2026) — MATIZA D35 y D47
+**Decisión:** de las tres tareas semanales de la temporada, **dos** se automatizan con **Claude navegando el Chrome de Iván**, con su sesión iniciada: calendario (jueves desde las 20:15, Deportes/web) y disponibilidad/convocatoria (lunes y martes, SportEasy). Cada una sigue el ciclo: aprendizaje con Iván → procedimiento escrito en `docs/RUTINAS/<rutina>.md` → 2 ejecuciones supervisadas → tarea programada.
+**Riesgo asumido (B y C):** Deportes/web prohíbe en sus condiciones la extracción automatizada (ver D47, `docs/SONDEO_CALENDARIO_AYTO.md`). Iván asume el riesgo y lo mitiga con: su propia sesión (no una cuenta de servicio), ritmo humano, una ejecución semanal por rutina, y solo sobre documentos del club (nunca datos de terceros). **Matiza D47** (que dejaba las fuentes externas de calendario como meros detectores de cambios propuestos): la rutina B pasa a ejecutarse por navegador en vez de solo como propuesta, con el mismo riesgo ya asumido en D62 para el calendario de SportEasy.
+**Corrección (02/10/2026): la rutina A (actas y estadísticas) NO va por Chrome.** La app **Afición FBM solo existe como app de móvil** (App Store/Indalweb), sin versión web que navegar (ver `docs/SONDEO_ACTAS_FASE0.md`, punto 1: "los PDF y XLSX sólo se obtienen desde la app"). Por eso no entra en este D63, que es específicamente sobre **navegador**. **Ver D69**, que fija cómo se automatiza la rutina A de verdad (emulador Android, no gesto manual ni Chrome).
+**Por qué:** es el mismo mecanismo ya aprobado y ejecutado para la carga del calendario en SportEasy (D62), extendido a la rutina de calendario y a la de convocatoria, que sí son webs navegables. La de actas usa otro mecanismo (D69), porque Afición FBM no es una web. Detalle completo en `docs/NORMAS_DE_TRABAJO.md` §3 y `docs/PLAN_TRABAJO_2026-27.md`.
+
+## D64 — SportEasy completo como respaldo hasta septiembre de 2027; sustitución función a función (Iván, 02/10/2026) — MATIZA D44 y D62
+**Decisión:** SportEasy se mantiene **completo como respaldo** mientras dure la suscripción pagada, hasta **septiembre de 2027**. No se apaga ni se retira antes. La plataforma propia lo sustituye **función a función**: una función pasa a la plataforma cuando ha funcionado **3 jornadas seguidas sin arreglos a mano** y Iván lo aprueba. Mientras una función conviva en los dos sitios, **nunca se pide a los jugadores lo mismo en dos sitios** a la vez.
+**Por qué:** matiza D44 (que planteaba apagar SportEasy desde la jornada 2 de 26/27, pendiente de decidir desde D62) y D62 (que lo devolvió a pleno rendimiento sin fijar fecha de salida): fija el criterio objetivo de sustitución —3 jornadas sin arreglos a mano— y una fecha límite de respaldo que coincide con el fin de la suscripción ya pagada, cerrando la ambigüedad sobre "cuándo se apaga" que D44 dejaba pendiente.
+
+## D65 — Normas de trabajo y modelos (Iván, 02/10/2026)
+**Decisión:** quedan fijadas en `docs/NORMAS_DE_TRABAJO.md` las normas de trato, actitud, reparto de papeles entre Iván / Claude (chat de diseño) / Code, y qué modelo de Claude usar en cada tipo de tarea (Opus 5.5 para decisiones, seguridad y arquitectura; Sonnet 5.5 para ejecución de rutinas ya escritas y trabajo con especificación cerrada; Haiku 4.5 para tareas menores; Fable 5.1 no se usa en este proyecto). También cuándo limpiar conversaciones (un chat por bloque o tema, `/clear` tras cada merge). El plan de trabajo de la temporada 2026/27 (fases, rutinas semanales, qué hay que diseñar) queda en `docs/PLAN_TRABAJO_2026-27.md`.
+**Por qué:** fija por escrito cómo se colabora a partir de ahora, para no tener que repetir las mismas indicaciones cada bloque.
+
+## D66 — Publicación automática de estadísticas si todo cuadra (Iván, 02/10/2026)
+**Decisión:** la rutina de actas y estadísticas (`npm run jornada`) **publica sola** cuando los puntos del boxscore cuadran con el marcador del acta, y avisa a Iván de lo publicado. **Si algo no cuadra, no publica y avisa** a Iván del motivo, sin tocar los datos publicados, para que decida él.
+**Por qué:** es la excepción escrita que ya preveía D35/D62 ("crear, modificar o enviar algo en nombre de Iván: con su OK explícito, salvo que una regla escrita lo autorice"). Publicar solo cuando la validación aritmética ya existente (D12, cuadre contra el marcador) da OK evita un visto bueno manual semanal para un dato que ya se verifica solo; cuando no cuadra, el riesgo de publicar un dato incorrecto es mayor que la espera, así que para y avisa.
+
+## D67 — Claude puede configurar herramientas en el Chrome de Iván, solo dentro de Maccabis (Iván, 02/10/2026)
+**Decisión:** Claude puede instalar y configurar herramientas en el Chrome de Iván (extensión, sesiones, tareas programadas) para las rutinas de este proyecto. **Siempre dentro del proyecto Maccabis; nunca toca nada del entorno de Tres Cantos (TCPC)**, aunque comparta el mismo navegador.
+**Por qué:** Iván usa el mismo Chrome para los dos clubes. Separar el alcance evita que una configuración pensada para Maccabis (sesiones, extensiones, tareas programadas) interfiera con el trabajo de TCPC.
+
+## D68 — Login único con Google (o código por correo) y lista blanca por correo; retira los enlaces (Iván, 02/10/2026) — SUSTITUYE a D45
+**Decisión:** se tomó el 25/09/2026 en el chat de diseño pero no llegó a los docs a tiempo; queda registrada ahora, aplicada en el bloque del 02/10/2026.
+1. **Login único con Google** (Supabase Auth) para jugadores y gestores, con un **código de un solo uso por correo** como respaldo para quien no usa Google. Según el rol: un jugador entra en `/mi-zona` y sus pedidos; un gestor entra además en `/gestion`; quien es las dos cosas (Iván, Edu) elige a dónde ir.
+2. **Nada abierto:** se retiran los enlaces personales `/j/<token>` (D45), la tabla `enlaces` y las 4 funciones que antes podía llamar `anon` con un token. `anon` se queda **sin ningún permiso**, ni sobre tablas ni sobre funciones: todo exige una sesión real.
+3. **Lista blanca:** solo entra quien tiene su correo dado de alta en `jugadores.email` o en `gestores.email` (los tres gestores también son jugadores de la plantilla, así que están en las dos). Un correo desconocido **nunca crea una cuenta**: lo bloquea el hook "Before User Created" de Supabase, que llama a la función `public.antes_de_crear_usuario`, registrada a mano en el panel (ver `plataforma/LEEME.md`).
+4. Los jugadores y gestores se identifican **por correo**: `auth.users` se vincula con `jugadores`/`gestores` comparando el correo (nunca por nombre), y las políticas RLS y funciones usan `auth.uid()` en vez de un token.
+**Consecuencia técnica:** migración `plataforma/supabase/migrations/20261002120000_login_google_lista_blanca.sql` (mantiene D58 — permisos explícitos y mínimos — y D59 — RLS automática). Aplicada directamente sobre el proyecto real sin staging, por D53 (no había pedidos que proteger). `npm run db:correos` (nuevo) importa los correos desde una exportación de SportEasy, casando por nombre exacto y listando aparte lo que no case, sin adivinar nunca.
+**Por qué:** cero contraseñas que gestionar y cero enlaces secretos que reenviar por error; Google ya es la cuenta que casi todos usan, y el código por correo cubre a quien no quiere usarlo. La lista blanca evita que cualquier cuenta de Google pueda entrar: solo quien el club ya conoce.
+**Registro de alta ("Allow new users to sign up"):** el 26/09/2026 este interruptor de Supabase estaba desactivado (nadie, ni con correo en la lista blanca, podía entrar la primera vez). **D68 exige activarlo**, pero solo **después** de tener puesto el hook "Before User Created" del punto 3: activarlo antes dejaría crear cuenta a cualquier correo de Google sin filtro. Procedimiento exacto en `plataforma/LEEME.md`, apartado 3.
+
+## D69 — Rutina A (actas): emulador Android con control del ordenador, no gesto manual (Iván, 02/10/2026) — MATIZA D35
+**Decisión:** la rutina A deja de ser un gesto manual de Iván. Claude descarga las actas y las hojas de estadística desde la app **Afición FBM instalada en un emulador Android** (Android Studio, oficial de Google) en el ordenador de Iván, manejado con **control del ordenador** (no depende del móvil de Iván ni de que esté disponible). Iván solo inicia sesión **una vez** en Google Play y en la app, en ese emulador.
+**Matiza D35:** D35 fijaba la descarga como "un gesto manual de Iván sin pedir permiso a la FBM". La parte de "sin pedir permiso a la FBM" **sigue vigente**; la parte de "gesto manual de Iván" queda sustituida por la ejecución de Claude en el emulador. El riesgo de D35 (extracción fuera de las condiciones de la app, sin permiso de la FBM) se mantiene igual; lo único que cambia es quién pulsa los botones.
+**Requisito técnico:** el ordenador de Iván encendido, con Android Studio y el emulador configurado, y la sesión de Google Play y de Afición FBM iniciada dentro del emulador (una vez, como en el Chrome de las rutinas B y C).
+**Por qué:** quita de encima de Iván el único paso semanal que seguía siendo manual, sin depender de su móvil ni de su disponibilidad el lunes por la mañana. Un emulador oficial de Google (Android Studio) es más estable y auditable que automatizar el móvil real de Iván.
+
+## D70 — Rutina A (actas): Enlace Móvil de Windows con el S22 Ultra, no emulador (Iván, 02/10/2026) — MATIZA D69
+**Decisión:** la rutina A va por **Enlace Móvil de Windows** ("Aplicaciones"), que refleja el **Samsung S22 Ultra de Iván** en una ventana del PC. Claude abre **Afición FBM** del móvil ahí y la maneja con **control del ordenador**. Probado el 02/10/2026: la app carga y responde (menú, Buscador). **Condición:** el móvil encendido, con wifi y cerca del PC; puede estar bloqueado.
+**Matiza D69:** el emulador Android queda **descartado por ahora**: Play Store no permite instalar Afición FBM en emuladores ("This app won't work for your device", probado en Android 15 y Android 17 con traducción ARM), y copiarla desde el móvil con adb no fue posible (el cable USB de Iván solo carga; la depuración inalámbrica falla en su red). Queda como **reserva**: Android Studio, el SDK y los dos móviles virtuales siguen instalados en F:; se retomaría solo con un cable de datos que sí transfiera.
+**Por qué:** Enlace Móvil funciona y ya está probado, mientras el emulador choca con una restricción de Play Store ajena a Claude. El riesgo y el mecanismo de fondo (D35: sin pedir permiso a la FBM) no cambian; solo cambia el dispositivo donde corre la app.

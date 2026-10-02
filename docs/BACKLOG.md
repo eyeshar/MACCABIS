@@ -1,9 +1,55 @@
 # BACKLOG — Proyecto Maccabis
 
 > Lo pendiente, por prioridad. Se reordena según urgencia y decisiones.
-> _Reordenado el 25/09/2026 (D30–D34) y actualizado el mismo día al cerrar el bloque "Cierre del sondeo y cimientos 26/27" (D35–D43)._
+> _Reordenado el 25/09/2026 (D30–D34), actualizado el mismo día al cerrar el bloque "Cierre del sondeo y cimientos 26/27" (D35–D43), y reordenado el 02/10/2026 según `docs/PLAN_TRABAJO_2026-27.md`: la subida de actas desde la zona de gestión pasa a plan B (la rutina A por Enlace Móvil, D70 matiza D69, la sustituye)._
 
-## Ahora — arranque de la temporada 2026/27 (jornada 1: domingo 4/10, D38)
+## ORDEN VIGENTE (26/09/2026, bloque "Plataforma v0", D44–D57)
+
+> Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
+
+1. **[ESTE BLOQUE] Plataforma v0: identidad, zona personal y pedido de ropa** — rama `feat/plataforma-v0`, **sin mergear**.
+   - [x] Esqueleto Next.js en `plataforma/` + migraciones con RLS en todas las tablas + semilla de la plantilla 26/27 y enlaces.
+   - [x] Zona personal `/j/<enlace>`, pedido de ropa (VIVE), zona de gestión (jugadores y enlaces, pedidos, Excel para VIVE).
+   - [x] Pruebas de extremo a extremo (`npm run pruebas`, 81 comprobaciones OK).
+   - [x] Supabase real creado por Iván, migraciones y semilla aplicadas, Iván gestor; verificación de seguridad contra el proyecto real 42/42 OK (26/09/2026).
+   - [x] Nombres visibles confirmados (D61). Dorsal libre en pedidos para familiares (D60).
+   - [x] **Login único con Google o código por correo, con lista blanca** (D68, 02/10/2026) — sustituye a los enlaces `/j/<token>` (D45, derogada). Migración `20261002120000_login_google_lista_blanca.sql` aplicada en el proyecto real; `npm run pruebas` y `node pruebas/verificar_real.mjs` en TODO OK.
+   - [x] **Google Cloud** (proyecto "Maccabis", pantalla de consentimiento, credenciales OAuth) **y proveedor Google activado en Supabase** — HECHO, verificado por Claude el 02/10/2026.
+   - [x] **Hook "Before User Created"** (`public.antes_de_crear_usuario`) **y "Allow new users to sign up"** activado **en ese orden** (`plataforma/LEEME.md`, apartado 3) — HECHO por Iván el 02/10/2026.
+   - [x] **Site URL y Redirect URLs** de Supabase (`plataforma/LEEME.md`, apartado 3, punto 5) — verificadas el 02/10/2026.
+   - [x] `npm run db:correos` ejecutado (02/10/2026) con `SportEasy_maccabis (1).xlsx`: 8 correos casados por nombre exacto. Ampliado el mismo día: Edimil Feliz Gómez, Ignacio Mateos Aparicio y Nicolás Yamín Squicciarini dados de alta como jugadores `solo_entreno` (entrenan, sin ficha MdA/MdL, el motor no los convoca) con su correo. Total real: **28 jugadores, 11 con correo**.
+   - [x] Las 17 correspondencias restantes (nombre de SportEasy ≠ nombre oficial exacto, p. ej. "Barrimelo Barreiro" = Carlos Barreiro), confirmadas por Iván (02/10/2026) y escritas. **28/28 jugadores con correo.**
+   - [x] **Iván:** Vercel configurado (carpeta raíz `plataforma`, 2 variables públicas) y **vista previa revisada y aprobada ("OK vista previa")**, incluido entrar de verdad con Google — 02/10/2026.
+   - [ ] Dar de alta como gestores a Carlos y Edu por correo (`npm run db:gestor`): se vinculan solos la primera vez que entren.
+   - [ ] **Abrir la campaña "Ropa 2026/27"** desde `/gestion`, fecha límite **domingo 18/10/2026** (decidido por Iván, 02/10/2026). La abre Claude (navegador) tras el merge, no Code; hasta entonces sigue cerrada.
+   - [ ] Merge a `main` tras la verificación de Iván.
+2. **Rutinas semanales, Fase 1 "Aprendizaje" (D63, `docs/PLAN_TRABAJO_2026-27.md`):**
+   - [ ] **Lun 5/10:** aprendizaje de la rutina A con las actas de la J1 (Enlace Móvil de Windows + control del ordenador, D70 matiza D69; Iván solo tiene el móvil encendido, con wifi y cerca del PC).
+   - [ ] **Jue 8/10, 20:15:** sesión de aprendizaje de la rutina B (calendario, por navegador) con Iván.
+   - [ ] **Lun 12/10:** sesión de aprendizaje de la rutina C (disponibilidad y convocatoria, por navegador) con Iván, para la J2.
+4. **Bloque siguiente, para la J2 (18/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
+5. **Motor de convocatoria v0.1 para la J3 (18/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
+6. **Migración del dashboard** a la plataforma.
+7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
+8. **Tesorería** (solo registro de cuentas, D52).
+
+**Plan B (02/10/2026, D69/D70):** **subida de actas desde la zona de gestión** (hoy: `npm run jornada` con Claude controlando Afición FBM por Enlace Móvil, D70, `docs/PROCEDIMIENTO_JORNADA.md`). Solo se construye si esa vía deja de ser viable (p. ej. si Afición FBM bloquea el acceso remoto).
+
+**Además:**
+- [ ] **Exportar el balance de asistencias de SportEasy antes de apagarlo** (noviembre), para conservar los eventos de 26/27.
+- [ ] **Una única consulta a Indalweb** (soporte@gesdeportiva.es) sobre una exportación oficial de actas y estadísticas; si dicen que no, se cierra (D49).
+- [x] ~~Mergear `feat/pipeline-estadisticas`~~ — HECHO (26/09/2026, `f69a39f`), test de regresión OK en `main`. Listo para la J1 (5/10).
+- [ ] `feat/calendario-automatico`: revisar y mergear como detector de cambios (D47), dentro del bloque de la J2.
+
+**SportEasy 26/27 (02/10/2026, D62):**
+- [x] ~~Decidir si se mantiene el apagado de SportEasy en noviembre o se usa toda la temporada.~~ — **RESUELTO:** `docs/NORMAS_DE_TRABAJO.md` §8 (D64) fija que se mantiene **completo como respaldo hasta septiembre de 2027**, sin apagarlo antes.
+- [ ] **Borrar en SportEasy las 3 ubicaciones duplicadas "Moratalaz"** (dirección "Pista 1/2/3") que creó la carga en bloque; ya no las usa ningún partido.
+- [ ] **Jornadas 2 (18/10/2026) y 13 (07/02/2027):** MdA y MdL juegan a la misma hora (10:15); esos domingos los de doble ficha no pueden estar en los dos partidos. Tenerlo en cuenta en el motor de convocatorias.
+- [ ] **Pasar el calendario 26/27 a datos del repo** (p. ej. `data/calendario_2026-27.json`) para la futura web, si se mantiene el plan de calendario propio. Sin datos personales.
+
+---
+
+## Ahora — arranque de la temporada 2026/27 (jornada 1: domingo 4/10, D38) — _histórico; ver "Orden vigente" arriba_
 
 ### 0. Pendiente de Iván (desbloquea lo demás)
 - [ ] **Verificar con Claude Code la rama `feat/pipeline-estadisticas`** y decidir si se mergea **antes del 4/10**. Es lo que procesa la jornada 1 (ver punto 2).
@@ -140,8 +186,8 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
   - Generar mensaje de WhatsApp de convocatoria listo para copiar/pegar.
   - Generar recordatorio para quien no ha contestado.
 - [ ] **Puente con SportEasy**:
-  - Generar el Excel del calendario de la temporada en formato importable (evita crear ~20 eventos a mano por equipo). Preparar cuando salga el calendario 26/27.
-  - Investigar la sección "Campeonatos" de SportEasy para vincular la liga JDM y traer el calendario hecho.
+  - ~~Generar el Excel del calendario de la temporada en formato importable (evita crear ~20 eventos a mano por equipo).~~ — **OBSOLETO (02/10/2026):** resuelto con la creación en bloque de SportEasy más el agente de navegador (D62).
+  - ~~Investigar la sección "Campeonatos" de SportEasy para vincular la liga JDM y traer el calendario hecho.~~ — **OBSOLETO (02/10/2026):** resuelto con la creación en bloque más el agente (D62); la importación automática de calendario no cubre nuestra federación (ver SPORTEASY.md).
   - PRESIONAR por vías de sacar/subir datos de SportEasy más allá del Excel (deseo de Iván). Si no sale nada, Excel plan B.
 
 ## Temporada 26/27 (cuando arranque y se defina)
@@ -157,7 +203,7 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [ ] Añadir un `favicon.ico` (el único error de consola del sitio es su 404).
 
 - [x] **`data/season_2026-27.json` creado vacío con la plantilla** (rama `feat/pipeline-estadisticas`). Se carga partido a partido con `npm run jornada`.
-- [x] ~~Preparar calendario 26/27 para SportEasy.~~ → "Ahora", punto 1 (tabla limpia + agente supervisado, D31).
+- [x] ~~Preparar calendario 26/27 para SportEasy.~~ — **HECHO (02/10/2026):** 40 partidos cargados en SportEasy con un agente de navegador (D62).
 - [x] **Plantilla 26/27 confirmada** (25/09/2026): 24 deportistas, 22 en ambas fichas; 3 personas nuevas creadas. `docs/PLANTILLA_26-27.md`.
 - [x] **`consolidar_fichas.js` adaptado a 26/27** (25/09/2026): sólo "Deportista", con grupo (la fecha de alta no se publica); falla si falta un PDF registrado; Torneos 2018 congelada (D41).
 

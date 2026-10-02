@@ -2,7 +2,74 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 25/09/2026 (noche) — **bloque "Cierre del sondeo y cimientos 26/27"**: plantilla confirmada, protección de las fuentes, URL de rivales, pipeline de estadísticas y calendario automático (en ramas sin mergear), sondeo de datos por jugador, cláusula de SportEasy, reglas de convocatoria v0 y decisiones D35–D43. La liga empieza el **4/10/2026** (D38)._
+_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68); rutina A por Enlace Móvil de Windows con el S22 Ultra de Iván (D70, matiza D69); calendario oficial 26/27 en `data/calendario_2026-27.json`.** Google Cloud, proveedor Google, hook "Before User Created", "Allow new users to sign up" y Redirect URLs ya verificados; Iván dio el "OK vista previa". `feat/plataforma-v0` lista para mergear a `main`._
+
+## Login único: Google o código por correo, con lista blanca (02/10/2026, D68)
+- **Sustituye a los enlaces personales `/j/<token>` (D45, derogada).** Ahora: `/entrar` (Google o código de un solo uso por correo) → `/mi-zona` (jugador), `/gestion` (gestor) o `/entrar/elegir` si es las dos cosas. `anon` se queda sin ningún permiso (ni tablas ni funciones): todo exige sesión real.
+- **Lista blanca por correo:** solo entra quien tiene su correo en `jugadores.email` o `gestores.email`. Un correo desconocido nunca crea cuenta: lo bloquea el hook "Before User Created" de Supabase (`public.antes_de_crear_usuario`, **registrado por Iván el 02/10/2026** en el panel, ver `plataforma/LEEME.md`). El registro de alta ("Allow new users to sign up") estaba desactivado desde el 26/09/2026; activado por Iván el 02/10/2026 **después** del hook, como exige D68.
+- **Migración** `plataforma/supabase/migrations/20261002120000_login_google_lista_blanca.sql`, aplicada directamente en el proyecto real (D53, sin pedidos que proteger). Durante la verificación se encontró y corrigió un fallo real de permisos (funciones nuevas heredaban `EXECUTE` del pseudo-rol `PUBLIC` porque el `revoke` solo decía `from anon`, no `from public, anon, authenticated`); quedó corregido en el propio fichero de migración y re-sincronizado en el proyecto real.
+- **Resultados reales de la verificación:**
+  - `npm run pruebas` (plataforma, pila local sin Docker): **93/93 OK**, incluye lista blanca (`correo_permitido`, `antes_de_crear_usuario`, `POST /otp`), un gestor reservado solo por correo que se vincula solo al entrar (trigger), sesión sin jugador ni gestor, RLS, pedidos (propio y familiar), dorsal repetido, Excel para VIVE celda a celda igual a la plantilla.
+  - `node pruebas/verificar_real.mjs` (proyecto Supabase real): **TODO OK**, con limpieza completa.
+- **Página pública `/privacidad`** (sin login): qué datos se guardan, para qué, quién los ve y cómo pedir el borrado.
+- **La Redirect URL `https://maccabis-*-web-tcpc.vercel.app/**` es correcta** (confirmado por Iván): "web-tcpc" es el slug del **equipo de Vercel**, no del proyecto de Tres Cantos. Verificado con la vista previa real `https://maccabis-git-feat-plataforma-v0-web-tcpc.vercel.app`. El aviso ⚠️ se ha quitado de `plataforma/LEEME.md`.
+- **Hecho** (`plataforma/LEEME.md`, apartados 2 y 3): proyecto de Google Cloud "Maccabis" (nunca el de TCPC) y proveedor Google activado en Supabase — verificado por Claude el 02/10/2026; hook "Before User Created" y "Allow new users to sign up" activados por Iván el 02/10/2026; Site URL y Redirect URLs verificadas el 02/10/2026.
+
+### `npm run db:correos` — ejecutado (02/10/2026)
+- Fichero: `SportEasy_maccabis (1).xlsx` de Descargas (exportación de SportEasy del 02/10/2026; el `(1)` porque ya había una copia antigua de agosto).
+- Columnas detectadas solas: correo = "Correo electrónico", nombre = "Nombre" + "Apellido(s)".
+- **8 correos casados y escritos** (nombre exacto, sin adivinar).
+- **3 personas nuevas dadas de alta** (corrección de Iván: no se ignoran) como jugadores **`solo_entreno`** (entrenan, sin ficha MdA/MdL — el motor nunca los convoca), con su correo: **Edimil Feliz Gómez**, **Ignacio Mateos Aparicio** y **Nicolás Yamín Squicciarini**. Identidades en `data/personas.json`: las dos últimas ya existían (`mateos-aparicio-ignacio`, `yamin-squicciarini-nicolas`); Edimil Feliz Gómez es identidad nueva (`feliz-gomez-edimil`), añadida a `data/historia_club.json` (sin temporadas jugadas, `previsto_2627: true`) y regenerada con `npm run personas` (88 identidades, `check:personas` 0 problemas). Añadidos también a `plataforma/scripts/plantilla_2026_27.mjs` para que una resiembra futura (`db:semilla`) no los pierda.
+- **Estado real tras todo lo anterior: `{"jugadores":28,"jugadores_con_correo":11,...}`.**
+- **17 correspondencias de nombre** (SportEasy ≠ nombre oficial exacto: motes, orden nombre/apellido, apellidos incompletos) propuestas a Iván en el chat y **confirmadas "tal cual" (02/10/2026)**: escritas en el proyecto real. **Resultado: 28/28 jugadores con correo**, verificado con `npm run db:estado` y `node pruebas/verificar_real.mjs` (TODO OK).
+- Corregido en el camino: el detector de columnas no reconocía la cabecera real "Apellido(s)" (el patrón exigía "Apellido" o "Apellidos" exactos); ahora acepta cualquier cabecera que empiece por "apellido". `pruebas/verificar_real.mjs` y `pruebas/ejecutar.mjs` ya no asumen "25 jugadores" a pelo: comparan contra el total real / el de la semilla (28).
+
+## Rutina A (actas): Enlace Móvil de Windows, no emulador (02/10/2026, D70 — matiza D69, que a su vez matiza D35)
+- Corrige el bloque anterior: D63 (rutinas por navegador) **nunca incluyó la rutina A** porque Afición FBM no tiene web. D69 proponía un emulador Android, pero Play Store no deja instalar Afición FBM en emuladores (probado en Android 15 y 17) y copiarla con adb no fue posible (cable solo carga, depuración inalámbrica falla en la red de Iván); queda como reserva en F:. **D70 fija cómo se automatiza de verdad:** Claude abre Afición FBM del Samsung S22 Ultra de Iván por **Enlace Móvil de Windows** y la maneja con control del ordenador. Probado el 02/10/2026: la app carga y responde. Condición: móvil encendido, con wifi, cerca del PC (puede estar bloqueado). Procedimiento en `docs/RUTINAS/A_ACTAS.md`; `docs/PLAN_TRABAJO_2026-27.md` y `docs/BACKLOG.md` actualizados para reflejarlo.
+
+## Calendario oficial 2026/27 (02/10/2026)
+- `data/calendario_2026-27.json` creado con los 44 partidos (22 jornadas × 2 fichas) leídos en Deportes/web el 02/10/2026 (fuente: `fuente.origen`, sin datos personales). Esquema compatible con el que generará `feat/calendario-automatico` (`scripts/calendario/actualizar_calendario.js`, sin mergear) cuando el portal 211549 publique la 26/27.
+- Verificado por contraste cruzado: 2 descansos por equipo (MdA en J4 y J15, MdL en J11 y J22) y los dos domingos con las dos fichas a la misma hora (18/10 y 07/02, 10:15) coinciden exactamente con lo ya registrado en D62/ESTADO sobre la carga en SportEasy.
+- `docs/RUTINAS/B_CALENDARIO.md` escrito con el procedimiento de la rutina B (pasos en Deportes/web, comparación con SportEasy, hallazgos del 02/10).
+
+## Normas de trabajo y plan 2026/27 (02/10/2026)
+- `docs/NORMAS_DE_TRABAJO.md`, `docs/PLAN_TRABAJO_2026-27.md` y `docs/RUTINAS/` creados en su ubicación definitiva (antes vivían como copias provisionales fuera de `docs/`). D63-D67 registradas en `DECISIONS.md`. BACKLOG reordenado: la subida de actas desde la zona de gestión pasa a plan B.
+- Traído con `merge --no-ff` de `docs/sporteasy-calendario-2627` a `feat/plataforma-v0` (commit `589f9ae`) y empujado a origin para refrescar la vista previa de Vercel.
+- **Verificación de la rama, resultados reales:**
+  - `npm run pruebas` (plataforma, Postgres + PostgREST + Chrome locales, sin Docker): **84/84 OK**, incluye `next build`, RLS y permisos, enlaces personales, pedido de ropa (jugador y familiar), dorsal repetido, campaña cerrada, Excel para VIVE celda a celda igual a la plantilla, sin errores de JS.
+  - `node pruebas/verificar_real.mjs` (contra el proyecto Supabase real, HTTPS con la clave pública): **TODO OK** (47 comprobaciones), con limpieza completa al final (estado: 1 usuario, 1 gestor, 25 jugadores, 25 enlaces, 1 campaña cerrada, 0 pedidos — igual que antes de la verificación).
+- **"OK vista previa" dado por Iván (02/10/2026)** sobre la Vercel de `feat/plataforma-v0`: queda despejado el único requisito pendiente antes del merge a `main`.
+
+## Temporada 2026/27 en SportEasy (02/10/2026)
+- **40 partidos de liga JDM cargados** con un agente de navegador (D62): **20 MdA** en el campeonato "Temporada MdA" (grupo G1) y **20 MdL** en "Temporada MdL" (grupo G2), 22 jornadas por equipo con 2 descansos cada uno (MdA en J4 y J15, MdL en J11 y J22).
+- **Todos con las inscripciones abiertas.**
+- **Verificados** contra el Excel `calendarios_maccabis.xlsx` de Iván (fecha, hora, jornada, rival, local/visitante, pista). El Excel **no está en el repositorio**.
+
+## Supabase real — CARGADO (26/09/2026)
+- Proyecto de Iván (región Europa), con "Automatically expose new tables" **desmarcado**, sin "Enable automatic RLS" y con el registro libre **desactivado**. Migraciones aplicadas: `20260926100000_plataforma_v0` y `20260926110000_permisos_rls_automatica_dorsal_familiar` (permisos explícitos D58, RLS automática D59, dorsal libre para familiares D60).
+- Semilla: **25 jugadores, 25 enlaces vivos, 1 campaña "Ropa 2026/27" cerrada, 0 pedidos.** Nombres visibles según D61.
+- **Gestores: solo Iván** (su único usuario, confirmado). Carlos y Edu, más adelante: `npm run db:gestor -- <correo> <nombre>` después de crearlos en Supabase.
+- **Verificación contra el proyecto real (`node pruebas/verificar_real.mjs`): 42/42 OK.** Todas las tablas con RLS; tabla de prueba creada y borrada nace con RLS; `anon` sin permisos sobre tablas y solo con las 4 funciones de enlace; por HTTPS con la clave pública un anónimo no lee ni escribe nada; con la identidad de Iván la base le reconoce como gestor y le deja ver los 25; login real de Supabase Auth con dos usuarios temporales (un gestor ve todo, uno que no lo es no ve nada); un jugador solo ve y toca lo suyo; familiar con dorsal repetido aceptado; campaña cerrada y enlace anulado rechazados. Todo lo temporal se borró (estado final: 1 usuario, 1 gestor, 25/25, 1 campaña cerrada, 0 pedidos).
+- `.env.local`: la URL del proyecto venía con `/rest/v1/` al final; se quitó (la app necesita la URL base). **En Vercel, la URL sin `/rest/v1/`.**
+
+## Pipeline de estadísticas — EN PRODUCCIÓN (26/09/2026)
+- `feat/pipeline-estadisticas` mergeada a `main` con `--no-ff` (merge `f69a39f`) por orden de Iván. `npm run test:regresion` en `main`: **"RESULTADO: OK"**. La web publicada no cambia (mismo `index.html`, `data/index.json` y `season_2025-26.json`; solo se añade `season_2026-27.json`, que no está en el índice). Lista para la jornada 1 (`docs/PROCEDIMIENTO_JORNADA.md`).
+- `main` se ha traído a `feat/plataforma-v0` (merge `92de691`), sin conflictos. `feat/calendario-automatico` sigue sin mergear.
+
+
+## Plataforma v0 — rama `feat/plataforma-v0` (26/09/2026, NO mergeada; vista previa de Vercel pendiente)
+- **Qué hay:** app Next.js 16 en `plataforma/` (la web de GitHub Pages no cambia). Base de datos Supabase definida en `plataforma/supabase/migrations/20260926100000_plataforma_v0.sql`: `jugadores`, `enlaces`, `gestores`, `campanas_ropa`, `pedidos_ropa`, RLS en todas, sin políticas para anónimos; los jugadores solo usan 4 funciones que reciben su enlace (D55). Guía de puesta en marcha en `plataforma/LEEME.md`.
+- **Zona personal `/j/<enlace>`:** saludo con su nombre visible; pedido de ropa activo con su estado; mis pedidos (modificar y anular mientras esté abierto); enlace a su ficha del dashboard; "Mi semana" y "Próximos partidos" como próximamente. Manifiesto propio para guardarla en la pantalla de inicio.
+- **Pedido de ropa (VIVE):** para mí o para un familiar; nombre completo, nombre en la ropa (mayúsculas, máx. 15), dorsal 0–99; camiseta, pantalón, cubre (con la nota de la equipación amarilla) y sudadera, cada una con su imagen (extraídas del PDF de `privado/`, publicadas en `plataforma/public/ropa/`), lo que lleva impreso, precio orientativo "por confirmar" y talla VIVE. Resumen en tabla siempre visible; no se envía si falta una talla. Dorsal cogido: "Ese dorsal ya está cogido", sin nombres (D56). Guía de tallas en `/guia-tallas`.
+- **Gestión `/gestion` (login):** jugadores y enlaces (copiar mensaje de bienvenida, WhatsApp si hay teléfono, regenerar, anular, editar nombre visible, teléfono, fichas, rol, entrena, activo); pedido de ropa (abrir/cerrar, fecha límite, precios, dorsales repetidos con nombres, recuento por prenda y talla, pedidos editables y borrables, alta manual) y **"Descargar Excel para VIVE"**, idéntico en estructura a la plantilla 24/25 (D57).
+- **Semilla:** 25 personas (24 de la plantilla confirmada + Carlos Barreiro como entrenador), con los motes de `PLANTILLA_26-27.md` ("Fernando T." y "Fernando M."); quien no tenía mote lleva su nombre de pila. Sin niveles ni posiciones. Sin teléfonos. Campaña "Ropa 2026/27" creada **cerrada**.
+- **Pruebas locales (`npm run pruebas`): 84/84 OK** (con la misma configuración de permisos que el proyecto real) contra Postgres 17 y PostgREST reales con las migraciones, la app compilada y Chrome a 375 px: enlace válido, anulado e inventado; RLS explícita (anónimo, usuario no gestor, jugador contra jugador); pedido válido, talla inválida, campaña cerrada y fecha pasada, dorsal repetido sin nombre, modificar, familiar; Excel celda a celda "IGUAL" con la plantilla. El login de gestores se prueba con un doble de Supabase Auth.
+- **Vercel:** lo configura Iván (carpeta raíz `plataforma`, 2 variables públicas). Pasos en `plataforma/LEEME.md`.
+- **Decisiones:** D44–D61. SportEasy sale de la operativa desde la J2 (D44).
+
+---
+
+_Actualización anterior: 25/09/2026 (noche) — **bloque "Cierre del sondeo y cimientos 26/27"**: plantilla confirmada, protección de las fuentes, URL de rivales, pipeline de estadísticas y calendario automático (en ramas sin mergear), sondeo de datos por jugador, cláusula de SportEasy, reglas de convocatoria v0 y decisiones D35–D43. La liga empieza el **4/10/2026** (D38)._
 
 ### Ramas pendientes de verificar con Iván (NO mergeadas)
 | Rama | Qué trae | Cómo se comprueba |

@@ -2,7 +2,15 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 26/09/2026 (tarde) — **base de datos real cargada y pipeline en producción.** La plataforma sigue en la rama `feat/plataforma-v0` (sin mergear), pendiente de la vista previa de Vercel y de la revisión de Iván._
+_Última actualización: 02/10/2026 — **normas de trabajo y plan 2026/27 fijados (D63-D67); rama `feat/plataforma-v0` verificada de nuevo y empujada a origin.** Sigue sin mergear a `main`, a la espera de que Iván revise la vista previa de Vercel y dé el "OK vista previa"._
+
+## Normas de trabajo y plan 2026/27 (02/10/2026)
+- `docs/NORMAS_DE_TRABAJO.md`, `docs/PLAN_TRABAJO_2026-27.md` y `docs/RUTINAS/` creados en su ubicación definitiva (antes vivían como copias provisionales fuera de `docs/`). D63-D67 registradas en `DECISIONS.md`. BACKLOG reordenado: la subida de actas desde la zona de gestión pasa a plan B.
+- Traído con `merge --no-ff` de `docs/sporteasy-calendario-2627` a `feat/plataforma-v0` (commit `589f9ae`) y empujado a origin para refrescar la vista previa de Vercel.
+- **Verificación de la rama, resultados reales:**
+  - `npm run pruebas` (plataforma, Postgres + PostgREST + Chrome locales, sin Docker): **84/84 OK**, incluye `next build`, RLS y permisos, enlaces personales, pedido de ropa (jugador y familiar), dorsal repetido, campaña cerrada, Excel para VIVE celda a celda igual a la plantilla, sin errores de JS.
+  - `node pruebas/verificar_real.mjs` (contra el proyecto Supabase real, HTTPS con la clave pública): **TODO OK** (47 comprobaciones), con limpieza completa al final (estado: 1 usuario, 1 gestor, 25 jugadores, 25 enlaces, 1 campaña cerrada, 0 pedidos — igual que antes de la verificación).
+- **Pendiente antes del merge a `main`**: el "OK vista previa" de Iván sobre la Vercel de `feat/plataforma-v0`.
 
 ## Temporada 2026/27 en SportEasy (02/10/2026)
 - **40 partidos de liga JDM cargados** con un agente de navegador (D62): **20 MdA** en el campeonato "Temporada MdA" (grupo G1) y **20 MdL** en "Temporada MdL" (grupo G2), 22 jornadas por equipo con 2 descansos cada uno (MdA en J4 y J15, MdL en J11 y J22).

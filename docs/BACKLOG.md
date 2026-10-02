@@ -7,7 +7,7 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
-1. **[ESTE BLOQUE] Plataforma v0: identidad, zona personal y pedido de ropa** — rama `feat/plataforma-v0`, **sin mergear**.
+1. **[CERRADO] Plataforma v0: identidad, zona personal y pedido de ropa** — mergeada a `main` el 02/10/2026 (merge `ad972df`).
    - [x] Esqueleto Next.js en `plataforma/` + migraciones con RLS en todas las tablas + semilla de la plantilla 26/27 y enlaces.
    - [x] Zona personal `/j/<enlace>`, pedido de ropa (VIVE), zona de gestión (jugadores y enlaces, pedidos, Excel para VIVE).
    - [x] Pruebas de extremo a extremo (`npm run pruebas`, 81 comprobaciones OK).
@@ -22,7 +22,7 @@
    - [x] **Iván:** Vercel configurado (carpeta raíz `plataforma`, 2 variables públicas) y **vista previa revisada y aprobada ("OK vista previa")**, incluido entrar de verdad con Google — 02/10/2026.
    - [ ] Dar de alta como gestores a Carlos y Edu por correo (`npm run db:gestor`): se vinculan solos la primera vez que entren.
    - [ ] **Abrir la campaña "Ropa 2026/27"** desde `/gestion`, fecha límite **domingo 18/10/2026** (decidido por Iván, 02/10/2026). La abre Claude (navegador) tras el merge, no Code; hasta entonces sigue cerrada.
-   - [ ] Merge a `main` tras la verificación de Iván.
+   - [x] **Merge a `main`** (merge `--no-ff` `ad972df`, 02/10/2026) — verificado antes y después: `npm run pruebas` 93/93 OK, `node pruebas/verificar_real.mjs` 43/43 OK, en los dos casos. Empujado a origin.
 2. **Rutinas semanales, Fase 1 "Aprendizaje" (D63, `docs/PLAN_TRABAJO_2026-27.md`):**
    - [ ] **Lun 5/10:** aprendizaje de la rutina A con las actas de la J1 (Enlace Móvil de Windows + control del ordenador, D70 matiza D69; Iván solo tiene el móvil encendido, con wifi y cerca del PC).
    - [ ] **Jue 8/10, 20:15:** sesión de aprendizaje de la rutina B (calendario, por navegador) con Iván.

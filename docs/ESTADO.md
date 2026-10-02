@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68); rutina A por Enlace Móvil de Windows con el S22 Ultra de Iván (D70, matiza D69); calendario oficial 26/27 en `data/calendario_2026-27.json`.** Google Cloud, proveedor Google, hook "Before User Created", "Allow new users to sign up" y Redirect URLs ya verificados; Iván dio el "OK vista previa". `feat/plataforma-v0` lista para mergear a `main`._
+_Última actualización: 02/10/2026 — **`feat/plataforma-v0` mergeada a `main`** (merge `--no-ff` `ad972df`): login único con Google/código por correo (D68), rutina A por Enlace Móvil de Windows con el S22 Ultra de Iván (D70, matiza D69), calendario oficial 26/27 en `data/calendario_2026-27.json`. **La plataforma (`plataforma/`) ya vive en `main` y en producción**; la web de GitHub Pages (estadísticas) no cambia._
 
 ## Login único: Google o código por correo, con lista blanca (02/10/2026, D68)
 - **Sustituye a los enlaces personales `/j/<token>` (D45, derogada).** Ahora: `/entrar` (Google o código de un solo uso por correo) → `/mi-zona` (jugador), `/gestion` (gestor) o `/entrar/elegir` si es las dos cosas. `anon` se queda sin ningún permiso (ni tablas ni funciones): todo exige sesión real.
@@ -57,7 +57,8 @@ _Última actualización: 02/10/2026 — **login único con Google/código por co
 - `main` se ha traído a `feat/plataforma-v0` (merge `92de691`), sin conflictos. `feat/calendario-automatico` sigue sin mergear.
 
 
-## Plataforma v0 — rama `feat/plataforma-v0` (26/09/2026, NO mergeada; vista previa de Vercel pendiente)
+## Plataforma v0 — EN PRODUCCIÓN desde el 02/10/2026 (mergeada a `main`, merge `ad972df`)
+> Bloque original del 26/09/2026, cuando aún vivía solo en `feat/plataforma-v0`; el login y las pruebas descritos abajo quedaron luego ampliados por D68 (ver más arriba). Mergeada a `main` el 02/10/2026 tras el "OK vista previa" de Iván: verificación antes del merge (`npm run pruebas` 93/93 OK, `node pruebas/verificar_real.mjs` 43/43 OK) y después del merge en `main` (mismos resultados: 93/93 y 43/43 OK).
 - **Qué hay:** app Next.js 16 en `plataforma/` (la web de GitHub Pages no cambia). Base de datos Supabase definida en `plataforma/supabase/migrations/20260926100000_plataforma_v0.sql`: `jugadores`, `enlaces`, `gestores`, `campanas_ropa`, `pedidos_ropa`, RLS en todas, sin políticas para anónimos; los jugadores solo usan 4 funciones que reciben su enlace (D55). Guía de puesta en marcha en `plataforma/LEEME.md`.
 - **Zona personal `/j/<enlace>`:** saludo con su nombre visible; pedido de ropa activo con su estado; mis pedidos (modificar y anular mientras esté abierto); enlace a su ficha del dashboard; "Mi semana" y "Próximos partidos" como próximamente. Manifiesto propio para guardarla en la pantalla de inicio.
 - **Pedido de ropa (VIVE):** para mí o para un familiar; nombre completo, nombre en la ropa (mayúsculas, máx. 15), dorsal 0–99; camiseta, pantalón, cubre (con la nota de la equipación amarilla) y sudadera, cada una con su imagen (extraídas del PDF de `privado/`, publicadas en `plataforma/public/ropa/`), lo que lleva impreso, precio orientativo "por confirmar" y talla VIVE. Resumen en tabla siempre visible; no se envía si falta una talla. Dorsal cogido: "Ese dorsal ya está cogido", sin nombres (D56). Guía de tallas en `/guia-tallas`.

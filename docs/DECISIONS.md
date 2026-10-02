@@ -211,6 +211,7 @@ _D44–D54: decisiones (a)–(k) de Iván en el chat de diseño, tras contrastar
 **Decisión:** desde la **jornada 2 (11/10/2026)** la disponibilidad (partidos y entrenos) y la convocatoria van **solo por nuestra web**. En SportEasy **no se crean los partidos de liga ni se pide respuesta**; queda como **respaldo dormido hasta noviembre**, cuando se decide si se apaga. No se carga el calendario en SportEasy: ni plantilla del soporte (D36) ni agente supervisado (D31).
 **Por qué:** dos sistemas pidiendo lo mismo al jugador duplican el trabajo de Iván, que es justo lo que se quiere quitar; y la doble ficha no encaja en SportEasy.
 **Consecuencia:** D37 (recordatorios de SportEasy Premium) deja de aplicarse cuando SportEasy se duerma; el recordatorio pasa a ser un mensaje de WhatsApp que prepara la plataforma (bloque siguiente). Antes de apagarlo hay que exportar el balance de asistencias (BACKLOG).
+**Matizada por D62 (02/10/2026):** para 26/27 SportEasy vuelve a usarse a pleno rendimiento (calendario, convocatorias y asistencia de liga), cargado con un agente de navegador. El apagado de noviembre sigue sin decidirse.
 
 ## D45 — Identidad: enlace personal secreto para jugadores; login real para los 3 gestores (Iván, 26/09/2026)
 **Decisión:** cada jugador tiene un **enlace personal secreto** (`/j/<token>`, token largo, revocable y regenerable) que hace de inicio de sesión: le da acceso a su zona personal y **solo le deja modificar lo suyo**. Los gestores (Iván, Carlos Barreiro, Eduardo Martín-Ortega) entran con **login real de Supabase Auth**. Cierra la "Decisión pendiente" del BACKLOG a favor de la opción (b).
@@ -274,3 +275,32 @@ _D44–D54: decisiones (a)–(k) de Iván en el chat de diseño, tras contrastar
 
 ## D61 — Nombres visibles confirmados (Iván, 26/09/2026)
 **Decisión:** "Julio" (De Carvalho), "Luis" (Varas) y "Carlos (entrenador)" (Barreiro). El resto, los motes de `docs/PLANTILLA_26-27.md`; quien no tiene mote, su nombre de pila (Carlos Baños queda como "Carlos"). Se cambian desde "Jugadores y enlaces".
+
+## D62 — SportEasy 26/27 se usa a pleno rendimiento y se alimenta con un agente de navegador (Iván, 02/10/2026) — MATIZA D44
+**Decisión:** para la temporada 2026/27 SportEasy no queda como respaldo dormido. Calendario, convocatorias y asistencia de los partidos de liga viven en SportEasy, cargados por un agente de navegador que actúa con la sesión de Iván, y siempre con su aprobación explícita antes de crear o modificar nada. Se mantienen los dos campeonatos ("Temporada MdA" y "Temporada MdL").
+**Por qué:** SportEasy ya está pagado para 26/27 y crear unos 40 partidos a mano era justo el trabajo manual que el proyecto quiere eliminar. El agente lo hizo en una sesión, verificando cada partido.
+**Qué reabre:** el punto de D44 (26/09/2026) que sacaba a SportEasy de la operativa desde la jornada 2 y cancelaba la carga de calendario (D31/D36, agente y plantilla del soporte). El agente de navegador vuelve a estar en uso, esta vez ya ejecutado. **No queda derogado** el apagado de SportEasy en noviembre que planteaba D44: Iván no lo ha decidido; sigue pendiente (ver BACKLOG).
+
+---
+## Bloque "Normas de trabajo y plan 2026/27" (02/10/2026)
+
+## D63 — Rutinas semanales por navegador en el Chrome de Iván (Iván, 02/10/2026) — MATIZA D35 y D47
+**Decisión:** las tres tareas semanales de la temporada —actas y estadísticas (lunes por la mañana), calendario (jueves desde las 20:15) y disponibilidad/convocatoria (lunes y martes)— se automatizan con **Claude navegando el Chrome de Iván**, con su sesión iniciada. Cada rutina sigue el ciclo: aprendizaje con Iván → procedimiento escrito en `docs/RUTINAS/<rutina>.md` → 2 ejecuciones supervisadas → tarea programada.
+**Riesgo asumido:** Afición FBM y Deportes/web prohíben en sus condiciones la extracción automatizada (ver D35, `docs/SONDEO_ACTAS_FASE0.md`, y D47, `docs/SONDEO_CALENDARIO_AYTO.md`). Iván asume el riesgo y lo mitiga con: su propia sesión (no una cuenta de servicio), ritmo humano, una ejecución semanal por rutina, y solo sobre documentos del club (nunca datos de terceros). **Matiza D35** (que limitaba las actas al gesto manual de Iván sin permiso de la FBM) y **D47** (que dejaba las fuentes externas de calendario como meros detectores de cambios propuestos): ambas rutinas pasan a ejecutarse por navegador en vez de a mano o solo como propuesta, con el mismo riesgo ya asumido en D62 para el calendario de SportEasy.
+**Por qué:** es el mismo mecanismo ya aprobado y ejecutado para la carga del calendario en SportEasy (D62), extendido a las otras dos tareas que más tiempo quitan a Iván cada semana. Detalle completo en `docs/NORMAS_DE_TRABAJO.md` §3 y `docs/PLAN_TRABAJO_2026-27.md`.
+
+## D64 — SportEasy completo como respaldo hasta septiembre de 2027; sustitución función a función (Iván, 02/10/2026) — MATIZA D44 y D62
+**Decisión:** SportEasy se mantiene **completo como respaldo** mientras dure la suscripción pagada, hasta **septiembre de 2027**. No se apaga ni se retira antes. La plataforma propia lo sustituye **función a función**: una función pasa a la plataforma cuando ha funcionado **3 jornadas seguidas sin arreglos a mano** y Iván lo aprueba. Mientras una función conviva en los dos sitios, **nunca se pide a los jugadores lo mismo en dos sitios** a la vez.
+**Por qué:** matiza D44 (que planteaba apagar SportEasy desde la jornada 2 de 26/27, pendiente de decidir desde D62) y D62 (que lo devolvió a pleno rendimiento sin fijar fecha de salida): fija el criterio objetivo de sustitución —3 jornadas sin arreglos a mano— y una fecha límite de respaldo que coincide con el fin de la suscripción ya pagada, cerrando la ambigüedad sobre "cuándo se apaga" que D44 dejaba pendiente.
+
+## D65 — Normas de trabajo y modelos (Iván, 02/10/2026)
+**Decisión:** quedan fijadas en `docs/NORMAS_DE_TRABAJO.md` las normas de trato, actitud, reparto de papeles entre Iván / Claude (chat de diseño) / Code, y qué modelo de Claude usar en cada tipo de tarea (Opus 5.5 para decisiones, seguridad y arquitectura; Sonnet 5.5 para ejecución de rutinas ya escritas y trabajo con especificación cerrada; Haiku 4.5 para tareas menores; Fable 5.1 no se usa en este proyecto). También cuándo limpiar conversaciones (un chat por bloque o tema, `/clear` tras cada merge). El plan de trabajo de la temporada 2026/27 (fases, rutinas semanales, qué hay que diseñar) queda en `docs/PLAN_TRABAJO_2026-27.md`.
+**Por qué:** fija por escrito cómo se colabora a partir de ahora, para no tener que repetir las mismas indicaciones cada bloque.
+
+## D66 — Publicación automática de estadísticas si todo cuadra (Iván, 02/10/2026)
+**Decisión:** la rutina de actas y estadísticas (`npm run jornada`) **publica sola** cuando los puntos del boxscore cuadran con el marcador del acta, y avisa a Iván de lo publicado. **Si algo no cuadra, no publica y avisa** a Iván del motivo, sin tocar los datos publicados, para que decida él.
+**Por qué:** es la excepción escrita que ya preveía D35/D62 ("crear, modificar o enviar algo en nombre de Iván: con su OK explícito, salvo que una regla escrita lo autorice"). Publicar solo cuando la validación aritmética ya existente (D12, cuadre contra el marcador) da OK evita un visto bueno manual semanal para un dato que ya se verifica solo; cuando no cuadra, el riesgo de publicar un dato incorrecto es mayor que la espera, así que para y avisa.
+
+## D67 — Claude puede configurar herramientas en el Chrome de Iván, solo dentro de Maccabis (Iván, 02/10/2026)
+**Decisión:** Claude puede instalar y configurar herramientas en el Chrome de Iván (extensión, sesiones, tareas programadas) para las rutinas de este proyecto. **Siempre dentro del proyecto Maccabis; nunca toca nada del entorno de Tres Cantos (TCPC)**, aunque comparta el mismo navegador.
+**Por qué:** Iván usa el mismo Chrome para los dos clubes. Separar el alcance evita que una configuración pensada para Maccabis (sesiones, extensiones, tareas programadas) interfiera con el trabajo de TCPC.

@@ -59,9 +59,17 @@ let correosOriginales = [];
 // Jugadores de verdad del club: crece con el tiempo (altas en "Jugadores" o
 // db:correos/db:gestor), así que se compara contra el total real, no un numero fijo.
 let nJugadoresReales = null;
+// Lo mismo que con nJugadoresReales: el club ya usa esto de verdad (gente que ya
+// entro alguna vez, gestores, la campana de ropa con pedidos reales), asi que la
+// limpieza final se compara contra esta foto de ANTES, no contra numeros fijos.
+let antes = null;
 
 try {
-  const [{ n: nUsuariosAntes }] = await sql`select count(*)::int n from auth.users`;
+  [antes] = await sql`select
+    (select count(*)::int from auth.users) as usuarios,
+    (select count(*)::int from public.gestores) as gestores,
+    (select count(*)::int from public.campanas_ropa) as campanas,
+    (select count(*)::int from public.pedidos_ropa) as pedidos`;
   nJugadoresReales = (await sql`select count(*)::int n from public.jugadores`)[0].n;
 
   seccion('Estructura en el proyecto real');
@@ -82,7 +90,7 @@ try {
   const authFunciones = (await sql`
     select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
-  ok(JSON.stringify(authFunciones) === JSON.stringify(['anular_pedido', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
+  ok(JSON.stringify(authFunciones) === JSON.stringify(['anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Anonimo sin sesion (HTTPS, clave publica)');
@@ -199,6 +207,18 @@ try {
   await sql`update public.campanas_ropa set estado = 'cerrada' where id = ${cam.id}`;
   rA = await cA.rpc('guardar_pedido', { p_pedido: pedido({ id: idPedidoA }) });
   ok(rA.data?.error === 'campana_cerrada', 'con la campaña cerrada no se puede modificar', JSON.stringify(rA.data));
+
+  seccion('Cambio de correo seguro (cambiar_correo_jugador) contra el proyecto real');
+  const emailA2 = `prueba-jugA2-${sufijo}@maccabis.invalid`;
+  const rcg = await cg.rpc('cambiar_correo_jugador', { p_jugador_id: jA.id, p_email: emailA2 });
+  ok(rcg.data?.ok === true && rcg.data?.auth_renombrado === true,
+    'el gestor renombra el correo de un jugador que ya tiene cuenta de auth', JSON.stringify(rcg.data ?? rcg.error));
+  const [authA2] = await sql`select email from auth.users where id = ${idA}`;
+  ok(authA2?.email === emailA2.toLowerCase(), 'su auth.users.email queda renombrado a la vez (misma cuenta, sin huerfanos ni duplicados)', authA2?.email);
+  const zA2 = (await cA.rpc('mi_zona')).data; // la MISMA sesion de antes, sin volver a entrar
+  ok(zA2?.jugador?.nombre_visible === 'Manu', 'con la MISMA sesion de antes, sigue entrando a su zona tras el renombrado', JSON.stringify(zA2));
+  const rNoGestor = await cn.rpc('cambiar_correo_jugador', { p_jugador_id: jB.id, p_email: `otra-${sufijo}@maccabis.invalid` });
+  ok(!!rNoGestor.error, 'quien no es gestor no puede cambiar correos', JSON.stringify(rNoGestor.data ?? rNoGestor.error));
 } catch (e) {
   fallos++;
   console.log(`  FALLO la verificacion se interrumpio: ${String(e.message).split(/\r?\n/)[0]}`);
@@ -213,11 +233,15 @@ try {
     (select count(*)::int from public.gestores) as gestores,
     (select count(*)::int from public.jugadores) as jugadores,
     (select count(*)::int from public.campanas_ropa) as campanas,
-    (select count(*)::int from public.pedidos_ropa) as pedidos,
-    (select string_agg(estado, ',') from public.campanas_ropa) as estado_campanas`;
-  console.log('  estado final:', JSON.stringify(f));
-  ok(f.usuarios === 1 && f.gestores === 1 && f.jugadores === nJugadoresReales && f.campanas === 1 && f.pedidos === 0 && f.estado_campanas === 'cerrada',
-    'todo lo temporal borrado: queda solo lo de la semilla y tu usuario');
+    (select count(*)::int from public.pedidos_ropa) as pedidos`;
+  console.log('  estado final:', JSON.stringify(f), '/ antes de la verificacion:', JSON.stringify(antes));
+  if (antes) {
+    ok(f.usuarios === antes.usuarios && f.gestores === antes.gestores && f.jugadores === nJugadoresReales
+        && f.campanas === antes.campanas && f.pedidos === antes.pedidos,
+      'todo lo temporal borrado: queda igual que antes de empezar (club real + tu usuario)');
+  } else {
+    console.log('  AVISO la verificacion se interrumpio antes de fotografiar el estado inicial: comprobacion de limpieza omitida');
+  }
   await sql.end();
   console.log(`\nRESULTADO: ${fallos === 0 ? 'TODO OK' : `${fallos} FALLOS`}`);
   process.exitCode = fallos ? 1 : 0;

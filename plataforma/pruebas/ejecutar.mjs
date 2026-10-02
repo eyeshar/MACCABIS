@@ -106,7 +106,7 @@ try {
   const anonFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
   ok(anonFunciones.length === 0, 'anon no puede ejecutar NINGUNA funcion de public (D68)', anonFunciones.join(', '));
   const authFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
-  ok(JSON.stringify(authFunciones) === JSON.stringify(['anular_pedido', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
+  ok(JSON.stringify(authFunciones) === JSON.stringify(['anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');
@@ -364,7 +364,15 @@ try {
   const filaSinCorreo = pG.locator(`li[data-person="de-maria-sanchez-jaime"]`);
   ok(await filaSinCorreo.getByText('Sin correo: no puede entrar').isVisible(), 'un jugador sin correo se marca "Sin correo: no puede entrar"');
   await filaSinCorreo.getByText('Editar datos').click();
-  await filaSinCorreo.getByLabel('Correo (para entrar)').fill('intruso@pruebas.local'); // ya en uso por otro usuario de pruebas, pero NO por otro jugador
+  // 'intruso@pruebas.local' ya tiene una cuenta de auth de OTRA persona (el intruso de las pruebas de sesion,
+  // arriba): no puede darsele sin mas a jaime, se fusionarian dos identidades distintas (cambiar_correo_jugador).
+  await filaSinCorreo.getByLabel('Correo (para entrar)').fill('intruso@pruebas.local');
+  await filaSinCorreo.getByRole('button', { name: 'Guardar datos' }).click();
+  await filaSinCorreo.getByText('Ese correo ya tiene una cuenta de acceso distinta en Supabase.').waitFor({ timeout: 5000 }).catch(() => {});
+  ok(await filaSinCorreo.getByText('Ese correo ya tiene una cuenta de acceso distinta en Supabase.').isVisible(),
+    'no deja dar de alta un correo con una cuenta de auth de otra persona');
+  ok(await filaSinCorreo.getByText('Sin correo: no puede entrar').isVisible(), 'y el jugador sigue sin correo (no se guarda a medias)');
+  await filaSinCorreo.getByLabel('Correo (para entrar)').fill('jaime@pruebas.local'); // este si, nunca usado
   await filaSinCorreo.getByRole('button', { name: 'Guardar datos' }).click();
   await filaSinCorreo.getByText('Guardado.').waitFor();
   await pG.reload();
@@ -373,10 +381,56 @@ try {
 
   const filaDup = pG.locator(`li[data-person="esteban-jon"]`);
   await filaDup.getByText('Editar datos').click();
-  await filaDup.getByLabel('Correo (para entrar)').fill('intruso@pruebas.local');
+  await filaDup.getByLabel('Correo (para entrar)').fill('jaime@pruebas.local'); // ya es el de jaime
   await filaDup.getByRole('button', { name: 'Guardar datos' }).click();
   await filaDup.getByText('Ese correo ya está en uso por otro jugador.').waitFor({ timeout: 5000 }).catch(() => {});
   ok(await filaDup.getByText('Ese correo ya está en uso por otro jugador.').isVisible(), 'dos jugadores no pueden compartir el mismo correo');
+
+  seccion('Cambio de correo seguro: sincroniza su cuenta de auth y la de gestores (cambiar_correo_jugador)');
+  // D ya tiene cuenta de auth (como A): sirve para probar el RENOMBRADO sin dejar huerfanos ni duplicados.
+  const D = { ...(await jugadorDe('vallesi-daniele', 'daniele@pruebas.local')), email: 'daniele@pruebas.local' };
+  const idD = await pila.crearUsuario(D.email, 'no-se-usa');
+  const jwtD = await pila.firmar({ sub: idD, role: 'authenticated', email: D.email });
+  r = await rpc('cambiar_correo_jugador', { p_jugador_id: D.id, p_email: 'daniele.nuevo@pruebas.local' }, jwtGestor);
+  ok(r.status === 200 && r.datos?.ok === true && r.datos?.auth_renombrado === true, 'renombra el correo de un jugador que ya tenia cuenta de auth', JSON.stringify(r.datos));
+  const [authD] = await sql`select email from auth.users where id = ${idD}`;
+  ok(authD?.email === 'daniele.nuevo@pruebas.local', 'su auth.users.email queda renombrado a la vez (misma cuenta, sin duplicados)', authD?.email);
+  const authDviejo = await sql`select id from auth.users where lower(email) = 'daniele@pruebas.local'`;
+  ok(authDviejo.length === 0, 'el correo viejo ya no tiene ninguna cuenta de auth (sin huerfanos)');
+  const zonaDviejaSesion = await rpc('mi_zona', {}, jwtD);
+  ok(zonaDviejaSesion.datos?.jugador?.nombre_visible === D.nombre_visible, 'con la MISMA sesion de antes (mismo id de usuario) sigue entrando a su zona tras el renombrado', JSON.stringify(zonaDviejaSesion.datos));
+
+  // E es ademas gestor con ese mismo correo (como Carlos o Edu en el club real): su fila de gestores sigue el cambio.
+  const E = { ...(await jugadorDe('barreiro-carballal-carlos-jose', 'carlos@pruebas.local')), email: 'carlos@pruebas.local' };
+  await sql`insert into public.gestores (email, nombre) values ('carlos@pruebas.local', 'Carlos de pruebas')`;
+  r = await rpc('cambiar_correo_jugador', { p_jugador_id: E.id, p_email: 'carlos.nuevo@pruebas.local' }, jwtGestor);
+  ok(r.status === 200 && r.datos?.ok === true && r.datos?.gestor_sincronizado === true, 'si esa persona es ademas gestor con el mismo correo, su fila de "gestores" se actualiza tambien', JSON.stringify(r.datos));
+  const [gestorE] = await sql`select email from public.gestores where nombre = 'Carlos de pruebas'`;
+  ok(gestorE?.email === 'carlos.nuevo@pruebas.local', 'gestores.email queda sincronizado con el correo nuevo', gestorE?.email);
+
+  // No se puede "robar" una cuenta de auth de otra persona poniendole su correo a otro jugador.
+  const F = await jugadorDe('mendez-escandon-fernando', 'fernando@pruebas.local');
+  r = await rpc('cambiar_correo_jugador', { p_jugador_id: F.id, p_email: 'daniele.nuevo@pruebas.local' }, jwtGestor);
+  ok(r.status === 200 && r.datos?.ok === false && r.datos?.error === 'correo_en_uso_auth', 'no deja poner un correo que ya tiene una cuenta de auth de OTRA persona', JSON.stringify(r.datos));
+  const [fSinCambios] = await sql`select email from public.jugadores where id = ${F.id}`;
+  ok(fSinCambios.email === 'fernando@pruebas.local', 'y no toca el correo del jugador si el cambio se rechaza', fSinCambios.email);
+
+  // Solo gestores pueden llamarla desde la web (con sesion).
+  r = await rpc('cambiar_correo_jugador', { p_jugador_id: F.id, p_email: 'otro@pruebas.local' }, jwtIntruso);
+  ok(r.status >= 400, 'una sesion que no es de gestor no puede cambiar correos', `status ${r.status}`);
+
+  // Sin sesion (conexion directa como "postgres", igual que el script local "npm run db:correo"): se permite.
+  const [{ cambiar_correo_jugador: sinSesion }] = await sql`
+    select public.cambiar_correo_jugador(${F.id}::uuid, 'fernando.nuevo@pruebas.local') as cambiar_correo_jugador`;
+  ok(sinSesion?.ok === true, 'desde una conexion directa sin sesion (como el script local db:correo) se permite sin ser gestor', JSON.stringify(sinSesion));
+
+  seccion('Aviso de "Entrará con código" para quien no tiene correo de Gmail');
+  await jugadorDe('romero-barrueco-alonso', 'alonso.aviso@gmail.com');
+  await pG.goto(`${APP}/gestion/jugadores`);
+  ok(await pG.locator('li[data-person="esteban-jon"]').getByText('Entrará con código por correo').isVisible(),
+    'correo que no es de Gmail (jon@pruebas.local): se avisa al gestor');
+  ok(!(await pG.locator('li[data-person="romero-barrueco-alonso"]').getByText('Entrará con código por correo').isVisible()),
+    'correo de Gmail: sin aviso');
 
   seccion('Vista de gestores: dorsales repetidos CON nombres, recuento, alta manual');
   await pG.goto(`${APP}/gestion/ropa/nuevo?c=${campana.id}`);

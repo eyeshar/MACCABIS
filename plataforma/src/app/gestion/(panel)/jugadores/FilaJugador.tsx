@@ -20,6 +20,14 @@ export type JugadorGestion = {
 
 const ROLES = { jugador: "Jugador", solo_entreno: "Solo entreno", entrenador: "Entrenador" } as const;
 
+// "Entrar con Google" exige una cuenta de Google con ese correo exacto; con un
+// correo que no es de Gmail lo normal es que esa persona no tenga cuenta de
+// Google ahí, así que entrará con el código de un solo uso (igual de válido,
+// solo que hay que avisarla). No es una validación: solo una pista para el gestor.
+function esGmail(email: string) {
+  return /@gmail\.com$/i.test(email.trim());
+}
+
 export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorGestion; mensaje: string | null }) {
   const [copiado, setCopiado] = useState(false);
   const [aviso, accionGuardar, guardando] = useActionState(guardarJugador.bind(null, j.id), null);
@@ -45,7 +53,11 @@ export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorG
       </p>
       <p className="pequeno" style={{ marginBottom: 0 }}>
         {j.email ? (
-          <><span className="etiqueta etiqueta-ok">Puede entrar</span> <span className="suave">{j.email}</span></>
+          <>
+            <span className="etiqueta etiqueta-ok">Puede entrar</span>{" "}
+            {!esGmail(j.email) && <span className="etiqueta etiqueta-aviso">Entrará con código por correo</span>}{" "}
+            <span className="suave">{j.email}</span>
+          </>
         ) : (
           <span className="etiqueta etiqueta-mal">Sin correo: no puede entrar</span>
         )}

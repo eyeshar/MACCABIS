@@ -6,6 +6,8 @@
 //   npm run db:semilla                 carga la plantilla 26/27 y la campana de ropa
 //   npm run db:gestor -- <email> <nombre>   reserva o vincula una plaza de gestor por correo (D68)
 //   npm run db:correos -- <fichero>    importa los correos de SportEasy a jugadores.email (scripts/importar_correos.mjs)
+//   npm run db:correo -- <person_id> <correo_nuevo>   cambia el correo de UN jugador, sincronizando
+//                                       su cuenta de auth (si ya existe) y la de gestores (si lo es)
 //   npm run db:estado                  resumen (sin mostrar telefonos)
 //
 // Las migraciones se registran en supabase_migrations.schema_migrations, la misma
@@ -94,6 +96,29 @@ export async function altaGestor(sql, email, nombre, { log = console.log } = {})
   return Boolean(r.length);
 }
 
+// Cambia el correo de UN jugador (por person_id), llamando a la misma funcion
+// SQL que usa la web (public.cambiar_correo_jugador): sincroniza su cuenta de
+// auth (si ya existe, la renombra en vez de dejarla huerfana) y la de
+// gestores (si esa persona es ademas gestor con el mismo correo). Fuera de la
+// web no hay sesion (auth.uid() es null con esta conexion), asi que la
+// funcion no exige is_gestor() aqui: ver el propio SQL para el porque.
+export async function cambiarCorreo(sql, personId, correoNuevo, { log = console.log } = {}) {
+  const [jugador] = await sql`select id, nombre_oficial, email from public.jugadores where person_id = ${personId}`;
+  if (!jugador) throw new Error(`No existe ningun jugador con person_id "${personId}".`);
+  const correo = correoNuevo.trim().toLowerCase();
+  const [{ cambiar_correo_jugador: r }] = await sql`
+    select public.cambiar_correo_jugador(${jugador.id}::uuid, ${correo}) as cambiar_correo_jugador`;
+  if (!r.ok) throw new Error(`No se pudo cambiar el correo de ${jugador.nombre_oficial}: ${r.error}`);
+  if (r.sin_cambios) {
+    log(`${jugador.nombre_oficial}: el correo ya era "${correo}", sin cambios.`);
+    return r;
+  }
+  log(`${jugador.nombre_oficial}: correo cambiado de "${jugador.email ?? '(sin correo)'}" a "${correo}".`);
+  if (r.auth_renombrado) log('  Su cuenta de Supabase Auth ya existia: renombrada al correo nuevo (misma cuenta, sin huerfanos ni duplicados).');
+  if (r.gestor_sincronizado) log('  Es tambien gestor con ese correo: su fila en "gestores" se actualizo igual.');
+  return r;
+}
+
 async function estado(sql) {
   const q = async (t) => (await sql.unsafe(`select count(*)::int as n from ${t}`))[0].n;
   console.log({
@@ -119,8 +144,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       const [email, ...nombre] = args;
       if (!email || !nombre.length) throw new Error('Uso: npm run db:gestor -- <email> <nombre>');
       await altaGestor(sql, email, nombre.join(' '));
+    } else if (orden === 'correo') {
+      const [personId, correoNuevo] = args;
+      if (!personId || !correoNuevo) throw new Error('Uso: npm run db:correo -- <person_id> <correo_nuevo>');
+      await cambiarCorreo(sql, personId, correoNuevo);
     } else if (orden === 'estado') await estado(sql);
-    else console.log('Ordenes: migrar | semilla | gestor <email> <nombre> | estado');
+    else console.log('Ordenes: migrar | semilla | gestor <email> <nombre> | correo <person_id> <correo_nuevo> | estado');
   } catch (e) {
     console.error('ERROR:', e.message);
     process.exitCode = 1;

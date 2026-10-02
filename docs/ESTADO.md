@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68); rutina A por emulador Android (D69); calendario oficial 26/27 en `data/calendario_2026-27.json`.** Rama `feat/plataforma-v0` sigue sin mergear a `main`, a la espera de que Iván configure Google/Supabase (`plataforma/LEEME.md`) y dé el "OK vista previa"._
+_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68); rutina A por Enlace Móvil de Windows con el S22 Ultra de Iván (D70, matiza D69); calendario oficial 26/27 en `data/calendario_2026-27.json`.** Rama `feat/plataforma-v0` sigue sin mergear a `main`, a la espera de que Iván registre el hook "Before User Created" en Supabase y configure Google (`plataforma/LEEME.md`) y dé el "OK vista previa"._
 
 ## Login único: Google o código por correo, con lista blanca (02/10/2026, D68)
 - **Sustituye a los enlaces personales `/j/<token>` (D45, derogada).** Ahora: `/entrar` (Google o código de un solo uso por correo) → `/mi-zona` (jugador), `/gestion` (gestor) o `/entrar/elegir` si es las dos cosas. `anon` se queda sin ningún permiso (ni tablas ni funciones): todo exige sesión real.
@@ -24,8 +24,8 @@ _Última actualización: 02/10/2026 — **login único con Google/código por co
 - **17 correspondencias de nombre** (SportEasy ≠ nombre oficial exacto: motes, orden nombre/apellido, apellidos incompletos) propuestas a Iván en el chat y **confirmadas "tal cual" (02/10/2026)**: escritas en el proyecto real. **Resultado: 28/28 jugadores con correo**, verificado con `npm run db:estado` y `node pruebas/verificar_real.mjs` (TODO OK).
 - Corregido en el camino: el detector de columnas no reconocía la cabecera real "Apellido(s)" (el patrón exigía "Apellido" o "Apellidos" exactos); ahora acepta cualquier cabecera que empiece por "apellido". `pruebas/verificar_real.mjs` y `pruebas/ejecutar.mjs` ya no asumen "25 jugadores" a pelo: comparan contra el total real / el de la semilla (28).
 
-## Rutina A (actas): emulador Android, no gesto manual (02/10/2026, D69 — matiza D35)
-- Corrige el bloque anterior: D63 (rutinas por navegador) **nunca incluyó la rutina A** porque Afición FBM no tiene web. Ahora D69 fija cómo se automatiza de verdad: Claude controla un **emulador Android** (Android Studio) en el ordenador de Iván, con su sesión de Google Play y Afición FBM iniciada una vez. `docs/PLAN_TRABAJO_2026-27.md`, `docs/NORMAS_DE_TRABAJO.md` §3 y `docs/BACKLOG.md` actualizados para reflejarlo.
+## Rutina A (actas): Enlace Móvil de Windows, no emulador (02/10/2026, D70 — matiza D69, que a su vez matiza D35)
+- Corrige el bloque anterior: D63 (rutinas por navegador) **nunca incluyó la rutina A** porque Afición FBM no tiene web. D69 proponía un emulador Android, pero Play Store no deja instalar Afición FBM en emuladores (probado en Android 15 y 17) y copiarla con adb no fue posible (cable solo carga, depuración inalámbrica falla en la red de Iván); queda como reserva en F:. **D70 fija cómo se automatiza de verdad:** Claude abre Afición FBM del Samsung S22 Ultra de Iván por **Enlace Móvil de Windows** y la maneja con control del ordenador. Probado el 02/10/2026: la app carga y responde. Condición: móvil encendido, con wifi, cerca del PC (puede estar bloqueado). Procedimiento en `docs/RUTINAS/A_ACTAS.md`; `docs/PLAN_TRABAJO_2026-27.md` y `docs/BACKLOG.md` actualizados para reflejarlo.
 
 ## Calendario oficial 2026/27 (02/10/2026)
 - `data/calendario_2026-27.json` creado con los 44 partidos (22 jornadas × 2 fichas) leídos en Deportes/web el 02/10/2026 (fuente: `fuente.origen`, sin datos personales). Esquema compatible con el que generará `feat/calendario-automatico` (`scripts/calendario/actualizar_calendario.js`, sin mergear) cuando el portal 211549 publique la 26/27.

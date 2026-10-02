@@ -1,7 +1,7 @@
 # BACKLOG — Proyecto Maccabis
 
 > Lo pendiente, por prioridad. Se reordena según urgencia y decisiones.
-> _Reordenado el 25/09/2026 (D30–D34), actualizado el mismo día al cerrar el bloque "Cierre del sondeo y cimientos 26/27" (D35–D43), y reordenado el 02/10/2026 según `docs/PLAN_TRABAJO_2026-27.md`: la subida de actas desde la zona de gestión pasa a plan B (la rutina A por emulador Android, D69, la sustituye)._
+> _Reordenado el 25/09/2026 (D30–D34), actualizado el mismo día al cerrar el bloque "Cierre del sondeo y cimientos 26/27" (D35–D43), y reordenado el 02/10/2026 según `docs/PLAN_TRABAJO_2026-27.md`: la subida de actas desde la zona de gestión pasa a plan B (la rutina A por Enlace Móvil, D70 matiza D69, la sustituye)._
 
 ## ORDEN VIGENTE (26/09/2026, bloque "Plataforma v0", D44–D57)
 
@@ -21,7 +21,7 @@
    - [ ] Dar de alta como gestores a Carlos y Edu por correo (`npm run db:gestor`): se vinculan solos la primera vez que entren.
    - [ ] Merge a `main` tras la verificación de Iván.
 2. **Rutinas semanales, Fase 1 "Aprendizaje" (D63, `docs/PLAN_TRABAJO_2026-27.md`):**
-   - [ ] **Lun 5/10:** aprendizaje de la rutina A con las actas de la J1 (emulador Android + control del ordenador, D69; Iván solo inicia sesión una vez en Google Play y en Afición FBM dentro del emulador).
+   - [ ] **Lun 5/10:** aprendizaje de la rutina A con las actas de la J1 (Enlace Móvil de Windows + control del ordenador, D70 matiza D69; Iván solo tiene el móvil encendido, con wifi y cerca del PC).
    - [ ] **Jue 8/10, 20:15:** sesión de aprendizaje de la rutina B (calendario, por navegador) con Iván.
    - [ ] **Lun 12/10:** sesión de aprendizaje de la rutina C (disponibilidad y convocatoria, por navegador) con Iván, para la J2.
 4. **Bloque siguiente, para la J2 (11/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
@@ -30,7 +30,7 @@
 7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
 8. **Tesorería** (solo registro de cuentas, D52).
 
-**Plan B (02/10/2026, D69):** **subida de actas desde la zona de gestión** (hoy: `npm run jornada` con Claude controlando el emulador Android, D69, `docs/PROCEDIMIENTO_JORNADA.md`). Solo se construye si esa vía deja de ser viable (p. ej. si Afición FBM bloquea el emulador).
+**Plan B (02/10/2026, D69/D70):** **subida de actas desde la zona de gestión** (hoy: `npm run jornada` con Claude controlando Afición FBM por Enlace Móvil, D70, `docs/PROCEDIMIENTO_JORNADA.md`). Solo se construye si esa vía deja de ser viable (p. ej. si Afición FBM bloquea el acceso remoto).
 
 **Además:**
 - [ ] **Exportar el balance de asistencias de SportEasy antes de apagarlo** (noviembre), para conservar los eventos de 26/27.

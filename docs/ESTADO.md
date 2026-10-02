@@ -2,18 +2,18 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68); rutina A por Enlace Móvil de Windows con el S22 Ultra de Iván (D70, matiza D69); calendario oficial 26/27 en `data/calendario_2026-27.json`.** Rama `feat/plataforma-v0` sigue sin mergear a `main`, a la espera de que Iván registre el hook "Before User Created" en Supabase y configure Google (`plataforma/LEEME.md`) y dé el "OK vista previa"._
+_Última actualización: 02/10/2026 — **login único con Google/código por correo (D68); rutina A por Enlace Móvil de Windows con el S22 Ultra de Iván (D70, matiza D69); calendario oficial 26/27 en `data/calendario_2026-27.json`.** Google Cloud, proveedor Google, hook "Before User Created", "Allow new users to sign up" y Redirect URLs ya verificados; Iván dio el "OK vista previa". `feat/plataforma-v0` lista para mergear a `main`._
 
 ## Login único: Google o código por correo, con lista blanca (02/10/2026, D68)
 - **Sustituye a los enlaces personales `/j/<token>` (D45, derogada).** Ahora: `/entrar` (Google o código de un solo uso por correo) → `/mi-zona` (jugador), `/gestion` (gestor) o `/entrar/elegir` si es las dos cosas. `anon` se queda sin ningún permiso (ni tablas ni funciones): todo exige sesión real.
-- **Lista blanca por correo:** solo entra quien tiene su correo en `jugadores.email` o `gestores.email`. Un correo desconocido nunca crea cuenta: lo bloquea el hook "Before User Created" de Supabase (`public.antes_de_crear_usuario`, **pendiente de registrar a mano** en el panel, ver `plataforma/LEEME.md`).
+- **Lista blanca por correo:** solo entra quien tiene su correo en `jugadores.email` o `gestores.email`. Un correo desconocido nunca crea cuenta: lo bloquea el hook "Before User Created" de Supabase (`public.antes_de_crear_usuario`, **registrado por Iván el 02/10/2026** en el panel, ver `plataforma/LEEME.md`). El registro de alta ("Allow new users to sign up") estaba desactivado desde el 26/09/2026; activado por Iván el 02/10/2026 **después** del hook, como exige D68.
 - **Migración** `plataforma/supabase/migrations/20261002120000_login_google_lista_blanca.sql`, aplicada directamente en el proyecto real (D53, sin pedidos que proteger). Durante la verificación se encontró y corrigió un fallo real de permisos (funciones nuevas heredaban `EXECUTE` del pseudo-rol `PUBLIC` porque el `revoke` solo decía `from anon`, no `from public, anon, authenticated`); quedó corregido en el propio fichero de migración y re-sincronizado en el proyecto real.
 - **Resultados reales de la verificación:**
   - `npm run pruebas` (plataforma, pila local sin Docker): **93/93 OK**, incluye lista blanca (`correo_permitido`, `antes_de_crear_usuario`, `POST /otp`), un gestor reservado solo por correo que se vincula solo al entrar (trigger), sesión sin jugador ni gestor, RLS, pedidos (propio y familiar), dorsal repetido, Excel para VIVE celda a celda igual a la plantilla.
   - `node pruebas/verificar_real.mjs` (proyecto Supabase real): **TODO OK**, con limpieza completa.
 - **Página pública `/privacidad`** (sin login): qué datos se guardan, para qué, quién los ve y cómo pedir el borrado.
 - **La Redirect URL `https://maccabis-*-web-tcpc.vercel.app/**` es correcta** (confirmado por Iván): "web-tcpc" es el slug del **equipo de Vercel**, no del proyecto de Tres Cantos. Verificado con la vista previa real `https://maccabis-git-feat-plataforma-v0-web-tcpc.vercel.app`. El aviso ⚠️ se ha quitado de `plataforma/LEEME.md`.
-- **Pendiente de Iván** (`plataforma/LEEME.md`, apartados 2 y 3): crear el proyecto de Google Cloud "Maccabis" (nunca el de TCPC), activar el proveedor Google en Supabase, registrar el hook "Before User Created".
+- **Hecho** (`plataforma/LEEME.md`, apartados 2 y 3): proyecto de Google Cloud "Maccabis" (nunca el de TCPC) y proveedor Google activado en Supabase — verificado por Claude el 02/10/2026; hook "Before User Created" y "Allow new users to sign up" activados por Iván el 02/10/2026; Site URL y Redirect URLs verificadas el 02/10/2026.
 
 ### `npm run db:correos` — ejecutado (02/10/2026)
 - Fichero: `SportEasy_maccabis (1).xlsx` de Descargas (exportación de SportEasy del 02/10/2026; el `(1)` porque ya había una copia antigua de agosto).
@@ -38,7 +38,7 @@ _Última actualización: 02/10/2026 — **login único con Google/código por co
 - **Verificación de la rama, resultados reales:**
   - `npm run pruebas` (plataforma, Postgres + PostgREST + Chrome locales, sin Docker): **84/84 OK**, incluye `next build`, RLS y permisos, enlaces personales, pedido de ropa (jugador y familiar), dorsal repetido, campaña cerrada, Excel para VIVE celda a celda igual a la plantilla, sin errores de JS.
   - `node pruebas/verificar_real.mjs` (contra el proyecto Supabase real, HTTPS con la clave pública): **TODO OK** (47 comprobaciones), con limpieza completa al final (estado: 1 usuario, 1 gestor, 25 jugadores, 25 enlaces, 1 campaña cerrada, 0 pedidos — igual que antes de la verificación).
-- **Pendiente antes del merge a `main`**: el "OK vista previa" de Iván sobre la Vercel de `feat/plataforma-v0`.
+- **"OK vista previa" dado por Iván (02/10/2026)** sobre la Vercel de `feat/plataforma-v0`: queda despejado el único requisito pendiente antes del merge a `main`.
 
 ## Temporada 2026/27 en SportEasy (02/10/2026)
 - **40 partidos de liga JDM cargados** con un agente de navegador (D62): **20 MdA** en el campeonato "Temporada MdA" (grupo G1) y **20 MdL** en "Temporada MdL" (grupo G2), 22 jornadas por equipo con 2 descansos cada uno (MdA en J4 y J15, MdL en J11 y J22).

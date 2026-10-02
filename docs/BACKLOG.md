@@ -14,17 +14,20 @@
    - [x] Supabase real creado por Iván, migraciones y semilla aplicadas, Iván gestor; verificación de seguridad contra el proyecto real 42/42 OK (26/09/2026).
    - [x] Nombres visibles confirmados (D61). Dorsal libre en pedidos para familiares (D60).
    - [x] **Login único con Google o código por correo, con lista blanca** (D68, 02/10/2026) — sustituye a los enlaces `/j/<token>` (D45, derogada). Migración `20261002120000_login_google_lista_blanca.sql` aplicada en el proyecto real; `npm run pruebas` y `node pruebas/verificar_real.mjs` en TODO OK.
-   - [ ] **Iván:** configurar Google Cloud y Supabase para el login (`plataforma/LEEME.md`, apartados 2 y 3): proyecto de Google Cloud "Maccabis", pantalla de consentimiento, credenciales OAuth, activar el proveedor Google y el hook "Before User Created" en Supabase, revisar las Redirect URLs.
+   - [x] **Google Cloud** (proyecto "Maccabis", pantalla de consentimiento, credenciales OAuth) **y proveedor Google activado en Supabase** — HECHO, verificado por Claude el 02/10/2026.
+   - [x] **Hook "Before User Created"** (`public.antes_de_crear_usuario`) **y "Allow new users to sign up"** activado **en ese orden** (`plataforma/LEEME.md`, apartado 3) — HECHO por Iván el 02/10/2026.
+   - [x] **Site URL y Redirect URLs** de Supabase (`plataforma/LEEME.md`, apartado 3, punto 5) — verificadas el 02/10/2026.
    - [x] `npm run db:correos` ejecutado (02/10/2026) con `SportEasy_maccabis (1).xlsx`: 8 correos casados por nombre exacto. Ampliado el mismo día: Edimil Feliz Gómez, Ignacio Mateos Aparicio y Nicolás Yamín Squicciarini dados de alta como jugadores `solo_entreno` (entrenan, sin ficha MdA/MdL, el motor no los convoca) con su correo. Total real: **28 jugadores, 11 con correo**.
    - [x] Las 17 correspondencias restantes (nombre de SportEasy ≠ nombre oficial exacto, p. ej. "Barrimelo Barreiro" = Carlos Barreiro), confirmadas por Iván (02/10/2026) y escritas. **28/28 jugadores con correo.**
-   - [ ] **Iván:** configurar Vercel (carpeta raíz `plataforma`, 2 variables públicas) y revisar la **vista previa** de `feat/plataforma-v0` con la lista de comprobación, incluido entrar de verdad con Google. Hasta entonces **no se comparte nada con los jugadores**.
+   - [x] **Iván:** Vercel configurado (carpeta raíz `plataforma`, 2 variables públicas) y **vista previa revisada y aprobada ("OK vista previa")**, incluido entrar de verdad con Google — 02/10/2026.
    - [ ] Dar de alta como gestores a Carlos y Edu por correo (`npm run db:gestor`): se vinculan solos la primera vez que entren.
+   - [ ] **Abrir la campaña "Ropa 2026/27"** desde `/gestion`, fecha límite **domingo 18/10/2026** (decidido por Iván, 02/10/2026). La abre Claude (navegador) tras el merge, no Code; hasta entonces sigue cerrada.
    - [ ] Merge a `main` tras la verificación de Iván.
 2. **Rutinas semanales, Fase 1 "Aprendizaje" (D63, `docs/PLAN_TRABAJO_2026-27.md`):**
    - [ ] **Lun 5/10:** aprendizaje de la rutina A con las actas de la J1 (Enlace Móvil de Windows + control del ordenador, D70 matiza D69; Iván solo tiene el móvil encendido, con wifi y cerca del PC).
    - [ ] **Jue 8/10, 20:15:** sesión de aprendizaje de la rutina B (calendario, por navegador) con Iván.
    - [ ] **Lun 12/10:** sesión de aprendizaje de la rutina C (disponibilidad y convocatoria, por navegador) con Iván, para la J2.
-4. **Bloque siguiente, para la J2 (11/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
+4. **Bloque siguiente, para la J2 (18/10):** staging de Supabase (D53); **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
 5. **Motor de convocatoria v0.1 para la J3 (18/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
 6. **Migración del dashboard** a la plataforma.
 7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
@@ -39,7 +42,7 @@
 - [ ] `feat/calendario-automatico`: revisar y mergear como detector de cambios (D47), dentro del bloque de la J2.
 
 **SportEasy 26/27 (02/10/2026, D62):**
-- [ ] **Decidir si se mantiene el apagado de SportEasy en noviembre o se usa toda la temporada.**
+- [x] ~~Decidir si se mantiene el apagado de SportEasy en noviembre o se usa toda la temporada.~~ — **RESUELTO:** `docs/NORMAS_DE_TRABAJO.md` §8 (D64) fija que se mantiene **completo como respaldo hasta septiembre de 2027**, sin apagarlo antes.
 - [ ] **Borrar en SportEasy las 3 ubicaciones duplicadas "Moratalaz"** (dirección "Pista 1/2/3") que creó la carga en bloque; ya no las usa ningún partido.
 - [ ] **Jornadas 2 (18/10/2026) y 13 (07/02/2027):** MdA y MdL juegan a la misma hora (10:15); esos domingos los de doble ficha no pueden estar en los dos partidos. Tenerlo en cuenta en el motor de convocatorias.
 - [ ] **Pasar el calendario 26/27 a datos del repo** (p. ej. `data/calendario_2026-27.json`) para la futura web, si se mantiene el plan de calendario propio. Sin datos personales.

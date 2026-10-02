@@ -54,11 +54,16 @@ en los paneles de Supabase y Vercel.
    el nombre puede variar) y selecciónalo como **Postgres Hook**, apuntando a la función
    `public.antes_de_crear_usuario`, que ya trae la migración. Sin este paso, cualquier correo de Google podría
    crear una cuenta: el hook es quien aplica la lista blanca (D68).
-3. **Authentication → Sign In / Providers → Email**: dentro, activa el envío por **OTP** (código de un solo uso),
+3. **Authentication → Sign In / Providers: activa "Allow new users to sign up"** — pero **solo después** de tener
+   el hook del paso 2 ya puesto, nunca antes. El orden importa en los dos sentidos: sin el hook, activar este
+   interruptor dejaría crear cuenta a cualquier correo de Google (ningún filtro de por medio); sin el interruptor,
+   aunque el hook ya esté puesto, **no entra nadie nuevo**, ni siquiera quien ya tiene su correo en la lista
+   blanca. El 26/09/2026 este registro estaba desactivado; D68 exige activarlo, con el hook ya puesto.
+4. **Authentication → Sign In / Providers → Email**: dentro, activa el envío por **OTP** (código de un solo uso),
    no el enlace mágico. Si tu panel solo deja elegir la plantilla de correo, edita **Authentication → Emails →
    Magic Link** para que muestre bien visible el código `{{ .Token }}` (6 dígitos): es lo que el jugador va a
    teclear en "Recibir código por correo".
-4. **Authentication → URL Configuration**:
+5. **Authentication → URL Configuration**:
    - **Site URL**: `https://maccabis.vercel.app`
    - **Redirect URLs**: añade `https://maccabis.vercel.app/**` y `https://maccabis-*-web-tcpc.vercel.app/**` (el
      segundo es el patrón de las vistas previas: "web-tcpc" es el **slug del equipo de Vercel** de Iván, no del

@@ -22,14 +22,15 @@ _Última actualización: 03/10/2026 — **Cambio de correo seguro para jugadores
   (`guardarJugador`, solo gestores) y desde `npm run db:correo -- <person_id> <correo_nuevo>` (scripts locales,
   conexión directa sin sesión: mismo modelo de confianza que `db:gestor`).
 - **Aplicados en el proyecto real (confirmado por Iván, 03/10/2026):**
-  `galan-domingo-guillermo` → `guillermo.galan.domingo@gmail.com` y `lopez-lucero-alfredo-david` →
-  `cordobesbasico@gmail.com`. Verificado: los correos viejos ya no pasan `correo_permitido`, los nuevos sí; los 28
-  jugadores siguen con correo (`npm run db:estado`); **ninguno de los dos tenía cuenta de Auth todavía** (nunca
-  habían entrado), así que no hay nada que renombrar — se creará sola en su primer login, como siempre.
+  `galan-domingo-guillermo` → `guillermo.galan.domingo@gmail.com`, `lopez-lucero-alfredo-david` →
+  `cordobesbasico@gmail.com` y `teruel-fernandez-tomas` → `tomasteruel5@gmail.com`. Verificado: los correos viejos
+  ya no pasan `correo_permitido`, los nuevos sí; los 28 jugadores siguen con correo (`npm run db:estado`); ninguno
+  tenía cuenta de Auth todavía (nunca habían entrado), así que no hay nada que renombrar — se creará sola en su
+  primer login, como siempre.
 - **Gestión → Jugadores marca en amarillo "Entrará con código por correo"** junto al correo de quien no es de
   Gmail, para que Iván sepa a quién pedirle su Gmail. **Pendientes de dar su Gmail (si lo tienen):** Manuel
   Calahorro Sánchez (su Gmail de jugadores probablemente no es el que usa de verdad en Google), Carlos Barreiro
-  (Hotmail), Víctor Pérez Núñez (Hotmail), Fernando Tejeiro (Hotmail), Tomás Teruel (Hotmail), Edwin Villa Guerrero
+  (Hotmail), Víctor Pérez Núñez (Hotmail), Fernando Tejeiro (Hotmail), Edwin Villa Guerrero
   (Hotmail) y Eduardo Martín-Ortega (correo de empresa).
 - **Diagnóstico de los que no podían entrar (David, Guillermo, Manu), con evidencia, no por suposición:**
   - `auth.audit_log_entries` (donde GoTrue registraría el detalle de cada intento) tiene **0 filas** en el proyecto

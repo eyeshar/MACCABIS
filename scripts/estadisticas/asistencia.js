@@ -86,7 +86,7 @@ function asignarEquipos(eventos, jugaron, avisos) {
     res.set(e.clave, eq);
     const lista = [...e.aTiempo].filter(x => !jugaron[eq].has(x)).map(x => `${x} consta "A tiempo" pero no jugó`);
     for (const x of jugaron[eq]) if (!e.aTiempo.has(x)) lista.push(`${x} jugó pero no consta "A tiempo"`);
-    avisos.push(`Asistencia: "Campeonato" del ${e.fecha} -> ${eq} (parecido ${det})` + (lista.length ? '; DISCREPANCIAS con la hoja: ' + lista.join('; ') : '; coincide exactamente con la hoja.'));
+    avisos.push(`Asistencia: "Campeonato" del ${e.fecha} -> ${eq} (parecido ${det})` + (lista.length ? '; discrepancias SportEasy/hoja (se corrige SportEasy): ' + lista.join('; ') : '; coincide exactamente con la hoja.'));
   }
   return res;
 }
@@ -122,6 +122,8 @@ function leerSportEasy(ficheros, avisos, ignorar = [], jugaron = null) {
             const ev = [hoja, c].join('|');
             const e = camp.get(ev) || camp.set(ev, { clave: ev, fecha, aTiempo: new Set() }).get(ev);
             if (estado === 'a tiempo') e.aTiempo.add(id);
+            (e.estados || (e.estados = new Map())).set(id, { raw: estado, nombre });
+            continue;                                // se cuenta después, corregido con la hoja (D72)
           }
           const k = [id, fecha, tipo, c].join('|');
           if (vistos.has(k)) continue;
@@ -136,7 +138,22 @@ function leerSportEasy(ficheros, avisos, ignorar = [], jugaron = null) {
   }
   if (camp.size) {
     if (!jugaron) throw new Error('Asistencia: hay eventos "Campeonato" y no tengo las hojas de estadística para asignarlos a MdA o MdL.');
-    asignarEquipos([...camp.values()], jugaron, avisos);
+    const eqDe = asignarEquipos([...camp.values()], jugaron, avisos);
+    // D72: en partidos de liga manda la hoja de la FBM sobre SportEasy. Quien aparece en la hoja
+    // asistió; quien consta "A tiempo" y no está en la hoja, no asistió ("No convocado").
+    for (const e of camp.values()) {
+      const lista = jugaron[eqDe.get(e.clave)];
+      for (const [id, { raw, nombre }] of e.estados || []) {
+        let est = ESTADOS[raw];
+        if (!est) { if (raw) avisos.push(`Asistencia: estado desconocido "${raw}" (${nombre}, ${e.fecha}).`); continue; }
+        const antes = est;
+        if (lista.has(id) && est !== 'fueron') est = 'fueron';
+        else if (!lista.has(id) && est === 'fueron') est = 'no_conv';
+        if (est !== antes) avisos.push(`Asistencia (D72, manda la hoja): ${nombre} en el ${eqDe.get(e.clave)} del ${e.fecha}: SportEasy decía "${raw}", se cuenta ${est === 'fueron' ? 'como asistente (jugó)' : 'como no asistente (no jugó)'}.`);
+        const o = cuenta.part[id] || (cuenta.part[id] = { excusa: 0, no_conv: 0, fueron: 0, lesion: 0, sin_excusa: 0, total: 0 });
+        o[est]++; o.total++;
+      }
+    }
   }
   for (const [nombre, k] of sinMapa) avisos.push(`Asistencia: "${nombre}" responde en ${k} evento(s) pero NO está en nombres_sporteasy.json: no cuenta (¿quién es?).`);
   const part = {}, entr = {};

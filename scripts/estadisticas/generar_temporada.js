@@ -254,7 +254,7 @@ async function leerFuentes(temporada, cfg) {
   const jugaron = {};
   for (const h of hojas) {
     const set = jugaron[h.equipo] || (jugaron[h.equipo] = new Set());
-    for (const j of h.jugadores) if (j.sec > 0) { const s = slug(aliasN[j.nombre] || j.nombre); set.add(ALIAS[s] || s); }
+    for (const j of h.jugadores) { const s = slug(aliasN[j.nombre] || j.nombre); set.add(ALIAS[s] || s); }
   }
   const asistencia = leerAsistencia(cfg.asistencia, base, avisos, temporada, Object.keys(jugaron).length ? jugaron : null);
   let calendario = [];

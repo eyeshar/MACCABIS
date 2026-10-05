@@ -30,7 +30,7 @@ const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { copiaSegura } = require('../lib/copia_segura');
 const { leerActa } = require('./leer_acta');
-const { leerHoja, datosDelNombre } = require('./leer_hoja');
+const { leerHoja } = require('./leer_hoja');
 const { generar } = require('./generar_temporada');
 const { normEquipo } = require('./util');
 const CONFIG = require('./temporadas.json');
@@ -40,7 +40,7 @@ const args = process.argv.slice(2);
 const argVal = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const TEMPORADA = args.find(a => /^\d{4}-\d{2}$/.test(a)) || '2026-27';
 const DESDE = argVal('--desde', path.join(os.homedir(), 'Downloads'));
-const DRY = args.includes('--dry');
+const DRY = args.includes('--dry');   // --sin-asistencia: no recoge el export de SportEasy
 
 const cfg = CONFIG[TEMPORADA];
 if (!cfg) { console.error(`No hay configuración para ${TEMPORADA}.`); process.exit(1); }
@@ -60,18 +60,24 @@ async function recoger() {
     if (!esNuestro(a.equipoA) && !esNuestro(a.equipoB)) continue;
     plan.push({ origen: f, destino: 'actas', nombre: `Acta-Partido-${a.num}.pdf`, que: `acta ${a.num} (${a.fecha})` });
   }
-  // Hojas: por la etiqueta de temporada del título ("... - FBM - 26/27").
+  // Hojas: por la etiqueta de temporada del título ("... - FBM - 26/27"). El NOMBRE del fichero no
+  // cuenta (la FBM lo llama estadisticaPartido_<fechaDeDescarga>.xlsx, con sufijos " 1", "_1", " (1)"):
+  // equipo, rival y local/visitante salen de la cabecera y el partido, del calendario.
+  const calendario = cfg.calendario.filter(c => c.formato === 'json' && fs.existsSync(path.join(ROOT, c.fichero)))
+    .flatMap(c => JSON.parse(fs.readFileSync(path.join(ROOT, c.fichero), 'utf8')).partidos);
   for (const f of todos.filter(f => /^estadisticaPartido.*\.xlsx$/i.test(f))) {
     let h;
     try { h = leerHoja(path.join(DESDE, f)); } catch (e) { console.log(`  ! ${f}: no se puede leer (${e.message})`); continue; }
     if (!h.titulo.includes(cfg.etiqueta_fbm)) continue;
-    // Se conserva el nombre si ya dice jornada y equipo; si no, uno único y legible.
-    const nombre = datosDelNombre(f) ? f.replace(/ \(\d+\)(?=\.xlsx$)/i, '')
-      : `estadisticaPartido_${h.equipo.toLowerCase()}_vs_${normEquipo(normEquipo(h.local) === h.equipo ? h.visitante : h.local).replace(/ /g, '-').toLowerCase()}_${md5(path.join(DESDE, f))}.xlsx`;
+    const rival = h.esLocal ? h.visitante : h.local;
+    const cal = calendario.filter(c => c.equipo === h.equipo && !c.descansa && c.local === h.esLocal && normEquipo(c.rival) === normEquipo(rival));
+    if (cal.length !== 1) console.log(`  ! ${f}: ${h.equipo} ${h.esLocal ? 'en casa' : 'fuera'} contra ${rival}: ${cal.length} partidos posibles en el calendario (se copia igualmente; el pipeline decidirá).`);
+    const jor = cal.length === 1 ? 'J' + String(cal[0].jornada).padStart(2, '0') : 'J--';
+    const nombre = `estadisticaPartido_${jor}_${h.equipo}_vs_${normEquipo(rival).replace(/ /g, '-').toLowerCase()}_${md5(path.join(DESDE, f))}.xlsx`;
     plan.push({ origen: f, destino: 'hojas', nombre, que: `hoja ${h.titulo.replace(/^Estadísticas - /, '').replace(/ - SenMas.*$/, '')}` });
   }
   // Asistencia: el export de SportEasy más reciente modificado desde el inicio de temporada.
-  const bilan = todos.filter(f => /^bilan_presence.*\.xlsx$/i.test(f))
+  const bilan = args.includes('--sin-asistencia') ? undefined : todos.filter(f => /^bilan_presence.*\.xlsx$/i.test(f))
     .map(f => ({ f, t: fs.statSync(path.join(DESDE, f)).mtime })).filter(x => x.t.toISOString().slice(0, 10) >= cfg.inicio)
     .sort((a, b) => b.t - a.t)[0];
   if (bilan) plan.push({ origen: bilan.f, destino: 'asistencia', nombre: `bilan_presence_${bilan.t.toISOString().slice(0, 10)}_${md5(path.join(DESDE, bilan.f))}.xlsx`, que: 'asistencia de SportEasy' });
@@ -100,7 +106,7 @@ async function recoger() {
     console.log('\nERRORES — no se ha escrito nada:'); r.errores.forEach(e => console.log('  X ' + e));
     process.exit(1);
   }
-  r.enlaces.forEach(e => console.log(`  ✓ ${e.hoja} -> acta ${e.acta}, jornada ${e.pn}: puntos de la hoja = marcador (${e.validado})`));
+  r.enlaces.forEach(e => console.log(`  ✓ ${e.hoja} -> acta ${e.acta}, jornada ${e.pn}: ${e.acta === "PENDIENTE" ? "provisional" : "puntos de la hoja = marcador"} (${e.validado})`));
 
   // Resumen de lo nuevo
   const ya = new Set(antes.partidos.map(p => p.num));

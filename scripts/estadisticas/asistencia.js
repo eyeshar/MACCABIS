@@ -9,8 +9,10 @@
  *     "Asistencai entrenamientos" [sic]. Es el que alimentó season_2025-26.json.
  *   - "sporteasy": el export directo de SportEasy (bilan_presence_*.xlsx: una hoja por mes, una
  *     columna por evento con su tipo en la 2ª fila). Cuentan los eventos "Partido" (liga) y
- *     "Entrenamiento"; amistosos, torneos y "partido entre nosotros" no. PENDIENTE de probar con
- *     un export que ya traiga partidos de liga de 2026/27.
+ *     "Entrenamiento", y desde la jornada 1 de 2026/27 también "Campeonato" (partido de liga);
+ *     amistosos, torneos y "partido entre nosotros" no. Los "Campeonato" vienen SIN equipo: se
+ *     asigna cada uno a MdA o MdL cruzando quién consta "A tiempo" con quién jugó en cada hoja
+ *     de estadística; si no es inequívoco, el proceso para (ver asignarEquipos).
  *
  * Los nombres de SportEasy se traducen con nombres_sporteasy.json. Un nombre desconocido no se
  * adivina: se ignora y se avisa.
@@ -61,10 +63,40 @@ function leerCompuesto(fichero, avisos) {
 const ESTADOS = { 'a tiempo': 'fueron', 'con excusa': 'excusa', 'sin excusa': 'sin_excusa',
   'no convocado': 'no_conv', 'lesionado': 'lesion' };
 
+/**
+ * Asigna cada evento "Campeonato" a MdA o MdL. `eventos`: [{ clave, fecha, aTiempo:Set(pid) }];
+ * `jugaron`: { MDA:Set(pid), MDL:Set(pid) } (quién jugó, según las hojas). Para cada evento se
+ * mide el parecido (Jaccard) entre "A tiempo" y los jugadores de cada hoja. Se asigna sólo si el
+ * mejor equipo supera 0,7, dobla al otro y no hay dos eventos del mismo día para el mismo equipo.
+ * Lo que no cumpla lanza un Error: decide una persona, no el script.
+ */
+function asignarEquipos(eventos, jugaron, avisos) {
+  const jac = (a, b) => { const i = [...a].filter(x => b.has(x)).length; return i / (a.size + b.size - i || 1); };
+  const res = new Map(), porDia = {};
+  for (const e of eventos) {
+    const sc = Object.fromEntries(Object.entries(jugaron).map(([eq, set]) => [eq, jac(e.aTiempo, set)]));
+    const orden = Object.entries(sc).sort((a, b) => b[1] - a[1]);
+    const [eq, mejor] = orden[0], otro = orden[1] ? orden[1][1] : 0;
+    const det = Object.entries(sc).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(', ');
+    if (mejor < 0.7 || otro > mejor / 2)
+      throw new Error(`Asistencia: no puedo asignar con seguridad el "Campeonato" del ${e.fecha} a un equipo (parecido con las hojas: ${det}). Dime a cuál corresponde.`);
+    const dia = porDia[e.fecha] || (porDia[e.fecha] = new Set());
+    if (dia.has(eq)) throw new Error(`Asistencia: dos "Campeonato" del ${e.fecha} salen como ${eq} (${det}). Dime cuál es cuál.`);
+    dia.add(eq);
+    res.set(e.clave, eq);
+    const lista = [...e.aTiempo].filter(x => !jugaron[eq].has(x)).map(x => `${x} consta "A tiempo" pero no jugó`);
+    for (const x of jugaron[eq]) if (!e.aTiempo.has(x)) lista.push(`${x} jugó pero no consta "A tiempo"`);
+    avisos.push(`Asistencia: "Campeonato" del ${e.fecha} -> ${eq} (parecido ${det})` + (lista.length ? '; DISCREPANCIAS con la hoja: ' + lista.join('; ') : '; coincide exactamente con la hoja.'));
+  }
+  return res;
+}
+
 /** Export directo de SportEasy (uno o varios bilan_presence_*.xlsx). */
-function leerSportEasy(ficheros, avisos, ignorar = []) {
+function leerSportEasy(ficheros, avisos, ignorar = [], jugaron = null) {
   const cuenta = { part: {}, entr: {} };
   const vistos = new Set();                          // un mismo evento puede venir en dos exports
+  const camp = new Map();                            // "Campeonato": clave de evento -> { fecha, aTiempo }
+  const sinMapa = new Map();                         // nombres de SportEasy sin persona, con respuestas reales
   for (const f of ficheros) {
     const wb = require('xlsx').readFile(f);
     for (const hoja of wb.SheetNames) {
@@ -75,13 +107,22 @@ function leerSportEasy(ficheros, avisos, ignorar = []) {
         const nombre = limpia(r[0]);
         if (!nombre) continue;
         const id = MAPA.nombres[nombre];
-        if (!id) continue;                           // miembros de SportEasy que no son del club
-        if (ignorar.includes(id)) continue;
+        if (id && ignorar.includes(id)) continue;
         for (let c = 1; c < r.length; c++) {
           const tipo = limpia(tipos[c]), fecha = limpia(fechas[c]);
           if (!fecha || !/\d{2}\/\d{2}\/\d{2}/.test(fecha)) continue;
-          const clase = tipo === 'Partido' ? 'part' : tipo === 'Entrenamiento' ? 'entr' : null;
+          const clase = ['Partido', 'Campeonato'].includes(tipo) ? 'part' : tipo === 'Entrenamiento' ? 'entr' : null;
           if (!clase) continue;
+          const estado = limpia(r[c]).toLowerCase();
+          if (!id) {                                 // miembros de SportEasy que no son del club, salvo que respondan
+            if (estado && estado !== 'no convocado') sinMapa.set(nombre, (sinMapa.get(nombre) || 0) + 1);
+            continue;
+          }
+          if (tipo === 'Campeonato') {
+            const ev = [hoja, c].join('|');
+            const e = camp.get(ev) || camp.set(ev, { clave: ev, fecha, aTiempo: new Set() }).get(ev);
+            if (estado === 'a tiempo') e.aTiempo.add(id);
+          }
           const k = [id, fecha, tipo, c].join('|');
           if (vistos.has(k)) continue;
           vistos.add(k);
@@ -93,6 +134,11 @@ function leerSportEasy(ficheros, avisos, ignorar = []) {
       }
     }
   }
+  if (camp.size) {
+    if (!jugaron) throw new Error('Asistencia: hay eventos "Campeonato" y no tengo las hojas de estadística para asignarlos a MdA o MdL.');
+    asignarEquipos([...camp.values()], jugaron, avisos);
+  }
+  for (const [nombre, k] of sinMapa) avisos.push(`Asistencia: "${nombre}" responde en ${k} evento(s) pero NO está en nombres_sporteasy.json: no cuenta (¿quién es?).`);
   const part = {}, entr = {};
   for (const [id, o] of Object.entries(cuenta.part)) part[id] = { ...partidos(o), sin_excusa: o.sin_excusa };
   for (const [id, o] of Object.entries(cuenta.entr)) entr[id] = { ...entrenos(o), sin_excusa: o.sin_excusa };
@@ -103,7 +149,7 @@ function leerSportEasy(ficheros, avisos, ignorar = []) {
  * @param cfg  { formato: 'compuesto', fichero } | { formato: 'sporteasy', ficheros: [...] }
  * @param base carpeta de la temporada
  */
-function leerAsistencia(cfg, base, avisos, temporada) {
+function leerAsistencia(cfg, base, avisos, temporada, jugaron = null) {
   if (!cfg) return { part: {}, entr: {} };
   if (cfg.formato === 'compuesto') return leerCompuesto(path.join(base, cfg.fichero), avisos);
   if (cfg.formato === 'sporteasy') {
@@ -115,7 +161,7 @@ function leerAsistencia(cfg, base, avisos, temporada) {
         .map(f => path.join(dir, f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs).slice(0, 1);
     }
     if (!ficheros.length) { avisos.push('Asistencia: todavía no hay export de SportEasy; la temporada sale sin asistencia.'); return { part: {}, entr: {} }; }
-    return leerSportEasy(ficheros, avisos, (MAPA.ignorar || {})[temporada] || []);
+    return leerSportEasy(ficheros, avisos, (MAPA.ignorar || {})[temporada] || [], jugaron);
   }
   throw new Error('Formato de asistencia desconocido: ' + cfg.formato);
 }

@@ -69,14 +69,21 @@ function construir({ temporada, cfg, actas, hojas, asistencia, calendario, perso
 
   // ---------------------------------------------------------------- hojas <-> actas
   // Se enlazan por equipo + rival + marcador (la hoja no trae nº de partido). Nunca por orden.
-  const enlaces = [];
+  const enlaces = [], sinActa = [];
   for (const h of hojas) {
     const sumaHoja = h.jugadores.reduce((s, j) => s + j.pts, 0);
     const esLocal = club[h.equipo].some(x => normEquipo(x) === normEquipo(h.local));
     const rivalHoja = esLocal ? h.visitante : h.local;
     const cands = partidos.filter(p => p.eq === h.equipo && normEquipo(p.rivalActa) === normEquipo(rivalHoja) && p.pf === sumaHoja);
     let p = cands.length === 1 ? cands[0] : cands.find(c => c.somosA === esLocal && cands.filter(d => d.somosA === esLocal).length === 1);
-    if (!p) { errores.push(`${h.fichero}: no encuentro un acta única de ${h.equipo} contra "${rivalHoja}" con ${sumaHoja} puntos (${cands.length} candidatas).`); continue; }
+    if (!p) {
+      // ¿Hay acta de este partido (mismo equipo, rival y local/visitante) pero con otro marcador? No se publica.
+      const mismo = partidos.filter(q => q.eq === h.equipo && !q.hoja && normEquipo(q.rivalActa) === normEquipo(rivalHoja) && q.somosA === esLocal);
+      if (mismo.length) { errores.push(`${h.fichero}: NO CUADRA con el acta ${mismo.map(q => `${q.acta.num} (${q.pf}-${q.pc})`).join(', ')}: la hoja suma ${sumaHoja}${h.totalesRival ? '-' + h.totalesRival.pts : ''}.`); continue; }
+      if (cfg.hojas_sin_acta) { sinActa.push({ h, esLocal, rivalHoja, sumaHoja }); continue; }
+      errores.push(`${h.fichero}: no encuentro un acta única de ${h.equipo} contra "${rivalHoja}" con ${sumaHoja} puntos (${cands.length} candidatas).`); continue;
+    }
+    if (h.totalesRival && h.totalesRival.pts !== p.pc) { errores.push(`${h.fichero}: el rival suma ${h.totalesRival.pts} en la hoja y ${p.pc} en el acta ${p.acta.num}.`); continue; }
     if (p.hoja) { errores.push(`${h.fichero}: el acta ${p.acta.num} ya está enlazada con ${p.hoja.fichero}.`); continue; }
     if (h.totales && h.totales.pts !== sumaHoja) errores.push(`${h.fichero}: la fila TOTALES (${h.totales.pts}) no coincide con la suma de jugadores (${sumaHoja}).`);
     p.hoja = h; p.rivalHoja = rivalHoja; p.localHoja = esLocal;
@@ -85,8 +92,28 @@ function construir({ temporada, cfg, actas, hojas, asistencia, calendario, perso
     enlaces.push({ hoja: h.fichero, acta: p.acta.num, validado: `${sumaHoja} = ${p.pf}`, p });
   }
 
+  // Hojas sin acta (excepción puntual a D66, ver cfg.hojas_sin_acta): el partido se publica como
+  // PARCIAL PENDIENTE DE ACTA. Equipo, rival y local/visitante salen de la hoja; fecha, hora, pista
+  // y jornada, del calendario. Cuando llegue el acta, el enlace de arriba lo completa y lo valida.
+  for (const { h, esLocal, rivalHoja, sumaHoja } of sinActa) {
+    const tomadas = new Set(partidos.map(q => (calendario || []).find(c => c.equipo === q.eq && c.fecha === q.acta.fecha && !c.descansa)));
+    const cal = (calendario || []).filter(c => c.equipo === h.equipo && !c.descansa && c.local === esLocal && normEquipo(c.rival) === normEquipo(rivalHoja));
+    const libres = cal.filter(c => !tomadas.has(c));
+    if (libres.length !== 1) { errores.push(`${h.fichero}: ${h.equipo} ${esLocal ? 'en casa' : 'fuera'} contra "${rivalHoja}": hay ${libres.length} partidos posibles en el calendario; no adivino cuál es.`); continue; }
+    const c = libres[0];
+    const pc = h.totalesRival ? h.totalesRival.pts : null;
+    if (pc === null) { errores.push(`${h.fichero}: no encuentro los puntos totales del rival en la hoja.`); continue; }
+    if (c.pf !== null && c.pf !== undefined && (c.pf !== sumaHoja || c.pc !== pc)) { errores.push(`${h.fichero}: la hoja (${sumaHoja}-${pc}) no coincide con el calendario (${c.pf}-${c.pc}).`); continue; }
+    const pn = /DISTRITO|FINAL|PLAY/i.test(c.fase) ? cfg.jornadas_liga + c.jornada : c.jornada;
+    const p = { acta: { num: `prov-${h.equipo}-${c.fecha}`, fecha: c.fecha, hora: c.hora, pista: c.campo ? 'Pista ' + c.campo : null, cuartos: [] },
+      eq: h.equipo, somosA: esLocal, pf: sumaHoja, pc, incomp: false, rivalActa: rivalHoja, pendiente: true,
+      hoja: h, rivalHoja, localHoja: esLocal, pn, calendario: c, res: sumaHoja > pc ? 'G' : 'P' };
+    partidos.push(p);
+    enlaces.push({ hoja: h.fichero, acta: 'PENDIENTE', validado: `${sumaHoja}-${pc} sólo de la hoja; falta el acta`, p });
+  }
+
   // Cada acta con su partido del calendario abierto (mismo equipo y fecha), si lo hay.
-  for (const p of partidos) p.calendario = (calendario || []).find(c => c.equipo === p.eq && c.fecha === p.acta.fecha && !c.descansa);
+  for (const p of partidos) if (!p.pendiente) p.calendario = (calendario || []).find(c => c.equipo === p.eq && c.fecha === p.acta.fecha && !c.descansa);
 
   // Jornada de las actas sin hoja: primero lo fijado a mano, después el calendario abierto.
   for (const p of partidos) {
@@ -101,6 +128,7 @@ function construir({ temporada, cfg, actas, hojas, asistencia, calendario, perso
 
   // Resultado de las incomparecencias: el acta sale 0-0 y sin vencedor.
   for (const p of partidos) {
+    if (p.pendiente) continue;
     if (!p.incomp) { p.res = p.pf > p.pc ? 'G' : 'P'; continue; }
     const manual = (cfg.resultados_manuales || {})[p.acta.num];
     if (manual) p.res = manual;
@@ -116,9 +144,10 @@ function construir({ temporada, cfg, actas, hojas, asistencia, calendario, perso
     num: p.acta.num, equipo: p.eq, fecha: p.acta.fecha,
     rival: pyTitle(p.rivalActa) + (esPO(p) ? ' (PO)' : ''),
     pf: p.pf, pc: p.pc, incomp: p.incomp, res: p.res, convocados: [], pn: p.pn,
-    q_us: p.incomp ? null : p.acta.cuartos.map(c => p.somosA ? c.a : c.b),
-    q_them: p.incomp ? null : p.acta.cuartos.map(c => p.somosA ? c.b : c.a),
+    q_us: p.incomp || p.pendiente ? null : p.acta.cuartos.map(c => p.somosA ? c.a : c.b),
+    q_them: p.incomp || p.pendiente ? null : p.acta.cuartos.map(c => p.somosA ? c.b : c.a),
     hora: p.acta.hora, pista: p.acta.pista,
+    ...(p.pendiente ? { pendiente_acta: true } : {}),
   }));
 
   // ---------------------------------------------------------------- jugadores (hojas)
@@ -196,6 +225,17 @@ function construir({ temporada, cfg, actas, hojas, asistencia, calendario, perso
     }
     json.plantilla = [...porId.values()].map(o => ({ ...o, fichas: o.fichas.sort() }))
       .sort((a, b) => a.display.localeCompare(b.display, 'es'));
+    // Gente de la plantilla con asistencia pero aún sin partidos con hoja (p. ej. en la jornada 1):
+    // entra con estadísticas a cero para que su asistencia salga en la web.
+    const ya = new Set(players.map(p => p.person_id));
+    for (const o of json.plantilla) {
+      const ap = (asistencia.part || {})[o.person_id] || null, ae = (asistencia.entr || {})[o.person_id] || null;
+      if (ya.has(o.person_id) || (!ap && !ae)) continue;
+      const nombre = (reg.get(o.person_id) || {}).display || o.display;
+      players.push({ nombre, dorsales: [], equipos: o.fichas, conv: 0, pj: 0, min_tot: 0,
+        tot: Object.fromEntries(CAMPOS.map(f => [f, 0])), games: [], avg: null, tl_pct: null, p2_pct: null, p3_pct: null,
+        pm_total: 0, ppm: null, display: nombre, asist_part: ap, asist_entr: ae, person_id: o.person_id });
+    }
   }
   return { json, errores, avisos, enlaces };
 }
@@ -209,7 +249,14 @@ async function leerFuentes(temporada, cfg) {
   for (const f of listar(path.join(base, 'actas'), /^Acta-Partido-\d+\.pdf$/i)) actas.push(await leerActa(f));
   const hojas = listar(path.join(base, 'hojas'), /^[^~].*\.xlsx$/i).map(f => leerHoja(f));
   const avisos = [];
-  const asistencia = leerAsistencia(cfg.asistencia, base, avisos, temporada);
+  // Quién jugó en cada hoja (para asignar los "Campeonato" sin equipo de SportEasy a MdA o MdL).
+  const aliasN = cfg.alias_nombres || {};
+  const jugaron = {};
+  for (const h of hojas) {
+    const set = jugaron[h.equipo] || (jugaron[h.equipo] = new Set());
+    for (const j of h.jugadores) if (j.sec > 0) { const s = slug(aliasN[j.nombre] || j.nombre); set.add(ALIAS[s] || s); }
+  }
+  const asistencia = leerAsistencia(cfg.asistencia, base, avisos, temporada, Object.keys(jugaron).length ? jugaron : null);
   let calendario = [];
   for (const c of cfg.calendario || []) {
     const f = path.join(ROOT, c.fichero);

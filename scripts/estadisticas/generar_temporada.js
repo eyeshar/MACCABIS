@@ -29,6 +29,7 @@ const { pyRound, pyTitle, limpia, normEquipo } = require('./util');
 const { leerActa } = require('./leer_acta');
 const { leerHoja } = require('./leer_hoja');
 const { leerAsistencia } = require('./asistencia');
+const { publica, detalle, escribirPrivado } = require('./asistencia_privacidad');
 const { partidosDelClub } = require('./calendario_abierto');
 const { slug } = require('../parse_diccionario.js');
 const { ALIAS } = require('../build_personas.js');
@@ -195,8 +196,9 @@ function construir({ temporada, cfg, actas, hojas, asistencia, calendario, perso
     rec.pm_total = tot.pm;
     rec.ppm = rec.min_tot ? pyRound(tot.pts / rec.min_tot, 2) : null;
     rec.display = displayDe(nombre);
-    rec.asist_part = (asistencia.part || {})[pid] || null;
-    rec.asist_entr = (asistencia.entr || {})[pid] || null;
+    // Público: solo { fueron, total, pct }; los motivos van a privado/ (D82).
+    rec.asist_part = publica((asistencia.part || {})[pid]);
+    rec.asist_entr = publica((asistencia.entr || {})[pid]);
     rec.person_id = pid;
     players.push(rec);
   }
@@ -234,10 +236,18 @@ function construir({ temporada, cfg, actas, hojas, asistencia, calendario, perso
       const nombre = (reg.get(o.person_id) || {}).display || o.display;
       players.push({ nombre, dorsales: [], equipos: o.fichas, conv: 0, pj: 0, min_tot: 0,
         tot: Object.fromEntries(CAMPOS.map(f => [f, 0])), games: [], avg: null, tl_pct: null, p2_pct: null, p3_pct: null,
-        pm_total: 0, ppm: null, display: nombre, asist_part: ap, asist_entr: ae, person_id: o.person_id });
+        pm_total: 0, ppm: null, display: nombre, asist_part: publica(ap), asist_entr: publica(ae), person_id: o.person_id });
     }
   }
-  return { json, errores, avisos, enlaces };
+  // Detalle de asistencia con motivos: solo para gestores, fuera de git (D82).
+  const ids = new Set([...Object.keys(asistencia.part || {}), ...Object.keys(asistencia.entr || {})]);
+  const asistenciaPrivada = [...ids].sort().map(pid => ({
+    person_id: pid,
+    display: (players.find(p => p.person_id === pid) || {}).display || (reg.get(pid) || {}).display || pid,
+    partidos: detalle((asistencia.part || {})[pid]),
+    entrenos: detalle((asistencia.entr || {})[pid]),
+  }));
+  return { json, errores, avisos, enlaces, asistenciaPrivada };
 }
 
 // ---------------------------------------------------------------------- lectura de ficheros
@@ -285,7 +295,10 @@ async function generar(temporada, { dry = false } = {}) {
     if (nb(previo) > nb(r.json))
       r.errores.push(`data/season_${temporada}.json tiene ${nb(previo)} boxscores y con las fuentes de ${cfg.carpeta} salen ${nb(r.json)}: faltan hojas; no se sobrescribe.`);
   }
-  if (!dry && !r.errores.length) fs.writeFileSync(destino, JSON.stringify(r.json) + '\n', 'utf8');
+  if (!dry && !r.errores.length) {
+    fs.writeFileSync(destino, JSON.stringify(r.json) + '\n', 'utf8');
+    if (r.asistenciaPrivada.length) r.ficheroAsistencia = escribirPrivado(temporada, r.asistenciaPrivada);
+  }
   return r;
 }
 

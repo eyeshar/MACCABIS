@@ -6,6 +6,8 @@ import escudo from "../../../../public/escudo.png";
 import NavGestion from "./NavGestion";
 
 export const dynamic = "force-dynamic";
+// Exige login: fuera de los buscadores (D85).
+export const metadata = { robots: { index: false, follow: false } };
 
 // Marco de gestion (maqueta Gestion, D76): tema claro, cabecera oscura y menu lateral.
 export default async function PanelGestion({ children }: { children: React.ReactNode }) {

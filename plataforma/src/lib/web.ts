@@ -1,7 +1,7 @@
 // Configuracion de la web publica (D76): un solo sitio para lo que se repite en varias pantallas.
 
-/** Año de fundacion que se muestra ("Desde 2013"). PENDIENTE DE CONFIRMAR por Ivan: SportEasy dice 2012.
- *  Si cambia, se cambia solo aqui (el escudo, que es una imagen, dice "since 2013" y habria que rehacerlo aparte). */
+/** Año de fundacion que se muestra ("Desde 2013"): 2013, temporada 2013/14, confirmado por Ivan (D81).
+ *  Un solo sitio: el escudo (imagen) tambien dice "since 2013". */
 export const FUNDACION = 2013;
 
 /** Web de estadisticas actual (GitHub Pages). Las secciones aun no migradas enlazan aqui (inventario en
@@ -16,7 +16,7 @@ export function estadisticas(pestana?: string, extra: Record<string, string> = {
 
 export type Seccion = { id: string; texto: string; href: string; externo: boolean };
 
-/** Menu principal de la web publica (maqueta Main). Partidos y El club viven en la portada nueva; Liga, Plantilla e
+/** Menu principal de la web publica (maqueta Main). Partidos vive en la portada y El club en /club; Liga, Plantilla e
  *  Historia siguen en la web de estadisticas hasta su migracion. */
 export const MENU: Seccion[] = [
   { id: "inicio", texto: "Inicio", href: "/", externo: false },
@@ -24,7 +24,7 @@ export const MENU: Seccion[] = [
   { id: "liga", texto: "Liga", href: estadisticas("liga"), externo: true },
   { id: "plantilla", texto: "Plantilla", href: estadisticas("jugadores"), externo: true },
   { id: "historia", texto: "Historia", href: estadisticas("historia"), externo: true },
-  { id: "club", texto: "El club", href: "/#club", externo: false },
+  { id: "club", texto: "El club", href: "/club", externo: false },
 ];
 
 export const NOMBRE_EQUIPO = { MDA: "MdA", MDL: "MdL" } as const;

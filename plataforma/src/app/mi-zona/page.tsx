@@ -24,6 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: zona ? `${zona.jugador.nombre_visible} · Maccabis` : "Maccabis",
     manifest: zona ? "/mi-zona/manifest.webmanifest" : undefined,
+    robots: { index: false, follow: false },
   };
 }
 

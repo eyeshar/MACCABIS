@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed, JetBrains_Mono } from "next/font/google";
 import RegistroSW from "@/components/RegistroSW";
+import { URL_PRODUCCION, esVistaPrevia } from "@/lib/indexacion";
 import "./globals.css";
 
 // Tipos del redisenio (D76). next/font los sirve desde el propio dominio: la CSP sigue en font-src 'self'.
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
   title: "Maccabis",
   description: "Maccabis, baloncesto en Madrid: MdA y MdL en la Liga Municipal de Moratalaz. Partidos, clasificación, estadísticas e historia del club.",
   applicationName: "Maccabis",
-  robots: { index: false, follow: false },
+  metadataBase: new URL(URL_PRODUCCION),
+  // D85: la web publica se indexa (salvo en las vistas previas de Vercel); lo que exige login pone noindex en su layout.
+  robots: esVistaPrevia() ? { index: false, follow: false } : { index: true, follow: true },
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Maccabis", statusBarStyle: "black-translucent" },
 };

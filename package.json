@@ -16,6 +16,7 @@
     "jornada": "node scripts/estadisticas/procesar_jornada.js 2026-27",
     "test:regresion": "node scripts/estadisticas/test_regresion_2025_26.js",
     "test:liga": "node scripts/estadisticas/test_liga.js",
+    "test:privacidad": "node scripts/estadisticas/test_privacidad.js",
     "liga": "node scripts/estadisticas/liga.js 2026-27"
   },
   "devDependencies": {

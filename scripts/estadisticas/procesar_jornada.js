@@ -153,5 +153,21 @@ async function recoger() {
   try { execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js'), '--check'], { stdio: 'pipe' }); console.log('Identidades: OK (check:personas).'); }
   catch (e) { console.log('Identidades: PROBLEMAS\n' + e.stdout); process.exit(1); }
 
-  console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json y data/index.json.');
+  // Privacidad de la asistencia (D82): ningún JSON público puede llevar motivos de ausencia.
+  const { comprobarPublicos } = require('./asistencia_privacidad');
+  const conMotivos = comprobarPublicos();
+  if (conMotivos.length) {
+    console.log('\nERROR: motivos de ausencia en ficheros públicos (D82):');
+    conMotivos.forEach(m => console.log(`  X ${m.fichero}: ${m.rutas.slice(0, 3).join(', ')}`));
+    process.exit(1);
+  }
+  if (r.ficheroAsistencia) console.log(`Asistencia con motivos (solo gestores): ${path.relative(ROOT, r.ficheroAsistencia)} -> Supabase con "npm run db:asistencia" en plataforma/.`);
+
+  // Portada de la web (D84): copias de data/ en plataforma/src/data/. Solo se llega aquí si la jornada cuadra.
+  try {
+    const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'sincronizar_equipacion.mjs')], { stdio: 'pipe' }).toString().trim();
+    console.log(`Plataforma: ${salida} (npm run datos:sync)`);
+  } catch (e) { console.log('Plataforma: NO se han podido sincronizar las copias de plataforma/src/data/:\n' + (e.stderr || e.message)); process.exit(1); }
+
+  console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/index.json y plataforma/src/data/.');
 })().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });

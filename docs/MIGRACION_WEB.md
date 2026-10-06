@@ -23,7 +23,7 @@
 | Liga | GitHub Pages `?p=liga` | pendiente de migrar (orden 1) |
 | Plantilla | GitHub Pages `?p=jugadores` | pendiente de migrar (orden 2) |
 | Historia | GitHub Pages `?p=historia` (El Club) | pendiente de migrar (orden 5) |
-| El club | `/#club` (pie) | queda pendiente una página «El club» con contenido propio (ver dudas) |
+| El club | `/club` | nuevo (D86, 06/10/2026): qué es el club, MdA y MdL, cifras, entrenos y dónde jugamos; enlaza a la rejilla de Historia de GitHub Pages |
 
 ## Inventario de secciones de GitHub Pages
 
@@ -58,7 +58,7 @@ Ficheros de `data/` que la web **no lee** pero son públicos (repositorio públi
 | 4 | **Rivales 26/27** | Independiente, útil en temporada; cuesta el modal y el SVG. | M (≈1 sesión) |
 | 5 | **El Club (historia)** | La más grande y necesita la Ficha migrada. | L (≈2 sesiones) |
 | 6 | **MdA (histórico)** | Poco uso. | S/M |
-| 7 | **Asistencia** | Solo cuando Iván decida qué se publica (P1); lo probable es llevarla a la zona con login o publicarla sin excusa ni lesión. | S |
+| 7 | **Asistencia** | Desde D82 ya solo publica asistidos, total y % (sin motivos); los motivos viven en Supabase, solo gestores. Migrarla es solo copiar la tabla. | S |
 
 Al migrar cada sección: misma URL corta en la web nueva (p. ej. `/liga`, `/jugadores`, `/jugador/<person_id>`), el menú
 deja de apuntar a GitHub Pages y la pestaña antigua redirige (o enlaza) a la nueva. GitHub Pages se mantiene hasta que
@@ -71,18 +71,15 @@ entrena» (D39), jugadores o árbitros de otros equipos (D43/D73) en `data/`. `f
 `person_id` por año y equipo (cumple D17). Los ficheros de liga, calendario, equipaciones y rivales solo tienen datos por
 equipo (cumple D73).
 
-**Hallazgos (señalados, no cambiados: en este paso no se reescriben las secciones públicas; decide Iván):**
+**Hallazgos** (06/10/2026; estado tras las respuestas de Iván de esa misma noche, D82):
 
 | # | Qué | Dónde | Regla | ¿Se ve? | Severidad | Propuesta |
 |---|---|---|---|---|---|---|
-| **P1** | Ausencias por jugador **con motivo**: «con excusa», «lesión» (dato de salud), «no convocado», «% no seleccionado» | `data/season_2025-26.json` y `season_2026-27.json` → `players[].asist_part` / `asist_entr` (`excusa`, `lesion`, `no_conv`, `sin_excusa`, `pct_nosel`); pestaña **Asistencia** | D46 (los jugadores nunca ven motivos de ausencia) | **Sí**, con nombre | **Alta** | Quitar esos campos de los JSON públicos y de la tabla; como mucho dejar «fueron» y el %, o llevar la pestaña a la zona con login. |
-| **P2** | Correos personales de 3 jugadores | `docs/ESTADO.md` (bloque del 03/10/2026, cambio de correo seguro) | D17 / privacidad | No se pinta, pero el repositorio es público | **Alta** | **Corregido en este bloque** en la versión actual (sustituidos por `<correo>`). Siguen en el historial de git: decidir si se reescribe el historial (`git filter-repo`) o se asume y se avisa a los afectados. |
-| P3 | Copia antigua del panel 25/26 con la asistencia embebida | `docs/dashboard-maccabis-25-26-v1.html` | D46 | Solo si alguien abre esa URL de Pages | Media | Borrarlo del repositorio o regenerarlo sin asistencia. |
+| **P1** | Ausencias por jugador **con motivo** («con excusa», «lesión», «no convocado», «sin excusa», «% no seleccionado») en ficheros públicos y en la pestaña Asistencia | `data/season_2025-26.json`, `season_2026-27.json` (`asist_part`/`asist_entr`) | D46 | — | Alta | **RESUELTO (D82):** los JSON públicos y la pestaña solo llevan `{fueron, total, pct}`; el detalle va a `privado/asistencia/` y a Supabase (`asistencia_motivos`, solo gestores; en real pendiente del OK). `npm run test:privacidad` y `npm run jornada` fallan si vuelve. Las versiones antiguas siguen en el historial de git. |
+| **P2** | Correos personales de 3 jugadores | `docs/ESTADO.md` (bloque del 03/10/2026) | D17 / privacidad | No | Alta | Sustituidos por `<correo>` en la versión actual. **No se reescribe el historial de git**: decisión pendiente de Iván (recomendación: asumirlo). |
+| P3 | Copia antigua del panel 25/26 con la asistencia embebida | `docs/dashboard-maccabis-25-26-v1.html` | D46 | — | Media | **RESUELTO:** borrado del repositorio (D82). |
 | P4 | Recuentos de asistencia del resumen MdA (sin motivo) | `season_2023-24.json` y `2024-25` → `mda_resumen.jugadores[].asist_partidos/asist_entrenos`; pestaña MdA | D46, marginal | Sí | Baja | Aceptable; quitarlo junto a P1 si se quiere un criterio único. |
 | P5 | Nota personal menor sobre un exjugador | `data/historia_club.json` → `personas[].nota` | — | No | Baja | Reducir la nota a «identificado por hoja de inscripción». |
 | P6 | Ficheros internos de trabajo publicados sin uso en la web | `data/rivales_2026-27.json`, `data/diccionario_nombres.json` | — | No | Baja | Moverlos fuera de `data/` si la web no los necesita. |
 
-La web nueva no hereda ninguno: la portada solo usa datos por equipo, los líderes (puntos, triples, tiros libres) y las
-cifras de historia; Mi zona solo muestra al jugador sus propias estadísticas; la copia `src/data/temporada.json` incluye los
-campos de P1 porque es copia literal de `data/`, pero **no se pinta** en ninguna pantalla nueva (corregir P1 en `data/` y
-`npm run datos:sync` los quita también de ahí).
+La web nueva no hereda ninguno: la portada y `/club` solo usan datos por equipo, los líderes (puntos, triples, tiros libres) y las cifras de historia; Mi zona solo muestra al jugador sus propias estadísticas. Desde D82 la copia `src/data/temporada.json` tampoco lleva motivos de ausencia (lo comprueba `npm run test:privacidad`).

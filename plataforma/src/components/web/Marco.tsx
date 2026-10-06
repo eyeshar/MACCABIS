@@ -69,11 +69,12 @@ export function BarraSecciones({ actual = "inicio" }: { actual?: string }) {
 
 export function PiePublico() {
   return (
-    <footer id="club" className="w-pie">
+    <footer id="pie" className="w-pie">
       <div className="w-dentro w-pie-fila">
         <Escudo decorativo />
         <span>Maccabis · Baloncesto en Madrid desde {FUNDACION}</span>
         <span>Fuente: actas y hojas oficiales de la FBM</span>
+        <Link href="/club">El club</Link>
         <a href={estadisticas()}>Todas las estadísticas</a>
         <Link href="/privacidad">Privacidad</Link>
         <Link href="/entrar" className="w-pie-acceso">Acceso jugadores y gestores</Link>

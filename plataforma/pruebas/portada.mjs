@@ -9,6 +9,7 @@
 // Deja capturas reales en privado/mockups_liga/rediseno/real_{portada,acceso,mizona,gestion}_{375,escritorio}.png.
 
 import fs from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -27,7 +28,16 @@ const equip = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'equipaciones_2
 const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
 const resumen = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'historia_resumen.json'), 'utf8'));
 
-const PUERTO = 3104;
+const PUERTO = 3104, PUERTO_WEB = 3105;
+const WEB = `http://127.0.0.1:${PUERTO_WEB}`;
+// Servidor estatico de la raiz del repo (la web de GitHub Pages tal cual) para la pestaña publica de Asistencia.
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png' };
+const servidorWeb = http.createServer((req, res) => {
+  const f = path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'), decodeURIComponent(new URL(req.url, WEB).pathname));
+  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+  res.writeHead(200, { 'content-type': TIPOS[path.extname(f)] ?? 'application/octet-stream' });
+  fs.createReadStream(f).pipe(res);
+}).listen(PUERTO_WEB, '127.0.0.1');
 const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -104,8 +114,13 @@ try {
   ok(equilibrado && pila_.length === 0, 'BEGIN/END equilibrados');
   const ev = ics.replace(/\r\n /g, '').split('BEGIN:VEVENT').slice(1).map((b) => b.split('END:VEVENT')[0]);
   const partidos = cal.partidos.filter((p) => !p.descansa && p.rival && p.fecha);
-  const miercoles = (() => { let n = 0; for (let d = new Date('2026-10-07T12:00:00Z'); d.toISOString().slice(0, 10) <= cal.partidos.map((p) => p.fecha).sort().at(-1); d.setUTCDate(d.getUTCDate() + 7)) n++; return n; })();
+  // Entrenos esperados: todos los miercoles del 07/10/2026 al 05/05/2027 menos los cancelados (Navidad, festivos, Semana Santa).
+  const SIN_ENTRENO = ['2026-12-23', '2026-12-30', '2027-01-06', '2027-03-24'];
+  const miercoles = (() => { let n = 0; for (let d = new Date('2026-10-07T12:00:00Z'); d.toISOString().slice(0, 10) <= '2027-05-05'; d.setUTCDate(d.getUTCDate() + 7)) if (!SIN_ENTRENO.includes(d.toISOString().slice(0, 10))) n++; return n; })();
   ok(ev.length === partidos.length + miercoles, `${partidos.length} partidos + ${miercoles} entrenos`, String(ev.length));
+  for (const f of SIN_ENTRENO) ok(!ev.some((b) => b.includes(`DTSTART;TZID=Europe/Madrid:${f.replace(/-/g, '')}T2`) && b.includes('CATEGORIES:Entrenamiento')), `iCal: sin entreno el ${f}`);
+  const ultimos = ev.filter((b) => b.includes('CATEGORIES:Entrenamiento')).map((b) => b.match(/DTSTART;TZID=Europe\/Madrid:(\d{8})/)[1]).sort();
+  ok(ultimos.at(-1) === '20270505', 'iCal: el ultimo entreno es el 05/05/2027', ultimos.at(-1));
   ok(ev.every((b) => /\r\nUID:/.test(b) && /\r\nDTSTAMP:\d{8}T\d{6}Z/.test(b) && /\r\nDTSTART[;:]/.test(b) && /\r\nSUMMARY:/.test(b)), 'cada VEVENT con UID, DTSTAMP, DTSTART y SUMMARY');
   ok(new Set(ev.map((b) => b.match(/UID:(.*)/)[1])).size === ev.length, 'UID unicos');
   ok(desplegado.includes('TZID:Europe/Madrid') && ev.filter((b) => b.includes('DTSTART;TZID=Europe/Madrid')).length === ev.length, 'horas en Europe/Madrid con VTIMEZONE');
@@ -116,6 +131,37 @@ try {
   const e14 = ev.find((b) => b.includes('DTSTART;TZID=Europe/Madrid:20261014T203000'));
   ok(e14 && e14.includes('DTEND;TZID=Europe/Madrid:20261014T223000') && e14.includes('Pista por confirmar (Valdebernardo en obras)'), 'entreno 14/10: 20:30-22:30, pista por confirmar (Valdebernardo en obras)');
   ok(!/[\w.+-]+@(?!maccabis\b)[\w-]+\.[\w.]+/.test(ics.replace(/UID:[^\r]*/g, '')), 'el feed no lleva ningun correo');
+
+  console.log('\n== Indexacion (D85)');
+  const robotsTxt = await (await fetch(`${APP}/robots.txt`)).text();
+  ok(/Allow: \/\s/.test(robotsTxt) && ['/entrar', '/mi-zona', '/gestion', '/auth'].every((r) => robotsTxt.includes(`Disallow: ${r}`)), 'robots.txt: permite la web publica y prohibe /entrar, /mi-zona, /gestion y /auth', robotsTxt.replace(/\n/g, ' | '));
+  ok(robotsTxt.includes('Sitemap: https://maccabis.vercel.app/sitemap.xml'), 'robots.txt enlaza el sitemap');
+  const sm = await (await fetch(`${APP}/sitemap.xml`)).text();
+  ok(sm.includes('<loc>https://maccabis.vercel.app/club</loc>') && sm.includes('<loc>https://maccabis.vercel.app/</loc>') && !/entrar|mi-zona|gestion/.test(sm), 'sitemap: portada y /club, nada privado');
+  for (const ruta of ['/', '/club', '/privacidad']) {
+    const x = await fetch(`${APP}${ruta}`);
+    const cuerpo = await x.text();
+    ok(!(x.headers.get('x-robots-tag') || '').includes('noindex') && /<meta name="robots" content="index, follow"/.test(cuerpo), `${ruta}: indexable (sin X-Robots-Tag noindex, meta robots index)`);
+  }
+  for (const ruta of ['/entrar', '/mi-zona', '/gestion', '/gestion/liga', '/entrar/elegir']) {
+    const x = await fetch(`${APP}${ruta}`, { redirect: 'manual' });
+    ok((x.headers.get('x-robots-tag') || '').includes('noindex'), `${ruta}: X-Robots-Tag noindex`, String(x.headers.get('x-robots-tag')));
+  }
+  ok(/<meta name="robots" content="noindex, nofollow"/.test(await (await fetch(`${APP}/entrar`)).text()), '/entrar: meta robots noindex');
+  const ncfg = fs.readFileSync(path.join(RAIZ, 'next.config.ts'), 'utf8'), idxts = fs.readFileSync(path.join(RAIZ, 'src', 'lib', 'indexacion.ts'), 'utf8');
+  const lista = (t, re) => JSON.stringify((t.match(re) || [, ''])[1].match(/"[^"]+"/g));
+  ok(lista(ncfg, /const privadas = \[([^\]]+)\]/) === lista(idxts, /RUTAS_PRIVADAS = \[([^\]]+)\]/), 'next.config.ts y src/lib/indexacion.ts tienen la misma lista de rutas privadas');
+  ok(/VERCEL_ENV/.test(ncfg) && /VERCEL_ENV/.test(idxts), 'las vistas previas de Vercel (VERCEL_ENV distinto de production) llevan noindex en todo');
+
+  console.log('\n== /club (D86)');
+  r = await fetch(`${APP}/club`);
+  const club = (await r.text()).replace(/<!-- -->/g, '');
+  ok(r.status === 200, '/club: 200 (antes 404)', String(r.status));
+  ok(club.includes('Desde 2013') && club.includes('Maccabi de Levantar') && club.includes('Maccabi de Acostar'), '/club: desde 2013, MdA y MdL');
+  ok([resumen.partidos_con_estadisticas, resumen.victorias, resumen.jugadores_en_la_historia].every((n) => club.includes(`<b>${n}</b>`) || club.includes(`>${n}</b>`)), '/club: las mismas cifras de historia que la portada (de los datos)');
+  ok(club.includes('Miércoles, 20:30–22:30') && club.includes('Valdebernardo') && club.includes('en obras'), '/club: entrenos (miercoles 20:30-22:30, Valdebernardo en obras)');
+  ok(club.includes('https://eyeshar.github.io/MACCABIS/?p=historia'), '/club: enlace a la rejilla completa de Historia (GitHub Pages)');
+  ok(!/[\w.+-]+@[\w-]+\.[\w.]+/.test(club.replace(/<script[\s\S]*?<\/script>/g, '')), '/club: ningun correo ni dato personal');
 
   // ---------------------------------------------------------------- Navegador
   nav = await chromium.launch({ channel: 'chrome', headless: true });
@@ -162,6 +208,7 @@ try {
     const fila14 = calSel.locator('[data-id="entreno-semanal-2026-10-14"]');
     ok((await fila14.textContent()).includes('20:30–22:30') && (await fila14.textContent()).includes('pista por confirmar') && (await fila14.textContent()).includes('Valdebernardo en obras'), 'calendario: entreno del 14/10, pista por confirmar (Valdebernardo en obras)');
     ok((await calSel.locator('[data-id="mda-j2"] [data-aviso="cambian_ellos"]').count()) === 1, 'calendario: J2 MdA con la pastilla "Cambian ellos"');
+    ok((await calSel.locator('[data-id="entreno-semanal-2026-12-23"], [data-id="entreno-semanal-2026-12-30"]').count()) === 0, 'calendario: sin entreno el 23 ni el 30 de diciembre');
     for (const [boton, sel, comprueba] of [
       ['Entrenamientos', '.w-cal-fila', (t) => t.every((x) => x === 'entreno')],
       ['Partidos', '.w-cal-fila', (t) => t.every((x) => x === 'partido')],
@@ -175,6 +222,8 @@ try {
     const antes = await calSel.locator('.w-cal-fila').count();
     await calSel.getByRole('button', { name: /Ver toda la temporada/ }).click();
     ok((await calSel.locator('.w-cal-fila').count()) > antes && (await calSel.locator('[data-id="mdl-j6"] [data-aviso="nos_toca"]').count()) === 1, 'ver toda la temporada: J6 en 28500 con "Nos toca: amarilla"');
+    const fechasEntreno = await calSel.locator('.w-cal-fila[data-tipo="entreno"]').evaluateAll((f) => f.map((x) => x.dataset.id.slice(-10)));
+    ok(['2026-12-23', '2026-12-30', '2027-01-06', '2027-03-24'].every((f) => !fechasEntreno.includes(f)) && fechasEntreno.at(-1) === '2027-05-05', 'toda la temporada: sin entrenos en Navidad, Reyes ni Semana Santa; el ultimo, el 05/05/2027', fechasEntreno.at(-1));
     ok((await p.locator('a[href^="webcal://"]').count()) === 1 && (await p.locator('a[href="/calendario.ics"]').count()) === 1, '"Añadir a mi calendario": suscripcion webcal y descarga del .ics');
     // objetivos tactiles
     const pequenos = await p.evaluate(() => [...document.querySelectorAll('main a, main button, header a, header summary, nav a')]
@@ -200,6 +249,35 @@ try {
     const nos = p.locator('article.w-partido[data-equipo="MDL"] .eq-aviso');
     ok((await nos.getAttribute('data-tipo')) === 'nos_toca' && (await nos.textContent()).includes('Nos toca cambiar: equipación AMARILLA') && (await nos.textContent()).includes('partido perdido'), 'el 20/11 (J6 MdL en 28500): NOS TOCA CAMBIAR');
     ok(errores.length === 0, 'portada: sin errores de JavaScript', errores.join(' | '));
+    await ctx.close();
+  }
+
+  // ---------------------------------------------------------------- /club y Asistencia publica (capturas)
+  for (const [etiqueta, ancho, alto, movil] of [['375', 375, 812, true], ['escritorio', 1440, 900, false]]) {
+    console.log(`\n== /club y Asistencia publica, ${etiqueta}`);
+    const ctx = await nav.newContext({ viewport: { width: ancho, height: alto }, deviceScaleFactor: movil ? 2 : 1, isMobile: movil, hasTouch: movil, locale: 'es-ES' });
+    const p = await ctx.newPage();
+    const errores = [];
+    p.on('pageerror', (e) => errores.push(String(e)));
+    await p.goto(`${APP}/club`);
+    ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), '/club: sin desbordamiento horizontal');
+    const enlaceClub = movil ? 'nav[aria-label="Menú"] a[href="/club"]' : 'nav[aria-label="Principal"] a[href="/club"]';
+    ok((await p.locator(enlaceClub).count()) === 1 && (await p.locator('footer a[href="/club"]').count()) === 1, 'el menu y el pie enlazan a /club');
+    if (!movil) ok((await p.locator('nav[aria-label="Principal"] a[href="/club"]').getAttribute('aria-current')) === 'page', '/club marcado en el menu');
+    await captura(p, `real_club_${etiqueta}`);
+    // Asistencia publica (GitHub Pages): solo asistidos, total y %
+    for (const t of ['2025-26', '2026-27']) {
+      await p.goto(`${WEB}/index.html?t=${t}&p=asistencia`);
+      await p.locator('#asisBody tr').first().waitFor({ timeout: 15000 });
+      for (const vista of ['part', 'entr']) {
+        await p.locator(`#segAsis [data-a="${vista}"]`).click();
+        const cab = await p.locator('#asisHead').textContent(), cuerpo = await p.locator('#asisTbl').textContent();
+        const celdas = await p.locator('#asisBody tr').evaluateAll((f) => f.map((x) => x.children.length));
+        ok(!/excusa|Lesión|No conv|No sel|Disp/i.test(cab) && /% Asist/.test(cab) && celdas.length > 5 && celdas.every((n) => n === 5) && !/excusa/i.test(cuerpo), `Asistencia ${t} (${vista === 'part' ? 'partidos' : 'entrenos'}): solo asistidos, total y %; ningun motivo`, cab);
+      }
+      if (t === '2025-26') { await p.locator('#segAsis [data-a="part"]').click(); await captura(p, `real_asistencia_publica_${etiqueta}`); }
+    }
+    ok(errores.length === 0, '/club y Asistencia: sin errores de JavaScript', errores.join(' | '));
     await ctx.close();
   }
 
@@ -262,6 +340,7 @@ try {
     await cg.close();
   }
 } finally {
+  servidorWeb.close();
   if (nav) await nav.close();
   if (app) app.kill();
   await pila.parar();

@@ -28,11 +28,14 @@ plataforma/
   scripts/cargar_liga.mjs   npm run db:liga: liga de todos los equipos (por jugador, calendario, clasificacion) a Supabase (D73)
   scripts/backup_public.mjs npm run db:backup: copia de los datos de public a privado/backups/ (fuera de git)
   scripts/importar_correos.mjs   npm run db:correos: correos de SportEasy -> jugadores.email
+  scripts/cargar_asistencia.mjs  npm run db:asistencia: privado/asistencia/*.json -> asistencia_motivos (motivos de
+                            ausencia, solo gestores, D82)
   scripts/extraer_imagenes_ropa.py   imágenes de las prendas desde el PDF de VIVE (privado/)
   pruebas/                  pruebas de extremo a extremo con Postgres y PostgREST reales (sin Docker)
                             npm run pruebas:liga (RLS de la liga), pruebas:pantallas (Scouting y Liga consolidada),
                             node pruebas/restaurar_backup.mjs <copia> (prueba que una copia se restaura),
-                            pruebas:portada (portada, acceso, Mi zona y gestión nuevos, iCal y web instalable; capturas
+                            pruebas:asistencia (RLS de los motivos de ausencia: solo gestores),
+                            pruebas:portada (portada, /club, indexación, acceso, Mi zona y gestión nuevos, iCal y web instalable; capturas
                             reales en privado/mockups_liga/rediseno/)
   public/ropa/              imágenes de las prendas y tablas de tallas (sí se publican)
 ```

@@ -426,7 +426,7 @@ try {
   ok(sinSesion?.ok === true, 'desde una conexion directa sin sesion (como el script local db:correo) se permite sin ser gestor', JSON.stringify(sinSesion));
 
   seccion('Aviso de "Entrará con código" para quien no tiene correo de Gmail');
-  await jugadorDe('romero-barrueco-alonso', 'alonso.aviso@gmail.com');
+  await jugadorDe('romero-barrueco-alonso', 'ab@gmail.com');
   await pG.goto(`${APP}/gestion/jugadores`);
   ok(await pG.locator('li[data-person="esteban-jon"]').getByText('Entrará con código por correo').isVisible(),
     'correo que no es de Gmail (jon@pruebas.local): se avisa al gestor');

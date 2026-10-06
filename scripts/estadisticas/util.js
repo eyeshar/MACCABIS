@@ -38,4 +38,19 @@ const limpia = s => (s === null || s === undefined) ? '' : String(s).replace(/\s
 const normEquipo = s => limpia(s).normalize('NFD').replace(/[̀-ͯ]/g, '')
   .toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
 
-module.exports = { pyRound, pyTitle, limpia, normEquipo };
+
+/**
+ * Nombre de equipo en formato Título ("LOS KHINKIS RUSOS" -> "Los Khinkis Rusos"). Se mantienen en mayúsculas las
+ * siglas (TD, RIF) y las abreviaturas con puntos (C.B., F.T.); "de/del/la/el/y" van en minúscula salvo al empezar.
+ */
+const SIGLAS = new Set(['TD', 'RIF']);
+const MINUSCULAS = new Set(['de', 'del', 'la', 'el', 'y']);
+function nombreTitulo(s) {
+  return limpia(s).replace(/\.{2,}$/, '.').split(' ').map((w, i) => {
+    if (/^[\d.]+$/.test(w) || SIGLAS.has(w.toUpperCase()) || /^(\p{L}\.)+$/u.test(w)) return /^\d/.test(w) ? w : w.toUpperCase();
+    const b = w.toLowerCase();
+    return i > 0 && MINUSCULAS.has(b) ? b : b.charAt(0).toUpperCase() + b.slice(1);
+  }).join(' ');
+}
+
+module.exports = { pyRound, pyTitle, limpia, normEquipo, nombreTitulo };

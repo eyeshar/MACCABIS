@@ -20,18 +20,22 @@
  * Puntuación (Bases de los 47 JDM, deportes de equipo, 2.10.1 Baloncesto): 2 puntos por victoria y 1 por derrota; perder
  * por sanción = resultado 20-0. Desempate (2.9): puntos en los partidos entre los empatados, diferencia en ellos,
  * diferencia general, cociente y puntos a favor. Las incomparecencias no generan hoja (D29) y restan puntos, pero las
- * Bases no dicen cuántos: mientras `liga.puntos_incomparecencia` sea null, el pipeline se para si se registra una.
+ * Bases no dicen cuántos (D74): se registran en `liga.incomparecencias` (grupo, jornada, local, visitante, no_presentado),
+ * el partido se marca, cuenta como ganado para el que se presentó y perdido para el otro, sin puntos a favor ni en contra, y
+ * los puntos del equipo que no se presentó se toman de la clasificación oficial de Deportes/web (rutina B de los jueves),
+ * anotados en `liga.puntos_oficiales` ({ G1: { <id-equipo>: { pts, fecha } } }). Hasta entonces su casilla dice
+ * "pendiente de la oficial" y el orden es provisional.
  */
 const fs = require('fs');
 const path = require('path');
 const { leerHojaLiga, validarSumas } = require('./leer_hoja_liga');
-const { normEquipo, pyRound } = require('./util');
+const { normEquipo, pyRound, nombreTitulo } = require('./util');
 const CONFIG = require('./temporadas.json');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const AVISO_CLASIFICACION = 'Clasificación calculada con las Bases del 47 JDM a partir de las hojas de estadística; pendiente de contrastar con la oficial (las incomparecencias restan puntos y no generan hoja, D29).';
 
-const limpiaNombre = s => String(s).replace(/\s+/g, ' ').trim().replace(/\.{2,}$/, '.');
+const limpiaNombre = nombreTitulo;   // nombres en formato Título, los mismos que la pestaña Rivales 26/27
 const slug = s => normEquipo(s).toLowerCase().replace(/ /g, '-');
 
 /** Grupos y equipos desde el calendario propio. */
@@ -113,24 +117,37 @@ function leerFuentes(temporada, ctx) {
 
 const cero = () => ({ pj: 0, g: 0, p: 0, pf: 0, pc: 0 });
 
-function clasificar(equipos, juegos, cfgLiga) {
-  const t = new Map(equipos.map(e => [e.id, { ...e, ...cero(), pts: 0, np: 0, casa: cero(), fuera: cero(), serie: [] }]));
+function clasificar(equipos, juegos, cfgLiga, oficiales) {
+  const t = new Map(equipos.map(e => [e.id, { ...e, ...cero(), pts: 0, np: 0, pts_pendiente: false, pts_fuente: null, casa: cero(), fuera: cero(), serie: [] }]));
   const sumar = (x, gana, pf, pc, donde) => {
     for (const o of [x, x[donde]]) { o.pj++; o[gana ? 'g' : 'p']++; o.pf += pf; o.pc += pc; }
   };
   for (const j of [...juegos].sort((a, b) => a.jornada - b.jornada)) {
     const L = t.get(j.local.id), V = t.get(j.visitante.id);
+    if (j.incomp) {
+      // Sin hoja: ganado para el que se presentó, perdido para el otro, sin puntos a favor ni en contra.
+      const ganaL = j.no_presentado !== j.local.id;
+      for (const [x, gana, donde] of [[L, ganaL, 'casa'], [V, !ganaL, 'fuera']]) { for (const o of [x, x[donde]]) { o.pj++; o[gana ? 'g' : 'p']++; } x.serie.push(gana ? 'G' : 'P'); }
+      t.get(j.no_presentado).np++;
+      continue;
+    }
     sumar(L, j.pl > j.pv, j.pl, j.pv, 'casa'); sumar(V, j.pv > j.pl, j.pv, j.pl, 'fuera');
     L.serie.push(j.pl > j.pv ? 'G' : 'P'); V.serie.push(j.pv > j.pl ? 'G' : 'P');
   }
   for (const x of t.values()) {
-    x.pts = x.g * cfgLiga.puntos_victoria + x.p * cfgLiga.puntos_derrota;
+    x.pts = x.g * cfgLiga.puntos_victoria + x.p * cfgLiga.puntos_derrota;   // para ordenar; con incomparecencias, ver abajo
     x.dif = x.pf - x.pc;
+    if (x.np) {
+      const of = oficiales && oficiales[x.id];
+      if (of && Number.isFinite(of.pts)) { x.pts = of.pts; x.pts_fuente = 'oficial'; }
+      else x.pts_pendiente = true;
+    }
   }
   // Desempate (Bases 2.9): puntos y diferencia en los partidos entre empatados, diferencia general, cociente, puntos a favor.
   const entre = (x, grupo) => {
     let pts = 0, dif = 0;
     for (const j of juegos) {
+      if (j.incomp) continue;
       const ids = [j.local.id, j.visitante.id];
       if (!ids.includes(x.id) || !ids.every(i => grupo.has(i))) continue;
       const mio = j.local.id === x.id ? j.pl : j.pv, suyo = j.local.id === x.id ? j.pv : j.pl;
@@ -178,9 +195,6 @@ function construir(temporada) {
   const cfgLiga = ctx.cfg.liga;
   const errores = [], avisos = [];
   if (!cfgLiga) throw new Error(`temporadas.json no tiene "liga" para ${temporada}.`);
-  if (cfgLiga.incomparecencias.length && cfgLiga.puntos_incomparecencia === null)
-    errores.push('Hay incomparecencias registradas pero no está decidido cuántos puntos restan (liga.puntos_incomparecencia). Pregunta a Iván.');
-  if (cfgLiga.incomparecencias.length) errores.push('Las incomparecencias todavía no están soportadas en el cálculo: se añadirán cuando haya una real y esté decidida su puntuación.');
 
   const { partidos, errores: eLectura } = leerFuentes(temporada, ctx);
   errores.push(...eLectura);
@@ -197,7 +211,7 @@ function construir(temporada) {
   const publico = {
     temporada, generado: new Date().toISOString().slice(0, 10),
     clasificacion_estado: AVISO_CLASIFICACION,
-    puntuacion: { victoria: cfgLiga.puntos_victoria, derrota: cfgLiga.puntos_derrota, incomparecencia: cfgLiga.puntos_incomparecencia, perder_por_sancion: '20-0', fuente: 'Bases reguladoras de los 47 JDM, deportes de equipo, 2.10.1 Baloncesto' },
+    puntuacion: { victoria: cfgLiga.puntos_victoria, derrota: cfgLiga.puntos_derrota, incomparecencia: 'los puntos del equipo que no se presenta se toman de la clasificación oficial (D74)', perder_por_sancion: '20-0', fuente: 'Bases reguladoras de los 47 JDM, deportes de equipo, 2.10.1 Baloncesto' },
     fuente: 'Hojas de estadística de la app Afición FBM (resultado = suma de los puntos de cada equipo). Sólo datos por equipo.',
     grupos: {},
   };
@@ -213,8 +227,16 @@ function construir(temporada) {
       return j;
     }).sort((a, b) => a.jornada - b.jornada || a.local.nombre.localeCompare(b.local.nombre, 'es'));
 
+    for (const ic of (cfgLiga.incomparecencias || []).filter(i => i.grupo === g.clave)) {
+      const eq = n => g.equipos.get(normEquipo(n));
+      const L = eq(ic.local), V = eq(ic.visitante), NP = eq(ic.no_presentado);
+      if (!L || !V || !NP || ![L, V].includes(NP)) { errores.push(`Incomparecencia mal anotada en ${g.clave} J${ic.jornada}: ${JSON.stringify(ic)}`); continue; }
+      if (juegos.some(j => j.jornada === ic.jornada && [j.local.id, j.visitante.id].some(i => [L.id, V.id].includes(i)))) errores.push(`${g.clave} J${ic.jornada}: ${L.nombre} - ${V.nombre} figura como incomparecencia y también tiene hoja.`);
+      juegos.push({ jornada: ic.jornada, fecha: g.fechas[ic.jornada] || null, local: L, visitante: V, pl: null, pv: null, incomp: true, no_presentado: NP.id });
+    }
+    juegos.sort((a, b) => a.jornada - b.jornada || a.local.nombre.localeCompare(b.local.nombre, 'es'));
     const equipos = [...g.equipos.values()];
-    const tabla = clasificar(equipos, juegos, cfgLiga);
+    const tabla = clasificar(equipos, juegos, cfgLiga, (cfgLiga.puntos_oficiales || {})[g.clave]);
     const jornadas = [...new Set(juegos.map(j => j.jornada))].sort((a, b) => a - b);
     const descansan = {};
     for (const jn of jornadas) {
@@ -225,8 +247,12 @@ function construir(temporada) {
     }
     publico.grupos[g.clave] = {
       nombre: g.nombre, nuestro: g.nuestro, jornadas_cargadas: jornadas,
-      clasificacion: tabla.map((x, i) => ({ pos: i + 1, id: x.id, equipo: x.nombre, nuestro: x.nuestro, pj: x.pj, g: x.g, p: x.p, pf: x.pf, pc: x.pc, dif: x.dif, pts: x.pts })),
-      resultados: juegos.map(j => ({ jornada: j.jornada, fecha: j.fecha, local: j.local.nombre, visitante: j.visitante.nombre, pl: j.pl, pv: j.pv })),
+      clasificacion: tabla.map((x, i) => ({ pos: i + 1, id: x.id, equipo: x.nombre, nuestro: x.nuestro, pj: x.pj, g: x.g, p: x.p, pf: x.pf, pc: x.pc, dif: x.dif,
+        pts: x.pts_pendiente ? null : x.pts, ...(x.np ? { incomparecencias: x.np, pts_fuente: x.pts_fuente || 'pendiente de la oficial' } : {}) })),
+      orden_provisional: tabla.some(x => x.pts_pendiente) || undefined,
+      resultados: juegos.map(j => (j.incomp
+        ? { jornada: j.jornada, fecha: j.fecha, local: j.local.nombre, visitante: j.visitante.nombre, incomparecencia: true, no_presentado: (j.no_presentado === j.local.id ? j.local : j.visitante).nombre }
+        : { jornada: j.jornada, fecha: j.fecha, local: j.local.nombre, visitante: j.visitante.nombre, pl: j.pl, pv: j.pv })),
       descansan,
       equipos: Object.fromEntries(tabla.map(x => [x.id, { nombre: x.nombre, nuestro: x.nuestro, ...estadisticasEquipo(x) }])),
     };
@@ -234,7 +260,7 @@ function construir(temporada) {
   return { publico, privado, errores, avisos, fuentes: partidos.length };
 }
 
-module.exports = { construir, contexto, identificarHoja, jornadaPorFecha, grupoDe };
+module.exports = { construir, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar };
 
 if (require.main === module) {
   const args = process.argv.slice(2);

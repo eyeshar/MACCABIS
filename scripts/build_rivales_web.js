@@ -14,6 +14,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { nombreTitulo } = require('./estadisticas/util');
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'data', 'rivales_2026-27.json');
@@ -63,6 +64,13 @@ function grafico(tray) {
   return EJE.map(t => ({ t, ...(porT[t] || {}) }));
 }
 
+/** Los textos de "lo esencial" llevan los nombres tal como vienen de la fuente: se pasan a formato Título. */
+function titularEsencial(esencial, nombres) {
+  const orden = [...new Set(nombres)].sort((a, b) => b.length - a.length);
+  const cambia = t => orden.reduce((x, n) => x.split(n).join(nombreTitulo(n)), t);
+  return JSON.parse(JSON.stringify(esencial, (k, v) => (typeof v === 'string' ? cambia(v) : v)));
+}
+
 function main() {
   const src = JSON.parse(fs.readFileSync(SRC, 'utf8'));
   const rivales = src.rivales.map(r => {
@@ -72,7 +80,7 @@ function main() {
     const h = r.cara_a_cara;
     return {
       id: slug(r.rival),
-      nombre: r.rival.replace(/^"|"$/g, ''),
+      nombre: nombreTitulo(r.rival.replace(/^"|"$/g, '')),   // formato Título, igual que la pestaña Liga 26/27
       grupo: r.grupo_club,
       antes: r.nombres_anteriores_confirmados,
       sin_rastro: !!r.sin_rastro,
@@ -111,7 +119,7 @@ function main() {
     generado: src._meta.generado,
     fuente: 'Ayuntamiento de Madrid, datos abiertos (datos.madrid.es), CC BY 4.0',
     temporadas_eje: EJE,
-    lo_esencial: src.lo_esencial,
+    lo_esencial: titularEsencial(src.lo_esencial, src.rivales.map(r => r.rival.replace(/^"|"$/g, ''))),
     rivales,
   };
   fs.writeFileSync(OUT, JSON.stringify(out));

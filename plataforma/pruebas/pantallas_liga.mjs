@@ -133,6 +133,79 @@ try {
     const textoLideres = await p.textContent('.lg-sub');
     ok(/de los 20 equipos con partidos jugados/.test(textoLideres), 'liga: el texto de lideres cuenta los equipos con partidos (20), igual que el ranking', textoLideres);
     await p.screenshot({ path: path.join(SALIDA, `real_c_liga_desplegado_${etiqueta}.png`), fullPage: true });
+
+    // ---- Tabla "Todos los jugadores"
+    await p.goto(`${APP}/gestion/liga`);
+    const T = p.locator('.lg-todos');
+    const filasVisibles = () => (movil ? T.locator('.lg-compactas .lg-fila') : T.locator('tbody tr')).count();
+    const posicion = await p.evaluate(() => { const t = document.querySelector('.lg-todos').getBoundingClientRect().top, l = document.querySelector('.lg-lideres').getBoundingClientRect().top, r = document.querySelector('details.lg-ranking').getBoundingClientRect().top; return l < t && t < r; });
+    ok(posicion, 'tabla: debajo de los lideres y encima del ranking de equipos');
+    ok((await filasVisibles()) === 25, 'tabla: 25 filas de partida');
+    await T.getByRole('button', { name: /Ver 25 más/ }).click();
+    ok((await filasVisibles()) === 50, 'tabla: "ver 25 mas" carga otras 25');
+    const nota = await T.locator('.lg-nota').first().textContent();
+    ok(/Mostrando 50 de \d+/.test(nota), 'tabla: indica cuantas filas muestra', nota);
+    ok((await T.locator('.lg-nota').last().textContent()).includes('no hay faltas recibidas ni intentos de campo'), 'tabla: la nota al pie dice que no hay faltas recibidas ni intentos de campo');
+    const primerPts = async () => Number(await (movil ? T.locator('.lg-fila-pts b').first() : T.locator('tbody tr').first().locator('td').nth(4)).textContent());
+    const maxPts = await p.evaluate(() => Math.max(...[...document.querySelectorAll('.lg-lider')[0].querySelectorAll('li b:last-child')].map((b) => Number(b.textContent))));
+    ok((await primerPts()) === maxPts, 'tabla: por defecto ordenada por PTS descendente (el primero es el maximo anotador de la liga)', `${await primerPts()} / ${maxPts}`);
+    if (!movil) {
+      ok((await T.locator('thead th').first().evaluate((e) => getComputedStyle(e).position)) === 'sticky', 'tabla escritorio: cabecera fija al desplazar');
+      await T.getByRole('button', { name: /^TL%/ }).click();
+      ok((await T.locator('th[aria-sort="descending"]').count()) === 1 && (await T.locator('th[aria-sort="descending"]').textContent()).includes('TL%'), 'tabla escritorio: la cabecera pulsable ordena (TL% descendente)');
+      await T.getByRole('button', { name: /^TL%/ }).click();
+      ok((await T.locator('th[aria-sort="ascending"]').count()) === 1, 'tabla escritorio: segunda pulsacion, ascendente');
+      await T.getByRole('button', { name: /^PTS/ }).click();
+      ok((await T.locator('th[aria-sort="descending"]').textContent()).includes('PTS'), 'tabla escritorio: otra columna empieza en descendente (PTS)');
+    } else {
+      ok(await T.getByLabel('Ordenar por').first().isVisible(), 'tabla movil: selector "Ordenar por"');
+      ok(!(await T.locator('table').isVisible()), 'tabla movil: sin tabla, filas compactas');
+      await T.getByLabel('Ordenar por').first().selectOption('media');
+      ok(/Media/.test(await T.locator('.lg-fila-val').first().textContent()), 'tabla movil: la fila compacta muestra la columna elegida y PTS');
+      await T.getByLabel('Ordenar por').first().selectOption('pts');
+    }
+    // filtros
+    await T.getByLabel('Buscar').fill('esteban, jon');
+    const nEst = await filasVisibles();
+    const txtEst = nEst ? await T.locator('.lg-nuestro').first().textContent() : '';
+    ok(nEst === 1 && txtEst.includes('dobla') && txtEst.includes('MdA + MdL'), 'tabla: el buscador encuentra a un doblador, una sola fila "MdA + MdL" con la etiqueta dobla', `${nEst} filas: ${txtEst}`);
+    await T.getByLabel('Buscar').fill('');
+    await T.getByLabel('Solo Maccabis').check();
+    const nNuestros = await filasVisibles();
+    const todasNuestras = await (movil ? T.locator('.lg-compactas .lg-fila') : T.locator('tbody tr')).evaluateAll((l) => l.every((e) => e.classList.contains('lg-nuestro')));
+    ok(nNuestros > 0 && nNuestros <= 25 && todasNuestras, `tabla: "Solo Maccabis" deja solo a los de MdA y MdL (${nNuestros})`);
+    await T.getByLabel('Solo Maccabis').uncheck();
+    await T.locator('label', { hasText: /^Grupo/ }).locator('select').selectOption('G2');
+    const eqDe = () => (movil ? T.locator('.lg-fila-eq') : T.locator('tbody tr td:nth-child(2)')).allTextContents();
+    const textoG2 = await eqDe();
+    ok(textoG2.length > 0 && textoG2.every((t) => /G2/.test(t)), 'tabla: el filtro de grupo G2 solo deja equipos del G2 (con los dobladores)');
+    await T.locator('label', { hasText: /^Equipo/ }).locator('select').selectOption('Craps');
+    ok((await filasVisibles()) > 0 && (await eqDe()).every((t) => /Craps/.test(t)), 'tabla: el filtro de equipo (Craps)');
+    await T.locator('label', { hasText: /^Equipo/ }).locator('select').selectOption('todos');
+    await T.locator('label', { hasText: /^Grupo/ }).locator('select').selectOption('todos');
+    // por partido
+    await T.getByRole('button', { name: 'Por partido' }).click();
+    ok(movil ? true : (await T.locator('thead').textContent()).includes('2P/p'), 'tabla: "Por partido" divide 2P, 3P, TL, faltas y minutos entre PJ (cabeceras con /p)');
+    await T.getByRole('button', { name: 'Totales' }).click();
+    ok(await T.getByLabel('Mínimo de partidos').isVisible(), 'tabla: filtro de minimo de partidos');
+    ok(await sinDesbordar(), 'tabla: sin desbordamiento horizontal de la pagina');
+    await T.scrollIntoViewIfNeeded();
+    if (movil) {
+      await T.locator('.lg-fila-cab').first().click();
+      const det = await T.locator('.lg-fila.abierta .lg-fila-det').textContent();
+      ok(['PJ', 'MIN', 'PTS', 'Media', '2P', '3P', 'TL', 'TL%', 'Faltas', 'F/P'].every((k) => det.includes(k)), 'tabla movil: al tocar la fila se despliega el resto de datos');
+      await T.screenshot({ path: path.join(SALIDA, 'real_d_tabla_375_desplegada.png') });
+      await T.locator('.lg-fila-cab').first().click();
+      await T.screenshot({ path: path.join(SALIDA, 'real_d_tabla_375.png') });
+    } else {
+      await T.screenshot({ path: path.join(SALIDA, 'real_d_tabla_escritorio.png') });
+    }
+    // clic en jugador / equipo -> Scouting con ese equipo
+    await T.getByLabel('Buscar').fill('esteban, jon');
+    if (movil) await T.locator('.lg-fila-cab').first().click();
+    await (movil ? T.locator('.lg-fila-det a').first() : T.locator('tbody tr a').first()).click();
+    await p.waitForURL(/\/gestion\/scouting\?e=Md[AL]/);
+    ok((await p.textContent('h2')).includes('Md'), 'tabla: clic en jugador/equipo abre Scouting con ese equipo (MdA)');
     ok(errores.length === 0, 'sin errores de JavaScript', errores.join(' | '));
     await ctx.close();
   }

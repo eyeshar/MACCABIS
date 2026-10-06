@@ -1,5 +1,7 @@
 import { exigirGestor } from "@/lib/sesion";
 import { bonito, cargarLiga, dec, quienDobla, unirDoblan, type JugadorLiga } from "@/lib/liga";
+import { filasTabla } from "@/lib/jugadoresLiga";
+import TablaJugadores from "./TablaJugadores";
 import { porFaltas, porMedia, porPuntos, porTirosLibres, porTriples } from "@/lib/ordenLideres";
 
 export const metadata = { title: "Liga consolidada · Gestión Maccabis" };
@@ -62,6 +64,11 @@ export default async function LigaConsolidada() {
         {lider("Tiros libres", porTirosLibres, (j) => `${j.tla}/${j.tli}`, jugadores.filter((j) => j.tli >= 3), "Con al menos 3 tiros libres intentados.")}
         {lider("Faltas", porFaltas, (j) => String(j.faltas), jugadores, "Faltas cometidas (5 = eliminado). A igualdad de faltas va primero quien las hizo en menos partidos (más faltas por partido); después, por nombre.")}
       </div>
+
+      <TablaJugadores
+        filas={filasTabla(liga.jugadores, pjEquipo)}
+        equipos={clasificacion.map((c) => ({ grupo: c.grupo, equipo: c.equipo }))}
+      />
 
       <details className="tarjeta lg-ranking">
         <summary>Ranking de equipos · G1 y G2 ({ranking.length} equipos)</summary>

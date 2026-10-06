@@ -52,8 +52,8 @@ try {
 
   async function entrar(p, email) {
     await p.goto(`${APP}/entrar`);
-    await p.getByLabel('Recibir código por correo').fill(email);
-    await p.getByRole('button', { name: 'Enviarme un código' }).click();
+    await p.getByLabel('Tu correo').fill(email);
+    await p.getByRole('button', { name: 'Enviarme el código' }).click();
     await p.getByText('Código enviado a').waitFor({ timeout: 10000 });
     await p.getByLabel('Código de 6 dígitos').fill((await codigoDe(email)) ?? '000000');
     await p.getByRole('button', { name: 'Entrar', exact: true }).click();

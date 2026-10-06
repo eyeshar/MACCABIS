@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { clienteNavegador } from "@/lib/supabaseBrowser";
+import { Google } from "@/components/Iconos";
 import { enviarCodigo, verificarCodigo } from "./acciones";
 
 export default function FormularioEntrar() {
@@ -21,35 +22,30 @@ export default function FormularioEntrar() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <button type="button" className="boton boton-amarillo boton-bloque" onClick={entrarConGoogle} disabled={conGoogle}>
-        {conGoogle ? "Llevándote a Google…" : "Entrar con Google"}
+    <div className="acc-form">
+      <button type="button" className="acc-google" onClick={entrarConGoogle} disabled={conGoogle}>
+        <Google />
+        {conGoogle ? "Llevándote a Google…" : "Continuar con Google"}
       </button>
 
-      <p className="suave pequeno" style={{ textAlign: "center", margin: 0 }}>o, de respaldo</p>
+      <div className="acc-o">o con un código por correo</div>
 
       {estado?.paso !== "codigo" ? (
         <form action={accionEnviar}>
-          <div className="campo">
-            <label htmlFor="email">Recibir código por correo</label>
-            <input id="email" name="email" type="email" autoComplete="email" required defaultValue={estado?.email} key={estado?.email} />
-          </div>
-          {estado?.error && <div className="aviso aviso-error" role="alert">{estado.error}</div>}
-          <button className="boton boton-claro boton-bloque" disabled={enviando}>{enviando ? "Enviando…" : "Enviarme un código"}</button>
+          <label htmlFor="email">Tu correo</label>
+          <input id="email" name="email" type="email" autoComplete="email" placeholder="nombre@correo.com" required defaultValue={estado?.email} key={estado?.email} />
+          {estado?.error && <div className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{estado.error}</div>}
+          <button className="acc-enviar" disabled={enviando}>{enviando ? "Enviando…" : "Enviarme el código"}</button>
         </form>
       ) : (
         <form action={accionVerificar}>
           <input type="hidden" name="email" value={estado.email} />
-          <p className="suave pequeno">Código enviado a <strong>{estado.email}</strong>.</p>
-          <div className="campo">
-            <label htmlFor="codigo">Código de 6 dígitos</label>
-            <input id="codigo" name="codigo" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required />
-          </div>
-          {estado.aviso && <div className="aviso aviso-info" role="status">{estado.aviso}</div>}
-          {estado.error && <div className="aviso aviso-error" role="alert">{estado.error}</div>}
-          <div className="botones">
-            <button className="boton boton-amarillo boton-bloque" disabled={verificando}>{verificando ? "Comprobando…" : "Entrar"}</button>
-          </div>
+          <p className="suave pequeno" style={{ margin: 0 }}>Código enviado a <strong>{estado.email}</strong>.</p>
+          {estado.aviso && <div className="aviso aviso-info" role="status" style={{ margin: 0 }}>{estado.aviso}</div>}
+          <label htmlFor="codigo">Código de 6 dígitos</label>
+          <input id="codigo" name="codigo" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required className="cifra" style={{ letterSpacing: "0.3em", fontSize: 22 }} />
+          {estado.error && <div className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{estado.error}</div>}
+          <button className="acc-enviar lleno" disabled={verificando}>{verificando ? "Comprobando…" : "Entrar"}</button>
         </form>
       )}
     </div>

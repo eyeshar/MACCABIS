@@ -1,31 +1,35 @@
+import Image from "next/image";
 import Link from "next/link";
 import { exigirGestor } from "@/lib/sesion";
 import { salir } from "@/app/entrar/acciones";
+import escudo from "../../../../public/escudo.png";
+import NavGestion from "./NavGestion";
 
 export const dynamic = "force-dynamic";
+// Exige login: fuera de los buscadores (D85).
+export const metadata = { robots: { index: false, follow: false } };
 
+// Marco de gestion (maqueta Gestion, D76): tema claro, cabecera oscura y menu lateral.
 export default async function PanelGestion({ children }: { children: React.ReactNode }) {
   const { nombre } = await exigirGestor();
   return (
     <>
-      <header className="cabecera cabecera-ancha">
-        <div className="dentro">
-          <div className="marca">Maccabis · gestión · {nombre}</div>
-          <nav aria-label="Gestión" className="botones" style={{ marginTop: 10 }}>
-            <Link className="boton boton-claro" href="/gestion">Inicio</Link>
-            <Link className="boton boton-claro" href="/gestion/jugadores">Jugadores</Link>
-            <Link className="boton boton-claro" href="/gestion/ropa">Pedido de ropa</Link>
-            <Link className="boton boton-claro" href="/gestion/scouting">Scouting rivales</Link>
-            <Link className="boton boton-claro" href="/gestion/liga">Liga consolidada</Link>
-            <Link className="boton boton-claro" href="/gestion/cuenta">Mi cuenta</Link>
-            <Link className="boton boton-claro" href="/mi-zona">Mi zona</Link>
-            <form action={salir}>
-              <button className="boton boton-amarillo" type="submit">Salir</button>
-            </form>
-          </nav>
+      <header className="gs-cab">
+        <div className="gs-cab-fila">
+          <Link href="/gestion" className="gs-cab-marca" aria-label="Gestión de Maccabis, panel">
+            <Image src={escudo} alt="" sizes="40px" />
+            <b>MACCABIS</b>
+            <span className="gs-etq">GESTIÓN</span>
+          </Link>
+          <Link className="gs-cab-enlace gs-ocultar-movil" href="/">Ver web pública</Link>
+          <span className="gs-yo"><i aria-hidden="true">{nombre.slice(0, 1).toUpperCase()}</i><span className="gs-ocultar-movil">{nombre}</span></span>
+          <form action={salir}><button type="submit">Salir</button></form>
         </div>
       </header>
-      <main className="pagina pagina-ancha">{children}</main>
+      <div className="gs-cuerpo">
+        <NavGestion />
+        <main className="gs-main">{children}</main>
+      </div>
     </>
   );
 }

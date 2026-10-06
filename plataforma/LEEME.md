@@ -11,20 +11,32 @@ Tres Cantos (TCPC): ni su proyecto de Google Cloud, ni su organización de Supab
 
 ```
 plataforma/
-  src/app/entrar/           login: Google + código por correo, y el reparto a /mi-zona o /gestion
+  src/app/page.tsx          portada pública sin login (D76): próxima jornada, resultados, clasificación, líderes, calendario, historia
+  src/app/calendario.ics/   feed iCal público (partidos y entrenos, sin datos personales, D77)
+  src/app/manifest.ts       web instalable (D78); iconos en public/iconos/ y src/app/{icon,apple-icon}.png (npm run iconos)
+  src/app/entrar/           acceso: Google + código por correo, y el reparto a /mi-zona o /gestion
   src/app/auth/callback/    vuelta de "Entrar con Google"
   src/app/mi-zona/          zona personal del jugador (pedido de ropa, mis pedidos, estadísticas)
   src/app/gestion/          zona de gestión: jugadores, pedido de ropa, Excel para VIVE
-  src/lib/                  prendas y tallas, Excel, mensajes, sesión, clientes de Supabase
+  src/lib/                  prendas y tallas, Excel, mensajes, sesión, clientes de Supabase; web.ts (FUNDACION, menú, enlaces
+                            a GitHub Pages), publico.ts (datos de la portada), dias.ts, ical.ts
+  src/data/                 COPIAS de ../data (npm run datos:sync): calendario, equipaciones, avisos, liga, temporada 26/27,
+                            entrenos y resumen de la historia. No se editan a mano; pruebas:portada falla si están desfasadas
+  src/app/globals.css       sistema visual: TODOS los tokens (colores, tipos, tamaños) en el bloque del principio
   supabase/migrations/      esquema de la base de datos (tablas, RLS, funciones, lista blanca)
   scripts/db.mjs            migrar, semilla (plantilla 26/27 + campaña), reservar/vincular gestores
   scripts/cargar_liga.mjs   npm run db:liga: liga de todos los equipos (por jugador, calendario, clasificacion) a Supabase (D73)
   scripts/backup_public.mjs npm run db:backup: copia de los datos de public a privado/backups/ (fuera de git)
   scripts/importar_correos.mjs   npm run db:correos: correos de SportEasy -> jugadores.email
+  scripts/cargar_asistencia.mjs  npm run db:asistencia: privado/asistencia/*.json -> asistencia_motivos (motivos de
+                            ausencia, solo gestores, D82)
   scripts/extraer_imagenes_ropa.py   imágenes de las prendas desde el PDF de VIVE (privado/)
   pruebas/                  pruebas de extremo a extremo con Postgres y PostgREST reales (sin Docker)
                             npm run pruebas:liga (RLS de la liga), pruebas:pantallas (Scouting y Liga consolidada),
-                            node pruebas/restaurar_backup.mjs <copia> (prueba que una copia se restaura)
+                            node pruebas/restaurar_backup.mjs <copia> (prueba que una copia se restaura),
+                            pruebas:asistencia (RLS de los motivos de ausencia: solo gestores),
+                            pruebas:portada (portada, /club, indexación, acceso, Mi zona y gestión nuevos, iCal y web instalable; capturas
+                            reales en privado/mockups_liga/rediseno/)
   public/ropa/              imágenes de las prendas y tablas de tallas (sí se publican)
 ```
 

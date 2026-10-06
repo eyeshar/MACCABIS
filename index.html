@@ -566,27 +566,24 @@ function renderAsis(){
   let pool=PLAYERS.filter(p=>isPart?p.asist_part:p.asist_entr);
   document.getElementById('asisTag').textContent=pool.length+' jugadores';
   let head,cols;
-  if(isPart){
-    cols=[['fueron','Fueron'],['excusa','Con excusa'],['no_conv','No conv.'],['lesion','Lesión'],['total','Total'],['pct_disp','% Disp.'],['pct_jug','% Jugados'],['pct_nosel','% No sel.']];
-  }else{
-    cols=[['fueron','Fueron'],['excusa','Con excusa'],['no_conv','No conv.'],['lesion','Lesión'],['pct','% Asist.']];
-  }
+  // Solo asistidos, total y %: los motivos de ausencia no son públicos (D82; los ven los gestores en la plataforma).
+  cols=[['fueron',isPart?'Partidos':'Entrenos'],['total','De'],['pct','% Asist.']];
   head='<tr><th data-k="rank" style="text-align:center">#</th><th data-k="nombre">Jugador</th>'+cols.map(c=>'<th data-k="'+c[0]+'" style="text-align:center">'+c[1]+'</th>').join('')+'</tr>';
   document.getElementById('asisHead').innerHTML=head;
   const src=p=>isPart?p.asist_part:p.asist_entr;
-  const sk=as.sortK|| (isPart?'pct_jug':'pct');
-  pool=pool.slice().sort((a,b)=>{const va=src(a)[sk],vb=src(b)[sk];return as.sortDir*((vb||0)-(va||0));});
+  const sk=as.sortK||'pct';
+  pool=pool.slice().sort((a,b)=>{const va=src(a)[sk],vb=src(b)[sk];return as.sortDir*((va||0)-(vb||0));});
   const fmtPct=v=>v==null?'—':Math.round(v*100)+'%';
   document.getElementById('asisBody').innerHTML=pool.map((p,i)=>{
     const d=src(p);
     const cells=cols.map(c=>{const k=c[0];let v=d[k];if(k.startsWith('pct')||k==='pct')v=fmtPct(v);else v=(v==null?'—':v);
-      const hl=(k==='pct_jug'||k==='pct'||k==='fueron');
+      const hl=(k==='pct'||k==='fueron');
       return '<td style="text-align:center" class="mono"'+(hl?' style="color:var(--ball2)"':'')+'>'+v+'</td>';}).join('');
     return '<tr><td class="mono" style="color:var(--dim);text-align:center">'+(i+1)+'</td><td class="name">'+(p.display||shortName(p.nombre))+'</td>'+cells+'</tr>';
   }).join('')||'<tr><td colspan="10" class="empty">Sin datos.</td></tr>';
   document.getElementById('asisNote').textContent=isPart
-    ? 'Fueron = partidos a los que asistió a tiempo. % Disp. = disponibilidad · % Jugados = de los partidos que jugó · % No sel. = partidos donde no fue seleccionado. Datos de la app de asistencia del equipo.'
-    : 'Fueron = entrenamientos a los que asistió a tiempo. % Asist. = porcentaje de asistencia. 5 jugadores no tienen registro de entrenamientos.';
+    ? 'Partidos = partidos de liga a los que asistió a tiempo, de los de su equipo en la temporada. % Asist. = asistió / total. Datos de la app de asistencia del equipo.'
+    : 'Entrenos = entrenamientos a los que asistió a tiempo, de los registrados. % Asist. = asistió / total. Algunos jugadores no tienen registro de entrenamientos.';
   // orden por cabecera
   document.querySelectorAll('#asisTbl th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(k==='rank'||k==='nombre')return;if(as.sortK===k)as.sortDir*=-1;else{as.sortK=k;as.sortDir=-1;}renderAsis();});
 }

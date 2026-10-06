@@ -69,7 +69,7 @@ try {
     const sinDesbordar = () => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
     await p.goto(`${BASE}/gestion`);
-    ok(p.url().endsWith('/gestion') && (await p.textContent('h1')).includes('Panel de gestión'), '/gestion carga con sesion de gestor');
+    ok(p.url().endsWith('/gestion') && (await p.textContent('.gs-eyebrow')).includes('Panel de gestión'), '/gestion carga con sesion de gestor');
     const enlaces = await p.$$eval('nav[aria-label="Gestión"] a', (a) => a.map((x) => x.textContent.trim()));
     ok(enlaces.includes('Scouting rivales') && enlaces.includes('Liga consolidada'), 'el menu de gestion trae Scouting rivales y Liga consolidada', enlaces.join(','));
     ok(await sinDesbordar(), '/gestion sin desbordamiento');

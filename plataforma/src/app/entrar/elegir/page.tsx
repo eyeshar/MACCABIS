@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { exigirSesion } from "@/lib/sesion";
+import { Escudo } from "@/components/web/Marco";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "¿A dónde vas? · Maccabis" };
@@ -9,19 +10,20 @@ export const metadata = { title: "¿A dónde vas? · Maccabis" };
 export default async function Elegir() {
   await exigirSesion();
   return (
-    <>
-      <header className="cabecera">
-        <div className="dentro">
-          <div className="marca">Maccabis</div>
-          <h1>¿A dónde vas?</h1>
-        </div>
-      </header>
-      <main className="pagina">
-        <section className="tarjeta" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <Link className="boton boton-amarillo boton-bloque" href="/mi-zona">Mi zona de jugador</Link>
-          <Link className="boton boton-claro boton-bloque" href="/gestion">Gestión del club</Link>
-        </section>
-      </main>
-    </>
+    <div className="tema-oscuro">
+      <div className="acc">
+        <main className="acc-main">
+          <div className="acc-marca">
+            <Escudo />
+            <h1>¿A dónde vas?</h1>
+            <p>Tienes zona de jugador y permisos de gestión.</p>
+          </div>
+          <nav className="acc-elegir" aria-label="Elegir zona">
+            <Link href="/mi-zona"><b>Mi zona de jugador</b><span>Tu agenda, tu temporada y el pedido de ropa</span></Link>
+            <Link href="/gestion"><b>Gestión del club</b><span>Panel de la semana, jugadores, liga y scouting</span></Link>
+          </nav>
+        </main>
+      </div>
+    </div>
   );
 }

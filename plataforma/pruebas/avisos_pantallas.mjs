@@ -28,6 +28,8 @@ const equip = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'equipaciones_2
 const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
 const hoyReal = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
 const bonito = (n) => A.equipoPorNombre(equip, n)?.nombre ?? n;
+// "MdA – Litros de Mahou" (el local primero, como en Mi zona y en el calendario oficial)
+const cruce = (nuestro, p) => (p.local ? `${nuestro} – ${bonito(p.rival)}` : `${bonito(p.rival)} – ${nuestro}`);
 const proxReal = (e) => A.proximoPartido(cal, hoyReal, e);
 const avisoReal = (e) => { const p = proxReal(e); return p ? A.avisoPartido(equip, p) : null; };
 
@@ -125,8 +127,8 @@ try {
 
   async function entrar(p, email) {
     await p.goto(`${APP}/entrar`);
-    await p.getByLabel('Recibir código por correo').fill(email);
-    await p.getByRole('button', { name: 'Enviarme un código' }).click();
+    await p.getByLabel('Tu correo').fill(email);
+    await p.getByRole('button', { name: 'Enviarme el código' }).click();
     await p.getByText('Código enviado a').waitFor({ timeout: 10000 });
     await p.getByLabel('Código de 6 dígitos').fill((await codigoDe(email)) ?? '000000');
     await p.getByRole('button', { name: 'Entrar', exact: true }).click();
@@ -150,7 +152,7 @@ try {
     const zona = pj.locator('[aria-labelledby="t-partidos"]');
     const aMdA = proxReal('MDA'), aMdL = proxReal('MDL');
     ok((await zona.locator('.eq-partido').count()) === 1, 'Mi zona: solo el proximo partido de SU equipo (ficha MdA)');
-    ok((await zona.textContent()).includes(`MdA ${aMdA.local ? 'vs' : 'en'} ${bonito(aMdA.rival)}`) && !(await zona.textContent()).includes(bonito(aMdL.rival)), `Mi zona: "MdA ${aMdA.local ? 'vs' : 'en'} ${bonito(aMdA.rival)}" y no el de MdL`);
+    ok((await zona.textContent()).includes(cruce('MdA', aMdA)) && !(await zona.textContent()).includes(bonito(aMdL.rival)), `Mi zona: "${cruce('MdA', aMdA)}" y no el de MdL`);
     ok((await zona.locator('.eq-aviso').count()) === (eti(avisoReal('MDA')) ? 1 : 0), 'Mi zona: aviso si y solo si el proximo rival de MdA choca', String(await zona.locator('.eq-aviso').count()));
     if (eti(avisoReal('MDA'))) ok((await zona.locator('.eq-aviso').textContent()).includes('Coinciden colores: cambia') && (await zona.locator('.eq-aviso').getAttribute('data-tipo')) === 'cambian_ellos', 'Mi zona: aviso informativo "cambian ellos" (somos locales)');
     ok((await zona.locator('[data-testid="color-rival"]').first().textContent()).includes('camiseta'), 'Mi zona: color del rival visible');
@@ -160,7 +162,7 @@ try {
     // jugador de MdL: su partido, sin el de MdA
     await sql`update public.jugadores set ficha_mda = false, ficha_mdl = true where person_id = 'esteban-jon'`;
     await pj.goto(`${APP}/mi-zona`);
-    ok((await zona.locator('.eq-partido').count()) === 1 && (await zona.textContent()).includes(`MdL ${aMdL.local ? 'vs' : 'en'} ${bonito(aMdL.rival)}`), 'Mi zona (ficha MdL): solo el proximo partido de MdL');
+    ok((await zona.locator('.eq-partido').count()) === 1 && (await zona.textContent()).includes(cruce('MdL', aMdL)), 'Mi zona (ficha MdL): solo el proximo partido de MdL');
     await sql`update public.jugadores set ficha_mda = true, ficha_mdl = true where person_id = 'esteban-jon'`;
     await pj.goto(`${APP}/mi-zona`);
     ok((await zona.locator('.eq-partido').count()) === 2, 'Mi zona (dobla): los dos proximos partidos');

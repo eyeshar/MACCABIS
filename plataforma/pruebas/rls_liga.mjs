@@ -9,7 +9,7 @@
 
 import { arrancar } from './pila.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
-import { filasTabla } from '../src/lib/jugadoresLiga.ts';
+import { filasTabla, filasFichas } from '../src/lib/jugadoresLiga.ts';
 
 let fallos = 0;
 const ok = (cond, que, detalle = '') => {
@@ -83,6 +83,16 @@ try {
     if (!(f.pts === a.pts + l.pts && f.pj === a.pj + l.pj && f.faltas === a.faltas + l.faltas && f.tla === a.tla + l.tla)) ok(false, `doblador ${f.nombre}: fichas sumadas`);
   }
   ok(true, 'cada doblador lleva las dos fichas sumadas (PJ, PTS, TL, faltas)');
+  // Con filtro de grupo o de equipo, quien dobla se ve con SOLO la ficha de ese grupo/equipo: la suma de PTS = puntos a favor del equipo
+  const fichas = filasFichas(jug, new Map(clas.map((c) => [`${c.grupo}|${c.equipo}`, c.pj])));
+  for (const [grupo, equipo] of [['G1', 'MdA'], ['G2', 'MdL']]) {
+    const pf = clas.find((c) => c.grupo === grupo && c.equipo === equipo).pf;
+    const porGrupo = fichas.filter((f) => f.grupos.includes(grupo) && f.equipos.includes(equipo)).reduce((n, f) => n + f.pts, 0);
+    ok(porGrupo === pf, `con filtro ${grupo}/${equipo}, la suma de PTS de la tabla (${porGrupo}) = puntos a favor de ${equipo} en la clasificacion (${pf})`);
+    const grupoEntero = fichas.filter((f) => f.grupos.includes(grupo)).reduce((n, f) => n + f.pts, 0);
+    ok(grupoEntero === clas.filter((c) => c.grupo === grupo).reduce((n, c) => n + c.pf, 0), `con filtro de grupo ${grupo}, la suma de PTS de todas las filas = puntos a favor de todo el grupo`);
+  }
+  ok(fichas.filter((f) => f.dobla).every((f) => f.soloFicha === f.equipos[0]), 'las fichas de los dobladores van marcadas con su ficha (MdA o MdL)');
 
   console.log('\n== RLS: anonimo, jugador e intruso no ven nada');
   const tablas = ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores', 'liga_calendario', 'liga_clasificacion'];

@@ -47,6 +47,7 @@ export type FilaTabla = JugadorLiga & {
   grupos: string[];       // ["G2"] | ["G1", "G2"] si dobla
   dobla: boolean;
   nuestro: boolean;       // MdA, MdL o ambos
+  soloFicha?: string;     // un doblador visto con un filtro de grupo/equipo: solo la ficha de "MdA" o de "MdL"
   minPartidos: number;    // minimo "automatico" para clasificar por medias: la mitad de los partidos de su equipo (al menos 1)
 };
 
@@ -60,6 +61,26 @@ export function filasTabla(jugadores: JugadorLiga[], pjEquipo: Map<string, numbe
       dobla,
       nuestro: (NUESTROS as readonly string[]).includes(j.equipo) || dobla,
       minPartidos: dobla ? 1 : Math.max(1, Math.ceil((pjEquipo.get(`${j.grupo}|${j.equipo}`) ?? 0) / 2)),
+    };
+  });
+}
+
+/**
+ * Las fichas SIN sumar: una fila por (equipo, persona). Los dobladores llevan «dobla» y `soloFicha` ("MdA" o "MdL"); se usan
+ * cuando la tabla esta filtrada por grupo o equipo (D73): ahi se ve solo la ficha de ese grupo o equipo.
+ */
+export function filasFichas(jugadores: JugadorLiga[], pjEquipo: Map<string, number>): FilaTabla[] {
+  const dobla = quienDobla(jugadores);
+  return jugadores.map((j) => {
+    const esDobla = dobla.has(j.nombre) && (NUESTROS as readonly string[]).includes(j.equipo);
+    return {
+      ...j,
+      equipos: [j.equipo],
+      grupos: [j.grupo],
+      dobla: esDobla,
+      soloFicha: esDobla ? j.equipo : undefined,
+      nuestro: (NUESTROS as readonly string[]).includes(j.equipo),
+      minPartidos: Math.max(1, Math.ceil((pjEquipo.get(`${j.grupo}|${j.equipo}`) ?? 0) / 2)),
     };
   });
 }

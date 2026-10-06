@@ -47,7 +47,7 @@ function celda(j: FilaTabla, k: Columna, pp: boolean): string {
 const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const clave = (j: FilaTabla) => `${j.grupo}|${j.equipo}|${j.nombre}`;
 
-export default function TablaJugadores({ filas, equipos }: { filas: FilaTabla[]; equipos: { grupo: string; equipo: string }[] }) {
+export default function TablaJugadores({ sumadas, fichas, equipos }: { sumadas: FilaTabla[]; fichas: FilaTabla[]; equipos: { grupo: string; equipo: string }[] }) {
   const [col, setCol] = useState<Columna>("pts");
   const [dir, setDir] = useState<1 | -1>(-1);
   const [porPartido, setPorPartido] = useState(false);
@@ -58,6 +58,7 @@ export default function TablaJugadores({ filas, equipos }: { filas: FilaTabla[];
   const [minimo, setMinimo] = useState<string>("auto");
   const [visibles, setVisibles] = useState(POR_PAGINA);
   const [abierta, setAbierta] = useState<string | null>(null);
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   const cambiar = <T,>(f: (v: T) => void) => (v: T) => { f(v); setVisibles(POR_PAGINA); setAbierta(null); };
   const ordenarPor = (k: Columna) => {
@@ -68,6 +69,9 @@ export default function TablaJugadores({ filas, equipos }: { filas: FilaTabla[];
 
   const equiposVisibles = equipos.filter((e) => grupo === "todos" || e.grupo === grupo);
   const min: Minimo = minimo === "auto" || minimo === "todos" ? minimo : Number(minimo);
+  // Con un filtro de grupo o de equipo (y sin "Solo Maccabis") quien dobla se ve con SOLO la ficha de ese grupo o equipo; si no, con las dos sumadas.
+  const filas = !soloMaccabis && (grupo !== "todos" || equipo !== "todos") ? fichas : sumadas;
+  const filtrosActivos = [grupo !== "todos", equipo !== "todos", soloMaccabis, buscar.trim() !== "", minimo !== "auto"].filter(Boolean).length;
 
   const lista = useMemo(() => {
     const q = sinTildes(buscar.trim());
@@ -99,13 +103,27 @@ export default function TablaJugadores({ filas, equipos }: { filas: FilaTabla[];
   return (
     <section className="tarjeta lg-todos" aria-label="Todos los jugadores">
       <h2 style={{ marginTop: 0 }}>Todos los jugadores</h2>
-      <p className="lg-sub">{filas.length} personas de la liga (G1 + G2, con MdA y MdL). «dobla» = sale con MdA y con MdL: una sola fila, con las dos fichas sumadas.</p>
+      <p className="lg-sub">{sumadas.length} personas de la liga (G1 + G2, con MdA y MdL). «dobla» = sale con MdA y con MdL: una sola fila con las dos fichas sumadas; si filtras por grupo o equipo, solo la ficha de ese grupo o equipo.</p>
 
-      <div className="lg-filtros">
+      <div className="lg-barra">
         <div className="lg-conmutador" role="group" aria-label="Totales o por partido">
           <button type="button" className={!porPartido ? "on" : ""} aria-pressed={!porPartido} onClick={() => cambiar(setPorPartido)(false)}>Totales</button>
           <button type="button" className={porPartido ? "on" : ""} aria-pressed={porPartido} onClick={() => cambiar(setPorPartido)(true)}>Por partido</button>
         </div>
+        <label className="lg-ordenar solo-movil-bloque">Ordenar por
+          <span className="lg-ordenar-fila">
+            <select value={col} onChange={(e) => ordenarPor(e.target.value as Columna)} aria-label="Ordenar por">
+              {COLUMNAS.map((c) => <option key={c.k} value={c.k}>{c.largo}</option>)}
+            </select>
+            <button type="button" className="boton boton-claro" onClick={() => { setDir((d) => (d === 1 ? -1 : 1)); setVisibles(POR_PAGINA); }} aria-label={dir === 1 ? "Orden ascendente" : "Orden descendente"}>{dir === 1 ? "▲" : "▼"}</button>
+          </span>
+        </label>
+        <button type="button" className="boton boton-claro lg-filtros-btn" aria-expanded={filtrosAbiertos} aria-controls="lg-filtros-panel" onClick={() => setFiltrosAbiertos((v) => !v)}>
+          Filtros ({filtrosActivos} {filtrosActivos === 1 ? "activo" : "activos"}) {filtrosAbiertos ? "▲" : "▼"}
+        </button>
+      </div>
+
+      <div id="lg-filtros-panel" className={`lg-filtros lg-filtros-panel${filtrosAbiertos ? " abierto" : ""}`}>
         <label>Grupo
           <select value={grupo} onChange={(e) => { cambiar(setGrupo)(e.target.value); setEquipo("todos"); }}>
             <option value="todos">Todos</option><option value="G1">G1 · MdA</option><option value="G2">G2 · MdL</option>
@@ -127,14 +145,6 @@ export default function TablaJugadores({ filas, equipos }: { filas: FilaTabla[];
           </select>
         </label>
         <label className="lg-check"><input type="checkbox" checked={soloMaccabis} onChange={(e) => cambiar(setSoloMaccabis)(e.target.checked)} /> Solo Maccabis</label>
-        <label className="lg-ordenar solo-movil-bloque">Ordenar por
-          <span className="lg-ordenar-fila">
-            <select value={col} onChange={(e) => ordenarPor(e.target.value as Columna)} aria-label="Ordenar por">
-              {COLUMNAS.map((c) => <option key={c.k} value={c.k}>{c.largo}</option>)}
-            </select>
-            <button type="button" className="boton boton-claro" onClick={() => { setDir((d) => (d === 1 ? -1 : 1)); setVisibles(POR_PAGINA); }} aria-label={dir === 1 ? "Orden ascendente" : "Orden descendente"}>{dir === 1 ? "▲" : "▼"}</button>
-          </span>
-        </label>
       </div>
 
       <p className="lg-nota" role="status">
@@ -157,7 +167,7 @@ export default function TablaJugadores({ filas, equipos }: { filas: FilaTabla[];
           <tbody>
             {visible.map((j) => (
               <tr key={clave(j)} className={j.nuestro ? "lg-nuestro" : ""}>
-                <td><Link href={urlEquipo(j.equipos[0])} className="lg-enlace"><b>{bonito(j.nombre)}</b></Link> <small>#{j.dorsal}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}</td>
+                <td><Link href={urlEquipo(j.equipos[0])} className="lg-enlace"><b>{bonito(j.nombre)}</b></Link> <small>#{j.dorsal}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}{j.soloFicha && <small className="lg-solo-ficha"> solo ficha {j.soloFicha}</small>}</td>
                 <td>{enlaceEquipos(j)} <small>{j.grupos.join("+")}</small></td>
                 <td>{j.pj}</td><td>{celda(j, "segundos", porPartido)}</td><td><b>{j.pts}</b></td><td>{celda(j, "media", false)}</td>
                 <td>{celda(j, "p2a", porPartido)}</td><td>{celda(j, "p3a", porPartido)}</td><td>{celda(j, "tla", porPartido)}</td><td>{celda(j, "pctTL", false)}</td>
@@ -179,7 +189,7 @@ export default function TablaJugadores({ filas, equipos }: { filas: FilaTabla[];
             <li key={k} className={`lg-fila${j.nuestro ? " lg-nuestro" : ""}${abierto ? " abierta" : ""}`}>
               <button type="button" className="lg-fila-cab" aria-expanded={abierto} onClick={() => setAbierta(abierto ? null : k)}>
                 <span className="lg-fila-nom">
-                  <b>{bonito(j.nombre)}</b> <small>#{j.dorsal}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}
+                  <b>{bonito(j.nombre)}</b> <small>#{j.dorsal}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}{j.soloFicha && <small className="lg-solo-ficha"> solo ficha {j.soloFicha}</small>}
                   <small className="lg-fila-eq">{j.equipos.join(" + ")} · {j.grupos.join("+")}</small>
                 </span>
                 {otra && <span className="lg-fila-val"><small>{nombreCol.t}</small>{celda(j, col, porPartido)}</span>}
@@ -210,8 +220,9 @@ export default function TablaJugadores({ filas, equipos }: { filas: FilaTabla[];
       <p className="lg-nota">
         Solo datos que trae la hoja de la FBM: <b>no hay faltas recibidas ni intentos de campo</b> (2P y 3P son canastas anotadas), y los tiros
         libres son anotados/intentados. Los minutos son los de la hoja y pueden no cuadrar con el reloj. Nada está estimado. «Por partido»
-        divide minutos, 2P, 3P, TL y faltas entre los partidos jugados (PJ); PTS, Media, TL% y F/P no cambian. A igualdad en la columna
-        elegida, el orden es siempre el mismo: puntos, media, nombre y equipo.
+        divide minutos, 2P, 3P, TL y faltas entre los partidos jugados (PJ); PTS, Media, TL% y F/P no cambian. Quien dobla sale en una sola fila
+        con las dos fichas sumadas; si filtras por grupo o por equipo (sin «Solo Maccabis»), solo con la ficha de ese grupo o equipo («solo
+        ficha MdA» / «solo ficha MdL»). A igualdad en la columna elegida, el orden es siempre el mismo: puntos, media, nombre y equipo.
       </p>
     </section>
   );

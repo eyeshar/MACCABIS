@@ -81,7 +81,13 @@ try {
     ok(await sinDesbordar(), 'Scouting sin desbordamiento');
 
     await p.goto(`${BASE}/gestion/liga`);
-    ok((await p.textContent('h1')).includes('Liga consolidada') && (await p.locator('.lg-lider').count()) === 5, 'Liga consolidada carga con sus 5 listas de lideres');
+    ok((await p.textContent('h1')).includes('Liga consolidada') && (await p.locator('#lideres .lg-lider').count()) === 4, 'Liga consolidada carga con sus listas de lideres (Totales)');
+    await p.locator('#lideres').getByRole('button', { name: 'Por partido' }).click();
+    ok((await p.locator('#lideres .lg-lider').count()) === 7, 'lideres Por partido: 7 listas');
+    ok((await p.locator('nav.lg-indice a').count()) === 3 && (await p.locator('.lg-todos').isVisible()), 'indice de la pagina y tabla Todos los jugadores');
+    ok((await p.locator('.lg-todos tbody tr, .lg-todos .lg-compactas .lg-fila').count()) > 0 && await sinDesbordar(), 'tabla Todos los jugadores con filas y sin desbordamiento');
+    await p.locator('.lg-todos').getByLabel('Buscar').fill('esteban, jon').catch(async () => { await p.locator('.lg-filtros-btn').click(); await p.locator('.lg-todos').getByLabel('Buscar').fill('esteban, jon'); });
+    ok((await p.locator('.lg-todos').textContent()).includes('MdA + MdL'), 'tabla: un doblador sale en una sola fila MdA + MdL');
     await p.locator('details.lg-ranking > summary').click();
     ok((await p.locator('details.lg-ranking tbody tr').count()) === 20 && await sinDesbordar(), 'ranking de equipos (20) sin desbordamiento');
     ok(errores.length === 0, 'sin errores de JavaScript', errores.join(' | '));

@@ -82,3 +82,31 @@ export function pasaMinimo(j: FilaOrden, col: Columna, minimo: Minimo, porPartid
   if (col === "pctTL" && j.tli < 3) return false;
   return true;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Lideres "Por partido" de la liga (vista independiente de la tabla). Una decimal en pantalla; el orden usa el valor exacto.
+// ---------------------------------------------------------------------------------------------------------------------
+
+export type LiderPP = Lider & { segundos: number; p2a: number; minPartidos: number };
+export type ClavePP = "pts" | "p2a" | "p3a" | "tla" | "pctTL" | "faltas" | "segundos";
+
+/** Valor por partido de una lista (null si no se puede calcular: sin partidos o, en TL%, sin intentos). */
+export function valorPP(j: LiderPP, k: ClavePP): number | null {
+  if (!j.pj) return null;
+  if (k === "pctTL") return j.tli ? j.tla / j.tli : null;
+  return j[k] / j.pj;
+}
+/** El total que desempata despues del valor por partido (en TL%, los tiros libres anotados). */
+const totalPP = (j: LiderPP, k: ClavePP) => (k === "pctTL" ? j.tla : j[k]);
+
+/**
+ * Minimo de partidos de los lideres por partido ("Automatico"): la mitad de los partidos de su equipo (al menos 1) y, en TL%,
+ * 3 tiros libres intentados. Un doblador cuenta con los partidos sumados de sus dos fichas.
+ */
+export const cumpleMinimoPP = (j: LiderPP, k: ClavePP) => j.pj >= j.minPartidos && (k !== "pctTL" || j.tli >= 3);
+
+/** Orden de cada lista por partido: valor por partido, luego total, luego MENOS partidos, luego nombre y equipo. */
+export const porPartido = (k: ClavePP) => (a: LiderPP, b: LiderPP) => {
+  const va = valorPP(a, k) ?? -1, vb = valorPP(b, k) ?? -1;
+  return vb - va || totalPP(b, k) - totalPP(a, k) || a.pj - b.pj || texto(a, b);
+};

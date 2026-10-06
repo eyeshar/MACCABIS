@@ -18,7 +18,9 @@
     "db:estado": "node scripts/db.mjs estado",
     "pruebas:pila": "node pruebas/pila.mjs",
     "pruebas": "node pruebas/ejecutar.mjs",
-    "imagenes:ropa": "python scripts/extraer_imagenes_ropa.py"
+    "imagenes:ropa": "python scripts/extraer_imagenes_ropa.py",
+    "db:liga": "node scripts/cargar_liga.mjs",
+    "pruebas:liga": "node pruebas/rls_liga.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

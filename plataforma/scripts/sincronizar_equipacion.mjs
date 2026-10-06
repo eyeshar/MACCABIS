@@ -53,7 +53,8 @@ export function desfasadas() {
     return !fs.existsSync(f) || !fs.readFileSync(f).equals(fs.readFileSync(path.join(DATOS, o)));
   }).map(([, d]) => d);
   const f = path.join(DESTINO, RESUMEN);
-  if (!fs.existsSync(f) || fs.readFileSync(f, 'utf8') !== resumenHistoria()) copias.push(RESUMEN);
+  // Sin distinguir CRLF/LF: en Windows git puede sacar el fichero con CRLF.
+  if (!fs.existsSync(f) || fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n') !== resumenHistoria()) copias.push(RESUMEN);
   return copias;
 }
 

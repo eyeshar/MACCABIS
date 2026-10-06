@@ -9,6 +9,8 @@ import BotonConfirmar from "@/components/BotonConfirmar";
 import { fechaCorta } from "@/lib/fechas";
 import { fichaEstadisticas } from "@/lib/mensajes";
 import SinZona from "./SinZona";
+import ProximoPartido from "@/components/ProximoPartido";
+import { proximoConAviso } from "@/lib/equipacion";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,9 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
   const { jugador, campana, pedidos } = zona;
   const deEstaCampana = pedidos.filter((x) => x.campana_id === campana?.id);
   const anteriores = pedidos.filter((x) => x.campana_id !== campana?.id);
+  // Proximo partido de SU equipo (o de los dos si dobla). Sin datos de equipo (mi_zona antigua): los dos.
+  const equiposJ = (["MDA", "MDL"] as const).filter((e) => (e === "MDA" ? jugador.ficha_mda : jugador.ficha_mdl));
+  const proximos = (equiposJ.length ? equiposJ : (["MDA", "MDL"] as const)).map((e) => proximoConAviso(e)?.partido).filter((x) => !!x);
 
   return (
     <>
@@ -146,9 +151,10 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
           <h2 id="t-semana">Mi semana</h2>
           <p style={{ margin: 0 }}>Próximamente: aquí dirás si puedes ir a cada partido y entreno.</p>
         </section>
-        <section className="tarjeta tarjeta-apagada" aria-labelledby="t-partidos">
+        <section className="tarjeta" aria-labelledby="t-partidos">
           <h2 id="t-partidos">Próximos partidos</h2>
-          <p style={{ margin: 0 }}>Próximamente: calendario y convocatorias.</p>
+          {proximos.length ? proximos.map((x) => <ProximoPartido key={x!.equipo} partido={x!} />) : <p className="suave" style={{ margin: 0 }}>No quedan partidos de liga en el calendario.</p>}
+          <p className="pequeno suave" style={{ margin: "10px 0 0" }}>Próximamente: convocatorias.</p>
         </section>
 
         <p className="pie">¿Algo no cuadra? Habla con Iván, Carlos o Edu.</p>

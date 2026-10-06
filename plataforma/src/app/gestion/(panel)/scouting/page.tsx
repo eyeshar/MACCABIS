@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { exigirGestor } from "@/lib/sesion";
+import { Camiseta } from "@/components/ProximoPartido";
+import { avisoContra, coloresDe } from "@/lib/equipacion";
 import {
   bonito, cargarLiga, codigoNuestro, dec, fechaCorta, mmss, nombreNuestro, proximoPartido, quienDobla,
   type JugadorLiga,
@@ -50,6 +52,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
     .sort((a, b) => b.pts - a.pts || b.segundos - a.segundos);
   const dobla = quienDobla(liga.jugadores);
   const prox = elegido.nuestro ? null : proximoPartido(calendario, hoy, codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo);
+  const aviso = prox ? avisoContra(codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo) : null;
   const suma = (k: "pts" | "p2a" | "p3a" | "tla" | "tli" | "faltas" | "segundos") => jugadores.reduce((s, j) => s + j[k], 0);
   const grupos = ["G1", "G2"];
 
@@ -94,12 +97,14 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
               {elegido.pos}º del grupo · {elegido.g} ganados, {elegido.p} perdidos · {elegido.pf}–{elegido.pc} ({elegido.pf - elegido.pc > 0 ? "+" : ""}{elegido.pf - elegido.pc}) ·{" "}
               {elegido.pts === null ? "pendiente de la oficial" : `${elegido.pts} pts`} <i>(clasificación calculada)</i>
             </p>
+            <p className="lg-sub" data-testid="color-equipo">{coloresDe(elegido.equipo) ? <Camiseta rival={elegido.equipo} /> : "Sin color de equipación"}</p>
           </div>
           {prox && (
             <div className="lg-prox">
               <div className="lg-prox-e">Próximo partido contra nosotros</div>
               <div className="lg-prox-f">{nombreNuestro(grupo)} {prox.local ? "vs" : "en"} {elegido.equipo}</div>
               <div className="lg-prox-d">J{prox.jornada} · {prox.fecha ? fechaCorta(prox.fecha) : ""} · {prox.hora} · pista {prox.campo} · {prox.local ? "en casa" : "fuera"}</div>
+              {aviso?.hay && <p className="eq-aviso" role="note"><span className="etiqueta etiqueta-aviso">{aviso.etiqueta}</span> <span>{aviso.texto}</span></p>}
             </div>
           )}
           {elegido.nuestro && <p className="lg-sub">Es uno de los nuestros: así nos ven los rivales.</p>}

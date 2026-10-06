@@ -12,3 +12,5 @@ Pasos (Deportes/web, sesión de Iván iniciada en su Chrome):
 6. Pendiente: sanciones (Juegos Deportivos Municipales-Equipos → equipo → más opciones → sanciones).
 
 **Hallazgos del 02/10:** J1 MdA oficialmente visitante en la pista 2 (SportEasy la tenía como local; Iván avisó por WhatsApp y decidió no tocar el evento). Mismo domingo a la misma hora: 18/10 y 07/02 (10:15). J1–J3 coinciden en todo lo demás.
+
+**Revisar cambios de equipación de los rivales (D75):** cada vez que se revise el calendario, comprobar en Deportes/web (ficha del equipo rival: colores de primera equipación) si algún rival ha cambiado de camiseta o pantalón. Si cambia: editar `data/equipaciones_2026-27.json` (texto original, color normalizado, fecha), correr `npm run equipacion:sync` en `plataforma/` y `npm run pruebas:equipacion`. Si cambia el calendario (fecha, rival, local/visitante), también `equipacion:sync` (copia del calendario en la plataforma). Los avisos de choque se recalculan solos.

@@ -219,6 +219,12 @@ th.hprev{color:var(--dim)}
 .lgpart{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:7px;font-size:14.5px}
 .lgpart .l{text-align:right}.lgpart .gan{font-weight:700}.lgpart .m{font-family:'JetBrains Mono';font-size:15px;background:var(--bg);padding:3px 10px;border-radius:7px;white-space:nowrap}.lgpart.nos{border-color:var(--grape2)}
 .lgdesc{font-size:12.5px;color:var(--dim);margin:2px 0 10px}
+.lgprox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}.lgprox .eqp{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.eqp .t{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:var(--dim)}.eqp .v{font-family:'Barlow Condensed';font-size:22px;font-weight:700;line-height:1.15;margin:2px 0}.eqp .s{font-size:13px;color:var(--dim)}
+.eqdot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.55);vertical-align:-1px;margin-right:5px}
+.eqcol{font-size:13px;color:var(--dim);margin-top:6px}
+.eqaviso{display:inline-block;margin-top:8px;font-family:'Barlow Condensed';font-weight:700;font-size:15px;letter-spacing:.03em;background:var(--gold);color:#1b1830;border-radius:7px;padding:2px 9px}.eqtxt{font-size:13px;color:#e9dca0;margin-top:5px}
+@media(max-width:640px){.lgprox{grid-template-columns:1fr}}
 .lgsel{max-width:340px;width:100%}
 .lgficha h3{font-family:'Barlow Condensed';font-size:28px;margin:12px 0 10px}
 .lgdos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.lgmini{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 14px}.lgmini .t{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:var(--dim)}.lgmini .v{font-family:'JetBrains Mono';font-size:22px;font-weight:600}.lgmini .s{font-family:'JetBrains Mono';font-size:12px;color:var(--dim)}
@@ -350,6 +356,8 @@ th.hprev{color:var(--dim)}
 </div>
 
 <div class="panel" id="p-liga">
+  <div class="sec-h"><h2>Próximos partidos</h2><span class="tag">MdA y MdL</span><span class="rule"></span></div>
+  <div class="lgprox" id="lgProx"></div>
   <div class="controls">
     <div class="ctl"><label>Grupo 2026/27</label><div class="segment" id="segLgGrupo"><button data-g="G1" class="on">G1 · MdA</button><button data-g="G2">G2 · MdL</button></div></div>
   </div>
@@ -368,6 +376,7 @@ th.hprev{color:var(--dim)}
 
 <footer><span id="footsrc">Fuente: 42 actas + 41 hojas de estadística (App Afición FBM / Gesdeportiva) · temporada 25/26</span><span id="stamp"></span></footer>
 </div></div>
+<script src="data/avisos_equipacion.js"></script>
 <script>
 function initDashboard(D){
  const PARTIDOS=D.partidos, PLAYERS=D.players, BOX=D.box, QSTATS=D.qstats;
@@ -1038,7 +1047,7 @@ function rvAbrir(id){
   cont.innerHTML='<div class="hmodal" id="rvModal"><div class="hbox rvbox" role="dialog" aria-modal="true" aria-label="Ficha de '+rvEsc(r.nombre)+'">'+
     '<div class="hhead"><div><h3>'+rvEsc(r.nombre)+'</h3>'+
     '<div class="hsub">Grupo del '+r.grupo+' en 2026/27'+(r.antes.length?' · antes: '+rvEsc(r.antes.join(', ')):'')+'</div>'+
-    '<div class="hsub">'+r.temporadas_jdm+' de '+r.temporadas_disponibles+' temporadas en los JDM · mejor: '+rvEsc(r.mejor)+'</div></div>'+
+    '<div class="hsub">'+r.temporadas_jdm+' de '+r.temporadas_disponibles+' temporadas en los JDM · mejor: '+rvEsc(r.mejor)+'</div>'+eqColor(r.nombre)+'</div>'+
     '<button class="hclose" id="rvCerrar" aria-label="Cerrar">✕</button></div>'+
     '<div class="hbody">'+rvBalanceH2H(h)+
     '<div class="sec-h"><h2>Trayectoria en liga</h2><span class="tag">puesto relativo · 1º arriba</span><span class="rule"></span></div>'+
@@ -1069,7 +1078,32 @@ const lgSig=(v)=>(v>0?'+':'')+v;
 const lgDec=v=>v==null?'–':String(v.toFixed?v.toFixed(1):v).replace('.',',');
 const lgEq=(g,nombre)=>Object.values(LG.grupos[g].equipos).find(e=>e.nombre===nombre);
 
+// Avisos de equipación (D79): el cálculo es data/avisos_equipacion.js (el mismo que usa la plataforma).
+let EQ=null,CAL=null;
+const eqHoy=()=>new URLSearchParams(location.search).get('hoy')||new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Madrid'});
+const eqDia=f=>new Date(f+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+const eqNombre=n=>{const e=EQ&&AvisosEquipacion.equipoPorNombre(EQ,n);return e?e.nombre:n;};
+function eqColor(nombre){
+  const e=EQ&&AvisosEquipacion.equipoPorNombre(EQ,nombre); if(!e)return '';
+  return '<div class="eqcol"><i class="eqdot" style="background:'+(EQ.paleta[e.camiseta]||'#999')+'"></i>camiseta '+rvEsc(e.camiseta)+', pantalón '+rvEsc(e.pantalon)+'</div>';
+}
+function eqAviso(p){
+  const a=EQ&&AvisosEquipacion.avisoPartido(EQ,p); if(!a||!a.hay)return '';
+  return '<div class="eqaviso">'+rvEsc(a.etiqueta)+'</div><div class="eqtxt">'+rvEsc(a.texto)+'</div>';
+}
+function lgProx(){
+  const cont=document.getElementById('lgProx'); if(!EQ||!CAL){cont.innerHTML='';return;}
+  cont.innerHTML=['MDA','MDL'].map(eq=>{
+    const p=AvisosEquipacion.proximoPartido(CAL,eqHoy(),eq), n=eq==='MDA'?'MdA':'MdL';
+    if(!p)return '<div class="eqp"><div class="t">'+n+'</div><div class="s">No quedan partidos en el calendario.</div></div>';
+    return '<div class="eqp" data-eq="'+eq+'"><div class="t">'+n+' · J'+p.jornada+'</div><div class="v">'+n+' '+(p.local?'vs':'en')+' '+rvEsc(eqNombre(p.rival))+'</div>'+
+      '<div class="s">'+eqDia(p.fecha)+' · '+rvEsc(p.hora)+' · pista '+rvEsc(p.campo)+' · '+(p.local?'en casa':'fuera')+'</div>'+eqColor(p.rival)+eqAviso(p)+'</div>';
+  }).join('');
+}
+
 async function initLiga(){
+  try{ [EQ,CAL]=await Promise.all(['equipaciones_2026-27','calendario_2026-27'].map(f=>fetch('data/'+f+'.json',{cache:'no-store'}).then(r=>r.json()))); lgProx(); }
+  catch(e){ console.error('Equipaciones:',e); }
   try{ LG=await (await fetch('data/liga_2026-27.json',{cache:'no-store'})).json(); }
   catch(e){ console.error('Liga 26/27:',e); document.getElementById('lgAviso').textContent='No se pudo cargar la liga.'; return; }
   const qs=new URLSearchParams(location.search);
@@ -1112,6 +1146,12 @@ function lgRender(){
   document.getElementById('lgFuente').textContent='Fuente: hojas de estadística de la FBM (app Afición FBM) hasta la jornada '+js[js.length-1]+'. Sólo datos por equipo. Generado el '+rvFecha(LG.generado)+'.';
 }
 
+function eqAvisoContra(eq,rival){
+  if(!CAL)return '';
+  const e=AvisosEquipacion.equipoPorNombre(EQ,rival), hoy=eqHoy();
+  const p=CAL.partidos.filter(x=>x.equipo===eq&&!x.descansa&&x.fecha>=hoy&&AvisosEquipacion.equipoPorNombre(EQ,x.rival)===e).sort((a,b)=>a.fecha<b.fecha?-1:1)[0];
+  return p?'<div class="eqtxt" style="color:var(--dim)">Próximo partido contra nosotros: J'+p.jornada+' · '+rvFecha(p.fecha).slice(0,5)+'</div>'+eqAviso(p):'';
+}
 function lgFicha(){
   const G=LG.grupos[lgs.grupo], e=lgEq(lgs.grupo,lgs.equipo);
   if(!e){document.getElementById('lgFicha').innerHTML='';return;}
@@ -1125,6 +1165,7 @@ function lgFicha(){
     '<div class="kpi gold"><div class="strip"></div><div class="lab">Diferencia</div><div class="val">'+(e.media_dif==null?'–':lgSig(e.media_dif).replace('.',','))+'</div><div class="foot">por partido</div></div>'+
     '<div class="kpi win"><div class="strip"></div><div class="lab">Racha</div><div class="val">'+(e.racha?e.racha.n+e.racha.tipo:'–')+'</div><div class="foot">'+(e.ultimos.length?e.ultimos.map(pill).join(''):'sin partidos')+'</div></div></div>'+
     '<div class="lgdos">'+bl('En casa',e.casa)+bl('Fuera',e.fuera)+'</div><p class="note">Casa y fuera: ganados–perdidos y media de puntos a favor / en contra.</p>'+
+    (EQ?'<div class="lgcolor" id="lgColor">'+eqColor(e.nombre)+(e.nuestro?'':eqAvisoContra(lgs.grupo==='G1'?'MDA':'MDL',e.nombre))+'</div>':'')+
     (e.nuestro?'':'<a class="lglink" href="'+url+'" data-rv="'+rvEsc(e.id)+'">'+(rv&&rv.sin_rastro?'Ver Rivales 26/27 (sin historial en datos abiertos) →':'Ver su ficha en Rivales 26/27 →')+'</a>');
   const a=document.querySelector('#lgFicha .lglink');
   if(a)a.onclick=ev=>{

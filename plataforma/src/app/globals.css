@@ -309,3 +309,11 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
   .lg-filtros-panel.abierto { display: flex; }
   .lg-conmutador { align-self: flex-start; }
 }
+
+/* Avisos de equipacion (D79) */
+.eq-aviso { margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-weight: 600; }
+.eq-color { display: inline-flex; align-items: center; gap: 6px; }
+.eq-punto { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #0006; display: inline-block; flex: none; }
+.eq-partido + .eq-partido { border-top: 1px solid var(--borde); margin-top: 12px; padding-top: 12px; }
+.lg-prox .eq-aviso { color: #fff; font-weight: 600; font-size: 0.85rem; margin-top: 6px; }
+.lg-prox .eq-color { color: #cfcab8; font-size: 0.85rem; margin-top: 4px; }

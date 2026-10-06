@@ -4,7 +4,7 @@ import { clienteSesion, configurado } from "@/lib/supabase";
 import type { Campana, Pedido } from "@/lib/ropa";
 
 export type Zona = {
-  jugador: { nombre_visible: string; nombre_oficial: string; person_id: string };
+  jugador: { nombre_visible: string; nombre_oficial: string; person_id: string; ficha_mda?: boolean; ficha_mdl?: boolean };
   campana: Campana | null;
   pedidos: Pedido[];
 };

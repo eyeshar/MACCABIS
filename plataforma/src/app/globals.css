@@ -311,9 +311,14 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 }
 
 /* Avisos de equipacion (D79) */
-.eq-aviso { margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-weight: 600; }
+.eq-aviso { margin: 6px 0 0; display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; }
+.eq-etq { font-size: 1rem; }
+.eq-nos_toca { background: #ffd400; color: #1a1a1a; border: 2px solid #1a1a1a; font-weight: 600; }
+.eq-nos_toca .eq-etq { text-transform: none; }
+.eq-cambian_ellos { background: #e8eef6; color: #1f3350; border: 1px solid #b7c6da; }
+.eq-dudoso { background: var(--amarillo-claro); color: var(--tinta); border: 1px solid #0003; }
 .eq-color { display: inline-flex; align-items: center; gap: 6px; }
 .eq-punto { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #0006; display: inline-block; flex: none; }
 .eq-partido + .eq-partido { border-top: 1px solid var(--borde); margin-top: 12px; padding-top: 12px; }
-.lg-prox .eq-aviso { color: #fff; font-weight: 600; font-size: 0.85rem; margin-top: 6px; }
+.lg-prox .eq-aviso { font-size: 0.85rem; margin-top: 8px; }
 .lg-prox .eq-color { color: #cfcab8; font-size: 0.85rem; margin-top: 4px; }

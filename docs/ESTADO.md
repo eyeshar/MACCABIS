@@ -4,11 +4,11 @@
 
 _Última actualización: 05/10/2026 (tarde: D72, la hoja manda sobre SportEasy en partidos de liga) — **Jornada 1 de 2026/27 procesada** (MdL 59–38 Mejorada 2012; Enfermos del Aro 14–62 MdA), publicada como **parcial pendiente de acta** (excepción puntual a D66, ver D71); 2026/27 ya es la temporada por defecto de la web. Antes (02/10/2026): **`feat/plataforma-v0` mergeada a `main`** (merge `--no-ff` `ad972df`): login único con Google/código por correo (D68), rutina A por Enlace Móvil de Windows con el S22 Ultra de Iván (D70, matiza D69), calendario oficial 26/27 en `data/calendario_2026-27.json`. **La plataforma (`plataforma/`) ya vive en `main` y en producción**; la web de GitHub Pages (estadísticas) no cambia._
 
-## Avisos de choque de equipación (06/10/2026, D75) — rama `feat/avisos-equipacion`, SIN mergear a la espera del OK de Iván
-- `data/equipaciones_2026-27.json` (22 equipos, 28500 incluido) + `data/avisos_equipacion.js` (un solo cálculo). Choque = camiseta rival negro/azul oscuro/azul; nuestra 2.ª amarilla. La regla de quién cambia no está en el repo: el aviso dice «llevad la amarilla por si acaso».
-- Se ve en: web pública (tarjeta Próximos partidos en Liga 26/27, ficha de equipo, ficha de Rivales), Mi zona, Inicio de gestión y Scouting (color del rival y aviso). Función para la convocatoria: `lineaEquipacion`.
-- 18 partidos con aviso en la temporada (MdA 8, MdL 10); J2 MdA–Litros de Mahou sí, MdL–Quinto Tiempo no, J3 ninguno.
-- Pendiente: aplicar `20261006210000_mi_zona_equipos.sql` en producción (backup + staging) al mergear; sin ella Mi zona enseña los dos partidos.
+## Avisos de choque de equipación con la regla oficial (06/10/2026, D75)
+- Regla: Bases 47 JDM, art. 5.11: cambia el equipo que figure en **segundo lugar** del calendario (el visitante). Dos avisos: **NOS TOCA CAMBIAR** (alerta amarilla intensa, «partido perdido» si no se cambia) y **CAMBIAN ELLOS** (informativo). Datos en `data/equipaciones_2026-27.json`, cálculo único en `data/avisos_equipacion.js`, línea para la convocatoria en `lineaEquipacion`.
+- 18 partidos con aviso: 9 nos toca cambiar (todos de visitantes) y 9 cambian ellos. J2 MdA–Litros de Mahou y J1 MdL–Mejorada: cambian ellos; MdL–Quinto Tiempo, sin aviso.
+- Migración `20261006210000_mi_zona_equipos.sql` aplicada en producción (backup `privado/backups/backup_public_2026-10-06-13-01.json`, restaurado y probado en local antes).
+- Si cambia el calendario o un color: `npm run equipacion:sync` (rutina B).
 
 ## Liga consolidada: líderes por partido, fichas de dobladores filtradas y enlaces (06/10/2026, tras el OK a "Todos los jugadores")
 - **Líderes con interruptor Totales / Por partido** (independiente del de la tabla). Totales: Puntos, Triples, Tiros libres y Faltas (desaparece "Media de puntos"). Por partido: Puntos, 2P, 3P, TL anotados, TL% (≥3 intentados), Faltas y Minutos por partido, con una decimal y mínimo "Automático" (la mitad de los partidos de su equipo, al menos 1; nota al pie). Desempate determinista en `ordenLideres.ts` (valor por partido → total → menos partidos → nombre → equipo); los dobladores promedian sobre los partidos sumados de sus dos fichas. `pruebas:orden` cubre cada lista.

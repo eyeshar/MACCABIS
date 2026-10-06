@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { exigirGestor } from "@/lib/sesion";
-import { Camiseta } from "@/components/ProximoPartido";
+import { AvisoCaja, Camiseta } from "@/components/ProximoPartido";
 import { avisoContra, coloresDe } from "@/lib/equipacion";
 import {
   bonito, cargarLiga, codigoNuestro, dec, fechaCorta, mmss, nombreNuestro, proximoPartido, quienDobla,
@@ -104,7 +104,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
               <div className="lg-prox-e">Próximo partido contra nosotros</div>
               <div className="lg-prox-f">{nombreNuestro(grupo)} {prox.local ? "vs" : "en"} {elegido.equipo}</div>
               <div className="lg-prox-d">J{prox.jornada} · {prox.fecha ? fechaCorta(prox.fecha) : ""} · {prox.hora} · pista {prox.campo} · {prox.local ? "en casa" : "fuera"}</div>
-              {aviso?.hay && <p className="eq-aviso" role="note"><span className="etiqueta etiqueta-aviso">{aviso.etiqueta}</span> <span>{aviso.texto}</span></p>}
+              {aviso?.hay && <AvisoCaja a={aviso} />}
             </div>
           )}
           {elegido.nuestro && <p className="lg-sub">Es uno de los nuestros: así nos ven los rivales.</p>}

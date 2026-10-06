@@ -43,27 +43,36 @@
   /**
    * Aviso de un partido nuestro. null si descansa o no hay rival.
    * { rival, colorRival, pantalonRival, conocido, hay, quien, etiqueta, texto, convocatoria }
-   *  quien: 'nosotros' | 'rival' | 'dudoso' | null (sin choque)
+   *  tipo: 'nos_toca' (vamos segundos: cambiamos) | 'cambian_ellos' (vamos primeros) | 'dudoso' (sin regla) | null (sin choque)
    */
   function avisoPartido(equip, partido) {
     if (!partido || partido.descansa || !partido.rival) return null;
     const e = equipoPorNombre(equip, partido.rival);
     const segunda = nuestraSegunda(equip);
-    if (!e) return { rival: partido.rival, colorRival: null, pantalonRival: null, conocido: false, hay: false, quien: null, etiqueta: null, texto: 'Sin color del rival', convocatoria: null };
+    if (!e) return { rival: partido.rival, colorRival: null, pantalonRival: null, conocido: false, hay: false, tipo: null, quien: null, etiqueta: null, texto: 'Sin color del rival', convocatoria: null };
     const color = e.camiseta;
     const base = { rival: e.nombre, colorRival: color, pantalonRival: e.pantalon, conocido: true };
-    if (!chocan(equip, color)) return { ...base, hay: false, quien: null, etiqueta: null, texto: null, convocatoria: null };
+    if (!chocan(equip, color)) return { ...base, hay: false, tipo: null, quien: null, etiqueta: null, texto: null, convocatoria: null };
     const regla = equip.regla_choque.quien_cambia;
-    const etiqueta = '⚠ Equipación ' + segunda;
-    if (regla && regla.cambia) {
-      // Regla de las Bases: la camiseta de 1.ª la conserva el local o el visitante según `cambia`.
-      const nosCambia = regla.cambia === 'visitante' ? partido.local === false : partido.local === true;
-      return nosCambia
-        ? { ...base, hay: true, quien: 'nosotros', etiqueta, texto: 'Nos toca cambiar: ' + segunda, convocatoria: 'Llevad la equipación ' + segunda }
-        : { ...base, hay: true, quien: 'rival', etiqueta: 'Cambia el rival', texto: 'Cambia el rival', convocatoria: null };
+    const primera = equip.regla_choque.nuestra_primera;
+    // Bases 47 JDM, 5.11: cambia el equipo que figura en SEGUNDO lugar del calendario (el visitante: el calendario
+    // lista primero al local). Sin regla, o sin saber quién es local, solo se avisa de la coincidencia.
+    if (regla && regla.cambia === 'segundo_en_calendario' && typeof partido.local === 'boolean') {
+      if (!partido.local) {
+        return {
+          ...base, hay: true, tipo: 'nos_toca', quien: 'nosotros', etiqueta: '⚠ Nos toca cambiar: equipación ' + segunda.toUpperCase(),
+          texto: 'Vamos en segundo lugar contra ' + e.nombre + ' (' + color + '). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).',
+          convocatoria: 'Llevad la equipación ' + segunda.toUpperCase() + ' (nos toca cambiar).',
+        };
+      }
+      return {
+        ...base, hay: true, tipo: 'cambian_ellos', quien: 'rival', etiqueta: 'ℹ Coinciden colores: cambia ' + e.nombre,
+        texto: 'Jugamos de ' + primera + '; ' + e.nombre + ' (' + color + ') va en segundo lugar y debe cambiar. Llevad la ' + segunda + ' por si acaso.',
+        convocatoria: 'Jugamos de ' + primera + '; cambia ' + e.nombre + '. Llevad la ' + segunda + ' por si acaso.',
+      };
     }
     return {
-      ...base, hay: true, quien: 'dudoso', etiqueta,
+      ...base, hay: true, tipo: 'dudoso', quien: 'dudoso', etiqueta: '⚠ Equipación ' + segunda,
       texto: 'Coincidencia de color con ' + e.nombre + ' (' + color + '): llevad la ' + segunda + ' por si acaso',
       convocatoria: 'Llevad la equipación ' + segunda,
     };
@@ -87,7 +96,7 @@
     return calendario.partidos
       .map((p) => ({ p, a: avisoPartido(equip, p) }))
       .filter((x) => x.a && x.a.hay)
-      .map((x) => ({ fecha: x.p.fecha, equipo: x.p.equipo, jornada: x.p.jornada, rival: x.a.rival, color: x.a.colorRival, texto: x.a.texto }))
+      .map((x) => ({ fecha: x.p.fecha, equipo: x.p.equipo, jornada: x.p.jornada, rival: x.a.rival, color: x.a.colorRival, tipo: x.a.tipo, texto: x.a.texto }))
       .sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : a.equipo < b.equipo ? -1 : 1));
   }
 

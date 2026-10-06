@@ -7,12 +7,10 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
-0. **[EN REVISIÓN] Avisos de choque de equipación (D75)** — rama `feat/avisos-equipacion`, pendiente de OK de Iván.
-   - [x] Equipaciones, regla, módulo único, web, Mi zona, gestión, Scouting y pruebas.
-   - [ ] Localizar en las Bases del 47 JDM la regla de coincidencia de colores (quién cambia) y rellenar `regla_choque.quien_cambia`.
+0. **[CERRADO] Avisos de choque de equipación (D75)** — con la regla oficial (Bases 47 JDM, 5.11), mergeado a `main` el 06/10/2026.
+   - [x] Equipaciones, regla, módulo único, web, Mi zona, gestión, Scouting, migración en producción y pruebas.
    - [ ] Rutina C: añadir la línea `lineaEquipacion` a la convocatoria/WhatsApp.
-   - [ ] Aplicar la migración `mi_zona_equipos` en producción al mergear (backup + staging).
-   - [ ] Revisar cambios de equipación de los rivales en cada revisión de calendario (rutina B).
+   - [ ] Revisar cambios de equipación de los rivales y el orden local/visitante en cada revisión de calendario (rutina B, `equipacion:sync`).
 
 1. **[CERRADO] Plataforma v0: identidad, zona personal y pedido de ropa** — mergeada a `main` el 02/10/2026 (merge `ad972df`).
    - [x] Esqueleto Next.js en `plataforma/` + migraciones con RLS en todas las tablas + semilla de la plantilla 26/27 y enlaces.

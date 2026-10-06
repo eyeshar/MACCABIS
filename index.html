@@ -223,7 +223,9 @@ th.hprev{color:var(--dim)}
 .eqp .t{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:var(--dim)}.eqp .v{font-family:'Barlow Condensed';font-size:22px;font-weight:700;line-height:1.15;margin:2px 0}.eqp .s{font-size:13px;color:var(--dim)}
 .eqdot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.55);vertical-align:-1px;margin-right:5px}
 .eqcol{font-size:13px;color:var(--dim);margin-top:6px}
-.eqaviso{display:inline-block;margin-top:8px;font-family:'Barlow Condensed';font-weight:700;font-size:15px;letter-spacing:.03em;background:var(--gold);color:#1b1830;border-radius:7px;padding:2px 9px}.eqtxt{font-size:13px;color:#e9dca0;margin-top:5px}
+.eqaviso{display:inline-block;margin-top:8px;font-family:'Barlow Condensed';font-weight:700;font-size:15px;letter-spacing:.03em;border-radius:7px;padding:2px 9px;background:var(--gold);color:#1b1830}.eqtxt{font-size:13px;color:#e9dca0;margin-top:5px}
+.eqnos .eqaviso{background:#ffd400;color:#111;font-size:17px;padding:4px 11px;border:2px solid #111;box-shadow:0 0 0 2px #ffd400}.eqnos .eqtxt{color:#ffe566;font-weight:600}
+.eqell .eqaviso{background:#2c3a55;color:#cfe0ff;border:1px solid #4d6798;font-weight:600}.eqell .eqtxt{color:#a9bde0}
 @media(max-width:640px){.lgprox{grid-template-columns:1fr}}
 .lgsel{max-width:340px;width:100%}
 .lgficha h3{font-family:'Barlow Condensed';font-size:28px;margin:12px 0 10px}
@@ -1089,7 +1091,7 @@ function eqColor(nombre){
 }
 function eqAviso(p){
   const a=EQ&&AvisosEquipacion.avisoPartido(EQ,p); if(!a||!a.hay)return '';
-  return '<div class="eqaviso">'+rvEsc(a.etiqueta)+'</div><div class="eqtxt">'+rvEsc(a.texto)+'</div>';
+  return '<div class="eqbox '+(a.tipo==='nos_toca'?'eqnos':a.tipo==='cambian_ellos'?'eqell':'')+'" data-tipo="'+a.tipo+'"><div class="eqaviso">'+rvEsc(a.etiqueta)+'</div><div class="eqtxt">'+rvEsc(a.texto)+'</div></div>';
 }
 function lgProx(){
   const cont=document.getElementById('lgProx'); if(!EQ||!CAL){cont.innerHTML='';return;}

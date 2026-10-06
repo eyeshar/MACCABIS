@@ -68,24 +68,35 @@ try {
     const mda = p.locator('#lgProx .eqp[data-eq="MDA"]'), mdl = p.locator('#lgProx .eqp[data-eq="MDL"]');
     ok((await p.locator('#lgProx .eqp').count()) === 2, 'tarjeta "Proximos partidos": uno de MdA y otro de MdL');
     ok((await mda.textContent()).includes('Litros de Mahou') && (await mda.textContent()).includes('domingo, 18 de octubre'), 'MdA: Litros de Mahou, domingo 18 de octubre');
-    ok((await mda.locator('.eqaviso').textContent()) === '⚠ Equipación amarilla', 'MdA–Litros de Mahou: etiqueta "⚠ Equipación amarilla"');
-    ok((await mda.textContent()).includes('Coincidencia de color con Litros de Mahou (negro): llevad la amarilla por si acaso'), 'MdA: texto de la coincidencia con el color del rival');
+    ok((await mda.locator('.eqaviso').textContent()) === 'ℹ Coinciden colores: cambia Litros de Mahou' && (await mda.locator('.eqbox').getAttribute('data-tipo')) === 'cambian_ellos', 'MdA–Litros de Mahou (local): CAMBIAN ELLOS, etiqueta informativa');
+    ok((await mda.textContent()).includes('Jugamos de negro; Litros de Mahou (negro) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.'), 'MdA: texto de "cambian ellos"');
     ok((await mda.textContent()).includes('camiseta negro'), 'MdA: se ve el color del rival');
     ok((await mdl.textContent()).includes('Quinto Tiempo') && (await mdl.locator('.eqaviso').count()) === 0, 'MdL–Quinto Tiempo: sin etiqueta');
     ok((await mdl.textContent()).includes('camiseta naranja'), 'MdL: color del rival visible aunque no haya aviso');
     ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'web: sin desbordamiento horizontal');
     await p.locator('#lgProx').scrollIntoViewIfNeeded();
-    await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_${etiqueta}.png`) });
+    await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_cambian_ellos_${etiqueta}.png`) });
     // ficha de equipo: color del rival y aviso del proximo partido contra nosotros
     await p.selectOption('#lgSel', 'Litros de Mahou');
     const ficha = await p.textContent('#lgFicha');
-    ok(ficha.includes('camiseta negro, pantalón negro') && ficha.includes('⚠ Equipación amarilla'), 'ficha de equipo (Litros de Mahou): su color y el aviso del proximo partido');
+    ok(ficha.includes('camiseta negro, pantalón negro') && ficha.includes('Coinciden colores: cambia Litros de Mahou'), 'ficha de equipo (Litros de Mahou): su color y el aviso del proximo partido');
     await p.locator('#segLgGrupo button[data-g="G2"]').click();
     await p.selectOption('#lgSel', 'Quinto Tiempo');
     const fichaQ = await p.textContent('#lgFicha');
-    ok(fichaQ.includes('camiseta naranja') && !fichaQ.includes('Equipación amarilla'), 'ficha de equipo (Quinto Tiempo): su color, sin aviso');
+    ok(fichaQ.includes('camiseta naranja') && !fichaQ.includes('Coinciden') && !fichaQ.includes('Nos toca'), 'ficha de equipo (Quinto Tiempo): su color, sin aviso');
     await p.selectOption('#lgSel', 'MdL');
-    ok(!(await p.textContent('#lgFicha')).includes('Equipación amarilla'), 'ficha de equipo de uno de los nuestros: sin aviso');
+    ok(!(await p.textContent('#lgFicha')).includes('Coinciden') && !(await p.textContent('#lgFicha')).includes('Nos toca'), 'ficha de equipo de uno de los nuestros: sin aviso');
+    const fondoEllos = await mda.locator('.eqaviso').evaluate((e) => getComputedStyle(e).backgroundColor);
+    // NOS TOCA: el 20/11 el proximo de MdL es la J6 en 28500 (negro), vamos de visitantes = segundos en el calendario
+    await p.goto(`${WEB}/index.html?p=liga&hoy=2026-11-20`);
+    await p.locator('#lgProx .eqp').first().waitFor({ timeout: 15000 });
+    const nos = p.locator('#lgProx .eqp[data-eq="MDL"]');
+    ok((await nos.textContent()).includes('MdL en 28500'), 'el 20/11 MdL juega en 28500 (J6, visitantes)');
+    ok((await nos.locator('.eqaviso').textContent()) === '⚠ Nos toca cambiar: equipación AMARILLA' && (await nos.locator('.eqbox').getAttribute('data-tipo')) === 'nos_toca', 'MdL en 28500: NOS TOCA CAMBIAR, etiqueta de alerta');
+    ok((await nos.textContent()).includes('Vamos en segundo lugar contra 28500 (negro). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).'), 'MdL en 28500: texto con la cita de las Bases');
+    ok((await nos.locator('.eqaviso').evaluate((e) => getComputedStyle(e).backgroundColor)) !== fondoEllos, 'los dos tipos tienen estilo distinto (alerta amarilla / informativo)');
+    await p.locator('#lgProx').scrollIntoViewIfNeeded();
+    await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_nos_toca_${etiqueta}.png`) });
     // pasada la J2 el 20/10: J3 sin avisos
     await p.goto(`${WEB}/index.html?p=liga&hoy=2026-10-20`);
     await p.locator('#lgProx .eqp').first().waitFor({ timeout: 15000 });
@@ -141,7 +152,7 @@ try {
     ok((await zona.locator('.eq-partido').count()) === 1, 'Mi zona: solo el proximo partido de SU equipo (ficha MdA)');
     ok((await zona.textContent()).includes(`MdA ${aMdA.local ? 'vs' : 'en'} ${bonito(aMdA.rival)}`) && !(await zona.textContent()).includes(bonito(aMdL.rival)), `Mi zona: "MdA ${aMdA.local ? 'vs' : 'en'} ${bonito(aMdA.rival)}" y no el de MdL`);
     ok((await zona.locator('.eq-aviso').count()) === (eti(avisoReal('MDA')) ? 1 : 0), 'Mi zona: aviso si y solo si el proximo rival de MdA choca', String(await zona.locator('.eq-aviso').count()));
-    if (eti(avisoReal('MDA'))) ok((await zona.locator('.eq-aviso').textContent()).includes('⚠ Equipación amarilla'), 'Mi zona: etiqueta "⚠ Equipación amarilla"');
+    if (eti(avisoReal('MDA'))) ok((await zona.locator('.eq-aviso').textContent()).includes('Coinciden colores: cambia') && (await zona.locator('.eq-aviso').getAttribute('data-tipo')) === 'cambian_ellos', 'Mi zona: aviso informativo "cambian ellos" (somos locales)');
     ok((await zona.locator('[data-testid="color-rival"]').first().textContent()).includes('camiseta'), 'Mi zona: color del rival visible');
     ok(await sinDesbordar(pj), 'Mi zona: sin desbordamiento horizontal');
     await zona.scrollIntoViewIfNeeded();
@@ -176,10 +187,18 @@ try {
     ok((await bloque.textContent()).includes('Próximo partido contra nosotros') && (await pg.textContent('h2')).includes(A.equipoPorNombre(equip, aMdA.rival).nombre), 'Scouting: por defecto, el proximo rival de MdA con su tarjeta de proximo partido');
     ok((await pg.locator('[data-testid="color-equipo"]').textContent()).includes('camiseta'), 'Scouting: se ve el color del rival (camiseta y pantalon)');
     ok((await bloque.locator('.eq-aviso').count()) === (eti(avisoReal('MDA')) ? 1 : 0), 'Scouting (MdA): el aviso sale en la tarjeta del proximo partido si choca');
-    await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_scouting_${etiqueta}.png`), fullPage: true });
+    await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_scouting_cambian_ellos_${etiqueta}.png`), fullPage: true });
     await pg.getByRole('link', { name: /^MdL:/ }).click();
     await pg.waitForURL(/v=mdl/);
     ok((await pg.locator('.lg-prox .eq-aviso').count()) === (eti(avisoReal('MDL')) ? 1 : 0), 'Scouting (MdL): el aviso sale solo si choca');
+    // NOS TOCA en Scouting: el proximo partido contra Chavalitros es la J10 (17/01), en su campo
+    await pg.selectOption('select[name="e"]', 'Chavalitros');
+    await pg.getByRole('button', { name: 'Ver' }).click();
+    await pg.waitForURL(/e=Chavalitros/);
+    const cajaNos = pg.locator('.lg-prox .eq-nos_toca');
+    ok((await cajaNos.count()) === 1 && (await cajaNos.textContent()).includes('⚠ Nos toca cambiar: equipación AMARILLA') && (await cajaNos.textContent()).includes('partido perdido (Bases 47 JDM, 5.11)'), 'Scouting (Chavalitros, J10 fuera): NOS TOCA CAMBIAR con la advertencia de partido perdido');
+    ok((await cajaNos.evaluate((e) => getComputedStyle(e).backgroundColor)) === 'rgb(255, 212, 0)', 'Scouting: el aviso "nos toca" es amarillo intenso');
+    await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_scouting_nos_toca_${etiqueta}.png`), fullPage: true });
     await pg.selectOption('select[name="e"]', 'Craps');
     await pg.getByRole('button', { name: 'Ver' }).click();
     await pg.waitForURL(/e=Craps/);

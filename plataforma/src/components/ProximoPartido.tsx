@@ -18,13 +18,21 @@ export function Camiseta({ rival }: { rival: string }) {
   );
 }
 
+/** Caja del aviso: "nos toca" (alerta amarilla intensa) o "cambian ellos" (informativa, gris azulada). */
+export function AvisoCaja({ a }: { a: { tipo: string | null; etiqueta: string | null; texto: string | null } }) {
+  return (
+    <div className={`eq-aviso eq-${a.tipo}`} role="note" data-tipo={a.tipo}>
+      <b className="eq-etq">{a.etiqueta}</b>
+      <span className="eq-txt">{a.texto}</span>
+    </div>
+  );
+}
+
 export function AvisoEquipacion({ partido }: { partido: Partido }) {
   const a = avisoDe(partido);
   if (!a?.hay) return null;
   return (
-    <p className="eq-aviso" role="note">
-      <span className="etiqueta etiqueta-aviso">{a.etiqueta}</span> <span>{a.texto}</span>
-    </p>
+    <AvisoCaja a={a} />
   );
 }
 

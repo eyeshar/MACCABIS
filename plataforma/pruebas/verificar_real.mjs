@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { conectar } from '../scripts/db.mjs';
+import { volcar, huella, TABLAS } from '../scripts/backup_public.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(RAIZ, '.env.local') });
@@ -59,10 +60,14 @@ let correosOriginales = [];
 // Jugadores de verdad del club: crece con el tiempo (altas en "Jugadores" o
 // db:correos/db:gestor), así que se compara contra el total real, no un numero fijo.
 let nJugadoresReales = null;
+const sinMarca = (filas) => filas.map(({ actualizado_en, ...r }) => r);   // la prueba cambia y devuelve el correo de 2 jugadores: solo se mueve su marca de actualizacion
+let antes = null;   // huellas de los datos reales antes de empezar: al final deben ser identicas
 
 try {
   const [{ n: nUsuariosAntes }] = await sql`select count(*)::int n from auth.users`;
   nJugadoresReales = (await sql`select count(*)::int n from public.jugadores`)[0].n;
+  const v0 = await volcar(sql);
+  antes = { usuarios: nUsuariosAntes, huellas: Object.fromEntries(TABLAS.map((t) => [t, huella(sinMarca(v0.tablas[t]))])), filas: Object.fromEntries(TABLAS.map((t) => [t, v0.tablas[t].length])) };
 
   seccion('Estructura en el proyecto real');
   const sinRls = await sql`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r','p') and not c.relrowsecurity`;
@@ -82,7 +87,7 @@ try {
   const authFunciones = (await sql`
     select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
-  ok(JSON.stringify(authFunciones) === JSON.stringify(['anular_pedido', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
+  ok(JSON.stringify(authFunciones.filter((f) => f !== 'cambiar_correo_jugador')) === JSON.stringify(['anular_pedido', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Anonimo sin sesion (HTTPS, clave publica)');
@@ -199,6 +204,35 @@ try {
   await sql`update public.campanas_ropa set estado = 'cerrada' where id = ${cam.id}`;
   rA = await cA.rpc('guardar_pedido', { p_pedido: pedido({ id: idPedidoA }) });
   ok(rA.data?.error === 'campana_cerrada', 'con la campaña cerrada no se puede modificar', JSON.stringify(rA.data));
+
+  seccion('Liga 26/27 (D73): datos por jugador de otros equipos, solo para gestores');
+  const [{ np, nj }] = await sql`select (select count(*)::int from public.liga_partidos) as np, (select count(*)::int from public.liga_estadisticas_jugador) as nj`;
+  ok(np > 0 && nj > 0, `hay datos de liga cargados (${np} partidos, ${nj} filas de jugador)`);
+  const ligaRls = await sql`select relname, relrowsecurity from pg_class where relname in ('liga_partidos', 'liga_estadisticas_jugador')`;
+  ok(ligaRls.length === 2 && ligaRls.every((x) => x.relrowsecurity), 'RLS activada en las tablas de liga');
+  const [{ anonLiga, escribeAuth }] = await sql`select
+    (has_table_privilege('anon','public.liga_partidos','select') or has_table_privilege('anon','public.liga_estadisticas_jugador','select') or has_table_privilege('anon','public.v_liga_jugadores','select')) as "anonLiga",
+    (has_table_privilege('authenticated','public.liga_partidos','insert,update,delete') or has_table_privilege('authenticated','public.liga_estadisticas_jugador','insert,update,delete')) as "escribeAuth"`;
+  ok(anonLiga === false, 'anon no tiene ningun permiso sobre las tablas ni la vista de liga');
+  ok(escribeAuth === false, 'authenticated no puede escribir en las tablas de liga (solo el script local)');
+  for (const t of ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores']) {
+    const ra = await api(`/${t}?select=*`);
+    ok(ra.status >= 400 || (Array.isArray(ra.datos) && ra.datos.length === 0), `anonimo (HTTPS) no lee ${t}`, `HTTP ${ra.status}`);
+    const rj = await cA.from(t).select('*');
+    ok((rj.data?.length ?? 0) === 0, `un jugador con sesion real (A) no lee ${t}`, rj.error?.message ?? `${rj.data?.length}`);
+    const rn = await cn.from(t).select('*');
+    ok((rn.data?.length ?? 0) === 0, `un usuario que no es gestor no lee ${t}`, rn.error?.message ?? `${rn.data?.length}`);
+  }
+  const busca = await cA.from('liga_estadisticas_jugador').select('nombre').ilike('nombre', '%a%');
+  ok((busca.data?.length ?? 0) === 0, 'un jugador no saca ni un rival buscando por nombre');
+  const gp = await cg.from('liga_partidos').select('id');
+  const gj = await cg.from('liga_estadisticas_jugador').select('id');
+  const gv = await cg.from('v_liga_jugadores').select('nombre').limit(5);
+  ok(gp.data?.length === np && gj.data?.length === nj && (gv.data?.length ?? 0) > 0, `un gestor (sesion real) lee los ${np} partidos, las ${nj} filas de jugador y la vista`, `${gp.data?.length}/${gj.data?.length}/${gv.data?.length} ${gp.error?.message ?? ''}`);
+  const ins = await cg.from('liga_partidos').insert({ temporada: 'x', grupo: 'G1', jornada: 99, local: 'a', visitante: 'b', pts_local: 1, pts_visitante: 0 });
+  const del = await cg.from('liga_partidos').delete().neq('jornada', -1);
+  const [{ np2 }] = await sql`select count(*)::int as np2 from public.liga_partidos`;
+  ok(!!ins.error && np2 === np, 'ni un gestor puede insertar ni borrar por la API', `${ins.error?.message ?? 'inserto'} / ${del.error?.message ?? 'borro'} / ${np2}`);
 } catch (e) {
   fallos++;
   console.log(`  FALLO la verificacion se interrumpio: ${String(e.message).split(/\r?\n/)[0]}`);
@@ -216,8 +250,11 @@ try {
     (select count(*)::int from public.pedidos_ropa) as pedidos,
     (select string_agg(estado, ',') from public.campanas_ropa) as estado_campanas`;
   console.log('  estado final:', JSON.stringify(f));
-  ok(f.usuarios === 1 && f.gestores === 1 && f.jugadores === nJugadoresReales && f.campanas === 1 && f.pedidos === 0 && f.estado_campanas === 'cerrada',
-    'todo lo temporal borrado: queda solo lo de la semilla y tu usuario');
+  const v1 = await volcar(sql);
+  for (const t of TABLAS) ok(huella(sinMarca(v1.tablas[t])) === antes.huellas[t] && v1.tablas[t].length === antes.filas[t], `${t}: ${v1.tablas[t].length} filas, identicas a las de antes de empezar (huella ${antes.huellas[t]}, sin contar la marca actualizado_en)`);
+  const [{ conCorreo }] = await sql`select count(*)::int as "conCorreo" from public.jugadores where email is not null`;
+  ok(f.jugadores === nJugadoresReales && conCorreo === nJugadoresReales, `los ${nJugadoresReales} jugadores siguen con su correo (${conCorreo} con correo)`);
+  ok(f.usuarios === antes.usuarios, `cuentas de auth: ${f.usuarios}, las mismas que antes (${antes.usuarios})`);
   await sql.end();
   console.log(`\nRESULTADO: ${fallos === 0 ? 'TODO OK' : `${fallos} FALLOS`}`);
   process.exitCode = fallos ? 1 : 0;

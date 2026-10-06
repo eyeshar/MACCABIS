@@ -18,9 +18,13 @@ plataforma/
   src/lib/                  prendas y tallas, Excel, mensajes, sesión, clientes de Supabase
   supabase/migrations/      esquema de la base de datos (tablas, RLS, funciones, lista blanca)
   scripts/db.mjs            migrar, semilla (plantilla 26/27 + campaña), reservar/vincular gestores
+  scripts/cargar_liga.mjs   npm run db:liga: liga de todos los equipos (por jugador, calendario, clasificacion) a Supabase (D73)
+  scripts/backup_public.mjs npm run db:backup: copia de los datos de public a privado/backups/ (fuera de git)
   scripts/importar_correos.mjs   npm run db:correos: correos de SportEasy -> jugadores.email
   scripts/extraer_imagenes_ropa.py   imágenes de las prendas desde el PDF de VIVE (privado/)
   pruebas/                  pruebas de extremo a extremo con Postgres y PostgREST reales (sin Docker)
+                            npm run pruebas:liga (RLS de la liga), pruebas:pantallas (Scouting y Liga consolidada),
+                            node pruebas/restaurar_backup.mjs <copia> (prueba que una copia se restaura)
   public/ropa/              imágenes de las prendas y tablas de tallas (sí se publican)
 ```
 

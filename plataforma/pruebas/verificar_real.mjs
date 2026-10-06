@@ -71,7 +71,7 @@ try {
     (select count(*)::int from public.pedidos_ropa) as pedidos`;
   nJugadoresReales = (await sql`select count(*)::int n from public.jugadores`)[0].n;
   const v0 = await volcar(sql);
-  antes = { usuarios: nUsuariosAntes, huellas: Object.fromEntries(TABLAS.map((t) => [t, huella(sinMarca(v0.tablas[t]))])), filas: Object.fromEntries(TABLAS.map((t) => [t, v0.tablas[t].length])) };
+  antes = { ...antes, huellas: Object.fromEntries(TABLAS.map((t) => [t, huella(sinMarca(v0.tablas[t]))])), filas: Object.fromEntries(TABLAS.map((t) => [t, v0.tablas[t].length])) };
 
   seccion('Estructura en el proyecto real');
   const sinRls = await sql`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r','p') and not c.relrowsecurity`;

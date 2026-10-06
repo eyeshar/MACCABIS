@@ -23,7 +23,8 @@
     "db:backup": "node scripts/backup_public.mjs",
     "db:liga": "node scripts/cargar_liga.mjs",
     "pruebas:liga": "node pruebas/rls_liga.mjs",
-    "pruebas:pantallas": "node pruebas/pantallas_liga.mjs"
+    "pruebas:pantallas": "node pruebas/pantallas_liga.mjs",
+    "pruebas:orden": "node pruebas/orden_lideres.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

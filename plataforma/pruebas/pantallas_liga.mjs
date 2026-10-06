@@ -123,6 +123,15 @@ try {
     await p.locator('details.lg-ranking > summary').click();
     ok((await p.locator('details.lg-ranking tbody tr').count()) === 20, 'liga: el ranking desplegado tiene los 20 equipos con partidos');
     ok(await sinDesbordar(), 'liga: desplegado, sin desbordamiento de pagina');
+    const cab = await p.$$eval('details.lg-ranking thead th', (ths) => ths.filter((t) => t.getBoundingClientRect().width > 0).map((t) => t.textContent.trim()));
+    const cabEsperada = movil ? ['#', 'Equipo', 'G-P', '%V', 'Dif/p'] : ['#', 'Equipo', 'PJ', 'G', 'P', '%V', 'PF/p', 'PC/p', 'Dif/p', 'Pts'];
+    ok(JSON.stringify(cab) === JSON.stringify(cabEsperada), movil ? 'ranking movil: solo #, Equipo+grupo, G-P, %V y Dif/p' : 'ranking escritorio: todas las columnas', cab.join(','));
+    const sinScroll = await p.evaluate(() => { const d = document.querySelector('details.lg-ranking .tabla-desplazable'); return d.scrollWidth <= d.clientWidth + 1; });
+    ok(sinScroll, 'ranking: la tabla cabe, sin scroll horizontal');
+    const celdasEnPantalla = await p.evaluate(() => [...document.querySelectorAll('details.lg-ranking tr')].every((tr) => [...tr.children].filter((c) => c.getBoundingClientRect().width > 0).every((c) => c.getBoundingClientRect().right <= window.innerWidth + 1)));
+    ok(celdasEnPantalla, 'ranking: ninguna celda visible se sale de la pantalla');
+    const textoLideres = await p.textContent('.lg-sub');
+    ok(/de los 20 equipos con partidos jugados/.test(textoLideres), 'liga: el texto de lideres cuenta los equipos con partidos (20), igual que el ranking', textoLideres);
     await p.screenshot({ path: path.join(SALIDA, `real_c_liga_desplegado_${etiqueta}.png`), fullPage: true });
     ok(errores.length === 0, 'sin errores de JavaScript', errores.join(' | '));
     await ctx.close();

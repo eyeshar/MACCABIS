@@ -233,6 +233,7 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .lg-lider li:last-child { border-bottom: 0; }
 .lg-lider small { display: block; font-size: 0.76rem; color: var(--tinta-suave); }
 .lg-ranking > summary { font-size: 1.05rem; }
+.lg-solo-mov { display: none; }
 @media (max-width: 639px) {
   .solo-movil { display: block; }
   .lg-tarjetas.solo-movil { display: grid; }
@@ -240,4 +241,8 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
   .lg-tres { grid-template-columns: 1fr; }
   .lg-prox { width: 100%; }
   .lg-oculto-movil { display: none; }
+  .lg-solo-mov { display: table-cell; }
+  .lg-tabla-rank th, .lg-tabla-rank td { padding: 8px 4px; font-size: 0.88rem; }
+  .lg-tabla-rank td:nth-child(2) { white-space: normal; }
+  .lg-ranking { padding-left: 10px; padding-right: 10px; }
 }

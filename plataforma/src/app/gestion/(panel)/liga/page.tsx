@@ -1,5 +1,6 @@
 import { exigirGestor } from "@/lib/sesion";
 import { bonito, cargarLiga, dec, quienDobla, unirDoblan, type JugadorLiga } from "@/lib/liga";
+import { porFaltas, porMedia, porPuntos, porTirosLibres, porTriples } from "@/lib/ordenLideres";
 
 export const metadata = { title: "Liga consolidada · Gestión Maccabis" };
 
@@ -14,12 +15,13 @@ export default async function LigaConsolidada() {
   const dobla = quienDobla(liga.jugadores);
   const pjEquipo = new Map(clasificacion.map((c) => [`${c.grupo}|${c.equipo}`, c.pj]));
   const jornadas = Math.max(...clasificacion.map((c) => c.pj));
+  const equiposConPartidos = clasificacion.filter((c) => c.pj > 0).length;   // el mismo recuento que el ranking
 
   const lider = (
-    titulo: string, clave: (j: JugadorLiga) => number, valor: (j: JugadorLiga) => string,
+    titulo: string, orden: (a: JugadorLiga, b: JugadorLiga) => number, valor: (j: JugadorLiga) => string,
     lista: JugadorLiga[] = jugadores, nota?: string,
   ) => {
-    const top = [...lista].sort((a, b) => clave(b) - clave(a) || b.pts - a.pts).slice(0, 8);
+    const top = [...lista].sort(orden).slice(0, 8);
     return (
       <section className="tarjeta lg-lider">
         <h3>{titulo}</h3>
@@ -51,14 +53,14 @@ export default async function LigaConsolidada() {
         <b>Solo gestores.</b> Datos por jugador de otros equipos: son de terceros y no se publican ni se enseñan a los jugadores (D73).
       </div>
       <h2>Líderes individuales de la liga</h2>
-      <p className="lg-sub">{jugadores.length} personas de los {clasificacion.length} equipos, hasta la jornada {jornadas}. «dobla» = sale con MdA y con MdL (sus dos fichas se suman).</p>
+      <p className="lg-sub">{jugadores.length} personas de los {equiposConPartidos} equipos con partidos jugados, hasta la jornada {jornadas}. «dobla» = sale con MdA y con MdL (sus dos fichas se suman).</p>
       <div className="lg-lideres">
-        {lider("Puntos", (j) => j.pts, (j) => String(j.pts))}
-        {lider("Media de puntos", (j) => (j.pj ? j.pts / j.pj : 0), (j) => dec(j.pj ? j.pts / j.pj : 0), jugadores.filter((j) => j.pj >= minPj(j)),
+        {lider("Puntos", porPuntos, (j) => String(j.pts))}
+        {lider("Media de puntos", porMedia, (j) => dec(j.pj ? j.pts / j.pj : 0), jugadores.filter((j) => j.pj >= minPj(j)),
           "Mínimo: la mitad de los partidos jugados por su equipo (al menos 1).")}
-        {lider("Triples", (j) => j.p3a, (j) => String(j.p3a))}
-        {lider("Tiros libres", (j) => j.tla, (j) => `${j.tla}/${j.tli}`, jugadores.filter((j) => j.tli >= 3), "Con al menos 3 tiros libres intentados.")}
-        {lider("Faltas", (j) => j.faltas, (j) => String(j.faltas), jugadores, "Faltas cometidas (5 = eliminado).")}
+        {lider("Triples", porTriples, (j) => String(j.p3a))}
+        {lider("Tiros libres", porTirosLibres, (j) => `${j.tla}/${j.tli}`, jugadores.filter((j) => j.tli >= 3), "Con al menos 3 tiros libres intentados.")}
+        {lider("Faltas", porFaltas, (j) => String(j.faltas), jugadores, "Faltas cometidas (5 = eliminado).")}
       </div>
 
       <details className="tarjeta lg-ranking">
@@ -68,19 +70,19 @@ export default async function LigaConsolidada() {
           y puntos a favor por partido.
         </p>
         <div className="tabla-desplazable">
-          <table className="lg-tabla">
+          <table className="lg-tabla lg-tabla-rank">
             <thead>
-              <tr><th>#</th><th>Equipo</th><th>PJ</th><th>G</th><th>P</th><th>%V</th><th className="lg-oculto-movil">PF/p</th><th className="lg-oculto-movil">PC/p</th><th>Dif/p</th><th>Pts</th></tr>
+              <tr><th>#</th><th>Equipo</th><th className="lg-oculto-movil">PJ</th><th className="lg-oculto-movil">G</th><th className="lg-oculto-movil">P</th><th className="lg-solo-mov">G-P</th><th>%V</th><th className="lg-oculto-movil">PF/p</th><th className="lg-oculto-movil">PC/p</th><th>Dif/p</th><th className="lg-oculto-movil">Pts</th></tr>
             </thead>
             <tbody>
               {ranking.map((c, i) => (
                 <tr key={`${c.grupo}${c.equipo}`} className={c.nuestro ? "lg-nuestro" : ""}>
                   <td>{i + 1}</td>
                   <td><b>{c.equipo}</b> <span className={`etiqueta ${c.grupo === "G1" ? "etiqueta-abierta" : "etiqueta-cerrada"}`}>{c.grupo}</span></td>
-                  <td>{c.pj}</td><td>{c.g}</td><td>{c.p}</td><td>{Math.round((100 * c.g) / c.pj)}%</td>
+                  <td className="lg-oculto-movil">{c.pj}</td><td className="lg-oculto-movil">{c.g}</td><td className="lg-oculto-movil">{c.p}</td><td className="lg-solo-mov">{c.g}-{c.p}</td><td>{Math.round((100 * c.g) / c.pj)}%</td>
                   <td className="lg-oculto-movil">{dec(c.pf / c.pj)}</td><td className="lg-oculto-movil">{dec(c.pc / c.pj)}</td>
                   <td>{(c.pf - c.pc) / c.pj > 0 ? "+" : ""}{dec((c.pf - c.pc) / c.pj)}</td>
-                  <td>{c.pts === null ? "pend." : c.pts}</td>
+                  <td className="lg-oculto-movil">{c.pts === null ? "pend." : c.pts}</td>
                 </tr>
               ))}
             </tbody>

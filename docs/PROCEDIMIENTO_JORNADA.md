@@ -1,5 +1,7 @@
 # Procedimiento de cada jornada (actas y estadísticas)
 
+> **Liga completa (D73):** desde la J2 se bajan también las hojas de los partidos donde no jugamos (los dos grupos). `npm run jornada` las copia a `fuentes_fbm/2026-27/liga/` y regenera `data/liga_2026-27.json` (solo datos por equipo). Los datos por jugador de los rivales no se publican (ver `docs/RUTINAS/A_ACTAS.md`).
+
 _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se procesa el lunes 5/10._
 
 ## Lo que haces tú (5 minutos, el lunes)

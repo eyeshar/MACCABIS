@@ -22,3 +22,14 @@ Play Store no deja instalar Afición FBM en emuladores ("This app won't work for
 ## Aprendizaje
 
 Lunes 5/10/2026: sesión de aprendizaje con las actas de la J1. Iván enseña el camino hasta el acta y la hoja de estadística dentro de Afición FBM; Claude lo registra aquí tras la sesión.
+
+## Alcance desde la J2: todas las hojas de la jornada, de los dos grupos (D73, 06/10/2026)
+
+Cada lunes, además de nuestras actas y hojas, se bajan **todas las hojas de estadística de la jornada de los dos grupos** (G1 y G2: 5 partidos por jornada y grupo, 10 en total; el equipo que descansa no tiene hoja). En la app: Buscador → Partidos → el partido de cada pareja → hoja de estadística. Las actas de los partidos ajenos **no** hacen falta. Todo a Descargas, sin renombrar.
+
+`npm run jornada` hace el resto:
+- Las hojas de partidos donde no jugamos van a `fuentes_fbm/2026-27/liga/` como `liga_J01_G1_<local>_vs_<visitante>_<hash>.xlsx` (copia segura, fuera de git). La jornada se infiere por fecha (la última ya jugada del grupo); si bajas hojas atrasadas, usa `npm run jornada -- --jornada N`.
+- Regenera `data/liga_2026-27.json` (resultados, clasificación calculada y estadísticas por equipo) tras validar que la suma por jugador es el total de cada equipo. Si algo no cuadra, **no escribe nada** y avisa.
+- Qué se publica: solo ese JSON (datos por equipo). Los datos por jugador de los rivales **no** se publican: se cargan a Supabase con `npm run db:liga` en `plataforma/` (rama `feat/plataforma-v0`), solo visibles para gestores (D73).
+- **Si falta una hoja** (un partido sin descargar), el resumen avisa "faltan hojas" en esa jornada y la clasificación queda incompleta hasta que llegue.
+- **Incomparecencias:** no generan hoja (D29). Se anotan a mano en `temporadas.json` (`liga.incomparecencias`) cuando Iván decida cuánto restan.

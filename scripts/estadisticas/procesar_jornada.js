@@ -31,6 +31,7 @@ const { execFileSync } = require('child_process');
 const { copiaSegura } = require('../lib/copia_segura');
 const { leerActa } = require('./leer_acta');
 const { leerHoja } = require('./leer_hoja');
+const liga = require('./liga');
 const { generar } = require('./generar_temporada');
 const { normEquipo } = require('./util');
 const CONFIG = require('./temporadas.json');
@@ -40,7 +41,8 @@ const args = process.argv.slice(2);
 const argVal = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const TEMPORADA = args.find(a => /^\d{4}-\d{2}$/.test(a)) || '2026-27';
 const DESDE = argVal('--desde', path.join(os.homedir(), 'Downloads'));
-const DRY = args.includes('--dry');   // --sin-asistencia: no recoge el export de SportEasy
+const DRY = args.includes('--dry');
+const JORNADA_FORZADA = +argVal('--jornada', 0) || null;   // jornada de las hojas de liga donde no jugamos (si no, la última con fecha <= hoy)   // --sin-asistencia: no recoge el export de SportEasy
 
 const cfg = CONFIG[TEMPORADA];
 if (!cfg) { console.error(`No hay configuración para ${TEMPORADA}.`); process.exit(1); }
@@ -66,6 +68,18 @@ async function recoger() {
   const calendario = cfg.calendario.filter(c => c.formato === 'json' && fs.existsSync(path.join(ROOT, c.fichero)))
     .flatMap(c => JSON.parse(fs.readFileSync(path.join(ROOT, c.fichero), 'utf8')).partidos);
   for (const f of todos.filter(f => /^estadisticaPartido.*\.xlsx$/i.test(f))) {
+    // Partidos de liga donde NO jugamos (D73): copia segura a liga/, con la jornada y el grupo en el nombre.
+    // Los datos por jugador de esas hojas son de terceros: sólo van a Supabase, nunca al repositorio.
+    let id;
+    try { id = liga.identificarHoja(TEMPORADA, path.join(DESDE, f)); } catch (e) { id = null; }
+    if (id && id.etiquetaOk && !id.nuestro) {
+      const jor = JORNADA_FORZADA || liga.jornadaPorFecha(id.grupo);
+      if (!jor) { console.log(`  ! ${f}: no sé de qué jornada es (usa --jornada N).`); continue; }
+      const n = x => normEquipo(x).replace(/ /g, '-').toLowerCase();
+      const nombre = `liga_J${String(jor).padStart(2, '0')}_${id.grupo.clave}_${n(id.hoja.local)}_vs_${n(id.hoja.visitante)}_${md5(path.join(DESDE, f))}.xlsx`;
+      plan.push({ origen: f, destino: 'liga', nombre, que: `liga ${id.grupo.clave} J${jor}${JORNADA_FORZADA ? '' : ' (inferida por fecha)'}: ${id.hoja.local} - ${id.hoja.visitante}` });
+      continue;
+    }
     let h;
     try { h = leerHoja(path.join(DESDE, f)); } catch (e) { console.log(`  ! ${f}: no se puede leer (${e.message})`); continue; }
     if (!h.titulo.includes(cfg.etiqueta_fbm)) continue;
@@ -119,6 +133,15 @@ async function recoger() {
   }
   if (DRY) { console.log('\n[dry] no se ha escrito nada.'); return; }
 
+  // Liga completa de los dos grupos: data/liga_<temporada>.json (sólo datos por equipo; el detalle por jugador va a Supabase).
+  if (cfg.liga) {
+    const l = liga.construir(TEMPORADA);
+    l.avisos.forEach(a => console.log('  ! ' + a));
+    if (l.errores.length) { console.log(`\nERRORES DE LIGA — no se ha escrito data/liga_${TEMPORADA}.json:`); l.errores.forEach(e => console.log('  X ' + e)); process.exit(1); }
+    fs.writeFileSync(path.join(ROOT, 'data', `liga_${TEMPORADA}.json`), JSON.stringify(l.publico, null, 1) + '\n', 'utf8');
+    console.log(`\nLiga: ${l.fuentes} hojas -> data/liga_${TEMPORADA}.json (clasificación calculada, pendiente de contrastar con la oficial).`);
+  }
+
   // index.json: la temporada entra en el selector en cuanto tiene partidos; la de por defecto no cambia.
   const idxPath = path.join(ROOT, 'data', 'index.json');
   const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
@@ -130,5 +153,5 @@ async function recoger() {
   try { execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js'), '--check'], { stdio: 'pipe' }); console.log('Identidades: OK (check:personas).'); }
   catch (e) { console.log('Identidades: PROBLEMAS\n' + e.stdout); process.exit(1); }
 
-  console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json y data/index.json.');
+  console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json y data/index.json.');
 })().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });

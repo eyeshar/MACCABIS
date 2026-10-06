@@ -57,7 +57,9 @@
    }
   ],
   "jornadas_manuales": {},
-  "hojas_sin_acta": { "autorizado_por": "Iván, 05/10/2026 (excepción puntual a D66, ver D71)" },
+  "hojas_sin_acta": {
+   "autorizado_por": "Iván, 05/10/2026 (excepción puntual a D66, ver D71)"
+  },
   "resultados_manuales": {},
   "asistencia": {
    "formato": "sporteasy",
@@ -66,6 +68,13 @@
   "plantilla_fichas": "2026",
   "regenerar_en_build": true,
   "inicio": "2026-09-01",
-  "etiqueta_fbm": "26/27"
+  "etiqueta_fbm": "26/27",
+  "liga": {
+   "_nota": "Clasificación calculada con las Bases del 47 JDM (2.10.1 Baloncesto): 2 puntos por victoria y 1 por derrota; perder por sanción = 20-0. Cuánto resta una incomparecencia NO está en las Bases: puntos_incomparecencia=null hace que el pipeline se pare si se registra una (preguntar a Iván).",
+   "puntos_victoria": 2,
+   "puntos_derrota": 1,
+   "puntos_incomparecencia": null,
+   "incomparecencias": []
+  }
  }
 }

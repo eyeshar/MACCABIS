@@ -14,7 +14,9 @@
     "build:rivales": "node scripts/build_rivales_web.js",
     "estadisticas": "node scripts/estadisticas/generar_temporada.js --build",
     "jornada": "node scripts/estadisticas/procesar_jornada.js 2026-27",
-    "test:regresion": "node scripts/estadisticas/test_regresion_2025_26.js"
+    "test:regresion": "node scripts/estadisticas/test_regresion_2025_26.js",
+    "test:liga": "node scripts/estadisticas/test_liga.js",
+    "liga": "node scripts/estadisticas/liga.js 2026-27"
   },
   "devDependencies": {
     "pdf-parse": "^2.4.5",

@@ -32,4 +32,5 @@ Cada lunes, además de nuestras actas y hojas, se bajan **todas las hojas de est
 - Regenera `data/liga_2026-27.json` (resultados, clasificación calculada y estadísticas por equipo) tras validar que la suma por jugador es el total de cada equipo. Si algo no cuadra, **no escribe nada** y avisa.
 - Qué se publica: solo ese JSON (datos por equipo). Los datos por jugador de los rivales **no** se publican: se cargan a Supabase con `npm run db:liga` en `plataforma/` (rama `feat/plataforma-v0`), solo visibles para gestores (D73).
 - **Si falta una hoja** (un partido sin descargar), el resumen avisa "faltan hojas" en esa jornada y la clasificación queda incompleta hasta que llegue.
-- **Incomparecencias:** no generan hoja (D29). Se anotan a mano en `temporadas.json` (`liga.incomparecencias`) cuando Iván decida cuánto restan.
+- **Incomparecencias (D74):** no generan hoja (D29). Se anotan en `temporadas.json` (`liga.incomparecencias`: grupo, jornada, local, visitante, no_presentado); el partido se marca y los puntos del equipo que no se presentó se toman de la clasificación oficial de Deportes/web (la de los jueves, rutina B), en `liga.puntos_oficiales`. Hasta entonces, su casilla dice "pendiente de la oficial".
+- Tras `npm run jornada`, para llevar los datos por jugador a Supabase: `npm run db:liga` en `plataforma/` (reemplaza la temporada entera).

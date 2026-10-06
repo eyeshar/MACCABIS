@@ -33,10 +33,9 @@
 5. **Motor de convocatoria v0.1 para la J3 (25/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
 6. **Migración del dashboard** a la plataforma.
 7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
-   - [x] **Datos (06/10/2026, D73):** pipeline de liga (`npm run jornada` acepta hojas de partidos ajenos), `data/liga_2026-27.json` por equipo, tablas privadas en Supabase y script de carga (rama `feat/plataforma-v0`, sin aplicar al proyecto real).
-   - [ ] **Iván: OK a los mockups** (web pública "Liga 26/27"; gestión "Scouting rivales" y "Liga consolidada") antes de construir pantallas.
-   - [ ] **Iván: cuánto resta una incomparecencia** en la clasificación (las Bases no lo dicen) y **contrastar la clasificación calculada con la oficial** de Deportes/web (jueves 20:00).
-   - [ ] Aplicar la migración de liga al proyecto real y cargar las hojas de la J1 (`npm run db:migrar` + `npm run db:liga`), tras el OK.
+   - [x] **Liga 26/27 (06/10/2026, D73/D74):** pipeline, `data/liga_2026-27.json`, pestaña pública (en `main`), tablas privadas y pantallas de gestión Scouting rivales y Liga consolidada (rama `feat/plataforma-v0`), migraciones aplicadas al proyecto real y J1 cargada.
+   - [ ] **Iván: mergear `feat/plataforma-v0` a `main`** cuando dé el OK a las pantallas de gestión (llevan además el Scouting/Liga en producción de Vercel). Ojo: el proyecto real tiene aplicada la migración `20261003090000` (cambio de correo) que solo está en `feat/correo-seguro-jugadores`.
+   - [ ] **Contrastar la clasificación calculada con la oficial** de Deportes/web (jueves 20:00) y, si hay incomparecencias, anotar sus puntos oficiales (D74).
    - [ ] Rutina A: bajar cada lunes las hojas de los dos grupos (`docs/RUTINAS/A_ACTAS.md`); la J2 es la primera vez.
 8. **Tesorería** (solo registro de cuentas, D52).
 

@@ -14,8 +14,10 @@
 Mucha gente tiene **doble ficha** (juega en los dos equipos); algunos solo en uno. La plantilla combinada es de ~24 jugadores por temporada.
 
 - **Liga:** Liga Municipal de Moratalaz (Juegos Deportivos Municipales, JDM), categoría Sénior Masculino. Distrito Moratalaz, Madrid.
-- **Partidos:** domingos por la mañana.
-- **Entrenamientos:** miércoles 20:30–22:30 en Valdebernardo.
+- **Dos instalaciones distintas (D88), que no hay que mezclar:**
+  - **Partidos** (Liga Municipal de Moratalaz, JDM; domingos por la mañana): **Centro Deportivo Municipal Moratalaz**, calle de Valdebernardo, 2, 28030 Madrid. Metro: Pavones (L9).
+  - **Entrenos** (miércoles 20:30–22:30): **Valdebernardo (Faustina Valladolid)**, ahora **en obras**; la pista de cada semana se confirma en el calendario.
+  - «Calle de Valdebernardo» (donde se juega) y «Valdebernardo (Faustina Valladolid)» (donde se entrena) son sitios diferentes; los textos de la web lo aclaran.
 - **SportEasy:** sale de la operativa desde la J2 (11/10/2026, D44); respaldo dormido hasta noviembre. Disponibilidad y convocatoria, por la plataforma propia.
 - **Plataforma propia** (`plataforma/`, D55): cada jugador entra con su **enlace personal secreto** (`/j/<enlace>`); los 3 gestores con login real (D45). Los jugadores nunca ven niveles, posiciones ni motivos (D46).
 - **Federación / plataforma de actas:** Afición FBM / Gesdeportiva (Indalweb). Cambió en 25/26; antes (24/25) usaban SWISH.

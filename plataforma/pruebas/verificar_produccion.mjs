@@ -57,7 +57,7 @@ try {
   }
   const entrar = await fetch(BASE + '/entrar');
   const html = await entrar.text();
-  ok(entrar.status === 200 && html.includes('Entrar'), '/entrar carga (HTTP 200)', `HTTP ${entrar.status}`);
+  ok(entrar.status === 200 && html.includes('Continuar con Google') && html.includes('Enviarme el código'), '/entrar carga (HTTP 200)', `HTTP ${entrar.status}`);
 
   for (const [etiqueta, ancho, alto, movil] of [['375', 375, 800, true], ['escritorio', 1280, 900, false]]) {
     console.log(`\n== Gestor en produccion, ${etiqueta}`);

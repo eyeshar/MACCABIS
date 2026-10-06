@@ -11,12 +11,12 @@ const TABLAS = [
 export default function GuiaTallas() {
   return (
     <>
-      <header className="cabecera">
+      <div className="cabecera">
         <div className="dentro">
           <div className="marca">Maccabis · ropa VIVE</div>
           <h1>Guía de tallas</h1>
         </div>
-      </header>
+      </div>
       <main className="pagina">
         <p>Medidas de la prenda (no del cuerpo) según VIVE. Lo más fiable: coge una camiseta tuya que te quede bien, mídela en plano y compárala con la tabla. Las medidas pueden variar un 2-3 % por la fabricación.</p>
         {TABLAS.map((t) => (

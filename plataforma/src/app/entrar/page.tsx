@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { clienteSesion, configurado } from "@/lib/supabase";
 import { destinoTrasEntrar } from "@/lib/sesion";
 import { Escudo } from "@/components/web/Marco";
-import { Volver } from "@/components/Iconos";
 import FormularioEntrar from "./FormularioEntrar";
 
 export const dynamic = "force-dynamic";
@@ -19,11 +18,7 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
     if (user) redirect(await destinoTrasEntrar(supabase));
   }
   return (
-    <div className="tema-oscuro">
-      <div className="acc">
-        <header className="acc-cab">
-          <Link href="/" aria-label="Volver a la portada"><Volver />Volver a la web</Link>
-        </header>
+    <div className="acc">
         <main className="acc-main">
           <div className="acc-marca">
             <Escudo />
@@ -52,7 +47,6 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
           </p>
         </main>
         <footer className="acc-pie" />
-      </div>
     </div>
   );
 }

@@ -24,10 +24,14 @@ const nextConfig: NextConfig = {
   // La app vive en plataforma/ dentro del repositorio del dashboard: esta es su raiz.
   outputFileTracingRoot: path.join(__dirname),
   turbopack: { root: path.join(__dirname) },
+  // Una sola pagina de cuenta para jugadores y gestores (D90): la antigua de gestion lleva a la nueva.
+  async redirects() {
+    return [{ source: "/gestion/cuenta", destination: "/cuenta", permanent: true }];
+  },
   async headers() {
     const NOINDEX = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
     const vistaPrevia = Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";
-    const privadas = ["/entrar", "/mi-zona", "/gestion", "/auth"];
+    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth"];
     return [
       ...(vistaPrevia
         ? [{ source: "/:path*", headers: NOINDEX }]

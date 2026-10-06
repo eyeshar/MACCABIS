@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed, JetBrains_Mono } from "next/font/google";
 import RegistroSW from "@/components/RegistroSW";
+import Cabecera from "@/components/nav/Cabecera";
 import { URL_PRODUCCION, esVistaPrevia } from "@/lib/indexacion";
 import "./globals.css";
 
@@ -31,7 +32,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`${titulos.variable} ${texto.variable} ${cifras.variable}`}>
       <body>
-        {children}
+        <a href="#contenido" className="nv-saltar">Saltar al contenido</a>
+        {/* Una sola navegacion en toda la web (D89): la cabecera y la barra inferior viven aqui, no en cada zona. */}
+        <Cabecera />
+        <div id="contenido" tabIndex={-1}>{children}</div>
         <RegistroSW />
       </body>
     </html>

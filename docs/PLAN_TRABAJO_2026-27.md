@@ -57,3 +57,14 @@ Bloque «Unificación web» (paso 1 del rediseño). Detalle en `DECISIONS.md` (D
    - **Paso 1 (hecho el 06/10, rama `feat/rediseno-web`, pendiente del OK de Iván):** web única, sistema visual, portada, calendario con entrenos e iCal, Acceso, Mi zona y Gestión con el aspecto nuevo, base instalable, inventario de migración.
    - **Paso 2:** Eventos y EventoEditar en gestión (tabla de eventos y pistas en Supabase, con backup y staging antes de producción), copia a SportEasy por navegador (fase puente), respuestas leídas de SportEasy en Gestión y «Tu agenda»; primera migración de sección (Liga).
    - **Paso 3:** EventoMovil (el jugador responde en la plataforma, «no voy» con motivo y periodos de no disponibilidad), avisos por la web instalada y recordatorios automáticos; después, el resto de secciones de `MIGRACION_WEB.md`.
+
+## Decisiones del 07/10/2026 — paso 1b: una sola navegación (D89, D90)
+1. **Una sola navegación en toda la web (D89).** Cabecera única en el layout raíz (la misma en portada, `/club`, Acceso, Mi zona, Mi cuenta y Gestión), que lee la sesión en el servidor; en móvil, barra inferior de 5 (Inicio · Partidos · Liga · Mi zona/Acceso · Más) y hoja «Más». Barras propias de Mi zona y de Gestión, fijas. Un solo tema oscuro; Mi zona a dos columnas en escritorio. GitHub Pages lleva una barra fija con «← Volver a Maccabis» y el mismo menú mientras se migra.
+2. **Menú de Gestión con submenús (D90)** en tres grupos (La semana, Plantilla, Competición); lo que llega en el paso 2 se ve en gris con «paso 2». «Mi cuenta», una sola página `/cuenta`, solo en el menú de usuario.
+3. **Orden de construcción (actualizado, manda sobre el punto 8 del 06/10):**
+   1. **Paso 1b — navegación única** (07/10, rama `feat/navegacion-unica`, pendiente del OK de Iván a la vista previa).
+   2. **Paso 2** (Eventos y pistas, Convocatoria, Asistencia y motivos; fase puente con SportEasy) **en paralelo con la migración de Liga** desde GitHub Pages a la plataforma.
+   3. **Migración de Plantilla y Ficha** de jugador.
+   4. **Migración de Historia.**
+   5. **Paso 3** (EventoMovil, «no voy» con motivo y periodos de no disponibilidad, avisos por la web instalada, recordatorios automáticos).
+   Cada sección migrada deja de enlazar a GitHub Pages en el menú (`MENU` en `plataforma/src/lib/web.ts`) y su pestaña de GitHub Pages pasa a llevar a la plataforma.

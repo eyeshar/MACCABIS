@@ -1,22 +1,38 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { clienteSesion, configurado } from "./supabase";
 
+// Sesion de la peticion (una sola llamada a Auth aunque la pidan la cabecera, el layout y la pagina). Sin configurar o
+// sin sesion: user null.
+export const sesionActual = cache(async () => {
+  if (!configurado()) return { supabase: null, user: null };
+  const supabase = await clienteSesion();
+  const { data: { user } } = await supabase.auth.getUser();
+  return { supabase, user };
+});
+
+/** is_gestor() de la sesion actual, una vez por peticion. */
+export const esGestorActual = cache(async () => {
+  const { supabase, user } = await sesionActual();
+  if (!supabase || !user) return false;
+  const { data } = await supabase.rpc("is_gestor");
+  return Boolean(data);
+});
+
 // Exige cualquier sesion (jugador o gestor). Redirige a /entrar si no hay.
 export async function exigirSesion() {
   if (!configurado()) redirect("/");
-  const supabase = await clienteSesion();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/entrar");
+  const { supabase, user } = await sesionActual();
+  if (!supabase || !user) redirect("/entrar");
   return { supabase, user };
 }
 
 // Exige sesion de GESTOR. Un jugador sin permisos de gestion va a su zona.
 export async function exigirGestor() {
   const { supabase, user } = await exigirSesion();
-  const { data: esGestor } = await supabase.rpc("is_gestor");
-  if (!esGestor) redirect("/mi-zona?no_gestor=1");
+  if (!(await esGestorActual())) redirect("/mi-zona?no_gestor=1");
   const { data: g } = await supabase.from("gestores").select("nombre").eq("user_id", user.id).maybeSingle();
   return { supabase, user, nombre: (g?.nombre as string | undefined) ?? user.email ?? "gestor" };
 }

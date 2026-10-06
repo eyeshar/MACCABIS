@@ -84,14 +84,14 @@ try {
     await entrar(p, gestorEmail);
     if (p.url().includes('/elegir')) await p.goto(`${APP}/gestion`);
     const sinDesbordar = () => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
-    const menuEntero = () => p.evaluate(() => [...document.querySelectorAll('nav[aria-label="Gestión"] a, nav[aria-label="Gestión"] button')]
-      .every((e) => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth + 1; }));
+    // D90: la barra de Gestion cabe o, en movil, es una fila con scroll horizontal (lo que no cabe se alcanza desplazandola).
+    const menuEntero = () => p.evaluate(() => { const f = document.querySelector('nav[aria-label="Gestión"] .zb-fila'); return f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === 'auto'; });
 
     await p.goto(`${APP}/gestion/scouting`);
     ok((await p.textContent('h2')).includes('Litros de Mahou'), 'scouting: por defecto, el proximo rival del MdA (Litros de Mahou)');
     ok((await p.textContent('.lg-prox')).includes('J2') && (await p.textContent('.lg-prox')).includes('18/10') && (await p.textContent('.lg-prox')).includes('en casa'), 'scouting: proximo partido contra nosotros (J2 · 18/10 · en casa)');
     ok((await p.locator('.lg-max').count()) === 3, 'scouting: 3 maximos anotadores');
-    ok(await menuEntero(), 'el menu de gestion no se corta');
+    ok(await menuEntero(), 'el menu de gestion no se corta (cabe o se desplaza en su fila)');
     ok(await sinDesbordar(), 'scouting: sin desbordamiento horizontal');
     ok((await p.locator('.lg-tarjetas').isVisible()) === movil && (await p.locator('.lg-tabla').first().isVisible()) === !movil,
       movil ? 'scouting movil: tarjetas por jugador, sin tabla' : 'scouting escritorio: tabla, sin tarjetas');

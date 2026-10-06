@@ -61,6 +61,14 @@ let correosOriginales = [];
 // db:correos/db:gestor), así que se compara contra el total real, no un numero fijo.
 let nJugadoresReales = null;
 const sinMarca = (filas) => filas.map(({ actualizado_en, ...r }) => r);   // la prueba cambia y devuelve el correo de 2 jugadores: solo se mueve su marca de actualizacion
+// Huella de TODAS las tablas de public (menos asistencia_motivos, que se carga a proposito en el paso de D88).
+const todasHuellas = async () => {
+  const nombres = (await sql`select c.relname n from pg_class c join pg_namespace s on s.oid = c.relnamespace where s.nspname = 'public' and c.relkind in ('r','p') and c.relname <> 'asistencia_motivos' order by 1`).map((x) => x.n);
+  const o = {};
+  for (const t of nombres) { const f = (await sql.unsafe(`select to_jsonb(t) r from public.${t} t`)).map((x) => x.r); o[t] = { filas: f.length, huella: huella(sinMarca(f)) }; }
+  return o;
+};
+let antesTodas = null;
 let antes = null;   // huellas de los datos reales antes de empezar: al final deben ser identicas
 
 try {
@@ -70,6 +78,7 @@ try {
     (select count(*)::int from public.campanas_ropa) as campanas,
     (select count(*)::int from public.pedidos_ropa) as pedidos`;
   nJugadoresReales = (await sql`select count(*)::int n from public.jugadores`)[0].n;
+  antesTodas = await todasHuellas();
   const v0 = await volcar(sql);
   antes = { ...antes, huellas: Object.fromEntries(TABLAS.map((t) => [t, huella(sinMarca(v0.tablas[t]))])), filas: Object.fromEntries(TABLAS.map((t) => [t, v0.tablas[t].length])) };
 
@@ -240,6 +249,28 @@ try {
   const del = await cg.from('liga_partidos').delete().neq('jornada', -1);
   const [{ np2 }] = await sql`select count(*)::int as np2 from public.liga_partidos`;
   ok(!!ins.error && np2 === np, 'ni un gestor puede insertar ni borrar por la API', `${ins.error?.message ?? 'inserto'} / ${del.error?.message ?? 'borro'} / ${np2}`);
+  seccion('Asistencia con motivos (D82): solo gestores');
+  const [{ na }] = await sql`select count(*)::int as na from public.asistencia_motivos`;
+  ok(na > 0, `hay asistencia cargada (${na} filas)`);
+  const [{ rlsA }] = await sql`select relrowsecurity as "rlsA" from pg_class where oid = 'public.asistencia_motivos'::regclass`;
+  ok(rlsA === true, 'RLS activada en asistencia_motivos');
+  const aAnon = await api('/asistencia_motivos?select=*');
+  ok(aAnon.status !== 200 || (Array.isArray(aAnon.datos) && aAnon.datos.length === 0), 'anonimo (sin sesion) NO lee asistencia_motivos', `${aAnon.status} ${JSON.stringify(aAnon.datos)?.slice(0, 80)}`);
+  const aJug = await cA.from('asistencia_motivos').select('*');
+  ok(!aJug.data?.length, 'un jugador con su sesion real NO lee asistencia_motivos', `${aJug.error?.message ?? ''} ${aJug.data?.length ?? 0} filas`);
+  const aNo = await cn.from('asistencia_motivos').select('*');
+  ok(!aNo.data?.length, 'un usuario que no es gestor NO lee asistencia_motivos', `${aNo.error?.message ?? ''} ${aNo.data?.length ?? 0} filas`);
+  const aGes = await cg.from('asistencia_motivos').select('*');
+  ok(aGes.data?.length === na, 'un gestor con su sesion real SI lee asistencia_motivos', aGes.error?.message ?? `${aGes.data?.length} / ${na}`);
+  const vA = await sql.begin(async (tx) => {
+    await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: ivan.user_id, role: 'authenticated' })}, true)`;
+    await tx`set local role authenticated`;
+    return (await tx`select count(*)::int n from public.asistencia_motivos`)[0].n;
+  });
+  ok(vA === na, 'con la identidad de Iván (gestor) se ven todas las filas', `${vA} / ${na}`);
+  const escritura = await cg.from('asistencia_motivos').insert({ temporada: '0000-00', person_id: 'x', nombre: 'x', ambito: 'partidos' });
+  ok(!!escritura.error, 'ni un gestor puede escribir por la API (solo el script con conexion directa)');
+
   seccion('Cambio de correo seguro (cambiar_correo_jugador) contra el proyecto real');
   const emailA2 = `prueba-jugA2-${sufijo}@maccabis.invalid`;
   const rcg = await cg.rpc('cambiar_correo_jugador', { p_jugador_id: jA.id, p_email: emailA2 });
@@ -270,6 +301,9 @@ try {
   console.log('  estado final:', JSON.stringify(f));
   const v1 = await volcar(sql);
   for (const t of TABLAS) ok(huella(sinMarca(v1.tablas[t])) === antes.huellas[t] && v1.tablas[t].length === antes.filas[t], `${t}: ${v1.tablas[t].length} filas, identicas a las de antes de empezar (huella ${antes.huellas[t]}, sin contar la marca actualizado_en)`);
+  const despuesTodas = await todasHuellas();
+  for (const t of Object.keys(antesTodas)) ok(despuesTodas[t]?.huella === antesTodas[t].huella && despuesTodas[t].filas === antesTodas[t].filas, `public.${t}: ${despuesTodas[t]?.filas} filas, identica a antes de empezar`);
+  ok(Object.keys(despuesTodas).length === Object.keys(antesTodas).length, `mismas tablas de public que antes (${Object.keys(antesTodas).length}, sin contar asistencia_motivos)`);
   const [{ conCorreo }] = await sql`select count(*)::int as "conCorreo" from public.jugadores where email is not null`;
   ok(f.jugadores === nJugadoresReales && conCorreo === nJugadoresReales, `los ${nJugadoresReales} jugadores siguen con su correo (${conCorreo} con correo)`);
   ok(f.usuarios === antes.usuarios, `cuentas de auth: ${f.usuarios}, las mismas que antes (${antes.usuarios})`);

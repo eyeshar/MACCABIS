@@ -32,9 +32,10 @@ try {
   const vacioOBloqueado = (r) => r.status === 401 || r.status === 403 || (Array.isArray(r.datos) && r.datos.length === 0);
 
   console.log('\n== Carga (la misma que npm run db:liga)');
-  const partidos = leerLiga('2026-27');
+  const liga = leerLiga('2026-27');
+  const partidos = liga.privado;
   const esperadoJug = partidos.reduce((s, p) => s + p.equipos.reduce((t, e) => t + e.jugadores.length, 0), 0);
-  await cargarLiga(sql, partidos, '2026-27', { log: () => {} });
+  await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   const cuenta = async () => ({
     p: (await sql`select count(*)::int n from public.liga_partidos`)[0].n,
     j: (await sql`select count(*)::int n from public.liga_estadisticas_jugador`)[0].n,
@@ -42,7 +43,7 @@ try {
   let c = await cuenta();
   ok(c.p === partidos.length && c.p === 10, `10 partidos cargados (los de la J1 de G1 y G2)`, String(c.p));
   ok(c.j === esperadoJug, `${esperadoJug} filas de jugador cargadas`, String(c.j));
-  await cargarLiga(sql, partidos, '2026-27', { log: () => {} });
+  await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   c = await cuenta();
   ok(c.p === 10 && c.j === esperadoJug, 'cargar dos veces no duplica nada (idempotente)');
   const [{ n: sumas }] = await sql`
@@ -65,7 +66,7 @@ try {
   const tIntruso = await jwt(intrusoId, 'intruso@pruebas.local');
 
   console.log('\n== RLS: anonimo, jugador e intruso no ven nada');
-  const tablas = ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores'];
+  const tablas = ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores', 'liga_calendario', 'liga_clasificacion'];
   for (const t of tablas) {
     ok(vacioOBloqueado(await api(`/${t}?select=*`)), `anonimo NO lee ${t}`);
     ok(vacioOBloqueado(await api(`/${t}?select=*`, { token: tJugador })), `un jugador (sesion real, no gestor) NO lee ${t}`);
@@ -75,6 +76,10 @@ try {
   ok(vacioOBloqueado(porNombre), 'un jugador no saca un rival ni buscandolo por nombre');
 
   console.log('\n== RLS: el gestor lee todo');
+  for (const [t, n] of [['liga_calendario', 44], ['liga_clasificacion', 22]]) {
+    const rg = await api(`/${t}?select=*`, { token: tGestor });
+    ok(rg.status === 200 && rg.datos.length === n, `gestor lee ${t} (${n} filas)`, `status ${rg.status} / ${rg.datos?.length}`);
+  }
   let r = await api('/liga_partidos?select=*', { token: tGestor });
   ok(r.status === 200 && r.datos.length === 10, 'gestor lee los 10 partidos', `status ${r.status} / ${r.datos?.length}`);
   r = await api('/liga_estadisticas_jugador?select=*', { token: tGestor });
@@ -104,10 +109,10 @@ try {
     ok(!anon_sel, `anon no tiene SELECT en ${t}`);
     ok(!aut_ins && !aut_upd && !aut_del, `authenticated no tiene INSERT/UPDATE/DELETE en ${t}`);
   }
-  const rls = await sql`select relname, relrowsecurity from pg_class where relname in ('liga_partidos', 'liga_estadisticas_jugador')`;
-  ok(rls.length === 2 && rls.every((x) => x.relrowsecurity), 'RLS activada en las dos tablas');
-  const pol = await sql`select tablename, cmd, roles::text from pg_policies where tablename in ('liga_partidos', 'liga_estadisticas_jugador')`;
-  ok(pol.length === 2 && pol.every((x) => x.cmd === 'SELECT'), 'cada tabla tiene una unica politica, de SELECT para gestores', JSON.stringify(pol));
+  const rls = await sql`select relname, relrowsecurity from pg_class where relname in ('liga_partidos', 'liga_estadisticas_jugador', 'liga_calendario', 'liga_clasificacion')`;
+  ok(rls.length === 4 && rls.every((x) => x.relrowsecurity), 'RLS activada en las cuatro tablas');
+  const pol = await sql`select tablename, cmd, roles::text from pg_policies where tablename like 'liga_%'`;
+  ok(pol.length === 4 && pol.every((x) => x.cmd === 'SELECT'), 'cada tabla tiene una unica politica, de SELECT para gestores', JSON.stringify(pol));
   const [{ inv }] = await sql`select (reloptions::text like '%security_invoker=true%') as inv from pg_class where relname = 'v_liga_jugadores'`;
   ok(inv === true, 'la vista v_liga_jugadores es security_invoker (hereda la RLS de quien consulta)');
 } finally {

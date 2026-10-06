@@ -32,6 +32,18 @@ export default async function InicioGestion() {
           <Link className="boton" href="/gestion/ropa">Ver pedido de ropa</Link>
         </section>
       </div>
+      <div className="rejilla-2">
+        <section className="tarjeta">
+          <h2>Scouting rivales</h2>
+          <p>Jugadores de cada rival (puntos, triples, tiros libres, faltas) y su próximo partido contra nosotros.</p>
+          <Link className="boton" href="/gestion/scouting">Ver scouting</Link>
+        </section>
+        <section className="tarjeta">
+          <h2>Liga consolidada</h2>
+          <p>Líderes individuales de los dos grupos y ranking conjunto de equipos.</p>
+          <Link className="boton" href="/gestion/liga">Ver liga</Link>
+        </section>
+      </div>
       <section className="tarjeta tarjeta-apagada">
         <h2>Próximamente</h2>
         <p style={{ margin: 0 }}>Calendario único, disponibilidad de la semana, pase de lista y convocatorias (bloque de la jornada 2).</p>

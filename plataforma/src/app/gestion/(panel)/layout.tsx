@@ -15,6 +15,8 @@ export default async function PanelGestion({ children }: { children: React.React
             <Link className="boton boton-claro" href="/gestion">Inicio</Link>
             <Link className="boton boton-claro" href="/gestion/jugadores">Jugadores</Link>
             <Link className="boton boton-claro" href="/gestion/ropa">Pedido de ropa</Link>
+            <Link className="boton boton-claro" href="/gestion/scouting">Scouting rivales</Link>
+            <Link className="boton boton-claro" href="/gestion/liga">Liga consolidada</Link>
             <Link className="boton boton-claro" href="/gestion/cuenta">Mi cuenta</Link>
             <Link className="boton boton-claro" href="/mi-zona">Mi zona</Link>
             <form action={salir}>

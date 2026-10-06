@@ -208,14 +208,14 @@ try {
   seccion('Liga 26/27 (D73): datos por jugador de otros equipos, solo para gestores');
   const [{ np, nj }] = await sql`select (select count(*)::int from public.liga_partidos) as np, (select count(*)::int from public.liga_estadisticas_jugador) as nj`;
   ok(np > 0 && nj > 0, `hay datos de liga cargados (${np} partidos, ${nj} filas de jugador)`);
-  const ligaRls = await sql`select relname, relrowsecurity from pg_class where relname in ('liga_partidos', 'liga_estadisticas_jugador')`;
-  ok(ligaRls.length === 2 && ligaRls.every((x) => x.relrowsecurity), 'RLS activada en las tablas de liga');
+  const ligaRls = await sql`select relname, relrowsecurity from pg_class where relname in ('liga_partidos', 'liga_estadisticas_jugador', 'liga_calendario', 'liga_clasificacion')`;
+  ok(ligaRls.length === 4 && ligaRls.every((x) => x.relrowsecurity), 'RLS activada en las cuatro tablas de liga');
   const [{ anonLiga, escribeAuth }] = await sql`select
-    (has_table_privilege('anon','public.liga_partidos','select') or has_table_privilege('anon','public.liga_estadisticas_jugador','select') or has_table_privilege('anon','public.v_liga_jugadores','select')) as "anonLiga",
+    (has_table_privilege('anon','public.liga_calendario','select') or has_table_privilege('anon','public.liga_clasificacion','select') or has_table_privilege('anon','public.liga_partidos','select') or has_table_privilege('anon','public.liga_estadisticas_jugador','select') or has_table_privilege('anon','public.v_liga_jugadores','select')) as "anonLiga",
     (has_table_privilege('authenticated','public.liga_partidos','insert,update,delete') or has_table_privilege('authenticated','public.liga_estadisticas_jugador','insert,update,delete')) as "escribeAuth"`;
   ok(anonLiga === false, 'anon no tiene ningun permiso sobre las tablas ni la vista de liga');
   ok(escribeAuth === false, 'authenticated no puede escribir en las tablas de liga (solo el script local)');
-  for (const t of ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores']) {
+  for (const t of ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores', 'liga_calendario', 'liga_clasificacion']) {
     const ra = await api(`/${t}?select=*`);
     ok(ra.status >= 400 || (Array.isArray(ra.datos) && ra.datos.length === 0), `anonimo (HTTPS) no lee ${t}`, `HTTP ${ra.status}`);
     const rj = await cA.from(t).select('*');
@@ -229,6 +229,9 @@ try {
   const gj = await cg.from('liga_estadisticas_jugador').select('id');
   const gv = await cg.from('v_liga_jugadores').select('nombre').limit(5);
   ok(gp.data?.length === np && gj.data?.length === nj && (gv.data?.length ?? 0) > 0, `un gestor (sesion real) lee los ${np} partidos, las ${nj} filas de jugador y la vista`, `${gp.data?.length}/${gj.data?.length}/${gv.data?.length} ${gp.error?.message ?? ''}`);
+  const gc = await cg.from('liga_calendario').select('jornada');
+  const gk = await cg.from('liga_clasificacion').select('equipo');
+  ok(gc.data?.length === 44 && gk.data?.length === 22, 'un gestor lee el calendario (44) y la clasificacion (22)', `${gc.data?.length}/${gk.data?.length}`);
   const ins = await cg.from('liga_partidos').insert({ temporada: 'x', grupo: 'G1', jornada: 99, local: 'a', visitante: 'b', pts_local: 1, pts_visitante: 0 });
   const del = await cg.from('liga_partidos').delete().neq('jornada', -1);
   const [{ np2 }] = await sql`select count(*)::int as np2 from public.liga_partidos`;

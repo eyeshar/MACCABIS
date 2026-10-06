@@ -75,8 +75,9 @@ export default function Club() {
             <span className="chip-eq chip-entreno" style={{ alignSelf: "flex-start" }}>ENTRENO</span>
             <h3 style={{ margin: 0, fontSize: 26, textTransform: "uppercase" }}>Miércoles, {habitual.inicio}–{habitual.fin}</h3>
             <p className="suave" style={{ margin: 0 }}>
-              Pista habitual: {habitual.pista}.{habitual.enObras ? <> Ahora está <b className="w-confirmar">en obras</b>: cada semana se confirma la pista en el calendario.</> : null}
+              Dónde se entrena: <b>{habitual.pista}</b>.{habitual.enObras ? <> Ahora está <b className="w-confirmar">en obras</b>: la pista de cada semana se confirma en el calendario.</> : null}
             </p>
+            <p className="w-nota" style={{ margin: 0 }}>No es la instalación de los partidos: son dos sitios distintos.</p>
             {proximo && (
               <p style={{ margin: 0 }}>
                 Próximo: {diaLargo(proximo.fecha)}, {proximo.inicio}–{proximo.fin} · {proximo.pistaPorConfirmar ? "pista por confirmar" : proximo.lugar}.
@@ -88,10 +89,13 @@ export default function Club() {
             <span className="chip-eq chip-MDA" style={{ alignSelf: "flex-start" }}>LIGA</span>
             <h3 style={{ margin: 0, fontSize: 26, textTransform: "uppercase" }}>Domingos por la mañana</h3>
             <p className="suave" style={{ margin: 0 }}>
-              Liga Municipal de Moratalaz (JDM), en las pistas 1 a 3 de la competición. Hora y pista de cada partido, en el
-              calendario oficial que revisamos cada jueves.
+              Liga Municipal de Moratalaz (JDM). Hora y pista de cada partido, en el calendario oficial que revisamos cada jueves.
             </p>
-            <p className="hueco" style={{ margin: 0 }}>Nombre y dirección de la instalación: pendiente de confirmar por el club.</p>
+            <p style={{ margin: 0 }} data-testid="club-instalacion-partidos">
+              <b>Centro Deportivo Municipal Moratalaz</b><br />
+              Calle de Valdebernardo, 2, 28030 Madrid<br />
+              Metro: Pavones (L9)
+            </p>
             <a className="w-mas" href={estadisticas("liga")}>Clasificación y resultados →</a>
           </div>
         </div>

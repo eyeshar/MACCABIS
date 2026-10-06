@@ -160,6 +160,8 @@ try {
   ok(club.includes('Desde 2013') && club.includes('Maccabi de Levantar') && club.includes('Maccabi de Acostar'), '/club: desde 2013, MdA y MdL');
   ok([resumen.partidos_con_estadisticas, resumen.victorias, resumen.jugadores_en_la_historia].every((n) => club.includes(`<b>${n}</b>`) || club.includes(`>${n}</b>`)), '/club: las mismas cifras de historia que la portada (de los datos)');
   ok(club.includes('Miércoles, 20:30–22:30') && club.includes('Valdebernardo') && club.includes('en obras'), '/club: entrenos (miercoles 20:30-22:30, Valdebernardo en obras)');
+  ok(club.includes('Centro Deportivo Municipal Moratalaz') && club.includes('Calle de Valdebernardo, 2, 28030 Madrid') && club.includes('Pavones (L9)'), '/club: instalación de los partidos (CDM Moratalaz, calle de Valdebernardo 2, metro Pavones L9)');
+  ok(club.includes('Valdebernardo (Faustina Valladolid)') && club.includes('son dos sitios distintos') && !club.includes('pendiente de confirmar'), '/club: entrenos en Valdebernardo (Faustina Valladolid), aclarado que no es la de los partidos, sin hueco');
   ok(club.includes('https://eyeshar.github.io/MACCABIS/?p=historia'), '/club: enlace a la rejilla completa de Historia (GitHub Pages)');
   ok(!/[\w.+-]+@[\w-]+\.[\w.]+/.test(club.replace(/<script[\s\S]*?<\/script>/g, '')), '/club: ningun correo ni dato personal');
 

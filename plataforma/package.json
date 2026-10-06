@@ -24,7 +24,10 @@
     "db:liga": "node scripts/cargar_liga.mjs",
     "pruebas:liga": "node pruebas/rls_liga.mjs",
     "pruebas:pantallas": "node pruebas/pantallas_liga.mjs",
-    "pruebas:orden": "node pruebas/orden_lideres.mjs"
+    "pruebas:orden": "node pruebas/orden_lideres.mjs",
+    "equipacion:sync": "node scripts/sincronizar_equipacion.mjs",
+    "pruebas:equipacion": "node pruebas/avisos_equipacion.mjs",
+    "pruebas:avisos": "node pruebas/avisos_pantallas.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

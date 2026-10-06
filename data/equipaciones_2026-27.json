@@ -1,0 +1,215 @@
+{
+  "temporada": "2026-27",
+  "fuente": "Captura de Deportes/web facilitada por Iván (primera equipación: camiseta / pantalón)",
+  "fecha": "2026-10-06",
+  "regla_choque": {
+    "descripcion": "Hay choque cuando la camiseta de la 1.ª equipación del rival está en `camiseta_rival_choca` (nuestra 1.ª es negra). Decisión de Iván: el «azul» de Nabuco TD cuenta como choque. Quién cambia: lo fija `quien_cambia` (Bases 47 JDM, 5.11).",
+    "camiseta_rival_choca": [
+      "negro",
+      "azul oscuro",
+      "azul"
+    ],
+    "nuestra_segunda": "amarilla",
+    "quien_cambia": {
+      "cambia": "segundo_en_calendario",
+      "articulo": "Bases Reguladoras 47 JDM, art. 5.11 Vestimenta (igual en la normativa 46 JDM, art. 2.8)",
+      "cita": "En caso de coincidencia de colores, deberá cambiarse obligatoriamente el equipo que figure en segundo lugar en el calendario de competición, si no lo hiciese se le dará el encuentro por perdido.",
+      "fuente": "https://www.madrid.es/UnidadesDescentralizadas/Deportes/EspecialInformativo/47JDM/ficheros/BasesReguladoras47JDM_1Sp.pdf",
+      "nota": "El calendario (data/calendario_2026-27.json) lista primero al local: el que figura en segundo lugar es el visitante (local=false)."
+    },
+    "nuestra_primera": "negro"
+  },
+  "paleta": {
+    "negro": "#111111",
+    "azul oscuro": "#1b2a6b",
+    "azul": "#2563eb",
+    "blanco": "#ffffff",
+    "rojo": "#d62828",
+    "rosa": "#f48fb1",
+    "naranja": "#f97316",
+    "amarillo": "#facc15"
+  },
+  "equipos": {
+    "tropicaleros": {
+      "nombre": "Tropicaleros",
+      "grupo": "G1",
+      "camiseta_original": "rosa",
+      "pantalon_original": "negro",
+      "camiseta": "rosa",
+      "pantalon": "negro"
+    },
+    "chavalitros": {
+      "nombre": "Chavalitros",
+      "grupo": "G1",
+      "camiseta_original": "negro",
+      "pantalon_original": "negro",
+      "camiseta": "negro",
+      "pantalon": "negro"
+    },
+    "chupitimanguis": {
+      "nombre": "Chupitimanguis",
+      "grupo": "G1",
+      "camiseta_original": "negra",
+      "pantalon_original": "negro",
+      "camiseta": "negro",
+      "pantalon": "negro"
+    },
+    "enfermos del aro": {
+      "nombre": "Enfermos del Aro",
+      "grupo": "G1",
+      "camiseta_original": "blanco",
+      "pantalon_original": "blanco",
+      "camiseta": "blanco",
+      "pantalon": "blanco"
+    },
+    "litros de mahou": {
+      "nombre": "Litros de Mahou",
+      "grupo": "G1",
+      "camiseta_original": "negra",
+      "pantalon_original": "negro",
+      "camiseta": "negro",
+      "pantalon": "negro"
+    },
+    "los khinkis rusos": {
+      "nombre": "Los Khinkis Rusos",
+      "grupo": "G1",
+      "camiseta_original": "rojo",
+      "pantalon_original": "rojo",
+      "camiseta": "rojo",
+      "pantalon": "rojo"
+    },
+    "nabuco td": {
+      "nombre": "Nabuco TD",
+      "grupo": "G1",
+      "camiseta_original": "azul",
+      "pantalon_original": "azul",
+      "camiseta": "azul",
+      "pantalon": "azul"
+    },
+    "rif": {
+      "nombre": "RIF",
+      "grupo": "G1",
+      "camiseta_original": "amarillo",
+      "pantalon_original": "amarillo",
+      "camiseta": "amarillo",
+      "pantalon": "amarillo"
+    },
+    "vallekas basket": {
+      "nombre": "Vallekas Basket",
+      "grupo": "G1",
+      "camiseta_original": "naranja",
+      "pantalon_original": "naranja",
+      "camiseta": "naranja",
+      "pantalon": "naranja"
+    },
+    "wild boys": {
+      "nombre": "Wild Boys",
+      "grupo": "G1",
+      "camiseta_original": "amarilla",
+      "pantalon_original": "amarilla",
+      "camiseta": "amarillo",
+      "pantalon": "amarillo"
+    },
+    "28500": {
+      "nombre": "28500",
+      "grupo": "G2",
+      "camiseta_original": "negra",
+      "pantalon_original": "negro",
+      "camiseta": "negro",
+      "pantalon": "negro",
+      "nota": "Sin hoja de equipo todavía; el color viene de la captura."
+    },
+    "castanazo": {
+      "nombre": "Castañazo",
+      "grupo": "G2",
+      "camiseta_original": "blanca",
+      "pantalon_original": "blanca",
+      "camiseta": "blanco",
+      "pantalon": "blanco"
+    },
+    "craps": {
+      "nombre": "Craps",
+      "grupo": "G2",
+      "camiseta_original": "negra",
+      "pantalon_original": "negro",
+      "camiseta": "negro",
+      "pantalon": "negro"
+    },
+    "f.t. floppers": {
+      "nombre": "F.T. Floppers",
+      "grupo": "G2",
+      "camiseta_original": "azul oscuro",
+      "pantalon_original": "azul oscuro",
+      "camiseta": "azul oscuro",
+      "pantalon": "azul oscuro"
+    },
+    "la cancha roja": {
+      "nombre": "La Cancha Roja",
+      "grupo": "G2",
+      "camiseta_original": "rojo",
+      "pantalon_original": "negro",
+      "camiseta": "rojo",
+      "pantalon": "negro"
+    },
+    "mejorada 2012 c.b.": {
+      "nombre": "Mejorada 2012 C.B.",
+      "grupo": "G2",
+      "camiseta_original": "azul oscuro",
+      "pantalon_original": "azul oscuro",
+      "camiseta": "azul oscuro",
+      "pantalon": "azul oscuro"
+    },
+    "quinto tiempo": {
+      "nombre": "Quinto Tiempo",
+      "grupo": "G2",
+      "camiseta_original": "naranja",
+      "pantalon_original": "negro",
+      "camiseta": "naranja",
+      "pantalon": "negro"
+    },
+    "suanzes motor": {
+      "nombre": "Suanzes Motor",
+      "grupo": "G2",
+      "camiseta_original": "naranja",
+      "pantalon_original": "negro",
+      "camiseta": "naranja",
+      "pantalon": "negro"
+    },
+    "trascendedores c.b.": {
+      "nombre": "Trascendedores C.B.",
+      "grupo": "G2",
+      "camiseta_original": "rosa",
+      "pantalon_original": "negro",
+      "camiseta": "rosa",
+      "pantalon": "negro"
+    },
+    "vanner": {
+      "nombre": "Vanner",
+      "grupo": "G2",
+      "camiseta_original": "negro",
+      "pantalon_original": "negro",
+      "camiseta": "negro",
+      "pantalon": "negro"
+    },
+    "mdl": {
+      "nombre": "MdL",
+      "grupo": "G2",
+      "nuestro": true,
+      "camiseta_original": "negra",
+      "pantalon_original": "negro",
+      "camiseta": "negro",
+      "pantalon": "negro",
+      "segunda": "amarilla"
+    },
+    "mda": {
+      "nombre": "MdA",
+      "grupo": "G1",
+      "nuestro": true,
+      "camiseta_original": "negra",
+      "pantalon_original": "negro",
+      "camiseta": "negro",
+      "pantalon": "negro",
+      "segunda": "amarilla"
+    }
+  }
+}

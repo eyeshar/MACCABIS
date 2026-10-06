@@ -19,6 +19,61 @@ _Última actualización: 05/10/2026 (tarde: D72, la hoja manda sobre SportEasy e
 - **Asistencia 26/27 integrada** (export de SportEasy del 05/10/2026, copiado a `fuentes_fbm/2026-27/asistencia/`): cuentan "Partido", "Campeonato" (liga) y "Entrenamiento"; amistosos/torneos no, y los entrenos de septiembre sí. Los dos "Campeonato" del 04/10 se asignan por cruce con las hojas: el 1.º = **MdL** (9 de 9 coinciden), el 2.º = **MdA** (8 de 9). **Regla D72:** en partidos de liga manda la hoja sobre SportEasy. Corregido en nuestros datos: Jon Esteban asistió al MdA (SportEasy decía "No convocado") y Alonso Romero no (decía "A tiempo"); quedan Jon 2 partidos y Alonso 1 asistido.
 - **Nombres de SportEasy resueltos:** "Edimil Feliz Gomez" → `feliz-gomez-edimil` y "Luis Gomez Pradal" → `gomez-pradal-luis` (ninguno está en la plantilla 26/27, así que no salen en la web). Barreiro, Pablo Ortega e Iván Rodríguez siguen fuera.
 
+## Cambio de correo seguro, aviso de "código por correo" y diagnóstico de acceso (03/10/2026)
+> Rama `feat/correo-seguro-jugadores`, **sin mergear a `main`** (instrucción explícita de Iván). La migración y los
+> dos cambios de correo de más abajo **sí están aplicados en el proyecto real** (D53, sin pedidos que proteger),
+> independientemente del merge.
+
+- **El fallo de origen:** en Gestión → Jugadores, cambiar el correo de un jugador solo tocaba `jugadores.email`.
+  Si esa persona ya tenía cuenta de Supabase Auth con el correo viejo, quedaba huérfana (nadie la referenciaba
+  ya) y el correo nuevo, sin vincular hasta su primer login. Corregido con una función nueva en la base de datos.
+- **`public.cambiar_correo_jugador(jugador_id, correo)`** (migración
+  `plataforma/supabase/migrations/20261003090000_cambiar_correo_jugador_sincroniza_auth.sql`): actualiza
+  `jugadores.email` y, si ya existía una cuenta de Auth con el correo viejo, la **renombra** al correo nuevo (misma
+  cuenta: Google la enlaza por el "sub" del usuario, no por el correo, así que renombrar no rompe esa sesión;
+  comprobado contra el proyecto real). Si el correo nuevo ya pertenece a una cuenta de Auth de **otra** persona,
+  rechaza el cambio (`correo_en_uso_auth`) en vez de fusionar dos identidades a lo tonto. Si esa persona es además
+  gestora con ese mismo correo (caso Carlos o Edu), actualiza también `gestores.email`. Se usa desde la web
+  (`guardarJugador`, solo gestores) y desde `npm run db:correo -- <person_id> <correo_nuevo>` (scripts locales,
+  conexión directa sin sesión: mismo modelo de confianza que `db:gestor`).
+- **Aplicados en el proyecto real (confirmado por Iván, 03/10/2026):**
+  `galan-domingo-guillermo` → `guillermo.galan.domingo@gmail.com`, `lopez-lucero-alfredo-david` →
+  `cordobesbasico@gmail.com` y `teruel-fernandez-tomas` → `tomasteruel5@gmail.com`. Verificado: los correos viejos
+  ya no pasan `correo_permitido`, los nuevos sí; los 28 jugadores siguen con correo (`npm run db:estado`); ninguno
+  tenía cuenta de Auth todavía (nunca habían entrado), así que no hay nada que renombrar — se creará sola en su
+  primer login, como siempre.
+- **Gestión → Jugadores marca en amarillo "Entrará con código por correo"** junto al correo de quien no es de
+  Gmail, para que Iván sepa a quién pedirle su Gmail. **Pendientes de dar su Gmail (si lo tienen):** Manuel
+  Calahorro Sánchez (su Gmail de jugadores probablemente no es el que usa de verdad en Google), Carlos Barreiro
+  (Hotmail), Víctor Pérez Núñez (Hotmail), Fernando Tejeiro (Hotmail), Edwin Villa Guerrero
+  (Hotmail) y Eduardo Martín-Ortega (correo de empresa).
+- **Diagnóstico de los que no podían entrar (David, Guillermo, Manu), con evidencia, no por suposición:**
+  - `auth.audit_log_entries` (donde GoTrue registraría el detalle de cada intento) tiene **0 filas** en el proyecto
+    real: Supabase hospedado no vuelca ahí el log de cada intento; vive en su propio panel
+    (**Authentication → Logs**), que no es accesible por SQL ni por esta sesión. **No puedo darte el texto exacto
+    del error de cada intento** sin que lo mires tú ahí; si quieres que lo haga por API hace falta un token de
+    gestión de Supabase (Personal Access Token), que no tengo.
+  - Lo que sí confirma la base de datos: **ninguno de los correos de David, Guillermo ni los otros 7 ha tenido
+    nunca una fila en `auth.users`** (antes del cambio de hoy): ningún intento llegó a completarse. Es coherente
+    con que "Entrar con Google" exige una cuenta de Google con **ese correo exacto**, y el suyo era Yahoo/Hotmail;
+    lo normal es que no exista tal cuenta de Google, así que la pantalla de Google nunca llega a ofrecer ese
+    correo como opción (no es un rechazo del hook: ni siquiera arranca con el correo correcto). La vía que sí
+    debería funcionarles siempre es "Recibir código por correo" a su dirección real.
+  - `auth.flow_state` (intentos de "Entrar con Google" sin terminar) tiene 2 filas del 02/10/2026 sin usuario
+    vinculado; coinciden con el día en que Iván probó el login real, no se puede atribuir a una persona concreta.
+  - **SMTP de los códigos:** hoy se envían con el servicio compartido por defecto de Supabase. **No he dado por
+    supuesto su límite exacto** (no es consultable por SQL ni sin entrar al panel): Iván debe mirar
+    **Authentication → Rate Limits** para ver la cifra real de su proyecto. Lo que sí es comportamiento documentado
+    de Supabase en general: ese servicio compartido está pensado solo para pruebas (bajo volumen, sin garantía de
+    entrega a bandejas externas). Guía para poner SMTP propio con Gmail del club: `plataforma/LEEME.md`, apartado
+    "7. Correo propio para los códigos".
+- **Pruebas:** `npm run pruebas` (pila local): **107/107 OK**, con un bloque nuevo para
+  `cambiar_correo_jugador` (renombrado de una cuenta existente, sincronía con gestores, rechazo de correo ya usado
+  por otra cuenta, solo gestores desde la web, permitido sin sesión desde un script local) y el aviso de "Entrará
+  con código". `node pruebas/verificar_real.mjs`: **TODO OK**, incluida la misma función contra el proyecto real
+  (correo renombrado con la sesión de gestor real, la sesión del jugador afectado sigue entrando tras el cambio),
+  con limpieza completa (estado final igual al de antes de empezar, no a cifras fijas: el club ya tiene uso real).
+
 ## Login único: Google o código por correo, con lista blanca (02/10/2026, D68)
 - **Sustituye a los enlaces personales `/j/<token>` (D45, derogada).** Ahora: `/entrar` (Google o código de un solo uso por correo) → `/mi-zona` (jugador), `/gestion` (gestor) o `/entrar/elegir` si es las dos cosas. `anon` se queda sin ningún permiso (ni tablas ni funciones): todo exige sesión real.
 - **Lista blanca por correo:** solo entra quien tiene su correo en `jugadores.email` o `gestores.email`. Un correo desconocido nunca crea cuenta: lo bloquea el hook "Before User Created" de Supabase (`public.antes_de_crear_usuario`, **registrado por Iván el 02/10/2026** en el panel, ver `plataforma/LEEME.md`). El registro de alta ("Allow new users to sign up") estaba desactivado desde el 26/09/2026; activado por Iván el 02/10/2026 **después** del hook, como exige D68.

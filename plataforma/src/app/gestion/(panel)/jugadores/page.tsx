@@ -30,7 +30,8 @@ export default async function Jugadores() {
       <h1>Jugadores</h1>
       <div className="aviso aviso-info">
         Solo entra quien tiene aquí su correo (D68). Pon el correo exacto que usa en Google, o cualquiera al que
-        pueda recibir un código. Sin correo, esa persona no puede entrar.
+        pueda recibir un código. Sin correo, esa persona no puede entrar. Con un correo que no es de Gmail
+        ("Entrará con código por correo"), pídele su Gmail si lo tiene: así podrá entrar también con Google.
       </div>
       <section className="tarjeta">
         <h2>Plantilla 2026/27 ({activos.length})</h2>

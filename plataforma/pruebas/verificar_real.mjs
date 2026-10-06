@@ -64,7 +64,11 @@ const sinMarca = (filas) => filas.map(({ actualizado_en, ...r }) => r);   // la 
 let antes = null;   // huellas de los datos reales antes de empezar: al final deben ser identicas
 
 try {
-  const [{ n: nUsuariosAntes }] = await sql`select count(*)::int n from auth.users`;
+  [antes] = await sql`select
+    (select count(*)::int from auth.users) as usuarios,
+    (select count(*)::int from public.gestores) as gestores,
+    (select count(*)::int from public.campanas_ropa) as campanas,
+    (select count(*)::int from public.pedidos_ropa) as pedidos`;
   nJugadoresReales = (await sql`select count(*)::int n from public.jugadores`)[0].n;
   const v0 = await volcar(sql);
   antes = { usuarios: nUsuariosAntes, huellas: Object.fromEntries(TABLAS.map((t) => [t, huella(sinMarca(v0.tablas[t]))])), filas: Object.fromEntries(TABLAS.map((t) => [t, v0.tablas[t].length])) };
@@ -87,7 +91,7 @@ try {
   const authFunciones = (await sql`
     select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
-  ok(JSON.stringify(authFunciones.filter((f) => f !== 'cambiar_correo_jugador')) === JSON.stringify(['anular_pedido', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
+  ok(JSON.stringify(authFunciones) === JSON.stringify(['anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Anonimo sin sesion (HTTPS, clave publica)');
@@ -236,6 +240,17 @@ try {
   const del = await cg.from('liga_partidos').delete().neq('jornada', -1);
   const [{ np2 }] = await sql`select count(*)::int as np2 from public.liga_partidos`;
   ok(!!ins.error && np2 === np, 'ni un gestor puede insertar ni borrar por la API', `${ins.error?.message ?? 'inserto'} / ${del.error?.message ?? 'borro'} / ${np2}`);
+  seccion('Cambio de correo seguro (cambiar_correo_jugador) contra el proyecto real');
+  const emailA2 = `prueba-jugA2-${sufijo}@maccabis.invalid`;
+  const rcg = await cg.rpc('cambiar_correo_jugador', { p_jugador_id: jA.id, p_email: emailA2 });
+  ok(rcg.data?.ok === true && rcg.data?.auth_renombrado === true,
+    'el gestor renombra el correo de un jugador que ya tiene cuenta de auth', JSON.stringify(rcg.data ?? rcg.error));
+  const [authA2] = await sql`select email from auth.users where id = ${idA}`;
+  ok(authA2?.email === emailA2.toLowerCase(), 'su auth.users.email queda renombrado a la vez (misma cuenta, sin huerfanos ni duplicados)', authA2?.email);
+  const zA2 = (await cA.rpc('mi_zona')).data; // la MISMA sesion de antes, sin volver a entrar
+  ok(zA2?.jugador?.nombre_visible === 'Manu', 'con la MISMA sesion de antes, sigue entrando a su zona tras el renombrado', JSON.stringify(zA2));
+  const rNoGestor = await cn.rpc('cambiar_correo_jugador', { p_jugador_id: jB.id, p_email: `otra-${sufijo}@maccabis.invalid` });
+  ok(!!rNoGestor.error, 'quien no es gestor no puede cambiar correos', JSON.stringify(rNoGestor.data ?? rNoGestor.error));
 } catch (e) {
   fallos++;
   console.log(`  FALLO la verificacion se interrumpio: ${String(e.message).split(/\r?\n/)[0]}`);

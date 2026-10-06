@@ -15,6 +15,7 @@
     "db:semilla": "node scripts/db.mjs semilla",
     "db:gestor": "node scripts/db.mjs gestor",
     "db:correos": "node scripts/importar_correos.mjs",
+    "db:correo": "node scripts/db.mjs correo",
     "db:estado": "node scripts/db.mjs estado",
     "pruebas:pila": "node pruebas/pila.mjs",
     "pruebas": "node pruebas/ejecutar.mjs",

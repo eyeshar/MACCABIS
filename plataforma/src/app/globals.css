@@ -112,6 +112,7 @@ img { max-width: 100%; height: auto; display: block; }
 .etiqueta-cerrada { background: var(--tinta); color: #fff; }
 .etiqueta-ok { background: var(--ok-fondo); color: var(--ok); }
 .etiqueta-mal { background: var(--error-fondo); color: var(--error); }
+.etiqueta-aviso { background: var(--amarillo-claro); color: var(--tinta); }
 
 .suave { color: var(--tinta-suave); }
 .pequeno { font-size: 0.9rem; }

@@ -19,9 +19,28 @@ export async function guardarJugador(jugadorId: string, _prev: string | null, fo
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return "Ese correo no tiene forma de correo.";
   const nombre = String(form.get("nombre_visible") ?? "").trim();
   if (!nombre) return "El nombre visible no puede quedar vacío.";
+
+  // El correo se cambia aparte, con una funcion que sincroniza a la vez
+  // jugadores.email y, si ya existia, su cuenta de Supabase Auth (la
+  // renombra, nunca la deja huérfana) y la de gestores si esa persona
+  // también lo es con ese mismo correo.
+  const { data: sincronia, error: errorCorreo } = await supabase.rpc("cambiar_correo_jugador", {
+    p_jugador_id: jugadorId,
+    p_email: email || null,
+  });
+  if (errorCorreo) return `No se pudo guardar: ${errorCorreo.message}`;
+  if (sincronia && sincronia.ok === false) {
+    const mensajes: Record<string, string> = {
+      correo_invalido: "Ese correo no tiene forma de correo.",
+      correo_duplicado_jugadores: "Ese correo ya está en uso por otro jugador.",
+      correo_en_uso_auth: "Ese correo ya tiene una cuenta de acceso distinta en Supabase. Pide a un gestor con acceso a Supabase que lo revise a mano.",
+      no_encontrado: "Ese jugador ya no existe.",
+    };
+    return mensajes[sincronia.error as string] ?? `No se pudo guardar: ${sincronia.error}`;
+  }
+
   const { error } = await supabase.from("jugadores").update({
     nombre_visible: nombre,
-    email: email || null,
     telefono: telefono || null,
     entrena: form.get("entrena") === "on",
     ficha_mda: form.get("ficha_mda") === "on",
@@ -29,10 +48,7 @@ export async function guardarJugador(jugadorId: string, _prev: string | null, fo
     activo: form.get("activo") === "on",
     rol: String(form.get("rol") ?? "jugador"),
   }).eq("id", jugadorId);
-  if (error) {
-    if (error.message.includes("jugadores_email_unico")) return "Ese correo ya está en uso por otro jugador.";
-    return `No se pudo guardar: ${error.message}`;
-  }
+  if (error) return `No se pudo guardar: ${error.message}`;
   revalidatePath("/gestion/jugadores");
   return "Guardado.";
 }

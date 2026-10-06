@@ -1,0 +1,29 @@
+{
+  "temporada": "2026-27",
+  "actualizado": "2026-10-06",
+  "fuente": "Iván (06/10/2026): entreno semanal los miércoles de 20:30 a 22:30; Valdebernardo cerrado por obras; el 07/10/2026 se entrena de 20:00 a 21:00 en la Caja Mágica.",
+  "notas": [
+    "Público: solo fecha, hora y pista. Nada de quién va ni de respuestas (eso vive en SportEasy y, desde el paso 2, en la plataforma).",
+    "Fin de la serie: sin fecha confirmada; se corta en el día de la última jornada del calendario de liga (hasta = null).",
+    "Miércoles sin entreno (Navidad, Semana Santa...): pendientes de Iván. Cuando se sepan, van en excepciones con \"cancelado\": true."
+  ],
+  "pistas": {
+    "valdebernardo": { "nombre": "Valdebernardo (Faustina Valladolid)", "habitual": true, "estado": "en_obras", "nota": "Cerrada por obras: cada miércoles sale «Pista por confirmar (Valdebernardo en obras)» hasta que reabra o se fije otra pista." },
+    "caja-magica": { "nombre": "Caja Mágica", "habitual": false, "estado": "disponible", "nota": "Provisional." }
+  },
+  "series": [
+    {
+      "id": "entreno-semanal",
+      "titulo": "Entrenamiento",
+      "dia_semana": 3,
+      "inicio": "20:30",
+      "fin": "22:30",
+      "pista": "valdebernardo",
+      "desde": "2026-10-07",
+      "hasta": null
+    }
+  ],
+  "excepciones": [
+    { "serie": "entreno-semanal", "fecha": "2026-10-07", "inicio": "20:00", "fin": "21:00", "pista": "caja-magica", "nota": "Cambiado solo esta semana." }
+  ]
+}

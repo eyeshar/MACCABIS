@@ -1,15 +1,16 @@
+import MarcoPublico from "@/components/web/Marco";
+
 export const metadata = { title: "Privacidad · Maccabis" };
 
 export default function Privacidad() {
   return (
-    <>
-      <header className="cabecera">
-        <div className="dentro">
-          <div className="marca">Maccabis</div>
-          <h1>Privacidad</h1>
-        </div>
-      </header>
-      <main className="pagina">
+    <MarcoPublico actual="club">
+      <div className="pagina">
+        <h1 style={{ fontSize: 48, textTransform: "uppercase", marginTop: 24 }}>Privacidad</h1>
+        <section className="tarjeta">
+          <h2>La web pública</h2>
+          <p style={{ margin: 0 }}>La portada, el calendario y las estadísticas solo muestran datos del equipo y estadísticas de juego de los jugadores de Maccabis. El calendario que puedes añadir a tu móvil lleva solo partidos y entrenos, sin ningún dato personal. Esta web no usa cookies de publicidad ni de seguimiento.</p>
+        </section>
         <section className="tarjeta">
           <h2>Qué datos guardamos</h2>
           <p>De cada jugador: nombre, correo (para que puedas entrar) y, si lo das, tu teléfono. Si haces un pedido de ropa: el nombre que va en la prenda, el dorsal, la talla y para quién es (tú o un familiar).</p>
@@ -30,7 +31,7 @@ export default function Privacidad() {
           <h2>Cómo pedir que borremos tus datos</h2>
           <p style={{ margin: 0 }}>Escribe al club (a Iván, Carlos o Edu) y te los borramos.</p>
         </section>
-      </main>
-    </>
+      </div>
+    </MarcoPublico>
   );
 }

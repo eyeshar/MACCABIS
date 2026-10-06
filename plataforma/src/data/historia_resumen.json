@@ -1,0 +1,7 @@
+{
+  "fuente": "Generado por plataforma/scripts/sincronizar_equipacion.mjs desde data/season_*.json y data/historia_club.json. No editar a mano.",
+  "temporadas_con_datos": 12,
+  "partidos_con_estadisticas": 226,
+  "victorias": 137,
+  "jugadores_en_la_historia": 87
+}

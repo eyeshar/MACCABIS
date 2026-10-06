@@ -1,0 +1,1133 @@
+{
+ "temporada": "2026-27",
+ "generado": "2026-10-06",
+ "clasificacion_estado": "Clasificación calculada con las Bases del 47 JDM a partir de las hojas de estadística; pendiente de contrastar con la oficial (las incomparecencias restan puntos y no generan hoja, D29).",
+ "puntuacion": {
+  "victoria": 2,
+  "derrota": 1,
+  "incomparecencia": "los puntos del equipo que no se presenta se toman de la clasificación oficial (D74)",
+  "perder_por_sancion": "20-0",
+  "fuente": "Bases reguladoras de los 47 JDM, deportes de equipo, 2.10.1 Baloncesto"
+ },
+ "fuente": "Hojas de estadística de la app Afición FBM (resultado = suma de los puntos de cada equipo). Sólo datos por equipo.",
+ "grupos": {
+  "G1": {
+   "nombre": "JDM MOR DOM MAÑ BC SEN MAS G1",
+   "nuestro": "MDA",
+   "jornadas_cargadas": [
+    1
+   ],
+   "clasificacion": [
+    {
+     "pos": 1,
+     "id": "mda",
+     "equipo": "MdA",
+     "nuestro": true,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 62,
+     "pc": 14,
+     "dif": 48,
+     "pts": 2
+    },
+    {
+     "pos": 2,
+     "id": "chavalitros",
+     "equipo": "Chavalitros",
+     "nuestro": false,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 56,
+     "pc": 16,
+     "dif": 40,
+     "pts": 2
+    },
+    {
+     "pos": 3,
+     "id": "tropicaleros",
+     "equipo": "Tropicaleros",
+     "nuestro": false,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 59,
+     "pc": 23,
+     "dif": 36,
+     "pts": 2
+    },
+    {
+     "pos": 4,
+     "id": "nabuco-td",
+     "equipo": "Nabuco TD",
+     "nuestro": false,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 49,
+     "pc": 38,
+     "dif": 11,
+     "pts": 2
+    },
+    {
+     "pos": 5,
+     "id": "litros-de-mahou",
+     "equipo": "Litros de Mahou",
+     "nuestro": false,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 49,
+     "pc": 44,
+     "dif": 5,
+     "pts": 2
+    },
+    {
+     "pos": 6,
+     "id": "los-khinkis-rusos",
+     "equipo": "Los Khinkis Rusos",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 44,
+     "pc": 49,
+     "dif": -5,
+     "pts": 1
+    },
+    {
+     "pos": 7,
+     "id": "chupitimanguis",
+     "equipo": "Chupitimanguis",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 38,
+     "pc": 49,
+     "dif": -11,
+     "pts": 1
+    },
+    {
+     "pos": 8,
+     "id": "wild-boys",
+     "equipo": "Wild Boys",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 23,
+     "pc": 59,
+     "dif": -36,
+     "pts": 1
+    },
+    {
+     "pos": 9,
+     "id": "vallekas-basket",
+     "equipo": "Vallekas Basket",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 16,
+     "pc": 56,
+     "dif": -40,
+     "pts": 1
+    },
+    {
+     "pos": 10,
+     "id": "enfermos-del-aro",
+     "equipo": "Enfermos del Aro",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 14,
+     "pc": 62,
+     "dif": -48,
+     "pts": 1
+    },
+    {
+     "pos": 11,
+     "id": "rif",
+     "equipo": "RIF",
+     "nuestro": false,
+     "pj": 0,
+     "g": 0,
+     "p": 0,
+     "pf": 0,
+     "pc": 0,
+     "dif": 0,
+     "pts": 0
+    }
+   ],
+   "resultados": [
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "Chavalitros",
+     "visitante": "Vallekas Basket",
+     "pl": 56,
+     "pv": 16
+    },
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "Chupitimanguis",
+     "visitante": "Nabuco TD",
+     "pl": 38,
+     "pv": 49
+    },
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "Enfermos del Aro",
+     "visitante": "MdA",
+     "pl": 14,
+     "pv": 62
+    },
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "Litros de Mahou",
+     "visitante": "Los Khinkis Rusos",
+     "pl": 49,
+     "pv": 44
+    },
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "Tropicaleros",
+     "visitante": "Wild Boys",
+     "pl": 59,
+     "pv": 23
+    }
+   ],
+   "descansan": {
+    "1": [
+     "RIF"
+    ]
+   },
+   "equipos": {
+    "mda": {
+     "nombre": "MdA",
+     "nuestro": true,
+     "id": "mda",
+     "media_pf": 62,
+     "media_pc": 14,
+     "media_dif": 48,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 62,
+      "pc": 14,
+      "media_pf": 62,
+      "media_pc": 14
+     }
+    },
+    "chavalitros": {
+     "nombre": "Chavalitros",
+     "nuestro": false,
+     "id": "chavalitros",
+     "media_pf": 56,
+     "media_pc": 16,
+     "media_dif": 40,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 56,
+      "pc": 16,
+      "media_pf": 56,
+      "media_pc": 16
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "tropicaleros": {
+     "nombre": "Tropicaleros",
+     "nuestro": false,
+     "id": "tropicaleros",
+     "media_pf": 59,
+     "media_pc": 23,
+     "media_dif": 36,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 59,
+      "pc": 23,
+      "media_pf": 59,
+      "media_pc": 23
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "nabuco-td": {
+     "nombre": "Nabuco TD",
+     "nuestro": false,
+     "id": "nabuco-td",
+     "media_pf": 49,
+     "media_pc": 38,
+     "media_dif": 11,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 49,
+      "pc": 38,
+      "media_pf": 49,
+      "media_pc": 38
+     }
+    },
+    "litros-de-mahou": {
+     "nombre": "Litros de Mahou",
+     "nuestro": false,
+     "id": "litros-de-mahou",
+     "media_pf": 49,
+     "media_pc": 44,
+     "media_dif": 5,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 49,
+      "pc": 44,
+      "media_pf": 49,
+      "media_pc": 44
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "los-khinkis-rusos": {
+     "nombre": "Los Khinkis Rusos",
+     "nuestro": false,
+     "id": "los-khinkis-rusos",
+     "media_pf": 44,
+     "media_pc": 49,
+     "media_dif": -5,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 44,
+      "pc": 49,
+      "media_pf": 44,
+      "media_pc": 49
+     }
+    },
+    "chupitimanguis": {
+     "nombre": "Chupitimanguis",
+     "nuestro": false,
+     "id": "chupitimanguis",
+     "media_pf": 38,
+     "media_pc": 49,
+     "media_dif": -11,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 38,
+      "pc": 49,
+      "media_pf": 38,
+      "media_pc": 49
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "wild-boys": {
+     "nombre": "Wild Boys",
+     "nuestro": false,
+     "id": "wild-boys",
+     "media_pf": 23,
+     "media_pc": 59,
+     "media_dif": -36,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 23,
+      "pc": 59,
+      "media_pf": 23,
+      "media_pc": 59
+     }
+    },
+    "vallekas-basket": {
+     "nombre": "Vallekas Basket",
+     "nuestro": false,
+     "id": "vallekas-basket",
+     "media_pf": 16,
+     "media_pc": 56,
+     "media_dif": -40,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 16,
+      "pc": 56,
+      "media_pf": 16,
+      "media_pc": 56
+     }
+    },
+    "enfermos-del-aro": {
+     "nombre": "Enfermos del Aro",
+     "nuestro": false,
+     "id": "enfermos-del-aro",
+     "media_pf": 14,
+     "media_pc": 62,
+     "media_dif": -48,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 14,
+      "pc": 62,
+      "media_pf": 14,
+      "media_pc": 62
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "rif": {
+     "nombre": "RIF",
+     "nuestro": false,
+     "id": "rif",
+     "media_pf": null,
+     "media_pc": null,
+     "media_dif": null,
+     "ultimos": [],
+     "racha": null,
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    }
+   }
+  },
+  "G2": {
+   "nombre": "JDM MOR DOM MAÑ BC SEN MAS G2",
+   "nuestro": "MDL",
+   "jornadas_cargadas": [
+    1
+   ],
+   "clasificacion": [
+    {
+     "pos": 1,
+     "id": "la-cancha-roja",
+     "equipo": "La Cancha Roja",
+     "nuestro": false,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 48,
+     "pc": 16,
+     "dif": 32,
+     "pts": 2
+    },
+    {
+     "pos": 2,
+     "id": "castanazo",
+     "equipo": "Castañazo",
+     "nuestro": false,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 66,
+     "pc": 42,
+     "dif": 24,
+     "pts": 2
+    },
+    {
+     "pos": 3,
+     "id": "mdl",
+     "equipo": "MdL",
+     "nuestro": true,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 59,
+     "pc": 38,
+     "dif": 21,
+     "pts": 2
+    },
+    {
+     "pos": 4,
+     "id": "suanzes-motor",
+     "equipo": "Suanzes Motor",
+     "nuestro": false,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 48,
+     "pc": 32,
+     "dif": 16,
+     "pts": 2
+    },
+    {
+     "pos": 5,
+     "id": "trascendedores-c-b",
+     "equipo": "Trascendedores C.B.",
+     "nuestro": false,
+     "pj": 1,
+     "g": 1,
+     "p": 0,
+     "pf": 51,
+     "pc": 40,
+     "dif": 11,
+     "pts": 2
+    },
+    {
+     "pos": 6,
+     "id": "craps",
+     "equipo": "Craps",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 40,
+     "pc": 51,
+     "dif": -11,
+     "pts": 1
+    },
+    {
+     "pos": 7,
+     "id": "f-t-floppers",
+     "equipo": "F.T. Floppers",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 32,
+     "pc": 48,
+     "dif": -16,
+     "pts": 1
+    },
+    {
+     "pos": 8,
+     "id": "mejorada-2012-c-b",
+     "equipo": "Mejorada 2012 C.B.",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 38,
+     "pc": 59,
+     "dif": -21,
+     "pts": 1
+    },
+    {
+     "pos": 9,
+     "id": "vanner",
+     "equipo": "Vanner",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 42,
+     "pc": 66,
+     "dif": -24,
+     "pts": 1
+    },
+    {
+     "pos": 10,
+     "id": "quinto-tiempo",
+     "equipo": "Quinto Tiempo",
+     "nuestro": false,
+     "pj": 1,
+     "g": 0,
+     "p": 1,
+     "pf": 16,
+     "pc": 48,
+     "dif": -32,
+     "pts": 1
+    },
+    {
+     "pos": 11,
+     "id": "28500",
+     "equipo": "28500",
+     "nuestro": false,
+     "pj": 0,
+     "g": 0,
+     "p": 0,
+     "pf": 0,
+     "pc": 0,
+     "dif": 0,
+     "pts": 0
+    }
+   ],
+   "resultados": [
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "Castañazo",
+     "visitante": "Vanner",
+     "pl": 66,
+     "pv": 42
+    },
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "Craps",
+     "visitante": "Trascendedores C.B.",
+     "pl": 40,
+     "pv": 51
+    },
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "F.T. Floppers",
+     "visitante": "Suanzes Motor",
+     "pl": 32,
+     "pv": 48
+    },
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "La Cancha Roja",
+     "visitante": "Quinto Tiempo",
+     "pl": 48,
+     "pv": 16
+    },
+    {
+     "jornada": 1,
+     "fecha": "2026-10-04",
+     "local": "MdL",
+     "visitante": "Mejorada 2012 C.B.",
+     "pl": 59,
+     "pv": 38
+    }
+   ],
+   "descansan": {
+    "1": [
+     "28500"
+    ]
+   },
+   "equipos": {
+    "28500": {
+     "nombre": "28500",
+     "nuestro": false,
+     "id": "28500",
+     "media_pf": null,
+     "media_pc": null,
+     "media_dif": null,
+     "ultimos": [],
+     "racha": null,
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "la-cancha-roja": {
+     "nombre": "La Cancha Roja",
+     "nuestro": false,
+     "id": "la-cancha-roja",
+     "media_pf": 48,
+     "media_pc": 16,
+     "media_dif": 32,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 48,
+      "pc": 16,
+      "media_pf": 48,
+      "media_pc": 16
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "castanazo": {
+     "nombre": "Castañazo",
+     "nuestro": false,
+     "id": "castanazo",
+     "media_pf": 66,
+     "media_pc": 42,
+     "media_dif": 24,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 66,
+      "pc": 42,
+      "media_pf": 66,
+      "media_pc": 42
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "mdl": {
+     "nombre": "MdL",
+     "nuestro": true,
+     "id": "mdl",
+     "media_pf": 59,
+     "media_pc": 38,
+     "media_dif": 21,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 59,
+      "pc": 38,
+      "media_pf": 59,
+      "media_pc": 38
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "suanzes-motor": {
+     "nombre": "Suanzes Motor",
+     "nuestro": false,
+     "id": "suanzes-motor",
+     "media_pf": 48,
+     "media_pc": 32,
+     "media_dif": 16,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 48,
+      "pc": 32,
+      "media_pf": 48,
+      "media_pc": 32
+     }
+    },
+    "trascendedores-c-b": {
+     "nombre": "Trascendedores C.B.",
+     "nuestro": false,
+     "id": "trascendedores-c-b",
+     "media_pf": 51,
+     "media_pc": 40,
+     "media_dif": 11,
+     "ultimos": [
+      "G"
+     ],
+     "racha": {
+      "tipo": "G",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 1,
+      "p": 0,
+      "pf": 51,
+      "pc": 40,
+      "media_pf": 51,
+      "media_pc": 40
+     }
+    },
+    "craps": {
+     "nombre": "Craps",
+     "nuestro": false,
+     "id": "craps",
+     "media_pf": 40,
+     "media_pc": 51,
+     "media_dif": -11,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 40,
+      "pc": 51,
+      "media_pf": 40,
+      "media_pc": 51
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "f-t-floppers": {
+     "nombre": "F.T. Floppers",
+     "nuestro": false,
+     "id": "f-t-floppers",
+     "media_pf": 32,
+     "media_pc": 48,
+     "media_dif": -16,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 32,
+      "pc": 48,
+      "media_pf": 32,
+      "media_pc": 48
+     },
+     "fuera": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     }
+    },
+    "mejorada-2012-c-b": {
+     "nombre": "Mejorada 2012 C.B.",
+     "nuestro": false,
+     "id": "mejorada-2012-c-b",
+     "media_pf": 38,
+     "media_pc": 59,
+     "media_dif": -21,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 38,
+      "pc": 59,
+      "media_pf": 38,
+      "media_pc": 59
+     }
+    },
+    "vanner": {
+     "nombre": "Vanner",
+     "nuestro": false,
+     "id": "vanner",
+     "media_pf": 42,
+     "media_pc": 66,
+     "media_dif": -24,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 42,
+      "pc": 66,
+      "media_pf": 42,
+      "media_pc": 66
+     }
+    },
+    "quinto-tiempo": {
+     "nombre": "Quinto Tiempo",
+     "nuestro": false,
+     "id": "quinto-tiempo",
+     "media_pf": 16,
+     "media_pc": 48,
+     "media_dif": -32,
+     "ultimos": [
+      "P"
+     ],
+     "racha": {
+      "tipo": "P",
+      "n": 1
+     },
+     "casa": {
+      "pj": 0,
+      "g": 0,
+      "p": 0,
+      "pf": 0,
+      "pc": 0,
+      "media_pf": null,
+      "media_pc": null
+     },
+     "fuera": {
+      "pj": 1,
+      "g": 0,
+      "p": 1,
+      "pf": 16,
+      "pc": 48,
+      "media_pf": 16,
+      "media_pc": 48
+     }
+    }
+   }
+  }
+ }
+}

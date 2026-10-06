@@ -176,8 +176,8 @@ try {
   // Entra por la UI con "codigo por correo" (Google no se puede probar sin una cuenta real).
   async function entrarPorCodigo(p, email) {
     await p.goto(`${APP}/entrar`);
-    await p.getByLabel('Recibir código por correo').fill(email);
-    await p.getByRole('button', { name: 'Enviarme un código' }).click();
+    await p.getByLabel('Tu correo').fill(email);
+    await p.getByRole('button', { name: 'Enviarme el código' }).click();
     await p.getByText('Código enviado a').waitFor({ timeout: 10000 });
     const codigo = await codigoDe(email);
     await p.getByLabel('Código de 6 dígitos').fill(codigo ?? '000000');
@@ -190,7 +190,8 @@ try {
   ok((h.get('x-robots-tag') || '').includes('noindex'), 'cabecera X-Robots-Tag: noindex');
   await pAnon.goto(`${APP}/`);
   const portada = await pAnon.textContent('body');
-  ok(!portada.includes('Calahorro') && !portada.includes(A.nombre_visible), 'la portada no muestra ningun dato de jugadores');
+  // Portada publica (D76): puede mostrar estadisticas de juego de Maccabis (ya publicas), nunca correos ni datos de la base.
+  ok(!/[\w.+-]+@[\w-]+\.[\w.]+/.test(portada) && !portada.includes(A.email), 'la portada no muestra ningun correo ni dato de la base de datos');
 
   seccion('Anonimo sin sesion');
   await pAnon.goto(`${APP}/gestion`);
@@ -204,8 +205,8 @@ try {
 
   seccion('Entrar con un correo que no está en la lista blanca');
   await pAnon.goto(`${APP}/entrar`);
-  await pAnon.getByLabel('Recibir código por correo').fill('nadie@fuera.local');
-  await pAnon.getByRole('button', { name: 'Enviarme un código' }).click();
+  await pAnon.getByLabel('Tu correo').fill('nadie@fuera.local');
+  await pAnon.getByRole('button', { name: 'Enviarme el código' }).click();
   await pAnon.getByText('No hemos podido mandar el código').waitFor({ timeout: 5000 }).catch(() => {});
   ok(await pAnon.getByText('No hemos podido mandar el código').isVisible(),
     'correo fuera de la lista blanca: aviso generico, sin confirmar que no esta dado de alta');
@@ -220,8 +221,8 @@ try {
 
   seccion('Código incorrecto');
   await pAnon.goto(`${APP}/entrar`);
-  await pAnon.getByLabel('Recibir código por correo').fill(C.email);
-  await pAnon.getByRole('button', { name: 'Enviarme un código' }).click();
+  await pAnon.getByLabel('Tu correo').fill(C.email);
+  await pAnon.getByRole('button', { name: 'Enviarme el código' }).click();
   await pAnon.getByText('Código enviado a').waitFor({ timeout: 10000 });
   await pAnon.getByLabel('Código de 6 dígitos').fill('000000');
   await pAnon.getByRole('button', { name: 'Entrar', exact: true }).click();
@@ -232,7 +233,7 @@ try {
   seccion('Gestor: entrar y abrir la campana');
   await entrarPorCodigo(pG, gestorEmail);
   await pG.waitForURL(`${APP}/gestion`);
-  ok(await pG.getByRole('heading', { name: 'Panel de gestión' }).isVisible(), 'el gestor entra al panel');
+  ok(await pG.getByText('Panel de gestión', { exact: false }).first().isVisible() && await pG.getByRole('heading', { level: 1 }).isVisible(), 'el gestor entra al panel');
   await pG.goto(`${APP}/gestion/ropa`);
   ok(await pA.getByText('Cerrado', { exact: true }).isVisible(), 'con la campana cerrada, el jugador ve "Cerrado" (antes de abrirla)');
   await pG.getByLabel('Estado').selectOption('abierta');

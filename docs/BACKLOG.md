@@ -39,7 +39,7 @@
 6. **Migración del dashboard** a la plataforma.
 7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
    - [x] **Liga 26/27 (06/10/2026, D73/D74):** pipeline, `data/liga_2026-27.json`, pestaña pública (en `main`), tablas privadas y pantallas de gestión Scouting rivales y Liga consolidada (rama `feat/plataforma-v0`), migraciones aplicadas al proyecto real y J1 cargada.
-   - [ ] **Iván: mergear `feat/plataforma-v0` a `main`** cuando dé el OK a las pantallas de gestión (llevan además el Scouting/Liga en producción de Vercel). La rama ya incluye `feat/correo-seguro-jugadores` (migración `20261003090000`, ya aplicada en real).
+   - [x] **`feat/plataforma-v0` mergeada a `main`** (06/10/2026, `ae4f4cc`) y verificada en producción (Scouting rivales y Liga consolidada, solo gestores).
    - [ ] **Contrastar la clasificación calculada con la oficial** de Deportes/web (jueves 20:00) y, si hay incomparecencias, anotar sus puntos oficiales (D74).
    - [ ] Rutina A: bajar cada lunes las hojas de los dos grupos (`docs/RUTINAS/A_ACTAS.md`); la J2 es la primera vez.
 8. **Tesorería** (solo registro de cuentas, D52).

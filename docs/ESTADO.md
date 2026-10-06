@@ -5,6 +5,7 @@
 _Última actualización: 05/10/2026 (tarde: D72, la hoja manda sobre SportEasy en partidos de liga) — **Jornada 1 de 2026/27 procesada** (MdL 59–38 Mejorada 2012; Enfermos del Aro 14–62 MdA), publicada como **parcial pendiente de acta** (excepción puntual a D66, ver D71); 2026/27 ya es la temporada por defecto de la web. Antes (02/10/2026): **`feat/plataforma-v0` mergeada a `main`** (merge `--no-ff` `ad972df`): login único con Google/código por correo (D68), rutina A por Enlace Móvil de Windows con el S22 Ultra de Iván (D70, matiza D69), calendario oficial 26/27 en `data/calendario_2026-27.json`. **La plataforma (`plataforma/`) ya vive en `main` y en producción**; la web de GitHub Pages (estadísticas) no cambia._
 
 ## Liga 26/27: resultados y clasificación de los dos grupos (06/10/2026, D73 y D74)
+- **Pulido de la liga e higiene de ramas (06/10/2026, tarde):** `feat/correo-seguro-jugadores` unida en `feat/plataforma-v0` (la migración `20261003090000` ya está en el repo; **no se reaplicó** en real). Las 6 migraciones del repo coinciden exactamente con las aplicadas en el proyecto real. Liga consolidada: el ranking de equipos a 375 px muestra solo #, Equipo+grupo, G-P, %V y Dif/p sin scroll (el resto, en escritorio); líderes de tiros libres ordenados por anotados, porcentaje, menos intentados y nombre (casos de control OK, `npm run pruebas:orden`); todas las listas de líderes con desempate determinista (`src/lib/ordenLideres.ts`); el texto "N personas de los M equipos" usa los equipos con partidos jugados (20), el mismo recuento que el ranking. Pruebas en verde: `pruebas` 107/107, `pruebas:liga`, `pruebas:pantallas`, `pruebas:orden`, `test:regresion`, `test:liga` y `verificar_real` (75 OK). **Sigue sin mergear a `main`**: espera el "OK vista previa" de Iván.
 - **Datos de la J1:** las 8 hojas de partidos ajenos (4 de G1 y 4 de G2) más las 2 nuestras = los 10 partidos. Todas cuadran (suma por jugador = total del equipo; 2P×2 + 3P×3 + TL = puntos). Descansan **RIF** (G1) y **28500** (G2).
 - **Web pública (`main`, ya publicada):** pestaña **Liga 26/27** (selector G1/G2, clasificación, resultados por jornada, ficha por equipo con enlace a su ficha de Rivales 26/27). Solo datos por equipo, en `data/liga_2026-27.json`, marcada "calculada; pendiente de contrastar con la oficial". Nombres de equipo en formato Título, también en `rivales_2026-27_web.json`. Comprobada en local: sin errores de JS, sin desbordamiento a 375 px y escritorio, `test:regresion` y `test:liga` OK.
 - **Incomparecencias (D74):** no se inventa la penalización. Se anotan en `temporadas.json` (`liga.incomparecencias`), el partido se marca, y los puntos del equipo que no se presenta salen de la clasificación oficial de Deportes/web (rutina B del jueves, `liga.puntos_oficiales`); mientras no lleguen, "pendiente de la oficial".
@@ -18,6 +19,61 @@ _Última actualización: 05/10/2026 (tarde: D72, la hoja manda sobre SportEasy e
 - **Pipeline:** las hojas de la FBM ya no llevan jornada ni equipo en el nombre (`estadisticaPartido_<fechaDescarga>.xlsx`, con sufijos " 1", "_1", " (1)"). Equipo, rival y local/visitante salen de la cabecera "Estadísticas - X vs Y - ..." y se casan con el calendario; la copia a `fuentes_fbm/2026-27/hojas/` se renombra `estadisticaPartido_J01_<EQ>_vs_<rival>_<md5>.xlsx` (copia segura, D41). Nombres con espacios sobrantes se recortan.
 - **Asistencia 26/27 integrada** (export de SportEasy del 05/10/2026, copiado a `fuentes_fbm/2026-27/asistencia/`): cuentan "Partido", "Campeonato" (liga) y "Entrenamiento"; amistosos/torneos no, y los entrenos de septiembre sí. Los dos "Campeonato" del 04/10 se asignan por cruce con las hojas: el 1.º = **MdL** (9 de 9 coinciden), el 2.º = **MdA** (8 de 9). **Regla D72:** en partidos de liga manda la hoja sobre SportEasy. Corregido en nuestros datos: Jon Esteban asistió al MdA (SportEasy decía "No convocado") y Alonso Romero no (decía "A tiempo"); quedan Jon 2 partidos y Alonso 1 asistido.
 - **Nombres de SportEasy resueltos:** "Edimil Feliz Gomez" → `feliz-gomez-edimil` y "Luis Gomez Pradal" → `gomez-pradal-luis` (ninguno está en la plantilla 26/27, así que no salen en la web). Barreiro, Pablo Ortega e Iván Rodríguez siguen fuera.
+
+## Cambio de correo seguro, aviso de "código por correo" y diagnóstico de acceso (03/10/2026)
+> Rama `feat/correo-seguro-jugadores`, **sin mergear a `main`** (instrucción explícita de Iván). La migración y los
+> dos cambios de correo de más abajo **sí están aplicados en el proyecto real** (D53, sin pedidos que proteger),
+> independientemente del merge.
+
+- **El fallo de origen:** en Gestión → Jugadores, cambiar el correo de un jugador solo tocaba `jugadores.email`.
+  Si esa persona ya tenía cuenta de Supabase Auth con el correo viejo, quedaba huérfana (nadie la referenciaba
+  ya) y el correo nuevo, sin vincular hasta su primer login. Corregido con una función nueva en la base de datos.
+- **`public.cambiar_correo_jugador(jugador_id, correo)`** (migración
+  `plataforma/supabase/migrations/20261003090000_cambiar_correo_jugador_sincroniza_auth.sql`): actualiza
+  `jugadores.email` y, si ya existía una cuenta de Auth con el correo viejo, la **renombra** al correo nuevo (misma
+  cuenta: Google la enlaza por el "sub" del usuario, no por el correo, así que renombrar no rompe esa sesión;
+  comprobado contra el proyecto real). Si el correo nuevo ya pertenece a una cuenta de Auth de **otra** persona,
+  rechaza el cambio (`correo_en_uso_auth`) en vez de fusionar dos identidades a lo tonto. Si esa persona es además
+  gestora con ese mismo correo (caso Carlos o Edu), actualiza también `gestores.email`. Se usa desde la web
+  (`guardarJugador`, solo gestores) y desde `npm run db:correo -- <person_id> <correo_nuevo>` (scripts locales,
+  conexión directa sin sesión: mismo modelo de confianza que `db:gestor`).
+- **Aplicados en el proyecto real (confirmado por Iván, 03/10/2026):**
+  `galan-domingo-guillermo` → `guillermo.galan.domingo@gmail.com`, `lopez-lucero-alfredo-david` →
+  `cordobesbasico@gmail.com` y `teruel-fernandez-tomas` → `tomasteruel5@gmail.com`. Verificado: los correos viejos
+  ya no pasan `correo_permitido`, los nuevos sí; los 28 jugadores siguen con correo (`npm run db:estado`); ninguno
+  tenía cuenta de Auth todavía (nunca habían entrado), así que no hay nada que renombrar — se creará sola en su
+  primer login, como siempre.
+- **Gestión → Jugadores marca en amarillo "Entrará con código por correo"** junto al correo de quien no es de
+  Gmail, para que Iván sepa a quién pedirle su Gmail. **Pendientes de dar su Gmail (si lo tienen):** Manuel
+  Calahorro Sánchez (su Gmail de jugadores probablemente no es el que usa de verdad en Google), Carlos Barreiro
+  (Hotmail), Víctor Pérez Núñez (Hotmail), Fernando Tejeiro (Hotmail), Edwin Villa Guerrero
+  (Hotmail) y Eduardo Martín-Ortega (correo de empresa).
+- **Diagnóstico de los que no podían entrar (David, Guillermo, Manu), con evidencia, no por suposición:**
+  - `auth.audit_log_entries` (donde GoTrue registraría el detalle de cada intento) tiene **0 filas** en el proyecto
+    real: Supabase hospedado no vuelca ahí el log de cada intento; vive en su propio panel
+    (**Authentication → Logs**), que no es accesible por SQL ni por esta sesión. **No puedo darte el texto exacto
+    del error de cada intento** sin que lo mires tú ahí; si quieres que lo haga por API hace falta un token de
+    gestión de Supabase (Personal Access Token), que no tengo.
+  - Lo que sí confirma la base de datos: **ninguno de los correos de David, Guillermo ni los otros 7 ha tenido
+    nunca una fila en `auth.users`** (antes del cambio de hoy): ningún intento llegó a completarse. Es coherente
+    con que "Entrar con Google" exige una cuenta de Google con **ese correo exacto**, y el suyo era Yahoo/Hotmail;
+    lo normal es que no exista tal cuenta de Google, así que la pantalla de Google nunca llega a ofrecer ese
+    correo como opción (no es un rechazo del hook: ni siquiera arranca con el correo correcto). La vía que sí
+    debería funcionarles siempre es "Recibir código por correo" a su dirección real.
+  - `auth.flow_state` (intentos de "Entrar con Google" sin terminar) tiene 2 filas del 02/10/2026 sin usuario
+    vinculado; coinciden con el día en que Iván probó el login real, no se puede atribuir a una persona concreta.
+  - **SMTP de los códigos:** hoy se envían con el servicio compartido por defecto de Supabase. **No he dado por
+    supuesto su límite exacto** (no es consultable por SQL ni sin entrar al panel): Iván debe mirar
+    **Authentication → Rate Limits** para ver la cifra real de su proyecto. Lo que sí es comportamiento documentado
+    de Supabase en general: ese servicio compartido está pensado solo para pruebas (bajo volumen, sin garantía de
+    entrega a bandejas externas). Guía para poner SMTP propio con Gmail del club: `plataforma/LEEME.md`, apartado
+    "7. Correo propio para los códigos".
+- **Pruebas:** `npm run pruebas` (pila local): **107/107 OK**, con un bloque nuevo para
+  `cambiar_correo_jugador` (renombrado de una cuenta existente, sincronía con gestores, rechazo de correo ya usado
+  por otra cuenta, solo gestores desde la web, permitido sin sesión desde un script local) y el aviso de "Entrará
+  con código". `node pruebas/verificar_real.mjs`: **TODO OK**, incluida la misma función contra el proyecto real
+  (correo renombrado con la sesión de gestor real, la sesión del jugador afectado sigue entrando tras el cambio),
+  con limpieza completa (estado final igual al de antes de empezar, no a cifras fijas: el club ya tiene uso real).
 
 ## Login único: Google o código por correo, con lista blanca (02/10/2026, D68)
 - **Sustituye a los enlaces personales `/j/<token>` (D45, derogada).** Ahora: `/entrar` (Google o código de un solo uso por correo) → `/mi-zona` (jugador), `/gestion` (gestor) o `/entrar/elegir` si es las dos cosas. `anon` se queda sin ningún permiso (ni tablas ni funciones): todo exige sesión real.

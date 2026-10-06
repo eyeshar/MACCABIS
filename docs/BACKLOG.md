@@ -23,6 +23,11 @@
    - [ ] Dar de alta como gestores a Carlos y Edu por correo (`npm run db:gestor`): se vinculan solos la primera vez que entren.
    - [ ] **Abrir la campaña "Ropa 2026/27"** desde `/gestion`, fecha límite **domingo 18/10/2026** (decidido por Iván, 02/10/2026). La abre Claude (navegador) tras el merge, no Code; hasta entonces sigue cerrada.
    - [x] **Merge a `main`** (merge `--no-ff` `ad972df`, 02/10/2026) — verificado antes y después: `npm run pruebas` 93/93 OK, `node pruebas/verificar_real.mjs` 43/43 OK, en los dos casos. Empujado a origin.
+   - [x] **Cambio de correo seguro** (03/10/2026, rama `feat/correo-seguro-jugadores`, sin mergear): `public.cambiar_correo_jugador` sincroniza `jugadores.email` con su cuenta de Auth (la renombra si ya existía, sin huérfanos ni duplicados) y con `gestores.email` si esa persona también es gestora. `npm run db:correo -- <person_id> <correo_nuevo>` para hacerlo desde local. Aplicados en real: Guillermo Galán Domingo → Gmail, David López Lucero → Gmail, Tomás Teruel → Gmail (confirmados por Iván el 03/10/2026). Marca "Entrará con código por correo" en Gestión → Jugadores para quien no tiene Gmail. `npm run pruebas` 107/107 OK, `node pruebas/verificar_real.mjs` TODO OK. Detalle en `docs/ESTADO.md`.
+   - [ ] **Pendiente de Iván:** pedir su Gmail (si lo tienen) a Manuel Calahorro Sánchez, Carlos Barreiro, Víctor Pérez Núñez, Fernando Tejeiro, Edwin Villa Guerrero y Eduardo Martín-Ortega — hoy entrarían por código, no por Google.
+   - [ ] **Pendiente de Iván:** configurar SMTP propio (Gmail del club) para los códigos por correo — guía en `plataforma/LEEME.md`, apartado 7. Mientras tanto se manda con el servicio compartido de Supabase, pensado solo para pruebas.
+   - [ ] **Pendiente de Iván:** si quiere el texto exacto de cada intento de acceso fallido, mirar **Authentication → Logs** en el panel de Supabase (no es accesible por SQL; Claude no tiene acceso).
+   - [ ] **Pendiente de Iván:** decidir si la rama `feat/correo-seguro-jugadores` se mergea a `main` (el código ya está aplicado en el proyecto real independientemente del merge).
 2. **Rutinas semanales, Fase 1 "Aprendizaje" (D63, `docs/PLAN_TRABAJO_2026-27.md`):**
    - [ ] **Lun 5/10:** aprendizaje de la rutina A con las actas de la J1 (Enlace Móvil de Windows + control del ordenador, D70 matiza D69; Iván solo tiene el móvil encendido, con wifi y cerca del PC).
    - [ ] **Jue 8/10, 20:15:** sesión de aprendizaje de la rutina B (calendario, por navegador) con Iván.
@@ -34,7 +39,7 @@
 6. **Migración del dashboard** a la plataforma.
 7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
    - [x] **Liga 26/27 (06/10/2026, D73/D74):** pipeline, `data/liga_2026-27.json`, pestaña pública (en `main`), tablas privadas y pantallas de gestión Scouting rivales y Liga consolidada (rama `feat/plataforma-v0`), migraciones aplicadas al proyecto real y J1 cargada.
-   - [ ] **Iván: mergear `feat/plataforma-v0` a `main`** cuando dé el OK a las pantallas de gestión (llevan además el Scouting/Liga en producción de Vercel). Ojo: el proyecto real tiene aplicada la migración `20261003090000` (cambio de correo) que solo está en `feat/correo-seguro-jugadores`.
+   - [ ] **Iván: mergear `feat/plataforma-v0` a `main`** cuando dé el OK a las pantallas de gestión (llevan además el Scouting/Liga en producción de Vercel). La rama ya incluye `feat/correo-seguro-jugadores` (migración `20261003090000`, ya aplicada en real).
    - [ ] **Contrastar la clasificación calculada con la oficial** de Deportes/web (jueves 20:00) y, si hay incomparecencias, anotar sus puntos oficiales (D74).
    - [ ] Rutina A: bajar cada lunes las hojas de los dos grupos (`docs/RUTINAS/A_ACTAS.md`); la J2 es la primera vez.
 8. **Tesorería** (solo registro de cuentas, D52).

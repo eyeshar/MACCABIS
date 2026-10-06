@@ -18,9 +18,13 @@ plataforma/
   src/lib/                  prendas y tallas, Excel, mensajes, sesión, clientes de Supabase
   supabase/migrations/      esquema de la base de datos (tablas, RLS, funciones, lista blanca)
   scripts/db.mjs            migrar, semilla (plantilla 26/27 + campaña), reservar/vincular gestores
+  scripts/cargar_liga.mjs   npm run db:liga: liga de todos los equipos (por jugador, calendario, clasificacion) a Supabase (D73)
+  scripts/backup_public.mjs npm run db:backup: copia de los datos de public a privado/backups/ (fuera de git)
   scripts/importar_correos.mjs   npm run db:correos: correos de SportEasy -> jugadores.email
   scripts/extraer_imagenes_ropa.py   imágenes de las prendas desde el PDF de VIVE (privado/)
   pruebas/                  pruebas de extremo a extremo con Postgres y PostgREST reales (sin Docker)
+                            npm run pruebas:liga (RLS de la liga), pruebas:pantallas (Scouting y Liga consolidada),
+                            node pruebas/restaurar_backup.mjs <copia> (prueba que una copia se restaura)
   public/ropa/              imágenes de las prendas y tablas de tallas (sí se publican)
 ```
 
@@ -102,6 +106,34 @@ adivina. **El fichero no entra en git**: pásalo desde Descargas o `privado/`.
 Entra en `/entrar` con tu Google o con un código a tu correo, y comprueba que te lleva a `/gestion`. Abre la
 campaña (Estado: Abierta, fecha límite), mira "Jugadores" (los correos que importaste), y haz un pedido de prueba
 desde `/mi-zona`. Hasta que lo apruebes, no se avisa a nadie de que ya puede entrar.
+
+### 7. Correo propio para los códigos (SMTP con Gmail del club) — hazlo antes de avisar a todos
+**Por qué:** hasta que no actives esto, Supabase manda los códigos de un solo uso (y cualquier otro correo de
+Auth) con su servicio compartido, que solo está pensado para pruebas: pocos envíos por hora y sin garantía de que
+lleguen a una bandeja ajena (puede acabar en spam, o no enviarse si se supera el límite). Todo el que no tiene
+Gmail (ve "Entrará con código por correo" en Gestión → Jugadores) depende de que este correo llegue de verdad, así
+que conviene ponerlo antes de avisar al equipo. Revisa en tu panel **Authentication → Rate Limits** cuál es hoy el
+límite de envíos de tu proyecto: no se puede saber desde fuera del panel, y varía según el plan.
+
+1. En la cuenta de Gmail del club (o la tuya), activa la verificación en dos pasos si no la tienes
+   (**Cuenta de Google → Seguridad**) y genera una **contraseña de aplicación**
+   (**Cuenta de Google → Seguridad → Verificación en dos pasos → Contraseñas de aplicaciones**). Cópiala: son 16
+   caracteres, sin espacios. Esto **no es tu contraseña normal de Gmail**: es una clave aparte, solo para esto.
+2. Supabase → tu proyecto → **Authentication → Emails → SMTP Settings** (en paneles más nuevos puede llamarse
+   **Authentication → Settings → SMTP Provider**): activa **"Enable Custom SMTP"** y rellena:
+   - **Host:** `smtp.gmail.com`
+   - **Port:** `465`
+   - **Username:** la cuenta de Gmail del club completa (`tu-cuenta@gmail.com`)
+   - **Password:** la contraseña de aplicación del paso 1. **Pégala tú mismo directamente en el panel de
+     Supabase: nunca por el chat, ni a Claude ni a nadie.**
+   - **Sender email:** la misma cuenta de Gmail.
+   - **Sender name:** `Maccabis`
+3. Guarda. El panel deja mandar un correo de prueba desde ahí mismo: compruébalo antes de avisar a nadie.
+4. Revisa la plantilla del código (**Authentication → Emails → Magic Link**, es la que usa el código OTP de
+   "Recibir código por correo"): que el texto esté en español, que dentro se vea bien claro el código
+   `{{ .Token }}` (los 6 dígitos) y que quede claro que el correo viene del club (el remitente ya lo dice con el
+   "Sender name" del paso 2, pero conviene que el cuerpo también lo diga, p. ej. "Tu código de Maccabis es:").
+   Gmail SMTP admite unos 500 correos al día por cuenta: de sobra para un club de este tamaño.
 
 ## Pruebas
 

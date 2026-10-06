@@ -112,6 +112,7 @@ img { max-width: 100%; height: auto; display: block; }
 .etiqueta-cerrada { background: var(--tinta); color: #fff; }
 .etiqueta-ok { background: var(--ok-fondo); color: var(--ok); }
 .etiqueta-mal { background: var(--error-fondo); color: var(--error); }
+.etiqueta-aviso { background: var(--amarillo-claro); color: var(--tinta); }
 
 .suave { color: var(--tinta-suave); }
 .pequeno { font-size: 0.9rem; }
@@ -189,3 +190,59 @@ td.falta { color: var(--error); font-weight: 700; }
 details > summary { cursor: pointer; min-height: var(--toque); display: flex; align-items: center; font-weight: 700; }
 .pie { text-align: center; color: var(--tinta-suave); font-size: 0.85rem; margin-top: 32px; }
 .solo-lectores { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ===== Liga 26/27 en gestion (scouting y liga consolidada, D73) ===== */
+.lg-etq { margin: 0; font-size: 0.85rem; color: var(--tinta-suave); }
+.lg-sub { margin: 4px 0 0; color: var(--tinta-suave); font-size: 0.92rem; }
+.lg-nota { font-size: 0.82rem; color: var(--tinta-suave); margin: 10px 0 0; }
+.lg-form { margin-top: 14px; }
+.lg-form-fila { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.lg-form select { flex: 1 1 220px; max-width: 360px; min-height: var(--toque); font-size: 1rem; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; }
+.lg-cab-equipo { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; justify-content: space-between; }
+.lg-prox { background: var(--tinta); color: #fff; border-radius: 10px; padding: 12px 14px; min-width: 240px; }
+.lg-prox-e { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amarillo); }
+.lg-prox-f { font-size: 1.1rem; font-weight: 700; }
+.lg-prox-d { font-size: 0.85rem; color: #cfcab8; }
+.lg-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+.lg-max { background: #fff; border: 2px solid var(--amarillo); border-radius: 10px; padding: 10px 12px; }
+.lg-max-n { font-size: 0.78rem; color: var(--tinta-suave); }
+.lg-max-nom { font-weight: 700; line-height: 1.2; margin: 2px 0 4px; }
+.lg-max-p { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+.lg-max-p small { font-size: 0.8rem; font-weight: 500; color: var(--tinta-suave); }
+.lg-max-x { font-size: 0.78rem; color: var(--tinta-suave); margin-top: 3px; }
+.lg-tabla th, .lg-tabla td { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lg-tabla th:first-child, .lg-tabla td:first-child, .lg-tabla th:nth-child(2), .lg-tabla td:nth-child(2) { text-align: left; }
+.lg-tabla tr.lg-top td { background: var(--amarillo-claro); }
+.lg-tabla tr.lg-nuestro td { background: #e8e4ff; }
+.lg-tabla tr.lg-equipo td { border-top: 2px solid var(--borde); }
+.lg-tabla small { color: var(--tinta-suave); }
+.solo-movil, .lg-tarjetas.solo-movil { display: none; }
+.lg-tarjetas { display: grid; gap: 8px; }
+.lg-jug { border: 1px solid var(--borde); border-radius: 10px; padding: 8px 10px; background: #fff; }
+.lg-jug.lg-top { background: var(--amarillo-claro); border-color: #ecd77a; }
+.lg-jug.lg-equipo { background: var(--fondo); }
+.lg-jug-cab { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lg-dorsal { min-width: 32px; height: 32px; padding: 0 6px; border-radius: 8px; background: var(--tinta); color: var(--amarillo); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+.lg-nombre { flex: 1 1 auto; line-height: 1.2; }
+.lg-jug-num { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-top: 6px; text-align: center; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
+.lg-jug-num small { display: block; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-suave); }
+.lg-lideres { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.lg-lider { margin: 0; }
+.lg-lider h3 { margin: 0 0 6px; }
+.lg-lider li { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--borde); font-size: 0.93rem; }
+.lg-lider li:last-child { border-bottom: 0; }
+.lg-lider small { display: block; font-size: 0.76rem; color: var(--tinta-suave); }
+.lg-ranking > summary { font-size: 1.05rem; }
+.lg-solo-mov { display: none; }
+@media (max-width: 639px) {
+  .solo-movil { display: block; }
+  .lg-tarjetas.solo-movil { display: grid; }
+  .solo-escritorio { display: none; }
+  .lg-tres { grid-template-columns: 1fr; }
+  .lg-prox { width: 100%; }
+  .lg-oculto-movil { display: none; }
+  .lg-solo-mov { display: table-cell; }
+  .lg-tabla-rank th, .lg-tabla-rank td { padding: 8px 4px; font-size: 0.88rem; }
+  .lg-tabla-rank td:nth-child(2) { white-space: normal; }
+  .lg-ranking { padding-left: 10px; padding-right: 10px; }
+}

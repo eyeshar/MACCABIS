@@ -70,11 +70,11 @@
   "inicio": "2026-09-01",
   "etiqueta_fbm": "26/27",
   "liga": {
-   "_nota": "Clasificación calculada con las Bases del 47 JDM (2.10.1 Baloncesto): 2 puntos por victoria y 1 por derrota; perder por sanción = 20-0. Cuánto resta una incomparecencia NO está en las Bases: puntos_incomparecencia=null hace que el pipeline se pare si se registra una (preguntar a Iván).",
+   "_nota": "Clasificación calculada con las Bases del 47 JDM (2.10.1 Baloncesto): 2 puntos por victoria y 1 por derrota. Incomparecencias (D74): se anotan en 'incomparecencias' ({grupo, jornada, local, visitante, no_presentado}) y los puntos del equipo que no se presentó se toman de la clasificación oficial de Deportes/web (rutina B del jueves) en 'puntos_oficiales' ({G1: {<id-equipo>: {pts, fecha}}}); hasta entonces la casilla dice 'pendiente de la oficial'. No se inventa la penalización.",
    "puntos_victoria": 2,
    "puntos_derrota": 1,
-   "puntos_incomparecencia": null,
-   "incomparecencias": []
+   "incomparecencias": [],
+   "puntos_oficiales": {}
   }
  }
 }

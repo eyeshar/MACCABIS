@@ -5,7 +5,7 @@
  "puntuacion": {
   "victoria": 2,
   "derrota": 1,
-  "incomparecencia": null,
+  "incomparecencia": "los puntos del equipo que no se presenta se toman de la clasificación oficial (D74)",
   "perder_por_sancion": "20-0",
   "fuente": "Bases reguladoras de los 47 JDM, deportes de equipo, 2.10.1 Baloncesto"
  },
@@ -47,7 +47,7 @@
     {
      "pos": 3,
      "id": "tropicaleros",
-     "equipo": "TROPICALEROS",
+     "equipo": "Tropicaleros",
      "nuestro": false,
      "pj": 1,
      "g": 1,
@@ -60,7 +60,7 @@
     {
      "pos": 4,
      "id": "nabuco-td",
-     "equipo": "NABUCO TD",
+     "equipo": "Nabuco TD",
      "nuestro": false,
      "pj": 1,
      "g": 1,
@@ -73,7 +73,7 @@
     {
      "pos": 5,
      "id": "litros-de-mahou",
-     "equipo": "LITROS DE MAHOU",
+     "equipo": "Litros de Mahou",
      "nuestro": false,
      "pj": 1,
      "g": 1,
@@ -86,7 +86,7 @@
     {
      "pos": 6,
      "id": "los-khinkis-rusos",
-     "equipo": "LOS KHINKIS RUSOS",
+     "equipo": "Los Khinkis Rusos",
      "nuestro": false,
      "pj": 1,
      "g": 0,
@@ -99,7 +99,7 @@
     {
      "pos": 7,
      "id": "chupitimanguis",
-     "equipo": "CHUPITIMANGUIS",
+     "equipo": "Chupitimanguis",
      "nuestro": false,
      "pj": 1,
      "g": 0,
@@ -112,7 +112,7 @@
     {
      "pos": 8,
      "id": "wild-boys",
-     "equipo": "WILD BOYS",
+     "equipo": "Wild Boys",
      "nuestro": false,
      "pj": 1,
      "g": 0,
@@ -125,7 +125,7 @@
     {
      "pos": 9,
      "id": "vallekas-basket",
-     "equipo": "VALLEKAS BASKET",
+     "equipo": "Vallekas Basket",
      "nuestro": false,
      "pj": 1,
      "g": 0,
@@ -167,15 +167,15 @@
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Chavalitros",
-     "visitante": "VALLEKAS BASKET",
+     "visitante": "Vallekas Basket",
      "pl": 56,
      "pv": 16
     },
     {
      "jornada": 1,
      "fecha": "2026-10-04",
-     "local": "CHUPITIMANGUIS",
-     "visitante": "NABUCO TD",
+     "local": "Chupitimanguis",
+     "visitante": "Nabuco TD",
      "pl": 38,
      "pv": 49
     },
@@ -190,16 +190,16 @@
     {
      "jornada": 1,
      "fecha": "2026-10-04",
-     "local": "LITROS DE MAHOU",
-     "visitante": "LOS KHINKIS RUSOS",
+     "local": "Litros de Mahou",
+     "visitante": "Los Khinkis Rusos",
      "pl": 49,
      "pv": 44
     },
     {
      "jornada": 1,
      "fecha": "2026-10-04",
-     "local": "TROPICALEROS",
-     "visitante": "WILD BOYS",
+     "local": "Tropicaleros",
+     "visitante": "Wild Boys",
      "pl": 59,
      "pv": 23
     }
@@ -277,7 +277,7 @@
      }
     },
     "tropicaleros": {
-     "nombre": "TROPICALEROS",
+     "nombre": "Tropicaleros",
      "nuestro": false,
      "id": "tropicaleros",
      "media_pf": 59,
@@ -310,7 +310,7 @@
      }
     },
     "nabuco-td": {
-     "nombre": "NABUCO TD",
+     "nombre": "Nabuco TD",
      "nuestro": false,
      "id": "nabuco-td",
      "media_pf": 49,
@@ -343,7 +343,7 @@
      }
     },
     "litros-de-mahou": {
-     "nombre": "LITROS DE MAHOU",
+     "nombre": "Litros de Mahou",
      "nuestro": false,
      "id": "litros-de-mahou",
      "media_pf": 49,
@@ -376,7 +376,7 @@
      }
     },
     "los-khinkis-rusos": {
-     "nombre": "LOS KHINKIS RUSOS",
+     "nombre": "Los Khinkis Rusos",
      "nuestro": false,
      "id": "los-khinkis-rusos",
      "media_pf": 44,
@@ -409,7 +409,7 @@
      }
     },
     "chupitimanguis": {
-     "nombre": "CHUPITIMANGUIS",
+     "nombre": "Chupitimanguis",
      "nuestro": false,
      "id": "chupitimanguis",
      "media_pf": 38,
@@ -442,7 +442,7 @@
      }
     },
     "wild-boys": {
-     "nombre": "WILD BOYS",
+     "nombre": "Wild Boys",
      "nuestro": false,
      "id": "wild-boys",
      "media_pf": 23,
@@ -475,7 +475,7 @@
      }
     },
     "vallekas-basket": {
-     "nombre": "VALLEKAS BASKET",
+     "nombre": "Vallekas Basket",
      "nuestro": false,
      "id": "vallekas-basket",
      "media_pf": 16,
@@ -593,7 +593,7 @@
     {
      "pos": 2,
      "id": "castanazo",
-     "equipo": "CASTAÑAZO",
+     "equipo": "Castañazo",
      "nuestro": false,
      "pj": 1,
      "g": 1,
@@ -632,7 +632,7 @@
     {
      "pos": 5,
      "id": "trascendedores-c-b",
-     "equipo": "TRASCENDEDORES C.B.",
+     "equipo": "Trascendedores C.B.",
      "nuestro": false,
      "pj": 1,
      "g": 1,
@@ -658,7 +658,7 @@
     {
      "pos": 7,
      "id": "f-t-floppers",
-     "equipo": "F.T. FLOPPERS",
+     "equipo": "F.T. Floppers",
      "nuestro": false,
      "pj": 1,
      "g": 0,
@@ -671,7 +671,7 @@
     {
      "pos": 8,
      "id": "mejorada-2012-c-b",
-     "equipo": "MEJORADA 2012 C.B.",
+     "equipo": "Mejorada 2012 C.B.",
      "nuestro": false,
      "pj": 1,
      "g": 0,
@@ -684,7 +684,7 @@
     {
      "pos": 9,
      "id": "vanner",
-     "equipo": "VANNER",
+     "equipo": "Vanner",
      "nuestro": false,
      "pj": 1,
      "g": 0,
@@ -725,8 +725,8 @@
     {
      "jornada": 1,
      "fecha": "2026-10-04",
-     "local": "CASTAÑAZO",
-     "visitante": "VANNER",
+     "local": "Castañazo",
+     "visitante": "Vanner",
      "pl": 66,
      "pv": 42
     },
@@ -734,14 +734,14 @@
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Craps",
-     "visitante": "TRASCENDEDORES C.B.",
+     "visitante": "Trascendedores C.B.",
      "pl": 40,
      "pv": 51
     },
     {
      "jornada": 1,
      "fecha": "2026-10-04",
-     "local": "F.T. FLOPPERS",
+     "local": "F.T. Floppers",
      "visitante": "Suanzes Motor",
      "pl": 32,
      "pv": 48
@@ -758,7 +758,7 @@
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "MdL",
-     "visitante": "MEJORADA 2012 C.B.",
+     "visitante": "Mejorada 2012 C.B.",
      "pl": 59,
      "pv": 38
     }
@@ -831,7 +831,7 @@
      }
     },
     "castanazo": {
-     "nombre": "CASTAÑAZO",
+     "nombre": "Castañazo",
      "nuestro": false,
      "id": "castanazo",
      "media_pf": 66,
@@ -930,7 +930,7 @@
      }
     },
     "trascendedores-c-b": {
-     "nombre": "TRASCENDEDORES C.B.",
+     "nombre": "Trascendedores C.B.",
      "nuestro": false,
      "id": "trascendedores-c-b",
      "media_pf": 51,
@@ -996,7 +996,7 @@
      }
     },
     "f-t-floppers": {
-     "nombre": "F.T. FLOPPERS",
+     "nombre": "F.T. Floppers",
      "nuestro": false,
      "id": "f-t-floppers",
      "media_pf": 32,
@@ -1029,7 +1029,7 @@
      }
     },
     "mejorada-2012-c-b": {
-     "nombre": "MEJORADA 2012 C.B.",
+     "nombre": "Mejorada 2012 C.B.",
      "nuestro": false,
      "id": "mejorada-2012-c-b",
      "media_pf": 38,
@@ -1062,7 +1062,7 @@
      }
     },
     "vanner": {
-     "nombre": "VANNER",
+     "nombre": "Vanner",
      "nuestro": false,
      "id": "vanner",
      "media_pf": 42,

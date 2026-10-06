@@ -7,7 +7,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { construir } = require('./liga');
+const { construir, clasificar } = require('./liga');
 const T = process.argv[2] || '2026-27';
 const ROOT = path.resolve(__dirname, '..', '..');
 let fallos = 0;
@@ -37,5 +37,18 @@ for (const [k, g] of Object.entries(pub.grupos)) {
   }
 }
 ok(/pendiente de contrastar con la oficial/.test(pub.clasificacion_estado), 'la clasificación va marcada como calculada y pendiente de contrastar');
+// 4. Incomparecencias (D74): sin inventar la penalizacion; los puntos del que no se presenta salen de la oficial.
+{
+  const E = ['a', 'b', 'c'].map(id => ({ id, nombre: id.toUpperCase(), nuestro: false }));
+  const cfg = { puntos_victoria: 2, puntos_derrota: 1 };
+  const juegos = [{ jornada: 1, local: E[0], visitante: E[1], pl: 50, pv: 40 }, { jornada: 2, local: E[2], visitante: E[1], incomp: true, no_presentado: 'b', pl: null, pv: null }];
+  let t = clasificar(E, juegos, cfg, undefined);
+  const b = t.find(x => x.id === 'b'), c = t.find(x => x.id === 'c');
+  ok(b.np === 1 && b.pts_pendiente === true && b.pj === 2 && b.p === 2, 'incomparecencia: el que no se presenta cuenta como perdido y su puntuacion queda pendiente de la oficial');
+  ok(c.g === 1 && c.pf === 0 && c.pc === 0 && c.pts === 2, 'incomparecencia: el que si se presenta gana, sin puntos a favor ni en contra');
+  ok(t.find(x => x.id === 'a').pf === 50 && b.pf === 40 && b.pc === 50, 'incomparecencia: no suma puntos a favor ni en contra');
+  t = clasificar(E, juegos, cfg, { b: { pts: -1 } });
+  ok(t.find(x => x.id === 'b').pts === -1 && !t.find(x => x.id === 'b').pts_pendiente && t.find(x => x.id === 'b').pts_fuente === 'oficial', 'con la clasificacion oficial anotada, se usan sus puntos');
+}
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

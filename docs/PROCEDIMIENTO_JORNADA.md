@@ -3,6 +3,8 @@
 > **Liga completa (D73):** desde la J2 se bajan también las hojas de los partidos donde no jugamos (los dos grupos). `npm run jornada` las copia a `fuentes_fbm/2026-27/liga/` y regenera `data/liga_2026-27.json` (solo datos por equipo). Los datos por jugador de los rivales no se publican (ver `docs/RUTINAS/A_ACTAS.md`).
 > **Después de `npm run jornada` (D73):** para ver los datos por jugador de los rivales en la zona de gestión (Scouting rivales, Liga consolidada), cargar en Supabase con `npm run db:liga` en `plataforma/` (reemplaza la temporada entera; valida antes que la suma por jugador sea el total del equipo). Los datos por jugador nunca van al repositorio ni a GitHub Pages. Tras un despliegue, `node pruebas/verificar_produccion.mjs` comprueba producción con un gestor temporal.
 
+> **Portada de la web (D76):** después de `npm run jornada`, `npm run datos:sync` en `plataforma/` y commit de `plataforma/src/data/` (resultados, clasificación y líderes de la portada).
+
 _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se procesa el lunes 5/10._
 
 ## Lo que haces tú (5 minutos, el lunes)

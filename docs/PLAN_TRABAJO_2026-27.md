@@ -42,3 +42,17 @@ Cada rutina pasa por: aprendizaje con Iván → procedimiento escrito en `docs/R
 ## Lo que deja de hacer falta
 - La pantalla de "subir actas desde la zona de gestión" (BACKLOG, punto 4) pasa a ser solo un **plan B**: la rutina A la sustituye.
 - La consulta a Indalweb (D49) se mantiene como opcional.
+
+## Decisiones del 06/10/2026 (tarde)
+Bloque «Unificación web» (paso 1 del rediseño). Detalle en `DECISIONS.md` (D76–D80), `ESTADO.md` y `MIGRACION_WEB.md`.
+
+1. **Rediseño y una sola web (D76).** Todo vive en `maccabis.vercel.app` con el diseño aprobado (`privado/mockups_liga/rediseno/`): portada pública sin login en `/`, Acceso, Mi zona y Gestión con el aspecto nuevo. Las secciones de estadísticas de GitHub Pages siguen igual y se enlazan desde el menú; se migran por orden (Liga → Equipo/Jugadores/Ficha → Rankings y Cuartos → Rivales → El Club → MdA → Asistencia, `MIGRACION_WEB.md`). «Desde 2013» en un solo sitio, pendiente de que Iván confirme el año (SportEasy dice 2012).
+2. **Calendario y «Tu agenda».** Calendario público en la portada (partidos con aviso de equipación y entrenos, filtros, «Añadir a mi calendario» con feed iCal sin datos personales). En Mi zona, «Tu agenda» solo con lo que ya hay (calendario, entrenos, avisos, partidos jugados); disponibilidad y convocatoria salen como «pendiente» hasta el paso 2.
+3. **Entrenos de los miércoles (D77).** 20:30–22:30; Valdebernardo (Faustina Valladolid) **en obras**: cada miércoles «Pista por confirmar (Valdebernardo en obras)» hasta que se fije pista. 07/10: 20:00–21:00 en la Caja Mágica. Datos en `data/entrenos_2026-27.json`. Pendiente de Iván: miércoles sin entreno (Navidad, Semana Santa) y fin de la serie.
+4. **Eventos en fase puente (D80).** Paso 2: los eventos se crean y editan en la plataforma (Eventos, EventoEditar) y Claude los copia a SportEasy con el OK de Iván; las respuestas se siguen leyendo de SportEasy hasta que los jugadores respondan en la plataforma (EventoMovil), con el criterio de D64.
+5. **Avisos por la web instalada (D78).** Paso 3: notificaciones de la web añadida a la pantalla de inicio (sin app nativa). Ya está la base instalable (manifiesto, iconos del escudo, service worker mínimo, sin avisos).
+6. **Recordatorios en la rutina C.** Hasta que existan los avisos del paso 3, los recordatorios a quien no ha respondido (entreno y partido) los **propone Claude dentro de la rutina C** (lunes y martes, con los datos de SportEasy) y **los envía Iván** por WhatsApp. Cuando lleguen los avisos, la plataforma los manda sola (lunes a las 19:00 y el mismo día a las 12:00, maqueta EventoEditar), con el OK de Iván por evento.
+7. **Orden de construcción.**
+   - **Paso 1 (hecho el 06/10, rama `feat/rediseno-web`, pendiente del OK de Iván):** web única, sistema visual, portada, calendario con entrenos e iCal, Acceso, Mi zona y Gestión con el aspecto nuevo, base instalable, inventario de migración.
+   - **Paso 2:** Eventos y EventoEditar en gestión (tabla de eventos y pistas en Supabase, con backup y staging antes de producción), copia a SportEasy por navegador (fase puente), respuestas leídas de SportEasy en Gestión y «Tu agenda»; primera migración de sección (Liga).
+   - **Paso 3:** EventoMovil (el jugador responde en la plataforma), avisos por la web instalada y recordatorios automáticos; después, el resto de secciones de `MIGRACION_WEB.md`.

@@ -17,5 +17,9 @@ export const porMedia = (a: Lider, b: Lider) => media(b) - media(a) || b.pts - a
 export const porTriples = (a: Lider, b: Lider) => b.p3a - a.p3a || b.pts - a.pts || texto(a, b);
 /** Tiros libres: mas anotados; a igualdad, mayor porcentaje; luego menos intentados; luego nombre. */
 export const porTirosLibres = (a: Lider, b: Lider) => b.tla - a.tla || pctTL(b) - pctTL(a) || a.tli - b.tli || texto(a, b);
-/** Faltas: mas faltas; a igualdad, menos partidos (mas faltas por partido); luego nombre. */
+/**
+ * Faltas: mas faltas; a igualdad, MENOS partidos jugados (las mismas faltas en menos partidos son mas faltas por partido; por eso
+ * quien dobla y suma dos fichas, con 2 partidos, va detras de quien tiene las mismas en 1); luego nombre.
+ * Criterio explicito, repetido en la nota al pie de la lista.
+ */
 export const porFaltas = (a: Lider, b: Lider) => b.faltas - a.faltas || a.pj - b.pj || texto(a, b);

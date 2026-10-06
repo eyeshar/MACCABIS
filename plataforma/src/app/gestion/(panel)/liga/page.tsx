@@ -60,7 +60,7 @@ export default async function LigaConsolidada() {
           "Mínimo: la mitad de los partidos jugados por su equipo (al menos 1).")}
         {lider("Triples", porTriples, (j) => String(j.p3a))}
         {lider("Tiros libres", porTirosLibres, (j) => `${j.tla}/${j.tli}`, jugadores.filter((j) => j.tli >= 3), "Con al menos 3 tiros libres intentados.")}
-        {lider("Faltas", porFaltas, (j) => String(j.faltas), jugadores, "Faltas cometidas (5 = eliminado).")}
+        {lider("Faltas", porFaltas, (j) => String(j.faltas), jugadores, "Faltas cometidas (5 = eliminado). A igualdad de faltas va primero quien las hizo en menos partidos (más faltas por partido); después, por nombre.")}
       </div>
 
       <details className="tarjeta lg-ranking">

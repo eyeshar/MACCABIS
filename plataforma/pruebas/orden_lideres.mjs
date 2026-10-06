@@ -17,6 +17,12 @@ ok(nombres(b) === 'Urrutia Valencia, Pablo > Villena Navas, Santiago > Espinoll 
 ok(nombres([J('B', 3, 3), J('A', 4, 9)].sort(porTirosLibres)) === 'A > B', 'más anotados manda sobre el porcentaje (4/9 antes que 3/3)');
 ok(nombres([J('B', 2, 4), J('A', 2, 2)].sort(porTirosLibres)) === 'A > B', 'mismo número de anotados: el mejor porcentaje primero');
 
+console.log('\n== Faltas: a igualdad, menos partidos primero (mas faltas por partido), luego nombre');
+const F = (nombre, faltas, pj) => ({ nombre, equipo: 'X', pj, pts: 0, p3a: 0, tla: 0, tli: 0, faltas });
+const f = [F('Esteban, Jon', 4, 2), F('Lucena, A', 4, 1), F('Garcia Gamon, B', 4, 1), F('Loarte, C', 4, 1), F('Zeta, D', 5, 3)].sort(porFaltas);
+ok(nombres(f) === 'Zeta, D > Garcia Gamon, B > Loarte, C > Lucena, A > Esteban, Jon', 'Esteban (4 faltas en 2 partidos, dobla) va detras de quienes hicieron 4 en 1 partido; entre iguales, por nombre', nombres(f));
+ok(nombres([F('B', 4, 1), F('A', 4, 1)].sort(porFaltas)) === 'A > B', 'mismas faltas y mismos partidos: por nombre');
+
 console.log('\n== Determinismo: el mismo dato da siempre el mismo orden, sea cual sea el orden de entrada');
 const datos = [];
 for (let i = 0; i < 30; i++) datos.push({ nombre: `Jugador ${i % 7}`, equipo: i % 2 ? 'A' : 'B', pj: 1 + (i % 3), pts: i % 5, p3a: i % 4, tla: i % 3, tli: 3 + (i % 3), faltas: i % 4 });

@@ -9,6 +9,7 @@
 
 import { arrancar } from './pila.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
+import { filasTabla, filasFichas } from '../src/lib/jugadoresLiga.ts';
 
 let fallos = 0;
 const ok = (cond, que, detalle = '') => {
@@ -64,6 +65,34 @@ try {
   const tGestor = await jwt(gestorId, 'gestor@pruebas.local');
   const tJugador = await jwt(jugadorId, 'jugador@pruebas.local');
   const tIntruso = await jwt(intrusoId, 'intruso@pruebas.local');
+
+  console.log('\n== Tabla "Todos los jugadores": coherencia con la clasificacion');
+  const jug = await sql`select grupo, equipo, nombre, dorsal, pj, segundos, pts, p2a, p3a, tla, tli, faltas from public.v_liga_jugadores where temporada = '2026-27'`;
+  const clas = await sql`select grupo, equipo, pf, pj from public.liga_clasificacion where temporada = '2026-27'`;
+  const filas = filasTabla(jug, new Map(clas.map((c) => [`${c.grupo}|${c.equipo}`, c.pj])));
+  const dobles = filas.filter((f) => f.dobla);
+  ok(dobles.length > 0, `hay dobladores (${dobles.length}) y salen en una sola fila con equipo "MdA + MdL"`);
+  ok(new Set(filas.map((f) => f.nombre.concat('|', f.equipos.join()))).size === filas.length, 'ninguna persona aparece dos veces en la tabla');
+  const porEquipo = new Map();
+  for (const j of jug) porEquipo.set(`${j.grupo}|${j.equipo}`, (porEquipo.get(`${j.grupo}|${j.equipo}`) ?? 0) + j.pts);
+  ok(clas.filter((c) => c.pj > 0).every((c) => porEquipo.get(`${c.grupo}|${c.equipo}`) === c.pf), 'la suma de PTS por jugador de cada equipo = sus puntos a favor en la clasificacion calculada (20 equipos con partidos)');
+  const sumaTabla = filas.reduce((n, f) => n + f.pts, 0), sumaFichas = jug.reduce((n, j) => n + j.pts, 0), sumaPF = clas.reduce((n, c) => n + c.pf, 0);
+  ok(sumaTabla === sumaFichas && sumaFichas === sumaPF, `los dobladores no se cuentan dos veces: PTS de la tabla (${sumaTabla}) = PTS de las fichas (${sumaFichas}) = puntos a favor de toda la liga (${sumaPF})`);
+  for (const f of dobles) {
+    const a = jug.find((j) => j.equipo === 'MdA' && j.nombre === f.nombre), l = jug.find((j) => j.equipo === 'MdL' && j.nombre === f.nombre);
+    if (!(f.pts === a.pts + l.pts && f.pj === a.pj + l.pj && f.faltas === a.faltas + l.faltas && f.tla === a.tla + l.tla)) ok(false, `doblador ${f.nombre}: fichas sumadas`);
+  }
+  ok(true, 'cada doblador lleva las dos fichas sumadas (PJ, PTS, TL, faltas)');
+  // Con filtro de grupo o de equipo, quien dobla se ve con SOLO la ficha de ese grupo/equipo: la suma de PTS = puntos a favor del equipo
+  const fichas = filasFichas(jug, new Map(clas.map((c) => [`${c.grupo}|${c.equipo}`, c.pj])));
+  for (const [grupo, equipo] of [['G1', 'MdA'], ['G2', 'MdL']]) {
+    const pf = clas.find((c) => c.grupo === grupo && c.equipo === equipo).pf;
+    const porGrupo = fichas.filter((f) => f.grupos.includes(grupo) && f.equipos.includes(equipo)).reduce((n, f) => n + f.pts, 0);
+    ok(porGrupo === pf, `con filtro ${grupo}/${equipo}, la suma de PTS de la tabla (${porGrupo}) = puntos a favor de ${equipo} en la clasificacion (${pf})`);
+    const grupoEntero = fichas.filter((f) => f.grupos.includes(grupo)).reduce((n, f) => n + f.pts, 0);
+    ok(grupoEntero === clas.filter((c) => c.grupo === grupo).reduce((n, c) => n + c.pf, 0), `con filtro de grupo ${grupo}, la suma de PTS de todas las filas = puntos a favor de todo el grupo`);
+  }
+  ok(fichas.filter((f) => f.dobla).every((f) => f.soloFicha === f.equipos[0]), 'las fichas de los dobladores van marcadas con su ficha (MdA o MdL)');
 
   console.log('\n== RLS: anonimo, jugador e intruso no ven nada');
   const tablas = ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores', 'liga_calendario', 'liga_clasificacion'];

@@ -81,6 +81,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
               ))}
             </select>
             <button className="boton" type="submit">Ver</button>
+            <Link className="boton boton-claro" href="/gestion/liga#todos">Ver todos los jugadores de la liga</Link>
           </div>
         </form>
       </section>
@@ -151,7 +152,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
             </div>
             <p className="lg-nota">
               2P y 3P: canastas anotadas (la hoja de la FBM no recoge los intentos de campo). TL: anotados/intentados. Los minutos son los de la
-              hoja y pueden no cuadrar con el reloj. Las medias son sobre sus partidos jugados.
+              hoja y pueden no cuadrar con el reloj. Las medias son sobre sus partidos jugados. Solo aparecen los jugadores que figuran en las hojas de la FBM (han jugado al menos un partido).
             </p>
           </>
         )}

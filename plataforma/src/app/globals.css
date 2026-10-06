@@ -246,3 +246,66 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
   .lg-tabla-rank td:nth-child(2) { white-space: normal; }
   .lg-ranking { padding-left: 10px; padding-right: 10px; }
 }
+
+/* ===== Tabla "Todos los jugadores" (Liga consolidada) ===== */
+.lg-todos { margin: 18px 0; }
+.lg-filtros { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end; margin: 10px 0; }
+.lg-filtros label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; color: var(--tinta-suave); }
+.lg-filtros select, .lg-filtros input[type="search"] { min-height: 40px; font-size: 0.95rem; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; max-width: 100%; }
+.lg-filtros .lg-check { flex-direction: row; align-items: center; gap: 6px; min-height: 40px; font-size: 0.95rem; color: var(--tinta); }
+.lg-conmutador { display: inline-flex; border: 1px solid var(--tinta); border-radius: 8px; overflow: hidden; }
+.lg-conmutador button { min-height: 40px; padding: 0 14px; border: 0; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.lg-conmutador button.on { background: var(--tinta); color: var(--amarillo); }
+.solo-movil-bloque { display: none !important; }
+.lg-ordenar-fila { display: flex; gap: 6px; }
+.lg-ordenar-fila select { flex: 1 1 auto; }
+.lg-tabla-scroll { max-height: 70vh; overflow: auto; border: 1px solid var(--borde); border-radius: 8px; }
+.lg-tabla-todos thead th { position: sticky; top: 0; z-index: 1; background: #fff; box-shadow: 0 1px 0 var(--borde); padding: 0; }
+.lg-tabla-todos thead th button { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 8px 6px; cursor: pointer; font-family: var(--fuente-titulos), sans-serif; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.9rem; white-space: nowrap; }
+.lg-tabla-todos thead th button:hover, .lg-tabla-todos thead th button:focus-visible { background: var(--amarillo-claro); }
+.lg-tabla-todos th:nth-child(-n+2) button { text-align: left; }
+.lg-tabla-todos th:nth-child(n+3) button { text-align: right; }
+.lg-tabla-todos td:nth-child(2) { white-space: normal; min-width: 110px; }
+.lg-enlace { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--tinta-suave); }
+.lg-enlace:hover { background: var(--amarillo-claro); }
+.lg-vermas { text-align: center; margin: 12px 0 0; }
+.lg-compactas { display: grid; gap: 6px; }
+.lg-compactas.solo-movil { display: none; }
+.lg-fila { border: 1px solid var(--borde); border-radius: 10px; background: #fff; }
+.lg-fila.lg-nuestro { background: #e8e4ff; }
+.lg-fila-cab { all: unset; box-sizing: border-box; width: 100%; display: flex; gap: 8px; align-items: center; padding: 8px 10px; min-height: var(--toque); cursor: pointer; }
+.lg-fila-nom { flex: 1 1 auto; min-width: 0; line-height: 1.25; }
+.lg-fila-eq { display: block; color: var(--tinta-suave); }
+.lg-fila-val { flex: none; text-align: right; font-variant-numeric: tabular-nums; min-width: 44px; }
+.lg-fila-val small { display: block; font-size: 0.66rem; text-transform: uppercase; color: var(--tinta-suave); }
+.lg-fila-pts b { font-size: 1.15rem; }
+.lg-fila-det { border-top: 1px solid var(--borde); padding: 8px 10px 10px; }
+.lg-fila-det dl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 4px; margin: 0; text-align: center; }
+.lg-fila-det dt { font-size: 0.66rem; text-transform: uppercase; color: var(--tinta-suave); }
+.lg-fila-det dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lg-fila-enl { margin: 8px 0 0; font-size: 0.88rem; }
+@media (max-width: 639px) {
+  .solo-movil-bloque { display: flex !important; flex: 1 1 100%; }
+  .lg-filtros label:not(.lg-check):not(.lg-ordenar) { flex: 1 1 45%; }
+  .lg-filtros select, .lg-filtros input[type="search"] { width: 100%; }
+  .lg-compactas.solo-movil { display: grid; }
+}
+
+/* ===== Liga consolidada: indice, lideres por partido, filtros plegables en movil, fichas de dobladores ===== */
+.lg-indice { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.lg-indice a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--tinta); border-radius: 999px; color: var(--tinta); text-decoration: none; font-weight: 700; background: #fff; }
+.lg-indice a:hover, .lg-indice a:focus-visible { background: var(--amarillo-claro); }
+.lg-seccion { scroll-margin-top: 12px; margin-bottom: 8px; }
+.lg-ancla { scroll-margin-top: 12px; }
+#ranking { scroll-margin-top: 12px; }
+.lg-solo-ficha { color: var(--tinta-suave); font-style: italic; }
+.lg-barra { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end; margin: 10px 0 0; }
+.lg-filtros-btn { display: none; }
+.lg-filtros-panel { margin-top: 10px; }
+@media (max-width: 600px) {
+  .lg-barra { flex-direction: column; align-items: stretch; }
+  .lg-filtros-btn { display: inline-flex; width: 100%; justify-content: space-between; align-items: center; }
+  .lg-filtros-panel { display: none; }
+  .lg-filtros-panel.abierto { display: flex; }
+  .lg-conmutador { align-self: flex-start; }
+}

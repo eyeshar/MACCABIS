@@ -23,6 +23,7 @@ export const Panel = ({ size = 20 }: P) => <svg {...base(size)}><rect x="3" y="3
 export const Lista = ({ size = 20 }: P) => <svg {...base(size)}><path d="M9 11l3 3 8-8" /><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" /></svg>;
 export const Lupa = ({ size = 20 }: P) => <svg {...base(size)}><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>;
 export const Tarjeta = ({ size = 20 }: P) => <svg {...base(size)}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h3" /></svg>;
+export const Mas = ({ size = 22 }: P) => <svg {...base(size)}><circle cx="5" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="19" cy="12" r="1.2" /></svg>;
 export const Google = ({ size = 20 }: P) => (
   <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
     <path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" />

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { exigirSesion } from "@/lib/sesion";
 import { cargarMiZona } from "./datos";
 import { anularPedidoJugador } from "./acciones";
-import { salir } from "@/app/entrar/acciones";
 import { PRENDAS, type PrendaId, type Pedido } from "@/lib/ropa";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { fechaCorta } from "@/lib/fechas";
@@ -11,11 +10,10 @@ import { fichaEstadisticas } from "@/lib/mensajes";
 import SinZona from "./SinZona";
 import { Camiseta as ColorRival } from "@/components/ProximoPartido";
 import AvisoTarjeta from "@/components/AvisoTarjeta";
-import { Escudo } from "@/components/web/Marco";
-import { Bolsa, Calendario, Camiseta, Casa, Flecha, Persona } from "@/components/Iconos";
+import { Bolsa, Camiseta, Flecha } from "@/components/Iconos";
 import { descansaEl, eventosTemporada, proximosPartidos, temporadaDe, type Equipo, type Evento } from "@/lib/publico";
 import { diaMes, diaSemanaCorto, hoyMadrid } from "@/lib/dias";
-import { NOMBRE_EQUIPO } from "@/lib/web";
+import { NOMBRE_EQUIPO, RUTA_CUENTA } from "@/lib/web";
 
 export const dynamic = "force-dynamic";
 
@@ -58,14 +56,15 @@ function Fecha({ f }: { f: string }) {
 /** "MdA – Litros de Mahou" (el local primero, como en el calendario oficial). */
 const cruce = (e: Evento) => { const n = NOMBRE_EQUIPO[e.equipo!]; return e.local ? `${n} – ${e.rival}` : `${e.rival} – ${n}`; };
 
-// Mi zona (maqueta MiZona, D76). "Tu agenda" solo con datos que ya existen: calendario, entrenos, avisos de equipacion y
-// partidos jugados. Disponibilidad y convocatoria salen como "pendiente" hasta el paso 2 (siguen en SportEasy).
+// Mi zona (maquetas MiZona y MiZonaEscritorio, D76 y D89). "Tu agenda" solo con datos que ya existen: calendario,
+// entrenos, avisos de equipacion y partidos jugados. Disponibilidad y convocatoria salen como "pendiente" hasta el paso 2
+// (siguen en SportEasy). En escritorio, dos columnas: ancha (saludo, agenda, temporada) y estrecha (domingo y ropa); en
+// movil, una columna en el orden de siempre. La cabecera y "Mi cuenta" son los de toda la web (D89, D90).
 export default async function MiZona({ searchParams }: { searchParams: Promise<{ guardado?: string; no_gestor?: string }> }) {
   const { guardado, no_gestor } = await searchParams;
-  const { supabase, user } = await exigirSesion();
+  await exigirSesion();
   const zona = await cargarMiZona();
   if (!zona) return <SinZona />;
-  const { data: esGestor } = await supabase.rpc("is_gestor");
 
   const { jugador, campana, pedidos } = zona;
   const deEstaCampana = pedidos.filter((x) => x.campana_id === campana?.id);
@@ -93,18 +92,12 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
   const dorsal = temporada?.dorsales[0];
 
   return (
-    <div className="tema-oscuro">
-      <div className="mz" id="inicio">
-        <header className="mz-cab">
-          <Link href="/" className="mz-escudo" aria-label="Ir a la web de Maccabis"><Escudo decorativo /></Link>
-          <span className="mz-cab-titulo">Mi zona</span>
-          {esGestor && <Link className="mz-enlace" href="/gestion">Gestión</Link>}
-          <form action={salir}><button type="submit">Salir</button></form>
-        </header>
+      <main className="mz" id="inicio">
+        {guardado && <div className="aviso aviso-ok mz-aviso" role="status">Pedido guardado. Puedes cambiarlo mientras el pedido siga abierto.</div>}
+        {no_gestor && <div className="aviso aviso-info mz-aviso" role="status">Tu cuenta no tiene permisos de gestión.</div>}
 
-        {guardado && <div className="aviso aviso-ok" role="status" style={{ margin: "12px 16px 0" }}>Pedido guardado. Puedes cambiarlo mientras el pedido siga abierto.</div>}
-        {no_gestor && <div className="aviso aviso-info" role="status" style={{ margin: "12px 16px 0" }}>Tu cuenta no tiene permisos de gestión.</div>}
-
+        <div className="mz-cols">
+        <div className="mz-ancha">
         <section className="mz-hola">
           <h1><small>Hola,</small>{" "}{jugador.nombre_visible}</h1>
           <div className="mz-chips">
@@ -113,7 +106,7 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
           </div>
         </section>
 
-        <section className="mz-sec" aria-labelledby="t-agenda">
+        <section className="mz-sec" id="agenda" aria-labelledby="t-agenda">
           <div className="mz-sec-cab">
             <h2 id="t-agenda">Tu agenda</h2>
             <Link href="/#calendario" className="pequeno" style={{ fontWeight: 600 }}>Calendario completo</Link>
@@ -150,7 +143,36 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
           <p className="mz-nota">Tu disponibilidad y la convocatoria llegarán aquí más adelante; mientras, se responde en SportEasy.</p>
         </section>
 
-        <section className="mz-sec" aria-labelledby="t-partidos">
+        <section className="mz-sec mz-sec-temporada" id="temporada" aria-labelledby="t-stats">
+          <div className="mz-sec-cab">
+            <h2 id="t-stats">Tu temporada</h2>
+            {temporada && <span className="mono tenue">26/27 · {temporada.pj} {temporada.pj === 1 ? "partido" : "partidos"}</span>}
+          </div>
+          {temporada && temporada.pj > 0 ? (
+            <>
+              <div className="mz-cifras">
+                <div className="mz-cifra"><b>{temporada.tot.pts}</b><span>puntos · {(temporada.tot.pts / temporada.pj).toLocaleString("es-ES", { maximumFractionDigits: 1, minimumFractionDigits: 1 })} por partido</span></div>
+                <div className="mz-cifra"><b>{temporada.pj}</b><span>partidos{temporada.minutos ? ` · ${temporada.minutos} min` : ""}</span></div>
+                <div className="mz-cifra"><b>{temporada.tot.p2a}</b><span>canastas de 2{temporada.tot.p3a ? ` · ${temporada.tot.p3a} triples` : ""}</span></div>
+                <div className="mz-cifra"><b>{temporada.tot.tla}/{temporada.tot.tli}</b><span>tiros libres{temporada.tot.tli ? ` · ${Math.round((100 * temporada.tot.tla) / temporada.tot.tli)} %` : ""}</span></div>
+              </div>
+              <div className="mz-lista">
+                {temporada.partidos.map((p, i) => (
+                  <div key={i} className="mz-fila" style={{ justifyContent: "space-between" }}>
+                    <span className="pequeno"><strong>{NOMBRE_EQUIPO[p.equipo]}</strong> {p.local ? "vs" : "en"} {p.rival}{p.pf != null && p.pc != null ? ` · ${p.pf > p.pc ? "G" : "P"} ${p.pf}-${p.pc}` : ""}</span>
+                    <span className="cifra">{p.pts} pts</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : <p className="suave" style={{ margin: 0 }}>Aún no tienes partidos con estadísticas esta temporada.</p>}
+          <a href={fichaEstadisticas(jugador.person_id)} style={{ fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center" }}>Ver tu ficha completa →</a>
+        </section>
+
+        </div>
+
+        <div className="mz-estrecha">
+        <section className="mz-sec" id="domingo" aria-labelledby="t-partidos">
           <h2 id="t-partidos">{fechaDomingo ? `Próximo partido · ${diaSemanaCorto(fechaDomingo)} ${diaMes(fechaDomingo)}` : "Próximos partidos"}</h2>
           {delDomingo.length ? (
             <>
@@ -261,51 +283,12 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
           </div>
         </section>
 
-        <section className="mz-sec" aria-labelledby="t-stats">
-          <div className="mz-sec-cab">
-            <h2 id="t-stats">Tu temporada</h2>
-            {temporada && <span className="mono tenue">26/27 · {temporada.pj} {temporada.pj === 1 ? "partido" : "partidos"}</span>}
-          </div>
-          {temporada && temporada.pj > 0 ? (
-            <>
-              <div className="mz-cifras">
-                <div className="mz-cifra"><b>{temporada.tot.pts}</b><span>puntos · {(temporada.tot.pts / temporada.pj).toLocaleString("es-ES", { maximumFractionDigits: 1, minimumFractionDigits: 1 })} por partido</span></div>
-                <div className="mz-cifra"><b>{temporada.pj}</b><span>partidos{temporada.minutos ? ` · ${temporada.minutos} min` : ""}</span></div>
-                <div className="mz-cifra"><b>{temporada.tot.p2a}</b><span>canastas de 2{temporada.tot.p3a ? ` · ${temporada.tot.p3a} triples` : ""}</span></div>
-                <div className="mz-cifra"><b>{temporada.tot.tla}/{temporada.tot.tli}</b><span>tiros libres{temporada.tot.tli ? ` · ${Math.round((100 * temporada.tot.tla) / temporada.tot.tli)} %` : ""}</span></div>
-              </div>
-              <div className="mz-lista">
-                {temporada.partidos.map((p, i) => (
-                  <div key={i} className="mz-fila" style={{ justifyContent: "space-between" }}>
-                    <span className="pequeno"><strong>{NOMBRE_EQUIPO[p.equipo]}</strong> {p.local ? "vs" : "en"} {p.rival}{p.pf != null && p.pc != null ? ` · ${p.pf > p.pc ? "G" : "P"} ${p.pf}-${p.pc}` : ""}</span>
-                    <span className="cifra">{p.pts} pts</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : <p className="suave" style={{ margin: 0 }}>Aún no tienes partidos con estadísticas esta temporada.</p>}
-          <a href={fichaEstadisticas(jugador.person_id)} style={{ fontWeight: 600, minHeight: 44, display: "inline-flex", alignItems: "center" }}>Ver tu ficha completa →</a>
-        </section>
+        </div>
+        </div>
 
-        <section className="mz-sec" id="cuenta" aria-labelledby="t-cuenta" style={{ paddingBottom: 24 }}>
-          <h2 id="t-cuenta">Mi cuenta</h2>
-          <div className="tarjeta" style={{ margin: 0 }}>
-            <p style={{ margin: 0 }}>Entras con <strong>{user.email}</strong> (Google o código por correo).</p>
-            <div className="botones">
-              {esGestor && <Link className="boton boton-claro" href="/gestion">Ir a gestión</Link>}
-              <form action={salir}><button className="boton boton-claro" type="submit">Salir</button></form>
-            </div>
-          </div>
-          <p className="pie" style={{ marginTop: 8 }}>¿Algo no cuadra? Habla con Iván, Carlos o Edu. · <Link href="/privacidad">Privacidad</Link></p>
-        </section>
-
-        <nav aria-label="Mi zona" className="mz-barra">
-          <a href="#inicio" aria-current="page"><Casa />Inicio</a>
-          <Link href="/#calendario"><Calendario />Partidos</Link>
-          <a href="#ropa"><Bolsa />Ropa</a>
-          <a href="#cuenta"><Persona />Mi cuenta</a>
-        </nav>
-      </div>
-    </div>
+        <p className="pie mz-pie">
+          ¿Algo no cuadra? Habla con Iván, Carlos o Edu. · <Link href={RUTA_CUENTA}>Mi cuenta</Link> · <Link href="/privacidad">Privacidad</Link>
+        </p>
+      </main>
   );
 }

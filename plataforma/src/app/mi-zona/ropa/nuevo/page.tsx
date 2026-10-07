@@ -17,12 +17,12 @@ export default async function NuevoPedido() {
 
   return (
     <>
-      <header className="cabecera">
+      <div className="cabecera">
         <div className="dentro">
           <div className="marca"><Link href={volver}>Maccabis · {jugador.nombre_visible}</Link></div>
           <h1>Pedido de ropa</h1>
         </div>
-      </header>
+      </div>
       <main className="pagina">
         {!campana || !campana.abierta_ahora ? (
           <section className="tarjeta">

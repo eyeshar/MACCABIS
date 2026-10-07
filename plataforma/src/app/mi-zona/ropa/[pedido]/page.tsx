@@ -18,12 +18,12 @@ export default async function ModificarPedido({ params }: { params: Promise<{ pe
 
   return (
     <>
-      <header className="cabecera">
+      <div className="cabecera">
         <div className="dentro">
           <div className="marca"><Link href={volver}>Maccabis · {zona.jugador.nombre_visible}</Link></div>
           <h1>Modificar pedido</h1>
         </div>
-      </header>
+      </div>
       <main className="pagina">
         {!pedido ? (
           <section className="tarjeta">

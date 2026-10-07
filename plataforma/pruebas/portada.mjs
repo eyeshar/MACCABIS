@@ -167,7 +167,7 @@ try {
 
   // ---------------------------------------------------------------- Navegador
   nav = await chromium.launch({ channel: 'chrome', headless: true });
-  const captura = (p, n) => p.addStyleTag({ content: '.w-barra,.mz-barra{position:static!important;transform:none!important;width:auto!important}' })
+  const captura = (p, n) => p.addStyleTag({ content: '.nv-barra{position:static!important}body{padding-bottom:0!important}' })
     .then(() => p.screenshot({ path: path.join(SALIDA, `${n}.png`), fullPage: true }));
   async function entrar(p, email) {
     await p.goto(`${APP}/entrar`);
@@ -334,8 +334,9 @@ try {
     ok((await g.locator('[aria-labelledby="t-prox"] .eq-partido').count()) >= 1, 'panel: partidos del domingo');
     ok(await g.locator('[data-testid="hueco-sporteasy"]').isVisible(), 'panel: hueco del entreno con datos de SportEasy (paso 2)');
     ok((await g.locator('.gs-pendientes li').count()) >= 1, 'panel: pendientes de la semana');
-    const menuEntero = await g.evaluate(() => [...document.querySelectorAll('nav[aria-label="Gestión"] a')].every((e) => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth + 1; }));
-    ok(menuEntero, 'el menu de gestion no se corta');
+    // D90: en movil la barra de Gestion es una fila con scroll horizontal; lo que no cabe se alcanza desplazandola.
+    const menuEntero = await g.evaluate(() => { const f = document.querySelector('nav[aria-label="Gestión"] .zb-fila'); return f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === 'auto'; });
+    ok(menuEntero, 'el menu de gestion no se corta (cabe o se desplaza en su fila)');
     ok(await g.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'panel: sin desbordamiento');
     await captura(g, `real_gestion_${etiqueta}`);
     ok(errG.length === 0, 'gestion: sin errores de JavaScript', errG.join(' | '));

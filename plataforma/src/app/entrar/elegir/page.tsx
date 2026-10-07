@@ -10,8 +10,7 @@ export const metadata = { title: "¿A dónde vas? · Maccabis" };
 export default async function Elegir() {
   await exigirSesion();
   return (
-    <div className="tema-oscuro">
-      <div className="acc">
+    <div className="acc">
         <main className="acc-main">
           <div className="acc-marca">
             <Escudo />
@@ -23,7 +22,6 @@ export default async function Elegir() {
             <Link href="/gestion"><b>Gestión del club</b><span>Panel de la semana, jugadores, liga y scouting</span></Link>
           </nav>
         </main>
-      </div>
     </div>
   );
 }

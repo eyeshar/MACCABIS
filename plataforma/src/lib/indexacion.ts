@@ -2,7 +2,7 @@
 // no (noindex y Disallow en robots.txt). Las vistas previas de Vercel nunca se indexan.
 // La lista se repite en next.config.ts (cabecera X-Robots-Tag), que no puede importar de src/: pruebas:portada
 // comprueba que las dos coinciden.
-export const RUTAS_PRIVADAS = ["/entrar", "/mi-zona", "/gestion", "/auth"];
+export const RUTAS_PRIVADAS = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth"];
 
 /** Despliegue de vista previa o desarrollo en Vercel (VERCEL_ENV lo pone Vercel; en local no existe). */
 export const esVistaPrevia = () => Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";

@@ -14,6 +14,10 @@ plataforma/
   src/app/page.tsx          portada pública sin login (D76): próxima jornada, resultados, clasificación, líderes, calendario, historia
   src/app/calendario.ics/   feed iCal público (partidos y entrenos, sin datos personales, D77)
   src/app/manifest.ts       web instalable (D78); iconos en public/iconos/ y src/app/{icon,apple-icon}.png (npm run iconos)
+  src/components/nav/       navegacion unica (D89, D90): Cabecera (lee la sesion en el servidor), Navegacion (menu, menu de
+                            usuario, menu de Gestion, barra inferior y hoja "Mas" del movil), BarrasZona (Mi zona y Gestion)
+  src/lib/usuario.ts        quien mira la pagina (sin sesion, jugador, gestor) para la cabecera
+  src/app/cuenta/           Mi cuenta: una pagina para jugadores y gestores (/gestion/cuenta redirige aqui)
   src/app/entrar/           acceso: Google + código por correo, y el reparto a /mi-zona o /gestion
   src/app/auth/callback/    vuelta de "Entrar con Google"
   src/app/mi-zona/          zona personal del jugador (pedido de ropa, mis pedidos, estadísticas)
@@ -35,6 +39,8 @@ plataforma/
                             npm run pruebas:liga (RLS de la liga), pruebas:pantallas (Scouting y Liga consolidada),
                             node pruebas/restaurar_backup.mjs <copia> (prueba que una copia se restaura),
                             pruebas:asistencia (RLS de los motivos de ausencia: solo gestores),
+                            pruebas:navegacion (cabecera unica por rol, desplegables, barra inferior, barras de zona,
+                            barra de GitHub Pages; capturas en privado/mockups_liga/rediseno/nav1b/),
                             pruebas:portada (portada, /club, indexación, acceso, Mi zona y gestión nuevos, iCal y web instalable; capturas
                             reales en privado/mockups_liga/rediseno/)
   public/ropa/              imágenes de las prendas y tablas de tallas (sí se publican)

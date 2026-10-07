@@ -14,6 +14,7 @@ import { FUNDACION, GRUPO_EQUIPO, NOMBRE_EQUIPO } from "@/lib/web";
 import { origen } from "@/lib/sesion";
 
 // Portada publica (D76, maquetas Main y PortadaMovil): sin login, solo datos publicos (lib/publico.ts).
+import { cargarFuente } from "@/lib/eventos/fuente";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Maccabis · Baloncesto en Madrid" };
 
@@ -64,7 +65,8 @@ export default async function Portada({ searchParams }: { searchParams: Promise<
   // ?hoy=AAAA-MM-DD fija la fecha (solo para pruebas y revisiones; los datos son publicos igualmente).
   const hoy = hoyPrueba && /^\d{4}-\d{2}-\d{2}$/.test(hoyPrueba) ? hoyPrueba : hoyMadrid();
 
-  const proximos = proximosPartidos(hoy);
+  const fuente = await cargarFuente(); // tabla de eventos (D94); sin ella, los ficheros del repo
+  const proximos = proximosPartidos(hoy, undefined, fuente);
   const mismaFecha = proximos.length > 1 && proximos.every((p) => p.evento.fecha === proximos[0].evento.fecha && p.evento.jornada === proximos[0].evento.jornada);
   const resultados = ultimosResultados(hoy);
   const grupos: GrupoClas[] = clasificaciones().map((g) => {
@@ -73,7 +75,7 @@ export default async function Portada({ searchParams }: { searchParams: Promise<
   });
   const lid = lideres();
   const historia = resumenHistoria();
-  const todos = eventosTemporada();
+  const todos = eventosTemporada(fuente);
   const eventos: EventoPublico[] = todos.filter((e) => e.fecha >= hoy).map((e) => ({
     id: e.id, tipo: e.tipo, fecha: e.fecha, inicio: e.inicio, fin: e.fin, titulo: e.titulo, lugar: e.lugar,
     pistaPorConfirmar: e.pistaPorConfirmar, nota: e.nota, equipo: e.equipo, campo: e.partido?.campo ?? null, chip: chipEquipacion(e.aviso),

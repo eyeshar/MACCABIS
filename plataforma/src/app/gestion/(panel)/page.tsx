@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { cargarFuente } from "@/lib/eventos/fuente";
+import { cargarJugadores } from "@/lib/eventos/datos";
+import { contarRespuestas, convocadosDe, type Respuesta } from "@/lib/eventos/dominio";
+import "./eventos/eventos.css";
 import { exigirGestor } from "@/lib/sesion";
 import { AvisoCaja } from "@/components/ProximoPartido";
 import { bonito, cargarLiga, type DatosLiga } from "@/lib/liga";
@@ -44,7 +48,8 @@ export default async function InicioGestion() {
     : { count: 0 };
 
   const hoy = hoyMadrid();
-  const proximos = proximosPartidos(hoy);
+  const fuente = await cargarFuente();
+  const proximos = proximosPartidos(hoy, undefined, fuente);
   const fecha = proximos.map((p) => p.evento.fecha).sort()[0];
   const delDomingo = proximos.filter((p) => p.evento.fecha === fecha).map((p) => p.evento);
   const jornada = delDomingo[0]?.jornada;
@@ -52,9 +57,19 @@ export default async function InicioGestion() {
   const conAviso = delDomingo.filter((e) => e.aviso?.hay);
   const resultados = ultimosResultados(hoy);
   const sinActa = resultados.filter((r) => r.pendienteActa);
-  const entreno = eventosEntrenos().find((e) => e.fecha >= hoy);
-  const habitual = entrenoHabitual();
+  const entreno = eventosEntrenos(fuente).find((e) => e.fecha >= hoy);
+  const habitual = entrenoHabitual(fuente);
   const sinCorreo = (jugadores ?? 0) - (conCorreo ?? 0);
+  // Respuestas de SportEasy al proximo entreno (leidas por Claude, paso 2): van / sin responder / no van.
+  let respEntreno: { va: number; duda: number; no: number; sin: number; id: string } | null = null;
+  if (entreno) {
+    const { data: ev } = await supabase.from("eventos").select("id, tipo, equipo").eq("clave", entreno.id).maybeSingle();
+    if (ev) {
+      const [{ data: rs }, js] = await Promise.all([supabase.from("respuestas").select("respuesta").eq("evento_id", ev.id), cargarJugadores(supabase)]);
+      const c = contarRespuestas([...(rs ?? []) as { respuesta: Respuesta }[], ...Array.from({ length: Math.max(0, convocadosDe(ev as never, js).length - (rs?.length ?? 0)) }, () => ({ respuesta: "sin_responder" as Respuesta }))]);
+      respEntreno = { va: c.va, duda: c.duda, no: c.no, sin: c.sin_responder, id: ev.id };
+    }
+  }
 
   const pendientes: string[] = [];
   if (entreno?.pistaPorConfirmar) pendientes.push(`Fijar la pista del entreno del ${diaSemanaCorto(entreno.fecha)} ${diaMes(entreno.fecha)} (${entreno.nota ?? "pista por confirmar"}).`);
@@ -159,9 +174,14 @@ export default async function InicioGestion() {
                 {" "}(lo habitual: miércoles {habitual.inicio}–{habitual.fin} en {habitual.pista}{habitual.enObras ? ", en obras" : ""})
               </span>
             ) : <span className="suave">No quedan entrenos en el calendario.</span>}
-            <div className="hueco" data-testid="hueco-sporteasy">
-              Respuestas al entreno (van, sin responder, no van): llegan en el paso 2, leídas de SportEasy. El recordatorio lo propondrá Claude y lo enviarás tú.
-            </div>
+            {respEntreno && respEntreno.va + respEntreno.duda + respEntreno.no > 0 ? (
+              <div data-testid="respuestas-entreno" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="ev-cuentas"><span className="ev-ok">{respEntreno.va} van</span><span className="ev-duda">{respEntreno.duda} dudan</span><span className="suave">{respEntreno.sin} sin responder</span><span className="ev-no">{respEntreno.no} no van</span></div>
+                <Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} style={{ fontWeight: 600 }}>Ver respuestas y motivos →</Link>
+              </div>
+            ) : (
+              <div className="hueco" data-testid="hueco-sporteasy">Sin respuestas de SportEasy todavía. Claude las trae (Importar → Respuestas) y el recordatorio lo propone él y lo envías tú.</div>
+            )}
           </section>
 
           <section className="gs-bloque" aria-labelledby="t-pendiente">

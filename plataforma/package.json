@@ -36,7 +36,14 @@
     "pruebas:privacidad": "node pruebas/privacidad_paginas.mjs",
     "iconos": "node scripts/generar_iconos.mjs",
     "db:asistencia": "node scripts/cargar_asistencia.mjs",
-    "pruebas:asistencia": "node pruebas/rls_asistencia.mjs"
+    "pruebas:asistencia": "node pruebas/rls_asistencia.mjs",
+    "db:eventos": "node scripts/cargar_eventos.mjs",
+    "eventos:cuadre": "node scripts/cuadre_eventos.mjs",
+    "pruebas:eventos": "node pruebas/rls_eventos.mjs",
+    "pruebas:eventos-real": "node pruebas/rls_eventos_real.mjs",
+    "pruebas:eventos-logica": "node pruebas/eventos_logica.mjs",
+    "pruebas:eventos-pantallas": "node pruebas/eventos_pantallas.mjs",
+    "pruebas:fuente-eventos": "node pruebas/fuente_eventos.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

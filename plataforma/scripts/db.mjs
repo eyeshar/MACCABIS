@@ -37,7 +37,8 @@ export async function migrar(sql, { log = console.log } = {}) {
   await sql`create table if not exists supabase_migrations.schema_migrations (
     version text primary key, statements text[], name text)`;
   const hechas = new Set((await sql`select version from supabase_migrations.schema_migrations`).map(r => r.version));
-  const ficheros = fs.readdirSync(DIR_MIGRACIONES).filter(f => /^\d+_.+\.sql$/.test(f)).sort();
+  // Las reversiones (<migracion>.revertir.sql, D94) viven al lado pero NUNCA las aplica este comando.
+  const ficheros = fs.readdirSync(DIR_MIGRACIONES).filter(f => /^\d+_.+\.sql$/.test(f) && !/\.revertir\.sql$/.test(f)).sort();
   let aplicadas = 0;
   for (const f of ficheros) {
     const [version, ...resto] = f.replace(/\.sql$/, '').split('_');

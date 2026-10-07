@@ -72,6 +72,27 @@ if (fs.existsSync(dirEst)) {
   ok(conPersonales.length === 0, 'las copias de estadísticas de la plataforma no llevan DNI, teléfono, correo, nivel, posición ni fechas de nacimiento', conPersonales.map(([f, r]) => `${f}: ${r.slice(0, 2)}`).join(' | '));
 }
 
+console.log('\n== Eventos, respuestas y asistencia (paso 2, D94)');
+const leer = (...r) => fs.readFileSync(path.join(PLAT, ...r), 'utf8');
+const sinComentarios = (t) => t.replace(/--.*$/gm, '');
+const PRIVADAS = ['respuestas', 'ausencias_periodo', 'diccionario_sporteasy', 'importaciones', 'asistencia_resumen', 'asistencia_motivos'];
+const publicas = ['src/lib/eventos/fuente.ts', 'src/lib/ical.ts', 'src/app/calendario.ics/route.ts', 'src/app/page.tsx', 'src/app/club/page.tsx', 'src/app/privacidad/page.tsx', 'src/components/web/CalendarioPublico.tsx'];
+const lee = publicas.filter((f) => fs.existsSync(path.join(PLAT, f)) && PRIVADAS.some((t) => new RegExp('(from|rpc)\\(["\']' + t + '["\']').test(leer(f))));
+ok(lee.length === 0, `el código público (${publicas.length} ficheros) no toca respuestas, ausencias, diccionario, importaciones ni asistencia`, lee.join(', '));
+const fuente = leer('src/lib/eventos/fuente.ts');
+ok(/v_eventos_publicos/.test(fuente) && !/\.from\("(eventos|pistas|respuestas)"\)/.test(fuente), 'la fuente pública lee solo las vistas públicas, nunca las tablas');
+const mig1 = leer('supabase/migrations/20261007230000_eventos_pistas.sql');
+const vista = mig1.slice(mig1.indexOf('create view public.v_eventos_publicos'), mig1.indexOf('create view public.v_descansos_publicos')).split('from public.eventos')[0];
+ok(vista.length > 100 && !/sporteasy_|origen|person_id|respuesta|detalle|creado_en|actualizado_en|pista_id|e\.id\b|e\.serie/.test(vista), 'la vista pública no selecciona estado de SportEasy, origen, serie, ids, respuestas ni datos personales');
+const rls = sinComentarios(['20261007230000_eventos_pistas.sql', '20261007231000_respuestas_ausencias_asistencia.sql'].map((f) => leer('supabase/migrations', f)).join('\n'));
+const tablas = [...rls.matchAll(/create table public\.(\w+)/g)].map((m) => m[1]);
+ok(tablas.length === 8 && tablas.every((t) => new RegExp('alter table public\\.' + t + '\\s+enable row level security').test(rls)), `las ${tablas.length} tablas nuevas tienen RLS (${tablas.join(', ')})`);
+ok(!/\bdrop\b|\btruncate\b|\bdelete\b/i.test(rls), 'las migraciones nuevas son solo aditivas: sin DROP, TRUNCATE ni DELETE');
+ok(!/grant[^;]*\bdelete\b/i.test(rls), 'ninguna tabla nueva concede DELETE');
+const nuevas = fs.readdirSync(path.join(PLAT, 'supabase', 'migrations')).filter((f) => /^2026100723.*\.sql$/.test(f) && !f.endsWith('.revertir.sql'));
+ok(nuevas.length === 3 && nuevas.every((f) => fs.existsSync(path.join(PLAT, 'supabase', 'migrations', f.replace(/\.sql$/, '.revertir.sql')))), 'cada migración nueva (3) tiene su revertir.sql al lado');
+ok(['eventos', 'asistencia'].every((d) => fs.existsSync(path.join(PLAT, 'src/app/gestion/(panel)', d, 'page.tsx'))) && /exigirGestor/.test(leer('src/app/gestion/(panel)/layout.tsx')), 'Eventos y Asistencia viven dentro del panel de gestión (solo gestores)');
+
 (async () => {
   if (fs.existsSync(path.join(PLAT, '.next', 'BUILD_ID'))) {
     const { revisar } = await import(pathToFileURL(path.join(PLAT, 'pruebas', 'privacidad_paginas.mjs')).href);

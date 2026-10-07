@@ -23,6 +23,8 @@ function personasPorTemporada() {
 
 /** Todas las paginas publicas que migran de GitHub Pages (se amplia en cada entrega). */
 export const RUTAS = [
+  // Paso 2 (D94): la portada, /club y el .ics leen de la tabla de eventos (vistas publicas): nada de respuestas ni motivos.
+  '/', '/?hoy=2026-10-07', '/club', '/privacidad', '/calendario.ics',
   '/historia', '/historia?persona=eric', '/historia?persona=barreiro-carballal-carlos-jose',
   '/plantilla', ...temporadas.map((t) => `/plantilla?t=${t}`), '/jugador',
   ...personasPorTemporada(),
@@ -49,7 +51,9 @@ export async function revisar({ log = console.log } = {}) {
     for (;;) { try { await fetch(`${APP}/liga`); break; } catch { if (Date.now() > fin) throw new Error('la web no arranca'); await new Promise((r) => setTimeout(r, 300)); } }
     for (const ruta of RUTAS) {
       const r = await fetch(APP + ruta, { redirect: 'follow' });
-      const html = await r.text();
+      let html = await r.text();
+      // El .ics lleva fechas como 19700329T020000 (no son DNI): se quitan las lineas de fecha y UID antes de buscar.
+      if (ruta.endsWith('.ics')) html = html.replace(/^(DTSTART|DTEND|DTSTAMP|UID)[^\r\n]*/gm, '');
       const malos = [];
       const c = html.match(CLAVES); if (c) malos.push(`clave ${c[1]}`);
       for (const [re, que] of PATRONES) { const m = html.match(re); if (m) malos.push(`${que} (${m[0]})`); }

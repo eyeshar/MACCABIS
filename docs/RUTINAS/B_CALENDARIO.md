@@ -1,4 +1,17 @@
-# RUTINA B — Revisión del calendario (borrador v0, 02/10/2026)
+# RUTINA B — Revisión del calendario (v1, 08/10/2026: usa Importar y la cola de SportEasy, D94/D95)
+
+> **Desde el paso 2 la web es la única fuente de eventos.** Los pasos 4 y 5 de abajo (comparar a mano con SportEasy y aplicar allí) se sustituyen por: **Importar → Calendario** en la plataforma (compara y propone) y, después, copiar a SportEasy lo que quede en la cola «Copia a SportEasy». El texto original se conserva por si hay que volver al método antiguo.
+
+## Procedimiento actual
+1. Leer en Deportes/web la programación de MdA (G1) y MdL (G2) (pasos 1–3 de abajo).
+2. Pegarla en `https://maccabis.vercel.app/gestion/eventos/importar` (pestaña **Calendario**), una línea por partido: `grupo;jornada;local;visitante;fecha;hora;pista` (G1 = MdA, G2 = MdL; una jornada de descanso se escribe «Maccabi de Acostar descansa»; las líneas de otros equipos se ignoran). Pulsar **Comparar**: sale «0 cambios» o la lista de cambios con campo, valor actual y valor del Ayuntamiento.
+3. **Proponer los cambios a Iván** y, con su OK, pulsar **Aceptar** (o **Ignorar**, o **Aceptar todos**) y **Aplicar lo aceptado**. Nada se aplica sin OK. Los partidos nuevos o desaparecidos salen como señales: se revisan a mano, no se crean ni se borran solos.
+4. Lo aceptado queda **pendiente de copiar a SportEasy**. Abrir `/gestion/eventos`, tarjeta **«Copia a SportEasy»**: copiar cada cambio a SportEasy con el OK de Iván y pulsar **«Marcar como copiado»**.
+5. Cada importación queda registrada (quién, cuándo, líneas, qué se aceptó) en la misma pantalla.
+6. Colores de los rivales y `npm run datos:sync` / `pruebas:equipacion`: como antes (abajo). Si cambia el orden local/visitante, el aviso de equipación se recalcula con los datos del calendario del repo: tras aceptar un cambio de local/visitante, actualizar también `data/calendario_2026-27.json` y correr `datos:sync` hasta que los avisos lean de la tabla.
+
+---
+## Texto original (v0, 02/10/2026)
 
 Cuándo: jueves desde las 20:15 (programación oficial a las 20:00 del jueves previo, Bases 47 JDM 4.2).
 

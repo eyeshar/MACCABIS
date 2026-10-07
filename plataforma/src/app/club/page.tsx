@@ -4,6 +4,7 @@ import MarcoPublico from "@/components/web/Marco";
 import { entrenoHabitual, eventosEntrenos, resumenHistoria } from "@/lib/publico";
 import { diaLargo, hoyMadrid } from "@/lib/dias";
 import { FUNDACION } from "@/lib/web";
+import { cargarFuente } from "@/lib/eventos/fuente";
 
 // "El club" (D86): que es Maccabis, desde 2013, MdA y MdL, cifras de historia (las mismas de la portada, de los datos),
 // entrenos y donde jugamos. Sin datos personales. La rejilla completa de la Historia sigue en GitHub Pages.
@@ -14,10 +15,11 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-export default function Club() {
+export default async function Club() {
   const h = resumenHistoria();
-  const habitual = entrenoHabitual();
-  const proximo = eventosEntrenos().find((e) => e.fecha >= hoyMadrid());
+  const fuente = await cargarFuente();
+  const habitual = entrenoHabitual(fuente);
+  const proximo = eventosEntrenos(fuente).find((e) => e.fecha >= hoyMadrid());
   return (
     <MarcoPublico actual="club">
       <section className="w-dentro w-heroe" style={{ paddingBottom: 8 }}>

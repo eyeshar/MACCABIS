@@ -15,6 +15,7 @@ import { descansaEl, eventosTemporada, proximosPartidos, temporadaDe, type Equip
 import { diaMes, diaSemanaCorto, hoyMadrid } from "@/lib/dias";
 import { NOMBRE_EQUIPO, RUTA_CUENTA } from "@/lib/web";
 
+import { cargarFuente } from "@/lib/eventos/fuente";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -76,15 +77,16 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
   const hoy = hoyMadrid();
 
   // Proximo domingo con partido suyo: todos sus partidos de esa fecha.
-  const proximos = proximosPartidos(hoy, equipos);
+  const fuente = await cargarFuente();
+  const proximos = proximosPartidos(hoy, equipos, fuente);
   const fechaDomingo = proximos.map((p) => p.evento.fecha).sort()[0];
   const delDomingo = proximos.filter((p) => p.evento.fecha === fechaDomingo).map((p) => p.evento);
-  const descansan = fechaDomingo ? descansaEl(fechaDomingo).filter((e) => equipos.includes(e)) : [];
+  const descansan = fechaDomingo ? descansaEl(fechaDomingo, fuente).filter((e) => equipos.includes(e)) : [];
   const mismaHora = delDomingo.length === 2 && delDomingo[0].inicio && delDomingo[0].inicio === delDomingo[1].inicio;
   const conAviso = delDomingo.filter((e) => e.aviso?.hay);
 
   // Agenda: los 3 proximos eventos suyos (entrenos y partidos de sus equipos) y lo ultimo que jugo.
-  const agenda = eventosTemporada().filter((e) => e.fecha >= hoy && (e.tipo === "entreno" || equipos.includes(e.equipo!))).slice(0, 3);
+  const agenda = eventosTemporada(fuente).filter((e) => e.fecha >= hoy && (e.tipo === "entreno" || equipos.includes(e.equipo!))).slice(0, 3);
   const temporada = temporadaDe(jugador.person_id);
   const jugados = temporada?.partidos.filter((p) => p.fecha && p.fecha <= hoy) ?? [];
   const ultimaFecha = jugados.map((p) => p.fecha!).sort().at(-1);

@@ -1,5 +1,5 @@
 import "server-only";
-import { eventosTemporada, type Evento } from "@/lib/publico";
+import { eventosTemporada, type Evento, type FuenteCalendario } from "@/lib/publico";
 import { GRUPO_EQUIPO } from "@/lib/web";
 
 // Feed iCal publico (D76): partidos de MdA y MdL y entrenos de la temporada. Solo datos del club: ni nombres de
@@ -59,14 +59,14 @@ function vevento(e: Evento, ahora: string): string[] {
   return ["BEGIN:VEVENT", ...l, "END:VEVENT"];
 }
 
-export function calendarioIcs(ahora = new Date()) {
+export function calendarioIcs(ahora = new Date(), fuente?: FuenteCalendario) {
   const s = sello(ahora);
   const lineas = [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Maccabis//Calendario 2026-27//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
     "X-WR-CALNAME:Maccabis", "X-WR-CALDESC:Partidos de MdA y MdL y entrenos de Maccabis", "X-WR-TIMEZONE:Europe/Madrid",
     "REFRESH-INTERVAL;VALUE=DURATION:PT12H", "X-PUBLISHED-TTL:PT12H",
     ...VTIMEZONE,
-    ...eventosTemporada().flatMap((e) => vevento(e, s)),
+    ...eventosTemporada(fuente).flatMap((e) => vevento(e, s)),
     "END:VCALENDAR",
   ];
   return lineas.map(plegar).join("\r\n") + "\r\n";

@@ -39,17 +39,29 @@ type Entrenos = {
   excepciones: { serie: string; fecha: string; inicio?: string; fin?: string; pista?: string; nota?: string; cancelado?: boolean }[];
 };
 const ENTRENOS = entrenosJson as unknown as Entrenos;
-const CALENDARIO = calJson as unknown as { partidos: (Partido & { fase?: string })[] };
-export const partidosCalendario = () => CALENDARIO.partidos;
+type PartidoCal = Partido & { fase?: string };
+const CALENDARIO = calJson as unknown as { partidos: PartidoCal[] };
+
+/** Origen del calendario publico. Por defecto, los ficheros del repo (la fuente de siempre). Desde el paso 2 (D94) las
+ *  paginas pueden pasar la fuente leida de la tabla de eventos (vistas publicas de Supabase, `cargarFuente`). */
+export type FuenteCalendario = {
+  partidos: PartidoCal[];
+  /** Entrenos ya expandidos (uno por miercoles). null = salen de data/entrenos_2026-27.json. */
+  entrenos: Evento[] | null;
+  habitual: { inicio: string; fin: string; pista: string; enObras: boolean } | null;
+};
+const FUENTE_FICHEROS: FuenteCalendario = { partidos: CALENDARIO.partidos, entrenos: null, habitual: null };
+
+export const partidosCalendario = (f: FuenteCalendario = FUENTE_FICHEROS) => f.partidos;
 
 /** Ultimo dia con partido de liga: la serie de entrenos sin fecha de fin se corta ahi. */
-export const finTemporada = () => CALENDARIO.partidos.map((p) => p.fecha).filter(Boolean).sort().at(-1) as string;
+export const finTemporada = (f: FuenteCalendario = FUENTE_FICHEROS) => f.partidos.map((p) => p.fecha).filter(Boolean).sort().at(-1) as string;
 
 /** "Pista 2" / "Moratalaz · Pista 2" */
 const pista = (campo: string | null) => (campo ? `Pista ${campo}` : "Pista por confirmar");
 
-export function eventosPartidos(): Evento[] {
-  return CALENDARIO.partidos
+export function eventosPartidos(f: FuenteCalendario = FUENTE_FICHEROS): Evento[] {
+  return f.partidos
     .filter((p) => !p.descansa && p.rival && p.fecha)
     .map((p) => {
       const nuestro = NOMBRE_EQUIPO[p.equipo], rival = nombreRival(p.rival);
@@ -74,7 +86,8 @@ export function eventosPartidos(): Evento[] {
 }
 
 /** Una fila por miercoles de entreno, con las excepciones aplicadas. Valdebernardo en obras: "Pista por confirmar". */
-export function eventosEntrenos(hasta = finTemporada()): Evento[] {
+export function eventosEntrenos(f: FuenteCalendario = FUENTE_FICHEROS, hasta = finTemporada(f)): Evento[] {
+  if (f.entrenos) return f.entrenos;
   const fuera: Evento[] = [];
   for (const s of ENTRENOS.series) {
     const fin = s.hasta ?? hasta;
@@ -102,15 +115,16 @@ export function eventosEntrenos(hasta = finTemporada()): Evento[] {
 }
 
 /** La serie habitual, para el texto "lo habitual: miercoles 20:30–22:30 en Valdebernardo". */
-export function entrenoHabitual() {
+export function entrenoHabitual(f: FuenteCalendario = FUENTE_FICHEROS) {
+  if (f.habitual) return f.habitual;
   const s = ENTRENOS.series[0];
   const p = ENTRENOS.pistas[s.pista];
   return { inicio: s.inicio, fin: s.fin, pista: p.nombre, enObras: p.estado === "en_obras" };
 }
 
 /** Todos los eventos de la temporada, por fecha y hora. */
-export function eventosTemporada(): Evento[] {
-  return [...eventosPartidos(), ...eventosEntrenos()].sort((a, b) =>
+export function eventosTemporada(f: FuenteCalendario = FUENTE_FICHEROS): Evento[] {
+  return [...eventosPartidos(f), ...eventosEntrenos(f)].sort((a, b) =>
     a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : (a.inicio ?? "99") < (b.inicio ?? "99") ? -1 : (a.inicio ?? "99") > (b.inicio ?? "99") ? 1 : a.id < b.id ? -1 : 1);
 }
 
@@ -126,18 +140,18 @@ export function chipEquipacion(a: Aviso | null | undefined) {
 export type Proximo = { equipo: Equipo; evento: Evento; descansaAntes: number[] };
 
 /** Proximo partido de cada equipo desde hoy (inclusive), con las jornadas que descansa antes. */
-export function proximosPartidos(hoy: string, equipos: Equipo[] = ["MDA", "MDL"]): Proximo[] {
-  const partidos = eventosPartidos();
+export function proximosPartidos(hoy: string, equipos: Equipo[] = ["MDA", "MDL"], f: FuenteCalendario = FUENTE_FICHEROS): Proximo[] {
+  const partidos = eventosPartidos(f);
   return equipos.flatMap((e) => {
     const evento = partidos.filter((p) => p.equipo === e && p.fecha >= hoy).sort((a, b) => (a.fecha < b.fecha ? -1 : 1))[0];
     if (!evento) return [];
-    const descansaAntes = CALENDARIO.partidos.filter((p) => p.equipo === e && p.descansa && p.fecha && p.fecha >= hoy && p.fecha < evento.fecha).map((p) => p.jornada);
+    const descansaAntes = f.partidos.filter((p) => p.equipo === e && p.descansa && p.fecha && p.fecha >= hoy && p.fecha < evento.fecha).map((p) => p.jornada);
     return [{ equipo: e, evento, descansaAntes }];
   });
 }
 
 /** Jornadas del calendario en las que descansa un equipo en una fecha dada (para "MdA descansa"). */
-export const descansaEl = (fecha: string) => CALENDARIO.partidos.filter((p) => p.descansa && p.fecha === fecha).map((p) => p.equipo);
+export const descansaEl = (fecha: string, f: FuenteCalendario = FUENTE_FICHEROS) => f.partidos.filter((p) => p.descansa && p.fecha === fecha).map((p) => p.equipo);
 
 // ---------------------------------------------------------------- resultados (temporada en curso, por equipo)
 type PartidoTemporada = { equipo: Equipo; fecha: string; rival: string; pf: number | null; pc: number | null; res: string | null; incomp: boolean; hora?: string; pista?: string; pendiente_acta?: boolean };

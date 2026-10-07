@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { exigirGestor } from "@/lib/sesion";
 import { hoyMadrid } from "@/lib/dias";
@@ -22,7 +22,7 @@ const TIPOS: TipoEvento[] = ["entreno", "liga", "amistoso", "torneo", "interno"]
 const EQUIPOS: EquipoEvento[] = ["MdA", "MdL", "ambos"];
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const hora = (v: string) => (/^\d{1,2}:\d{2}$/.test(v) ? v.padStart(5, "0") : null);
-const refrescar = () => { revalidatePath("/gestion/eventos"); revalidatePath("/gestion"); revalidatePath("/"); };
+const refrescar = () => { revalidatePath("/gestion/eventos"); revalidatePath("/gestion"); revalidatePath("/"); revalidatePath("/calendario.ics"); revalidateTag("calendario", "max"); };
 
 type Campos = CamposEditables;
 

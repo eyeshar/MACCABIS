@@ -9,6 +9,9 @@
 //  2. Los 4 descansos (MdA en J4 y J15, MdL en J11 y J22) y que no hay ningun partido en esas jornadas.
 //  3. La serie de entrenos: 27 miercoles (31 menos los 4 sin sesion), con la excepcion del 07/10 en la Caja Magica.
 //  4. Contra la copia que ya vive en Supabase (liga_calendario, 44 filas): mismas fechas, horas, rivales y pistas.
+//     (liga_calendario guarda los rivales en formato Titulo y el calendario en MAYUSCULAS, tal como lo da el
+//     Ayuntamiento: es solo tipografia, por eso el rival se compara sin mayusculas ni puntos finales: 'MEJORADA 2012 C.B..'
+//     frente a 'Mejorada 2012 C.B.'. Fechas, horas, pistas y local/visitante se comparan EXACTOS.)
 //  5. Contra lo escrito en la documentacion el 02/10 (D62 / ESTADO / rutina B): dos domingos con las dos fichas a la
 //     misma hora (18/10 y 07/02, 10:15) y J1 de MdA visitante en la pista 2.
 //  6. Cada rival tiene sus colores en data/equipaciones_2026-27.json (los avisos de equipacion siguen funcionando).
@@ -25,6 +28,8 @@ const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
 const require = createRequire(import.meta.url);
 const hhmm = (t) => (t ? String(t).slice(0, 5) : null);
+// Solo tipografia: mayusculas y puntos finales ('MEJORADA 2012 C.B..' en el calendario, 'Mejorada 2012 C.B.' en liga_calendario).
+const tipografia = (t) => String(t ?? '').toLowerCase().replace(/\.+$/, '');
 const dia = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d ? String(d).slice(0, 10) : null);
 
 export async function cuadrar(sql, { log = console.log } = {}) {
@@ -101,7 +106,7 @@ export async function cuadrar(sql, { log = console.log } = {}) {
       const eq = c.equipo === 'MDA' ? 'MdA' : 'MdL';
       if (c.descansa) { ok(des.some((d) => d.equipo === eq && d.jornada === c.jornada), `liga_calendario ${eq} J${c.jornada} descansa = descansos`); continue; }
       const e = porClave.get(`${c.equipo.toLowerCase()}-j${c.jornada}`);
-      ok(!!e && dia(e.fecha) === dia(c.fecha) && hhmm(e.inicio) === hhmm(c.hora) && e.rival === c.rival && e.es_local === c.local && String(e.numero_pista) === String(c.campo),
+      ok(!!e && dia(e.fecha) === dia(c.fecha) && hhmm(e.inicio) === hhmm(c.hora) && tipografia(e.rival) === tipografia(c.rival) && e.es_local === c.local && String(e.numero_pista) === String(c.campo),
         `liga_calendario ${eq} J${c.jornada} = eventos`);
     }
   }

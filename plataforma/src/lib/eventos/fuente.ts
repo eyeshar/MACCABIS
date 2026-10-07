@@ -45,7 +45,11 @@ async function leer(): Promise<FuenteCalendario | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL, anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anon) return null;
   try {
-    const sb = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
+    const sb = createClient(url, anon, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      // Nunca colgar una pagina ni la compilacion por una base lenta: a los 8 s se usan los ficheros del repo.
+      global: { fetch: (entrada, init) => fetch(entrada, { ...init, signal: AbortSignal.timeout(8000) }) },
+    });
     const [ev, de, ha] = await Promise.all([
       sb.from("v_eventos_publicos").select("*").eq("temporada", "2026-27").order("fecha"),
       sb.from("v_descansos_publicos").select("equipo, jornada, fecha").eq("temporada", "2026-27"),
@@ -59,9 +63,10 @@ async function leer(): Promise<FuenteCalendario | null> {
   }
 }
 
-const enCache = unstable_cache(async () => (await leer()) ?? null, ["calendario-publico-2026-27"], { revalidate: 60, tags: ["calendario"] });
+// Se guarda un objeto (no null) para que "sin datos" tambien se cachee y no se repita la consulta.
+const enCache = unstable_cache(async () => ({ fuente: await leer() }), ["calendario-publico-2026-27"], { revalidate: 60, tags: ["calendario"] });
 
 /** Calendario publico leido de la tabla de eventos (cacheado 60 s). undefined = usar los ficheros del repo. */
 export async function cargarFuente(): Promise<FuenteCalendario | undefined> {
-  return (await enCache()) ?? undefined;
+  return (await enCache()).fuente ?? undefined;
 }

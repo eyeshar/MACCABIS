@@ -48,6 +48,7 @@ try {
   ok(fs.existsSync(path.join(MIGS, '20261007230000_eventos_pistas.revertir.sql')) && fs.existsSync(path.join(MIGS, '20261007231000_respuestas_ausencias_asistencia.revertir.sql')), 'cada migración nueva tiene su revertir.sql al lado');
   for (const n of TABLAS_PRIVADAS) ok(await tablaExiste(n), `existe public.${n}`);
   // Datos de asistencia para probar la copia (la pila arranca con la tabla vacia).
+  await sql.unsafe(fs.readFileSync(path.join(MIGS, '20261007232000_pista_habitual_publica.revertir.sql'), 'utf8'));
   await sql.unsafe(fs.readFileSync(path.join(MIGS, '20261007231000_respuestas_ausencias_asistencia.revertir.sql'), 'utf8'));
   ok(!(await tablaExiste('respuestas')) && !(await tablaExiste('asistencia_resumen')), 'revertir la 2.ª migración quita respuestas, ausencias, diccionario, importaciones y resumen');
   ok(await tablaExiste('asistencia_motivos'), 'asistencia_motivos sigue ahí (no se toca)');

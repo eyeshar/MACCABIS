@@ -174,7 +174,7 @@ export default async function InicioGestion() {
                 {" "}(lo habitual: miércoles {habitual.inicio}–{habitual.fin} en {habitual.pista}{habitual.enObras ? ", en obras" : ""})
               </span>
             ) : <span className="suave">No quedan entrenos en el calendario.</span>}
-            {respEntreno && (respEntreno.va + respEntreno.duda + respEntreno.no > 0 || respEntreno.sin > 0) ? (
+            {respEntreno && respEntreno.va + respEntreno.duda + respEntreno.no > 0 ? (
               <div data-testid="respuestas-entreno" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div className="ev-cuentas"><span className="ev-ok">{respEntreno.va} van</span><span className="ev-duda">{respEntreno.duda} dudan</span><span className="suave">{respEntreno.sin} sin responder</span><span className="ev-no">{respEntreno.no} no van</span></div>
                 <Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} style={{ fontWeight: 600 }}>Ver respuestas y motivos →</Link>

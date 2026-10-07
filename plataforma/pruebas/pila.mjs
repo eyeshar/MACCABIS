@@ -190,7 +190,8 @@ export async function arrancar({ log = () => {} } = {}) {
           res.writeHead(r.statusCode, r.headers);
           r.pipe(res);
         });
-        prox.on('error', e => { res.writeHead(502); res.end(String(e)); });
+        prox.on('error', e => { if (res.headersSent) { res.destroy(); return; } res.writeHead(502); res.end(String(e)); }); // un cliente que corta (timeout) no debe tumbar la pila
+        req.on('close', () => prox.destroy());
         req.pipe(prox);
         return;
       }

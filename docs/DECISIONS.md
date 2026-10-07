@@ -453,4 +453,4 @@ Varios comentarios del código y `data/avisos_equipacion.js` llaman «D79» a la
 - **Privacidad:** `npm run test:privacidad` revisa también el código, las copias de datos y el HTML renderizado de las páginas nuevas (motivos, niveles, DNI, teléfonos, correos, fechas de nacimiento).
 - **Menú:** «Liga» de la cabecera y «Todas las estadísticas» del pie apuntan a `/liga`.
 **Por qué:** una sola web; la comparación automática con GitHub Pages (`npm run pruebas:cuadre`, 12 temporadas) garantiza que los números son los mismos.
-**Estado:** entrega 1 pendiente del OK de Iván en producción.
+**Estado:** entrega 1 en producción (merge `a2cb0df`, `verificar_produccion` en TODO OK); pendiente de la revisión de Iván.

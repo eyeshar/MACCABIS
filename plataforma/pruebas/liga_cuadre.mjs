@@ -112,7 +112,7 @@ try {
     igual(fa, fb, `${t} jugadores: ${fa.length} jugadores`);
     if (['2025-26', '2023-24', '2017-18'].includes(t)) {
       // los 5 primeros por puntos, para el cuadre del PR
-      for (let i = 0; i < Math.min(5, fa.length); i++) cuadre.push([t, fa[i][1], fa[i].slice(2).join(' | '), (fb[i] ?? [])[1] + ' -> ' + (fb[i] ?? []).slice(2).join(' | ')]);
+      for (let i = 0; i < Math.min(5, fa.length); i++) cuadre.push([t, fa[i][1], fa[i].slice(2).join(' · '), (fb[i] ?? []).slice(2).join(' · ')]);
     }
   }
   await abrirVieja('2025-26', 'jugadores'); await abrirNueva('2025-26', 'jugadores');

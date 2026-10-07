@@ -10,6 +10,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const { publica, detalle, buscarMotivos, comprobarPublicos, CLAVES_PRIVADAS, DIR_PRIVADO } = require('./asistencia_privacidad');
 
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -53,5 +54,29 @@ if (fs.existsSync(DIR_PRIVADO)) {
   }
 } else console.log('  (no hay privado/asistencia/ en este equipo: se omite)');
 
-console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
-process.exit(fallos ? 1 : 0);
+console.log('\n== Páginas públicas migradas de GitHub Pages (Liga, Plantilla, Historia)');
+const PLAT = path.join(ROOT, 'plataforma');
+const fuentes = ['src/app/liga', 'src/components/liga', 'src/lib/estadisticas'].flatMap(d => {
+  const base = path.join(PLAT, d);
+  const lista = f => fs.readdirSync(f, { withFileTypes: true }).flatMap(e => e.isDirectory() ? lista(path.join(f, e.name)) : [path.join(f, e.name)]);
+  return fs.existsSync(base) ? lista(base) : [];
+});
+const pintan = fuentes.filter(f => /\.(tsx?|css)$/.test(f) && CLAVES_PRIVADAS.some(k => new RegExp(`\\b${k}\\b`).test(fs.readFileSync(f, 'utf8'))));
+ok(fuentes.length > 0 && pintan.length === 0, `el código de las páginas migradas (${fuentes.length} ficheros) no maneja motivos de ausencia`, pintan.map(f => path.relative(ROOT, f)).join(', '));
+const CLAVES_PERSONALES = /^(dni|nif|telefono|tel|movil|fecha_nacimiento|nacimiento|fecha_alta|nivel|email|correo|posicion|dobla|si_dobla|si_entrena)$/;
+const personales = (o, r = '') => Array.isArray(o) ? o.flatMap((x, i) => personales(x, `${r}[${i}]`))
+  : o && typeof o === 'object' ? Object.entries(o).flatMap(([k, v]) => (CLAVES_PERSONALES.test(k) ? [`${r}.${k}`] : []).concat(personales(v, `${r}.${k}`))) : [];
+const dirEst = path.join(PLAT, 'src', 'data', 'estadisticas');
+if (fs.existsSync(dirEst)) {
+  const conPersonales = fs.readdirSync(dirEst).filter(f => f.endsWith('.json')).map(f => [f, personales(JSON.parse(fs.readFileSync(path.join(dirEst, f), 'utf8')))]).filter(([, r]) => r.length);
+  ok(conPersonales.length === 0, 'las copias de estadísticas de la plataforma no llevan DNI, teléfono, correo, nivel, posición ni fechas de nacimiento', conPersonales.map(([f, r]) => `${f}: ${r.slice(0, 2)}`).join(' | '));
+}
+
+(async () => {
+  if (fs.existsSync(path.join(PLAT, '.next', 'BUILD_ID'))) {
+    const { revisar } = await import(pathToFileURL(path.join(PLAT, 'pruebas', 'privacidad_paginas.mjs')).href);
+    fallos += await revisar({ log: console.log });
+  } else console.log('  (no hay compilación en plataforma/.next: se omite el HTML renderizado; hazlo tras npm run build)');
+  console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
+  process.exit(fallos ? 1 : 0);
+})();

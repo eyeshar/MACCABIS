@@ -60,7 +60,7 @@ try {
   ok(entrar.status === 200 && html.includes('Continuar con Google') && html.includes('Enviarme el código'), '/entrar carga (HTTP 200)', `HTTP ${entrar.status}`);
 
   // Web publica sin sesion (D85, D89): paginas, redirecciones, iCal, robots y sitemap.
-  for (const r of ['/', '/club', '/privacidad']) {
+  for (const r of ['/', '/club', '/privacidad', '/liga', '/liga/rivales', '/liga/2025-26/equipo', '/liga/2025-26/jugadores', '/liga/2013-14/rankings', '/liga/2023-24/mda']) {
     const resp = await fetch(BASE + r);
     const cuerpo = await resp.text();
     ok(resp.status === 200 && cuerpo.includes('class="nv-cab"') && cuerpo.includes('href="/entrar"') && cuerpo.includes('Acceso jugadores y gestores'), `${r}: 200 con la cabecera unica y el acceso (sin sesion)`, `HTTP ${resp.status}`);

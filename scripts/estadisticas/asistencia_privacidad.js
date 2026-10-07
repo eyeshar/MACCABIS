@@ -47,9 +47,9 @@ function buscarMotivos(obj, ruta = '') {
   return fuera;
 }
 
-/** Ficheros JSON públicos que se revisan: data/*.json y las copias de la plataforma (plataforma/src/data/*.json). */
+/** Ficheros JSON públicos que se revisan: data/*.json y las copias de la plataforma (plataforma/src/data/*.json y plataforma/src/data/estadisticas/*.json). */
 function ficherosPublicos() {
-  const dirs = [path.join(ROOT, 'data'), path.join(ROOT, 'plataforma', 'src', 'data')];
+  const dirs = [path.join(ROOT, 'data'), path.join(ROOT, 'plataforma', 'src', 'data'), path.join(ROOT, 'plataforma', 'src', 'data', 'estadisticas')];
   return dirs.filter(fs.existsSync).flatMap(d => fs.readdirSync(d).filter(f => f.endsWith('.json')).map(f => path.join(d, f)));
 }
 

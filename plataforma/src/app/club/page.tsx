@@ -3,7 +3,7 @@ import Link from "next/link";
 import MarcoPublico from "@/components/web/Marco";
 import { entrenoHabitual, eventosEntrenos, resumenHistoria } from "@/lib/publico";
 import { diaLargo, hoyMadrid } from "@/lib/dias";
-import { FUNDACION, estadisticas } from "@/lib/web";
+import { FUNDACION } from "@/lib/web";
 
 // "El club" (D86): que es Maccabis, desde 2013, MdA y MdL, cifras de historia (las mismas de la portada, de los datos),
 // entrenos y donde jugamos. Sin datos personales. La rejilla completa de la Historia sigue en GitHub Pages.
@@ -58,7 +58,7 @@ export default function Club() {
             <span className="w-eyebrow w-naranja">Desde {FUNDACION}</span>
             <h2 id="t-historia-club">En cifras</h2>
             <p>{h.temporadas_con_datos} temporadas con estadísticas, de todas las que tenemos datos.</p>
-            <a className="w-mas" href={estadisticas("historia")}>Ver la rejilla completa de la historia →</a>
+            <Link className="w-mas" href="/historia">Ver la rejilla completa de la historia →</Link>
           </div>
           <div className="w-cifras" data-testid="cifras-historia">
             <div><b>{h.partidos_con_estadisticas}</b><span>partidos con estadísticas</span></div>
@@ -96,7 +96,7 @@ export default function Club() {
               Calle de Valdebernardo, 2, 28030 Madrid<br />
               Metro: Pavones (L9)
             </p>
-            <a className="w-mas" href={estadisticas("liga")}>Clasificación y resultados →</a>
+            <Link className="w-mas" href="/liga">Clasificación y resultados →</Link>
           </div>
         </div>
       </section>

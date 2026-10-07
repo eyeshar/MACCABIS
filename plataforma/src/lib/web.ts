@@ -24,7 +24,7 @@ export const MENU: Seccion[] = [
   { id: "partidos", texto: "Partidos", href: "/#calendario", externo: false },
   { id: "liga", texto: "Liga", href: "/liga", externo: false },
   { id: "plantilla", texto: "Plantilla", href: "/plantilla", externo: false },
-  { id: "historia", texto: "Historia", href: estadisticas("historia"), externo: true },
+  { id: "historia", texto: "Historia", href: "/historia", externo: false },
   { id: "club", texto: "El club", href: "/club", externo: false },
 ];
 

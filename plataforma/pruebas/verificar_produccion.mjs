@@ -6,6 +6,7 @@
 //
 //   node pruebas/verificar_produccion.mjs [url]
 
+import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +17,8 @@ import { conectar } from '../scripts/db.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(RAIZ, '.env.local') });
+/** Con la redireccion activada (scripts/activar_redirecciones.js) GitHub Pages ya no tiene barra: se omiten sus pruebas. */
+const REDIR_ACTIVA = /var ESTA_ACTIVA = true;/.test(fs.readFileSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'), 'data', 'redireccion_web.js'), 'utf8'));
 const BASE = (process.argv[2] || 'https://maccabis.vercel.app').replace(/\/$/, '');
 const URL_SB = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -60,7 +63,7 @@ try {
   ok(entrar.status === 200 && html.includes('Continuar con Google') && html.includes('Enviarme el código'), '/entrar carga (HTTP 200)', `HTTP ${entrar.status}`);
 
   // Web publica sin sesion (D85, D89): paginas, redirecciones, iCal, robots y sitemap.
-  for (const r of ['/', '/club', '/privacidad', '/liga', '/liga/rivales', '/liga/2025-26/equipo', '/plantilla', '/plantilla?t=2017-18', '/jugador/esteban-jon?t=2025-26', '/liga/2013-14/rankings', '/liga/2023-24/mda']) {
+  for (const r of ['/', '/club', '/privacidad', '/liga', '/liga/rivales', '/liga/2025-26/equipo', '/historia', '/plantilla', '/plantilla?t=2017-18', '/jugador/esteban-jon?t=2025-26', '/liga/2013-14/rankings', '/liga/2023-24/mda']) {
     const resp = await fetch(BASE + r);
     const cuerpo = await resp.text();
     ok(resp.status === 200 && cuerpo.includes('class="nv-cab"') && cuerpo.includes('href="/entrar"') && cuerpo.includes('Acceso jugadores y gestores'), `${r}: 200 con la cabecera unica y el acceso (sin sesion)`, `HTTP ${resp.status}`);
@@ -78,7 +81,7 @@ try {
   ok(['/', '/club', '/privacidad'].every((x) => sitemap.includes(`<loc>https://maccabis.vercel.app${x === '/' ? '/' : x}</loc>`)) && !/entrar|mi-zona|gestion|cuenta/.test(sitemap), 'sitemap.xml: solo la web publica');
 
   // Web de estadisticas (GitHub Pages): barra "Volver a Maccabis" en todas las pestañas (D89).
-  {
+  if (!REDIR_ACTIVA) {
     const GH = 'https://eyeshar.github.io/MACCABIS/';
     const ctx = await nav.newContext({ viewport: { width: 1280, height: 900 }, locale: 'es-ES' });
     const p = await ctx.newPage();

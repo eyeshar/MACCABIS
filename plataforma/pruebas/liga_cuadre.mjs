@@ -12,6 +12,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
 import { desfasadas } from '../scripts/sincronizar_equipacion.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,6 +25,7 @@ const APP = `http://127.0.0.1:${PUERTO}`, PAGES = `http://127.0.0.1:${PUERTO_PAG
 const HOY = '2026-10-07';
 const indice = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'index.json'), 'utf8'));
 const TEMPORADAS = indice.seasons.map((s) => s.id);
+const R = createRequire(import.meta.url)(path.join(REPO, 'data', 'redireccion_web.js'));
 const RIV = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'rivales_2026-27_web.json'), 'utf8')).rivales;
 const PRIMERO = Object.fromEntries(TEMPORADAS.map((t) => [t, JSON.parse(fs.readFileSync(path.join(REPO, 'data', `season_${t}.json`), 'utf8')).players[0].person_id]));
 const conFicha = (g) => RIV.find((r) => r.grupo === g && !r.sin_rastro).id;
@@ -72,6 +74,8 @@ try {
   const ctx = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
   const errores = [];
   const nueva = await ctx.newPage(), vieja = await ctx.newPage();
+  // El cuadre compara con la web anterior tal cual: aunque la redireccion este activada, aqui no salta.
+  await vieja.route('**/data/redireccion_web.js', (route) => route.fulfill({ contentType: 'text/javascript', body: fs.readFileSync(path.join(REPO, 'data', 'redireccion_web.js'), 'utf8').replace('var ESTA_ACTIVA = true', 'var ESTA_ACTIVA = false') }));
   for (const p of [nueva, vieja]) { p.on('pageerror', (e) => errores.push(String(e))); p.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text())) errores.push(m.text()); }); }
 
   const abrirVieja = async (t, pestana, extra = '') => {
@@ -256,15 +260,110 @@ try {
   const r404 = await fetch(`${APP}/jugador/no-existe`); ok(r404.status === 404, 'ficha de una persona que no existe: 404');
   const rfuera = await fetch(`${APP}/jugador/esteban-jon?t=2013-14`, { redirect: 'manual' }); ok(rfuera.status >= 300 && rfuera.status < 400, 'ficha en una temporada en la que no jugo: lleva a una temporada suya');
 
+  // ------------------------------------------------------------------------------------------ Historia
+  seccion('Historia del club: rejilla (filas y colores por celda), tira temporal y ficha de las 88 personas');
+  await abrirVieja('2025-26', 'historia');
+  await vieja.waitForSelector('#hBody tr');
+  await nueva.goto(`${APP}/historia`, { waitUntil: 'networkidle' });
+  // firma de cada fila: nombre + cifra dorada + color de cada celda (s = naranja con estadisticas, j = en el club sin estadisticas, p = prevista)
+  const firma = (page, viejo) => page.evaluate((v) => [...document.querySelectorAll(v ? '#hBody tr' : '[data-testid="historia-rejilla"] tbody tr')].map((tr) => {
+    if (tr.classList.contains(v ? 'hsep' : 'e-hsep')) return 'SEP ' + tr.innerText.replace(/\s+/g, ' ').trim().toLowerCase();
+    const celdas = [...tr.querySelectorAll(v ? 'td.hcell' : 'td.e-hcell')].map((c) => {
+      const m = c.querySelector(v ? '.hmark' : '.e-hmark'); if (!m) return '-';
+      const st = m.classList.contains(v ? 'stats' : 'e-hstats'), pr = m.classList.contains(v ? 'prev' : 'e-hprevmark');
+      return (pr ? 'p' : st ? 's' : 'j') + (m.classList.contains(v ? 'ini' : 'e-hini') ? '[' : '') + (m.classList.contains(v ? 'fin' : 'e-hfin') ? ']' : '');
+    });
+    return tr.querySelector(v ? 'td.hname' : 'td.e-hname').innerText.replace(/\s+/g, ' ').trim().toLowerCase() + ' | ' + celdas.join(' ');
+  }), viejo);
+  const kp = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').trim().toLowerCase()), sel);
+  igual(await kp(vieja, '#hKpis .kpi'), await kp(nueva, '[data-testid="historia-kpis"] .e-kpi'), 'historia: indicadores');
+  const fv = await firma(vieja, true);
+  ok(fv.length > 80, `historia: rejilla con ${fv.length} filas`);
+  igual(fv, await firma(nueva, false), 'historia veteranía: rejilla completa (filas, cifra dorada y color por celda)');
+  igual(await kp(vieja, '#hNotaOrden'), await kp(nueva, '[data-testid="historia-nota-orden"]'), 'historia veteranía: nota');
+  await vieja.click('#segHOrden button[data-o="debut"]'); await clic(nueva, '.e-segmento button', 'Año de incorporación');
+  const fd = await firma(nueva, false);
+  igual(await firma(vieja, true), fd, 'historia año de incorporación: rejilla completa');
+  igual(await kp(vieja, '#hNotaOrden'), await kp(nueva, '[data-testid="historia-nota-orden"]'), 'historia año de incorporación: nota');
+  ok(fd.filter((x) => x.startsWith('SEP')).length === 1 && /cuerpo técnico/.test(fd.find((x) => x.startsWith('SEP'))), 'D22: en el modo de incorporacion no hay tramos de veteranía; solo la sección de cuerpo técnico');
+  ok(fv.filter((x) => x.startsWith('SEP')).length === 6 && fv.some((x) => /^SEP cuerpo técnico/.test(x)), 'D22: en el modo de veteranía hay 5 tramos y el cuerpo técnico aparte');
+  for (const [tit, vSel, nTxt] of [['Con estadísticas', 'STATS', 'Con estadísticas'], ['Sólo presencia', 'NOSTATS', 'Sólo presencia']]) {
+    await vieja.click(`#segHQuien button[data-q="${vSel}"]`); await clic(nueva, '.e-segmento button', nTxt);
+    igual(await firma(vieja, true), await firma(nueva, false), `historia debut + ${tit}: rejilla`);
+  }
+  await vieja.click('#segHQuien button[data-q="ALL"]'); await clic(nueva, '.e-segmento button', 'Todos');
+  await vieja.fill('#hBuscar', 'lópez'); await nueva.fill('input[type=search]', 'lópez');
+  igual(await firma(vieja, true), await firma(nueva, false), 'historia: buscador (lópez)');
+  await vieja.fill('#hBuscar', ''); await nueva.fill('input[type=search]', '');
+  await vieja.click('#segHOrden button[data-o="veterania"]'); await clic(nueva, '.e-segmento button', 'Veteranía');
+  // tira temporal
+  await vieja.click('#segHVista button[data-v="tira"]'); await clic(nueva, '.e-segmento button', 'Por temporada');
+  igual(await kp(vieja, '#hTira .htcard'), await kp(nueva, '[data-testid="historia-tira"] .e-htcard'), 'historia: tira temporal (13 temporadas + la prevista)');
+  await vieja.click('#segHVista button[data-v="rejilla"]'); await clic(nueva, '.e-segmento button', 'Rejilla');
+  // ficha de persona: las 88
+  const pids = await vieja.locator('#hBody tr[data-pid]').evaluateAll((trs) => trs.map((t) => t.dataset.pid));
+  ok(pids.length === 88, `historia: ${pids.length} personas en la rejilla (88 identidades)`);
+  let sinEnlace = 0, enlaces = 0; const rotos = [];
+  for (const pid of pids) {
+    await vieja.locator(`#hBody tr[data-pid="${pid}"]`).click();
+    await nueva.locator(`[data-testid="historia-rejilla"] tr[data-pid="${pid}"]`).click();
+    const a = (await kp(vieja, '#hFicha .hbox'))[0], b = (await kp(nueva, '[data-testid="historia-ficha"]'))[0];
+    igual(a, b, `historia ficha de ${pid}`);
+    // cada anio con estadisticas enlaza a una pagina que existe; los de solo presencia no son enlaces
+    const hrefs = await nueva.locator('[data-testid="historia-ficha"] a.e-hy').evaluateAll((as) => as.map((x) => x.getAttribute('href')));
+    const conStats = await nueva.locator('[data-testid="historia-ficha"] .e-hy-stats').count();
+    sinEnlace += await nueva.locator('[data-testid="historia-ficha"] .e-hy-sinenlace').count();
+    ok(hrefs.length === conStats - await nueva.locator('[data-testid="historia-ficha"] .e-hy-sinenlace').count(), `${pid}: solo las temporadas con estadísticas son enlaces`);
+    ok(await nueva.locator('[data-testid="historia-ficha"] a.e-hy:not(.e-hy-stats)').count() === 0, `${pid}: ningún año de solo presencia es un enlace`);
+    for (const h of hrefs) { enlaces++; const r = await fetch(APP + h); if (r.status !== 200) rotos.push(`${pid} ${h} ${r.status}`); }
+    await vieja.keyboard.press('Escape'); await nueva.keyboard.press('Escape');
+  }
+  ok(rotos.length === 0, `historia: ${enlaces} enlaces desde las fichas de persona, ninguno da 404`, rotos.slice(0, 3).join(' | '));
+  ok(sinEnlace === 0, 'historia: toda temporada con estadisticas tiene destino (ficha o resumen MdA)', String(sinEnlace));
+  // casos pedidos por Ivan: Eric y Pupo (solo mote), Barreiro (cuerpo tecnico), Lonchas (fila sin ficha en un boxscore)
+  for (const [pid, dice] of [['eric', /de paso/i], ['pupo', /de paso/i], ['barreiro-carballal-carlos-jose', /entrenador/i]]) {
+    await nueva.goto(`${APP}/historia?persona=${pid}`, { waitUntil: 'networkidle' });
+    ok(dice.test(await nueva.locator('[data-testid="historia-ficha"]').innerText()) && (await nueva.locator('[data-testid="historia-ficha"] a.e-hy').count()) === 0, `${pid}: ficha de persona sin estadisticas y sin enlaces`);
+  }
+  await abrirVieja('2019-20', 'equipo'); await abrirNueva('2019-20', 'equipo');
+  const box = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'season_2019-20.json'), 'utf8')).box;
+  const claves = Object.entries(box).filter(([, f]) => f.some((g) => /lonchas/i.test((g.mote || '') + g.nombre))).map(([k]) => k);
+  ok(claves.length > 0, `Lonchas aparece como fila sin ficha en ${claves.length} boxscores de 2019/20 (no es una persona de la Historia)`);
+  for (const k of claves) {
+    const [pn, eq] = k.split('_');
+    await vieja.locator(`#tbody tr.gmrow[data-pn="${pn}"][data-eq="${eq}"]`).click();
+    // la web nueva ordena igual: abrir por posicion en la tabla
+    const idx = await vieja.locator('#tbody tr.gmrow').evaluateAll((trs, [p, e]) => trs.findIndex((t) => t.dataset.pn === p && t.dataset.eq === e), [pn, eq]);
+    await nueva.locator('[data-testid="equipo-partidos"] tbody tr.e-fila-click').nth(idx).click();
+    igual(await filas(vieja, '#tbody .boxrow'), await filas(nueva, '[data-testid="boxscore"]'), `2019-20 boxscore ${k} (con Lonchas)`);
+    await vieja.locator(`#tbody tr.gmrow[data-pn="${pn}"][data-eq="${eq}"]`).click();
+    await nueva.locator('[data-testid="equipo-partidos"] tbody tr.e-fila-click').nth(idx).click();
+  }
+
+  // ------------------------------------------------------------------------------------------ alias (D20)
+  seccion('person_id antiguos (alias): redirigen a la identidad canonica');
+  const personas = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'personas.json'), 'utf8')).personas;
+  const tieneFicha = new Set(TEMPORADAS.flatMap((t) => JSON.parse(fs.readFileSync(path.join(REPO, 'data', `season_${t}.json`), 'utf8')).players.map((x) => x.person_id)));
+  const alias = personas.flatMap((p) => p.alias_ids.map((a) => [a, p]));
+  ok(alias.length >= 6, `${alias.length} alias en el registro (Castro Mayo, Mar Calvo...)`);
+  for (const [a, p] of alias) {
+    const r = await fetch(`${APP}/jugador/${a}?t=2024-25`, { redirect: 'manual' });
+    ok(r.status >= 300 && r.status < 400 && (r.headers.get('location') || '').includes(`/jugador/${p.person_id}`), `/jugador/${a} -> /jugador/${p.person_id}`, `${r.status} ${r.headers.get('location')}`);
+    const fin = await fetch(`${APP}/jugador/${a}?t=2024-25`, { redirect: 'follow' });
+    ok(fin.status === (tieneFicha.has(p.person_id) ? 200 : 404), `/jugador/${a}: ficha canonica ${tieneFicha.has(p.person_id) ? 'existe (200)' : 'sin estadisticas (404)'}`, String(fin.status));
+    const d = R.nuevaUrl(`?t=2024-25&p=jugador&j=${a}`, '');
+    ok(d === `/jugador/${a}?t=2024-25`, `enlace antiguo de GitHub Pages con el alias ${a} tiene destino`, String(d));
+  }
+  const rh = await fetch(`${APP}/historia?persona=castro-mayo-henry-luis`);
+  ok(rh.status === 200 && (await rh.text()).includes('Henry Luis Castro Moya'), '/historia?persona=<alias> abre la ficha de la identidad canonica');
+
   // ------------------------------------------------------------------------------------------ redirecciones
   seccion('URL antiguas de GitHub Pages -> pagina nueva');
   const fuenteRedir = fs.readFileSync(path.join(REPO, 'data', 'redireccion_web.js'), 'utf8');
-  const { createRequire } = await import('node:module');
-  const R = createRequire(import.meta.url)(path.join(REPO, 'data', 'redireccion_web.js'));
-  ok(R.ESTA_ACTIVA === false, 'la redireccion esta desactivada hasta el OK final de Ivan (GitHub Pages sigue publicada)');
+  ok(typeof R.ESTA_ACTIVA === 'boolean', `la redireccion esta ${R.ESTA_ACTIVA ? 'ACTIVADA' : 'desactivada hasta el OK final de Ivan (GitHub Pages sigue publicada)'}`);
   ok(/<script src="data\/redireccion_web\.js"><\/script>/.test(fs.readFileSync(path.join(REPO, 'index.html'), 'utf8')), 'index.html carga data/redireccion_web.js');
   const antiguas = [
-    '', '?t=2023-24', '#2013-14', '?t=2013-14&p=jugadores', '?p=equipo&t=2016-17', '?t=2025-26&p=rankings', '?p=cuartos', '?p=asistencia&t=2025-26', '?p=jugador', '?p=jugador&j=esteban-jon&t=2025-26', '?j=esteban-jon', '?t=2023-24&p=jugador&j=villaescusa-silva-ivan', '?p=mda&t=2024-25',
+    '', '?t=2023-24', '#2013-14', '?t=2013-14&p=jugadores', '?p=equipo&t=2016-17', '?t=2025-26&p=rankings', '?p=cuartos', '?p=asistencia&t=2025-26', '?p=historia', '?p=jugador', '?p=jugador&j=esteban-jon&t=2025-26', '?j=esteban-jon', '?t=2023-24&p=jugador&j=villaescusa-silva-ivan', '?p=mda&t=2024-25',
     '?p=liga', '?p=liga&g=G2', `?p=liga&hoy=${HOY}`, '?p=rivales', '?p=rivales&g=MdL', `?p=rivales&g=MdA&r=${conFicha('MdA')}`,
   ];
   for (const a of antiguas) {
@@ -273,19 +372,20 @@ try {
     ok(d !== null, `antigua ${a || '(portada de GitHub Pages)'} tiene destino`, String(d));
     if (d) { const r = await fetch(APP + d, { redirect: 'follow' }); ok(r.status === 200, `antigua ${a || '(sin parametros)'} -> ${d}: 200`, String(r.status)); }
   }
-  for (const a of ['?p=historia']) ok(R.nuevaUrl(a, '') === null, `${a}: aun no migrada, sigue en GitHub Pages`);
+  ok(['?p=historia', '?p=jugador&j=esteban-jon', '?j=esteban-jon', '?p=liga', '?t=2023-24&p=mda'].every((a) => R.nuevaUrl(a, '')), 'todas las pestañas de GitHub Pages tienen destino (ya no queda nada sin migrar)');
   // con la redireccion activada, la propia pagina antigua salta a la nueva
   await vieja.route('**/data/redireccion_web.js', (route) => route.fulfill({ contentType: 'text/javascript', body: fuenteRedir.replace('var ESTA_ACTIVA = false', 'var ESTA_ACTIVA = true').replace("'https://maccabis.vercel.app'", `'${APP}'`) }));
   await vieja.goto(`${PAGES}/index.html?t=2023-24&p=rankings`, { waitUntil: 'commit' });
   await vieja.waitForURL(`${APP}/liga/2023-24/rankings`, { timeout: 15000 }).catch(() => {});
   ok(vieja.url() === `${APP}/liga/2023-24/rankings`, 'activada: ?t=2023-24&p=rankings salta a /liga/2023-24/rankings', vieja.url());
-  await vieja.goto(`${PAGES}/index.html?p=historia`, { waitUntil: 'networkidle' });
-  ok(vieja.url().startsWith(PAGES), 'activada: ?p=historia se queda en GitHub Pages (aun no migrada)', vieja.url());
+  await vieja.goto(`${PAGES}/index.html?p=historia`, { waitUntil: 'commit' });
+  await vieja.waitForURL(`${APP}/historia`, { timeout: 15000 }).catch(() => {});
+  ok(vieja.url() === `${APP}/historia`, 'activada: ?p=historia salta a /historia', vieja.url());
   await vieja.unroute('**/data/redireccion_web.js');
 
   // ------------------------------------------------------------------------------------------ movil, consola y capturas
   seccion('Movil a 375 px, errores de consola y capturas');
-  const rutas = ['/liga', '/liga/rivales', `/liga/rivales?g=MdL&r=${conFicha('MdL')}`, ...TEMPORADAS.flatMap((t) => ['equipo', 'rankings', 'cuartos', 'asistencia', 'mda'].map((p) => `/liga/${t}/${p}`)), ...TEMPORADAS.map((t) => `/plantilla?t=${t}`), ...TEMPORADAS.map((t) => `/jugador/${PRIMERO[t]}?t=${t}`)];
+  const rutas = ['/liga', '/liga/rivales', `/liga/rivales?g=MdL&r=${conFicha('MdL')}`, ...TEMPORADAS.flatMap((t) => ['equipo', 'rankings', 'cuartos', 'asistencia', 'mda'].map((p) => `/liga/${t}/${p}`)), '/historia', '/historia?persona=eric', ...TEMPORADAS.map((t) => `/plantilla?t=${t}`), ...TEMPORADAS.map((t) => `/jugador/${PRIMERO[t]}?t=${t}`)];
   const movil = await nav.newPage({ viewport: { width: 375, height: 800 } });
   movil.on('pageerror', (e) => errores.push(String(e)));
   movil.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text())) errores.push(m.text()); });

@@ -16,8 +16,15 @@ const indice = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'index.json'),
 const temporadas = indice.seasons.map((s) => s.id);
 const rivales = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'rivales_2026-27_web.json'), 'utf8')).rivales;
 
+/** Una ficha por jugador y temporada (todas las de GitHub Pages). */
+function personasPorTemporada() {
+  return temporadas.flatMap((t) => JSON.parse(fs.readFileSync(path.join(REPO, 'data', `season_${t}.json`), 'utf8')).players.map((p) => `/jugador/${p.person_id}?t=${t}`));
+}
+
 /** Todas las paginas publicas que migran de GitHub Pages (se amplia en cada entrega). */
 export const RUTAS = [
+  '/plantilla', ...temporadas.map((t) => `/plantilla?t=${t}`), '/jugador',
+  ...personasPorTemporada(),
   '/liga', '/liga?g=G2', '/liga/rivales', '/liga/rivales?g=MdL',
   ...rivales.filter((r) => !r.sin_rastro).slice(0, 6).map((r) => `/liga/rivales?g=${r.grupo}&r=${r.id}`),
   ...temporadas.flatMap((t) => ['equipo', 'jugadores', 'rankings', 'cuartos', 'asistencia', 'mda'].map((p) => `/liga/${t}/${p}`)),

@@ -140,7 +140,7 @@ try {
         if (d.desborda) problemas.desborda.push(ruta);
         if (d.blank) problemas.blank.push(ruta);
         if (!d.inicio) problemas.sinInicio.push(ruta);
-        if (!movil && (d.externos.length !== 2 || d.externos.some((x) => x.svg || x.t))) problemas.blank.push(`${ruta}: Liga/Plantilla/Historia con icono o target`);
+        if (!movil && (d.externos.length !== 1 || d.externos.some((x) => x.svg || x.t))) problemas.blank.push(`${ruta}: Liga/Plantilla/Historia con icono o target`);
         if (movil) {
           // La barra inferior no tapa contenido: al final de la pagina, el contenido acaba por encima de ella.
           await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));

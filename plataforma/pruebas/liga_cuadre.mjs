@@ -25,6 +25,7 @@ const HOY = '2026-10-07';
 const indice = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'index.json'), 'utf8'));
 const TEMPORADAS = indice.seasons.map((s) => s.id);
 const RIV = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'rivales_2026-27_web.json'), 'utf8')).rivales;
+const PRIMERO = Object.fromEntries(TEMPORADAS.map((t) => [t, JSON.parse(fs.readFileSync(path.join(REPO, 'data', `season_${t}.json`), 'utf8')).players[0].person_id]));
 const conFicha = (g) => RIV.find((r) => r.grupo === g && !r.sin_rastro).id;
 
 let fallos = 0, comprobaciones = 0, elementos = 0;
@@ -79,7 +80,7 @@ try {
     const b = vieja.locator(`.tab[data-p="${pestana}"]`);
     if (await b.isVisible()) await b.click();
   };
-  const abrirNueva = (t, pestana) => nueva.goto(`${APP}/liga/${t}/${pestana}`, { waitUntil: 'networkidle' });
+  const abrirNueva = (t, pestana) => nueva.goto(pestana === 'jugadores' ? `${APP}/plantilla?t=${t}` : `${APP}/liga/${t}/${pestana}`, { waitUntil: 'networkidle' });
   const clic = async (page, sel, texto) => { await page.locator(sel, { hasText: new RegExp(`^${texto}$`, 'i') }).first().click(); };
 
   // ------------------------------------------------------------------------------------------ Equipo
@@ -227,6 +228,34 @@ try {
     }
   }
 
+  // ------------------------------------------------------------------------------------------ Ficha de jugador
+  seccion('Ficha de jugador: todos los jugadores de las 12 temporadas');
+  let fichas = 0;
+  for (const t of TEMPORADAS) {
+    await abrirVieja(t, 'jugador');
+    const ids = await vieja.locator('#selPlayer option').evaluateAll((os) => os.map((o) => o.textContent));
+    const pids = JSON.parse(fs.readFileSync(path.join(REPO, 'data', `season_${t}.json`), 'utf8')).players;
+    const orden = pids.slice().sort((a, b) => a.nombre.localeCompare(b.nombre));
+    ok(orden.length === ids.length, `${t} ficha: ${ids.length} jugadores en el selector`);
+    for (let i = 0; i < orden.length; i++) {
+      await vieja.selectOption('#selPlayer', { index: i });
+      await nueva.goto(`${APP}/jugador/${orden[i].person_id}?t=${t}`, { waitUntil: 'domcontentloaded' });
+      const a = [await textos(vieja, '#playerCard .playerhead'), await textos(vieja, '#playerCard .kpi'), await filas(vieja, '#playerCard tbody'), await textos(vieja, '#playerCard .note')];
+      const b = [await textos(nueva, '.e-cabjugador'), await textos(nueva, '[data-testid="ficha"] .e-kpi'), await filas(nueva, '[data-testid="ficha-partidos"] tbody'), await textos(nueva, '[data-testid="ficha"] > .e-nota')];
+      fichas++;
+      igual(a, b, `${t} ficha de ${orden[i].person_id}`);
+    }
+  }
+  console.log(`  ${fichas} fichas comparadas`);
+  // enlace por person_id: la tabla de la plantilla y los rankings enlazan a la ficha
+  await nueva.goto(`${APP}/plantilla?t=2025-26`, { waitUntil: 'networkidle' });
+  ok((await nueva.locator('[data-testid="jugadores-tabla"] tbody a[href^="/jugador/"]').count()) === 24, 'plantilla 25/26: los 24 nombres enlazan a su ficha');
+  await nueva.locator('[data-testid="jugadores-tabla"] tbody a').first().click();
+  await nueva.waitForURL(/\/jugador\/esteban-jon\?t=2025-26/);
+  ok(/Jon Esteban/i.test(await nueva.locator('.e-nombre-ficha').innerText()), 'clic en el nombre abre la ficha de esa persona (person_id)');
+  const r404 = await fetch(`${APP}/jugador/no-existe`); ok(r404.status === 404, 'ficha de una persona que no existe: 404');
+  const rfuera = await fetch(`${APP}/jugador/esteban-jon?t=2013-14`, { redirect: 'manual' }); ok(rfuera.status >= 300 && rfuera.status < 400, 'ficha en una temporada en la que no jugo: lleva a una temporada suya');
+
   // ------------------------------------------------------------------------------------------ redirecciones
   seccion('URL antiguas de GitHub Pages -> pagina nueva');
   const fuenteRedir = fs.readFileSync(path.join(REPO, 'data', 'redireccion_web.js'), 'utf8');
@@ -235,7 +264,7 @@ try {
   ok(R.ESTA_ACTIVA === false, 'la redireccion esta desactivada hasta el OK final de Ivan (GitHub Pages sigue publicada)');
   ok(/<script src="data\/redireccion_web\.js"><\/script>/.test(fs.readFileSync(path.join(REPO, 'index.html'), 'utf8')), 'index.html carga data/redireccion_web.js');
   const antiguas = [
-    '', '?t=2023-24', '#2013-14', '?t=2013-14&p=jugadores', '?p=equipo&t=2016-17', '?t=2025-26&p=rankings', '?p=cuartos', '?p=asistencia&t=2025-26', '?p=mda&t=2024-25',
+    '', '?t=2023-24', '#2013-14', '?t=2013-14&p=jugadores', '?p=equipo&t=2016-17', '?t=2025-26&p=rankings', '?p=cuartos', '?p=asistencia&t=2025-26', '?p=jugador', '?p=jugador&j=esteban-jon&t=2025-26', '?j=esteban-jon', '?t=2023-24&p=jugador&j=villaescusa-silva-ivan', '?p=mda&t=2024-25',
     '?p=liga', '?p=liga&g=G2', `?p=liga&hoy=${HOY}`, '?p=rivales', '?p=rivales&g=MdL', `?p=rivales&g=MdA&r=${conFicha('MdA')}`,
   ];
   for (const a of antiguas) {
@@ -244,7 +273,7 @@ try {
     ok(d !== null, `antigua ${a || '(portada de GitHub Pages)'} tiene destino`, String(d));
     if (d) { const r = await fetch(APP + d, { redirect: 'follow' }); ok(r.status === 200, `antigua ${a || '(sin parametros)'} -> ${d}: 200`, String(r.status)); }
   }
-  for (const a of ['?p=historia', '?p=jugador&j=esteban-jon&t=2025-26', '?j=esteban-jon']) ok(R.nuevaUrl(a, '') === null, `${a}: aun no migrada, sigue en GitHub Pages`);
+  for (const a of ['?p=historia']) ok(R.nuevaUrl(a, '') === null, `${a}: aun no migrada, sigue en GitHub Pages`);
   // con la redireccion activada, la propia pagina antigua salta a la nueva
   await vieja.route('**/data/redireccion_web.js', (route) => route.fulfill({ contentType: 'text/javascript', body: fuenteRedir.replace('var ESTA_ACTIVA = false', 'var ESTA_ACTIVA = true').replace("'https://maccabis.vercel.app'", `'${APP}'`) }));
   await vieja.goto(`${PAGES}/index.html?t=2023-24&p=rankings`, { waitUntil: 'commit' });
@@ -256,7 +285,7 @@ try {
 
   // ------------------------------------------------------------------------------------------ movil, consola y capturas
   seccion('Movil a 375 px, errores de consola y capturas');
-  const rutas = ['/liga', '/liga/rivales', `/liga/rivales?g=MdL&r=${conFicha('MdL')}`, ...TEMPORADAS.flatMap((t) => ['equipo', 'jugadores', 'rankings', 'cuartos', 'asistencia', 'mda'].map((p) => `/liga/${t}/${p}`))];
+  const rutas = ['/liga', '/liga/rivales', `/liga/rivales?g=MdL&r=${conFicha('MdL')}`, ...TEMPORADAS.flatMap((t) => ['equipo', 'rankings', 'cuartos', 'asistencia', 'mda'].map((p) => `/liga/${t}/${p}`)), ...TEMPORADAS.map((t) => `/plantilla?t=${t}`), ...TEMPORADAS.map((t) => `/jugador/${PRIMERO[t]}?t=${t}`)];
   const movil = await nav.newPage({ viewport: { width: 375, height: 800 } });
   movil.on('pageerror', (e) => errores.push(String(e)));
   movil.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text())) errores.push(m.text()); });
@@ -273,7 +302,7 @@ try {
   await movil.goto(`${APP}/liga/2025-26/equipo`, { waitUntil: 'networkidle' });
   await movil.locator('tr.e-fila-click').first().click();
   ok((await movil.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0, 'boxscore abierto a 375 px sin desbordamiento');
-  for (const [r, n] of [['/liga', 'liga'], ['/liga/rivales', 'rivales'], ['/liga/2025-26/equipo', 'equipo'], ['/liga/2025-26/jugadores', 'jugadores'], ['/liga/2025-26/rankings', 'rankings'], ['/liga/2025-26/cuartos', 'cuartos'], ['/liga/2025-26/asistencia', 'asistencia'], ['/liga/2023-24/mda', 'mda'], ['/liga/2013-14/jugadores', 'jugadores_2013']]) {
+  for (const [r, n] of [['/liga', 'liga'], ['/liga/rivales', 'rivales'], ['/liga/2025-26/equipo', 'equipo'], ['/liga/2025-26/rankings', 'rankings'], ['/liga/2025-26/cuartos', 'cuartos'], ['/liga/2025-26/asistencia', 'asistencia'], ['/liga/2023-24/mda', 'mda'], ['/plantilla?t=2013-14', 'plantilla_2013'], ['/plantilla', 'plantilla'], ['/jugador/esteban-jon?t=2025-26', 'ficha'], ['/jugador/esteban-jon?t=2023-24', 'ficha_2324']]) {
     await movil.goto(APP + r + (r === '/liga' ? '?hoy=' + HOY : ''), { waitUntil: 'networkidle' });
     await movil.screenshot({ path: path.join(SALIDA, `${n}_375.png`), fullPage: true });
     await nueva.setViewportSize({ width: 1280, height: 900 });

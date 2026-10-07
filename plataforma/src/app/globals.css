@@ -479,6 +479,7 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .w-pie-fila img { width: 40px; height: 32px; object-fit: contain; }
 .w-pie-fila a { color: var(--tinta-suave); min-height: var(--toque); display: inline-flex; align-items: center; }
 .w-pie-fila a.w-pie-acceso { margin-left: auto; color: var(--c-amarillo); font-weight: 600; }
+.w-pie-fila a.w-pie-zona { color: var(--c-amarillo); font-weight: 600; }
 
 
 @media (max-width: 899px) {

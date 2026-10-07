@@ -167,6 +167,10 @@ try {
 
       // ---- Lo que ve cada rol
       await p.goto(`${APP}/`);
+      const pie = await p.locator('footer#pie a').evaluateAll((a) => a.map((x) => `${x.textContent.trim()}|${x.getAttribute('href')}`));
+      const piePrevisto = { anon: ['Acceso jugadores y gestores|/entrar'], jugador: ['Mi zona|/mi-zona'], gestor: ['Mi zona|/mi-zona', 'Gestión|/gestion'] }[rol];
+      const pieZonas = pie.filter((x) => /\|\/(entrar|mi-zona|gestion)$/.test(x));
+      ok(JSON.stringify(pieZonas) === JSON.stringify(piePrevisto), `pie de la portada con la misma sesion que la cabecera (${rol}): ${piePrevisto.map((x) => x.split('|')[0]).join(' y ')}`, pie.join(', '));
       const cab = p.locator('header.nv-cab');
       const barra = p.locator('nav[aria-label="Secciones"]');
       const acceso = cab.getByRole('link', { name: 'Acceso' });
@@ -360,6 +364,9 @@ try {
     await entrar(p, soloGestor);
     ok(p.url().endsWith('/gestion'), 'entra en /gestion', p.url());
     const textos = await p.locator('nav[aria-label="Secciones"] > a, nav[aria-label="Secciones"] > button').allTextContents();
+    await p.goto(`${APP}/`);
+    const pie = await p.locator('footer#pie a').evaluateAll((a) => a.map((x) => `${x.textContent.trim()}|${x.getAttribute('href')}`).filter((x) => /\|\/(entrar|mi-zona|gestion)$/.test(x)));
+    ok(JSON.stringify(pie) === JSON.stringify(['Gestión|/gestion']), 'pie de la portada (gestor sin ficha): solo "Gestión"', pie.join(', '));
     ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(['Inicio', 'Partidos', 'Liga', 'Gestión', 'Más']) && (await p.getByRole('link', { name: 'Mi zona' }).count()) === 0, 'barra inferior con "Gestión" en lugar de Mi zona; sin Mi zona', textos.join(','));
     await ctx.close();
   }

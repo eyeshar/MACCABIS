@@ -59,6 +59,46 @@ try {
   const html = await entrar.text();
   ok(entrar.status === 200 && html.includes('Continuar con Google') && html.includes('Enviarme el código'), '/entrar carga (HTTP 200)', `HTTP ${entrar.status}`);
 
+  // Web publica sin sesion (D85, D89): paginas, redirecciones, iCal, robots y sitemap.
+  for (const r of ['/', '/club', '/privacidad']) {
+    const resp = await fetch(BASE + r);
+    const cuerpo = await resp.text();
+    ok(resp.status === 200 && cuerpo.includes('class="nv-cab"') && cuerpo.includes('href="/entrar"') && cuerpo.includes('Acceso jugadores y gestores'), `${r}: 200 con la cabecera unica y el acceso (sin sesion)`, `HTTP ${resp.status}`);
+  }
+  for (const r of ['/mi-zona', '/cuenta']) {
+    const resp = await fetch(BASE + r, { redirect: 'manual' });
+    ok(resp.status >= 300 && resp.status < 400 && (resp.headers.get('location') || '').includes('/entrar'), `${r} sin sesion manda a /entrar`, `HTTP ${resp.status}`);
+  }
+  const ics = await fetch(BASE + '/calendario.ics');
+  const icsTxt = await ics.text();
+  ok(ics.status === 200 && (ics.headers.get('content-type') || '').startsWith('text/calendar') && icsTxt.startsWith('BEGIN:VCALENDAR') && (icsTxt.match(/BEGIN:VEVENT/g) || []).length > 0, `/calendario.ics: 200, ${(icsTxt.match(/BEGIN:VEVENT/g) || []).length} eventos`);
+  const robots = await (await fetch(BASE + '/robots.txt')).text();
+  ok(['/entrar', '/mi-zona', '/gestion', '/cuenta', '/auth'].every((x) => robots.includes(`Disallow: ${x}`)) && robots.includes('Sitemap: https://maccabis.vercel.app/sitemap.xml'), 'robots.txt: Disallow de lo privado (con /cuenta) y sitemap');
+  const sitemap = await (await fetch(BASE + '/sitemap.xml')).text();
+  ok(['/', '/club', '/privacidad'].every((x) => sitemap.includes(`<loc>https://maccabis.vercel.app${x === '/' ? '/' : x}</loc>`)) && !/entrar|mi-zona|gestion|cuenta/.test(sitemap), 'sitemap.xml: solo la web publica');
+
+  // Web de estadisticas (GitHub Pages): barra "Volver a Maccabis" en todas las pestañas (D89).
+  {
+    const GH = 'https://eyeshar.github.io/MACCABIS/';
+    const ctx = await nav.newContext({ viewport: { width: 1280, height: 900 }, locale: 'es-ES' });
+    const p = await ctx.newPage();
+    const errores = [];
+    p.on('pageerror', (e) => errores.push(String(e)));
+    await p.goto(GH);
+    await p.locator('.tab.on').waitFor({ timeout: 20000 });
+    const pestanas = await p.locator('.tab').evaluateAll((t) => t.map((x) => x.dataset.p));
+    const malas = [];
+    for (const t of pestanas) {
+      await p.goto(`${GH}?p=${t}`);
+      await p.locator('.tab.on').waitFor({ timeout: 20000 });
+      const d = await p.evaluate(() => { const v = document.querySelector('#mcb .mcb-volver'); return v ? { href: v.getAttribute('href'), txt: v.textContent.trim(), fija: getComputedStyle(document.getElementById('mcb')).position } : null; });
+      if (!d || d.href !== 'https://maccabis.vercel.app/' || d.txt !== '← Volver a Maccabis' || d.fija !== 'sticky') malas.push(`${t}: ${JSON.stringify(d)}`);
+    }
+    ok(pestanas.length === 10 && malas.length === 0, `GitHub Pages: "← Volver a Maccabis" en las ${pestanas.length} pestañas, fija y a la portada`, malas.join(' | '));
+    ok(errores.length === 0, 'GitHub Pages: sin errores de JavaScript', errores.join(' | '));
+    await ctx.close();
+  }
+
   for (const [etiqueta, ancho, alto, movil] of [['375', 375, 800, true], ['escritorio', 1280, 900, false]]) {
     console.log(`\n== Gestor en produccion, ${etiqueta}`);
     const ctx = await nav.newContext({ viewport: { width: ancho, height: alto }, isMobile: movil, hasTouch: movil, locale: 'es-ES' });

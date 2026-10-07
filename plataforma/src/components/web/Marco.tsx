@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import escudo from "../../../public/escudo.png";
-import { FUNDACION, estadisticas } from "@/lib/web";
+import { FUNDACION } from "@/lib/web";
 import { usuarioActual } from "@/lib/usuario";
 
 // Marco de la web publica (maquetas Main y PortadaMovil): contenido y pie. La cabecera y la barra inferior son las de
@@ -21,7 +21,7 @@ export async function PiePublico() {
         <span>Maccabis · Baloncesto en Madrid desde {FUNDACION}</span>
         <span>Fuente: actas y hojas oficiales de la FBM</span>
         <Link href="/club">El club</Link>
-        <a href={estadisticas()}>Todas las estadísticas</a>
+        <Link href="/liga">Todas las estadísticas</Link>
         <Link href="/privacidad">Privacidad</Link>
         {!usuario && <Link href="/entrar" className="w-pie-acceso">Acceso jugadores y gestores</Link>}
         {usuario?.esJugador && <Link href="/mi-zona" className="w-pie-acceso">Mi zona</Link>}

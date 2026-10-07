@@ -14,6 +14,14 @@ import { fileURLToPath } from 'node:url';
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATOS = path.join(RAIZ, '..', 'data');
 const DESTINO = path.join(RAIZ, 'src', 'data');
+/** Estadisticas por temporada y rivales de la liga (paso 2, migracion de GitHub Pages): las mismas data/season_<t>.json que
+ *  genera npm run jornada, copiadas tal cual a src/data/estadisticas/ (la plataforma no puede importar ../data). */
+const INDICE = JSON.parse(fs.readFileSync(path.join(DATOS, "index.json"), "utf8"));
+const COPIAS_ESTADISTICAS = [
+  ["index.json", "estadisticas/index.json"],
+  ["rivales_2026-27_web.json", "estadisticas/rivales.json"],
+  ...INDICE.seasons.map((s) => [`season_${s.id}.json`, `estadisticas/season_${s.id}.json`]),
+];
 export const COPIAS = [
   ['avisos_equipacion.js', 'avisosEquipacion.js'],
   ['equipaciones_2026-27.json', 'equipaciones.json'],
@@ -21,6 +29,7 @@ export const COPIAS = [
   ['liga_2026-27.json', 'liga.json'],
   ['season_2026-27.json', 'temporada.json'],
   ['entrenos_2026-27.json', 'entrenos.json'],
+  ...COPIAS_ESTADISTICAS,
 ];
 const RESUMEN = 'historia_resumen.json';
 
@@ -64,7 +73,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (d.length) { console.error(`Copias desfasadas en src/data/: ${d.join(', ')} (npm run datos:sync)`); process.exit(1); }
     console.log('Copias de src/data/ al dia.');
   } else {
-    fs.mkdirSync(DESTINO, { recursive: true });
+    fs.mkdirSync(path.join(DESTINO, 'estadisticas'), { recursive: true });
     for (const [o, d] of COPIAS) fs.copyFileSync(path.join(DATOS, o), path.join(DESTINO, d));
     fs.writeFileSync(path.join(DESTINO, RESUMEN), resumenHistoria());
     console.log(`Copiados ${COPIAS.length} ficheros y generado ${RESUMEN} en src/data/.`);

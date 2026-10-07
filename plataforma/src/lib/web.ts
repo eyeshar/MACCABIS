@@ -22,7 +22,7 @@ export type Seccion = { id: string; texto: string; href: string; externo: boolea
 export const MENU: Seccion[] = [
   { id: "inicio", texto: "Inicio", href: "/", externo: false },
   { id: "partidos", texto: "Partidos", href: "/#calendario", externo: false },
-  { id: "liga", texto: "Liga", href: estadisticas("liga"), externo: true },
+  { id: "liga", texto: "Liga", href: "/liga", externo: false },
   { id: "plantilla", texto: "Plantilla", href: estadisticas("jugadores"), externo: true },
   { id: "historia", texto: "Historia", href: estadisticas("historia"), externo: true },
   { id: "club", texto: "El club", href: "/club", externo: false },

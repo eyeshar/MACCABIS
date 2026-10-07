@@ -100,7 +100,7 @@
 - [ ] **Prueba de exportación de SportEasy:** ¿"Asistencias → Por eventos → exportar" incluye **eventos futuros con respuestas** (p. ej. el amistoso del 27/09)? Indicio: el export de hoy llega sólo hasta el 23/09 (`docs/SPORTEASY.md`). Decide la "Decisión pendiente" de abajo.
 - [ ] **Pedir al soporte de SportEasy la plantilla Excel de importación del calendario** (vía principal, D36).
 - [ ] **Leer la cláusula literal de SportEasy** (`docs/SPORTEASY.md`) y decidir si se mantiene el agente de carga como plan B (D36).
-- [ ] **Guardar en `privado/`** (fuera de git) los datos por jugador para convocar: posición, base secundario, nivel, si dobla, si entrena. Code no lo lee hasta que se pida.
+- [x] Tabla de posiciones, niveles A–E y Dobla/No dobla de 2026/27 guardada en `privado/plantilla_2026-27.csv` (con `person_id`) y criterios de reparto en `privado/criterios_convocatoria.md`, fuente de la rutina C. Ignorados por git; no se copian a `data/` ni a docs.
 - [ ] **Responder las preguntas abiertas** de `docs/REGLAS_CONVOCATORIA.md` (7 preguntas).
 - [ ] **Corregir el delegado del MdA** en la organización (Varas → Barreiro; Barreiro también en el MdL).
 - [ ] **Localizar las 40 hojas XLSX de 25/26** que faltan (sólo si se quiere regenerar la 25/26 con hora, pista y las 3 correcciones; ver ESTADO). No es urgente.
@@ -258,5 +258,6 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - Estadísticas Carlos 23/24 y 24/25 (MdA .xlsx, MdL .xls).
 - `Equipo_MdL_2025-2026_Claude.xlsx` (pendiente de revisar en detalle).
 
-- [ ] **Guardar en `privado/` (nunca en el repo público) la tabla de posiciones, niveles A–E y Dobla/No dobla de 2026/27**, para la rutina C (convocatoria). Claude la pasará en la próxima sesión. Va a `privado/` (ignorado por git), no a `data/` ni a `plataforma/src/data/`: son datos que D39 prohíbe publicar, y `test:privacidad` no deja que lleguen a las páginas públicas.
-- [ ] Limpieza menor: quitar `URL_DASHBOARD`, `URL_ESTADISTICAS` y `estadisticas()` de `plataforma/src/lib` (ya sin uso), cuando no haya riesgo de conflicto con la pista E.
+- [x] Tabla de posiciones, niveles A–E y Dobla/No dobla de 2026/27 guardada en `privado/plantilla_2026-27.csv` (con `person_id`) y criterios de reparto en `privado/criterios_convocatoria.md`, fuente de la rutina C. Ignorados por git; no se copian a `data/` ni a docs.
+- [x] Limpieza menor hecha: quitados `URL_DASHBOARD`, `URL_ESTADISTICAS` y `estadisticas()` de `plataforma/src/lib`.
+- [ ] `pruebas:cuadre` compara con la web antigua de GitHub Pages, que ahora redirige: si se vuelve a necesitar, ejecutarlo con las redirecciones desactivadas (copia temporal de `data/redireccion_web.js` con `ESTA_ACTIVA = false`).

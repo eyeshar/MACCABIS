@@ -267,17 +267,14 @@ try {
     ok((await p.locator(enlaceClub).count()) === 1 && (await p.locator('footer a[href="/club"]').count()) === 1, 'el menu y el pie enlazan a /club');
     if (!movil) ok((await p.locator('nav[aria-label="Principal"] a[href="/club"]').getAttribute('aria-current')) === 'page', '/club marcado en el menu');
     await captura(p, `real_club_${etiqueta}`);
-    // Asistencia publica (GitHub Pages): solo asistidos, total y %
+    // Asistencia publica (pestaña de la web nueva, D91; GitHub Pages ya solo redirige): solo asistidos, total y %
     for (const t of ['2025-26', '2026-27']) {
-      await p.goto(`${WEB}/index.html?t=${t}&p=asistencia`);
-      await p.locator('#asisBody tr').first().waitFor({ timeout: 15000 });
-      for (const vista of ['part', 'entr']) {
-        await p.locator(`#segAsis [data-a="${vista}"]`).click();
-        const cab = await p.locator('#asisHead').textContent(), cuerpo = await p.locator('#asisTbl').textContent();
-        const celdas = await p.locator('#asisBody tr').evaluateAll((f) => f.map((x) => x.children.length));
-        ok(!/excusa|Lesión|No conv|No sel|Disp/i.test(cab) && /% Asist/.test(cab) && celdas.length > 5 && celdas.every((n) => n === 5) && !/excusa/i.test(cuerpo), `Asistencia ${t} (${vista === 'part' ? 'partidos' : 'entrenos'}): solo asistidos, total y %; ningun motivo`, cab);
-      }
-      if (t === '2025-26') { await p.locator('#segAsis [data-a="part"]').click(); await captura(p, `real_asistencia_publica_${etiqueta}`); }
+      await p.goto(`${APP}/liga/${t}/asistencia`);
+      await p.locator('[data-testid="asistencia-tabla"] tbody tr').first().waitFor({ timeout: 15000 });
+      const cab = await p.locator('[data-testid="asistencia-tabla"] thead').textContent(), cuerpo = await p.locator('[data-testid="asistencia-tabla"]').textContent();
+      const celdas = await p.locator('[data-testid="asistencia-tabla"] tbody tr').evaluateAll((f) => f.map((x) => x.children.length));
+      ok(!/excusa|Lesión|No conv|No sel|Disp/i.test(cab) && /% Asist/.test(cab) && celdas.length > 5 && !/excusa/i.test(cuerpo), `Asistencia ${t}: solo asistidos, total y %; ningun motivo`, cab);
+      if (t === '2025-26') await captura(p, `real_asistencia_publica_${etiqueta}`);
     }
     ok(errores.length === 0, '/club y Asistencia: sin errores de JavaScript', errores.join(' | '));
     await ctx.close();

@@ -22,5 +22,4 @@ export function enlaceWhatsApp(telefono: string, texto: string) {
   return `https://wa.me/${digitos}?text=${encodeURIComponent(texto)}`;
 }
 
-export const URL_DASHBOARD = "https://eyeshar.github.io/MACCABIS/";
 export const fichaEstadisticas = (personId: string) => `/jugador/${encodeURIComponent(personId)}`; // ficha en la web (D92); la temporada por defecto es la en curso

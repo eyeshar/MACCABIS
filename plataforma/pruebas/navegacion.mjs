@@ -236,9 +236,9 @@ try {
         const columnas = await pg.locator('.nv-grupo').evaluateAll((g) => g.map((x) => Math.round(x.getBoundingClientRect().left)));
         ok(new Set(columnas).size === 3, 'menu de Gestion: los tres grupos en columnas', columnas.join(','));
         const enlaces = await pg.locator('a.nv-entrada').evaluateAll((a) => a.map((x) => [x.querySelector('b').textContent.trim(), x.getAttribute('href'), x.querySelector('span')?.textContent.trim()]));
-        ok(JSON.stringify(enlaces.map((e) => e[0])) === JSON.stringify(['Panel de la semana', 'Jugadores', 'Pedido de ropa', 'Scouting rivales', 'Liga consolidada']) && enlaces.every((e) => e[2]), 'menu de Gestion: entradas existentes con enlace y una linea de descripcion', JSON.stringify(enlaces));
+        ok(JSON.stringify(enlaces.map((e) => e[0])) === JSON.stringify(['Panel de la semana', 'Eventos y pistas', 'Jugadores', 'Asistencia y motivos', 'Pedido de ropa', 'Scouting rivales', 'Liga consolidada']) && enlaces.every((e) => e[2]) && enlaces.find((e) => e[0] === 'Eventos y pistas')[1] === '/gestion/eventos' && enlaces.find((e) => e[0] === 'Asistencia y motivos')[1] === '/gestion/asistencia', 'menu de Gestion: entradas existentes con enlace y una linea de descripcion (Eventos y Asistencia ya sin marca "paso 2", paso 2 pista E)', JSON.stringify(enlaces));
         const paso2 = await pg.locator('.nv-paso2').evaluateAll((s) => s.map((x) => ({ t: x.textContent, a: x.getAttribute('aria-disabled'), tag: x.tagName, href: x.getAttribute('href') })));
-        ok(paso2.length === 3 && ['Eventos y pistas', 'Convocatoria', 'Asistencia y motivos'].every((t, i) => paso2[i].t.includes(t) && paso2[i].t.includes('paso 2')) && paso2.every((x) => x.a === 'true' && x.tag !== 'A' && !x.href), 'menu de Gestion: Eventos, Convocatoria y Asistencia con "paso 2", sin enlace (aria-disabled)', JSON.stringify(paso2));
+        ok(paso2.length === 1 && paso2[0].t.includes('Convocatoria') && paso2[0].t.includes('paso 2') && paso2.every((x) => x.a === 'true' && x.tag !== 'A' && !x.href), 'menu de Gestion: solo Convocatoria lleva "paso 2", sin enlace (aria-disabled); Eventos y Asistencia ya no', JSON.stringify(paso2));
         ok((await pg.textContent()).includes('Mi cuenta') === false, '"Mi cuenta" ya no esta en el menu de Gestion (solo en el de usuario)');
         await foto(p, `cabecera_gestor_menu_gestion_${etiqueta}`, false);
         await p.keyboard.press('Escape');
@@ -266,7 +266,7 @@ try {
         ok(['Plantilla', 'Historia', 'El club'].every((t) => ht.includes(t)) && /la web/i.test(ht), 'hoja: LA WEB con Plantilla, Historia y El club');
         if (rol === 'gestor') {
           const g = hoja.locator('.nv-hoja-gestion');
-          ok(await g.isVisible() && (await g.locator('a.nv-entrada').count()) === 5 && (await g.locator('.nv-paso2[aria-disabled="true"]').count()) === 3, 'hoja (gestor): GESTIÓN con las mismas entradas y etiquetas "paso 2"');
+          ok(await g.isVisible() && (await g.locator('a.nv-entrada').count()) === 7 && (await g.locator('.nv-paso2[aria-disabled="true"]').count()) === 1, 'hoja (gestor): GESTIÓN con las mismas entradas y la etiqueta "paso 2" solo en Convocatoria');
         } else ok((await hoja.locator('.nv-hoja-gestion').count()) === 0, `hoja (${rol}): sin Gestion`);
         if (rol !== 'anon') ok(ht.includes('Mi cuenta') && ht.includes('Salir'), 'hoja: Mi cuenta y Salir');
         else ok(!ht.includes('Salir'), 'hoja sin sesion: sin Mi cuenta ni Salir');
@@ -311,7 +311,7 @@ try {
           const bg = p.locator('nav[aria-label="Gestión"]');
           const d = await bg.evaluate((b) => ({ fondo: getComputedStyle(b).backgroundColor, etq: b.querySelector('.zb-etq')?.textContent, grupos: b.querySelectorAll('.zb-grupo').length, paso2: [...b.querySelectorAll('.zb-paso2')].map((x) => [x.textContent.trim(), x.getAttribute('aria-disabled'), x.tagName]) }));
           const actual = await bg.locator('a[aria-current="page"]').allTextContents();
-          ok(d.fondo === 'rgb(42, 36, 16)' && d.etq === 'GESTIÓN' && d.grupos === 3 && d.paso2.length === 3 && d.paso2.every((x) => x[1] === 'true' && x[2] !== 'A' && x[0].includes('paso 2')) && actual.length === 1, `${ruta}: barra de Gestion (#2A2410, GESTIÓN, 3 grupos, "paso 2" sin enlace, la actual marcada: ${actual[0]})`, JSON.stringify(d));
+          ok(d.fondo === 'rgb(42, 36, 16)' && d.etq === 'GESTIÓN' && d.grupos === 3 && d.paso2.length === 1 && d.paso2.every((x) => x[1] === 'true' && x[2] !== 'A' && x[0].includes('Convocatoria') && x[0].includes('paso 2')) && actual.length === 1, `${ruta}: barra de Gestion (#2A2410, GESTIÓN, 3 grupos, solo Convocatoria con "paso 2" sin enlace, la actual marcada: ${actual[0]})`, JSON.stringify(d));
           const claro = await p.evaluate(() => [...document.querySelectorAll('main *')].filter((e) => e.offsetParent !== null && !e.closest('.foto'))
             // Superficies claras (tarjetas, tablas, campos): las del tema claro antiguo. Los botones primarios y la
             // etiqueta "Cerrado" van en tinta clara a proposito, como "Ver calendario" en la portada.

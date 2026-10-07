@@ -27,7 +27,7 @@ export const MENU_GESTION: GrupoGestion[] = [
     grupo: "La semana",
     entradas: [
       { texto: "Panel de la semana", corto: "Panel", descripcion: "Rutinas, partidos del domingo y pendientes", href: "/gestion" },
-      { texto: "Eventos y pistas", corto: "Eventos", descripcion: "Partidos, entrenos y la pista de cada semana" },
+      { texto: "Eventos y pistas", corto: "Eventos", descripcion: "Partidos, entrenos y la pista de cada semana", href: "/gestion/eventos" },
       { texto: "Convocatoria", corto: "Convocatoria", descripcion: "Reparto MdA / MdL y aviso de equipación" },
     ],
   },
@@ -35,7 +35,7 @@ export const MENU_GESTION: GrupoGestion[] = [
     grupo: "Plantilla",
     entradas: [
       { texto: "Jugadores", corto: "Jugadores", descripcion: "Plantilla, fichas y correos de acceso", href: "/gestion/jugadores" },
-      { texto: "Asistencia y motivos", corto: "Asistencia", descripcion: "Quién viene y por qué falta (solo gestores)" },
+      { texto: "Asistencia y motivos", corto: "Asistencia", descripcion: "Quién viene y por qué falta (solo gestores)", href: "/gestion/asistencia" },
       { texto: "Pedido de ropa", corto: "Pedido de ropa", descripcion: "Campaña, pedidos y Excel para VIVE", href: "/gestion/ropa" },
     ],
   },

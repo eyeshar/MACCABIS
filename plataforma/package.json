@@ -41,7 +41,8 @@
     "eventos:cuadre": "node scripts/cuadre_eventos.mjs",
     "pruebas:eventos": "node pruebas/rls_eventos.mjs",
     "pruebas:eventos-real": "node pruebas/rls_eventos_real.mjs",
-    "pruebas:eventos-logica": "node pruebas/eventos_logica.mjs"
+    "pruebas:eventos-logica": "node pruebas/eventos_logica.mjs",
+    "pruebas:eventos-pantallas": "node pruebas/eventos_pantallas.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

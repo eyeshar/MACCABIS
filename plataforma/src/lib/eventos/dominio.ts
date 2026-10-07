@@ -126,10 +126,14 @@ export function describirCambios(antes: CamposEditables, despues: CamposEditable
   return c;
 }
 
+/** La base de pruebas local usa WIN1252 (sin la flecha «→»): lo que se guarda lleva « -> » y al mostrarlo vuelve a ser «→». */
+export const cambioParaGuardar = (t: string | null) => (t == null ? t : t.replaceAll("→", "->"));
+export const cambioParaVer = (t: string | null) => (t == null ? t : t.replaceAll(" -> ", " → "));
+
 /** Texto de "cambio pendiente": lo anterior + lo nuevo, sin repetir. */
 export const juntarCambios = (previo: string | null, nuevos: string[]) => {
   const lista = [...(previo && previo !== "Cambio sin describir" && !previo.startsWith("Carga inicial") ? previo.split("; ") : []), ...nuevos];
-  return [...new Set(lista)].join("; ") || null;
+  return cambioParaGuardar([...new Set(lista.map((x) => cambioParaGuardar(x)!))].join("; ") || null);
 };
 
 // ---------------------------------------------------------------- mensaje de WhatsApp al guardar

@@ -23,6 +23,7 @@ function personasPorTemporada() {
 
 /** Todas las paginas publicas que migran de GitHub Pages (se amplia en cada entrega). */
 export const RUTAS = [
+  '/historia', '/historia?persona=eric', '/historia?persona=barreiro-carballal-carlos-jose',
   '/plantilla', ...temporadas.map((t) => `/plantilla?t=${t}`), '/jugador',
   ...personasPorTemporada(),
   '/liga', '/liga?g=G2', '/liga/rivales', '/liga/rivales?g=MdL',

@@ -162,7 +162,7 @@ try {
   ok(club.includes('Miércoles, 20:30–22:30') && club.includes('Valdebernardo') && club.includes('en obras'), '/club: entrenos (miercoles 20:30-22:30, Valdebernardo en obras)');
   ok(club.includes('Centro Deportivo Municipal Moratalaz') && club.includes('Calle de Valdebernardo, 2, 28030 Madrid') && club.includes('Pavones (L9)'), '/club: instalación de los partidos (CDM Moratalaz, calle de Valdebernardo 2, metro Pavones L9)');
   ok(club.includes('Valdebernardo (Faustina Valladolid)') && club.includes('son dos sitios distintos') && !club.includes('pendiente de confirmar'), '/club: entrenos en Valdebernardo (Faustina Valladolid), aclarado que no es la de los partidos, sin hueco');
-  ok(club.includes('https://eyeshar.github.io/MACCABIS/?p=historia'), '/club: enlace a la rejilla completa de Historia (GitHub Pages)');
+  ok(club.includes('href="/historia"'), '/club: enlace a la rejilla completa de Historia (/historia)');
   ok(!/[\w.+-]+@[\w-]+\.[\w.]+/.test(club.replace(/<script[\s\S]*?<\/script>/g, '')), '/club: ningun correo ni dato personal');
 
   // ---------------------------------------------------------------- Navegador
@@ -242,7 +242,7 @@ try {
       ok(await p.locator('nav[aria-label="Principal"]').isVisible() && !(await p.locator('nav[aria-label="Secciones"]').isVisible()), 'escritorio: menu principal; sin barra inferior');
       const menu = await p.$$eval('nav[aria-label="Principal"] a', (a) => a.map((x) => x.textContent.trim()));
       ok(['Inicio', 'Partidos', 'Liga', 'Plantilla', 'Historia', 'El club'].every((t, i) => menu[i]?.startsWith(t)), 'menu: Inicio, Partidos, Liga, Plantilla, Historia, El club', menu.join(','));
-      ok((await p.locator('nav[aria-label="Principal"] a[href^="https://eyeshar.github.io/MACCABIS/"]').count()) === 1, 'Historia (Liga y Plantilla ya son de la web) enlaza a la web de estadisticas (GitHub Pages)');
+      ok((await p.locator('nav[aria-label="Principal"] a[href^="https://eyeshar.github.io/MACCABIS/"]').count()) === 0, 'Liga, Plantilla e Historia ya son de la web: ningun enlace del menu a GitHub Pages');
     }
     await p.goto(`${APP}/?hoy=2026-10-06`);
     await captura(p, `real_portada_${etiqueta}`);

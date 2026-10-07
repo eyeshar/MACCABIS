@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import FichaJugador from "@/components/liga/Ficha";
 import { SelectorJugador, SelectorTemporadaRuta } from "@/components/liga/Selectores";
 import { metricasDe, nombrePropio } from "@/lib/estadisticas/calculo";
+import { ALIAS } from "@/lib/estadisticas/historiaDatos";
 import { TEMPORADAS, TEMPORADA_POR_DEFECTO, cargarTemporada, equiposDe, esTemporada, temporadasDePersona } from "@/lib/estadisticas/datos";
 
 type Props = { params: Promise<{ personId: string }>; searchParams: Promise<{ t?: string }> };
@@ -10,6 +11,9 @@ type Props = { params: Promise<{ personId: string }>; searchParams: Promise<{ t?
 async function resolver({ params, searchParams }: Props) {
   const { personId } = await params;
   const { t } = await searchParams;
+  // Un person_id antiguo (alias, D20: Castro Mayo, Mar Calvo...) lleva a la ficha de su identidad canonica.
+  const canonico = ALIAS.get(personId);
+  if (canonico) redirect(`/jugador/${canonico}${t ? `?t=${t}` : ""}`);
   const suyas = await temporadasDePersona(personId);
   if (!suyas.length) return null;
   // Temporada pedida; si el jugador no esta en ella (o no existe), la mas reciente suya.

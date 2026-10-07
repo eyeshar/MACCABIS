@@ -24,6 +24,8 @@ fs.mkdirSync(SALIDA, { recursive: true });
 const PUERTO = 3106, PUERTO_WEB = 3107;
 const APP = `http://127.0.0.1:${PUERTO}`;
 const WEB = `http://127.0.0.1:${PUERTO_WEB}`;
+/** Con la redireccion activada (scripts/activar_redirecciones.js) GitHub Pages ya no tiene barra: se omiten sus pruebas. */
+const REDIR_ACTIVA = /var ESTA_ACTIVA = true;/.test(fs.readFileSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'), 'data', 'redireccion_web.js'), 'utf8'));
 const PORTADA_PROD = 'https://maccabis.vercel.app/';
 // La web de GitHub Pages tal cual (raiz del repo), servida en local.
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png' };
@@ -140,7 +142,7 @@ try {
         if (d.desborda) problemas.desborda.push(ruta);
         if (d.blank) problemas.blank.push(ruta);
         if (!d.inicio) problemas.sinInicio.push(ruta);
-        if (!movil && (d.externos.length !== 1 || d.externos.some((x) => x.svg || x.t))) problemas.blank.push(`${ruta}: Liga/Plantilla/Historia con icono o target`);
+        if (!movil && (d.externos.length !== 0 || d.externos.some((x) => x.svg || x.t))) problemas.blank.push(`${ruta}: Liga/Plantilla/Historia con icono o target`);
         if (movil) {
           // La barra inferior no tapa contenido: al final de la pagina, el contenido acaba por encima de ella.
           await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
@@ -372,7 +374,7 @@ try {
   }
 
   // ---------------------------------------------------------------- GitHub Pages
-  for (const [etiqueta, ancho, alto, movil] of TAMANOS) {
+  for (const [etiqueta, ancho, alto, movil] of (REDIR_ACTIVA ? [] : TAMANOS)) {
     console.log(`\n== Web de estadisticas (GitHub Pages), ${etiqueta}`);
     const ctx = await nav.newContext({ viewport: { width: ancho, height: alto }, deviceScaleFactor: movil ? 2 : 1, isMobile: movil, hasTouch: movil, locale: 'es-ES' });
     const p = await ctx.newPage();

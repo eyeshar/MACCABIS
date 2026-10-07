@@ -13,8 +13,8 @@
   var NUEVA_WEB = 'https://maccabis.vercel.app';
   var ESTA_ACTIVA = false;
   var TEMPORADA_POR_DEFECTO = '2026-27';
-  /* Pestañas de GitHub Pages (?p=) ya migradas. Entrega 1: Liga. Entrega 2: Plantilla (?p=jugadores) y Ficha (?p=jugador&j=). Entrega 3: Historia. */
-  var MIGRADAS = ['equipo', 'jugadores', 'jugador', 'rankings', 'cuartos', 'asistencia', 'mda', 'liga', 'rivales'];
+  /* Pestañas de GitHub Pages (?p=) ya migradas. Entrega 1: Liga. Entrega 2: Plantilla (?p=jugadores) y Ficha (?p=jugador&j=). Entrega 3: Historia (?p=historia). */
+  var MIGRADAS = ['equipo', 'jugadores', 'jugador', 'rankings', 'cuartos', 'asistencia', 'mda', 'liga', 'rivales', 'historia'];
   var DE_TEMPORADA = ['equipo', 'rankings', 'cuartos', 'asistencia', 'mda'];
 
   function nuevaUrl(search, hash) {
@@ -25,6 +25,7 @@
     if (MIGRADAS.indexOf(p) < 0) return null;
     var extra = new URLSearchParams();
     if (DE_TEMPORADA.indexOf(p) >= 0) return '/liga/' + t + '/' + p;
+    if (p === 'historia') return '/historia';
     if (p === 'jugadores') return '/plantilla?t=' + t;
     if (p === 'jugador') return q.get('j') ? '/jugador/' + encodeURIComponent(q.get('j')) + '?t=' + t : '/jugador?t=' + t;
     if (p === 'liga') {

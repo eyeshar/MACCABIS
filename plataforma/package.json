@@ -32,6 +32,7 @@
     "pruebas:portada": "node pruebas/portada.mjs",
     "pruebas:navegacion": "node pruebas/navegacion.mjs",
     "pruebas:cuadre": "node pruebas/liga_cuadre.mjs",
+    "pruebas:activacion": "node pruebas/activar_redirecciones.mjs",
     "pruebas:privacidad": "node pruebas/privacidad_paginas.mjs",
     "iconos": "node scripts/generar_iconos.mjs",
     "db:asistencia": "node scripts/cargar_asistencia.mjs",

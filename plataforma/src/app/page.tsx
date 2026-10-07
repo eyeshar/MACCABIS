@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import MarcoPublico from "@/components/web/Marco";
 import AvisoTarjeta from "@/components/AvisoTarjeta";
@@ -9,7 +10,7 @@ import {
   top, ultimosResultados, type Proximo, type Resultado,
 } from "@/lib/publico";
 import { diaLargo, diaMes, diaMesLargo, hoyMadrid } from "@/lib/dias";
-import { FUNDACION, GRUPO_EQUIPO, NOMBRE_EQUIPO, estadisticas } from "@/lib/web";
+import { FUNDACION, GRUPO_EQUIPO, NOMBRE_EQUIPO } from "@/lib/web";
 import { origen } from "@/lib/sesion";
 
 // Portada publica (D76, maquetas Main y PortadaMovil): sin login, solo datos publicos (lib/publico.ts).
@@ -121,7 +122,7 @@ export default async function Portada({ searchParams }: { searchParams: Promise<
       <section id="liga" className="w-dentro w-seccion" aria-labelledby="t-liga">
         <div className="w-seccion-cab">
           <h2 id="t-liga">Clasificación</h2>
-          <a className="w-mas" href={estadisticas("liga")}>Clasificación completa y resultados →</a>
+          <Link className="w-mas" href="/liga">Clasificación completa y resultados →</Link>
         </div>
         <Clasificacion grupos={grupos} />
         <p className="w-nota">{estadoClasificacion()}</p>
@@ -130,7 +131,7 @@ export default async function Portada({ searchParams }: { searchParams: Promise<
       <section id="plantilla" className="w-dentro w-seccion" aria-labelledby="t-lideres">
         <div className="w-seccion-cab">
           <h2 id="t-lideres">Líderes Maccabis</h2>
-          <a className="w-mas" href={estadisticas("jugadores")}>Estadísticas de toda la plantilla →</a>
+          <Link className="w-mas" href="/plantilla">Estadísticas de toda la plantilla →</Link>
         </div>
         {lid.length ? (
           <div className="w-lideres">
@@ -171,7 +172,7 @@ export default async function Portada({ searchParams }: { searchParams: Promise<
             <span className="w-eyebrow w-naranja">Desde {FUNDACION}</span>
             <h2 id="t-historia">La historia del club</h2>
             <p>Cada temporada, cada partido con estadísticas y todos los que han vestido la camiseta.</p>
-            <a className="w-mas" href={estadisticas("historia")}>Explorar la historia →</a>
+            <Link className="w-mas" href="/historia">Explorar la historia →</Link>
           </div>
           <div className="w-cifras" data-testid="cifras-historia">
             <div><b>{historia.partidos_con_estadisticas}</b><span>partidos con estadísticas</span></div>

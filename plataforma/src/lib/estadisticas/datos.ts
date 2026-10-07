@@ -79,3 +79,17 @@ export function pestanasDe(t: Temporada): Pestana[] {
 
 /** Equipos que juegan esa temporada (con doble ficha se ofrece el selector Combinado / MdA / MdL). */
 export const equiposDe = (t: Temporada) => [...new Set(t.partidos.map((p) => p.equipo))];
+
+/** Temporadas en las que aparece cada persona (por person_id), con estadisticas de jugador. Se calcula una vez por proceso. */
+let INDICE_PERSONAS: Promise<Map<string, string[]>> | null = null;
+export function temporadasDePersona(personId: string): Promise<string[]> {
+  INDICE_PERSONAS ??= (async () => {
+    const m = new Map<string, string[]>();
+    for (const s of TEMPORADAS) {
+      const t = await cargarTemporada(s.id);
+      for (const p of t?.players ?? []) m.set(p.person_id, [...(m.get(p.person_id) ?? []), s.id]);
+    }
+    return m;
+  })();
+  return INDICE_PERSONAS.then((m) => m.get(personId) ?? []);
+}

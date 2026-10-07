@@ -27,6 +27,8 @@ export default async function PestanaTemporada({ params }: { params: Promise<{ t
   const t = await cargarTemporada(temporada);
   if (!t && /^[0-9]{4}-[0-9]{2}$/.test(temporada)) redirect(`/liga/${TEMPORADA_POR_DEFECTO}/equipo`);
   if (!t) notFound();
+  // Jugadores es la Plantilla (una sola pagina, con enlace a la ficha de cada jugador).
+  if (pestana === "jugadores") redirect(`/plantilla?t=${temporada}`);
   if (!(PESTANAS as readonly string[]).includes(pestana)) notFound();
   // Una pestaña que esa temporada no tiene (p. ej. Por cuartos en 2013/14) lleva a Equipo, como la web anterior.
   if (!pestanasDe(t).includes(pestana as Pestana)) redirect(`/liga/${temporada}/equipo`);
@@ -44,7 +46,7 @@ export default async function PestanaTemporada({ params }: { params: Promise<{ t
     switch (pestana as Pestana) {
       case "equipo": return <EquipoPestana key={temporada} partidos={t.partidos} box={t.box} M={M} equipos={equipos} />;
       case "jugadores": return <JugadoresPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} />;
-      case "rankings": return <RankingsPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} />;
+      case "rankings": return <RankingsPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} temporada={temporada} />;
       case "cuartos": return <CuartosPestana key={temporada} qstats={t.qstats!} multiEquipo={multi} />;
       case "asistencia": return <AsistenciaPestana key={temporada} jugadores={t.players.map((p) => ({ person_id: p.person_id, nombre: p.nombre, display: p.display, asist_part: p.asist_part, asist_entr: p.asist_entr }))} />;
       case "mda": return <MdaPestana key={temporada} resumen={t.mda_resumen!} />;

@@ -454,3 +454,11 @@ Varios comentarios del código y `data/avisos_equipacion.js` llaman «D79» a la
 - **Menú:** «Liga» de la cabecera y «Todas las estadísticas» del pie apuntan a `/liga`.
 **Por qué:** una sola web; la comparación automática con GitHub Pages (`npm run pruebas:cuadre`, 12 temporadas) garantiza que los números son los mismos.
 **Estado:** entrega 1 en producción (merge `a2cb0df`, `verificar_produccion` en TODO OK); pendiente de la revisión de Iván.
+
+## D92 — Migración de Plantilla y Ficha a la web Next.js (paso 2, pista M, entrega 2) (07/10/2026)
+**Decisión:** la pestaña «Jugadores» de GitHub Pages es **`/plantilla`** (ranking de la plantilla de una temporada, `?t=`, por defecto 2026/27; el menú «Plantilla» apunta ahí) y la «Ficha» es **`/jugador/<person_id>?t=<temporada>`**. Cada nombre de Plantilla y de Rankings enlaza con la ficha por `person_id`. `/jugador` abre el primero de la plantilla por orden alfabético (como la pestaña antigua); si la persona no jugó en la temporada pedida, la ficha abre su temporada más reciente; una persona sin estadísticas da 404. `/liga/<t>/jugadores` redirige a `/plantilla?t=<t>` (una sola página y una sola lógica, el mismo componente), y la pestaña «Jugadores» de las temporadas enlaza ahí.
+- **Mejora mínima:** el selector de temporada de la ficha solo ofrece las temporadas en que esa persona tiene estadísticas (la web antigua dejaba elegir cualquiera y caía en otro jugador).
+- **Privacidad:** la ficha pública solo lleva estadísticas de juego (nada de niveles, posiciones, correos, DNI, teléfonos ni fechas de nacimiento); `test:privacidad` revisa el HTML de las 195 fichas, las 12 plantillas y el resto de páginas migradas (291).
+- **Redirecciones** (`data/redireccion_web.js`): `?p=jugadores` → `/plantilla?t=`, `?p=jugador` → `/jugador?t=`, `?p=jugador&j=<id>` o `?j=<id>` → `/jugador/<id>?t=`; siguen **desactivadas** hasta el OK final de Iván. Solo Historia sigue sin redirigir.
+- **Copias:** `datos:sync` copia además `personas.json` e `historia_club.json` (para la entrega 3). `plataforma/src/data/estadisticas/` es una copia generada (`LEEME.md`, `npm run check:copias`).
+**Estado:** entrega 2 pendiente de la revisión de Iván en producción.

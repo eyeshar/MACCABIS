@@ -37,7 +37,7 @@ export function NavTemporada({ temporada, temporadas, pestanas }: {
       </div>
       <nav className="e-pestanas" aria-label="Pestañas de la temporada">
         {pestanas.map((p) => (
-          <Link key={p.id} href={`/liga/${temporada}/${p.id}`} aria-current={actual === p.id ? "page" : undefined}>{p.t}</Link>
+          <Link key={p.id} href={p.id === "jugadores" ? `/plantilla?t=${temporada}` : `/liga/${temporada}/${p.id}`} aria-current={actual === p.id ? "page" : undefined}>{p.t}</Link>
         ))}
       </nav>
     </div>

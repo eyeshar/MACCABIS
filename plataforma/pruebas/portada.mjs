@@ -242,7 +242,7 @@ try {
       ok(await p.locator('nav[aria-label="Principal"]').isVisible() && !(await p.locator('nav[aria-label="Secciones"]').isVisible()), 'escritorio: menu principal; sin barra inferior');
       const menu = await p.$$eval('nav[aria-label="Principal"] a', (a) => a.map((x) => x.textContent.trim()));
       ok(['Inicio', 'Partidos', 'Liga', 'Plantilla', 'Historia', 'El club'].every((t, i) => menu[i]?.startsWith(t)), 'menu: Inicio, Partidos, Liga, Plantilla, Historia, El club', menu.join(','));
-      ok((await p.locator('nav[aria-label="Principal"] a[href^="https://eyeshar.github.io/MACCABIS/"]').count()) === 2, 'Plantilla e Historia (Liga ya es /liga) enlazan a la web de estadisticas (GitHub Pages)');
+      ok((await p.locator('nav[aria-label="Principal"] a[href^="https://eyeshar.github.io/MACCABIS/"]').count()) === 1, 'Historia (Liga y Plantilla ya son de la web) enlaza a la web de estadisticas (GitHub Pages)');
     }
     await p.goto(`${APP}/?hoy=2026-10-06`);
     await captura(p, `real_portada_${etiqueta}`);

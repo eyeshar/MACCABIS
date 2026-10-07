@@ -254,3 +254,10 @@
   .e-gp { font-size: 34px; }
   .e-nav a { padding: 0 12px; font-size: 15px; }
 }
+
+/* Ficha de jugador */
+.e-cabjugador { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 13px; padding: 20px 24px; margin: 8px 0 20px; }
+.e-dorsal { font-family: var(--f-titulos); font-weight: 800; font-size: 54px; color: var(--c-amarillo); line-height: 1; min-width: 70px; text-align: center; }
+.e-nombre-ficha { margin: 0; font-weight: 700; font-size: 26px; text-transform: uppercase; }
+.e-meta { color: var(--tinta-tenue); font-size: 13px; font-family: var(--f-cifras); margin-top: 2px; }
+@media (max-width: 640px) { .e-cabjugador { padding: 16px; gap: 14px; } .e-dorsal { font-size: 44px; min-width: 56px; } }

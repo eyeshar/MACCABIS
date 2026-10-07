@@ -56,7 +56,7 @@ if (fs.existsSync(DIR_PRIVADO)) {
 
 console.log('\n== Páginas públicas migradas de GitHub Pages (Liga, Plantilla, Historia)');
 const PLAT = path.join(ROOT, 'plataforma');
-const fuentes = ['src/app/liga', 'src/components/liga', 'src/lib/estadisticas'].flatMap(d => {
+const fuentes = ['src/app/liga', 'src/app/jugador', 'src/app/plantilla', 'src/components/liga', 'src/lib/estadisticas'].flatMap(d => {
   const base = path.join(PLAT, d);
   const lista = f => fs.readdirSync(f, { withFileTypes: true }).flatMap(e => e.isDirectory() ? lista(path.join(f, e.name)) : [path.join(f, e.name)]);
   return fs.existsSync(base) ? lista(base) : [];

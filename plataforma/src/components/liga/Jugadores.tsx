@@ -1,13 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { jugadoresFiltrados, nombreCorto, type ClaveJugador, type Eq, type FiltroEq, type JugadorEst, type Metricas } from "@/lib/estadisticas/calculo";
 import { CajaTabla, ChipEquipo, Control, N1, N2, NInt, NPct, NSigned, NSigned1, Nota, OPCIONES_EQUIPO, SecH, Segmento, Nz } from "./Comunes";
 
 // Pestaña Jugadores: la plantilla de la temporada, ordenable por cualquier columna. PJ = partidos con minutos (los DNP no
 // cuentan en las medias). `fichaHref`, si se da, enlaza el nombre con la ficha del jugador (por person_id).
-export default function JugadoresPestana({ jugadores, M, multiEquipo, fichaHref }: {
-  jugadores: JugadorEst[]; M: Metricas; multiEquipo: boolean; fichaHref?: (personId: string) => string;
+export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada }: {
+  jugadores: JugadorEst[]; M: Metricas; multiEquipo: boolean; temporada?: string;
 }) {
   const [equipo, setEquipo] = useState<FiltroEq>("ALL");
   const [minpj, setMinpj] = useState(1);
@@ -68,7 +69,7 @@ export default function JugadoresPestana({ jugadores, M, multiEquipo, fichaHref 
                 <tr key={p.person_id + i}>
                   <td className="e-c e-mono e-tenue">{i + 1}</td>
                   <td className="e-nombre">
-                    {fichaHref ? <a href={fichaHref(p.person_id)} className="e-enlace-nombre">{nombre}</a> : nombre}
+                    {temporada ? <Link href={`/jugador/${p.person_id}?t=${temporada}`} className="e-enlace-nombre">{nombre}</Link> : nombre}
                     {p.dorsales && p.dorsales.length > 0 && <> <span className="e-completo">#{p.dorsales.join("/")}</span></>}
                   </td>
                   {multiEquipo && <td className="e-oculta-sm">{p.equipos.map((e: Eq, k) => <Fragment key={e}>{k > 0 && " "}<ChipEquipo equipo={e} corto /></Fragment>)}</td>}

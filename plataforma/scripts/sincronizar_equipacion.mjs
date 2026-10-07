@@ -20,6 +20,8 @@ const INDICE = JSON.parse(fs.readFileSync(path.join(DATOS, "index.json"), "utf8"
 const COPIAS_ESTADISTICAS = [
   ["index.json", "estadisticas/index.json"],
   ["rivales_2026-27_web.json", "estadisticas/rivales.json"],
+  ["personas.json", "estadisticas/personas.json"],
+  ["historia_club.json", "estadisticas/historia_club.json"],
   ...INDICE.seasons.map((s) => [`season_${s.id}.json`, `estadisticas/season_${s.id}.json`]),
 ];
 export const COPIAS = [

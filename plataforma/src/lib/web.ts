@@ -23,7 +23,7 @@ export const MENU: Seccion[] = [
   { id: "inicio", texto: "Inicio", href: "/", externo: false },
   { id: "partidos", texto: "Partidos", href: "/#calendario", externo: false },
   { id: "liga", texto: "Liga", href: "/liga", externo: false },
-  { id: "plantilla", texto: "Plantilla", href: estadisticas("jugadores"), externo: true },
+  { id: "plantilla", texto: "Plantilla", href: "/plantilla", externo: false },
   { id: "historia", texto: "Historia", href: estadisticas("historia"), externo: true },
   { id: "club", texto: "El club", href: "/club", externo: false },
 ];

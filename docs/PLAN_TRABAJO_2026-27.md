@@ -68,3 +68,6 @@ Bloque «Unificación web» (paso 1 del rediseño). Detalle en `DECISIONS.md` (D
    4. **Migración de Historia.**
    5. **Paso 3** (EventoMovil, «no voy» con motivo y periodos de no disponibilidad, avisos por la web instalada, recordatorios automáticos).
    Cada sección migrada deja de enlazar a GitHub Pages en el menú (`MENU` en `plataforma/src/lib/web.ts`) y su pestaña de GitHub Pages pasa a llevar a la plataforma.
+
+## Migración de GitHub Pages cerrada (07/10/2026, D91–D93)
+Orden del 07/10 (punto 3 del bloque «paso 1b»): **hecha la migración de Liga, Plantilla/Ficha e Historia** a `maccabis.vercel.app` (`/liga`, `/liga/rivales`, `/liga/<temporada>/...`, `/plantilla`, `/jugador/<person_id>`, `/historia`), con cuadre celda a celda contra GitHub Pages. **GitHub Pages solo redirige** (commit `7a9b041`, reversible). Siguen: paso 2 de la plataforma (Eventos y pistas, Convocatoria, Asistencia y motivos; pista E) y paso 3 (EventoMovil, avisos, recordatorios). Para la rutina C hará falta la tabla de posiciones, niveles A–E y Dobla/No dobla de 2026/27, **solo en `privado/`** (BACKLOG).

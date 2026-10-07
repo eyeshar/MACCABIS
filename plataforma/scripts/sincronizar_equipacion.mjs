@@ -59,7 +59,9 @@ export function resumenHistoria() {
 export function desfasadas() {
   const copias = COPIAS.filter(([o, d]) => {
     const f = path.join(DESTINO, d);
-    return !fs.existsSync(f) || !fs.readFileSync(f).equals(fs.readFileSync(path.join(DATOS, o)));
+    // Sin distinguir CRLF/LF (en Windows git puede sacar los ficheros con uno u otro).
+    const norm = (x) => fs.readFileSync(x, 'utf8').replace(/\r\n/g, '\n');
+    return !fs.existsSync(f) || norm(f) !== norm(path.join(DATOS, o));
   }).map(([, d]) => d);
   const f = path.join(DESTINO, RESUMEN);
   // Sin distinguir CRLF/LF: en Windows git puede sacar el fichero con CRLF.

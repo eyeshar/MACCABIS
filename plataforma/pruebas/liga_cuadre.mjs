@@ -12,6 +12,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { desfasadas } from '../scripts/sincronizar_equipacion.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -63,8 +64,10 @@ function igual(a, b, que) {
 
 const cuadre = []; // filas del cuadre de jugadores: [temporada, jugador, anterior, nueva]
 try {
+  seccion('Copias generadas de src/data/ = fuente en data/');
+  ok(desfasadas().length === 0, 'plataforma/src/data/ (incluida estadisticas/) coincide con data/ (npm run datos:sync)', desfasadas().join(', '));
   await esperar(`${APP}/liga`);
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  nav =await chromium.launch({ channel: 'chrome', headless: true });
   const ctx = await nav.newContext({ viewport: { width: 1280, height: 1000 } });
   const errores = [];
   const nueva = await ctx.newPage(), vieja = await ctx.newPage();

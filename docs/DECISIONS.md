@@ -461,4 +461,4 @@ Varios comentarios del código y `data/avisos_equipacion.js` llaman «D79» a la
 - **Privacidad:** la ficha pública solo lleva estadísticas de juego (nada de niveles, posiciones, correos, DNI, teléfonos ni fechas de nacimiento); `test:privacidad` revisa el HTML de las 195 fichas, las 12 plantillas y el resto de páginas migradas (291).
 - **Redirecciones** (`data/redireccion_web.js`): `?p=jugadores` → `/plantilla?t=`, `?p=jugador` → `/jugador?t=`, `?p=jugador&j=<id>` o `?j=<id>` → `/jugador/<id>?t=`; siguen **desactivadas** hasta el OK final de Iván. Solo Historia sigue sin redirigir.
 - **Copias:** `datos:sync` copia además `personas.json` e `historia_club.json` (para la entrega 3). `plataforma/src/data/estadisticas/` es una copia generada (`LEEME.md`, `npm run check:copias`).
-**Estado:** entrega 2 pendiente de la revisión de Iván en producción.
+**Estado:** entrega 2 en producción (merge `c20ce51`, `verificar_produccion` en TODO OK); pendiente de la revisión de Iván.

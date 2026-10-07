@@ -11,7 +11,7 @@
  */
 (function (raiz) {
   var NUEVA_WEB = 'https://maccabis.vercel.app';
-  var ESTA_ACTIVA = false;
+  var ESTA_ACTIVA = true;
   var TEMPORADA_POR_DEFECTO = '2026-27';
   /* Pestañas de GitHub Pages (?p=) ya migradas. Entrega 1: Liga. Entrega 2: Plantilla (?p=jugadores) y Ficha (?p=jugador&j=). Entrega 3: Historia (?p=historia). */
   var MIGRADAS = ['equipo', 'jugadores', 'jugador', 'rankings', 'cuartos', 'asistencia', 'mda', 'liga', 'rivales', 'historia'];

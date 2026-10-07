@@ -1,0 +1,851 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Maccabis//Calendario 2026-27//ES
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Maccabis
+X-WR-CALDESC:Partidos de MdA y MdL y entrenos de Maccabis
+X-WR-TIMEZONE:Europe/Madrid
+REFRESH-INTERVAL;VALUE=DURATION:PT12H
+X-PUBLISHED-TTL:PT12H
+BEGIN:VTIMEZONE
+TZID:Europe/Madrid
+X-LIC-LOCATION:Europe/Madrid
+BEGIN:DAYLIGHT
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0200
+TZNAME:CEST
+DTSTART:19700329T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:+0200
+TZOFFSETTO:+0100
+TZNAME:CET
+DTSTART:19701025T030000
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:mdl-j1-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261004T090000
+DTEND;TZID=Europe/Madrid:20261004T101500
+SUMMARY:MdL – Mejorada 2012 C.B. (J1)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 1.\nEqui
+ pación: Jugamos de negro\; cambia Mejorada 2012 C.B.. Llevad la amarilla 
+ por si acaso.\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j1-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261004T140000
+DTEND;TZID=Europe/Madrid:20261004T151500
+SUMMARY:Enfermos del Aro – MdA (J1)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 1.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-10-07-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261007T200000
+DTEND;TZID=Europe/Madrid:20261007T210000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Caja Mágica
+DESCRIPTION:Cambiado solo esta semana.\nCalendario de Maccabis: maccabis.ve
+ rcel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-10-14-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261014T203000
+DTEND;TZID=Europe/Madrid:20261014T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j2-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261018T101500
+DTEND;TZID=Europe/Madrid:20261018T113000
+SUMMARY:MdA – Litros de Mahou (J2)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 2.\nEqui
+ pación: Jugamos de negro\; cambia Litros de Mahou. Llevad la amarilla por
+  si acaso.\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j2-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261018T101500
+DTEND;TZID=Europe/Madrid:20261018T113000
+SUMMARY:Quinto Tiempo – MdL (J2)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 2.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-10-21-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261021T203000
+DTEND;TZID=Europe/Madrid:20261021T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j3-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261025T090000
+DTEND;TZID=Europe/Madrid:20261025T101500
+SUMMARY:Los Khinkis Rusos – MdA (J3)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 3.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j3-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261025T140000
+DTEND;TZID=Europe/Madrid:20261025T151500
+SUMMARY:MdL – Suanzes Motor (J3)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 3.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-10-28-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261028T203000
+DTEND;TZID=Europe/Madrid:20261028T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-11-04-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261104T203000
+DTEND;TZID=Europe/Madrid:20261104T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j4-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261108T113000
+DTEND;TZID=Europe/Madrid:20261108T124500
+SUMMARY:Trascendedores C.B. – MdL (J4)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 4.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-11-11-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261111T203000
+DTEND;TZID=Europe/Madrid:20261111T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j5-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261115T090000
+DTEND;TZID=Europe/Madrid:20261115T101500
+SUMMARY:MdA – Nabuco TD (J5)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 5.\nEqui
+ pación: Jugamos de negro\; cambia Nabuco TD. Llevad la amarilla por si ac
+ aso.\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j5-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261115T124500
+DTEND;TZID=Europe/Madrid:20261115T140000
+SUMMARY:MdL – Vanner (J5)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 5.\nEqui
+ pación: Jugamos de negro\; cambia Vanner. Llevad la amarilla por si acaso
+ .\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-11-18-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261118T203000
+DTEND;TZID=Europe/Madrid:20261118T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j6-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261122T101500
+DTEND;TZID=Europe/Madrid:20261122T113000
+SUMMARY:Vallekas Basket – MdA (J6)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 6.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j6-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261122T124500
+DTEND;TZID=Europe/Madrid:20261122T140000
+SUMMARY:28500 – MdL (J6)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 6.\nEqui
+ pación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario de
+  Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-11-25-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261125T203000
+DTEND;TZID=Europe/Madrid:20261125T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j7-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261129T113000
+DTEND;TZID=Europe/Madrid:20261129T124500
+SUMMARY:MdL – Castañazo (J7)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 7.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j7-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261129T140000
+DTEND;TZID=Europe/Madrid:20261129T151500
+SUMMARY:MdA – Wild Boys (J7)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 7.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-12-02-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261202T203000
+DTEND;TZID=Europe/Madrid:20261202T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-12-09-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261209T203000
+DTEND;TZID=Europe/Madrid:20261209T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j8-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261213T113000
+DTEND;TZID=Europe/Madrid:20261213T124500
+SUMMARY:RIF – MdA (J8)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 8.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j8-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261213T140000
+DTEND;TZID=Europe/Madrid:20261213T151500
+SUMMARY:Craps – MdL (J8)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 8.\nEqui
+ pación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario de
+  Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2026-12-16-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20261216T203000
+DTEND;TZID=Europe/Madrid:20261216T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j9-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270110T101500
+DTEND;TZID=Europe/Madrid:20270110T113000
+SUMMARY:MdL – F.T. Floppers (J9)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 9.\nEqui
+ pación: Jugamos de negro\; cambia F.T. Floppers. Llevad la amarilla por s
+ i acaso.\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j9-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270110T124500
+DTEND;TZID=Europe/Madrid:20270110T140000
+SUMMARY:MdA – Tropicaleros (J9)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 9.\nCale
+ ndario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-01-13-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270113T203000
+DTEND;TZID=Europe/Madrid:20270113T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j10-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270117T090000
+DTEND;TZID=Europe/Madrid:20270117T101500
+SUMMARY:La Cancha Roja – MdL (J10)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 10.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j10-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270117T124500
+DTEND;TZID=Europe/Madrid:20270117T140000
+SUMMARY:Chavalitros – MdA (J10)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 10.\nEqu
+ ipación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario d
+ e Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-01-20-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270120T203000
+DTEND;TZID=Europe/Madrid:20270120T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j11-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270124T113000
+DTEND;TZID=Europe/Madrid:20270124T124500
+SUMMARY:MdA – Chupitimanguis (J11)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 11.\nEqu
+ ipación: Jugamos de negro\; cambia Chupitimanguis. Llevad la amarilla por
+  si acaso.\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-01-27-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270127T203000
+DTEND;TZID=Europe/Madrid:20270127T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j12-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270131T090000
+DTEND;TZID=Europe/Madrid:20270131T101500
+SUMMARY:Mejorada 2012 C.B. – MdL (J12)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 12.\nEqu
+ ipación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario d
+ e Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j12-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270131T140000
+DTEND;TZID=Europe/Madrid:20270131T151500
+SUMMARY:MdA – Enfermos del Aro (J12)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 12.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-02-03-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270203T203000
+DTEND;TZID=Europe/Madrid:20270203T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j13-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270207T101500
+DTEND;TZID=Europe/Madrid:20270207T113000
+SUMMARY:Litros de Mahou – MdA (J13)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 13.\nEqu
+ ipación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario d
+ e Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j13-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270207T101500
+DTEND;TZID=Europe/Madrid:20270207T113000
+SUMMARY:MdL – Quinto Tiempo (J13)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 13.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-02-10-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270210T203000
+DTEND;TZID=Europe/Madrid:20270210T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-02-17-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270217T203000
+DTEND;TZID=Europe/Madrid:20270217T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j14-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270221T090000
+DTEND;TZID=Europe/Madrid:20270221T101500
+SUMMARY:MdA – Los Khinkis Rusos (J14)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 14.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j14-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270221T140000
+DTEND;TZID=Europe/Madrid:20270221T151500
+SUMMARY:Suanzes Motor – MdL (J14)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 14.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-02-24-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270224T203000
+DTEND;TZID=Europe/Madrid:20270224T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j15-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270228T113000
+DTEND;TZID=Europe/Madrid:20270228T124500
+SUMMARY:MdL – Trascendedores C.B. (J15)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 15.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-03-03-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270303T203000
+DTEND;TZID=Europe/Madrid:20270303T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j16-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270307T090000
+DTEND;TZID=Europe/Madrid:20270307T101500
+SUMMARY:Nabuco TD – MdA (J16)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 16.\nEqu
+ ipación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario d
+ e Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j16-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270307T124500
+DTEND;TZID=Europe/Madrid:20270307T140000
+SUMMARY:Vanner – MdL (J16)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 16.\nEqu
+ ipación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario d
+ e Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-03-10-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270310T203000
+DTEND;TZID=Europe/Madrid:20270310T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j17-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270314T101500
+DTEND;TZID=Europe/Madrid:20270314T113000
+SUMMARY:MdA – Vallekas Basket (J17)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 17.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j17-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270314T124500
+DTEND;TZID=Europe/Madrid:20270314T140000
+SUMMARY:MdL – 28500 (J17)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 17.\nEqu
+ ipación: Jugamos de negro\; cambia 28500. Llevad la amarilla por si acaso
+ .\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-03-17-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270317T203000
+DTEND;TZID=Europe/Madrid:20270317T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-03-31-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270331T203000
+DTEND;TZID=Europe/Madrid:20270331T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j18-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270404T113000
+DTEND;TZID=Europe/Madrid:20270404T124500
+SUMMARY:Castañazo – MdL (J18)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 18.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j18-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270404T140000
+DTEND;TZID=Europe/Madrid:20270404T151500
+SUMMARY:Wild Boys – MdA (J18)
+LOCATION:Moratalaz · Pista 2
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 18.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-04-07-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270407T203000
+DTEND;TZID=Europe/Madrid:20270407T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j19-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270411T113000
+DTEND;TZID=Europe/Madrid:20270411T124500
+SUMMARY:MdA – RIF (J19)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 19.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j19-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270411T140000
+DTEND;TZID=Europe/Madrid:20270411T151500
+SUMMARY:MdL – Craps (J19)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 19.\nEqu
+ ipación: Jugamos de negro\; cambia Craps. Llevad la amarilla por si acaso
+ .\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-04-14-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270414T203000
+DTEND;TZID=Europe/Madrid:20270414T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j20-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270418T101500
+DTEND;TZID=Europe/Madrid:20270418T113000
+SUMMARY:F.T. Floppers – MdL (J20)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 20.\nEqu
+ ipación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario d
+ e Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j20-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270418T124500
+DTEND;TZID=Europe/Madrid:20270418T140000
+SUMMARY:Tropicaleros – MdA (J20)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 20.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-04-21-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270421T203000
+DTEND;TZID=Europe/Madrid:20270421T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mdl-j21-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270425T090000
+DTEND;TZID=Europe/Madrid:20270425T101500
+SUMMARY:MdL – La Cancha Roja (J21)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdL · Liga Municipal de Moratalaz\, grupo 2\, jornada 21.\nCal
+ endario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j21-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270425T124500
+DTEND;TZID=Europe/Madrid:20270425T140000
+SUMMARY:MdA – Chavalitros (J21)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 21.\nEqu
+ ipación: Jugamos de negro\; cambia Chavalitros. Llevad la amarilla por si
+  acaso.\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-04-28-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270428T203000
+DTEND;TZID=Europe/Madrid:20270428T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:entreno-semanal-2027-05-05-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270505T203000
+DTEND;TZID=Europe/Madrid:20270505T223000
+SUMMARY:Entrenamiento Maccabis
+LOCATION:Pista por confirmar (Valdebernardo en obras)
+DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
+ \nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j22-2026-27@maccabis
+DTSTAMP:20261007T170233Z
+DTSTART;TZID=Europe/Madrid:20270509T113000
+DTEND;TZID=Europe/Madrid:20270509T124500
+SUMMARY:Chupitimanguis – MdA (J22)
+LOCATION:Moratalaz · Pista 3
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 22.\nEqu
+ ipación: Llevad la equipación AMARILLA (nos toca cambiar).\nCalendario d
+ e Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR

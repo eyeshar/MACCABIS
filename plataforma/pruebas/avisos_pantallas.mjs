@@ -111,6 +111,8 @@ try {
   const { sql, url, anonKey } = pila;
   const { leerLiga, cargarLiga } = await import('../scripts/cargar_liga.mjs');
   await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
+  await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;

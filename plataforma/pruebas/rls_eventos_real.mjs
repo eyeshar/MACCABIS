@@ -58,6 +58,8 @@ try {
   const dp = await api('/v_descansos_publicos?select=*');
   ok(dp.status === 200 && dp.datos.length === 4, 'anónimo lee los 4 descansos');
   ok((await api('/v_eventos_publicos', { metodo: 'POST', cuerpo: {} })).status >= 400, 'la vista pública no admite escritura');
+  const ph = await api('/v_pista_habitual_publica?select=*');
+  ok(ph.status === 200 && ph.datos.length === 1 && Object.keys(ph.datos[0]).sort().join() === 'estado,nombre,nombre_corto', 'anónimo lee la pista habitual (solo nombre y estado, sin dirección)', JSON.stringify(ph.datos));
 
   console.log('\n== Permisos y políticas en la base real');
   for (const t of PRIVADAS) {

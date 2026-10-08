@@ -212,7 +212,7 @@ try {
   const j2b = (await sql`select fecha, inicio, rival, quedada, notas, sporteasy_estado, sporteasy_cambio from public.eventos where clave = 'mda-j2'`)[0];
   ok(String(j2b.quedada).startsWith('09:45') && j2b.notas === 'Calentamiento a las 9:50' && j2b.fecha.toISOString() === j2.fecha.toISOString() && String(j2b.inicio) === String(j2.inicio) && j2b.rival === j2.rival, 'se guardan quedada y notas; fecha, hora y rival intactos');
   ok(j2b.sporteasy_estado === 'pendiente' && /quedada: 09:55 -> 09:45/.test(j2b.sporteasy_cambio), 'pendiente de copiar con «quedada: 09:55 → 09:45»', j2b.sporteasy_cambio);
-  ok((await p.getByTestId('mensaje-whatsapp').textContent()).includes('quedada a las 09:45') && (await p.getByTestId('mensaje-whatsapp').textContent()).includes('Cambian ellos') === false && /amarilla|equipaci/i.test(await p.getByTestId('mensaje-whatsapp').textContent()), 'mensaje del partido: quedada y línea de equipación');
+  ok((await p.getByTestId('mensaje-whatsapp').textContent()).includes('encuentro 09:45') && (await p.getByTestId('mensaje-whatsapp').textContent()).includes('Cambian ellos') === false && /amarilla|equipaci/i.test(await p.getByTestId('mensaje-whatsapp').textContent()), 'mensaje del partido: encuentro y línea de equipación');
 
   // ---------------------------------------------------------------- crear
   console.log('\n== Nuevo evento');

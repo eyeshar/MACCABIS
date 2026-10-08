@@ -515,3 +515,12 @@ Varios comentarios del código y `data/avisos_equipacion.js` llaman «D79» a la
 **Confirmación de Iván (dato, no inferencia de Claude):** el 08/10/2026 Iván confirmó que **creó la serie de entrenos en SportEasy**. Con esa confirmación se marcaron como copiados los **26 entrenos de la serie, del 14/10/2026 al 05/05/2027** (los de «Carga inicial: serie de entrenos por confirmar»), con una sola transacción que aborta si no son exactamente 26. Tras eso: 0 pendientes futuros, 66 copiados (40 partidos + 26 entrenos). El del 07/10 ya había pasado y no se tocó.
 **Dato de pista:** la Caja Mágica pasa a tener la dirección «Camino de Perales 23, 28041 Madrid (Metro San Fermín-Orcasur, L3)» (dada por Iván). Sigue «provisional».
 **Nota:** Iván vio que «Gestionar» redirigía a `/gestion/eventos` en producción; en el código y en las pruebas locales esa ruta no redirige, así que no se encontró la causa — se comprueba en producción tras este despliegue.
+
+## D98 — Encuentro, equilibrio por línea, sin cuenta de pruebas y WhatsApp con pista (Iván, 08/10/2026) — AJUSTA D95 y D96
+**Decisión (Iván, 08/10/2026):**
+1. **El encuentro es siempre 20 minutos antes de la hora de inicio** (es la quedada por defecto; en el texto a los jugadores se llama «encuentro»).
+2. **Convocatorias con rivales parejos:** se equilibra **por línea** (bases, exteriores, interiores) y no solo en el total.
+3. **No se crea cuenta de gestor de pruebas en producción:** Claude revisa con la sesión de Iván.
+4. **Mensaje de WhatsApp de los eventos** con pista, número y dirección: «Entreno del miércoles 14/10: de 20:00 a 22:00 (encuentro 19:40) en Antonio Díaz Miguel, pista 3 — Calle Joaquín Dicenta, 1.». Una nota que sea solo «Pista N» cuenta como número de pista y no se repite; el resto de notas sigue en su línea.
+**Registro:** el 08/10 Claude creó en producción la pista «Antonio Díaz Miguel» (Calle Joaquín Dicenta, 1, provisional) y asignó el entreno del 14/10 (20:00–22:00, encuentro 19:40, nota «Pista 3»), ya copiado a SportEasy.
+**Revisión del lienzo:** Claude comparó EventoRespuestas y EventoImportar con el lienzo en producción el 08/10 y coinciden: ese pendiente queda tachado.

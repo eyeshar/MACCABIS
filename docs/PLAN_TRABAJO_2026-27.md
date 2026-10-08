@@ -75,3 +75,8 @@ Orden del 07/10 (punto 3 del bloque «paso 1b»): **hecha la migración de Liga,
 ## Paso 2 — Eventos y pistas en fase puente (07–08/10/2026, D94, D95)
 Hecho (rama `feat/eventos-puente`): la **web es la única fuente de eventos**. Iván crea y cambia eventos solo en `/gestion/eventos`; cada cambio queda «pendiente de copiar» y genera el mensaje de WhatsApp; **Claude los copia a SportEasy con su OK** en el Chrome de Iván y los marca como copiados; las respuestas se traen a la plataforma con **Importar → Respuestas** (diccionario cerrado de nombres). Los jugadores siguen respondiendo en SportEasy hasta el paso 3. El calendario del Ayuntamiento se compara con **Importar → Calendario** (rutina B). Bloque hecho sin entorno de pruebas por decisión de Iván, con las mitigaciones y la forma de restaurar en D94. **Rutinas actualizadas:** B usa Importar y la cola de SportEasy; C (nueva, `RUTINAS/C_CONVOCATORIA.md`) lee SportEasy → Importar → Respuestas → convocatoria. Siguen: Convocatoria en la plataforma, paso 3 (respuestas de los jugadores en la web, avisos, recordatorios) y retirar `asistencia_motivos` (otra decisión).
 
+## Decisiones del 08/10/2026 (D98)
+- El **encuentro** es siempre 20 minutos antes de la hora de inicio.
+- En convocatorias con rivales parejos se **equilibra por línea** (bases, exteriores, interiores), no solo en el total.
+- **No se crea cuenta de gestor de pruebas en producción**: Claude revisa con la sesión de Iván.
+- El mensaje de WhatsApp de cada evento lleva pista, número de pista y dirección (D98).

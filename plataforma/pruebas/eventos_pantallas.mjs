@@ -239,6 +239,7 @@ try {
   await p.goto(`${APP}/gestion/eventos`);
   const antesPend = (await sql`select count(*)::int n from public.eventos where sporteasy_estado = 'pendiente' and fecha >= ${hoy} and (sporteasy_cambio is null or sporteasy_cambio not like 'Carga inicial%')`)[0].n;
   ok((await p.getByTestId('copia-sporteasy').locator('input[name=id]:not([disabled])').count()) === antesPend, `la tarjeta lista ${antesPend} cambios, todos marcados`);
+  p.once('dialog', (d) => d.accept());
   await p.getByTestId('copia-sporteasy').getByRole('button', { name: 'Marcar como copiado' }).click();
   await p.waitForLoadState('networkidle');
   const despPend = (await sql`select count(*)::int n from public.eventos where sporteasy_estado = 'pendiente' and fecha >= ${hoy} and (sporteasy_cambio is null or sporteasy_cambio not like 'Carga inicial%')`)[0].n;
@@ -270,6 +271,66 @@ try {
   await p.getByRole('button', { name: 'Añadir pista' }).click();
   await p.waitForURL((u) => u.pathname === '/gestion/eventos');
   ok((await sql`select direccion, uso, estado from public.pistas where nombre = 'Pabellón de pruebas'`)[0]?.direccion === null, 'una pista nueva se crea sin dirección si no se pone (no se inventa)');
+
+  // ---------------------------------------------------------------- pistas: pantalla de edicion
+  console.log('\n== Pistas: editar y entrar desde «Gestionar»');
+  await p.goto(`${APP}/gestion/eventos`);
+  await p.getByRole('link', { name: 'Gestionar' }).click();
+  await p.waitForURL((u) => u.pathname === '/gestion/eventos/pistas');
+  ok(new URL(p.url()).pathname === '/gestion/eventos/pistas' && (await p.locator('h1').textContent()) === 'Pistas', '«Gestionar» abre la pantalla de pistas (no redirige)', p.url());
+  const caja = p.locator('[data-pista=caja-magica]');
+  await caja.getByLabel('Dirección').fill('Camino de Perales 23, 28041 Madrid (Metro San Fermín-Orcasur, L3)');
+  await caja.getByLabel('Nombre', { exact: true }).fill('Caja Mágica (pabellón)');
+  await caja.getByLabel('Número de pistas').fill('2');
+  await caja.getByRole('button', { name: 'Guardar' }).click();
+  await p.waitForLoadState('networkidle'); await p.waitForTimeout(600);
+  const cm = (await sql`select nombre, direccion, num_pistas, uso from public.pistas where slug = 'caja-magica'`)[0];
+  ok(cm.direccion.startsWith('Camino de Perales 23') && cm.nombre === 'Caja Mágica (pabellón)' && cm.num_pistas === 2 && cm.uso === 'entreno', 'se editan nombre, dirección y número de pistas', JSON.stringify(cm));
+  await caja.getByLabel('Uso').selectOption('partido');
+  await caja.getByRole('button', { name: 'Guardar' }).click();
+  await p.waitForLoadState('networkidle'); await p.waitForTimeout(600);
+  ok((await sql`select uso from public.pistas where slug = 'caja-magica'`)[0].uso === 'partido', 'se cambia el uso');
+  await sql`update public.pistas set uso = 'entreno', nombre = 'Caja Mágica' where slug = 'caja-magica'`;
+
+  // ---------------------------------------------------------------- marcar como copiado (tarjeta y filtro)
+  console.log('\n== Marcar como copiado: serie, casilla por evento y «marcar todos» (con confirmación)');
+  const SERIE_PEND = "sporteasy_estado = 'pendiente', sporteasy_cambio = 'Carga inicial: serie de entrenos por confirmar', sporteasy_copiado_en = null";
+  await sql.unsafe(`update public.eventos set ${SERIE_PEND} where serie is not null and origen = 'manual' and fecha >= '${hoy}'`);
+  const nSerie = (await sql`select count(*)::int n from public.eventos where serie is not null and origen = 'manual' and fecha >= ${hoy} and sporteasy_estado = 'pendiente'`)[0].n;
+  await p.goto(`${APP}/gestion/eventos`);
+  const cs = p.getByTestId('copia-sporteasy');
+  const cajaSerie = cs.locator('input[name=serie]');
+  ok(await cajaSerie.isEnabled(), 'la casilla de «entrenos de la serie» está habilitada');
+  let texto = '';
+  p.once('dialog', (d) => { texto = d.message(); d.dismiss(); });
+  await cajaSerie.check();
+  await cs.getByRole('button', { name: 'Marcar como copiado' }).click();
+  await p.waitForTimeout(500);
+  ok(texto.includes(`${nSerie} eventos`) && (await sql`select count(*)::int n from public.eventos where serie is not null and sporteasy_estado = 'pendiente' and fecha >= ${hoy}`)[0].n === nSerie, `pide confirmación («${texto}») y, si se cancela, no marca nada`);
+  p.once('dialog', (d) => d.accept());
+  await cs.getByRole('button', { name: 'Marcar como copiado' }).click();
+  await p.waitForFunction(() => !document.querySelector('[data-testid=copia-sporteasy] input[name=serie]'), null, { timeout: 15000 });
+  const rest = (await sql`select count(*)::int n from public.eventos where serie is not null and sporteasy_estado = 'pendiente' and fecha >= ${hoy}`)[0].n;
+  ok(rest === 0 && (await sql`select count(*)::int n from public.eventos where serie is not null and sporteasy_estado = 'copiado' and sporteasy_cambio is null and sporteasy_copiado_en is not null and fecha >= ${hoy}`)[0].n === nSerie, `confirmado: los ${nSerie} entrenos de la serie quedan copiados`);
+  // filtro «Pendientes»: casilla por evento y «Marcar todos»
+  await sql.unsafe(`update public.eventos set ${SERIE_PEND} where serie is not null and origen = 'manual' and fecha >= '${hoy}'`);
+  await p.goto(`${APP}/gestion/eventos?f=pendientes`);
+  ok((await p.locator('[data-testid=tabla-eventos] tbody input[name=id]').count()) === nSerie && (await p.getByTestId('marcar-copiado-lista').count()) === 1, 'el filtro «Pendientes» tiene una casilla por evento y el botón');
+  const primera = p.locator('[data-testid=tabla-eventos] tbody input[name=id]').first();
+  const idPrimera = await primera.inputValue();
+  await primera.check();
+  p.once('dialog', (d) => { texto = d.message(); d.accept(); });
+  await p.getByTestId('marcar-copiado-lista').click();
+  await p.waitForFunction((n) => document.querySelectorAll('[data-testid=tabla-eventos] tbody input[name=id]').length === n, nSerie - 1, { timeout: 15000 });
+  ok(texto.includes('este evento') && (await sql`select sporteasy_estado from public.eventos where id = ${idPrimera}`)[0].sporteasy_estado === 'copiado', 'una casilla marca solo ese evento');
+  await p.locator('section[aria-labelledby=t-lista]').getByTestId('marcar-todos').click();
+  ok((await p.locator('[data-testid=tabla-eventos] tbody input[name=id]:checked').count()) === nSerie - 1, '«Marcar todos» marca todas las casillas');
+  p.once('dialog', (d) => d.accept());
+  await p.getByTestId('marcar-copiado-lista').click();
+  await p.waitForFunction(() => document.body.innerText.includes('No hay eventos en esta vista'), null, { timeout: 15000 });
+  ok((await sql`select count(*)::int n from public.eventos where sporteasy_estado = 'pendiente' and fecha >= ${hoy}`)[0].n === 0, '«Marcar todos» + confirmar deja todo copiado');
+  await p.goto(`${APP}/gestion/eventos`);
+  ok((await p.getByTestId('copia-sporteasy').textContent()).includes('Todo al día'), 'la tarjeta vuelve a «Todo al día»');
 
   // ---------------------------------------------------------------- importar calendario
   console.log('\n== Importar calendario');

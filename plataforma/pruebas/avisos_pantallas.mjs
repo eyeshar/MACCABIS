@@ -81,8 +81,9 @@ try {
     ok((await p.locator('.e-eqp[data-eq]').count()) === 2, 'tarjeta "Proximos partidos": uno de MdA y otro de MdL');
     ok((await mda.textContent()).includes('Litros de Mahou') && (await mda.textContent()).includes('18 de octubre'), 'MdA: Litros de Mahou, 18 de octubre');
     ok((await mda.locator('.eq-aviso').getAttribute('data-tipo')) === 'cambian_ellos' && (await mda.locator('.eq-etq').textContent()).includes('Coinciden colores: cambia Litros de Mahou'), 'MdA-Litros de Mahou (local): CAMBIAN ELLOS, etiqueta informativa');
-    ok((await mda.textContent()).includes('Jugamos de negro; Litros de Mahou (negro) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.'), 'MdA: texto de "cambian ellos"');
+    ok((await mda.textContent()).includes('Jugamos de negro; Litros de Mahou (camiseta negra) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.'), 'MdA: texto de "cambian ellos"');
     ok((await mda.textContent()).includes('camiseta negra'), 'MdA: se ve el color del rival');
+    ok(!/camiseta (negro|blanco|amarillo|rojo)/.test(await p.locator('main').innerText()), '/liga: ningún «camiseta negro» (Próximos partidos)');
     ok((await mdl.textContent()).includes('Quinto Tiempo') && (await mdl.locator('.eq-aviso').count()) === 0, 'MdL-Quinto Tiempo: sin aviso');
     ok((await mdl.textContent()).includes('camiseta naranja'), 'MdL: color del rival visible aunque no haya aviso');
     ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), '/liga: sin desbordamiento horizontal');
@@ -93,7 +94,7 @@ try {
     await nos.waitFor({ timeout: 15000 });
     ok((await nos.textContent()).includes('MdL en 28500'), 'el 20/11 MdL juega en 28500 (J6, visitantes)');
     ok((await nos.locator('.eq-aviso').getAttribute('data-tipo')) === 'nos_toca' && (await nos.locator('.eq-etq').textContent()).includes('Nos toca cambiar: equipación AMARILLA'), 'MdL en 28500: NOS TOCA CAMBIAR');
-    ok((await nos.textContent()).includes('Vamos en segundo lugar contra 28500 (negro). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).'), 'MdL en 28500: texto con la cita de las Bases');
+    ok((await nos.textContent()).includes('Vamos en segundo lugar contra 28500 (camiseta negra). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).'), 'MdL en 28500: texto con la cita de las Bases');
     await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_nos_toca_${etiqueta}.png`) });
     // pasada la J2 el 20/10: J3 sin avisos
     await p.goto(`${APP}/liga?hoy=2026-10-20`);
@@ -135,6 +136,7 @@ try {
     ok((await zona.locator('.eq-aviso').count()) === (eti(avisoReal('MDA')) ? 1 : 0), 'Mi zona: aviso si y solo si el proximo rival de MdA choca', String(await zona.locator('.eq-aviso').count()));
     if (eti(avisoReal('MDA'))) ok((await zona.locator('.eq-aviso').textContent()).includes('Coinciden colores: cambia') && (await zona.locator('.eq-aviso').getAttribute('data-tipo')) === 'cambian_ellos', 'Mi zona: aviso informativo "cambian ellos" (somos locales)');
     ok((await zona.locator('[data-testid="color-rival"]').first().textContent()).includes('camiseta'), 'Mi zona: color del rival visible');
+    ok(!/camiseta (negro|blanco|amarillo|rojo)/.test(await pj.locator('main').innerText()) && !/\((negro|blanco|amarillo|rojo)\)/.test(await pj.locator('main').innerText()), 'Mi zona: ningún «camiseta negro» ni color suelto sin concordar');
     ok(await sinDesbordar(pj), 'Mi zona: sin desbordamiento horizontal');
     await zona.scrollIntoViewIfNeeded();
     await pj.screenshot({ path: path.join(SALIDA, `real_e_aviso_mizona_${etiqueta}.png`), fullPage: true });

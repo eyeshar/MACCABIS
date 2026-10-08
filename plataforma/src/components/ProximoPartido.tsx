@@ -1,3 +1,4 @@
+import { textoColores } from "@/lib/colores";
 import { avisoDe, coloresDe, nombreRival, type Partido } from "@/lib/equipacion";
 
 // Un partido nuestro con su rival, lugar y, si toca, el aviso de equipacion (D79). Mismo aspecto en Mi zona e Inicio de gestion.
@@ -13,7 +14,7 @@ export function Camiseta({ rival }: { rival: string }) {
   return (
     <span className="eq-color" data-testid="color-rival">
       <i className="eq-punto" style={{ background: c.css }} aria-hidden="true" />
-      camiseta {c.camiseta}, pantalón {c.pantalon}
+      {textoColores(c)}
     </span>
   );
 }

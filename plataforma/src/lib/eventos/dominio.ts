@@ -1,5 +1,7 @@
 // Dominio de los eventos (paso 2, pista E, D94): funciones PURAS, sin acceso a datos y sin imports, para que las use la
-// web y las pruebas (`node` puede cargar este fichero tal cual). Fechas como "AAAA-MM-DD" y horas como "HH:MM".
+// web y las pruebas (`node` puede cargar este fichero tal cual; solo importa la definicion unica de quien responde). Fechas como "AAAA-MM-DD" y horas como "HH:MM".
+
+import { quienResponde } from "../respuestas/dominio.ts";
 
 export type TipoEvento = "entreno" | "liga" | "amistoso" | "torneo" | "interno";
 export type EquipoEvento = "MdA" | "MdL" | "ambos";
@@ -19,6 +21,8 @@ export type EventoFila = {
   inicio: string | null; fin: string | null; quedada: string | null; pista_id: string | null; numero_pista: number | null;
   notas: string | null; origen: "ayuntamiento" | "manual"; serie: string | null; estado: "programado" | "cancelado";
   sporteasy_estado: EstadoCopia; sporteasy_cambio: string | null; sporteasy_copiado_en: string | null;
+  /** Paso 3 (D99) */
+  sin_recordatorios?: boolean; creado_en?: string; cambio_visible?: { campos: string[]; antes: string } | null; cambio_visible_en?: string | null;
 };
 
 export const TIPOS: { id: TipoEvento; texto: string; corto: string }[] = [
@@ -102,6 +106,13 @@ export function tituloEvento(e: Pick<EventoFila, "tipo" | "equipo" | "titulo" | 
 }
 
 // ---------------------------------------------------------------- series de entrenos
+/** Como se nombra una serie de cara a las personas: «serie miércoles 20:30–22:30» (nunca su nombre interno, «entreno-semanal»). */
+export function nombreSerie(e: Pick<EventoFila, "fecha" | "inicio" | "fin">) {
+  const dia = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"][new Date(`${e.fecha}T12:00:00Z`).getUTCDay()];
+  const i = e.inicio ? String(e.inicio).slice(0, 5) : null, f = e.fin ? String(e.fin).slice(0, 5) : null;
+  return `serie ${dia}${i ? ` ${i}${f ? `–${f}` : ""}` : ""}`;
+}
+
 /** Eventos de la misma serie desde `base` (inclusive), por fecha, sin los cancelados. */
 export function deLaSerieDesde<T extends Pick<EventoFila, "serie" | "fecha" | "estado" | "id">>(todos: T[], base: Pick<EventoFila, "serie" | "fecha">): T[] {
   if (!base.serie) return [];
@@ -144,7 +155,7 @@ export const juntarCambios = (previo: string | null, nuevos: string[]) => {
 export type AccionMensaje = "nuevo" | "cambio" | "cancelado";
 
 /** El texto para pegar en el grupo de WhatsApp. `lineaEquipacion` (rutina C) se pasa ya calculada, solo en partidos. */
-export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMensaje, opciones: { cambios?: string[]; lineaEquipacion?: string | null } = {}) {
+export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMensaje, opciones: { cambios?: string[]; lineaEquipacion?: string | null; respondeEnLaWeb?: string | null } = {}) {
   const pe = pistaEfectiva(e, pistas);
   const dia = diaCorto(e.fecha);
   const hora = hhmm(e.inicio);
@@ -167,20 +178,17 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
   if (accion === "cambio" && opciones.cambios?.length) lineas.push(`Qué cambia: ${opciones.cambios.join("; ")}.`);
   if (notas) lineas.push(notas.replace(/\.$/, "") + ".");
   if (opciones.lineaEquipacion) lineas.push(opciones.lineaEquipacion);
-  lineas.push("Responded en SportEasy, por favor.");
+  // Con «respuestas en la web» encendido (D99) se termina con el enlace a la web; si no, SportEasy (fase puente).
+  lineas.push(opciones.respondeEnLaWeb ? `Responde en la web: ${opciones.respondeEnLaWeb}` : "Responded en SportEasy, por favor.");
   return lineas.join("\n");
 }
 
 // ---------------------------------------------------------------- ¿quien esta convocado a un evento?
-export type JugadorBasico = { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean };
+export type JugadorBasico = { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" };
 
-/** Personas a las que se les pide respuesta: en un entreno, quien entrena; en un partido, la ficha de su equipo. */
+/** Personas a las que se les pide respuesta (D105): la definicion unica `quienResponde`. */
 export function convocadosDe(e: Pick<EventoFila, "tipo" | "equipo">, jugadores: JugadorBasico[]) {
-  const activos = jugadores.filter((j) => j.activo);
-  if (e.tipo === "entreno" || e.tipo === "interno") return activos.filter((j) => j.entrena || j.ficha_mda || j.ficha_mdl);
-  if (e.equipo === "MdA") return activos.filter((j) => j.ficha_mda);
-  if (e.equipo === "MdL") return activos.filter((j) => j.ficha_mdl);
-  return activos.filter((j) => j.ficha_mda || j.ficha_mdl);
+  return jugadores.filter((j) => quienResponde(e, j));
 }
 
 // ---------------------------------------------------------------- respuestas ordenadas

@@ -1,4 +1,4 @@
-import { exigirGestor, origen } from "@/lib/sesion";
+import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import { mensajeBienvenida } from "@/lib/mensajes";
 import FilaJugador, { type JugadorGestion } from "./FilaJugador";
 
@@ -11,7 +11,7 @@ export default async function Jugadores() {
     .select("id, person_id, nombre_oficial, nombre_visible, email, ficha_mda, ficha_mdl, entrena, rol, telefono, activo")
     .order("nombre_visible");
   if (error) throw new Error(error.message);
-  const base = await origen();
+  const base = await origenMensajes();
   const urlEntrar = `${base}/entrar`;
   const lista = (jugadores ?? []) as JugadorGestion[];
   const activos = lista.filter((j) => j.activo);

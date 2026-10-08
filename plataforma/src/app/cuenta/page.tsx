@@ -35,6 +35,7 @@ export default async function Cuenta() {
           <li><strong>iPhone (Safari):</strong> botón Compartir → «Añadir a pantalla de inicio».</li>
           <li><strong>Android (Chrome):</strong> menú ⋮ → «Instalar aplicación» o «Añadir a pantalla de inicio».</li>
         </ul>
+        <Link className="boton boton-amarillo" href="/avisos">Activar los avisos en este móvil</Link>
       </section>
       <p className="pie">¿Algo no cuadra? Habla con Iván, Carlos o Edu. · <Link href="/privacidad">Privacidad</Link></p>
     </main>

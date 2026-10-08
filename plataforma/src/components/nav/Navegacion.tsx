@@ -77,7 +77,7 @@ function MenuUsuario({ usuario, actual }: { usuario: Usuario; actual: boolean })
         </div>
         <nav aria-label="Tu cuenta">
           <Link href={RUTA_CUENTA} className="nv-entrada" aria-current={actual ? "page" : undefined}><b>Mi cuenta</b></Link>
-          <Link href={`${RUTA_CUENTA}#instalar`} className="nv-entrada"><b>Instalar en el móvil</b></Link>
+          <Link href="/avisos" className="nv-entrada"><b>Instalar en el móvil</b></Link>
         </nav>
         <form action={salir}><button type="submit" className="nv-entrada nv-salir"><b>Salir</b></button></form>
       </div>

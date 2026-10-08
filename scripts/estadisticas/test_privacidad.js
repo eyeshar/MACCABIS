@@ -93,6 +93,34 @@ const nuevas = fs.readdirSync(path.join(PLAT, 'supabase', 'migrations')).filter(
 ok(nuevas.length === 3 && nuevas.every((f) => fs.existsSync(path.join(PLAT, 'supabase', 'migrations', f.replace(/\.sql$/, '.revertir.sql')))), 'cada migración nueva (3) tiene su revertir.sql al lado');
 ok(['eventos', 'asistencia'].every((d) => fs.existsSync(path.join(PLAT, 'src/app/gestion/(panel)', d, 'page.tsx'))) && /exigirGestor/.test(leer('src/app/gestion/(panel)/layout.tsx')), 'Eventos y Asistencia viven dentro del panel de gestión (solo gestores)');
 
+console.log('\n== Respuestas en la web y avisos (paso 3, D99)');
+const MIG3 = ['20261008100000_respuestas_web.sql', '20261008101000_avisos.sql'];
+const sql3 = sinComentarios(MIG3.map((f) => leer('supabase/migrations', f)).join('\n'));
+const tablas3 = [...sql3.matchAll(/create table public\.(\w+)/g)].map((m) => m[1]);
+ok(tablas3.length === 7 && tablas3.every((t) => new RegExp('alter table public\\.' + t + '\\s+enable row level security').test(sql3)), `las ${tablas3.length} tablas nuevas tienen RLS (${tablas3.join(', ')})`);
+// Solo aditivas (D94): lo unico que se "quita" son tres relajaciones sin perdida de datos (hasta vacio y dos checks ampliados).
+const drops = [...sql3.matchAll(/(?:alter|drop)[^;]*\bdrop\b[^;]*;/gi)].map((m) => m[0].replace(/\s+/g, ' '));
+const permitidos = [/alter column hasta drop not null/i, /drop constraint respuestas_motivo_check/i, /drop constraint respuestas_fuente_check/i, /drop constraint ausencias_periodo_fuente_check/i];
+ok(drops.every((d) => permitidos.some((p) => p.test(d))) && drops.length === 4, `solo aditivas: sin DROP de tablas ni columnas (los ${drops.length} «drop» son relajaciones sin pérdida)`, drops.join(' | '));
+ok(!/\btruncate\b|\bdelete\s+from\b/i.test(sql3), 'sin TRUNCATE ni DELETE (una ausencia o una suscripción se marcan, no se borran)');
+ok(!/grant[^;]*\bdelete\b/i.test(sql3), 'ninguna tabla concede DELETE');
+for (const t of ['respuestas', 'ausencias_periodo']) ok(new RegExp(`add constraint ${t === 'respuestas' ? 'respuestas_motivo_check' : 'ausencias_periodo_fuente_check'}`).test(sql3), `${t}: el check se vuelve a poner (ampliado), no se queda sin él`);
+ok(MIG3.every((f) => fs.existsSync(path.join(PLAT, 'supabase', 'migrations', f.replace(/\.sql$/, '.revertir.sql')))), 'cada migración del paso 3 tiene su revertir.sql');
+const vistasJ = sql3.slice(sql3.indexOf('create function public._mis_eventos'), sql3.indexOf('create function public._quien_va'));
+ok(!/sporteasy_|\bserie\b|person_id\s*,|\.motivo|detalle|nivel|posici/.test(vistasJ.replace(/public\._mi_person_id\(\)/g, '').replace(/pista_motivo/g, '')), 'v_mis_eventos: sin estado de SportEasy, serie, motivos, detalles, niveles ni posiciones');
+const quien = sql3.slice(sql3.indexOf('create function public._quien_va'), sql3.indexOf('create view public.v_quien_va as'));
+ok(/returns table \(evento_id uuid, nombre text, estado text\)/.test(quien) && !/\.motivo|\.detalle|origen|nivel|posici/.test(quien), 'v_quien_va: solo evento, nombre y estado (sin motivos, detalles, origen, niveles ni posiciones)');
+const jugadorTs = ['src/lib/respuestas/jugador.ts', 'src/app/mi-zona/respuestas-acciones.ts'].map((f) => leer(f)).join('\n');
+ok(!/\.from\("(eventos|jugadores|asistencia_\w+|alertas_gestores|avisos_registro)"\)/.test(jugadorTs), 'lo del jugador lee sus vistas y lo suyo; nunca tablas de eventos, plantilla, asistencia, alertas ni registro de avisos');
+ok(/v_mis_eventos/.test(jugadorTs) && /v_quien_va/.test(jugadorTs), 'y usa v_mis_eventos y v_quien_va');
+const textos = leer('src/lib/avisos/textos.ts').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
+ok(!/motivo|lesi[oó]n|trabajo|viaje|familia|nivel|posici/i.test(textos.replace(/Sin motivos, niveles ni posiciones/g, '')), 'los textos de los avisos (pantalla de bloqueo) no llevan motivos, niveles ni posiciones');
+const sw = fs.readFileSync(path.join(PLAT, 'public', 'sw.js'), 'utf8');
+ok(/addEventListener\('push'/.test(sw) && /addEventListener\('notificationclick'/.test(sw) && !/addEventListener\('fetch'/.test(sw) && !/caches\./.test(sw), 'service worker: solo push y notificationclick, sin caché ni manejador de peticiones');
+const repoTodo = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.name === 'node_modules' || e.name === '.next' || e.name.startsWith('.') ? [] : e.isDirectory() ? repoTodo(path.join(d, e.name)) : [path.join(d, e.name)]));
+const conClave = repoTodo(PLAT).filter((f) => /\.(ts|tsx|js|mjs|json|sql|md)$/.test(f)).filter((f) => /VAPID_PRIVATE_KEY\s*=\s*[A-Za-z0-9_-]{20,}|SUPABASE_SERVICE_ROLE_KEY\s*=\s*ey|AVISOS_SECRETO\s*=\s*[0-9a-f]{32,}/.test(fs.readFileSync(f, 'utf8')));
+ok(conClave.length === 0, 'ninguna clave privada (VAPID, servicio, secreto de la tarea) en el repositorio', conClave.join(', '));
+
 (async () => {
   if (fs.existsSync(path.join(PLAT, '.next', 'BUILD_ID'))) {
     const { revisar } = await import(pathToFileURL(path.join(PLAT, 'pruebas', 'privacidad_paginas.mjs')).href);

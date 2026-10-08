@@ -1085,7 +1085,7 @@ const eqDia=f=>new Date(f+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long
 const eqNombre=n=>{const e=EQ&&AvisosEquipacion.equipoPorNombre(EQ,n);return e?e.nombre:n;};
 function eqColor(nombre){
   const e=EQ&&AvisosEquipacion.equipoPorNombre(EQ,nombre); if(!e)return '';
-  return '<div class="eqcol"><i class="eqdot" style="background:'+(EQ.paleta[e.camiseta]||'#999')+'"></i>camiseta '+rvEsc(e.camiseta)+', pantalón '+rvEsc(e.pantalon)+'</div>';
+  return '<div class="eqcol"><i class="eqdot" style="background:'+(EQ.paleta[e.camiseta]||'#999')+'"></i>'+rvEsc(AvisosEquipacion.descripcionColores(e.camiseta,e.pantalon))+'</div>';
 }
 function eqAviso(p){
   const a=EQ&&AvisosEquipacion.avisoPartido(EQ,p); if(!a||!a.hay)return '';

@@ -200,19 +200,20 @@ try {
   ok((await sql`select estado from public.eventos where id = ${id2}`)[0].estado === 'programado', 'restablecer vuelve a programado');
 
   // ---------------------------------------------------------------- partido del Ayuntamiento
-  console.log('\n== Partido de liga: solo quedada y notas');
+  // D99.10: el encuentro es siempre 20 minutos antes (se muestra calculado); de un partido del Ayuntamiento solo se
+  // editan las notas.
+  console.log('\n== Partido de liga: solo notas (encuentro calculado)');
   const j2 = (await sql`select id, fecha, inicio, rival from public.eventos where clave = 'mda-j2'`)[0];
   await p.goto(`${APP}/gestion/eventos/${j2.id}`);
   ok((await p.locator('input[name=tipo]:disabled').count()) === 5 && (await p.locator('#fecha').isDisabled()) && (await p.locator('#inicio').isDisabled()) && (await p.locator('#pista').isDisabled()), 'tipo, fecha, hora y pista bloqueados');
-  ok(!(await p.locator('#quedada').isDisabled()) && !(await p.locator('#notas').isDisabled()), 'quedada y notas editables');
-  await p.locator('#quedada').fill('09:45');
+  ok(!(await p.locator('#quedada').count()) && (await p.getByTestId('encuentro').textContent()) === '09:55' && !(await p.locator('#notas').isDisabled()), 'encuentro calculado (09:55, no editable) y notas editables');
   await p.locator('#notas').fill('Calentamiento a las 9:50');
   await p.getByRole('button', { name: 'Guardar y preparar mensaje' }).click();
   await guardado(p);
   const j2b = (await sql`select fecha, inicio, rival, quedada, notas, sporteasy_estado, sporteasy_cambio from public.eventos where clave = 'mda-j2'`)[0];
-  ok(String(j2b.quedada).startsWith('09:45') && j2b.notas === 'Calentamiento a las 9:50' && j2b.fecha.toISOString() === j2.fecha.toISOString() && String(j2b.inicio) === String(j2.inicio) && j2b.rival === j2.rival, 'se guardan quedada y notas; fecha, hora y rival intactos');
-  ok(j2b.sporteasy_estado === 'pendiente' && /quedada: 09:55 -> 09:45/.test(j2b.sporteasy_cambio), 'pendiente de copiar con «quedada: 09:55 → 09:45»', j2b.sporteasy_cambio);
-  ok((await p.getByTestId('mensaje-whatsapp').textContent()).includes('encuentro 09:45') && (await p.getByTestId('mensaje-whatsapp').textContent()).includes('Cambian ellos') === false && /amarilla|equipaci/i.test(await p.getByTestId('mensaje-whatsapp').textContent()), 'mensaje del partido: encuentro y línea de equipación');
+  ok(String(j2b.quedada).startsWith('09:55') && j2b.notas === 'Calentamiento a las 9:50' && j2b.fecha.toISOString() === j2.fecha.toISOString() && String(j2b.inicio) === String(j2.inicio) && j2b.rival === j2.rival, 'se guardan las notas; fecha, hora, encuentro y rival intactos');
+  ok(j2b.sporteasy_estado === 'pendiente' && /notas: «Calentamiento a las 9:50»/.test(j2b.sporteasy_cambio), 'pendiente de copiar con las notas', j2b.sporteasy_cambio);
+  ok((await p.getByTestId('mensaje-whatsapp').textContent()).includes('encuentro 09:55') && (await p.getByTestId('mensaje-whatsapp').textContent()).includes('Cambian ellos') === false && /amarilla|equipaci/i.test(await p.getByTestId('mensaje-whatsapp').textContent()), 'mensaje del partido: encuentro y línea de equipación');
 
   // ---------------------------------------------------------------- crear
   console.log('\n== Nuevo evento');
@@ -424,7 +425,7 @@ try {
   const rank = { no: 0, duda: 1, sin_responder: 2, va: 3 };
   ok(orden.length >= 4 && orden.every((x, i) => i === 0 || rank[orden[i - 1]] <= rank[x]) && orden[0] === 'no' && orden.at(-1) === 'va', `orden: no van → dudan → sin responder → van (${orden.join(' ')})`);
   const cont = await p.getByTestId('contadores').textContent();
-  ok(/1novan/.test(cont.replace(/\s/g, '')) && /1dudan/.test(cont.replace(/\s/g, '')) && /1van$/.test(cont.replace(/\s/g, '')), 'contadores: 1 no va, 1 duda, 1 va (la otra línea sigue bloqueada)', cont);
+  ok(/1novan/.test(cont.replace(/\s/g, '')) && /1dudan/.test(cont.replace(/\s/g, '')) && /^1van/.test(cont.replace(/\s/g, '')), 'contadores: 1 no va, 1 duda, 1 va (la otra línea sigue bloqueada)', cont);
   ok((await p.locator('[data-respuesta=no]').first().textContent()).includes('Trabajo') && (await p.locator('[data-respuesta=no]').first().textContent()).includes('Turno de tarde'), 'el «no voy» lleva su motivo y detalle');
   ok((await p.getByTestId('franja-ausencias').textContent()).includes('Viaje') && (await p.getByTestId('franja-ausencias').textContent()).includes('20/12'), 'franja visual de ausencias por periodo');
   await p.getByTestId('recordatorio').locator('summary').click();

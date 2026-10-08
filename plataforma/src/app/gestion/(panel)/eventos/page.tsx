@@ -29,10 +29,11 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   const filtro: Filtro = FILTROS.some((x) => x.id === f) ? (f as Filtro) : "proximos";
   const { supabase } = await exigirGestor();
   const hoy = hoyMadrid();
-  const [eventos, pistas, jugadores, { data: filasResp }, { data: importaciones }] = await Promise.all([
+  const [eventos, pistas, jugadores, { data: filasResp }, { data: importaciones }, { data: encendidoWeb }] = await Promise.all([
     cargarEventos(supabase), cargarPistas(supabase), cargarJugadores(supabase),
     supabase.from("respuestas").select("evento_id, respuesta, leido_en"),
     supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, aceptadas, bloqueadas").order("en", { ascending: false }).limit(4),
+    supabase.rpc("respuestas_web_encendido"),
   ]);
   const resp = new Map<string, { respuesta: Respuesta }[]>();
   let ultimaLectura: string | null = null;
@@ -159,6 +160,11 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
                 <span className="pequeno suave">Pulsa solo si ya está copiado en SportEasy. Te pedirá confirmación.</span>
               </FormularioCopia>
             )}
+            {encendidoWeb ? (
+              <p className="pequeno" style={{ margin: 0 }} data-testid="copia-sin-notificar">
+                <b>Respuestas en la web encendido (D104):</b> cada evento se crea en SportEasy con el formulario completo (<span className="mono">/calendar/create/</span>, «Ajustes avanzados»): <b>«Selección manual»</b> (nace sin participantes) y <b>«Enviar una notificación» apagado</b>. Nunca el formulario rápido de «Crear evento»: invita a todos y notifica.
+              </p>
+            ) : <p className="pequeno suave" style={{ margin: 0 }}>Fase puente: la copia sigue como hasta ahora.</p>}
           </section>
 
           <section className="gs-bloque" aria-labelledby="t-pistas">

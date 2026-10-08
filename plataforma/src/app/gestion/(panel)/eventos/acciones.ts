@@ -6,9 +6,10 @@ import { exigirGestor } from "@/lib/sesion";
 import { hoyMadrid } from "@/lib/dias";
 import { cargarEvento, cargarEventos, cargarJugadores, cargarPistas, TEMPORADA } from "@/lib/eventos/datos";
 import {
-  describirCambios, deLaSerieDesde, hhmm, juntarCambios, pistaEfectiva, quedadaPorDefecto, resumenCopia,
-  type CamposEditables, type EquipoEvento, type EstadoPista, type EventoFila, type TipoEvento,
+  describirCambios, deLaSerieDesde, fechaDMA, hhmm, juntarCambios, pistaEfectiva, quedadaPorDefecto, resumenCopia, sumarDias,
+  type CamposEditables, type EquipoEvento, type EstadoPista, type EventoFila, type Pista, type TipoEvento,
 } from "@/lib/eventos/dominio";
+import { avisarCambioEvento, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/servidor";
 import {
   compararCalendario, crearDiccionario, leerCalendario, leerFecha, leerRespuestas, normalizar,
   type CambioCalendario, type LineaRespuesta, type Senal,
@@ -25,6 +26,21 @@ const hora = (v: string) => (/^\d{1,2}:\d{2}$/.test(v) ? v.padStart(5, "0") : nu
 const refrescar = () => { revalidatePath("/gestion/eventos"); revalidatePath("/gestion"); revalidatePath("/"); revalidatePath("/calendario.ics"); revalidateTag("calendario", "max"); };
 
 type Campos = CamposEditables;
+
+/** Solo se avisa al movil de los eventos de las proximas dos semanas (en una serie, no se avisa de todo el curso). */
+const AVISAR_DIAS = 14;
+
+/** Que cambio de lo que avisa (fecha, hora, pista, encuentro) y como era antes, para la linea amarilla del evento. */
+function cambioVisible(a: Campos, d: Campos, pistas: Pista[]) {
+  const campos: string[] = [], antes: string[] = [];
+  if (a.fecha !== d.fecha) { campos.push("fecha"); antes.push(fechaDMA(a.fecha).slice(0, 5)); }
+  const ha = `${hhmm(a.inicio) ?? "sin hora"}${a.fin ? `–${hhmm(a.fin)}` : ""}`, hd = `${hhmm(d.inicio) ?? "sin hora"}${d.fin ? `–${hhmm(d.fin)}` : ""}`;
+  if (ha !== hd) { campos.push("hora"); antes.push(ha); }
+  const pa = pistaEfectiva(a, pistas).texto, pd = pistaEfectiva(d, pistas).texto;
+  if (pa !== pd) { campos.unshift("pista"); antes.unshift(pa); }
+  if (!campos.includes("hora") && hhmm(a.quedada) !== hhmm(d.quedada)) { campos.push("encuentro"); antes.push(`encuentro ${hhmm(a.quedada) ?? "—"}`); }
+  return campos.length ? { campos, antes: antes.join(", ") } : null;
+}
 
 /** Lee el formulario de un evento. `base` = el evento actual (si se edita); un partido del Ayuntamiento solo cambia
  *  quedada y notas. */
@@ -74,6 +90,9 @@ export async function crearEvento(_prev: Estado, f: FormData): Promise<Estado> {
     sporteasy_estado: "pendiente", sporteasy_cambio: "Evento nuevo: crearlo en SportEasy",
   }).select("id").single();
   if (error) return { error: `No se pudo crear: ${error.message}` };
+  if (f.get("sin_recordatorios") === "on") await supabase.from("eventos").update({ sin_recordatorios: true }).eq("id", data.id);
+  // Amistoso, torneo o «entre nosotros»: el recordatorio «al crearlo» sale ya (si toca; la tarea lo repite sin duplicar).
+  else if (configuradoEnvio()) { try { await ejecutarTarea(new Date()); } catch { /* lo recoge la tarea de cada 15 min */ } }
   refrescar();
   redirect(`/gestion/eventos/${data.id}?guardado=nuevo`);
 }
@@ -88,7 +107,16 @@ export async function guardarEvento(id: string, _prev: Estado, f: FormData): Pro
   const nuevo = r.campos, viejo = editables(antes);
   const alcance = texto(f, "alcance") === "siguientes" && antes.serie ? "siguientes" : "este";
   const diff = describirCambios(viejo, nuevo, pistas);
+  // «Sin recordatorios para este evento» (D99.6): no es un cambio para SportEasy ni avisa a nadie.
+  const sinRec = f.get("sin_recordatorios") === "on";
+  if (sinRec !== Boolean(antes.sin_recordatorios)) {
+    const { error } = await supabase.from("eventos").update({ sin_recordatorios: sinRec }).eq("id", id);
+    if (error) return { error: `No se pudo guardar: ${error.message}` };
+    if (!diff.length) { refrescar(); redirect(`/gestion/eventos/${id}?guardado=recordatorios`); }
+  }
   if (!diff.length) redirect(`/gestion/eventos/${id}?guardado=nada`);
+  const avisar = texto(f, "avisar") === "1";
+  const avisados: { id: string; cambiaDia: boolean }[] = [];
 
   // Solo este: se guarda todo. Este y los siguientes: solo lo que ha cambiado en el formulario (menos la fecha), para no
   // pisar las excepciones de cada miercoles (por ejemplo, el del 07/10 a las 20:00 en la Caja Magica).
@@ -105,13 +133,19 @@ export async function guardarEvento(id: string, _prev: Estado, f: FormData): Pro
     const cambios = describirCambios(actual, aplicar, pistas);
     if (!cambios.length) continue;
     const previo = o.sporteasy_estado === "pendiente" ? o.sporteasy_cambio : null;
+    // «Guardar y avisar» (D99.9): la linea amarilla del evento dice que cambio y como era antes.
+    const visible = avisar ? cambioVisible(actual, aplicar, pistas) : null;
     const { error } = await supabase.from("eventos").update({
       ...aFila(aplicar), sporteasy_estado: "pendiente", sporteasy_cambio: juntarCambios(previo, cambios),
+      ...(visible ? { cambio_visible: visible, cambio_visible_en: new Date().toISOString() } : {}),
     }).eq("id", o.id);
     if (error) return { error: `No se pudo guardar: ${error.message}` };
+    if (visible && o.fecha <= sumarDias(hoyMadrid(), AVISAR_DIAS)) avisados.push({ id: o.id, cambiaDia: actual.fecha !== aplicar.fecha });
   }
+  let n = 0;
+  for (const a of avisados) n += (await avisarCambioEvento(a.id, "cambio", a.cambiaDia)).avisados;
   refrescar();
-  redirect(`/gestion/eventos/${id}?guardado=${alcance === "siguientes" ? `serie-${objetivos.length}` : "cambio"}`);
+  redirect(`/gestion/eventos/${id}?guardado=${alcance === "siguientes" ? `serie-${objetivos.length}` : "cambio"}${avisar ? `&avisados=${n}` : ""}`);
 }
 
 // ---------------------------------------------------------------- cancelar y restablecer
@@ -129,6 +163,12 @@ export async function cancelarEvento(id: string, alcance: "este" | "siguientes",
       sporteasy_cambio: juntarCambios(previo, [restablecer ? "evento restablecido" : "evento cancelado"]),
     }).eq("id", o.id);
     if (error) throw new Error(error.message);
+  }
+  // Cancelar avisa a los invitados (D99.9) con «respuestas en la web» encendido (apagado no sale nada: sigue la cola de
+  // SportEasy). En una serie, solo los de las dos proximas semanas.
+  if (!restablecer) {
+    const limite = sumarDias(hoyMadrid(), AVISAR_DIAS);
+    for (const o of objetivos) if (o.fecha >= hoyMadrid() && o.fecha <= limite) await avisarCambioEvento(o.id, "cancelacion", false);
   }
   refrescar();
   redirect(`/gestion/eventos/${id}?guardado=${restablecer ? "restablecido" : "cancelado"}${objetivos.length > 1 ? `-${objetivos.length}` : ""}`);
@@ -202,7 +242,7 @@ export type ResultadoCalendario = {
   lineas: number; nuestras: number; ajenas: number; iguales: number;
   errores: { n: number; crudo: string; error: string }[];
   cambios: CambioCalendario[]; senales: Senal[];
-  aplicado?: { aceptadas: number; ignoradas: number; cambiosEn: string[] };
+  aplicado?: { aceptadas: number; ignoradas: number; cambiosEn: string[]; avisados?: number | null };
 };
 
 async function compararConLaBase(textoPegado: string) {
@@ -224,12 +264,14 @@ export async function analizarCalendario(textoPegado: string): Promise<Resultado
 }
 
 /** Aplica SOLO los cambios aceptados (por su id) y registra la importacion. Lo aceptado queda pendiente de copiar. */
-export async function aplicarCalendario(textoPegado: string, aceptados: string[]): Promise<ResultadoCalendario> {
+export async function aplicarCalendario(textoPegado: string, aceptados: string[], avisar = false): Promise<ResultadoCalendario> {
   const { supabase, nombre, user, eventos, comp } = await compararConLaBase(textoPegado);
   const elegidos = comp.cambios.filter((c) => aceptados.includes(c.id));
   const porEvento = new Map<string, CambioCalendario[]>();
   for (const c of elegidos) porEvento.set(c.eventoId, [...(porEvento.get(c.eventoId) ?? []), c]);
   const aplicadosEn: string[] = [];
+  const porAvisar: { id: string; cambiaDia: boolean }[] = [];
+  let avisados = 0;
   for (const [eventoId, cs] of porEvento) {
     const e = eventos.find((x) => x.id === eventoId);
     if (!e) continue;
@@ -242,13 +284,24 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
       if (c.campo === "rival") cambio.rival = c.valorOficial;
     }
     const previo = e.sporteasy_estado === "pendiente" ? e.sporteasy_cambio : null;
+    // «Aplicar y avisar» (D103): como en Editar evento, la linea amarilla dice que cambio y como era antes.
+    const avisables = cs.filter((c) => c.campo === "fecha" || c.campo === "hora" || c.campo === "pista");
+    const ORDEN_CAMPO = { pista: 0, fecha: 1, hora: 2 } as Record<string, number>;
+    const visible = avisar && avisables.length ? {
+      campos: avisables.map((c) => c.campo).sort((a, b) => ORDEN_CAMPO[a] - ORDEN_CAMPO[b]),
+      antes: avisables.sort((a, b) => ORDEN_CAMPO[a.campo] - ORDEN_CAMPO[b.campo]).map((c) => (c.campo === "pista" ? `pista ${c.actual}` : String(c.actual))).join(", "),
+    } : null;
     const { error } = await supabase.from("eventos").update({
       ...cambio, sporteasy_estado: "pendiente",
       sporteasy_cambio: juntarCambios(previo, cs.map((c) => `${c.textoCampo.toLowerCase()}: ${c.actual} → ${c.oficial} (Ayuntamiento)`)),
+      ...(visible ? { cambio_visible: visible, cambio_visible_en: new Date().toISOString() } : {}),
     }).eq("id", eventoId);
     if (error) throw new Error(`No se pudo aplicar ${e.clave}: ${error.message}`);
     aplicadosEn.push(`${e.equipo} J${e.jornada}`);
+    const fechaNueva = (cambio.fecha as string | undefined) ?? e.fecha;
+    if (visible && fechaNueva >= hoyMadrid() && fechaNueva <= sumarDias(hoyMadrid(), AVISAR_DIAS)) porAvisar.push({ id: eventoId, cambiaDia: "fecha" in cambio });
   }
+  for (const a of porAvisar) avisados += (await avisarCambioEvento(a.id, "cambio", a.cambiaDia)).avisados;
   await supabase.from("importaciones").insert({
     tipo: "calendario", por_user_id: user.id, por_nombre: nombre, lineas: comp.lineas, validas: comp.nuestras,
     aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, bloqueadas: comp.errores.length,
@@ -256,7 +309,7 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
   });
   refrescar();
   const re = await compararConLaBase(textoPegado);
-  return { ...aResultado(re.comp), aplicado: { aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, cambiosEn: aplicadosEn } };
+  return { ...aResultado(re.comp), aplicado: { aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, cambiosEn: aplicadosEn, avisados: avisar ? avisados : null } };
 }
 
 // ---------------------------------------------------------------- importar: respuestas y ausencias de SportEasy

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import AvisoTarjeta from "@/components/AvisoTarjeta";
+import { textoColores } from "@/lib/colores";
 import { fechaCorta } from "@/lib/estadisticas/calculo";
 import type { Color, ContraNosotros, Grupo, GrupoLiga } from "@/lib/estadisticas/liga";
 import { CajaTabla, Control, Kpi, Nota, SecH, Segmento } from "./Comunes";
@@ -14,7 +15,7 @@ const dec = (v: number | null | undefined) => (v == null ? "–" : v.toFixed(1).
 
 function Colores({ color }: { color: Color | null | undefined }) {
   if (!color) return null;
-  return <div className="e-eqcol"><i className="e-eqdot" style={{ background: color.css }} />camiseta {color.camiseta}, pantalón {color.pantalon}</div>;
+  return <div className="e-eqcol"><i className="e-eqdot" style={{ background: color.css }} />{textoColores(color)}</div>;
 }
 
 export default function LigaGrupoPanel({ grupos, generado, colores, contra, grupoInicial, sinRastro }: {

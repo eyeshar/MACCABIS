@@ -7,6 +7,14 @@
 >
 > **02/10/2026 — D62 (matiza D44):** SportEasy vuelve a usarse a pleno rendimiento para 26/27. El calendario completo (40 partidos de liga JDM, los dos campeonatos) se cargó con un agente de navegador que actúa con la sesión de Iván. Ver la sección "Cómo funciona por dentro (verificado 02/10/2026)" más abajo. El apagado de noviembre sigue sin decidirse.
 
+## Crear eventos SIN notificar a nadie (D104, comprobado el 08/10/2026)
+Desde que se encienda «respuestas en la web» (D99), los jugadores responden en la web y SportEasy **no debe pedirles nada** (D64). Comprobado por Claude en el Chrome de Iván el 08/10/2026 con el evento de prueba **55230671**: crear el evento sin participantes, añadir a Iván, abrir las inscripciones con la notificación apagada y quitarlo antes y después de abrirlas **no le envió ninguna notificación**.
+- **Crear cada evento con el formulario completo:** `/calendar/create/` → «Ajustes avanzados» → **«Selección manual»** (el evento nace sin participantes) y **«Enviar una notificación» apagado** (el «Recordatorio automático» depende de ella: apagada la notificación, no hay recordatorio).
+- **Nunca el formulario rápido** de «Crear evento»: invita a todos y notifica.
+- **El día de la activación:** a cada evento futuro ya creado, «Modificar los participantes implicados» → **«Seleccionar 0 miembros»**.
+- **Sin probar todavía:** el interruptor «Aplicar los ajustes a próximos entrenamientos». No usarlo hasta probarlo con un evento de prueba.
+- Mientras el interruptor esté apagado, la copia sigue como hasta ahora.
+
 ## Cómo funciona por dentro (verificado 02/10/2026)
 
 - **Convocatoria automática por campeonato:** Campeonatos → Ajustes → Convocatorias permite filtrar a los convocados por rol y por un campo personalizado del plantel. Configuración actual de los dos campeonatos: roles Jugador, Jugador-entrenador y Jugador ocasional + "Equipo inscrito contiene MdA" (o "MdL"). Se aplica a los partidos que se creen **después**, no a los que ya existen.

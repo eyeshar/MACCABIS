@@ -69,7 +69,9 @@ try {
     ok(!p.a_sel && !p.a_ins && !p.u_del && !p.u_trunc && p.rls, `${t}: RLS activa; anon sin permisos; authenticated sin DELETE ni TRUNCATE`);
   }
   const pol = await sql`select tablename, cmd, qual, with_check from pg_policies where schemaname = 'public' and tablename = any(${PRIVADAS})`;
-  ok(pol.every((p) => /is_gestor\(\)/.test(`${p.qual ?? ''}${p.with_check ?? ''}`)), `las ${pol.length} políticas de las 8 tablas exigen is_gestor()`);
+  // Paso 3 (D99): además, el jugador LEE sus propias respuestas y ausencias (solo SELECT y solo las suyas).
+  const deJugador = (p) => p.cmd === 'SELECT' && ['respuestas', 'ausencias_periodo'].includes(p.tablename) && /_mi_person_id\(\)/.test(p.qual ?? '');
+  ok(pol.every((p) => /is_gestor\(\)/.test(`${p.qual ?? ''}${p.with_check ?? ''}`) || deJugador(p)), `las ${pol.length} políticas de las 8 tablas exigen is_gestor() (salvo «el jugador lee lo suyo», solo lectura, D99)`);
   ok(!pol.some((p) => p.cmd === 'DELETE' || p.cmd === 'ALL'), 'ninguna política permite DELETE ni ALL');
   const [v] = await sql`select has_table_privilege('anon', 'public.v_eventos_publicos', 'select') a, has_table_privilege('anon', 'public.v_eventos_publicos', 'insert') i`;
   ok(v.a && !v.i, 'anon puede leer la vista pública y no escribirla');

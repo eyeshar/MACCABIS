@@ -552,14 +552,20 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 /* ===== Mi zona (maqueta MiZona) ===== */
 .mz { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; padding-bottom: 16px; scroll-margin-top: 60px; }
 .mz-aviso { margin: 12px 16px 0; }
-/* Movil: una columna en el orden de siempre (saludo, agenda, domingo, ropa, temporada). Escritorio: dos columnas. */
+/* Movil: una columna con el orden de D105: saludo, banda «Activa los avisos», «Te faltan N», «Tu agenda», «Marcar dias»
+   y despues lo demas (domingo, ropa, lo ultimo que jugaste, temporada). Todo lleva `order` explicito: lo que no lo
+   lleva se queda en 0 y sube por encima del saludo. Escritorio: dos columnas con el mismo orden dentro de cada una. */
 .mz-cols { display: flex; flex-direction: column; }
 .mz-ancha, .mz-estrecha { display: contents; }
 .mz-hola { order: 1; }
-#agenda { order: 2; }
-#domingo { order: 3; }
-#ropa { order: 4; }
-#temporada { order: 5; }
+.mz .rw-banda { order: 2; }
+.mz .rw-faltan { order: 3; }
+#agenda { order: 4; }
+.mz .rw-marcar { order: 5; }
+#domingo { order: 6; }
+#ropa { order: 7; }
+#ultimo { order: 8; }
+#temporada { order: 9; }
 .mz-pie { padding: 0 16px; }
 .mz-sec { padding: 16px 16px 4px; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 60px; }
 @media (min-width: 1024px) {
@@ -569,6 +575,7 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
   .mz-ancha, .mz-estrecha { display: flex; flex-direction: column; gap: 12px; }
   .mz-estrecha { padding-top: 28px; }
   .mz .mz-sec { padding: 16px 0 8px; }
+  .mz .rw-banda, .mz .rw-marcar { margin-left: 0; margin-right: 0; }
   .mz .mz-hola { padding: 32px 0 8px; }
   .mz .mz-hola h1 { font-size: 56px; }
   .mz-pie { padding: 0; }

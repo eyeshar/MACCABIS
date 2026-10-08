@@ -16,6 +16,10 @@ import { diaMes, diaSemanaCorto, hoyMadrid } from "@/lib/dias";
 import { NOMBRE_EQUIPO, RUTA_CUENTA } from "@/lib/web";
 
 import { cargarFuente } from "@/lib/eventos/fuente";
+import { cargarMisAusencias, cargarMisEventos, cargarMisRespuestas, respuestasWebEncendido } from "@/lib/respuestas/jugador";
+import { estadoDe, unidades } from "@/lib/respuestas/dominio";
+import BandaAvisos from "@/components/avisos/BandaAvisos";
+import Agenda from "./Agenda";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -85,8 +89,12 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
   const mismaHora = delDomingo.length === 2 && delDomingo[0].inicio && delDomingo[0].inicio === delDomingo[1].inicio;
   const conAviso = delDomingo.filter((e) => e.aviso?.hay);
 
-  // Agenda: los 3 proximos eventos suyos (entrenos y partidos de sus equipos) y lo ultimo que jugo.
-  const agenda = eventosTemporada(fuente).filter((e) => e.fecha >= hoy && (e.tipo === "entreno" || equipos.includes(e.equipo!))).slice(0, 3);
+  // Agenda (D99): sus eventos (v_mis_eventos), sus respuestas y ausencias; y lo ultimo que jugo.
+  const [encendido, misEventos, misRespuestas, misAusencias] = await Promise.all([
+    respuestasWebEncendido(), cargarMisEventos(hoy).catch(() => []), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
+  ]);
+  const unidadDomingo = fechaDomingo ? unidades(misEventos).find((u) => u.tipo === "domingo" && u.fecha === fechaDomingo) : undefined;
+  const estadoDomingo = unidadDomingo ? estadoDe(unidadDomingo, misRespuestas, misAusencias) : null;
   const temporada = temporadaDe(jugador.person_id);
   const jugados = temporada?.partidos.filter((p) => p.fecha && p.fecha <= hoy) ?? [];
   const ultimaFecha = jugados.map((p) => p.fecha!).sort().at(-1);
@@ -108,25 +116,14 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
           </div>
         </section>
 
-        <section className="mz-sec" id="agenda" aria-labelledby="t-agenda">
-          <div className="mz-sec-cab">
-            <h2 id="t-agenda">Tu agenda</h2>
-            <Link href="/#calendario" className="pequeno" style={{ fontWeight: 600 }}>Calendario completo</Link>
-          </div>
+        <BandaAvisos />
+
+        <Agenda eventos={misEventos} respuestas={misRespuestas} ausencias={misAusencias} encendido={encendido} hoy={hoy} />
+
+        {ultimos.length > 0 && (
+        <section className="mz-sec" id="ultimo" aria-labelledby="t-ultimo">
+          <h2 id="t-ultimo" className="solo-lectores">Lo último que jugaste</h2>
           <div className="mz-lista">
-            {agenda.map((e) => (
-              <div key={e.id} className="mz-fila" data-tipo={e.tipo}>
-                <Fecha f={e.fecha} />
-                <div className="mz-que">
-                  <strong>{e.tipo === "entreno" ? "Entrenamiento" : `J${e.jornada} · ${cruce(e)}`}</strong>
-                  <span>
-                    {e.inicio ? (e.tipo === "entreno" ? `${e.inicio}–${e.fin}` : e.inicio) : "Hora por confirmar"} ·{" "}
-                    {e.tipo === "entreno" ? (e.pistaPorConfirmar ? `pista por confirmar${e.nota ? ` (${e.nota})` : ""}` : `${e.lugar}${e.nota ? ` (${e.nota.replace(/\.$/, "").toLowerCase()})` : ""}`) : e.lugar}
-                  </span>
-                </div>
-                <span className="pastilla pastilla-pendiente">{e.tipo === "entreno" ? "Respuesta: pendiente" : "Convocatoria: pendiente"}</span>
-              </div>
-            ))}
             {ultimos.length > 0 && (
               <div className="mz-fila pasado" data-tipo="jugado">
                 <Fecha f={ultimaFecha!} />
@@ -140,10 +137,9 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
                 <span className="pastilla pastilla-jugo">Jugó</span>
               </div>
             )}
-            {!agenda.length && !ultimos.length && <div className="mz-fila"><span className="suave">No hay nada en el calendario.</span></div>}
           </div>
-          <p className="mz-nota">Tu disponibilidad y la convocatoria llegarán aquí más adelante; mientras, se responde en SportEasy.</p>
         </section>
+        )}
 
         <section className="mz-sec mz-sec-temporada" id="temporada" aria-labelledby="t-stats">
           <div className="mz-sec-cab">
@@ -194,7 +190,9 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
                     </div>
                   ))}
                 </div>
-                <div className="mz-dato"><span>Tu disponibilidad</span><span className="pastilla pastilla-pendiente">Pendiente: en SportEasy</span></div>
+                {encendido && unidadDomingo && estadoDomingo
+                  ? <Link href={unidadDomingo.url} className="mz-dato"><span>Tu disponibilidad</span><span className={`rw-estado rw-estado-${estadoDomingo.clase}`}>{estadoDomingo.texto}</span></Link>
+                  : <div className="mz-dato"><span>Tu disponibilidad</span><span className="pastilla pastilla-pendiente">Pendiente: en SportEasy</span></div>}
               </article>
               <article className={`mz-equipacion ${conAviso.length ? "alerta" : "calma"}`} aria-label="Equipación del domingo">
                 <Camiseta />

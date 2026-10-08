@@ -48,12 +48,13 @@ export const MENU_GESTION: GrupoGestion[] = [
   },
 ];
 
-/** Secciones de Mi zona (su barra propia): anclas de la misma pagina. */
+/** Secciones de Mi zona (su barra propia, D99): Resumen, Mi agenda y Estadísticas son anclas de la misma pagina;
+ *  Ausencias es su pagina (solo con «respuestas en la web» encendido). */
 export const MENU_MI_ZONA = [
   { id: "inicio", texto: "Resumen", href: "/mi-zona" },
   { id: "agenda", texto: "Mi agenda", href: "/mi-zona#agenda" },
-  { id: "temporada", texto: "Mis estadísticas", href: "/mi-zona#temporada" },
-  { id: "ropa", texto: "Pedido de ropa", href: "/mi-zona#ropa" },
+  { id: "ausencias", texto: "Ausencias", href: "/mi-zona/ausencias", soloEncendido: true },
+  { id: "temporada", texto: "Estadísticas", href: "/mi-zona#temporada" },
 ];
 
 /** Pagina de la cuenta, una para jugadores y gestores (D90). */

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AvisoTarjeta from "@/components/AvisoTarjeta";
+import { textoColores } from "@/lib/colores";
 import LigaGrupoPanel from "@/components/liga/LigaGrupo";
 import { SecH } from "@/components/liga/Comunes";
 import { datosLiga, RIVALES, type Grupo } from "@/lib/estadisticas/liga";
@@ -31,7 +32,7 @@ export default async function Liga({ searchParams }: { searchParams: Promise<{ g
               <div className="e-eqp-t">{n} · J{p.jornada}</div>
               <div className="e-eqp-v">{n} {p.local ? "vs" : "en"} {p.rival}</div>
               <div className="e-eqp-s">{p.fecha ? diaLargo(p.fecha) : "fecha por confirmar"} · {p.hora ?? "hora por confirmar"} · pista {p.campo ?? "por confirmar"} · {p.local ? "en casa" : "fuera"}</div>
-              {p.color && <div className="e-eqcol"><i className="e-eqdot" style={{ background: p.color.css }} />camiseta {p.color.camiseta}, pantalón {p.color.pantalon}</div>}
+              {p.color && <div className="e-eqcol"><i className="e-eqdot" style={{ background: p.color.css }} />{textoColores(p.color)}</div>}
               <AvisoTarjeta aviso={p.aviso} />
             </div>
           );

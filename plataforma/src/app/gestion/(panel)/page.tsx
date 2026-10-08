@@ -3,7 +3,8 @@ import { cargarFuente } from "@/lib/eventos/fuente";
 import { cargarJugadores } from "@/lib/eventos/datos";
 import { contarRespuestas, convocadosDe, type Respuesta } from "@/lib/eventos/dominio";
 import "./eventos/eventos.css";
-import { exigirGestor } from "@/lib/sesion";
+import { exigirGestor, origenMensajes } from "@/lib/sesion";
+import TarjetaActivar, { type EstadoActivacion } from "./TarjetaActivar";
 import { AvisoCaja } from "@/components/ProximoPartido";
 import { bonito, cargarLiga, type DatosLiga } from "@/lib/liga";
 import { clave } from "@/data/avisosEquipacion";
@@ -71,6 +72,20 @@ export default async function InicioGestion() {
     }
   }
 
+  // «Respuestas en la web: activar» (D99.13): estado, condiciones y jornadas jugadas para marcarlas.
+  const [{ data: activacion }, { data: marcasDB }, { data: jugadas }] = await Promise.all([
+    supabase.rpc("estado_activacion"),
+    supabase.from("jornadas_control").select("jornada, estado").eq("temporada", "2026-27"),
+    supabase.from("eventos").select("jornada").eq("tipo", "liga").lt("fecha", hoy).not("jornada", "is", null),
+  ]);
+  const ultimaJugada = Math.max(0, ...((jugadas ?? []) as { jornada: number }[]).map((x) => x.jornada));
+  const jornadasJugadas = Array.from({ length: ultimaJugada }, (_, i) => i + 1);
+  const marcas = Object.fromEntries(((marcasDB ?? []) as { jornada: number; estado: "limpia" | "con_arreglo" }[]).map((m) => [m.jornada, m.estado]));
+  const web = await origenMensajes();
+  const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis, no en SportEasy: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo, nunca de noche): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
+
+  const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
+  const mensajeEntrar = `Hola, ${faltan.join(", ")}: aún no habéis entrado en la web de Maccabis. Entrad una vez con vuestro correo (os llega un código) para tenerlo listo: ${web}/entrar. Si podéis, instaladla en el móvil y activad los avisos: ${web}/avisos`;
   const pendientes: string[] = [];
   if (entreno?.pistaPorConfirmar) pendientes.push(`Fijar la pista del entreno del ${diaSemanaCorto(entreno.fecha)} ${diaMes(entreno.fecha)} (${entreno.nota ?? "pista por confirmar"}).`);
   if (jornada) pendientes.push(`Convocatoria de la J${jornada}: reparto MdA / MdL y aviso de equipación (rutina C, lunes y martes).`);
@@ -86,7 +101,6 @@ export default async function InicioGestion() {
           <div className="gs-eyebrow">Panel de gestión{fecha ? ` · ${textoSemana(fecha)}` : ""}</div>
           <h1>{jornada ? `Jornada ${jornada}` : "Temporada terminada"}</h1>
         </div>
-        <span className="pastilla pastilla-pendiente" title="Llega en el paso 2">Preparar convocatoria: llega en el paso 2</span>
       </div>
 
       <section aria-label="Rutinas semanales" className="gs-rutinas">
@@ -110,6 +124,8 @@ export default async function InicioGestion() {
           </span>
         </div>
       </section>
+
+      {activacion && <div style={{ marginBottom: 20 }}><TarjetaActivar estado={activacion as EstadoActivacion} jornadas={jornadasJugadas} marcas={marcas} mensaje={mensajeActivar} mensajeEntrar={mensajeEntrar} /></div>}
 
       <div className="gs-dos">
         <div className="gs-izq">

@@ -8,7 +8,7 @@ G1;4;Maccabi de Acostar descansa;;08/11/2026;;
 G2;2;Quinto Tiempo;Maccabi de Levantar;18/10/2026;10:15;1`;
 
 /** Importar el calendario del Ayuntamiento: pegar, comparar y aceptar/ignorar cada cambio. Nada se aplica sin OK. */
-export default function ImportarCalendario() {
+export default function ImportarCalendario({ encendido = false }: { encendido?: boolean }) {
   const [texto, setTexto] = useState("");
   const [res, setRes] = useState<ResultadoCalendario | null>(null);
   const [decisiones, setDecisiones] = useState<Record<string, "acepta" | "ignora">>({});
@@ -20,9 +20,11 @@ export default function ImportarCalendario() {
     try { setRes(await analizarCalendario(texto)); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo comparar."); }
   });
   const aceptados = Object.entries(decisiones).filter(([, v]) => v === "acepta").map(([k]) => k);
-  const aplicar = () => empezar(async () => {
+  // Con «respuestas en la web» encendido (D103): «Aplicar y avisar» (por defecto) o «Aplicar sin avisar», con las reglas
+  // de Editar evento.
+  const aplicar = (avisar = false) => empezar(async () => {
     setError(null);
-    try { setRes(await aplicarCalendario(texto, aceptados)); setDecisiones({}); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo aplicar."); }
+    try { setRes(await aplicarCalendario(texto, aceptados, avisar)); setDecisiones({}); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo aplicar."); }
   });
   const decidir = (id: string, v: "acepta" | "ignora") => setDecisiones((d) => ({ ...d, [id]: d[id] === v ? (undefined as never) : v }));
 
@@ -51,7 +53,7 @@ export default function ImportarCalendario() {
           </p>
           {res.aplicado && (
             <div className="aviso aviso-ok" role="status" style={{ margin: 0 }}>
-              Aplicado: {res.aplicado.aceptadas} {res.aplicado.aceptadas === 1 ? "cambio aceptado" : "cambios aceptados"}{res.aplicado.cambiosEn.length ? ` (${res.aplicado.cambiosEn.join(", ")})` : ""}. Quedan <b>pendientes de copiar a SportEasy</b>. Importación registrada.
+              Aplicado: {res.aplicado.aceptadas} {res.aplicado.aceptadas === 1 ? "cambio aceptado" : "cambios aceptados"}{res.aplicado.cambiosEn.length ? ` (${res.aplicado.cambiosEn.join(", ")})` : ""}. Quedan <b>pendientes de copiar a SportEasy</b>. Importación registrada.{res.aplicado.avisados != null ? ` Aviso al móvil:   (de noche, sale a las 08:30).` : ""}
             </div>
           )}
 
@@ -87,9 +89,16 @@ export default function ImportarCalendario() {
               </div>
               <div className="botones" style={{ margin: 0 }}>
                 <button className="boton boton-claro" type="button" onClick={() => setDecisiones(Object.fromEntries(res.cambios.map((c) => [c.id, "acepta" as const])))} disabled={pendiente}>Aceptar todos</button>
-                <button className="boton boton-amarillo" type="button" onClick={aplicar} disabled={pendiente || aceptados.length === 0}>{pendiente ? "Aplicando…" : `Aplicar lo aceptado (${aceptados.length})`}</button>
+                {encendido ? (
+                  <>
+                    <button className="boton boton-amarillo" type="button" onClick={() => aplicar(true)} disabled={pendiente || aceptados.length === 0}>{pendiente ? "Aplicando…" : `Aplicar y avisar (${aceptados.length})`}</button>
+                    <button className="boton boton-claro" type="button" onClick={() => aplicar(false)} disabled={pendiente || aceptados.length === 0}>Aplicar sin avisar</button>
+                  </>
+                ) : (
+                  <button className="boton boton-amarillo" type="button" onClick={() => aplicar(false)} disabled={pendiente || aceptados.length === 0}>{pendiente ? "Aplicando…" : `Aplicar lo aceptado (${aceptados.length})`}</button>
+                )}
               </div>
-              <p className="pequeno suave" style={{ margin: 0 }}>Lo que no aceptes se queda como está. Lo aceptado cambia el evento y queda «pendiente de copiar» a SportEasy.</p>
+              <p className="pequeno suave" style={{ margin: 0 }}>Lo que no aceptes se queda como está. Lo aceptado cambia el evento y queda «pendiente de copiar» a SportEasy.{encendido ? " «Aplicar y avisar» manda el aviso de cambio a los invitados (nunca de 22:30 a 8:30); si cambia el día, sus respuestas vuelven a «sin responder»." : " Con «respuestas en la web» apagado no sale ningún aviso a los móviles."}</p>
             </>
           )}
 

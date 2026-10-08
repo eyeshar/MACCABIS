@@ -34,6 +34,18 @@
     return null;
   }
 
+  /** Color con el género de la prenda ('f': camiseta -> "roja"; 'm': pantalón -> "rojo"). Azul, naranja y rosa no cambian. */
+  function colorConGenero(color, genero) {
+    const c = String(color == null ? '' : color);
+    if (genero !== 'f') return c;
+    return c.replace(/^(negr|blanc|amarill|roj)o$/, '$1a');
+  }
+
+  /** "camiseta roja, pantalón rojo": la descripción de una equipación, con cada color concordando con su prenda. */
+  function descripcionColores(camiseta, pantalon) {
+    return 'camiseta ' + colorConGenero(camiseta, 'f') + ', pantalón ' + colorConGenero(pantalon, 'm');
+  }
+
   function chocan(equip, colorRival) {
     return equip.regla_choque.camiseta_rival_choca.indexOf(colorRival) >= 0;
   }
@@ -61,19 +73,19 @@
       if (!partido.local) {
         return {
           ...base, hay: true, tipo: 'nos_toca', quien: 'nosotros', etiqueta: '⚠ Nos toca cambiar: equipación ' + segunda.toUpperCase(),
-          texto: 'Vamos en segundo lugar contra ' + e.nombre + ' (' + color + '). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).',
+          texto: 'Vamos en segundo lugar contra ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + '). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).',
           convocatoria: 'Llevad la equipación ' + segunda.toUpperCase() + ' (nos toca cambiar).',
         };
       }
       return {
         ...base, hay: true, tipo: 'cambian_ellos', quien: 'rival', etiqueta: 'ℹ Coinciden colores: cambia ' + e.nombre,
-        texto: 'Jugamos de ' + primera + '; ' + e.nombre + ' (' + color + ') va en segundo lugar y debe cambiar. Llevad la ' + segunda + ' por si acaso.',
+        texto: 'Jugamos de ' + primera + '; ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + ') va en segundo lugar y debe cambiar. Llevad la ' + segunda + ' por si acaso.',
         convocatoria: 'Jugamos de ' + primera + '; cambia ' + e.nombre + '. Llevad la ' + segunda + ' por si acaso.',
       };
     }
     return {
       ...base, hay: true, tipo: 'dudoso', quien: 'dudoso', etiqueta: '⚠ Equipación ' + segunda,
-      texto: 'Coincidencia de color con ' + e.nombre + ' (' + color + '): llevad la ' + segunda + ' por si acaso',
+      texto: 'Coincidencia de color con ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + '): llevad la ' + segunda + ' por si acaso',
       convocatoria: 'Llevad la equipación ' + segunda,
     };
   }
@@ -107,5 +119,5 @@
     return Object.keys(f);
   }
 
-  return { clave, colorNormalizado, equipoPorNombre, chocan, avisoPartido, lineaConvocatoria, proximoPartido, listarAvisos, rivalesSinColor };
+  return { clave, colorNormalizado, colorConGenero, descripcionColores, equipoPorNombre, chocan, avisoPartido, lineaConvocatoria, proximoPartido, listarAvisos, rivalesSinColor };
 });

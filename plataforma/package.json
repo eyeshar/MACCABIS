@@ -43,7 +43,13 @@
     "pruebas:eventos-real": "node pruebas/rls_eventos_real.mjs",
     "pruebas:eventos-logica": "node pruebas/eventos_logica.mjs",
     "pruebas:eventos-pantallas": "node pruebas/eventos_pantallas.mjs",
-    "pruebas:fuente-eventos": "node pruebas/fuente_eventos.mjs"
+    "pruebas:fuente-eventos": "node pruebas/fuente_eventos.mjs",
+    "pruebas:respuestas-web": "node pruebas/rls_respuestas_web.mjs",
+    "pruebas:avisos-logica": "node pruebas/avisos_logica.mjs",
+    "pruebas:respuestas-pantallas": "node pruebas/respuestas_pantallas.mjs",
+    "pruebas:respuestas-real": "node pruebas/rls_respuestas_real.mjs",
+    "avisos:claves": "node scripts/avisos_claves.mjs",
+    "avisos:programar": "node scripts/programar_tarea_avisos.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -52,12 +58,14 @@
     "next": "^16.3.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "dotenv": "^16.4.5",
     "embedded-postgres": "17.10.0-beta.17",
     "jose": "^6.0.0",

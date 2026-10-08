@@ -29,6 +29,15 @@ const COLORES = ['negro', 'azul oscuro', 'azul', 'blanco', 'rojo', 'rosa', 'nara
 const lista = Object.values(equip.equipos);
 ok(lista.length === 22, '22 equipos (20 rivales + MdA + MdL)', String(lista.length));
 ok(lista.every((e) => e.camiseta_original && e.pantalon_original), 'todos con el texto original de camiseta y pantalon');
+{
+  const MASC = /camiseta (negro|blanco|amarillo|rojo)\b/, FEM = /pantalón (negra|blanca|amarilla|roja)\b/;
+  const textos = Object.values(equip.equipos).map((e) => A.descripcionColores(e.camiseta, e.pantalon));
+  ok(textos.every((t) => !MASC.test(t) && !FEM.test(t)), `ningún equipo sale con «camiseta negro/blanco/amarillo/rojo» ni «pantalón negra/…» (${textos.length} equipos)`, textos.find((t) => MASC.test(t) || FEM.test(t)));
+  ok(['negro', 'blanco', 'amarillo', 'rojo'].every((c) => !MASC.test(A.descripcionColores(c, c)) && !FEM.test(A.descripcionColores(c, c))), 'los cuatro colores con género: negra, blanca, amarilla, roja (camiseta) y negro, blanco, amarillo, rojo (pantalón)');
+  const todosAvisos = A.listarAvisos(equip, cal).map((x) => x.texto).join(' ');
+  ok(!MASC.test(todosAvisos) && !/\((negro|blanco|amarillo|rojo)\)/.test(todosAvisos), 'los avisos de choque tampoco dicen «camiseta negro» ni «(negro)» suelto');
+}
+ok(A.descripcionColores('rojo', 'rojo') === 'camiseta roja, pantalón rojo' && A.descripcionColores('negro', 'negro') === 'camiseta negra, pantalón negro' && A.descripcionColores('azul oscuro', 'blanco') === 'camiseta azul oscuro, pantalón blanco' && A.descripcionColores('amarillo', 'rosa') === 'camiseta amarilla, pantalón rosa', 'el texto del color concuerda con la prenda: «camiseta roja, pantalón rojo»');
 ok(lista.every((e) => COLORES.includes(e.camiseta) && COLORES.includes(e.pantalon)), 'colores normalizados: minusculas, sin genero, de la lista');
 ok(lista.every((e) => A.colorNormalizado(e.camiseta_original) === e.camiseta && A.colorNormalizado(e.pantalon_original) === e.pantalon), 'el color normalizado sale del texto original (negra->negro, amarilla->amarillo...)');
 ok(!!equip.fuente && /^\d{4}-\d{2}-\d{2}$/.test(equip.fecha), 'fuente y fecha del dato');
@@ -54,10 +63,10 @@ ok(desc && !desc.conocido && !desc.hay, 'rival sin color: aviso "no conocido", s
 console.log('\n== Casos de control');
 const a = (eq, j) => A.avisoPartido(equip, partido(eq, j));
 ok(a('MDA', 2).hay && a('MDA', 2).tipo === 'cambian_ellos' && a('MDA', 2).colorRival === 'negro', 'J2 18/10 MdA–Litros de Mahou: CAMBIAN ELLOS (somos locales)');
-ok(a('MDA', 2).etiqueta === 'ℹ Coinciden colores: cambia Litros de Mahou' && a('MDA', 2).texto === 'Jugamos de negro; Litros de Mahou (negro) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.', 'J2: etiqueta y texto de "cambian ellos"', a('MDA', 2).texto);
+ok(a('MDA', 2).etiqueta === 'ℹ Coinciden colores: cambia Litros de Mahou' && a('MDA', 2).texto === 'Jugamos de negro; Litros de Mahou (camiseta negra) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.', 'J2: etiqueta y texto de "cambian ellos"', a('MDA', 2).texto);
 ok(a('MDL', 1).tipo === 'cambian_ellos' && a('MDL', 1).colorRival === 'azul oscuro', 'J1 04/10 MdL–Mejorada: CAMBIAN ELLOS (local, azul oscuro)');
 ok(a('MDL', 6).tipo === 'nos_toca' && a('MDL', 6).colorRival === 'negro' && partido('MDL', 6).local === false, 'J6 MdL en 28500 (negro): NOS TOCA (visitantes, vamos en segundo lugar)');
-ok(a('MDL', 6).etiqueta === '⚠ Nos toca cambiar: equipación AMARILLA' && a('MDL', 6).texto === 'Vamos en segundo lugar contra 28500 (negro). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).', 'J6: etiqueta y texto de "nos toca cambiar"', a('MDL', 6).texto);
+ok(a('MDL', 6).etiqueta === '⚠ Nos toca cambiar: equipación AMARILLA' && a('MDL', 6).texto === 'Vamos en segundo lugar contra 28500 (camiseta negra). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).', 'J6: etiqueta y texto de "nos toca cambiar"', a('MDL', 6).texto);
 ok(a('MDA', 10).tipo === 'nos_toca' && a('MDA', 16).tipo === 'nos_toca' && a('MDA', 16).colorRival === 'azul', 'MdA en Chavalitros (negro) y en Nabuco TD (azul): NOS TOCA');
 ok(!a('MDL', 2).hay && a('MDL', 2).colorRival === 'naranja', 'J2 18/10 MdL–Quinto Tiempo: SIN aviso (naranja)');
 ok(!a('MDA', 3).hay && !a('MDL', 3).hay, 'J3: sin avisos (Khinkis rojo, Suanzes naranja)');
@@ -74,7 +83,7 @@ const mismo = { equipo: 'MDA', rival: 'Litros de Mahou' };
 ok(A.avisoPartido(equip, { ...mismo, local: false }).tipo === 'nos_toca' && A.avisoPartido(equip, { ...mismo, local: true }).tipo === 'cambian_ellos', 'si el orden local/visitante cambia, el aviso cambia solo (rutina B)');
 ok(A.avisoPartido(equip, { ...mismo, local: null }).tipo === 'dudoso', 'sin saber quien es local: aviso prudente "llevad la amarilla por si acaso"');
 const sinRegla = { ...equip, regla_choque: { ...equip.regla_choque, quien_cambia: null } };
-ok(A.avisoPartido(sinRegla, { ...mismo, local: false }).texto === 'Coincidencia de color con Litros de Mahou (negro): llevad la amarilla por si acaso', 'sin regla en el fichero: vuelve al aviso prudente');
+ok(A.avisoPartido(sinRegla, { ...mismo, local: false }).texto === 'Coincidencia de color con Litros de Mahou (camiseta negra): llevad la amarilla por si acaso', 'sin regla en el fichero: vuelve al aviso prudente');
 
 console.log('\n== Proximo partido');
 const prox = (h, e) => A.proximoPartido(cal, h, e);

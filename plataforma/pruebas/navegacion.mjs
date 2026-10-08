@@ -285,14 +285,14 @@ try {
       if (rol !== 'anon') {
         await p.goto(`${APP}/mi-zona`);
         const bz = p.locator('nav[aria-label="Mi zona"]');
-        ok(JSON.stringify((await bz.locator('a').allTextContents()).map((t) => t.trim())) === JSON.stringify(['Resumen', 'Mi agenda', 'Mis estadísticas', 'Pedido de ropa']), 'Mi zona: barra propia (Resumen · Mi agenda · Mis estadísticas · Pedido de ropa)');
+        ok(JSON.stringify((await bz.locator('a').allTextContents()).map((t) => t.trim())) === JSON.stringify(['Resumen', 'Mi agenda', 'Estadísticas']), 'Mi zona: barra propia (Resumen · Mi agenda · Estadísticas; «Ausencias» solo con respuestas en la web, D99)');
         await p.evaluate(() => window.scrollTo(0, 700));
         await p.waitForTimeout(150);
         ok(Math.abs((await bz.evaluate((b) => b.getBoundingClientRect().top))) < 1, 'Mi zona: la barra queda fija arriba al hacer scroll');
-        await bz.getByRole('link', { name: 'Mis estadísticas' }).click();
+        await bz.getByRole('link', { name: 'Estadísticas' }).click();
         await p.waitForTimeout(400);
         const alFinal = await p.evaluate(() => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2);
-        ok(((await p.locator('#temporada').evaluate((s) => s.getBoundingClientRect().top)) < 200 || alFinal) && (await bz.getByRole('link', { name: 'Mis estadísticas' }).getAttribute('aria-current')) !== null, 'Mi zona: "Mis estadísticas" lleva a su seccion y la marca');
+        ok(((await p.locator('#temporada').evaluate((s) => s.getBoundingClientRect().top)) < 200 || alFinal) && (await bz.getByRole('link', { name: 'Estadísticas' }).getAttribute('aria-current')) !== null, 'Mi zona: "Estadísticas" lleva a su seccion y la marca');
         ok(await p.evaluate(() => { const s = document.getElementById('temporada').getBoundingClientRect(); const b = document.querySelector('nav[aria-label="Mi zona"]').getBoundingClientRect(); return s.top >= b.bottom - 2; }), 'Mi zona: la seccion no queda debajo de la barra');
         const pos = await p.evaluate(() => Object.fromEntries(['hola', 'agenda', 'domingo', 'ropa', 'temporada'].map((id) => { const e = id === 'hola' ? document.querySelector('.mz-hola') : document.getElementById(id); const r = e.getBoundingClientRect(); return [id, { x: Math.round(r.left), y: Math.round(r.top + scrollY), d: Math.round(r.right) }]; })));
         if (movil) ok(pos.hola.y < pos.agenda.y && pos.agenda.y < pos.domingo.y && pos.domingo.y < pos.ropa.y && pos.ropa.y < pos.temporada.y, 'Mi zona movil: una columna (saludo, agenda, domingo, ropa, temporada)', JSON.stringify(pos));

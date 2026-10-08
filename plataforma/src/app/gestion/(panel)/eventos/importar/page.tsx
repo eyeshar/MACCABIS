@@ -11,9 +11,10 @@ export default async function Importar({ searchParams }: { searchParams: Promise
   const { t } = await searchParams;
   const pestana = t === "respuestas" ? "respuestas" : "calendario";
   const { supabase } = await exigirGestor();
-  const [jugadores, { data: registro }] = await Promise.all([
+  const [jugadores, { data: registro }, { data: encendido }] = await Promise.all([
     cargarJugadores(supabase),
     supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, validas, aceptadas, ignoradas, bloqueadas, detalle").order("en", { ascending: false }).limit(10),
+    supabase.rpc("respuestas_web_encendido"),
   ]);
   const personas = jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
   return (
@@ -28,7 +29,7 @@ export default async function Importar({ searchParams }: { searchParams: Promise
         <Link href="/gestion/eventos/importar" aria-current={pestana === "calendario" ? "true" : undefined}>Calendario</Link>
         <Link href="/gestion/eventos/importar?t=respuestas" aria-current={pestana === "respuestas" ? "true" : undefined}>Respuestas</Link>
       </nav>
-      {pestana === "calendario" ? <ImportarCalendario /> : <ImportarRespuestas personas={personas} />}
+      {pestana === "calendario" ? <ImportarCalendario encendido={Boolean(encendido)} /> : <ImportarRespuestas personas={personas} />}
 
       <section className="gs-bloque" style={{ marginTop: 20 }} aria-labelledby="t-registro" data-testid="registro-importaciones">
         <h2 id="t-registro" style={{ fontSize: 22 }}>Importaciones registradas</h2>

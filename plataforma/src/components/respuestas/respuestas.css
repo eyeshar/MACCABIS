@@ -1,0 +1,160 @@
+/* Respuestas en la web y avisos (D99, lienzo «Paso 3»). Tema oscuro unico (D89): solo tokens de globals.css. Objetivos
+   tactiles de al menos 44 px; todo cabe a 375 px. */
+:root {
+  --rw-va: #3fb98a;
+  --rw-va-fondo: #173a2d;
+  --rw-no: #ff6b5e;
+  --rw-no-fondo: #3a1a17;
+  --rw-duda: #6ea8ff;
+  --rw-duda-fondo: #1e2433;
+  --rw-mda: var(--c-amarillo);
+  --rw-mdl: var(--c-naranja);
+}
+
+/* ---------- banda amarilla y tarjeta «Marcar días que no estoy» */
+.rw-banda, .rw-marcar {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 14px; margin: 12px 16px 0;
+  border-radius: var(--radio); text-decoration: none;
+}
+.rw-banda { background: var(--amarillo); color: var(--c-sobre-acento); }
+.rw-banda:hover { color: var(--c-sobre-acento); filter: brightness(1.05); }
+.rw-banda > span:nth-child(2), .rw-marcar > span:nth-child(2) { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rw-banda small { font-size: 13px; opacity: 0.85; }
+.rw-banda-icono, .rw-marcar-icono { display: inline-flex; flex: none; }
+.rw-marcar { background: var(--tarjeta); border: 1px solid var(--borde); color: var(--tinta); margin: 12px 16px; }
+.rw-marcar small { color: var(--tinta-tenue); font-size: 13px; }
+.rw-marcar:hover { color: var(--tinta); border-color: var(--borde-fuerte); }
+
+/* ---------- «Te faltan N respuestas» */
+.rw-faltan h2 { color: var(--amarillo); }
+.rw-tarjetas { display: flex; flex-direction: column; gap: 10px; }
+.rw-tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-left: 3px solid var(--amarillo); border-radius: var(--radio); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.rw-tarjeta-cab { display: flex; gap: 12px; align-items: center; color: var(--tinta); text-decoration: none; min-height: 44px; }
+.rw-tarjeta-cab:hover { color: var(--tinta); }
+.rw-tarjeta-que { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rw-tarjeta-que span { font-size: 13px; color: var(--tinta-tenue); overflow-wrap: anywhere; }
+
+/* ---------- botones Voy / No voy / Duda */
+.rw-responder { display: flex; flex-direction: column; gap: 10px; }
+.rw-botones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rw-btn {
+  min-height: 44px; padding: 8px 10px; border-radius: var(--radio); border: 1px solid; font: inherit; font-weight: 700;
+  cursor: pointer; background: transparent; touch-action: manipulation;
+}
+.rw-responder.grande .rw-btn { min-height: 56px; font-size: 17px; }
+.rw-btn:disabled { opacity: 0.5; cursor: wait; }
+.rw-btn:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 2px; }
+.rw-btn-va { color: var(--rw-va); border-color: color-mix(in srgb, var(--rw-va) 55%, transparent); }
+.rw-btn-no { color: var(--rw-no); border-color: color-mix(in srgb, var(--rw-no) 55%, transparent); }
+.rw-btn-duda { color: var(--rw-duda); border-color: color-mix(in srgb, var(--rw-duda) 55%, transparent); }
+.rw-btn-va.marcada { background: var(--rw-va); color: #0b1f17; border-color: var(--rw-va); }
+.rw-btn-no.marcada { background: var(--rw-no); color: #2a0b07; border-color: var(--rw-no); }
+.rw-btn-duda.marcada { background: var(--rw-duda); color: #0b1430; border-color: var(--rw-duda); }
+button.boton.rw-btn-no { background: var(--rw-no); color: #2a0b07; border-color: var(--rw-no); }
+.rw-abrir { width: 100%; }
+.rw-abrir.grande { min-height: 56px; }
+
+/* ---------- agenda */
+.rw-fila { color: var(--tinta); text-decoration: none; min-height: 56px; }
+.rw-fila:hover { color: var(--tinta); background: color-mix(in srgb, var(--tarjeta) 70%, transparent); }
+.rw-estado { flex: none; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; max-width: 46%; overflow: hidden; text-overflow: ellipsis; }
+.rw-estado-vas { background: var(--rw-va-fondo); color: var(--rw-va); }
+.rw-estado-novas { background: var(--rw-no-fondo); color: var(--rw-no); }
+.rw-estado-duda { background: var(--rw-duda-fondo); color: var(--rw-duda); }
+.rw-estado-responde { background: var(--amarillo); color: var(--c-sobre-acento); }
+.rw-estado-ausente { background: var(--borde); color: var(--tinta-suave); }
+.rw-estado-cancelado { background: transparent; border: 1px dashed var(--borde-fuerte); color: var(--tinta-tenue); text-decoration: line-through; }
+.rw-sporteasy { color: var(--tinta-suave); font-weight: 600; }
+
+/* ---------- evento y domingo */
+.rw-volver { margin: 0 0 8px; }
+.rw-volver a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+.rw-evento { display: flex; flex-direction: column; gap: 12px; }
+.rw-evento .tarjeta { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.rw-ev-cab { display: flex; flex-direction: column; gap: 4px; }
+.rw-ev-cab h1 { margin: 0; overflow-wrap: anywhere; }
+.rw-ev-tipo { font-family: var(--f-cifras); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--amarillo); }
+.rw-ev-cab[data-tipo="entreno"] .rw-ev-tipo { color: var(--c-verde); }
+.rw-ev-fecha, .rw-ev-horas { margin: 0; }
+.rw-ev-horas { font-size: 18px; color: var(--tinta); }
+.rw-cambio { margin: 0; padding: 10px 12px; border-radius: var(--radio); background: var(--amarillo-claro); border: 1px solid color-mix(in srgb, var(--amarillo) 55%, transparent); color: var(--amarillo-tinta); font-weight: 600; }
+.rw-pista strong { font-size: 17px; }
+.rw-mapa { align-self: flex-start; }
+.rw-etiqueta { font-size: 13px; font-weight: 700; color: var(--tinta-suave); }
+.rw-etiqueta.sin { color: var(--amarillo); }
+.rw-quien h2 { margin: 0; font-size: 20px; }
+.rw-quien dl { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.rw-quien dt { font-weight: 700; font-size: 14px; }
+.rw-quien dd { margin: 2px 0 0; color: var(--tinta-suave); overflow-wrap: anywhere; }
+.rw-q-va { color: var(--rw-va); }
+.rw-q-duda { color: var(--rw-duda); }
+.rw-q-no { color: var(--rw-no); }
+.rw-enlace { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+.rw-partidos { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 640px) { .rw-partidos { grid-template-columns: 1fr 1fr; } }
+.rw-partido { background: var(--tarjeta); border: 1px solid var(--borde); border-top: 4px solid var(--rw-mda); border-radius: var(--radio); padding: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rw-partido[data-equipo="MdL"] { border-top-color: var(--rw-mdl); }
+.rw-partido-eq { font-family: var(--f-cifras); font-size: 12px; font-weight: 700; color: var(--rw-mda); }
+.rw-partido[data-equipo="MdL"] .rw-partido-eq { color: var(--rw-mdl); }
+.rw-partido-hora { font-size: 24px; }
+.rw-domingo-opciones { display: flex; flex-direction: column; gap: 8px; }
+.rw-opcion { width: 100%; text-align: left; min-height: 52px; padding: 10px 14px; font-size: 16px; }
+.rw-nota-conv { margin: 0; padding: 10px 12px; border-radius: var(--radio); background: var(--info-fondo); color: var(--info-tinta); font-size: 14px; }
+
+/* ---------- hoja «No voy» (dialogo) */
+.rw-hoja { padding: 0; border: 0; background: transparent; max-width: 520px; width: 100%; margin: auto auto 0; color: var(--tinta); }
+@media (min-width: 640px) { .rw-hoja { margin: auto; } }
+.rw-hoja::backdrop { background: rgb(0 0 0 / 0.6); }
+.rw-hoja-dentro { background: var(--tarjeta); border: 1px solid var(--borde-fuerte); border-radius: 18px 18px 0 0; padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 12px; max-height: 92vh; overflow-y: auto; }
+@media (min-width: 640px) { .rw-hoja-dentro { border-radius: 18px; } }
+.rw-hoja-asa { width: 40px; height: 4px; border-radius: 4px; background: var(--borde-fuerte); align-self: center; }
+.rw-hoja h2 { margin: 0; font-size: 22px; }
+.rw-motivos { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.tarjeta.rw-motivos { border: 1px solid var(--borde); padding: 14px; }
+.rw-motivos legend { padding: 0; margin-bottom: 8px; font-weight: 600; }
+.rw-motivo { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio); cursor: pointer; }
+.rw-motivo.elegido { border-color: var(--rw-no); background: var(--rw-no-fondo); }
+.rw-motivo input { width: 20px; height: 20px; accent-color: var(--rw-no); }
+.rw-detalle { display: flex; flex-direction: column; gap: 6px; }
+.rw-detalle input { min-height: 44px; }
+.rw-hoja-botones { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+
+/* ---------- ausencias y calendario */
+.rw-ausencias { display: flex; flex-direction: column; gap: 12px; }
+.rw-aus-lista { display: flex; flex-direction: column; gap: 10px; }
+.rw-aus { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.rw-aus[data-abierta="true"] { border-left: 3px solid var(--rw-no); }
+.rw-aus-botones { margin-top: 8px; }
+.rw-ausencia { display: flex; flex-direction: column; gap: 12px; }
+.rw-ausencia .tarjeta { margin: 0; }
+.rw-cal { display: flex; flex-direction: column; gap: 10px; }
+.rw-cal-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rw-cal-flecha { min-width: 44px; padding: 0; font-size: 22px; }
+.rw-cal-rejilla { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.rw-cal-sem { text-align: center; font-size: 12px; color: var(--tinta-tenue); font-family: var(--f-cifras); }
+.rw-cal-dia { position: relative; min-height: 44px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--tinta); font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
+.rw-cal-dia:disabled { color: var(--tinta-tenue); opacity: 0.45; cursor: default; }
+.rw-cal-dia.hoy { border-color: var(--borde-fuerte); }
+.rw-cal-dia.en-franja { background: var(--rw-no-fondo); color: var(--rw-no); }
+.rw-cal-dia.extremo { background: var(--rw-no); color: #2a0b07; }
+.rw-cal-dia:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 1px; }
+.rw-cal-punto { position: absolute; left: 50%; bottom: 5px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--amarillo); }
+.rw-check { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.rw-check input { width: 20px; height: 20px; }
+.rw-resumen { display: flex; flex-direction: column; gap: 8px; }
+.rw-aviso-voy { margin: 0; padding: 10px 12px; border-radius: var(--radio); background: var(--amarillo-claro); color: var(--amarillo-tinta); font-weight: 600; }
+
+/* ---------- /avisos */
+.av-pagina { display: flex; flex-direction: column; gap: 12px; }
+.av-intro { margin: 0; color: var(--tinta-suave); }
+.av-caso { margin: 0; }
+.av-ok h2 { color: var(--ok); }
+.av-pasos { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.av-paso { display: grid; grid-template-columns: 32px 28px 1fr; align-items: center; gap: 10px; }
+.av-num { width: 32px; height: 32px; border-radius: 50%; background: var(--amarillo); color: var(--c-sobre-acento); display: grid; place-items: center; font-weight: 800; }
+.av-icono { color: var(--amarillo); display: grid; place-items: center; }
+.av-url { padding: 10px; background: var(--fondo); border-radius: 8px; overflow-wrap: anywhere; }
+.av-activar { min-height: 52px; }
+.av-ajustes summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.av-ajustes summary h2 { margin: 0; font-size: 18px; }
+.av-ajustes ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }

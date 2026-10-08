@@ -151,7 +151,7 @@ export function lineaCambio(e: Pick<MiEvento, "cambio_visible" | "cambio_visible
   const NOM: Record<string, string> = { fecha: "el día", hora: "la hora", pista: "la pista", encuentro: "el encuentro" };
   const lista = c.campos.map((x) => NOM[x] ?? x);
   const que = lista.length === 1 ? lista[0] : `${lista.slice(0, -1).join(", ")} y ${lista.at(-1)}`;
-  const dia = new Date(e.cambio_visible_en).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
+  const dia = ddmm(new Date(e.cambio_visible_en).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }));
   return `Cambió ${que} el ${dia}${c.antes ? ` (antes: ${c.antes})` : ""}`;
 }
 

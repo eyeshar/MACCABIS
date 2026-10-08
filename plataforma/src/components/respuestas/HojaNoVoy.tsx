@@ -7,9 +7,11 @@ import { MOTIVOS_JUGADOR, type MotivoJugador } from "@/lib/respuestas/dominio";
 // Hoja «No voy» (D99, 3.4): dialogo modal accesible (<dialog> nativo: encierra el foco, Esc lo cierra y devuelve el foco
 // a quien lo abrio). El motivo es obligatorio: «Guardar «no voy»» esta desactivado hasta elegirlo. Solo lo ven los
 // gestores (D46, D82).
-export default function HojaNoVoy({ abierta, titulo, motivoInicial, detalleInicial, guardando, error, onCerrar, onGuardar }: {
+export default function HojaNoVoy({ abierta, titulo, motivoInicial, detalleInicial, guardando, error, onCerrar, onGuardar, volverA }: {
   abierta: boolean; titulo: string; motivoInicial?: MotivoJugador | null; detalleInicial?: string | null; guardando?: boolean; error?: string | null;
   onCerrar: () => void; onGuardar: (motivo: MotivoJugador, detalle: string) => void;
+  /** Boton que la abrio: recibe el foco al cerrar (un toque en el movil no siempre le da el foco). */
+  volverA?: React.RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [motivo, setMotivo] = useState<MotivoJugador | null>(motivoInicial ?? null);
@@ -19,8 +21,8 @@ export default function HojaNoVoy({ abierta, titulo, motivoInicial, detalleInici
     const d = ref.current;
     if (!d) return;
     if (abierta && !d.open) { setMotivo(motivoInicial ?? null); setDetalle(detalleInicial ?? ""); d.showModal(); }
-    if (!abierta && d.open) d.close();
-  }, [abierta, motivoInicial, detalleInicial]);
+    if (!abierta && d.open) { d.close(); volverA?.current?.focus(); }
+  }, [abierta, motivoInicial, detalleInicial, volverA]);
   return (
     <dialog ref={ref} className="rw-hoja" aria-labelledby={`${id}-t`} onClose={onCerrar} onCancel={(e) => { e.preventDefault(); onCerrar(); }}
       onClick={(e) => { if (e.target === ref.current) onCerrar(); }}>

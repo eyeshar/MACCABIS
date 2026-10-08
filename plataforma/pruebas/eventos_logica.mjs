@@ -168,7 +168,17 @@ ok(/pista por confirmar \(Valdebernardo en obras\)/.test(D.mensajeWhatsApp(mierc
 ok(/^Se cancela el entreno del miércoles 14\/10/.test(D.mensajeWhatsApp(miercoles, pistas, 'cancelado')), 'mensaje de cancelación');
 const partido = { ...miercoles, tipo: 'liga', equipo: 'MdA', titulo: null, jornada: 2, rival: 'Litros de Mahou', es_local: false, fecha: '2026-10-18', inicio: '10:15:00', fin: null, quedada: '09:55:00', pista_id: 'm', numero_pista: 2, serie: null, origen: 'ayuntamiento' };
 const mp = D.mensajeWhatsApp(partido, pistas, 'cambio', { cambios: ['quedada: 10:00 → 09:55'], lineaEquipacion: 'Llevad la equipación amarilla.' });
-ok(/J2/.test(mp) && /Litros de Mahou – MdA|Litros de Mahou/.test(mp) && /quedada a las 09:55/.test(mp) && /amarilla/.test(mp), 'mensaje de partido con quedada y equipación', mp);
+ok(/J2/.test(mp) && /Litros de Mahou – MdA|Litros de Mahou/.test(mp) && /encuentro 09:55/.test(mp) && /amarilla/.test(mp), 'mensaje de partido con encuentro y equipación', mp);
+
+const adm = { id: 'adm', slug: 'antonio-diaz-miguel', nombre: 'Antonio Díaz Miguel', nombre_corto: null, direccion: 'Calle Joaquín Dicenta, 1', uso: 'entreno', estado: 'provisional', es_de_serie: false, num_pistas: null, nota: null };
+const e1410 = { ...miercoles, inicio: '20:00:00', fin: '22:00:00', quedada: '19:40:00', pista_id: 'adm', notas: 'Pista 3' };
+const pAdm = [...pistas, adm];
+ok(D.mensajeWhatsApp(e1410, pAdm, 'nuevo').split('\n')[0] === 'Entreno del miércoles 14/10: de 20:00 a 22:00 (encuentro 19:40) en Antonio Díaz Miguel, pista 3 — Calle Joaquín Dicenta, 1.', 'WhatsApp: horario, encuentro, pista, número (de las notas) y dirección', D.mensajeWhatsApp(e1410, pAdm, 'nuevo'));
+ok(!/Pista 3\./.test(D.mensajeWhatsApp(e1410, pAdm, 'nuevo')), 'la nota «Pista 3» no se repite');
+const conNota = D.mensajeWhatsApp({ ...e1410, numero_pista: 2, notas: 'Traed agua' }, pAdm, 'nuevo');
+ok(/en Antonio Díaz Miguel, pista 2 — Calle/.test(conNota) && /\nTraed agua\.\n/.test(conNota), 'el número de pista del evento manda y las notas reales se añaden', conNota);
+ok(/^Entreno del miércoles 14\/10: de 20:00 a 22:00 \(encuentro 19:40\), pista por confirmar/.test(D.mensajeWhatsApp({ ...e1410, pista_id: null }, pistas, 'nuevo')), 'sin pista: «pista por confirmar»');
+ok(/a las 20:00 \(encuentro 19:40\) en Antonio/.test(D.mensajeWhatsApp({ ...e1410, fin: null }, pAdm, 'nuevo')), 'sin hora de fin: «a las…»');
 
 console.log('\n== Respuestas ordenadas, recordatorio y asistencia');
 const plantilla = ['a', 'b', 'c', 'd', 'e'].map((x) => ({ person_id: x, nombre_visible: x.toUpperCase(), ficha_mda: true, ficha_mdl: false, entrena: true, activo: true }));

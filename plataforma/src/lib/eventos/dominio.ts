@@ -149,20 +149,23 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
   const dia = diaCorto(e.fecha);
   const hora = hhmm(e.inicio);
   const quedada = hhmm(e.quedada);
-  const sitio = pe.porConfirmar ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}` : pe.texto.replace(" · Pista", ", pista");
+  // «Pista 3» escrito en las notas cuenta como numero de pista (y no se repite en las notas).
+  const notaPista = !e.numero_pista ? e.notas?.match(/^\s*pista\s+(\d+)\s*\.?\s*$/i) : null;
+  const numero = e.numero_pista ?? (notaPista ? Number(notaPista[1]) : null);
+  const notas = notaPista ? null : e.notas;
+  const sitio = pe.porConfirmar || !pe.pista ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}`
+    : `en ${pe.pista.nombre_corto ?? pe.pista.nombre}${numero ? `, pista ${numero}` : ""}${pe.pista.direccion ? ` — ${pe.pista.direccion.replace(/\.$/, "")}` : ""}`;
   const que = e.tipo === "entreno" ? `entreno del ${dia}`
     : e.tipo === "liga" ? `partido de liga${e.jornada ? ` (J${e.jornada})` : ""} ${tituloEvento(e)}, ${dia}`
     : `${textoTipo(e.tipo).toLowerCase()}${e.titulo ? ` «${e.titulo}»` : ""}${e.rival ? ` contra ${limpiarRival(e.rival)}` : ""}, ${dia}`;
   if (accion === "cancelado") return `Se cancela el ${que}. Perdonad las molestias.`;
-  const detalle = [
-    hora ? `a las ${hora}${hhmm(e.fin) ? ` (hasta las ${hhmm(e.fin)})` : ""}` : "hora por confirmar",
-    sitio,
-    quedada && hora ? `quedada a las ${quedada}` : null,
-  ].filter(Boolean).join(", ");
+  const fin = hhmm(e.fin);
+  const cuando = hora ? `${fin ? `de ${hora} a ${fin}` : `a las ${hora}`}${quedada ? ` (encuentro ${quedada})` : ""}` : "hora por confirmar";
+  const detalle = `${cuando} ${sitio}`.replace(" pista por confirmar", ", pista por confirmar");
   const cab = accion === "cambio" && opciones.cambios?.length ? `Cambio en el ${que}` : `${que[0].toUpperCase()}${que.slice(1)}`;
-  const lineas = [`${cab}: ${detalle}.`];
+  const lineas = [`${cab}: ${detalle.replace(/\.$/, "")}.`];
   if (accion === "cambio" && opciones.cambios?.length) lineas.push(`Qué cambia: ${opciones.cambios.join("; ")}.`);
-  if (e.notas) lineas.push(e.notas.replace(/\.$/, "") + ".");
+  if (notas) lineas.push(notas.replace(/\.$/, "") + ".");
   if (opciones.lineaEquipacion) lineas.push(opciones.lineaEquipacion);
   lineas.push("Responded en SportEasy, por favor.");
   return lineas.join("\n");

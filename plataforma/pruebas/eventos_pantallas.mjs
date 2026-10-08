@@ -118,13 +118,21 @@ try {
   const a2 = p.locator('tr[data-evento="mda-j2"]');
   ok(await a2.count() === 1 && (await a2.textContent()).includes('encuentro 09:55') && (await a2.textContent()).includes('Moratalaz · Pista 2') && (await a2.textContent()).includes('Cambian ellos'), 'J2 MdA: hora, encuentro 09:55, Moratalaz · Pista 2 y aviso de equipación');
   const ent0 = p.locator(`tr[data-evento="entreno-semanal-${proximo.fecha.toISOString().slice(0, 10)}"]`);
-  ok((await ent0.textContent()).includes('Pista por confirmar') && (await ent0.textContent()).includes('Valdebernardo en obras') && (await ent0.textContent()).includes('Se abre al fijar pista'), 'entreno sin pista: «Pista por confirmar · Valdebernardo en obras · Se abre al fijar pista»');
+  ok((await ent0.textContent()).includes('Pista por confirmar') && (await ent0.textContent()).includes('Valdebernardo en obras') && !(await ent0.textContent()).includes('Se abre al fijar pista'), 'entreno sin pista: «Pista por confirmar · Valdebernardo en obras», sin «Se abre al fijar pista» (no bloquea respuestas)');
   await p.screenshot({ path: path.join(SALIDA, 'real_eventos_escritorio.png'), fullPage: true });
-  for (const [filtro, esperado] of [['entrenos', entrenosFuturos.length], ['liga', 40], ['pendientes', 27], ['amistosos', 0]]) {
+  for (const [filtro, esperado] of [['entrenos', entrenosFuturos.length], ['liga', 40], ['pendientes', entrenosFuturos.length], ['amistosos', 0]]) {
     await p.goto(`${APP}/gestion/eventos?f=${filtro}`);
     const n = await p.locator('[data-testid=tabla-eventos] tbody tr').count();
     ok(n === esperado, `filtro «${filtro}»: ${n} eventos`, `esperaba ${esperado}`);
   }
+  await p.goto(`${APP}/gestion/eventos`);
+  const contadorPend = +(await p.locator('.ev-filtros a', { hasText: 'Pendientes de SportEasy' }).locator('small').textContent());
+  const tarjetaCopia = await p.getByTestId('copia-sporteasy').textContent();
+  const enTarjeta = (+(tarjetaCopia.match(/(\d+) cambios? pendientes?/)?.[1] ?? 0)) + (+(tarjetaCopia.match(/\+ (\d+) entrenos de la serie/)?.[1] ?? 0));
+  ok(contadorPend === enTarjeta && contadorPend === entrenosFuturos.length, `el contador del filtro «Pendientes» (${contadorPend}) y la tarjeta «Copia a SportEasy» (${enTarjeta}) cuentan lo mismo`);
+  const idSinPista = (await sql`select id from public.eventos where clave = ${'entreno-semanal-' + proximo.fecha.toISOString().slice(0, 10)}`)[0].id;
+  await p.goto(`${APP}/gestion/eventos/${idSinPista}/respuestas`);
+  ok(new URL(p.url()).pathname === `/gestion/eventos/${idSinPista}/respuestas` && (await p.getByTestId('contadores').count()) === 1, 'las respuestas se abren también en un entreno con la pista por confirmar (no redirige a la ficha)', p.url());
   await p.goto(`${APP}/gestion/eventos?f=pasados`);
   const pasados = (await sql`select count(*)::int n from public.eventos where fecha < ${hoy}`)[0].n;
   ok((await p.locator('[data-testid=tabla-eventos] tbody tr').count()) === pasados, `filtro «Pasados»: ${pasados}`);
@@ -137,7 +145,8 @@ try {
   await p.waitForURL(/\/gestion\/eventos\/[0-9a-f-]{36}$/);
   ok((await p.locator('h1').first().textContent()).startsWith('Entreno ·'), 'abre la edición del primer entreno sin pista');
   ok((await p.locator('#pista option:checked').textContent()).includes('La de la serie'), 'por defecto: la pista de la serie (en obras -> por confirmar)');
-  ok((await p.locator('.ayuda', { hasText: 'sigue en obras' }).count()) === 1, 'avisa de que Valdebernardo sigue en obras y que no se piden respuestas');
+  ok((await p.locator('.ayuda', { hasText: 'sigue en obras' }).count()) === 1, 'avisa de que Valdebernardo sigue en obras');
+  ok(!(await p.locator('.ayuda', { hasText: 'sigue en obras' }).textContent()).includes('no se piden respuestas'), 'el aviso ya no dice que no se piden respuestas');
   ok(await p.locator('input[name=alcance][value=este]').isChecked(), 'alcance por defecto: solo este miércoles');
   await p.locator('#pista').selectOption({ label: 'Caja Mágica · provisional' });
   await p.getByRole('button', { name: 'Guardar y preparar mensaje' }).click();
@@ -307,7 +316,7 @@ try {
   await p.locator('#cal-texto').fill(sinJ7 + '\nG2;7;Otro;Equipo;29/11/2026;11:30;2');
   await p.getByRole('button', { name: 'Comparar' }).click();
   await p.getByTestId('senales').waitFor();
-  ok((await p.getByTestId('senales').textContent()).includes('YA NO figura') && (await p.getByTestId('senales').textContent()).includes('No se borra solo'), 'un partido que desaparece se señala («no se borra solo»)');
+  ok((await p.getByTestId('senales').textContent()).includes('no aparece en lo pegado (¿lo han quitado?)') && (await p.getByTestId('senales').textContent()).includes('No se borra solo'), 'un partido que desaparece se señala («no se borra solo»)');
   ok((await sql`select count(*)::int n from public.eventos where tipo = 'liga'`)[0].n === 40, 'y no se borra ni se crea nada');
   await p.locator('#cal-texto').fill('esto no es una linea\nG1;1;Enfermos del Aro;Maccabi de Acostar;31/02/2026;14:00;2');
   await p.getByRole('button', { name: 'Comparar' }).click();

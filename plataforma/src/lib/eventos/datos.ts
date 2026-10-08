@@ -1,7 +1,7 @@
 import "server-only";
 import { avisoDe } from "@/lib/equipacion";
 import type { clienteSesion } from "@/lib/supabase";
-import type { EventoFila, JugadorBasico, Pista } from "./dominio";
+import { limpiarRival, type EventoFila, type JugadorBasico, type Pista } from "./dominio";
 import type { Aviso } from "@/lib/equipacion";
 
 // Lectura de eventos, pistas y jugadores con la sesion del gestor: la base (RLS + is_gestor) decide quien lee.
@@ -39,6 +39,6 @@ export function avisoDeEvento(e: Pick<EventoFila, "tipo" | "equipo" | "jornada" 
   if (e.tipo !== "liga" || (e.equipo !== "MdA" && e.equipo !== "MdL") || !e.rival || e.jornada == null) return null;
   return avisoDe({
     equipo: e.equipo === "MdA" ? "MDA" : "MDL", jornada: e.jornada, fecha: e.fecha, hora: e.inicio ? e.inicio.slice(0, 5) : null,
-    local: e.es_local, descansa: false, rival: e.rival, campo: e.numero_pista ? String(e.numero_pista) : null,
+    local: e.es_local, descansa: false, rival: limpiarRival(e.rival), campo: e.numero_pista ? String(e.numero_pista) : null,
   });
 }

@@ -44,7 +44,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   const futuros = eventos.filter((e) => e.fecha >= hoy);
   const sinPista = futuros.filter((e) => e.tipo === "entreno" && e.estado === "programado" && pistaEfectiva(e, pistas).porConfirmar);
   const { concretos, deSerie } = resumenCopia(eventos, hoy);
-  const pendientesTodos = eventos.filter((e) => e.sporteasy_estado === "pendiente");
+  const pendientesTodos = resumenCopia(eventos, hoy).pendientes;
 
   const lista = ((): EventoFila[] => {
     switch (filtro) {
@@ -215,7 +215,7 @@ function Fila({ e, pistas, respuestas, convocados }: { e: EventoFila; pistas: Pi
               {total === 0 && null}
             </div>
           </div>
-        ) : sinPista ? <span className="suave">Se abre al fijar pista</span> : e.tipo === "liga" ? <span className="suave">Convocatoria el martes</span> : <span className="suave">—</span>}
+        ) : e.tipo === "liga" ? <span className="suave">Convocatoria el martes</span> : <span className="suave">—</span>}
       </td>
       <td data-label="SportEasy">
         {e.sporteasy_estado === "copiado"

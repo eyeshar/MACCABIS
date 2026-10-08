@@ -27,7 +27,7 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
   const enSerie = Boolean(evento?.serie);
   const deLaSerieSinPista = tipo === "entreno" && !pistaId;
   const aviso = deLaSerieSinPista && serie?.estado === "en_obras"
-    ? `${serie.nombre.split(" (")[0]} sigue en obras: mientras no elijas pista, el entreno sale como «Pista por confirmar» y no se piden respuestas.` : null;
+    ? `${serie.nombre.split(" (")[0]} sigue en obras: mientras no elijas pista, el entreno sale como «Pista por confirmar».` : null;
 
   return (
     <form action={accion} className="gs-izq" style={{ maxWidth: 960 }}>

@@ -497,3 +497,15 @@ Varios comentarios del código y `data/avisos_equipacion.js` llaman «D79» a la
 - **Cambio de fuente pública** (commit aparte): `/calendario.ics`, la portada, `/club`, Mi zona y el panel leen de la tabla (cacheada 60 s y vaciada al guardar). Salvo las pistas por confirmar que fije Iván, el `.ics` es **idéntico** al de producción del 07/10 (`pruebas/fixtures/calendario_antes_paso2.ics`). Siguen leyendo ficheros: resultados jugados, Scouting y avisos de equipación del próximo partido (`equipacion.ts`), hasta que se migren.
 - **Nota técnica:** la pila local de pruebas usa codificación WIN1252 (el nombre de usuario de Windows lleva «á»), así que el texto del cambio pendiente se guarda con « -> » y se muestra con « → ».
 **Estado:** construido sobre las maquetas Eventos y EventoEditar (aprobadas). **EventoRespuestas y EventoImportar no estaban en `privado/mockups_liga/rediseno/`** (Iván eligió construirlas con la descripción del encargo): conviene compararlas con el lienzo.
+
+## D96 — Correcciones de la revisión del paso 2 (Iván, 08/10/2026) — AJUSTA D95
+**Decisión:** tras revisar el paso 2 con su sesión de gestor, Iván pidió ocho ajustes, todos hechos en `fix/revision-paso2`:
+1. **«Pista por confirmar» no bloquea las respuestas** (decisión aprobada en la maqueta): fuera «Se abre al fijar pista» de la lista y «no se piden respuestas» del aviso del formulario; `/gestion/eventos/<id>/respuestas` abre también en entrenos sin pista (prueba nueva).
+2. **Importar calendario acepta la jornada como `J1` y como `1`.**
+3. **WhatsApp:** «Cambio en el entreno…» solo cuando hay un cambio real que contar; si no, «Entreno del miércoles 14/10: …».
+4. **Importar calendario avisa de los partidos de liga de la web que no aparecen en lo pegado** («no aparece en lo pegado (¿lo han quitado?)»), para cada equipo que el bloque menciona; **nunca se borran**. Un bloque que solo trae un grupo no avisa del otro equipo.
+5. **Un solo criterio de «pendiente de copiar»** en el contador del filtro y en la tarjeta «Copia a SportEasy» (futuros o cancelados; el entreno ya pasado del 07/10 no cuenta en ninguno): 26 y 26, no 27 y 26.
+6. **Barra de Gestión:** «Asistencia» pasa a «Asistencia y motivos».
+7. **Rival: la puntuación repetida se limpia al mostrar** («C.B..» → «C.B.») en listas, mensajes, avisos de equipación y calendario público. El nombre guardado, el del Ayuntamiento, no se toca.
+8. **`pruebas:avisos`** ya no usa GitHub Pages: comprueba `/liga` (tarjetas de próximos partidos y avisos) en la propia web.
+**Efecto colateral arreglado:** la pila local de pruebas cortaba la petición a PostgREST en cuanto se leía el cuerpo (cierre mal detectado en Node 24); ahora solo corta si el cliente se va antes de la respuesta.

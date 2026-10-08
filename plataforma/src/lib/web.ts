@@ -35,7 +35,7 @@ export const MENU_GESTION: GrupoGestion[] = [
     grupo: "Plantilla",
     entradas: [
       { texto: "Jugadores", corto: "Jugadores", descripcion: "Plantilla, fichas y correos de acceso", href: "/gestion/jugadores" },
-      { texto: "Asistencia y motivos", corto: "Asistencia", descripcion: "Quién viene y por qué falta (solo gestores)", href: "/gestion/asistencia" },
+      { texto: "Asistencia y motivos", corto: "Asistencia y motivos", descripcion: "Quién viene y por qué falta (solo gestores)", href: "/gestion/asistencia" },
       { texto: "Pedido de ropa", corto: "Pedido de ropa", descripcion: "Campaña, pedidos y Excel para VIVE", href: "/gestion/ropa" },
     ],
   },

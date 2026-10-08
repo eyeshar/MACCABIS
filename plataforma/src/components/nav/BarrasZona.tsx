@@ -30,15 +30,17 @@ export function BarraGestion() {
   );
 }
 
-/** Barra de Mi zona: Resumen, Mi agenda, Mis estadisticas y Pedido de ropa. Son secciones de una sola pagina: anclas,
- *  y se marca la que se esta viendo. Desde una subpagina (/mi-zona/ropa/...) se marca Pedido de ropa. */
-export function BarraMiZona() {
+/** Barra de Mi zona (D99): Resumen, Mi agenda, Ausencias y Estadisticas. Resumen, agenda y estadisticas son anclas de la
+ *  misma pagina y se marca la que se esta viendo; Ausencias es su pagina y solo sale con «respuestas en la web»
+ *  encendido. Desde el evento o el domingo se marca Mi agenda. */
+export function BarraMiZona({ conAusencias = false }: { conAusencias?: boolean }) {
   const ruta = usePathname();
   const [visible, setVisible] = useState("inicio");
   const pulsada = useRef<string | null>(null);
+  const menu = MENU_MI_ZONA.filter((s) => conAusencias || !s.soloEncendido);
   useEffect(() => {
     if (ruta !== "/mi-zona") return;
-    const ids = MENU_MI_ZONA.map((s) => s.id);
+    const ids = MENU_MI_ZONA.filter((s) => !s.soloEncendido).map((s) => s.id);
     const elegir = () => {
       // La seccion cuyo principio ha pasado bajo la barra mas recientemente (en escritorio hay dos columnas: no vale
       // el orden del documento).
@@ -58,11 +60,12 @@ export function BarraMiZona() {
     window.addEventListener("resize", elegir);
     return () => { window.removeEventListener("scroll", elegir); window.removeEventListener("resize", elegir); };
   }, [ruta]);
-  const marcada = ruta === "/mi-zona" ? visible : ruta.startsWith("/mi-zona/ropa") ? "ropa" : null;
+  const marcada = ruta === "/mi-zona" ? visible : ruta.startsWith("/mi-zona/ausencias") ? "ausencias"
+    : ruta.startsWith("/mi-zona/evento") || ruta.startsWith("/mi-zona/domingo") ? "agenda" : null;
   return (
     <nav aria-label="Mi zona" className="zb">
       <div className="w-dentro zb-fila">
-        {MENU_MI_ZONA.map((s) => (
+        {menu.map((s) => (
           <Link key={s.id} href={s.href} onClick={() => { pulsada.current = s.id; setVisible(s.id); }} aria-current={marcada === s.id ? (ruta === "/mi-zona" ? "location" : "page") : undefined}>{s.texto}</Link>
         ))}
       </div>

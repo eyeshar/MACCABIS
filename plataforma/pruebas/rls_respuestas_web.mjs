@@ -319,6 +319,11 @@ try {
   const [pp] = await sql`select origen, puesto_por, puesto_por_nombre from public.respuestas where evento_id = ${E.e14} and person_id = 'vallesi-daniele'`;
   ok(r.status === 200 && pp.origen === 'gestor' && pp.puesto_por === gestorUid && pp.puesto_por_nombre === 'Iván', 'queda guardado que la puso un gestor y quién («puesto por Iván»)');
   ok(/no_invitado/.test(error(await rpc('responder_por', { p_evento: E.mdlJ3, p_person: 'galan-domingo-guillermo', p_respuesta: 'va' }, tG))), 'ni el gestor responde por alguien a un evento al que no está invitado');
+  r = await rpc('responder_domingo_por', { p_fecha: '2026-10-25', p_person: 'vallesi-daniele', p_opcion: 'solo', p_evento: E.mdlJ3 }, tG);
+  const dd = await j3('vallesi-daniele');
+  ok(r.status === 200 && dd.MdL === 'va' && dd.MdA === 'no·horario', 'en la vista de domingo, el gestor pone «solo al de las 14:00» (y el otro queda «no · horario»)', `${r.status} ${error(r)} ${JSON.stringify(dd)}`);
+  ok((await sql`select count(*)::int n from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-25' and r.person_id = 'vallesi-daniele' and r.origen = 'gestor' and r.puesto_por_nombre = 'Iván'`)[0].n === 2, 'con origen «gestor» y su nombre en los dos partidos');
+  ok((await rpc('responder_domingo_por', { p_fecha: '2026-10-25', p_person: 'esteban-jon', p_opcion: 'ambos' }, jon.token)).status >= 400, 'un jugador no usa la función del gestor');
 
   console.log('\n== Suscripciones de avisos');
   ok((await api('/suscripciones_avisos?select=*', { token: jon.token })).datos.length === 1, 'Jon ve su suscripción');
@@ -341,8 +346,8 @@ try {
     ok(!p.a_sel && !p.u_del && p.rls, `${t}: RLS activa, anon sin permisos, nadie borra`);
   }
   for (const t of ['respuestas', 'ausencias_periodo']) ok(!(await sql`select has_table_privilege('authenticated', ${'public.' + t}, 'delete') d`)[0].d, `${t}: nadie borra por la API`);
-  const fns = await sql`select p.proname, has_function_privilege('anon', p.oid, 'execute') anon from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = any(${['responder', 'responder_domingo', 'guardar_ausencia', 'cerrar_ausencia', 'borrar_ausencia', 'alta_suscripcion', 'baja_suscripcion', 'previsualizar_ausencia', 'responder_por', 'cambiar_interruptor', 'estado_activacion', 'marcar_jornada', 'marcar_sporteasy']})`;
-  ok(fns.length === 13 && fns.every((f) => !f.anon), 'anónimo no ejecuta ninguna de las funciones nuevas');
+  const fns = await sql`select p.proname, has_function_privilege('anon', p.oid, 'execute') anon from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = any(${['responder', 'responder_domingo', 'guardar_ausencia', 'cerrar_ausencia', 'borrar_ausencia', 'alta_suscripcion', 'baja_suscripcion', 'previsualizar_ausencia', 'responder_por', 'responder_domingo_por', 'cambiar_interruptor', 'estado_activacion', 'marcar_jornada', 'marcar_sporteasy']})`;
+  ok(fns.length === 14 && fns.every((f) => !f.anon), 'anónimo no ejecuta ninguna de las funciones nuevas');
 
   console.log('\n== Apagar: se vuelve a la fase puente sin perder nada');
   await rpc('responder', { p_evento: E.e21, p_respuesta: 'va' }, jon.token);

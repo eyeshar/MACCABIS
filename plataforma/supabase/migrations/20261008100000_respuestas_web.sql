@@ -310,12 +310,11 @@ end $$;
 
 /** Una sola respuesta por domingo (D99.3). p_opcion: 'ambos' | 'solo' (con p_evento) | 'voy' | 'no' | 'duda'.
  *  Se guarda por evento: con "solo al de las HH:MM", el otro partido queda "no" con el motivo interno 'horario'. */
-create function public.responder_domingo(p_fecha date, p_opcion text, p_evento uuid default null,
-                                         p_motivo text default null, p_detalle text default null)
+create function public._responder_domingo_de(v_person text, p_fecha date, p_opcion text, p_evento uuid, p_motivo text,
+                                             p_detalle text, p_origen text, p_por_nombre text)
 returns jsonb language plpgsql security definer set search_path = ''
 as $$
 declare
-  v_person text := public._exigir_jugador();
   v_ids uuid[];
   v_inicios time[];
   v_id uuid;
@@ -325,7 +324,6 @@ declare
   v_antes text;
   v_alertas int := 0;
 begin
-  perform public._exigir_encendido();
   select array_agg(e.id order by e.inicio nulls last, e.equipo), array_agg(e.inicio order by e.inicio nulls last, e.equipo)
     into v_ids, v_inicios
   from public.eventos e
@@ -353,10 +351,33 @@ begin
     elsif v_id = p_evento then v_resp := 'va';
     else v_resp := 'no'; v_mot := 'horario';
     end if;
-    v_antes := public._escribir_respuesta(v_id, v_person, v_resp, v_mot, v_det, 'jugador', auth.uid(), null, null);
-    if public._tras_cambio_jugador(v_id, v_person, v_antes, v_resp) then v_alertas := v_alertas + 1; end if;
+    v_antes := public._escribir_respuesta(v_id, v_person, v_resp, v_mot, v_det, p_origen, auth.uid(), p_por_nombre, null);
+    if p_origen = 'jugador' and public._tras_cambio_jugador(v_id, v_person, v_antes, v_resp) then v_alertas := v_alertas + 1; end if;
   end loop;
   return jsonb_build_object('eventos', to_jsonb(v_ids), 'alertas', v_alertas);
+end $$;
+
+create function public.responder_domingo(p_fecha date, p_opcion text, p_evento uuid default null,
+                                         p_motivo text default null, p_detalle text default null)
+returns jsonb language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_person text := public._exigir_jugador();
+begin
+  perform public._exigir_encendido();
+  return public._responder_domingo_de(v_person, p_fecha, p_opcion, p_evento, p_motivo, p_detalle, 'jugador', null);
+end $$;
+
+/** "Responder por el" en la vista de domingo de Gestion: la misma respuesta unica, puesta por un gestor. */
+create function public.responder_domingo_por(p_fecha date, p_person text, p_opcion text, p_evento uuid default null,
+                                             p_motivo text default null, p_detalle text default null)
+returns jsonb language plpgsql security definer set search_path = ''
+as $$
+declare v_nombre text;
+begin
+  if not public.is_gestor() then raise exception 'solo_gestores' using errcode = 'P0001'; end if;
+  select nombre into v_nombre from public.gestores where user_id = auth.uid();
+  return public._responder_domingo_de(p_person, p_fecha, p_opcion, p_evento, p_motivo, p_detalle, 'gestor', v_nombre);
 end $$;
 
 -- Eventos abiertos a los que esta invitado que cubre un periodo (para el resumen antes de guardar).
@@ -576,6 +597,7 @@ revoke execute on function
   public._aplicar_ausencias_evento(uuid), public._soltar_ausencia(uuid), public._eventos_tras_escribir(),
   public._exigir_jugador(), public._exigir_encendido(), public._validar_respuesta(text, text),
   public._eventos_del_periodo(text, date, date),
+  public._responder_domingo_de(text, date, text, uuid, text, text, text, text), public.responder_domingo_por(date, text, text, uuid, text, text),
   public.responder(uuid, text, text, text), public.responder_domingo(date, text, uuid, text, text),
   public.previsualizar_ausencia(date, date), public.guardar_ausencia(uuid, date, date, text, text),
   public.cerrar_ausencia(uuid), public.borrar_ausencia(uuid), public.respuestas_web_encendido(),
@@ -585,7 +607,7 @@ grant execute on function
   public.responder(uuid, text, text, text), public.responder_domingo(date, text, uuid, text, text),
   public.previsualizar_ausencia(date, date), public.guardar_ausencia(uuid, date, date, text, text),
   public.cerrar_ausencia(uuid), public.borrar_ausencia(uuid), public.respuestas_web_encendido(),
-  public.responder_por(uuid, text, text, text, text)
+  public.responder_por(uuid, text, text, text, text), public.responder_domingo_por(date, text, text, uuid, text, text)
   to authenticated;
 -- Las politicas "lo suyo" se evaluan con el rol de quien consulta: necesita poder saber su propio person_id (solo
 -- devuelve el suyo; nada de otros).

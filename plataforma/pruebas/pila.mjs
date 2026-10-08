@@ -191,7 +191,7 @@ export async function arrancar({ log = () => {} } = {}) {
           r.pipe(res);
         });
         prox.on('error', e => { if (res.headersSent) { res.destroy(); return; } res.writeHead(502); res.end(String(e)); }); // un cliente que corta (timeout) no debe tumbar la pila
-        req.on('close', () => prox.destroy());
+        res.on('close', () => { if (!res.writableFinished) prox.destroy(); }); // solo si el cliente se va antes de tener la respuesta
         req.pipe(prox);
         return;
       }

@@ -65,7 +65,12 @@ ok(des.senales.some((s) => s.tipo === 'desaparecido' && s.jornada === 3 && s.equ
 const soloAjena = comparar(sinJ3.join('\n') + '\nG1;3;Otro Equipo;Alguien;25/10/2026;09:00;1');
 ok(soloAjena.senales.filter((s) => s.tipo === 'desaparecido').length === 1, 'si el bloque trae la jornada 3 de G1 pero ya sin nuestro partido: 1 desaparecido', JSON.stringify(soloAjena.senales));
 const parcial = comparar(oficial.filter((l) => l.startsWith('G1;1;') || l.startsWith('G2;1;')).join('\n'));
-ok(parcial.senales.length === 0 && parcial.cambios.length === 0, 'un bloque parcial (solo la J1) NO marca como desaparecido el resto de la temporada');
+const desap = parcial.senales.filter((s) => s.tipo === 'desaparecido');
+ok(parcial.cambios.length === 0 && desap.length > 0 && desap.every((s) => /no aparece en lo pegado \(¿lo han quitado\?\)/.test(s.texto) && /No se borra solo/.test(s.texto)), 'un partido de liga de la web que no aparece en lo pegado se avisa como «no aparece en lo pegado (¿lo han quitado?)», sin borrarlo', JSON.stringify(desap.slice(0, 1)));
+const soloG1 = comparar(oficial.filter((l) => l.startsWith('G1;')).join('\n'));
+ok(soloG1.cambios.length === 0 && soloG1.senales.every((s) => s.equipo === 'MdA'), 'un bloque solo del G1 no avisa de los partidos de MdL');
+ok(comparar(oficial.map((l) => l.replace(/^(G[12]);(\d+);/, '$1;J$2;')).join('\n')).cambios.length === 0 && comparar(oficial.map((l) => l.replace(/^(G[12]);(\d+);/, '$1;J$2;')).join('\n')).errores.length === 0, 'la jornada se acepta como «J1» y como «1»');
+ok(D.limpiarRival('MEJORADA 2012 C.B..') === 'MEJORADA 2012 C.B.' && D.limpiarRival('Los Khinkis Rusos') === 'Los Khinkis Rusos' && D.limpiarRival('A..B') === 'A.B', 'limpiarRival quita la puntuación repetida y no toca lo demás');
 const sinEv = eventos.filter((e) => e.clave !== 'mdl-j5');
 const nuevo = comparar(bloque, sinEv);
 ok(nuevo.senales.length === 1 && nuevo.senales[0].tipo === 'nuevo' && nuevo.senales[0].jornada === 5 && nuevo.senales[0].equipo === 'MdL', 'un partido del Ayuntamiento que no tenemos se señala como NUEVO', JSON.stringify(nuevo.senales));
@@ -157,6 +162,7 @@ ok(D.describirCambios(miercoles, { ...miercoles, estado: 'cancelado' }, pistas).
 ok(D.describirCambios(miercoles, miercoles, pistas).length === 0, 'sin cambios no hay nada que copiar');
 ok(D.juntarCambios('pista: A → B', ['pista: B → C']).includes('; '), 'los cambios se acumulan hasta copiarlos');
 const msg = D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: cs });
+ok(/^Entreno del miércoles 14\/10: /.test(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: [] })) && !/Cambio en el/.test(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio')), '«Cambio en el entreno…» solo si hay un cambio real');
 ok(/Cambio en el entreno del miércoles 14\/10/.test(msg) && /Caja Mágica/.test(msg) && /Responded en SportEasy/.test(msg), 'mensaje de cambio de entreno', msg);
 ok(/pista por confirmar \(Valdebernardo en obras\)/.test(D.mensajeWhatsApp(miercoles, pistas, 'nuevo')), 'con la pista por confirmar lo dice');
 ok(/^Se cancela el entreno del miércoles 14\/10/.test(D.mensajeWhatsApp(miercoles, pistas, 'cancelado')), 'mensaje de cancelación');

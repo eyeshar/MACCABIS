@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Avisos de equipacion en las pantallas (D79), de extremo a extremo: web publica (index.html servida tal cual),
-// y plataforma (pila local con nuestras migraciones + app Next.js compilada + Chrome).
+// Avisos de equipacion en las pantallas (D79), de extremo a extremo: web publica (/liga) y plataforma (pila local con nuestras migraciones + app Next.js compilada + Chrome).
 //
 //   npm run pruebas:avisos
 //
@@ -10,7 +9,6 @@
 // que las comprobaciones de la plataforma calculan el proximo partido con la misma funcion que la app.
 
 import fs from 'node:fs';
-import http from 'node:http';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -33,8 +31,8 @@ const cruce = (nuestro, p) => (p.local ? `${nuestro} – ${bonito(p.rival)}` : `
 const proxReal = (e) => A.proximoPartido(cal, hoyReal, e);
 const avisoReal = (e) => { const p = proxReal(e); return p ? A.avisoPartido(equip, p) : null; };
 
-const PUERTO = 3102, PUERTO_WEB = 3103;
-const APP = `http://127.0.0.1:${PUERTO}`, WEB = `http://127.0.0.1:${PUERTO_WEB}`;
+const PUERTO = 3102;
+const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
 
@@ -44,68 +42,10 @@ async function esperar(url, ms = 60000) {
   throw new Error(`${url} no arranca`);
 }
 
-// Servidor estatico de la raiz del repo (como la web publicada).
-const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml' };
-const servidorWeb = http.createServer((req, res) => {
-  const f = path.join(REPO, decodeURIComponent(new URL(req.url, WEB).pathname));
-  if (!f.startsWith(REPO) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
-  res.writeHead(200, { 'content-type': TIPOS[path.extname(f)] ?? 'application/octet-stream' });
-  fs.createReadStream(f).pipe(res);
-}).listen(PUERTO_WEB, '127.0.0.1');
-
 const pila = await arrancar();
 let app, nav;
 try {
   nav = await chromium.launch({ channel: 'chrome', headless: true });
-
-  // =================== WEB PUBLICA
-  for (const [etiqueta, ancho, alto, movil] of [['375', 375, 800, true], ['escritorio', 1280, 900, false]]) {
-    console.log(`\n== Web publica, ${etiqueta}`);
-    const ctx = await nav.newContext({ viewport: { width: ancho, height: alto }, deviceScaleFactor: movil ? 2 : 1, isMobile: movil, hasTouch: movil, locale: 'es-ES' });
-    const p = await ctx.newPage();
-    const errores = [];
-    p.on('pageerror', (e) => errores.push(String(e)));
-    await p.goto(`${WEB}/index.html?p=liga&hoy=2026-10-06`);
-    await p.locator('#lgProx .eqp').first().waitFor({ timeout: 15000 });
-    const mda = p.locator('#lgProx .eqp[data-eq="MDA"]'), mdl = p.locator('#lgProx .eqp[data-eq="MDL"]');
-    ok((await p.locator('#lgProx .eqp').count()) === 2, 'tarjeta "Proximos partidos": uno de MdA y otro de MdL');
-    ok((await mda.textContent()).includes('Litros de Mahou') && (await mda.textContent()).includes('domingo, 18 de octubre'), 'MdA: Litros de Mahou, domingo 18 de octubre');
-    ok((await mda.locator('.eqaviso').textContent()) === 'ℹ Coinciden colores: cambia Litros de Mahou' && (await mda.locator('.eqbox').getAttribute('data-tipo')) === 'cambian_ellos', 'MdA–Litros de Mahou (local): CAMBIAN ELLOS, etiqueta informativa');
-    ok((await mda.textContent()).includes('Jugamos de negro; Litros de Mahou (negro) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.'), 'MdA: texto de "cambian ellos"');
-    ok((await mda.textContent()).includes('camiseta negro'), 'MdA: se ve el color del rival');
-    ok((await mdl.textContent()).includes('Quinto Tiempo') && (await mdl.locator('.eqaviso').count()) === 0, 'MdL–Quinto Tiempo: sin etiqueta');
-    ok((await mdl.textContent()).includes('camiseta naranja'), 'MdL: color del rival visible aunque no haya aviso');
-    ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'web: sin desbordamiento horizontal');
-    await p.locator('#lgProx').scrollIntoViewIfNeeded();
-    await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_cambian_ellos_${etiqueta}.png`) });
-    // ficha de equipo: color del rival y aviso del proximo partido contra nosotros
-    await p.selectOption('#lgSel', 'Litros de Mahou');
-    const ficha = await p.textContent('#lgFicha');
-    ok(ficha.includes('camiseta negro, pantalón negro') && ficha.includes('Coinciden colores: cambia Litros de Mahou'), 'ficha de equipo (Litros de Mahou): su color y el aviso del proximo partido');
-    await p.locator('#segLgGrupo button[data-g="G2"]').click();
-    await p.selectOption('#lgSel', 'Quinto Tiempo');
-    const fichaQ = await p.textContent('#lgFicha');
-    ok(fichaQ.includes('camiseta naranja') && !fichaQ.includes('Coinciden') && !fichaQ.includes('Nos toca'), 'ficha de equipo (Quinto Tiempo): su color, sin aviso');
-    await p.selectOption('#lgSel', 'MdL');
-    ok(!(await p.textContent('#lgFicha')).includes('Coinciden') && !(await p.textContent('#lgFicha')).includes('Nos toca'), 'ficha de equipo de uno de los nuestros: sin aviso');
-    const fondoEllos = await mda.locator('.eqaviso').evaluate((e) => getComputedStyle(e).backgroundColor);
-    // NOS TOCA: el 20/11 el proximo de MdL es la J6 en 28500 (negro), vamos de visitantes = segundos en el calendario
-    await p.goto(`${WEB}/index.html?p=liga&hoy=2026-11-20`);
-    await p.locator('#lgProx .eqp').first().waitFor({ timeout: 15000 });
-    const nos = p.locator('#lgProx .eqp[data-eq="MDL"]');
-    ok((await nos.textContent()).includes('MdL en 28500'), 'el 20/11 MdL juega en 28500 (J6, visitantes)');
-    ok((await nos.locator('.eqaviso').textContent()) === '⚠ Nos toca cambiar: equipación AMARILLA' && (await nos.locator('.eqbox').getAttribute('data-tipo')) === 'nos_toca', 'MdL en 28500: NOS TOCA CAMBIAR, etiqueta de alerta');
-    ok((await nos.textContent()).includes('Vamos en segundo lugar contra 28500 (negro). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).'), 'MdL en 28500: texto con la cita de las Bases');
-    ok((await nos.locator('.eqaviso').evaluate((e) => getComputedStyle(e).backgroundColor)) !== fondoEllos, 'los dos tipos tienen estilo distinto (alerta amarilla / informativo)');
-    await p.locator('#lgProx').scrollIntoViewIfNeeded();
-    await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_nos_toca_${etiqueta}.png`) });
-    // pasada la J2 el 20/10: J3 sin avisos
-    await p.goto(`${WEB}/index.html?p=liga&hoy=2026-10-20`);
-    await p.locator('#lgProx .eqp').first().waitFor({ timeout: 15000 });
-    ok((await p.locator('#lgProx .eqaviso').count()) === 0 && (await p.textContent('#lgProx')).includes('Los Khinkis Rusos') && (await p.textContent('#lgProx')).includes('Suanzes Motor'), 'el 20/10 (J3: Khinkis y Suanzes): ningun aviso');
-    ok(errores.length === 0, 'web: sin errores de JavaScript', errores.join(' | '));
-    await ctx.close();
-  }
 
   // =================== PLATAFORMA
   const { sql, url, anonKey } = pila;
@@ -126,6 +66,43 @@ try {
   ok(true, 'next build');
   app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
   await esperar(APP);
+
+  // =================== WEB PUBLICA (/liga, que sustituye a la pestana de GitHub Pages)
+  for (const [etiqueta, ancho, alto, movil] of [['375', 375, 800, true], ['escritorio', 1280, 900, false]]) {
+    console.log(`
+== Web publica /liga, ${etiqueta}`);
+    const ctx = await nav.newContext({ viewport: { width: ancho, height: alto }, deviceScaleFactor: movil ? 2 : 1, isMobile: movil, hasTouch: movil, locale: 'es-ES' });
+    const p = await ctx.newPage();
+    const errores = [];
+    p.on('pageerror', (e) => errores.push(String(e)));
+    await p.goto(`${APP}/liga?hoy=2026-10-06`);
+    await p.locator('.e-eqp[data-eq]').first().waitFor({ timeout: 15000 });
+    const mda = p.locator('.e-eqp[data-eq="MDA"]'), mdl = p.locator('.e-eqp[data-eq="MDL"]');
+    ok((await p.locator('.e-eqp[data-eq]').count()) === 2, 'tarjeta "Proximos partidos": uno de MdA y otro de MdL');
+    ok((await mda.textContent()).includes('Litros de Mahou') && (await mda.textContent()).includes('18 de octubre'), 'MdA: Litros de Mahou, 18 de octubre');
+    ok((await mda.locator('.eq-aviso').getAttribute('data-tipo')) === 'cambian_ellos' && (await mda.locator('.eq-etq').textContent()).includes('Coinciden colores: cambia Litros de Mahou'), 'MdA-Litros de Mahou (local): CAMBIAN ELLOS, etiqueta informativa');
+    ok((await mda.textContent()).includes('Jugamos de negro; Litros de Mahou (negro) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.'), 'MdA: texto de "cambian ellos"');
+    ok((await mda.textContent()).includes('camiseta negro'), 'MdA: se ve el color del rival');
+    ok((await mdl.textContent()).includes('Quinto Tiempo') && (await mdl.locator('.eq-aviso').count()) === 0, 'MdL-Quinto Tiempo: sin aviso');
+    ok((await mdl.textContent()).includes('camiseta naranja'), 'MdL: color del rival visible aunque no haya aviso');
+    ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), '/liga: sin desbordamiento horizontal');
+    await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_cambian_ellos_${etiqueta}.png`) });
+    // NOS TOCA: el 20/11 el proximo de MdL es la J6 en 28500 (negro), vamos de visitantes = segundos en el calendario
+    await p.goto(`${APP}/liga?hoy=2026-11-20`);
+    const nos = p.locator('.e-eqp[data-eq="MDL"]');
+    await nos.waitFor({ timeout: 15000 });
+    ok((await nos.textContent()).includes('MdL en 28500'), 'el 20/11 MdL juega en 28500 (J6, visitantes)');
+    ok((await nos.locator('.eq-aviso').getAttribute('data-tipo')) === 'nos_toca' && (await nos.locator('.eq-etq').textContent()).includes('Nos toca cambiar: equipación AMARILLA'), 'MdL en 28500: NOS TOCA CAMBIAR');
+    ok((await nos.textContent()).includes('Vamos en segundo lugar contra 28500 (negro). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).'), 'MdL en 28500: texto con la cita de las Bases');
+    await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_nos_toca_${etiqueta}.png`) });
+    // pasada la J2 el 20/10: J3 sin avisos
+    await p.goto(`${APP}/liga?hoy=2026-10-20`);
+    await p.locator('.e-eqp[data-eq]').first().waitFor({ timeout: 15000 });
+    const t = await p.locator('.e-proximos').textContent();
+    ok((await p.locator('.e-proximos .eq-aviso').count()) === 0 && t.includes('Los Khinkis Rusos') && t.includes('Suanzes Motor'), 'el 20/10 (J3: Khinkis y Suanzes): ningun aviso');
+    ok(errores.length === 0, '/liga: sin errores de JavaScript', errores.join(' | '));
+    await ctx.close();
+  }
 
   async function entrar(p, email) {
     await p.goto(`${APP}/entrar`);
@@ -218,7 +195,6 @@ try {
 } finally {
   if (nav) await nav.close();
   if (app) app.kill();
-  servidorWeb.close();
   await pila.parar();
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

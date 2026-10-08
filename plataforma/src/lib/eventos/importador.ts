@@ -8,6 +8,8 @@
 import type { EventoFila, Motivo, Respuesta } from "./dominio";
 
 // ---------------------------------------------------------------- utilidades
+// Igual que limpiarRival de dominio.ts (aqui no se importa: este fichero se prueba suelto con node).
+const limpiarRival = (r: string | null | undefined) => (r ?? "").replace(/([.,;:!?])\1+/g, "$1").replace(/\s+/g, " ").trim();
 /** Minusculas, sin tildes ni signos: para comparar nombres ("MEJORADA 2012 C.B.." == "Mejorada 2012 C.B."). */
 export const normalizar = (t: string | null | undefined) =>
   String(t ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -71,8 +73,8 @@ export function leerCalendario(texto: string): LineaCalendario[] {
     if (!g) { salida.push(error("El grupo debe ser G1 (MdA) o G2 (MdL).")); continue; }
     const grupo = `G${g[1]}` as "G1" | "G2";
     const equipo = GRUPO_EQUIPO[grupo];
-    const jornada = Number(c[1]);
-    if (!Number.isInteger(jornada) || jornada < 1) { salida.push(error("La jornada debe ser un número (1, 2, 3…).")); continue; }
+    const jornada = /^J?\s*\d+$/i.test(c[1] ?? "") ? Number(c[1].replace(/\D/g, "")) : NaN;
+    if (!Number.isInteger(jornada) || jornada < 1) { salida.push(error("La jornada debe ser un número (1 o J1).")); continue; }
     const local = c[2] ?? "", visitante = c[3] ?? "";
     // "X descansa": una jornada de descanso (en el campo de local o de visitante, o en el de fecha si falta uno).
     const desc = [local, visitante].map((t) => t.match(/^(.*?)\s+descansa\s*$/i)).find(Boolean);
@@ -122,6 +124,8 @@ export function compararCalendario(lineas: LineaCalendario[], eventos: EventoLig
   let iguales = 0;
   const vistos = new Set<string>(); // "MdA-4": jornadas de nuestro equipo que el bloque menciona
   const jornadasDelGrupo = new Set<string>(); // "MdA-4": jornadas de las que el bloque trae alguna linea (suya o ajena)
+  const equiposDelBloque = new Set<string>();
+  for (const l of lineas) if (l.tipo !== "error") equiposDelBloque.add(l.tipo === "ajena" ? (l.grupo === "G1" ? "MdA" : "MdL") : l.equipo);
   for (const l of lineas) if (l.tipo !== "error") jornadasDelGrupo.add(`${l.tipo === "ajena" ? (l.grupo === "G1" ? "MdA" : "MdL") : l.equipo}-${l.jornada}`);
 
   for (const l of lineas) {
@@ -159,8 +163,8 @@ export function compararCalendario(lineas: LineaCalendario[], eventos: EventoLig
   // Partidos nuestros de las jornadas del bloque que el Ayuntamiento ya no trae.
   for (const e of liga) {
     const k = `${e.equipo}-${e.jornada}`;
-    if (jornadasDelGrupo.has(k) && !vistos.has(k)) {
-      senales.push({ tipo: "desaparecido", equipo: e.equipo as "MdA" | "MdL", jornada: e.jornada!, texto: `J${e.jornada} ${e.equipo}: el partido contra ${e.rival} (${fdma(e.fecha)}) YA NO figura en lo pegado. No se borra solo.` });
+    if (equiposDelBloque.has(e.equipo) && !vistos.has(k)) {
+      senales.push({ tipo: "desaparecido", equipo: e.equipo as "MdA" | "MdL", jornada: e.jornada!, texto: `J${e.jornada} ${e.equipo}: el partido contra ${limpiarRival(e.rival)} (${fdma(e.fecha)}) no aparece en lo pegado (¿lo han quitado?). No se borra solo.` });
     }
   }
   const nuestras = lineas.filter((l) => l.tipo === "partido" || l.tipo === "descanso").length;

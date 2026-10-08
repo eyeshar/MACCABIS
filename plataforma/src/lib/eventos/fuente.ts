@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import type { Evento, FuenteCalendario } from "@/lib/publico";
 import type { Partido } from "@/lib/equipacion";
+import { limpiarRival } from "./dominio";
 
 // Fuente PUBLICA del calendario desde la tabla de eventos (paso 2, D94): lee SOLO las vistas publicas
 // (v_eventos_publicos, v_descansos_publicos, v_pista_habitual_publica) con la clave anonima: sin respuestas, sin motivos,
@@ -22,7 +23,7 @@ export function construirFuente(
   const partidos: (Partido & { fase?: string })[] = [];
   for (const f of filas) {
     if (f.tipo !== "liga" || f.estado === "cancelado" || (f.equipo !== "MdA" && f.equipo !== "MdL") || f.jornada == null) continue;
-    partidos.push({ equipo: f.equipo === "MdA" ? "MDA" : "MDL", fase: "liga", jornada: f.jornada, fecha: f.fecha, hora: h(f.inicio), local: f.es_local, descansa: false, rival: f.rival, campo: f.numero_pista ? String(f.numero_pista) : null });
+    partidos.push({ equipo: f.equipo === "MdA" ? "MDA" : "MDL", fase: "liga", jornada: f.jornada, fecha: f.fecha, hora: h(f.inicio), local: f.es_local, descansa: false, rival: limpiarRival(f.rival), campo: f.numero_pista ? String(f.numero_pista) : null });
   }
   for (const d of descansos) partidos.push({ equipo: d.equipo === "MdA" ? "MDA" : "MDL", fase: "liga", jornada: d.jornada, fecha: d.fecha, hora: null, local: null, descansa: true, rival: null, campo: null });
   partidos.sort((a, b) => a.jornada - b.jornada || (a.equipo < b.equipo ? -1 : 1));

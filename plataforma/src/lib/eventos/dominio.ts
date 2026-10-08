@@ -87,14 +87,18 @@ export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_
 
 // ---------------------------------------------------------------- titulo y texto de un evento
 const NOMBRE_NUESTRO = { MdA: "MdA", MdL: "MdL", ambos: "Maccabis" } as const;
+/** Para MOSTRAR: puntuacion repetida fuera ("C.B.." -> "C.B."). El nombre guardado (el del Ayuntamiento) no se toca. */
+export const limpiarRival = (r: string | null | undefined) => (r == null ? r : r.replace(/([.,;:!?])\1+/g, "$1").replace(/\s+/g, " ").trim()) as string | null;
+
 export function tituloEvento(e: Pick<EventoFila, "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "jornada">) {
   if (e.tipo === "liga" && e.rival) {
     const n = NOMBRE_NUESTRO[e.equipo];
-    return `${e.es_local === false ? `${e.rival} – ${n}` : `${n} – ${e.rival}`}`;
+    const rv = limpiarRival(e.rival);
+    return `${e.es_local === false ? `${rv} – ${n}` : `${n} – ${rv}`}`;
   }
   if (e.tipo === "entreno") return e.titulo ?? "Entrenamiento semanal";
-  if (e.rival && e.titulo) return `${e.titulo} · ${e.rival}`;
-  return e.titulo ?? e.rival ?? textoTipo(e.tipo);
+  if (e.rival && e.titulo) return `${e.titulo} · ${limpiarRival(e.rival)}`;
+  return e.titulo ?? limpiarRival(e.rival) ?? textoTipo(e.tipo);
 }
 
 // ---------------------------------------------------------------- series de entrenos
@@ -148,14 +152,14 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
   const sitio = pe.porConfirmar ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}` : pe.texto.replace(" · Pista", ", pista");
   const que = e.tipo === "entreno" ? `entreno del ${dia}`
     : e.tipo === "liga" ? `partido de liga${e.jornada ? ` (J${e.jornada})` : ""} ${tituloEvento(e)}, ${dia}`
-    : `${textoTipo(e.tipo).toLowerCase()}${e.titulo ? ` «${e.titulo}»` : ""}${e.rival ? ` contra ${e.rival}` : ""}, ${dia}`;
+    : `${textoTipo(e.tipo).toLowerCase()}${e.titulo ? ` «${e.titulo}»` : ""}${e.rival ? ` contra ${limpiarRival(e.rival)}` : ""}, ${dia}`;
   if (accion === "cancelado") return `Se cancela el ${que}. Perdonad las molestias.`;
   const detalle = [
     hora ? `a las ${hora}${hhmm(e.fin) ? ` (hasta las ${hhmm(e.fin)})` : ""}` : "hora por confirmar",
     sitio,
     quedada && hora ? `quedada a las ${quedada}` : null,
   ].filter(Boolean).join(", ");
-  const cab = accion === "cambio" ? `Cambio en el ${que}` : `${que[0].toUpperCase()}${que.slice(1)}`;
+  const cab = accion === "cambio" && opciones.cambios?.length ? `Cambio en el ${que}` : `${que[0].toUpperCase()}${que.slice(1)}`;
   const lineas = [`${cab}: ${detalle}.`];
   if (accion === "cambio" && opciones.cambios?.length) lineas.push(`Qué cambia: ${opciones.cambios.join("; ")}.`);
   if (e.notas) lineas.push(e.notas.replace(/\.$/, "") + ".");

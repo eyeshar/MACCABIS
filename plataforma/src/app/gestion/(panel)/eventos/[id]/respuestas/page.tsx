@@ -52,6 +52,9 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
     supabase.from("alertas_gestores").select("id, evento_id, person_id, antes, despues, en").in("evento_id", ids).is("visto_en", null).order("en"),
     supabase.from("avisos_registro").select("clave, tipo, enviado_en, resultado, programado_para").overlaps("eventos", ids).eq("tipo", "recordatorio"),
   ]);
+  // La respuesta unica del domingo (D103): si sigue vigente, «Solo al de las 09:00» se lee tal cual, sin deducirlo.
+  const { data: domingosDB } = dia ? await supabase.from("respuestas_domingo").select("person_id, opcion, solo_evento, origen, puesto_por_nombre, vigente").eq("fecha", evento.fecha).eq("vigente", true) : { data: [] };
+  const domingoDe = new Map(((domingosDB ?? []) as { person_id: string; opcion: string; solo_evento: string | null; origen: string; puesto_por_nombre: string | null }[]).map((d) => [d.person_id, d]));
   const periodos = (periodosDB ?? []) as PeriodoW[];
   const conAvisos = new Set(((subs ?? []) as { person_id: string | null }[]).map((s) => s.person_id).filter(Boolean));
   const nombre = new Map(jugadores.map((j) => [j.person_id, j.nombre_visible]));
@@ -77,6 +80,11 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
     else if (vals.includes("duda")) { clase = "duda"; texto = "Duda"; }
     else { clase = "no"; texto = "No va"; }
     if (dia && suyos.length === 1 && clase === "va") { solo = suyos[0].id; texto = `Solo ${hhmm(suyos[0].inicio)} (${suyos[0].equipo}, su ficha)`; }
+    const dg = domingoDe.get(j.person_id);
+    if (dg?.opcion === "solo" && suyos.length === 2) {
+      const e = eventos.find((x) => x.id === dg.solo_evento);
+      if (e) { clase = "va"; solo = e.id; texto = `Solo ${hhmm(e.inicio)} (${e.equipo})`; }
+    }
     const horario = rs.find((r) => r?.motivo === "horario");
     const motivo = rNo ? `${textoMotivo(rNo.motivo)}${rNo.detalle ? ` · ${rNo.detalle}` : ""}` : per && clase === "no" ? `${TEXTO_MOTIVO[per.motivo]} · ${franja(per)}`
       : horario && solo ? `solo puede al de las ${hhmm(eventos.find((e) => e.id === solo)!.inicio)}` : null;

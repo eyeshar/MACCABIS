@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { clienteSesion, configurado } from "@/lib/supabase";
-import type { MiAusencia, MiEvento, MiRespuesta } from "./dominio";
+import type { MiAusencia, MiDomingo, MiEvento, MiRespuesta } from "./dominio";
 
 // Lo que lee el jugador con SU sesion (D99): sus eventos (v_mis_eventos), sus respuestas y ausencias (RLS: solo las
 // suyas) y los nombres de "quien va" de sus eventos (v_quien_va: nombre y estado, nada mas). La base decide.
@@ -49,7 +49,14 @@ export const cargarMisAusencias = cache(async (): Promise<MiAusencia[]> => {
   return (data ?? []) as MiAusencia[];
 });
 
-export type QuienVa = { va: string[]; duda: string[]; no: string[]; sin_responder: number };
+/** Su respuesta unica a un domingo (D103), si la hay y sigue vigente. */
+export async function cargarMiDomingo(fecha: string): Promise<MiDomingo | null> {
+  const sb = await clienteSesion();
+  const { data } = await sb.from("respuestas_domingo").select("fecha, opcion, solo_evento, vigente").eq("fecha", fecha).eq("vigente", true).maybeSingle();
+  return (data as MiDomingo | null) ?? null;
+}
+
+export type QuienVa ={ va: string[]; duda: string[]; no: string[]; sin_responder: number };
 
 export async function cargarQuienVa(eventoIds: string[]): Promise<Map<string, QuienVa>> {
   const sb = await clienteSesion();

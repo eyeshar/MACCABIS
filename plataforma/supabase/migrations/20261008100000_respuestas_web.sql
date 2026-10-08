@@ -59,7 +59,11 @@ create table public.respuestas_web_config (
   encendido_desde      timestamptz,
   sporteasy_comprobado boolean not null default false,
   cambiado_en          timestamptz,
-  cambiado_por_nombre  text
+  cambiado_por_nombre  text,
+  -- Condicion 2 (D103): minimo de jugadores de la plantilla que han entrado en la web (configurable).
+  minimo_entrados      int  not null default 20 check (minimo_entrados > 0),
+  -- Solo esta persona (por su ficha: el gestor con el mismo correo que este jugador) maneja el interruptor (D103).
+  responsable_person_id text not null default 'villaescusa-silva-ivan'
 );
 insert into public.respuestas_web_config (id) values (1);
 
@@ -308,8 +312,46 @@ begin
   return jsonb_build_object('antes', v_antes, 'despues', p_respuesta, 'alerta', v_alerta);
 end $$;
 
-/** Una sola respuesta por domingo (D99.3). p_opcion: 'ambos' | 'solo' (con p_evento) | 'voy' | 'no' | 'duda'.
- *  Se guarda por evento: con "solo al de las HH:MM", el otro partido queda "no" con el motivo interno 'horario'. */
+-- ---------------------------------------------------------------- la respuesta unica del domingo (D103)
+-- La respuesta del jugador a un domingo se GUARDA tal cual («A los dos», «Solo al de las 09:00», «Voy», «No voy», «Duda»)
+-- y de ella SE DERIVAN las respuestas de cada partido (respuestas), que siguen leyendo Importar, Asistencia y la
+-- convocatoria como en D95. Si la respuesta de un partido cambia por otro camino (Importar de SportEasy, «Responder por
+-- el» de un solo partido, una ausencia, un cambio de dia), la del domingo deja de valer (vigente = false) y manda lo de
+-- cada partido.
+create table public.respuestas_domingo (
+  fecha             date not null,
+  person_id         text not null,
+  opcion            text not null check (opcion in ('ambos', 'solo', 'voy', 'no', 'duda')),
+  solo_evento       uuid references public.eventos (id),
+  motivo            text check (motivo in ('lesion', 'trabajo', 'viaje', 'familia', 'otro')),
+  detalle           text,
+  origen            text not null check (origen in ('jugador', 'gestor')),
+  puesto_por        uuid,
+  puesto_por_nombre text,
+  cambiado_en       timestamptz not null default now(),
+  vigente           boolean not null default true,
+  primary key (fecha, person_id),
+  check ((opcion = 'solo') = (solo_evento is not null)),
+  check ((opcion = 'no') = (motivo is not null))
+);
+
+-- Si la respuesta de un partido cambia por otro camino que no sea la del domingo, la del domingo deja de valer.
+create function public._respuestas_tras_escribir()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+begin
+  if coalesce(current_setting('maccabis.desde_domingo', true), '') = '1' then return null; end if;
+  update public.respuestas_domingo d set vigente = false
+   from public.eventos e
+   where e.id = new.evento_id and e.tipo = 'liga' and d.fecha = e.fecha and d.person_id = new.person_id and d.vigente;
+  return null;
+end $$;
+create trigger respuestas_tras_escribir after insert or update on public.respuestas
+  for each row execute function public._respuestas_tras_escribir();
+
+/** Una sola respuesta por domingo (D99.3, D103). p_opcion: 'ambos' | 'solo' (con p_evento) | 'voy' | 'no' | 'duda'.
+ *  Se guarda en respuestas_domingo y se deriva a cada partido: con "solo al de las HH:MM", el otro queda "no" con el
+ *  motivo interno 'horario'. */
 create function public._responder_domingo_de(v_person text, p_fecha date, p_opcion text, p_evento uuid, p_motivo text,
                                              p_detalle text, p_origen text, p_por_nombre text)
 returns jsonb language plpgsql security definer set search_path = ''
@@ -343,6 +385,14 @@ begin
   end if;
   if p_opcion = 'no' then perform public._validar_respuesta('no', p_motivo); end if;
 
+  insert into public.respuestas_domingo (fecha, person_id, opcion, solo_evento, motivo, detalle, origen, puesto_por, puesto_por_nombre, cambiado_en, vigente)
+  values (p_fecha, v_person, p_opcion, case when p_opcion = 'solo' then p_evento end, case when p_opcion = 'no' then p_motivo end,
+          case when p_opcion = 'no' then nullif(btrim(coalesce(p_detalle, '')), '') end, p_origen, auth.uid(), p_por_nombre, now(), true)
+  on conflict (fecha, person_id) do update set opcion = excluded.opcion, solo_evento = excluded.solo_evento,
+    motivo = excluded.motivo, detalle = excluded.detalle, origen = excluded.origen, puesto_por = excluded.puesto_por,
+    puesto_por_nombre = excluded.puesto_por_nombre, cambiado_en = now(), vigente = true;
+  -- Lo que se deriva a cada partido no invalida la respuesta del domingo que lo origina.
+  perform set_config('maccabis.desde_domingo', '1', true);
   foreach v_id in array v_ids loop
     v_mot := null; v_det := null;
     if p_opcion in ('ambos', 'voy') then v_resp := 'va';
@@ -354,6 +404,7 @@ begin
     v_antes := public._escribir_respuesta(v_id, v_person, v_resp, v_mot, v_det, p_origen, auth.uid(), p_por_nombre, null);
     if p_origen = 'jugador' and public._tras_cambio_jugador(v_id, v_person, v_antes, v_resp) then v_alertas := v_alertas + 1; end if;
   end loop;
+  perform set_config('maccabis.desde_domingo', '', true);
   return jsonb_build_object('eventos', to_jsonb(v_ids), 'alertas', v_alertas);
 end $$;
 
@@ -563,6 +614,14 @@ alter table public.respuestas_web_config   enable row level security;
 alter table public.respuestas_web_registro enable row level security;
 alter table public.jornadas_control        enable row level security;
 alter table public.alertas_gestores        enable row level security;
+alter table public.respuestas_domingo      enable row level security;
+
+create policy jugador_lee_las_suyas on public.respuestas_domingo for select to authenticated
+  using (person_id = public._mi_person_id());
+create policy gestores_leen on public.respuestas_domingo for select to authenticated using (public.is_gestor());
+revoke all on public.respuestas_domingo from anon, authenticated, public;
+grant select on public.respuestas_domingo to authenticated;
+revoke all on function public._respuestas_tras_escribir() from public, anon, authenticated;
 
 create policy jugador_lee_las_suyas on public.respuestas for select to authenticated
   using (person_id = public._mi_person_id());

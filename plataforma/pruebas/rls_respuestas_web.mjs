@@ -29,7 +29,7 @@ const ok = (cond, que, detalle = '') => {
   if (cond) console.log(`  OK    ${que}`);
   else { fallos++; console.log(`  FALLO ${que}${detalle ? ` -> ${detalle}` : ''}`); }
 };
-const NUEVAS = ['respuestas_web_config', 'respuestas_web_registro', 'jornadas_control', 'alertas_gestores', 'suscripciones_avisos', 'avisos_registro'];
+const NUEVAS = ['respuestas_domingo', 'respuestas_web_config', 'respuestas_web_registro', 'jornadas_control', 'alertas_gestores', 'suscripciones_avisos', 'avisos_registro'];
 const hoyMadrid = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
 const sumar = (f, n) => { const d = new Date(`${f}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
@@ -86,6 +86,11 @@ try {
   const edimil = await jugador('feliz-gomez-edimil', 'edimil@pruebas.local');      // solo entrena
   const gestorUid = await pila.crearUsuario('gestor@pruebas.local', 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gestorUid}, 'Iván', 'gestor@pruebas.local')`;
+  // Ivan es gestor y jugador (su ficha, villaescusa-silva-ivan, con el mismo correo): solo el maneja el interruptor (D103).
+  await sql`update public.jugadores set email = 'gestor@pruebas.local' where person_id = 'villaescusa-silva-ivan'`;
+  const carlosUid = await pila.crearUsuario('carlos-gestor@pruebas.local', 'no-se-usa');
+  await sql`insert into public.gestores (user_id, nombre, email) values (${carlosUid}, 'Carlos', 'carlos-gestor@pruebas.local')`;
+  const tC = await pila.firmar({ sub: carlosUid, role: 'authenticated', email: 'carlos-gestor@pruebas.local' });
   const tG = await pila.firmar({ sub: gestorUid, role: 'authenticated', email: 'gestor@pruebas.local' });
   const intrusoUid = await pila.crearUsuario('intruso@pruebas.local', 'no-se-usa');
   const tI = await pila.firmar({ sub: intrusoUid, role: 'authenticated', email: 'intruso@pruebas.local' });
@@ -107,7 +112,16 @@ try {
   r = await rpc('cambiar_interruptor', { p_encender: true }, tG);
   ok(r.status >= 400 && /condiciones_sin_cumplir/.test(error(r)), 'sin las condiciones no se enciende');
   let est = (await rpc('estado_activacion', {}, tG)).datos;
-  ok(est.plantilla === 24 && est.entrados === 2 && est.con_avisos === 1 && est.jornadas_seguidas === 0, `estado: ${est.entrados}/${est.plantilla} han entrado, ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`, JSON.stringify(est));
+  ok(est.plantilla === 24 && est.entrados === 3 && est.minimo_entrados === 20 && est.con_avisos === 1 && est.jornadas_seguidas === 0 && est.puede_manejar === true, `estado: ${est.entrados}/${est.plantilla} han entrado (mínimo ${est.minimo_entrados}), ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`, JSON.stringify(est));
+  ok(Array.isArray(est.faltan_por_entrar) && est.faltan_por_entrar.length === 21 && !est.faltan_por_entrar.includes('Jon') && est.faltan_por_entrar.includes('Adriano'), 'condición 2: la lista de quién falta por entrar (21)');
+
+  console.log('\n== Solo Iván maneja el interruptor, las jornadas y SportEasy (D103); otro gestor, solo lectura');
+  const estC = (await rpc('estado_activacion', {}, tC)).datos;
+  ok(estC && estC.plantilla === 24 && estC.puede_manejar === false, 'otro gestor (Carlos) ve el estado, sin poder manejarlo');
+  ok(/solo_responsable/.test(error(await rpc('marcar_jornada', { p_jornada: 1, p_estado: 'limpia' }, tC))), 'Carlos NO marca jornadas (lo para la base)');
+  ok(/solo_responsable/.test(error(await rpc('marcar_sporteasy', { p_comprobado: true }, tC))), 'Carlos NO marca la casilla de SportEasy');
+  ok(/solo_responsable/.test(error(await rpc('cambiar_interruptor', { p_encender: false }, tC))), 'Carlos NO enciende ni apaga');
+  ok((await sql`select count(*)::int n from public.jornadas_control`)[0].n === 0, 'y no ha quedado nada escrito');
   for (const j of [1, 2, 3]) await rpc('marcar_jornada', { p_jornada: j, p_estado: 'limpia' }, tG);
   ok((await rpc('estado_activacion', {}, tG)).datos.jornadas_seguidas === 3, '3 jornadas limpias seguidas = 3/3');
   await rpc('marcar_jornada', { p_jornada: 4, p_estado: 'con_arreglo' }, tG);
@@ -116,14 +130,16 @@ try {
   ok((await rpc('estado_activacion', {}, tG)).datos.jornadas_seguidas === 3, 'y vuelve a contar desde ahí (J5–J7 = 3/3)');
   ok((await rpc('marcar_jornada', { p_jornada: 8, p_estado: 'limpia' }, jon.token)).status >= 400, 'un jugador NO marca jornadas');
   await rpc('marcar_sporteasy', { p_comprobado: true }, tG);
-  ok((await rpc('cambiar_interruptor', { p_encender: true }, tG)).status >= 400, 'con 1 y 4 pero sin todos dentro de la web (condición 2), no se enciende');
-  // Para la prueba: todos los de la plantilla "han entrado" (cuenta creada).
-  for (const j of await sql`select person_id from public.jugadores where activo and (ficha_mda or ficha_mdl) and (email is null or email not like '%@pruebas.local')`) {
+  ok((await rpc('cambiar_interruptor', { p_encender: true }, tG)).status >= 400, 'con 1 y 4 pero solo 3 de 24 dentro de la web (condición 2, mínimo 20), no se enciende');
+  // Para la prueba: entran 17 más (20 de 24): basta el mínimo, no hace falta que entren todos.
+  for (const j of await sql`select person_id from public.jugadores where activo and (ficha_mda or ficha_mdl) and (email is null or email not like '%@pruebas.local') order by person_id limit 17`) {
     const em = `${j.person_id}@pruebas.local`;
     await sql`update public.jugadores set email = ${em} where person_id = ${j.person_id}`;
     await pila.crearUsuario(em, 'x');
   }
-  r = await rpc('cambiar_interruptor', { p_encender: true }, tG);
+  est = (await rpc('estado_activacion', {}, tG)).datos;
+  ok(est.entrados === 20 && est.faltan_por_entrar.length === 4 && est.se_puede_encender === true, '20 de 24 han entrado: se cumple la condición 2 (faltan 4)', JSON.stringify(est));
+  ok(/solo_responsable/.test(error(await rpc('cambiar_interruptor', { p_encender: true }, tC))), 'aun con las condiciones, Carlos no puede encender');  r = await rpc('cambiar_interruptor', { p_encender: true }, tG);
   ok(r.status === 200 && r.datos.encendido === true, 'con las tres condiciones, se enciende', `${r.status} ${error(r)}`);
   const reg = await sql`select que, por_nombre from public.respuestas_web_registro order by en`;
   ok(reg.some((x) => x.que === 'encender' && x.por_nombre === 'Iván') && reg.filter((x) => x.que.startsWith('jornada')).length === 7 && reg.some((x) => x.que === 'sporteasy_comprobado'), 'cada cambio queda registrado (quién y cuándo)');
@@ -206,6 +222,11 @@ try {
   r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'solo', p_evento: E.mdaJ3 }, jon.token);
   let x3 = await j3();
   ok(r.status === 200 && x3.MdA === 'va' && x3.MdL === 'no·horario', '«Solo al de las 09:00 (MdA)» = va en MdA y «no · horario» en MdL', JSON.stringify(x3));
+  const dom = async (p = 'esteban-jon', f = '2026-10-25') => (await sql`select opcion, solo_evento, motivo, origen, vigente from public.respuestas_domingo where fecha = ${f} and person_id = ${p}`)[0];
+  let d0 = await dom();
+  ok(d0 && d0.opcion === 'solo' && d0.solo_evento === E.mdaJ3 && d0.vigente && d0.origen === 'jugador', 'se GUARDA la respuesta única del domingo: «solo», con el partido elegido (D103)', JSON.stringify(d0));
+  ok((await api('/respuestas_domingo?select=*', { token: jon.token })).datos.length === 1 && (await api('/respuestas_domingo?select=*', { token: guille.token })).datos.length === 0, 'cada jugador lee solo su respuesta del domingo');
+  ok((await api('/respuestas_domingo', { metodo: 'POST', cuerpo: { fecha: '2026-10-25', person_id: 'esteban-jon', opcion: 'voy', origen: 'jugador' }, token: jon.token })).status >= 400, 'nadie la escribe directamente en la tabla');
   r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'no' }, jon.token);
   ok(/falta_motivo/.test(error(r)), '«No voy» del domingo exige motivo');
   r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'no', p_motivo: 'familia' }, jon.token);
@@ -224,6 +245,15 @@ try {
   ok(r.status === 200 && JSON.stringify(await j3('galan-domingo-guillermo')) === JSON.stringify({ MdA: 'va' }), 'una sola ficha: responde solo su partido (Guillermo, MdA)');
   r = await rpc('responder_domingo', { p_fecha: '2026-11-08', p_opcion: 'voy' }, guille.token);
   ok(/no_invitado/.test(error(r)), 'su equipo descansa (08/11, MdA): no hay nada que responder');
+  ok((await dom('esteban-jon', '2026-10-18'))?.opcion === 'voy' && (await dom()).opcion === 'duda', 'la respuesta del domingo sigue a la última (J2 «voy», J3 «duda»)');
+  // Si un partido cambia por otro camino (Importar, «Responder por él» de un partido, una ausencia...), la del domingo deja de valer.
+  await sql`select public._escribir_respuesta(${E.mdlJ3}, 'esteban-jon', 'va', null, null, 'sporteasy', null, null, null)`;
+  d0 = await dom();
+  ok(d0.vigente === false, 'si un partido cambia por otro camino (p. ej. Importar de SportEasy), la respuesta del domingo deja de valer y manda lo de cada partido');
+  await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'duda' }, jon.token);
+  ok((await dom()).vigente === true, 'y vuelve a valer en cuanto el jugador responde al domingo otra vez');
+  const asis = await sql`select e.equipo, r.respuesta from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-25' and e.tipo = 'liga' and r.person_id = 'esteban-jon' order by e.equipo`;
+  ok(asis.length === 2 && asis.every((x) => x.respuesta === 'duda'), 'Importar, Asistencia y la convocatoria siguen leyendo una respuesta por partido (derivada)');
 
   console.log('\n== Periodos de no disponibilidad');
   await rpc('responder', { p_evento: E.e21, p_respuesta: 'va' }, jon.token);

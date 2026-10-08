@@ -84,6 +84,8 @@ export default async function InicioGestion() {
   const web = await origen();
   const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis, no en SportEasy: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo, nunca de noche): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
 
+  const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
+  const mensajeEntrar = `Hola, ${faltan.join(", ")}: aún no habéis entrado en la web de Maccabis. Entrad una vez con vuestro correo (os llega un código) para tenerlo listo: ${web}/entrar. Si podéis, instaladla en el móvil y activad los avisos: ${web}/avisos`;
   const pendientes: string[] = [];
   if (entreno?.pistaPorConfirmar) pendientes.push(`Fijar la pista del entreno del ${diaSemanaCorto(entreno.fecha)} ${diaMes(entreno.fecha)} (${entreno.nota ?? "pista por confirmar"}).`);
   if (jornada) pendientes.push(`Convocatoria de la J${jornada}: reparto MdA / MdL y aviso de equipación (rutina C, lunes y martes).`);
@@ -124,7 +126,7 @@ export default async function InicioGestion() {
         </div>
       </section>
 
-      {activacion && <div style={{ marginBottom: 20 }}><TarjetaActivar estado={activacion as EstadoActivacion} jornadas={jornadasJugadas} marcas={marcas} mensaje={mensajeActivar} /></div>}
+      {activacion && <div style={{ marginBottom: 20 }}><TarjetaActivar estado={activacion as EstadoActivacion} jornadas={jornadasJugadas} marcas={marcas} mensaje={mensajeActivar} mensajeEntrar={mensajeEntrar} /></div>}
 
       <div className="gs-dos">
         <div className="gs-izq">

@@ -44,7 +44,7 @@ export async function recordatorioAhora(eventoId: string): Promise<R> {
 }
 
 // ---------------------------------------------------------------- interruptor (D99.13)
-const ERR: Record<string, string> = { condiciones_sin_cumplir: "Aún no se cumplen las condiciones 1, 2 y 4.", solo_gestores: "Solo los gestores." };
+const ERR: Record<string, string> = { condiciones_sin_cumplir: "Aún no se cumplen las condiciones 1, 2 y 4.", solo_gestores: "Solo los gestores.", solo_responsable: "Solo Iván puede cambiar esto." };
 const err = (m: string) => ERR[Object.keys(ERR).find((k) => m.includes(k)) ?? ""] ?? m;
 
 export async function cambiarInterruptor(encender: boolean): Promise<R> {

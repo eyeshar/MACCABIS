@@ -65,7 +65,7 @@ do $$
 begin
   grant select, insert, update on public.suscripciones_avisos, public.avisos_registro to service_role;
   grant select on public.eventos, public.pistas, public.jugadores, public.respuestas, public.ausencias_periodo,
-                  public.gestores, public.descansos, public.respuestas_web_config to service_role;
+                  public.gestores, public.descansos, public.respuestas_web_config, public.respuestas_domingo to service_role;
   grant select, update on public.alertas_gestores to service_role;
 exception when undefined_object then
   null;
@@ -103,7 +103,7 @@ begin
   return found;
 end $$;
 
--- ---------------------------------------------------------------- activacion (D99.13), solo gestores
+-- ---------------------------------------------------------------- activacion (D99.13, D103)
 -- Jornadas seguidas sin arreglos a mano, contando hacia atras desde la ultima marcada: una "con arreglo" o un hueco
 -- cortan la cuenta.
 create function public._jornadas_limpias_seguidas()
@@ -123,7 +123,30 @@ begin
   return n;
 end $$;
 
-/** Las cuatro condiciones de la tarjeta "Respuestas en la web: activar". */
+-- Solo Ivan maneja el interruptor, las jornadas y la casilla de SportEasy (D103): el gestor con sesion cuyo correo es
+-- el de la ficha de jugador de respuestas_web_config.responsable_person_id ('villaescusa-silva-ivan').
+create function public._es_responsable()
+returns boolean language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.gestores g
+    join public.jugadores j on lower(j.email) = lower(g.email)
+    join public.respuestas_web_config c on c.id = 1 and c.responsable_person_id = j.person_id
+    where g.user_id = auth.uid())
+$$;
+
+create function public._exigir_responsable()
+returns text language plpgsql stable security definer set search_path = ''
+as $$
+declare v_nombre text;
+begin
+  if not public._es_responsable() then raise exception 'solo_responsable' using errcode = 'P0001'; end if;
+  select nombre into v_nombre from public.gestores where user_id = auth.uid();
+  return coalesce(v_nombre, 'gestor');
+end $$;
+
+/** Las cuatro condiciones de la tarjeta "Respuestas en la web: activar" (todos los gestores la ven; solo Ivan la
+ *  maneja). Condicion 2: un minimo configurable (20) de los de la plantilla han entrado, con la lista de quien falta. */
 create function public.estado_activacion()
 returns jsonb language plpgsql stable security definer set search_path = ''
 as $$
@@ -132,33 +155,36 @@ declare
   v_plantilla int;
   v_entrados int;
   v_avisos int;
+  v_faltan jsonb;
 begin
   if not public.is_gestor() then raise exception 'solo_gestores' using errcode = 'P0001'; end if;
   select * into c from public.respuestas_web_config where id = 1;
   select count(*)::int,
          count(*) filter (where exists (select 1 from auth.users u where lower(u.email) = lower(j.email)))::int,
-         count(*) filter (where exists (select 1 from public.suscripciones_avisos s where s.person_id = j.person_id and s.activa))::int
-    into v_plantilla, v_entrados, v_avisos
+         count(*) filter (where exists (select 1 from public.suscripciones_avisos s where s.person_id = j.person_id and s.activa))::int,
+         coalesce(jsonb_agg(j.nombre_visible order by j.nombre_visible)
+                    filter (where not exists (select 1 from auth.users u where lower(u.email) = lower(j.email))), '[]'::jsonb)
+    into v_plantilla, v_entrados, v_avisos, v_faltan
   from public.jugadores j where j.activo and (j.ficha_mda or j.ficha_mdl);
   return jsonb_build_object(
     'encendido', c.encendido, 'encendido_desde', c.encendido_desde, 'sporteasy_comprobado', c.sporteasy_comprobado,
     'cambiado_en', c.cambiado_en, 'cambiado_por', c.cambiado_por_nombre,
     'jornadas_seguidas', public._jornadas_limpias_seguidas(), 'plantilla', v_plantilla, 'entrados', v_entrados,
-    'con_avisos', v_avisos,
-    'se_puede_encender', public._jornadas_limpias_seguidas() >= 3 and v_entrados >= v_plantilla and c.sporteasy_comprobado);
+    'minimo_entrados', least(c.minimo_entrados, v_plantilla), 'faltan_por_entrar', v_faltan, 'con_avisos', v_avisos,
+    'puede_manejar', public._es_responsable(),
+    'se_puede_encender', public._jornadas_limpias_seguidas() >= 3 and v_entrados >= least(c.minimo_entrados, v_plantilla)
+                         and c.sporteasy_comprobado);
 end $$;
 
-/** Enciende o apaga "respuestas en la web". Encender exige las condiciones 1, 2 y 4 (la 3 es informativa); apagar se
- *  puede siempre y no pierde nada. Cada cambio queda registrado (quien y cuando). */
+/** Enciende o apaga "respuestas en la web" (solo Ivan). Encender exige las condiciones 1, 2 y 4 (la 3 es informativa);
+ *  apagar se puede siempre y no pierde nada. Cada cambio queda registrado (quien y cuando). */
 create function public.cambiar_interruptor(p_encender boolean)
 returns jsonb language plpgsql security definer set search_path = ''
 as $$
 declare
-  v_nombre text;
+  v_nombre text := public._exigir_responsable();
   v_estado jsonb;
 begin
-  if not public.is_gestor() then raise exception 'solo_gestores' using errcode = 'P0001'; end if;
-  select nombre into v_nombre from public.gestores where user_id = auth.uid();
   v_estado := public.estado_activacion();
   if p_encender and not (v_estado->>'se_puede_encender')::boolean then
     raise exception 'condiciones_sin_cumplir' using errcode = 'P0001';
@@ -168,50 +194,45 @@ begin
          cambiado_en = now(), cambiado_por_nombre = v_nombre
    where id = 1;
   insert into public.respuestas_web_registro (por_user_id, por_nombre, que)
-  values (auth.uid(), coalesce(v_nombre, 'gestor'), case when p_encender then 'encender' else 'apagar' end);
+  values (auth.uid(), v_nombre, case when p_encender then 'encender' else 'apagar' end);
   return public.estado_activacion();
 end $$;
 
-/** Casilla 4: "SportEasy deja de pedir respuesta, comprobado por Claude" (la marca Ivan). Queda registrada. */
+/** Casilla 4: "SportEasy deja de pedir respuesta, comprobado por Claude" (solo Ivan). Queda registrada. */
 create function public.marcar_sporteasy(p_comprobado boolean)
 returns jsonb language plpgsql security definer set search_path = ''
 as $$
-declare v_nombre text;
+declare v_nombre text := public._exigir_responsable();
 begin
-  if not public.is_gestor() then raise exception 'solo_gestores' using errcode = 'P0001'; end if;
-  select nombre into v_nombre from public.gestores where user_id = auth.uid();
   update public.respuestas_web_config set sporteasy_comprobado = p_comprobado where id = 1;
   insert into public.respuestas_web_registro (por_user_id, por_nombre, que)
-  values (auth.uid(), coalesce(v_nombre, 'gestor'), case when p_comprobado then 'sporteasy_comprobado' else 'sporteasy_sin_comprobar' end);
+  values (auth.uid(), v_nombre, case when p_comprobado then 'sporteasy_comprobado' else 'sporteasy_sin_comprobar' end);
   return public.estado_activacion();
 end $$;
 
-/** Casilla de una jornada: 'limpia' (sin arreglos a mano) o 'con_arreglo' (la cuenta vuelve a 0). Queda registrada. */
+/** Casilla de una jornada (solo Ivan): 'limpia' o 'con_arreglo' (la cuenta vuelve a 0). Queda registrada. */
 create function public.marcar_jornada(p_jornada int, p_estado text)
 returns jsonb language plpgsql security definer set search_path = ''
 as $$
-declare v_nombre text;
+declare v_nombre text := public._exigir_responsable();
 begin
-  if not public.is_gestor() then raise exception 'solo_gestores' using errcode = 'P0001'; end if;
   if p_estado not in ('limpia', 'con_arreglo') then raise exception 'estado_no_valido' using errcode = 'P0001'; end if;
-  select nombre into v_nombre from public.gestores where user_id = auth.uid();
   insert into public.jornadas_control (temporada, jornada, estado, marcado_por_nombre)
   values ('2026-27', p_jornada, p_estado, v_nombre)
   on conflict (temporada, jornada) do update set estado = excluded.estado, marcado_por_nombre = excluded.marcado_por_nombre,
     marcado_en = now();
   insert into public.respuestas_web_registro (por_user_id, por_nombre, que, detalle)
-  values (auth.uid(), coalesce(v_nombre, 'gestor'), case when p_estado = 'limpia' then 'jornada_limpia' else 'jornada_con_arreglo' end,
-          'J' || p_jornada);
+  values (auth.uid(), v_nombre, case when p_estado = 'limpia' then 'jornada_limpia' else 'jornada_con_arreglo' end, 'J' || p_jornada);
   return public.estado_activacion();
 end $$;
 
 revoke execute on function public.alta_suscripcion(text, text, text, text), public.baja_suscripcion(text),
-  public._jornadas_limpias_seguidas(), public.estado_activacion(), public.cambiar_interruptor(boolean),
-  public.marcar_sporteasy(boolean), public.marcar_jornada(int, text)
+  public._jornadas_limpias_seguidas(), public._es_responsable(), public._exigir_responsable(), public.estado_activacion(),
+  public.cambiar_interruptor(boolean), public.marcar_sporteasy(boolean), public.marcar_jornada(int, text)
   from public, anon, authenticated;
 grant execute on function public.alta_suscripcion(text, text, text, text), public.baja_suscripcion(text),
   public.estado_activacion(), public.cambiar_interruptor(boolean), public.marcar_sporteasy(boolean),
   public.marcar_jornada(int, text) to authenticated;
 revoke insert, update on public.jornadas_control from authenticated;
--- El interruptor solo cambia con cambiar_interruptor (que comprueba las condiciones): nadie lo toca a mano por la API.
+-- El interruptor solo cambia con cambiar_interruptor (que comprueba responsable y condiciones): nadie lo toca a mano.
 revoke update on public.respuestas_web_config from authenticated;

@@ -242,7 +242,7 @@ export type ResultadoCalendario = {
   lineas: number; nuestras: number; ajenas: number; iguales: number;
   errores: { n: number; crudo: string; error: string }[];
   cambios: CambioCalendario[]; senales: Senal[];
-  aplicado?: { aceptadas: number; ignoradas: number; cambiosEn: string[] };
+  aplicado?: { aceptadas: number; ignoradas: number; cambiosEn: string[]; avisados?: number | null };
 };
 
 async function compararConLaBase(textoPegado: string) {
@@ -264,12 +264,14 @@ export async function analizarCalendario(textoPegado: string): Promise<Resultado
 }
 
 /** Aplica SOLO los cambios aceptados (por su id) y registra la importacion. Lo aceptado queda pendiente de copiar. */
-export async function aplicarCalendario(textoPegado: string, aceptados: string[]): Promise<ResultadoCalendario> {
+export async function aplicarCalendario(textoPegado: string, aceptados: string[], avisar = false): Promise<ResultadoCalendario> {
   const { supabase, nombre, user, eventos, comp } = await compararConLaBase(textoPegado);
   const elegidos = comp.cambios.filter((c) => aceptados.includes(c.id));
   const porEvento = new Map<string, CambioCalendario[]>();
   for (const c of elegidos) porEvento.set(c.eventoId, [...(porEvento.get(c.eventoId) ?? []), c]);
   const aplicadosEn: string[] = [];
+  const porAvisar: { id: string; cambiaDia: boolean }[] = [];
+  let avisados = 0;
   for (const [eventoId, cs] of porEvento) {
     const e = eventos.find((x) => x.id === eventoId);
     if (!e) continue;
@@ -282,13 +284,24 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
       if (c.campo === "rival") cambio.rival = c.valorOficial;
     }
     const previo = e.sporteasy_estado === "pendiente" ? e.sporteasy_cambio : null;
+    // «Aplicar y avisar» (D103): como en Editar evento, la linea amarilla dice que cambio y como era antes.
+    const avisables = cs.filter((c) => c.campo === "fecha" || c.campo === "hora" || c.campo === "pista");
+    const ORDEN_CAMPO = { pista: 0, fecha: 1, hora: 2 } as Record<string, number>;
+    const visible = avisar && avisables.length ? {
+      campos: avisables.map((c) => c.campo).sort((a, b) => ORDEN_CAMPO[a] - ORDEN_CAMPO[b]),
+      antes: avisables.sort((a, b) => ORDEN_CAMPO[a.campo] - ORDEN_CAMPO[b.campo]).map((c) => (c.campo === "pista" ? `pista ${c.actual}` : String(c.actual))).join(", "),
+    } : null;
     const { error } = await supabase.from("eventos").update({
       ...cambio, sporteasy_estado: "pendiente",
       sporteasy_cambio: juntarCambios(previo, cs.map((c) => `${c.textoCampo.toLowerCase()}: ${c.actual} → ${c.oficial} (Ayuntamiento)`)),
+      ...(visible ? { cambio_visible: visible, cambio_visible_en: new Date().toISOString() } : {}),
     }).eq("id", eventoId);
     if (error) throw new Error(`No se pudo aplicar ${e.clave}: ${error.message}`);
     aplicadosEn.push(`${e.equipo} J${e.jornada}`);
+    const fechaNueva = (cambio.fecha as string | undefined) ?? e.fecha;
+    if (visible && fechaNueva >= hoyMadrid() && fechaNueva <= sumarDias(hoyMadrid(), AVISAR_DIAS)) porAvisar.push({ id: eventoId, cambiaDia: "fecha" in cambio });
   }
+  for (const a of porAvisar) avisados += (await avisarCambioEvento(a.id, "cambio", a.cambiaDia)).avisados;
   await supabase.from("importaciones").insert({
     tipo: "calendario", por_user_id: user.id, por_nombre: nombre, lineas: comp.lineas, validas: comp.nuestras,
     aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, bloqueadas: comp.errores.length,
@@ -296,7 +309,7 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
   });
   refrescar();
   const re = await compararConLaBase(textoPegado);
-  return { ...aResultado(re.comp), aplicado: { aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, cambiosEn: aplicadosEn } };
+  return { ...aResultado(re.comp), aplicado: { aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, cambiosEn: aplicadosEn, avisados: avisar ? avisados : null } };
 }
 
 // ---------------------------------------------------------------- importar: respuestas y ausencias de SportEasy

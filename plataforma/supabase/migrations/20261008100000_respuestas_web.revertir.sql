@@ -4,6 +4,7 @@
 -- fuente 'web') no existe en el modelo anterior y se pierde: antes de ejecutar esto, volcado completo (D94).
 
 drop trigger if exists eventos_tras_escribir on public.eventos;
+drop trigger if exists respuestas_tras_escribir on public.respuestas;
 
 drop view if exists public.v_quien_va;
 drop view if exists public.v_mis_eventos;
@@ -22,6 +23,8 @@ drop function if exists public._eventos_del_periodo(text, date, date);
 drop function if exists public.responder_domingo_por(date, text, text, uuid, text, text);
 drop function if exists public.responder_domingo(date, text, uuid, text, text);
 drop function if exists public._responder_domingo_de(text, date, text, uuid, text, text, text, text);
+drop function if exists public._respuestas_tras_escribir();
+drop table if exists public.respuestas_domingo;
 drop function if exists public.responder(uuid, text, text, text);
 drop function if exists public._validar_respuesta(text, text);
 drop function if exists public._exigir_encendido();

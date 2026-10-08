@@ -70,6 +70,10 @@ try {
   const jUid = await pila.crearUsuario(jugadorEmail, 'x');
   const gUid = await pila.crearUsuario(gestorEmail, 'x');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gUid}, 'Iván', ${gestorEmail})`;
+  // Iván es gestor y jugador (su ficha): solo él maneja el interruptor (D103). Carlos, otro gestor: solo lectura.
+  await sql`update public.jugadores set email = ${gestorEmail} where person_id = 'villaescusa-silva-ivan'`;
+  const cUid = await pila.crearUsuario('carlos-gestor@pruebas.local', 'x');
+  await sql`insert into public.gestores (user_id, nombre, email) values (${cUid}, 'Carlos', 'carlos-gestor@pruebas.local')`;
   const codigoDe = async (email) => (await sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
 
   console.log('\n== Compilación con claves de avisos de prueba');
@@ -291,6 +295,10 @@ try {
   await pg.goto(`${APP}/gestion/eventos/${E.mdaJ3}/respuestas`);
   const cajas3 = await pg.getByTestId('contadores').innerText();
   ok(/a los dos/.test(cajas3) && /solo 09:00/.test(cajas3) && /solo 14:00/.test(cajas3), 'domingo: vista de día con «a los dos / solo 09:00 / solo 14:00»', cajas3);
+  await sql`insert into public.respuestas_domingo (fecha, person_id, opcion, solo_evento, origen) values ('2026-10-25', 'vallesi-daniele', 'solo', ${E.mdlJ3}, 'gestor')
+            on conflict (fecha, person_id) do update set opcion = 'solo', solo_evento = excluded.solo_evento, vigente = true`;
+  await pg.reload();
+  ok(/Solo 14:00 \(MdL\)/.test(await pg.locator('tr', { hasText: 'Daniele' }).innerText()), 'la respuesta guardada del domingo se lee tal cual: «Solo 14:00 (MdL)» (D103)');
   await foto(pg, 'gestion_domingo_escritorio');
 
   console.log('\n== Editar evento: encuentro calculado y aviso de cambio');
@@ -323,6 +331,49 @@ try {
     ok(await sinDesbordar(pg375), `${ruta} a 375 px sin desbordamiento`);
   }
   await foto(pg375, 'gestion_editar_375');
+
+  console.log('\n== Importar calendario: «Aplicar y avisar» / «Aplicar sin avisar» (D103)');
+  const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+  const dma = (f) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
+  const NOMBRE = { MDA: 'Maccabi de Acostar', MDL: 'Maccabi de Levantar' };
+  const bloque = cal.partidos.map((p) => {
+    const g = p.equipo === 'MDA' ? 'G1' : 'G2';
+    if (p.descansa) return `${g};${p.jornada};${NOMBRE[p.equipo]} descansa;;${dma(p.fecha)};;`;
+    const [l, v] = p.local ? [NOMBRE[p.equipo], p.rival] : [p.rival, NOMBRE[p.equipo]];
+    return `${g};${p.jornada};${l};${v};${dma(p.fecha)};${p.hora};${p.campo}`;
+  });
+  const importar = async (lineas, boton) => {
+    await pg.goto(`${APP}/gestion/eventos/importar`);
+    await pg.locator('#cal-texto').fill(lineas.join('\n'));
+    await pg.getByRole('button', { name: 'Comparar' }).click();
+    await pg.waitForFunction(() => document.querySelector('[data-testid=titulo-resultado]')?.textContent === '1 cambio');
+    await pg.locator('[data-testid=tabla-cambios] tbody tr').getByRole('button', { name: 'Aceptar' }).click();
+    ok(await visto(pg.getByRole('button', { name: /^Aplicar y avisar \(1\)/ })) && await visto(pg.getByRole('button', { name: 'Aplicar sin avisar' })), 'encendido: «Aplicar y avisar» (por defecto) y «Aplicar sin avisar»');
+    await pg.getByRole('button', { name: boton }).click();
+    await pg.getByText(/Aplicado: 1 cambio aceptado/).waitFor({ timeout: 20000 });
+  };
+  const mdlJ2 = await id('mdl-j2');
+  const sinAvisar = bloque.map((l) => (l.startsWith('G2;2;') ? l.replace(';10:15;', ';10:30;') : l));
+  await importar(sinAvisar, 'Aplicar sin avisar');
+  ok((await sql`select count(*)::int n from public.avisos_registro where tipo = 'cambio' and ${mdlJ2} = any(eventos)`)[0].n === 0 && !(await sql`select cambio_visible from public.eventos where id = ${mdlJ2}`)[0].cambio_visible, '«Aplicar sin avisar»: cambia la hora (MdL J2 10:30) sin avisos ni línea amarilla');
+  const conAvisar = sinAvisar.map((l) => (l.startsWith('G1;2;') ? l.replace(';10:15;', ';11:30;') : l));
+  await importar(conAvisar, /^Aplicar y avisar/);
+  const avJ2 = await sql`select titulo, cuerpo from public.avisos_registro where tipo = 'cambio' and ${E.mdaJ2} = any(eventos)`;
+  ok(avJ2.length > 10 && avJ2.every((a) => a.titulo === 'Cambio en el partido del domingo 18' && /11:30/.test(a.cuerpo)), `«Aplicar y avisar»: aviso de cambio a los invitados del MdA (${avJ2.length})`, JSON.stringify(avJ2[0]));
+  const [vj2] = await sql`select cambio_visible, inicio::text from public.eventos where id = ${E.mdaJ2}`;
+  ok(vj2.inicio.startsWith('11:30') && vj2.cambio_visible?.campos?.includes('hora') && /10:15/.test(vj2.cambio_visible.antes), 'y la línea amarilla «Cambió la hora … (antes: 10:15)»', JSON.stringify(vj2.cambio_visible));
+
+  console.log('\n== Otro gestor (Carlos): la tarjeta del interruptor en solo lectura; copia a SportEasy sin notificar');
+  const ctxCg = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+  const pcg = await nuevaPagina(ctxCg);
+  await entrar(pcg, 'carlos-gestor@pruebas.local');
+  await pcg.goto(`${APP}/gestion`);
+  ok(await visto(pcg.getByTestId('solo-lectura')) && await pcg.getByRole('button', { name: 'Desactivar' }).isDisabled() && await pcg.locator('.ev-jornadas button').first().isDisabled(), 'Carlos ve la tarjeta en solo lectura (botones y casillas desactivados)');
+  await pg.goto(`${APP}/gestion`);
+  ok(await visto(pg.getByTestId('tarjeta-activar')) && !(await pg.getByTestId('solo-lectura').count()) && await pg.getByRole('button', { name: 'Desactivar' }).isEnabled(), 'Iván sí la maneja');
+  await pcg.goto(`${APP}/gestion/eventos`);
+  ok(/Selección manual/.test(await pcg.getByTestId('copia-sin-notificar').innerText()) && /«Enviar una notificación» apagado/.test(await pcg.getByTestId('copia-sin-notificar').innerText()), 'tarjeta «Copia a SportEasy»: formulario completo, «Selección manual» y sin notificación (D104)');
+  await ctxCg.close();
 
   console.log('\n== Apagar: fase puente sin perder nada');
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;

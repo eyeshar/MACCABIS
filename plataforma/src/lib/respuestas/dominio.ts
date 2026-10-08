@@ -95,8 +95,18 @@ export function opcionesDomingo(u: Pick<Unidad, "modo" | "eventos">): OpcionDomi
   return [{ id: "voy", opcion: "voy", texto: "Voy" }, { id: "no", opcion: "no", texto: "No voy" }, { id: "duda", opcion: "duda", texto: "Duda" }];
 }
 
-/** Opcion marcada ahora (null = sin responder). */
-export function opcionActual(u: Pick<Unidad, "modo" | "eventos">, respuestas: MiRespuesta[]): string | null {
+/** La respuesta unica guardada de un domingo (D103); solo cuenta si sigue vigente. */
+export type MiDomingo = { fecha: string; opcion: "ambos" | "solo" | "voy" | "no" | "duda"; solo_evento: string | null; vigente: boolean };
+
+/** Opcion marcada ahora (null = sin responder). Manda la respuesta del domingo guardada; si no la hay (o dejo de valer
+ *  porque un partido cambio por otro camino), se deduce de cada partido. */
+export function opcionActual(u: Pick<Unidad, "modo" | "eventos">, respuestas: MiRespuesta[], domingo?: MiDomingo | null): string | null {
+  if (domingo?.vigente) {
+    if (domingo.opcion === "solo") return `solo-${domingo.solo_evento}`;
+    if (u.modo === "distintas" && domingo.opcion === "voy") return "ambos";
+    if (u.modo !== "distintas" && domingo.opcion === "ambos") return "voy";
+    return domingo.opcion;
+  }
   const vals = u.eventos.map((e) => respuestas.find((r) => r.evento_id === e.id)?.respuesta ?? "sin_responder");
   if (vals.includes("sin_responder")) return null;
   if (vals.every((v) => v === "va")) return u.modo === "distintas" ? "ambos" : "voy";

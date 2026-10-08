@@ -5,6 +5,8 @@ drop function if exists public.marcar_sporteasy(boolean);
 drop function if exists public.cambiar_interruptor(boolean);
 drop function if exists public.estado_activacion();
 drop function if exists public._jornadas_limpias_seguidas();
+drop function if exists public._exigir_responsable();
+drop function if exists public._es_responsable();
 -- (respuestas_web_config vuelve a tener UPDATE para gestores, como la dejo la 20261008100000)
 grant update on public.respuestas_web_config to authenticated;
 grant insert, update on public.jornadas_control to authenticated;

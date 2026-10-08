@@ -5,7 +5,7 @@ import { exigirSesion } from "@/lib/sesion";
 import ElegirDomingo from "@/components/respuestas/ElegirDomingo";
 import { Camiseta as ColorRival } from "@/components/ProximoPartido";
 import { madrid } from "@/lib/avisos/horario";
-import { cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, respuestasWebEncendido } from "@/lib/respuestas/jugador";
+import { cargarMiDomingo, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, respuestasWebEncendido } from "@/lib/respuestas/jugador";
 import {
   enlaceMapa, estadoDe, fechaLarga, hhmm, lineaCambio, opcionActual, opcionesDomingo, pistaTexto, restar20, unidades,
   type MotivoJugador,
@@ -25,7 +25,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
   const partidos = (await cargarMisEventosDelDia(fecha)).filter((e) => e.tipo === "liga");
   if (!partidos.length) notFound();
   const u = unidades(partidos).find((x) => x.tipo === "domingo");
-  const [encendido, respuestas, ausencias] = await Promise.all([respuestasWebEncendido(), cargarMisRespuestas(), cargarMisAusencias()]);
+  const [encendido, respuestas, ausencias, miDomingo] = await Promise.all([respuestasWebEncendido(), cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha)]);
   const abierto = !!u && u.eventos.every((e) => madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00") > new Date());
   const est = u ? estadoDe(u, respuestas, ausencias) : null;
   const quien = encendido ? await cargarQuienVa(partidos.map((e) => e.id)) : null;
@@ -64,7 +64,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
         <div className="mz-sec-cab"><h2 id="t-puedes">¿Puedes jugar?</h2>{est && <span className={`rw-etiqueta${est.pendiente ? " sin" : ""}`}>{est.pendiente ? "Aún no has respondido" : est.texto}</span>}</div>
         {encendido && u ? (
           abierto ? (
-            <ElegirDomingo fecha={fecha} opciones={opcionesDomingo(u)} actual={opcionActual(u, respuestas)} nombre={`partido del domingo ${+fecha.slice(8)}`}
+            <ElegirDomingo fecha={fecha} opciones={opcionesDomingo(u)} actual={opcionActual(u, respuestas, miDomingo)} nombre={`partido del domingo ${+fecha.slice(8)}`}
               motivo={(rNo?.motivo as MotivoJugador) ?? null} detalle={rNo?.detalle ?? null} />
           ) : <p className="suave" style={{ margin: 0 }}>Los partidos ya empezaron: no se puede cambiar la respuesta.</p>
         ) : <p className="rw-sporteasy" style={{ margin: 0 }}>Por ahora, responde en SportEasy.</p>}

@@ -97,7 +97,7 @@ console.log('\n== Respuestas en la web y avisos (paso 3, D99)');
 const MIG3 = ['20261008100000_respuestas_web.sql', '20261008101000_avisos.sql'];
 const sql3 = sinComentarios(MIG3.map((f) => leer('supabase/migrations', f)).join('\n'));
 const tablas3 = [...sql3.matchAll(/create table public\.(\w+)/g)].map((m) => m[1]);
-ok(tablas3.length === 6 && tablas3.every((t) => new RegExp('alter table public\\.' + t + '\\s+enable row level security').test(sql3)), `las ${tablas3.length} tablas nuevas tienen RLS (${tablas3.join(', ')})`);
+ok(tablas3.length === 7 && tablas3.every((t) => new RegExp('alter table public\\.' + t + '\\s+enable row level security').test(sql3)), `las ${tablas3.length} tablas nuevas tienen RLS (${tablas3.join(', ')})`);
 // Solo aditivas (D94): lo unico que se "quita" son tres relajaciones sin perdida de datos (hasta vacio y dos checks ampliados).
 const drops = [...sql3.matchAll(/(?:alter|drop)[^;]*\bdrop\b[^;]*;/gi)].map((m) => m[0].replace(/\s+/g, ' '));
 const permitidos = [/alter column hasta drop not null/i, /drop constraint respuestas_motivo_check/i, /drop constraint respuestas_fuente_check/i, /drop constraint ausencias_periodo_fuente_check/i];

@@ -20,7 +20,7 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const sql = conectar();
 let fallos = 0;
 const ok = (c, que, det = '') => { if (c) console.log(`  OK    ${que}`); else { fallos++; console.log(`  FALLO ${que}${det ? ` -> ${det}` : ''}`); } };
-const NUEVAS = ['respuestas_web_config', 'respuestas_web_registro', 'jornadas_control', 'alertas_gestores', 'suscripciones_avisos', 'avisos_registro'];
+const NUEVAS = ['respuestas_domingo', 'respuestas_web_config', 'respuestas_web_registro', 'jornadas_control', 'alertas_gestores', 'suscripciones_avisos', 'avisos_registro'];
 const FUNCIONES = ['responder', 'responder_domingo', 'guardar_ausencia', 'cerrar_ausencia', 'borrar_ausencia', 'alta_suscripcion', 'baja_suscripcion', 'previsualizar_ausencia', 'responder_por', 'responder_domingo_por', 'cambiar_interruptor', 'estado_activacion', 'marcar_jornada', 'marcar_sporteasy'];
 
 async function api(ruta, { metodo = 'GET', cuerpo } = {}) {
@@ -65,6 +65,8 @@ try {
   console.log('\n== Un jugador real (solo lectura)');
   const [jug] = await sql`select u.id, j.person_id, j.ficha_mda, j.ficha_mdl from public.jugadores j join auth.users u on lower(u.email) = lower(j.email)
                           where j.activo and not exists (select 1 from public.gestores g where g.user_id = u.id) and (j.ficha_mda or j.ficha_mdl) order by (j.ficha_mda and j.ficha_mdl) limit 1`;
+  // (fuera de la transaccion: la conexion es una sola)
+  const [ajeno] = jug ? await sql`select e.id from public.eventos e where e.tipo = 'liga' and e.equipo = ${jug.ficha_mda ? 'MdL' : 'MdA'} limit 1` : [];
   if (!jug) ok(false, 'hay al menos un jugador (no gestor) con cuenta');
   else await como(jug.id, async (tx) => {
     const mias = await tx`select person_id from public.respuestas`;
@@ -84,7 +86,6 @@ try {
     const ev = mis.find((e) => e.estado === 'programado' && e.fecha > new Date().toISOString().slice(0, 10));
     let r = await intenta(tx, `select public.responder($1::uuid, 'va')`, [ev?.id ?? '00000000-0000-0000-0000-000000000000']);
     ok(!r.ok && /respuestas_apagadas/.test(r.error), 'con el interruptor apagado NO responde (lo para la base)', r.error);
-    const [ajeno] = await sql`select e.id from public.eventos e where e.tipo = 'liga' and e.equipo = ${jug.ficha_mda ? 'MdL' : 'MdA'} limit 1`;
     if (ajeno && !(jug.ficha_mda && jug.ficha_mdl)) {
       ok(!(await tx`select 1 from public.v_mis_eventos where id = ${ajeno.id}`).length, 'no ve el partido del otro equipo (no está invitado)');
     }
@@ -102,7 +103,7 @@ try {
   const [ges] = await sql`select user_id from public.gestores where user_id is not null limit 1`;
   if (ges) await como(ges.user_id, async (tx) => {
     const est = (await tx`select public.estado_activacion() e`)[0].e;
-    ok(typeof est.plantilla === 'number' && est.encendido === false, `el gestor ve el estado: ${est.entrados}/${est.plantilla} han entrado, ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`);
+    ok(typeof est.plantilla === 'number' && est.encendido === false && est.minimo_entrados === 20 && est.puede_manejar === true, `Iván (gestor responsable) ve el estado y puede manejarlo: ${est.entrados}/${est.plantilla} han entrado (mínimo 20), ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`);
     ok((await tx`select count(*)::int n from public.respuestas`)[0].n >= 0, 'el gestor lee las respuestas');
   });
   ok((await sql`select count(*)::int n from auth.users`)[0].n === cuentas0, `cuentas de auth antes y después: ${cuentas0}`);

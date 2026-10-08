@@ -153,7 +153,11 @@ límite de envíos de tu proyecto: no se puede saber desde fuera del panel, y va
    "Sender name" del paso 2, pero conviene que el cuerpo también lo diga, p. ej. "Tu código de Maccabis es:").
    Gmail SMTP admite unos 500 correos al día por cuenta: de sobra para un club de este tamaño.
 
-### 8. Avisos al móvil (paso 3, D99–D101): claves en Vercel y tarea programada
+### 8. Avisos al móvil (paso 3, D99–D104): claves en Vercel y tarea programada
+Estado (08/10/2026): las dos migraciones del paso 3 **ya están aplicadas** en el Supabase real (volcado previo en
+`privado/backups/2026-10-08_pre-paso3.sql`) y el interruptor está **apagado**. Lo que sigue es solo para cuando des el
+OK: claves en Vercel, merge a `main` y tarea programada. El interruptor lo enciende solo Iván desde Gestión → Panel
+(D103), y antes hay que preparar SportEasy para que no notifique (D104, `docs/SPORTEASY.md`).
 Las claves **nunca** van al repositorio ni al chat. Ya están generadas en tu `plataforma/.env.local` (las creó
 `npm run avisos:claves`, que no las enseña; si borras ese fichero, vuelve a ejecutarlo y genera unas nuevas).
 

@@ -6,7 +6,7 @@ import { exigirGestor } from "@/lib/sesion";
 import { hoyMadrid } from "@/lib/dias";
 import { cargarEvento, cargarEventos, cargarJugadores, cargarPistas, TEMPORADA } from "@/lib/eventos/datos";
 import {
-  describirCambios, deLaSerieDesde, hhmm, juntarCambios, pistaEfectiva, quedadaPorDefecto,
+  describirCambios, deLaSerieDesde, hhmm, juntarCambios, pistaEfectiva, quedadaPorDefecto, resumenCopia,
   type CamposEditables, type EquipoEvento, type EstadoPista, type EventoFila, type TipoEvento,
 } from "@/lib/eventos/dominio";
 import {
@@ -138,9 +138,11 @@ export async function cancelarEvento(id: string, alcance: "este" | "siguientes",
 /** "Marcar como copiado": lo usa Claude tras copiar el evento a SportEasy con el OK de Ivan. */
 export async function marcarCopiado(f: FormData) {
   const { supabase } = await exigirGestor();
-  const ids = f.getAll("id").map(String).filter(Boolean);
-  if (!ids.length) return;
-  const { error } = await supabase.from("eventos").update({ sporteasy_estado: "copiado", sporteasy_cambio: null, sporteasy_copiado_en: new Date().toISOString() }).in("id", ids);
+  const ids = new Set(f.getAll("id").map(String).filter(Boolean));
+  // «Entrenos de la serie» (carga inicial sin confirmar): se resuelven aqui, con el mismo criterio que la tarjeta.
+  if (f.get("serie")) for (const e of resumenCopia(await cargarEventos(supabase), hoyMadrid()).deSerie) ids.add(e.id);
+  if (!ids.size) return;
+  const { error } = await supabase.from("eventos").update({ sporteasy_estado: "copiado", sporteasy_cambio: null, sporteasy_copiado_en: new Date().toISOString() }).in("id", [...ids]);
   if (error) throw new Error(error.message);
   refrescar();
 }
@@ -174,7 +176,10 @@ export async function cambiarPista(id: string, _prev: Estado, f: FormData): Prom
   const pedido = f.get("reabrir") ? "habitual" : f.get("cerrar_obras") ? "en_obras" : texto(f, "estado");
   const estado = (["habitual", "provisional", "en_obras", "cerrada"] as EstadoPista[]).find((x) => x === pedido) ?? antes.estado;
   const n = Number(texto(f, "num_pistas"));
-  const cambios = { estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null };
+  const nombre = texto(f, "nombre") || antes.nombre;
+  if (nombre.length < 3) return { error: "Ponle un nombre a la pista." };
+  const uso = f.get("uso") ? (texto(f, "uso") === "partido" ? "partido" : "entreno") : antes.uso;
+  const cambios = { nombre, uso, estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null };
   const { error } = await supabase.from("pistas").update(cambios).eq("id", id);
   if (error) return { error: `No se pudo guardar: ${error.message}` };
   if (antes.es_de_serie && antes.estado !== estado) {

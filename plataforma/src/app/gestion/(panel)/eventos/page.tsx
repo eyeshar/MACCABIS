@@ -8,7 +8,7 @@ import {
   contarRespuestas, convocadosDe, hhmm, pistaEfectiva, rangoHoras, resumenCopia, cambioParaVer, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,
   type EventoFila, type Pista, type Respuesta,
 } from "@/lib/eventos/dominio";
-import { marcarCopiado } from "./acciones";
+import FormularioCopia, { MarcarTodos } from "./FormularioCopia";
 
 export const metadata = { title: "Eventos · Gestión Maccabis" };
 
@@ -101,14 +101,23 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
             ))}
           </nav>
           {lista.length === 0 ? <p className="suave" style={{ margin: 0 }}>No hay eventos en esta vista.</p> : (
+            <Envoltorio activo={filtro === "pendientes"}>
             <div className="tabla-desplazable">
               <table className="gs-tabla ev-tabla" data-testid="tabla-eventos">
                 <thead><tr><th>Fecha</th><th>Evento</th><th>Pista</th><th>Respuestas</th><th>SportEasy</th></tr></thead>
                 <tbody>
-                  {lista.map((e) => <Fila key={e.id} e={e} pistas={pistas} respuestas={resp.get(e.id) ?? []} convocados={convocadosDe(e, jugadores).length} />)}
+                  {lista.map((e) => <Fila key={e.id} casilla={filtro === "pendientes"} e={e} pistas={pistas} respuestas={resp.get(e.id) ?? []} convocados={convocadosDe(e, jugadores).length} />)}
                 </tbody>
               </table>
             </div>
+            {filtro === "pendientes" && (
+              <div className="botones" style={{ margin: "12px 0 0" }}>
+                <button className="boton boton-amarillo" type="submit" data-testid="marcar-copiado-lista">Marcar como copiado</button>
+                <MarcarTodos />
+                <span className="pequeno suave">Pulsa solo si ya está copiado en SportEasy. Te pedirá confirmación.</span>
+              </div>
+            )}
+            </Envoltorio>
           )}
           {filtro === "proximos" && futuros.length > MAX_PROXIMOS && <p className="pequeno suave" style={{ margin: 0 }}>Se ven los próximos {MAX_PROXIMOS} de {futuros.length}. Para el resto, usa los filtros (Entrenos, Liga…).</p>}
           <p className="pequeno suave" style={{ margin: 0 }}>
@@ -123,7 +132,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
               {concretos.length === 0 && deSerie.length === 0 ? "Todo al día" : `${concretos.length} ${concretos.length === 1 ? "cambio pendiente" : "cambios pendientes"}${deSerie.length ? ` + ${deSerie.length} entrenos de la serie` : ""}`}
             </h2>
             {concretos.length === 0 && deSerie.length === 0 ? <p className="pequeno suave" style={{ margin: 0 }}>No hay nada que copiar.</p> : (
-              <form action={marcarCopiado} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <FormularioCopia style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <ul>
                   {concretos.map((e) => (
                     <li key={e.id}>
@@ -136,16 +145,19 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
                   {deSerie.length > 0 && (
                     <li>
                       <label>
-                        <input type="checkbox" name="id" value="" disabled />
+                        <input type="checkbox" name="serie" value="1" data-n={deSerie.length} />
                         <span><b>{deSerie.length} entrenos de la serie</b> (del {diaYNumero(deSerie[0].fecha)} al {diaYNumero(deSerie[deSerie.length - 1].fecha)}) sin confirmar en SportEasy.<br />
-                          <span className="suave">Claude los comprueba y, con tu OK, los marca desde el filtro «Pendientes».</span></span>
+                          <span className="suave">Márcalos cuando la serie esté creada en SportEasy (o uno a uno desde el filtro «Pendientes de SportEasy»).</span></span>
                       </label>
                     </li>
                   )}
                 </ul>
-                {concretos.length > 0 && <button className="boton boton-amarillo" type="submit">Marcar como copiado</button>}
-                <span className="pequeno suave">Lo usa Claude cuando termina de copiar a SportEasy. Pulsa solo si ya está copiado.</span>
-              </form>
+                <div className="botones" style={{ margin: 0 }}>
+                  <button className="boton boton-amarillo" type="submit">Marcar como copiado</button>
+                  <MarcarTodos />
+                </div>
+                <span className="pequeno suave">Pulsa solo si ya está copiado en SportEasy. Te pedirá confirmación.</span>
+              </FormularioCopia>
             )}
           </section>
 
@@ -181,7 +193,11 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   );
 }
 
-function Fila({ e, pistas, respuestas, convocados }: { e: EventoFila; pistas: Pista[]; respuestas: { respuesta: Respuesta }[]; convocados: number }) {
+function Envoltorio({ activo, children }: { activo: boolean; children: React.ReactNode }) {
+  return activo ? <FormularioCopia>{children}</FormularioCopia> : <>{children}</>;
+}
+
+function Fila({ e, pistas, respuestas, convocados, casilla }: { casilla?: boolean; e: EventoFila; pistas: Pista[]; respuestas: { respuesta: Respuesta }[]; convocados: number }) {
   const pe = pistaEfectiva(e, pistas);
   const aviso = chipEquipacion(avisoDeEvento(e));
   const cancelado = e.estado === "cancelado";
@@ -193,6 +209,7 @@ function Fila({ e, pistas, respuestas, convocados }: { e: EventoFila; pistas: Pi
   return (
     <tr className={`${cancelado ? "ev-cancelado" : ""} ${sinPista ? "ev-sin-pista" : ""}`} data-evento={e.clave}>
       <td data-label="Fecha">
+        {casilla && e.sporteasy_estado === "pendiente" && <input type="checkbox" name="id" value={e.id} aria-label={`Marcar como copiado: ${tituloEvento(e)} ${diaYNumero(e.fecha)}`} style={{ marginRight: 8 }} />}
         <strong>{diaYNumero(e.fecha)}</strong>
         <div className="ev-hora">{rangoHoras(e)}{e.tipo === "liga" && quedada ? ` · encuentro ${quedada}` : ""}</div>
       </td>

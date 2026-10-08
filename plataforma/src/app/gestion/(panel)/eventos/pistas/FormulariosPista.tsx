@@ -22,6 +22,14 @@ export function FilaPista({ pista }: { pista: Pista }) {
       {res?.error && <div className="aviso aviso-error" role="alert">{res.error}</div>}
       <form action={accion} className="ev-dos">
         <div className="campo" style={{ margin: 0 }}>
+          <label htmlFor={`nombre-${pista.id}`}>Nombre</label>
+          <input id={`nombre-${pista.id}`} name="nombre" type="text" required minLength={3} maxLength={80} defaultValue={pista.nombre} />
+        </div>
+        <div className="campo" style={{ margin: 0 }}>
+          <label htmlFor={`uso-${pista.id}`}>Uso</label>
+          <select id={`uso-${pista.id}`} name="uso" defaultValue={pista.uso}><option value="entreno">Entreno</option><option value="partido">Partido</option></select>
+        </div>
+        <div className="campo" style={{ margin: 0 }}>
           <label htmlFor={`estado-${pista.id}`}>Estado</label>
           <select id={`estado-${pista.id}`} name="estado" defaultValue={pista.estado}>{ESTADOS.map((e) => <option key={e} value={e}>{TEXTO_ESTADO_PISTA[e]}</option>)}</select>
         </div>

@@ -206,7 +206,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
                       <CopiarTexto texto={rec.texto} etiqueta="Copiar texto" />
                     </>
                   ) : <p className="pequeno suave" style={{ margin: 0 }}>Todos han respondido o están ausentes por periodo: no hace falta recordatorio.</p>}
-                  <p className="pequeno suave" style={{ margin: 0 }}>Con «respuestas en la web» apagado, los recordatorios los envía Claude desde SportEasy, con tu OK.</p>
+                  <p className="pequeno suave" style={{ margin: 0 }}>Esto solo prepara la lista y el texto. El envío lo hace Claude desde SportEasy, con tu OK (mientras «respuestas en la web» esté apagado).</p>
                 </div>
               </details>
             )}

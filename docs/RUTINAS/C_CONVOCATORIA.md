@@ -21,4 +21,11 @@ Cuándo: lunes y martes (la jornada es el domingo). Fuente de las respuestas: Sp
 ## 4. Cola «Copia a SportEasy» (si hay cambios de eventos)
 8. Si en `/gestion/eventos` la tarjeta **«Copia a SportEasy»** lista cambios pendientes, copiarlos a SportEasy **uno a uno con el OK de Iván** (crear, cambiar fecha, hora, pista o quedada, o cancelar, según diga la descripción), y después pulsar **«Marcar como copiado»**. Nunca marcar algo que no se haya copiado. Los 27 entrenos de la carga inicial salen como pendientes hasta que se compruebe que la serie existe en SportEasy.
 
-Notas: no se piden las mismas respuestas en dos sitios (D64): los jugadores responden en SportEasy hasta el paso 3. Claude no inventa respuestas ni motivos: si SportEasy no muestra un motivo, la línea va sin motivo.
+## 5. Con «respuestas en la web» encendido (paso 3, D99)
+9. Al encender: **una última Importar → Respuestas** de los eventos futuros (paso 1) y después ya no se importa más: los jugadores responden en la web. La etiqueta de cada evento pasa a «Respuestas en la web».
+10. Los recordatorios salen solos (lunes 19:00 agrupado; martes 10:00 del partido, también a quien tiene «duda»; miércoles 10:00 del entreno). «Pedir recordatorio a Claude» desaparece; si hace falta uno extra, «Enviar un recordatorio ahora» en la pantalla del evento.
+11. Si un jugador dice algo por WhatsApp, «Responder por él» en la pantalla del evento (queda «puesto por …»).
+12. Después del martes a las 10:00, cualquier cambio de un partido sale en **banda roja** (y avisa a los gestores): revisar la convocatoria y pulsar «Visto».
+13. Cada lunes, marcar la jornada anterior en el Panel (limpia / con arreglo): es la condición 1 de D64.
+
+Notas: no se piden las mismas respuestas en dos sitios (D64): los jugadores responden en SportEasy mientras el interruptor esté apagado. Claude no inventa respuestas ni motivos: si SportEasy no muestra un motivo, la línea va sin motivo.

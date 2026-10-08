@@ -106,7 +106,12 @@ try {
   const anonFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
   ok(anonFunciones.length === 0, 'anon no puede ejecutar NINGUNA funcion de public (D68)', anonFunciones.join(', '));
   const authFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
-  ok(JSON.stringify(authFunciones) === JSON.stringify(['anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en']),
+  // Paso 3 (D99): las del jugador (responder, ausencias, suscripcion), las de gestor (comprueban is_gestor dentro) y las
+  // tres internas que solo devuelven lo de quien consulta (_mi_person_id, _mis_eventos, _quien_va).
+  const PASO3 = ['_mi_person_id', '_mis_eventos', '_quien_va', 'alta_suscripcion', 'baja_suscripcion', 'borrar_ausencia', 'cambiar_interruptor', 'cerrar_ausencia',
+    'estado_activacion', 'guardar_ausencia', 'marcar_jornada', 'marcar_sporteasy', 'previsualizar_ausencia', 'responder', 'responder_domingo', 'responder_domingo_por',
+    'responder_por', 'respuestas_web_encendido'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

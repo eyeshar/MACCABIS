@@ -46,7 +46,10 @@
     "pruebas:fuente-eventos": "node pruebas/fuente_eventos.mjs",
     "pruebas:respuestas-web": "node pruebas/rls_respuestas_web.mjs",
     "pruebas:avisos-logica": "node pruebas/avisos_logica.mjs",
-    "pruebas:respuestas-pantallas": "node pruebas/respuestas_pantallas.mjs"
+    "pruebas:respuestas-pantallas": "node pruebas/respuestas_pantallas.mjs",
+    "pruebas:respuestas-real": "node pruebas/rls_respuestas_real.mjs",
+    "avisos:claves": "node scripts/avisos_claves.mjs",
+    "avisos:programar": "node scripts/programar_tarea_avisos.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

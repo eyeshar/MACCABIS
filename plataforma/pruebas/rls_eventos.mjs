@@ -47,7 +47,9 @@ try {
   console.log('\n== Reversibilidad: cada migración se deshace con su .revertir.sql y se puede volver a aplicar');
   ok(fs.existsSync(path.join(MIGS, '20261007230000_eventos_pistas.revertir.sql')) && fs.existsSync(path.join(MIGS, '20261007231000_respuestas_ausencias_asistencia.revertir.sql')), 'cada migración nueva tiene su revertir.sql al lado');
   for (const n of TABLAS_PRIVADAS) ok(await tablaExiste(n), `existe public.${n}`);
-  // Datos de asistencia para probar la copia (la pila arranca con la tabla vacia).
+  // Datos de asistencia para probar la copia (la pila arranca con la tabla vacia). Las del paso 3 (D99) dependen de
+  // estas: se deshacen antes, en orden inverso, y migrar() las vuelve a aplicar despues.
+  for (const f of ['20261008101000_avisos', '20261008100000_respuestas_web']) await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${f}.revertir.sql`), 'utf8')));
   await sql.unsafe(fs.readFileSync(path.join(MIGS, '20261007232000_pista_habitual_publica.revertir.sql'), 'utf8'));
   await sql.unsafe(fs.readFileSync(path.join(MIGS, '20261007231000_respuestas_ausencias_asistencia.revertir.sql'), 'utf8'));
   ok(!(await tablaExiste('respuestas')) && !(await tablaExiste('asistencia_resumen')), 'revertir la 2.ª migración quita respuestas, ausencias, diccionario, importaciones y resumen');
@@ -74,9 +76,11 @@ try {
   ok(r0 && r0.fueron === 20 && r0.con_excusa === 3 && r0.sin_excusa === 1 && r0.no_convocado === 2 && r0.lesion === 4 && r0.total === 30, 'los valores columna a columna son los del origen');
   ok(JSON.stringify(await sql`select * from public.asistencia_motivos order by temporada, person_id, ambito`) === huellaOrigen, 'asistencia_motivos queda idéntica (no se toca)');
   // Si la copia no cuadrase, la migracion aborta entera: se simula con un resumen corrupto.
+  for (const f of ['20261008101000_avisos', '20261008100000_respuestas_web']) await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${f}.revertir.sql`), 'utf8')));
   await sql.unsafe(fs.readFileSync(path.join(MIGS, '20261007231000_respuestas_ausencias_asistencia.revertir.sql'), 'utf8'));
   await sql`insert into public.asistencia_motivos (temporada, person_id, nombre, ambito, fueron, total) values ('2026-27', 'zzz', 'Z', 'partidos', 1, 1)`;
   await migrar(sql, { log: () => {} });
+  await sql`notify pgrst, 'reload schema'`; await new Promise((ok) => setTimeout(ok, 1500)); // PostgREST: vuelve a leer el esquema
   ok((await sql`select count(*)::int n from public.asistencia_resumen`)[0].n === filasOrigen.length + 1, 'una fila más en el origen se copia también');
 
   console.log('\n== Carga inicial y cuadre 1:1');
@@ -115,7 +119,7 @@ try {
   console.log('\n== RLS: lectura de lo privado');
   for (const t of TABLAS_PRIVADAS) {
     ok(vacioOBloqueado(await api(`/${t}?select=*`)), `anónimo NO lee ${t}`);
-    ok(vacioOBloqueado(await api(`/${t}?select=*`, { token: tJ })), `un jugador NO lee ${t} (ni siquiera lo suyo)`);
+    ok(vacioOBloqueado(await api(`/${t}?select=*`, { token: tJ })), `un jugador NO lee ${t} (de lo suyo, solo respuestas y ausencias desde el paso 3; aqui no tiene)`);
     ok(vacioOBloqueado(await api(`/${t}?select=*`, { token: tI })), `un usuario sin ficha NO lee ${t}`);
     const r = await api(`/${t}?select=*`, { token: tG });
     ok(r.status === 200 && r.datos.length > 0 || (r.status === 200 && ['respuestas', 'ausencias_periodo', 'importaciones'].includes(t)), `el gestor lee ${t}`, `${r.status}`);

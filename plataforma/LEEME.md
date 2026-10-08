@@ -153,6 +153,36 @@ límite de envíos de tu proyecto: no se puede saber desde fuera del panel, y va
    "Sender name" del paso 2, pero conviene que el cuerpo también lo diga, p. ej. "Tu código de Maccabis es:").
    Gmail SMTP admite unos 500 correos al día por cuenta: de sobra para un club de este tamaño.
 
+### 8. Avisos al móvil (paso 3, D99–D101): claves en Vercel y tarea programada
+Las claves **nunca** van al repositorio ni al chat. Ya están generadas en tu `plataforma/.env.local` (las creó
+`npm run avisos:claves`, que no las enseña; si borras ese fichero, vuelve a ejecutarlo y genera unas nuevas).
+
+**a) La clave de servicio de Supabase (la única que tienes que copiar del panel)**
+1. Supabase → tu proyecto → **Project Settings → API Keys** → la clave **`service_role`** (en paneles nuevos,
+   **Secret keys**). Pulsa «Reveal» y cópiala.
+2. Abre `plataforma/.env.local` con el Bloc de notas y añade una línea al final: `SUPABASE_SERVICE_ROLE_KEY=` seguido
+   de la clave, sin espacios. Guarda. (Esta clave salta las reglas de seguridad: solo la usa el servidor.)
+
+**b) Las cinco variables en Vercel**
+1. https://vercel.com → proyecto **maccabis** → **Settings → Environment Variables**.
+2. Para cada una de estas, pulsa **Add New**: nombre exactamente como aquí; valor, el de la misma línea de tu
+   `.env.local` (lo que va después del `=`); entorno: marca **Production** (y **Preview** si quieres probar en las
+   vistas previas); en las cuatro últimas marca **Sensitive**:
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (es pública: va al navegador)
+   - `VAPID_PRIVATE_KEY`
+   - `VAPID_SUBJECT`
+   - `AVISOS_SECRETO`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+3. **Deployments** → el último de producción → **⋯ → Redeploy** (las variables nuevas solo valen tras volver a
+   desplegar; la pública, además, se mete en la web al compilar).
+4. Comprueba: `curl -X POST https://maccabis.vercel.app/api/avisos/tarea` debe responder **401** (sin secreto, no
+   hace nada). Con las claves sin poner respondería 503.
+
+**c) La tarea cada 15 minutos (pg_cron + pg_net de Supabase, D101)** — solo tras tu OK, y después del redeploy:
+`npm run avisos:programar` enseña lo que haría; `npm run avisos:programar -- --aplicar` lo aplica (activa pg_cron y
+pg_net, guarda el secreto cifrado en Vault y programa el trabajo); `-- --quitar` lo quita. Con el interruptor
+apagado la tarea solo envía avisos de prueba pendientes: no manda ningún recordatorio.
+
 ## Pruebas
 
 ```

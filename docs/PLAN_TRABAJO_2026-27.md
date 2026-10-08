@@ -80,3 +80,6 @@ Hecho (rama `feat/eventos-puente`): la **web es la única fuente de eventos**. I
 - En convocatorias con rivales parejos se **equilibra por línea** (bases, exteriores, interiores), no solo en el total.
 - **No se crea cuenta de gestor de pruebas en producción**: Claude revisa con la sesión de Iván.
 - El mensaje de WhatsApp de cada evento lleva pista, número de pista y dirección (D98).
+
+## Paso 3 — Respuestas en la web y avisos (08/10/2026, D99–D102)
+Construido y entregado **apagado** (rama `feat/paso3-respuestas-avisos`). Sustituye lo dicho arriba sobre los recordatorios: salen solos a las **10:00** (no 12:00), sin OK por evento, cuando Iván encienda «respuestas en la web» (condiciones de D99.13). Orden para ponerlo en marcha: `BACKLOG.md` → Paso 3 (pendientes 1–7).

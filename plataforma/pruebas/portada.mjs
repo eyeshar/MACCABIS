@@ -161,7 +161,7 @@ try {
   ok(r.status === 200, '/club: 200 (antes 404)', String(r.status));
   ok(club.includes('Desde 2013') && club.includes('Maccabi de Levantar') && club.includes('Maccabi de Acostar'), '/club: desde 2013, MdA y MdL');
   ok([resumen.partidos_con_estadisticas, resumen.victorias, resumen.jugadores_en_la_historia].every((n) => club.includes(`<b>${n}</b>`) || club.includes(`>${n}</b>`)), '/club: las mismas cifras de historia que la portada (de los datos)');
-  ok(club.includes('Miércoles, 20:30–22:30') && club.includes('Valdebernardo') && club.includes('en obras'), '/club: entrenos (miercoles 20:30-22:30, Valdebernardo en obras)');
+  ok(club.includes('Miércoles, 20:30–22:30') && club.includes('Valdebernardo') && club.includes('en obras'), '/club: entrenos (miercoles 20:30-22:30, Valdebernardo en obras)', (club.match(/.{0,120}Miércoles.{0,160}/) ?? [club.slice(club.indexOf('ntreno'), club.indexOf('ntreno') + 300)])[0]);
   ok(club.includes('Centro Deportivo Municipal Moratalaz') && club.includes('Calle de Valdebernardo, 2, 28030 Madrid') && club.includes('Pavones (L9)'), '/club: instalación de los partidos (CDM Moratalaz, calle de Valdebernardo 2, metro Pavones L9)');
   ok(club.includes('Valdebernardo (Faustina Valladolid)') && club.includes('son dos sitios distintos') && !club.includes('pendiente de confirmar'), '/club: entrenos en Valdebernardo (Faustina Valladolid), aclarado que no es la de los partidos, sin hueco');
   ok(club.includes('href="/historia"'), '/club: enlace a la rejilla completa de Historia (/historia)');
@@ -210,7 +210,7 @@ try {
     const filaCaja = calSel.locator('[data-id="entreno-semanal-2026-10-07"]');
     ok((await filaCaja.textContent()).includes('20:00–21:00') && (await filaCaja.textContent()).includes('Caja Mágica'), 'calendario: entreno del 07/10, 20:00–21:00 en la Caja Magica');
     const fila14 = calSel.locator('[data-id="entreno-semanal-2026-10-14"]');
-    ok((await fila14.textContent()).includes('20:30–22:30') && (await fila14.textContent()).includes('pista por confirmar') && (await fila14.textContent()).includes('Valdebernardo en obras'), 'calendario: entreno del 14/10, pista por confirmar (Valdebernardo en obras)');
+    ok((await fila14.textContent()).includes('20:30–22:30') && (await fila14.textContent()).includes('pista por confirmar') && (await fila14.textContent()).includes('Valdebernardo en obras'), 'calendario: entreno del 14/10, pista por confirmar (Valdebernardo en obras)', await fila14.textContent());
     ok((await calSel.locator('[data-id="mda-j2"] [data-aviso="cambian_ellos"]').count()) === 1, 'calendario: J2 MdA con la pastilla "Cambian ellos"');
     ok((await calSel.locator('[data-id="entreno-semanal-2026-12-23"], [data-id="entreno-semanal-2026-12-30"]').count()) === 0, 'calendario: sin entreno el 23 ni el 30 de diciembre');
     for (const [boton, sel, comprueba] of [
@@ -306,12 +306,14 @@ try {
     ok(p.url().endsWith('/mi-zona'), 'un jugador entra en /mi-zona', p.url());
     ok(await p.getByRole('heading', { name: /Hola, Jon/ }).isVisible(), 'Mi zona: "Hola, <nombre>"');
     const agenda = p.locator('[aria-labelledby="t-agenda"]');
-    ok((await agenda.locator('.mz-fila[data-tipo="entreno"]').count()) >= 1 && (await agenda.textContent()).includes('Respuesta: pendiente'), 'Tu agenda: entrenos con la respuesta "pendiente" (paso 2)');
-    ok((await agenda.locator('.mz-fila[data-tipo="jugado"]').textContent()).includes('jugaste con MdA y MdL') && (await agenda.textContent()).includes('30 puntos'), 'Tu agenda: J1 jugada con MdA y MdL, 30 puntos');
+    // Paso 3 (D99), con «respuestas en la web» apagado: los entrenos salen sin botones y con «Por ahora, responde en SportEasy».
+    ok((await agenda.locator('.mz-fila[data-tipo="entreno"]').count()) >= 1 && (await agenda.textContent()).includes('Por ahora, responde en SportEasy'), 'Tu agenda: entrenos y «Por ahora, responde en SportEasy» (interruptor apagado)');
+    const ultimo = p.locator('[aria-labelledby="t-ultimo"]');
+    ok((await ultimo.locator('.mz-fila[data-tipo="jugado"]').textContent()).includes('jugaste con MdA y MdL') && (await ultimo.textContent()).includes('30 puntos'), 'Mi zona: J1 jugada con MdA y MdL, 30 puntos');
     const domingo = p.locator('[aria-labelledby="t-partidos"]');
     ok((await domingo.locator('.eq-partido').count()) === 2, 'Mi zona (dobla): los dos partidos del proximo domingo');
     if (aMdA?.fecha === '2026-10-18') {
-      ok((await domingo.textContent()).includes('no se puede doblar'), 'J2: misma hora, "no se puede doblar"');
+      ok((await domingo.textContent()).includes('no se puede doblar'), 'J2: misma hora, "no se puede doblar"', await domingo.textContent());
       ok((await domingo.locator('.eq-aviso[data-tipo="cambian_ellos"]').count()) === 1, 'Equipacion del domingo: cambian ellos (Litros de Mahou)');
     }
     ok((await p.locator('[aria-labelledby="t-stats"]').textContent()).includes('30'), 'Tu temporada: 30 puntos');

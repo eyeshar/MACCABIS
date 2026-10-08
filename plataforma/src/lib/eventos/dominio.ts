@@ -19,6 +19,8 @@ export type EventoFila = {
   inicio: string | null; fin: string | null; quedada: string | null; pista_id: string | null; numero_pista: number | null;
   notas: string | null; origen: "ayuntamiento" | "manual"; serie: string | null; estado: "programado" | "cancelado";
   sporteasy_estado: EstadoCopia; sporteasy_cambio: string | null; sporteasy_copiado_en: string | null;
+  /** Paso 3 (D99) */
+  sin_recordatorios?: boolean; creado_en?: string; cambio_visible?: { campos: string[]; antes: string } | null; cambio_visible_en?: string | null;
 };
 
 export const TIPOS: { id: TipoEvento; texto: string; corto: string }[] = [
@@ -144,7 +146,7 @@ export const juntarCambios = (previo: string | null, nuevos: string[]) => {
 export type AccionMensaje = "nuevo" | "cambio" | "cancelado";
 
 /** El texto para pegar en el grupo de WhatsApp. `lineaEquipacion` (rutina C) se pasa ya calculada, solo en partidos. */
-export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMensaje, opciones: { cambios?: string[]; lineaEquipacion?: string | null } = {}) {
+export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMensaje, opciones: { cambios?: string[]; lineaEquipacion?: string | null; respondeEnLaWeb?: string | null } = {}) {
   const pe = pistaEfectiva(e, pistas);
   const dia = diaCorto(e.fecha);
   const hora = hhmm(e.inicio);
@@ -167,7 +169,8 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
   if (accion === "cambio" && opciones.cambios?.length) lineas.push(`Qué cambia: ${opciones.cambios.join("; ")}.`);
   if (notas) lineas.push(notas.replace(/\.$/, "") + ".");
   if (opciones.lineaEquipacion) lineas.push(opciones.lineaEquipacion);
-  lineas.push("Responded en SportEasy, por favor.");
+  // Con «respuestas en la web» encendido (D99) se termina con el enlace a la web; si no, SportEasy (fase puente).
+  lineas.push(opciones.respondeEnLaWeb ? `Responde en la web: ${opciones.respondeEnLaWeb}` : "Responded en SportEasy, por favor.");
   return lineas.join("\n");
 }
 

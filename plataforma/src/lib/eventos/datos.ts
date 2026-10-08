@@ -8,7 +8,7 @@ import type { Aviso } from "@/lib/equipacion";
 export type Cliente = Awaited<ReturnType<typeof clienteSesion>>;
 export const TEMPORADA = "2026-27";
 
-const COLUMNAS_EVENTO = "id, clave, temporada, tipo, equipo, titulo, jornada, rival, es_local, fecha, inicio, fin, quedada, pista_id, numero_pista, notas, origen, serie, estado, sporteasy_estado, sporteasy_cambio, sporteasy_copiado_en";
+const COLUMNAS_EVENTO = "id, clave, temporada, tipo, equipo, titulo, jornada, rival, es_local, fecha, inicio, fin, quedada, pista_id, numero_pista, notas, origen, serie, estado, sporteasy_estado, sporteasy_cambio, sporteasy_copiado_en, sin_recordatorios, creado_en, cambio_visible, cambio_visible_en";
 
 export async function cargarPistas(sb: Cliente): Promise<Pista[]> {
   const { data, error } = await sb.from("pistas").select("id, slug, nombre, nombre_corto, direccion, uso, estado, es_de_serie, num_pistas, nota").order("uso").order("nombre");

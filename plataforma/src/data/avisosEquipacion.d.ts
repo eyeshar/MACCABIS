@@ -15,6 +15,8 @@ export type Aviso = {
 export function clave(nombre: string | null | undefined): string;
 export function colorNormalizado(texto: string): string;
 export function equipoPorNombre(equip: Equipaciones, nombre: string | null | undefined): Equipaciones["equipos"][string] | null;
+export function colorConGenero(color: string, genero: "f" | "m"): string;
+export function descripcionColores(camiseta: string, pantalon: string): string;
 export function chocan(equip: Equipaciones, colorRival: string): boolean;
 export function avisoPartido(equip: Equipaciones, partido: Partial<Partido> | null): Aviso | null;
 export function lineaConvocatoria(equip: Equipaciones, partido: Partial<Partido> | null): string | null;

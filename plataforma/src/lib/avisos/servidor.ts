@@ -112,7 +112,7 @@ async function cargarBase(sb: SupabaseClient) {
   const [eventos, pistas, jugadores, respuestas, ausencias] = await Promise.all([
     leer(sb.from("eventos").select(COLUMNAS).eq("temporada", "2026-27"), "eventos") as Promise<EventoBase[]>,
     leer(sb.from("pistas").select("id, slug, nombre, nombre_corto, direccion, uso, estado, es_de_serie, num_pistas, nota"), "pistas") as Promise<Pista[]>,
-    leer(sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo"), "jugadores") as Promise<(JugadorPlan & { nombre_visible: string })[]>,
+    leer(sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol"), "jugadores") as Promise<(JugadorPlan & { nombre_visible: string })[]>,
     leer(sb.from("respuestas").select("evento_id, person_id, respuesta"), "respuestas") as Promise<{ evento_id: string; person_id: string; respuesta: RespuestaTexto }[]>,
     leer(sb.from("ausencias_periodo").select("person_id, desde, hasta, borrada_en"), "ausencias") as Promise<{ person_id: string; desde: string; hasta: string | null; borrada_en: string | null }[]>,
   ]);

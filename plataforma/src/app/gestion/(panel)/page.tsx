@@ -3,7 +3,7 @@ import { cargarFuente } from "@/lib/eventos/fuente";
 import { cargarJugadores } from "@/lib/eventos/datos";
 import { contarRespuestas, convocadosDe, type Respuesta } from "@/lib/eventos/dominio";
 import "./eventos/eventos.css";
-import { exigirGestor, origen } from "@/lib/sesion";
+import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import TarjetaActivar, { type EstadoActivacion } from "./TarjetaActivar";
 import { AvisoCaja } from "@/components/ProximoPartido";
 import { bonito, cargarLiga, type DatosLiga } from "@/lib/liga";
@@ -81,7 +81,7 @@ export default async function InicioGestion() {
   const ultimaJugada = Math.max(0, ...((jugadas ?? []) as { jornada: number }[]).map((x) => x.jornada));
   const jornadasJugadas = Array.from({ length: ultimaJugada }, (_, i) => i + 1);
   const marcas = Object.fromEntries(((marcasDB ?? []) as { jornada: number; estado: "limpia" | "con_arreglo" }[]).map((m) => [m.jornada, m.estado]));
-  const web = await origen();
+  const web = await origenMensajes();
   const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis, no en SportEasy: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo, nunca de noche): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
 
   const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
@@ -101,7 +101,6 @@ export default async function InicioGestion() {
           <div className="gs-eyebrow">Panel de gestión{fecha ? ` · ${textoSemana(fecha)}` : ""}</div>
           <h1>{jornada ? `Jornada ${jornada}` : "Temporada terminada"}</h1>
         </div>
-        <span className="pastilla pastilla-pendiente" title="Llega en el paso 2">Preparar convocatoria: llega en el paso 2</span>
       </div>
 
       <section aria-label="Rutinas semanales" className="gs-rutinas">

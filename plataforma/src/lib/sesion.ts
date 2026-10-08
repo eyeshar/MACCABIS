@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { URL_PRODUCCION } from "./indexacion";
 import { clienteSesion, configurado } from "./supabase";
 
 // Sesion de la peticion (una sola llamada a Auth aunque la pidan la cabecera, el layout y la pagina). Sin configurar o
@@ -51,7 +52,11 @@ export async function destinoTrasEntrar(supabase: Awaited<ReturnType<typeof clie
   return "/entrar?sin_zona=1";
 }
 
-// Origen publico de la web (para construir enlaces y mensajes).
+/** Direccion que llevan los enlaces de los mensajes de WhatsApp (D105): SIEMPRE la de produccion, aunque el gestor
+ *  este mirando una vista previa de Vercel o su ordenador (la plantilla no debe recibir un enlace que caduca). */
+export const origenMensajes = async () => URL_PRODUCCION;
+
+// Origen publico de la web de ESTA ejecucion (enlaces propios de la pantalla, no mensajes).
 export async function origen() {
   if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   const h = await headers();

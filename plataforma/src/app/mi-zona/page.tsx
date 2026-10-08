@@ -106,8 +106,6 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
         {guardado && <div className="aviso aviso-ok mz-aviso" role="status">Pedido guardado. Puedes cambiarlo mientras el pedido siga abierto.</div>}
         {no_gestor && <div className="aviso aviso-info mz-aviso" role="status">Tu cuenta no tiene permisos de gestión.</div>}
 
-        <BandaAvisos />
-
         <div className="mz-cols">
         <div className="mz-ancha">
         <section className="mz-hola">
@@ -118,10 +116,12 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
           </div>
         </section>
 
+        <BandaAvisos />
+
         <Agenda eventos={misEventos} respuestas={misRespuestas} ausencias={misAusencias} encendido={encendido} hoy={hoy} />
 
         {ultimos.length > 0 && (
-        <section className="mz-sec" aria-labelledby="t-ultimo">
+        <section className="mz-sec" id="ultimo" aria-labelledby="t-ultimo">
           <h2 id="t-ultimo" className="solo-lectores">Lo último que jugaste</h2>
           <div className="mz-lista">
             {ultimos.length > 0 && (

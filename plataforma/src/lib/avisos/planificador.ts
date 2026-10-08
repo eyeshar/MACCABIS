@@ -10,11 +10,12 @@
 //   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo, ni con el interruptor apagado.
 //   - Horas de silencio (22:30–8:30): sale a las 8:30 salvo que el evento empiece en menos de 12 h.
 
+import { quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
 import { horaDeEnvio, lunesDe, madrid, sumarDias } from "./horario.ts";
 import { queEs, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, type EventoTexto, type Texto } from "./textos.ts";
 
 export type EventoPlan = EventoTexto & { estado: "programado" | "cancelado"; sin_recordatorios: boolean; creado_en: string };
-export type JugadorPlan = { person_id: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean };
+export type JugadorPlan = { person_id: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: PersonaResponde["rol"] };
 export type RespuestaPlan = { evento_id: string; person_id: string; respuesta: "va" | "duda" | "no" | "sin_responder" };
 export type AusenciaPlan = { person_id: string; desde: string; hasta: string | null; borrada_en?: string | null };
 
@@ -37,11 +38,9 @@ export type AvisoPlan = Texto & {
 /** Si la tarea no pudo pasar a su hora, un recordatorio aun sale dentro de este margen; despues, ya no. */
 export const MARGEN_MS = 3 * 3600 * 1000;
 
-/** Invitados a un evento segun su ficha (igual que convocadosDe y que _invitado de la base). */
+/** Invitados a un evento (D105): la definicion unica `quienResponde`, igual que en la base. */
 export function invitados(e: Pick<EventoPlan, "tipo" | "equipo">, jugadores: JugadorPlan[]) {
-  return jugadores.filter((j) => j.activo && (
-    e.tipo === "entreno" || e.tipo === "interno" ? j.entrena || j.ficha_mda || j.ficha_mdl
-      : e.equipo === "MdA" ? j.ficha_mda : e.equipo === "MdL" ? j.ficha_mdl : j.ficha_mda || j.ficha_mdl));
+  return jugadores.filter((j) => quienResponde(e, j));
 }
 
 export const inicioDe = (e: Pick<EventoPlan, "fecha" | "inicio">) => madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00");

@@ -29,6 +29,7 @@ const COLORES = ['negro', 'azul oscuro', 'azul', 'blanco', 'rojo', 'rosa', 'nara
 const lista = Object.values(equip.equipos);
 ok(lista.length === 22, '22 equipos (20 rivales + MdA + MdL)', String(lista.length));
 ok(lista.every((e) => e.camiseta_original && e.pantalon_original), 'todos con el texto original de camiseta y pantalon');
+ok(A.descripcionColores('rojo', 'rojo') === 'camiseta roja, pantalón rojo' && A.descripcionColores('negro', 'negro') === 'camiseta negra, pantalón negro' && A.descripcionColores('azul oscuro', 'blanco') === 'camiseta azul oscuro, pantalón blanco' && A.descripcionColores('amarillo', 'rosa') === 'camiseta amarilla, pantalón rosa', 'el texto del color concuerda con la prenda: «camiseta roja, pantalón rojo»');
 ok(lista.every((e) => COLORES.includes(e.camiseta) && COLORES.includes(e.pantalon)), 'colores normalizados: minusculas, sin genero, de la lista');
 ok(lista.every((e) => A.colorNormalizado(e.camiseta_original) === e.camiseta && A.colorNormalizado(e.pantalon_original) === e.pantalon), 'el color normalizado sale del texto original (negra->negro, amarilla->amarillo...)');
 ok(!!equip.fuente && /^\d{4}-\d{2}-\d{2}$/.test(equip.fecha), 'fuente y fecha del dato');

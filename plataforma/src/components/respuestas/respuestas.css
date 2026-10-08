@@ -20,7 +20,7 @@
 .rw-banda:hover { color: var(--c-sobre-acento); filter: brightness(1.05); }
 .rw-banda > span:nth-child(2), .rw-marcar > span:nth-child(2) { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .rw-banda small { font-size: 13px; opacity: 0.85; }
-.rw-banda-icono, .rw-marcar-icono { font-size: 22px; }
+.rw-banda-icono, .rw-marcar-icono { display: inline-flex; flex: none; }
 .rw-marcar { background: var(--tarjeta); border: 1px solid var(--borde); color: var(--tinta); margin: 12px 16px; }
 .rw-marcar small { color: var(--tinta-tenue); font-size: 13px; }
 .rw-marcar:hover { color: var(--tinta); border-color: var(--borde-fuerte); }

@@ -29,6 +29,21 @@ export const restar20 = (h: string) => { const [a, b] = h.split(":").map(Number)
 export const ausenciaQueCubre = (fecha: string, ausencias: MiAusencia[]) =>
   ausencias.filter((a) => !a.borrada_en && a.desde <= fecha && (a.hasta == null || a.hasta >= fecha)).sort((a, b) => (a.desde < b.desde ? 1 : -1))[0] ?? null;
 
+// ---------------------------------------------------------------- quien responde (D105): UNA sola definicion
+// (la base tiene la misma en _invitado): responden los activos menos el entrenador; "solo entreno" solo a entrenos.
+export type PersonaResponde = { ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" };
+
+/** ¿Es de los que responden (a algo)? Los activos menos el entrenador: hoy 27 de 28. */
+export const respondeEnGeneral = (j: Pick<PersonaResponde, "activo" | "rol">) => j.activo && j.rol !== "entrenador";
+
+/** ¿Está invitado a este evento? Entreno o «entre nosotros»: quien entrena o tiene ficha; partido: su ficha, y nunca «solo entreno». */
+export function quienResponde(e: { tipo: string; equipo: string }, j: PersonaResponde) {
+  if (!respondeEnGeneral(j)) return false;
+  if (e.tipo === "entreno" || e.tipo === "interno") return j.entrena || j.ficha_mda || j.ficha_mdl;
+  if (j.rol === "solo_entreno") return false;
+  return e.equipo === "MdA" ? j.ficha_mda : e.equipo === "MdL" ? j.ficha_mdl : j.ficha_mda || j.ficha_mdl;
+}
+
 // ---------------------------------------------------------------- unidades: un evento, o un domingo con sus partidos
 export type Unidad = {
   clave: string; tipo: "evento" | "domingo"; fecha: string; eventos: MiEvento[];

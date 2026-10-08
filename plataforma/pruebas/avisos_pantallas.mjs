@@ -82,7 +82,7 @@ try {
     ok((await mda.textContent()).includes('Litros de Mahou') && (await mda.textContent()).includes('18 de octubre'), 'MdA: Litros de Mahou, 18 de octubre');
     ok((await mda.locator('.eq-aviso').getAttribute('data-tipo')) === 'cambian_ellos' && (await mda.locator('.eq-etq').textContent()).includes('Coinciden colores: cambia Litros de Mahou'), 'MdA-Litros de Mahou (local): CAMBIAN ELLOS, etiqueta informativa');
     ok((await mda.textContent()).includes('Jugamos de negro; Litros de Mahou (negro) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.'), 'MdA: texto de "cambian ellos"');
-    ok((await mda.textContent()).includes('camiseta negro'), 'MdA: se ve el color del rival');
+    ok((await mda.textContent()).includes('camiseta negra'), 'MdA: se ve el color del rival');
     ok((await mdl.textContent()).includes('Quinto Tiempo') && (await mdl.locator('.eq-aviso').count()) === 0, 'MdL-Quinto Tiempo: sin aviso');
     ok((await mdl.textContent()).includes('camiseta naranja'), 'MdL: color del rival visible aunque no haya aviso');
     ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), '/liga: sin desbordamiento horizontal');
@@ -183,11 +183,11 @@ try {
     await pg.selectOption('select[name="e"]', 'Craps');
     await pg.getByRole('button', { name: 'Ver' }).click();
     await pg.waitForURL(/e=Craps/);
-    ok((await pg.locator('[data-testid="color-equipo"]').textContent()).includes('camiseta negro'), 'Scouting: ficha de Craps con su color (negro)');
+    ok((await pg.locator('[data-testid="color-equipo"]').textContent()).includes('camiseta negra'), 'Scouting: ficha de Craps con su color (negro)');
     await pg.selectOption('select[name="e"]', 'MdA');
     await pg.getByRole('button', { name: 'Ver' }).click();
     await pg.waitForURL(/e=MdA/);
-    ok((await pg.locator('[data-testid="color-equipo"]').textContent()).includes('camiseta negro'), 'Scouting: nuestro equipo con su 1.ª equipacion (negra)');
+    ok((await pg.locator('[data-testid="color-equipo"]').textContent()).includes('camiseta negra'), 'Scouting: nuestro equipo con su 1.ª equipacion (negra)');
     ok(await sinDesbordar(pg), 'Scouting: sin desbordamiento horizontal');
     ok(errG.length === 0, 'Gestion: sin errores de JavaScript', errG.join(' | '));
     await cg.close();

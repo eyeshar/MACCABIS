@@ -596,3 +596,11 @@ Varios comentarios del código y `data/avisos_equipacion.js` llaman «D79» a la
 - **Sin probar todavía:** el interruptor «Aplicar los ajustes a próximos entrenamientos» (no usarlo hasta probarlo).
 - Mientras el interruptor esté apagado, la copia sigue como hoy.
 Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a SportEasy» de Gestión.
+
+## D105 — Quién responde, y retoques del paso 3 tras la vista previa (Iván, 08/10/2026) — CORRIGE D103.2
+**Decisión de Iván — quién responde:**
+1. **Responden las personas activas menos Carlos (entrenador, Barreiro)**, que no responde a nada: hoy **27 de 28**.
+2. **Quien está marcado «solo entreno» solo se invita a los entrenos** (y a «entre nosotros»), nunca a los partidos, aunque tenga ficha (hoy: Fernando M., Edimil, Ignacio y Nicolás).
+3. **Una sola definición**: `quienResponde` (`plataforma/src/lib/respuestas/dominio.ts`) en la web y `_invitado` en la base (migración `20261008102000_quien_responde`, con su `.revertir.sql`). La usan: invitados de cada evento, condición 2 del interruptor («N/27», **mínimo 20**, configurable en `respuestas_web_config.minimo_entrados`), «Te faltan N», recordatorios, «Sin avisos · N» y las listas de quién falta. Las funciones de responder (`responder`, `responder_domingo`, `responder_por`, `responder_domingo_por`, ausencias) **rechazan en la base** a quien no esté invitado (`no_invitado`).
+4. **«Responder por él» no existe con el interruptor apagado** (en la fase puente las respuestas vienen solo de Importar): ni el botón, ni en la base (`responder_por` y `responder_domingo_por` exigen el interruptor encendido, `respuestas_apagadas`).
+**Retoques:** Mi zona en el móvil encendida: saludo → banda «Activa los avisos» → «Te faltan N» → «Tu agenda» → «Marcar días» → domingo → ropa → «Lo último que jugaste» → temporada (todo con `order` explícito; lo que no lo llevaba subía sobre el saludo); icono de campana dibujado en lugar del emoji; la equipación concuerda con la prenda («camiseta roja, pantalón rojo», `descripcionColores` en `data/avisos_equipacion.js`, usada por la web pública y la plataforma); Editar evento dice «serie miércoles 20:30–22:30» y no el nombre interno; fuera «Preparar convocatoria: llega en el paso 2» del panel; los enlaces de los mensajes de WhatsApp usan siempre `https://maccabis.vercel.app`.

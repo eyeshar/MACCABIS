@@ -51,9 +51,10 @@ try {
   const error = (r) => (r.datos && (r.datos.message || r.datos.msg)) || '';
 
   console.log('\n== Reversibilidad de las dos migraciones nuevas');
-  for (const f of ['20261008100000_respuestas_web', '20261008101000_avisos']) ok(fs.existsSync(path.join(MIGS, `${f}.revertir.sql`)), `${f} tiene su revertir.sql`);
+  for (const f of ['20261008100000_respuestas_web', '20261008101000_avisos', '20261008102000_quien_responde']) ok(fs.existsSync(path.join(MIGS, `${f}.revertir.sql`)), `${f} tiene su revertir.sql`);
   for (const n of NUEVAS) ok(await tablaExiste(n), `existe public.${n}`);
   const colsAntes = async (t) => (await sql`select column_name from information_schema.columns where table_schema = 'public' and table_name = ${t} order by column_name`).map((c) => c.column_name).join(',');
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261008102000_quien_responde.revertir.sql'), 'utf8')));
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261008101000_avisos.revertir.sql'), 'utf8')));
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261008100000_respuestas_web.revertir.sql'), 'utf8')));
   ok(!(await tablaExiste('suscripciones_avisos')) && !(await tablaExiste('respuestas_web_config')), 'revertir quita las tablas nuevas');
@@ -105,6 +106,12 @@ try {
   r = await rpc('alta_suscripcion', { p_endpoint: 'https://push.example/jon-1', p_p256dh: 'clave', p_auth: 'auth', p_navegador: 'Safari iPhone' }, jon.token);
   ok(r.status === 200, 'pero SÍ activa los avisos en su móvil (D99.12)', `${r.status} ${error(r)}`);
   ok((await rpc('respuestas_web_encendido', {}, jon.token)).datos === false, 'la web sabe que está apagado');
+  // D105: en la fase puente las respuestas vienen solo de Importar; «Responder por él» tampoco vale (ni de un evento ni del domingo).
+  r = await rpc('responder_por', { p_evento: E.e14, p_person: 'esteban-jon', p_respuesta: 'va' }, tG);
+  ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'con el interruptor apagado ni un gestor usa «Responder por él» (evento)', `${r.status} ${error(r)}`);
+  r = await rpc('responder_domingo_por', { p_fecha: '2026-10-25', p_person: 'esteban-jon', p_opcion: 'ambos' }, tG);
+  ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'ni el de la vista de domingo', `${r.status} ${error(r)}`);
+  ok((await sql`select count(*)::int n from public.respuestas where person_id = 'esteban-jon'`)[0].n === 0, 'y no ha quedado ninguna respuesta escrita');
 
   console.log('\n== Encender: condiciones 1, 2 y 4 (la 3 es informativa); solo gestores; queda registrado');
   ok((await rpc('cambiar_interruptor', { p_encender: true }, jon.token)).status >= 400, 'un jugador NO enciende el interruptor');
@@ -112,12 +119,12 @@ try {
   r = await rpc('cambiar_interruptor', { p_encender: true }, tG);
   ok(r.status >= 400 && /condiciones_sin_cumplir/.test(error(r)), 'sin las condiciones no se enciende');
   let est = (await rpc('estado_activacion', {}, tG)).datos;
-  ok(est.plantilla === 24 && est.entrados === 3 && est.minimo_entrados === 20 && est.con_avisos === 1 && est.jornadas_seguidas === 0 && est.puede_manejar === true, `estado: ${est.entrados}/${est.plantilla} han entrado (mínimo ${est.minimo_entrados}), ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`, JSON.stringify(est));
-  ok(Array.isArray(est.faltan_por_entrar) && est.faltan_por_entrar.length === 21 && !est.faltan_por_entrar.includes('Jon') && est.faltan_por_entrar.includes('Adriano'), 'condición 2: la lista de quién falta por entrar (21)');
+  ok(est.plantilla === 27 && est.entrados === 4 && est.minimo_entrados === 20 && est.con_avisos === 1 && est.jornadas_seguidas === 0 && est.puede_manejar === true, `estado: ${est.entrados}/${est.plantilla} han entrado (mínimo ${est.minimo_entrados}), ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`, JSON.stringify(est));
+  ok(Array.isArray(est.faltan_por_entrar) && est.faltan_por_entrar.length === 23 && !est.faltan_por_entrar.includes('Jon') && est.faltan_por_entrar.includes('Adriano') && !est.faltan_por_entrar.some((n) => /entrenador/.test(n)), 'condición 2: la lista de quién falta por entrar (23 de los 27; Carlos, el entrenador, no cuenta)');
 
   console.log('\n== Solo Iván maneja el interruptor, las jornadas y SportEasy (D103); otro gestor, solo lectura');
   const estC = (await rpc('estado_activacion', {}, tC)).datos;
-  ok(estC && estC.plantilla === 24 && estC.puede_manejar === false, 'otro gestor (Carlos) ve el estado, sin poder manejarlo');
+  ok(estC && estC.plantilla === 27 && estC.puede_manejar === false, 'otro gestor (Carlos) ve el estado, sin poder manejarlo');
   ok(/solo_responsable/.test(error(await rpc('marcar_jornada', { p_jornada: 1, p_estado: 'limpia' }, tC))), 'Carlos NO marca jornadas (lo para la base)');
   ok(/solo_responsable/.test(error(await rpc('marcar_sporteasy', { p_comprobado: true }, tC))), 'Carlos NO marca la casilla de SportEasy');
   ok(/solo_responsable/.test(error(await rpc('cambiar_interruptor', { p_encender: false }, tC))), 'Carlos NO enciende ni apaga');
@@ -130,15 +137,21 @@ try {
   ok((await rpc('estado_activacion', {}, tG)).datos.jornadas_seguidas === 3, 'y vuelve a contar desde ahí (J5–J7 = 3/3)');
   ok((await rpc('marcar_jornada', { p_jornada: 8, p_estado: 'limpia' }, jon.token)).status >= 400, 'un jugador NO marca jornadas');
   await rpc('marcar_sporteasy', { p_comprobado: true }, tG);
-  ok((await rpc('cambiar_interruptor', { p_encender: true }, tG)).status >= 400, 'con 1 y 4 pero solo 3 de 24 dentro de la web (condición 2, mínimo 20), no se enciende');
-  // Para la prueba: entran 17 más (20 de 24): basta el mínimo, no hace falta que entren todos.
-  for (const j of await sql`select person_id from public.jugadores where activo and (ficha_mda or ficha_mdl) and (email is null or email not like '%@pruebas.local') order by person_id limit 17`) {
+  ok((await rpc('cambiar_interruptor', { p_encender: true }, tG)).status >= 400, 'con 1 y 4 pero solo 4 de 27 dentro de la web (condición 2, mínimo 20), no se enciende');
+  // Para la prueba: entran 15 más (19 de 27: aún no basta) y luego 1 más (20 de 27: basta el mínimo, no hace falta que entren todos).
+  const entran = async (n) => {
+  for (const j of await sql`select person_id from public.jugadores where activo and rol <> 'entrenador' and (email is null or email not like '%@pruebas.local') order by person_id limit ${n}`) {
     const em = `${j.person_id}@pruebas.local`;
     await sql`update public.jugadores set email = ${em} where person_id = ${j.person_id}`;
     await pila.crearUsuario(em, 'x');
   }
+  };
+  await entran(15);
   est = (await rpc('estado_activacion', {}, tG)).datos;
-  ok(est.entrados === 20 && est.faltan_por_entrar.length === 4 && est.se_puede_encender === true, '20 de 24 han entrado: se cumple la condición 2 (faltan 4)', JSON.stringify(est));
+  ok(est.entrados === 19 && est.se_puede_encender === false, '19 de 27: todavía no se cumple la condición 2 (mínimo 20)', JSON.stringify(est));
+  await entran(1);
+  est = (await rpc('estado_activacion', {}, tG)).datos;
+  ok(est.entrados === 20 && est.plantilla === 27 && est.faltan_por_entrar.length === 7 && est.se_puede_encender === true, '20 de 27 han entrado: se cumple la condición 2 (faltan 7)', JSON.stringify(est));
   ok(/solo_responsable/.test(error(await rpc('cambiar_interruptor', { p_encender: true }, tC))), 'aun con las condiciones, Carlos no puede encender');  r = await rpc('cambiar_interruptor', { p_encender: true }, tG);
   ok(r.status === 200 && r.datos.encendido === true, 'con las tres condiciones, se enciende', `${r.status} ${error(r)}`);
   const reg = await sql`select que, por_nombre from public.respuestas_web_registro order by en`;
@@ -340,6 +353,35 @@ try {
     ok((await api(`/alertas_gestores?evento_id=eq.${pt.id}`, { metodo: 'PATCH', cuerpo: { visto_en: new Date().toISOString(), visto_por_nombre: 'Iván' }, token: tG })).datos.length === 2, '«Visto» la quita (la marca el gestor)');
   } else ok(true, '(hoy es lunes o martes antes de las 10:00: no hay partido «tarde» que probar en la base; lo cubre pruebas:avisos-logica)');
   ok((await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${E.e14}`)[0].n === 0, 'los entrenos no generan alerta');
+
+  console.log('\n== Quién responde (D105): los activos menos el entrenador; «solo entreno» solo a los entrenos');
+  const inv = async (person, ev) => (await sql`select public._invitado(${person}, ${ev}) as v`)[0].v;
+  const CARLOS_E = 'barreiro-carballal-carlos-jose', FERNANDO_M = 'mendez-escandon-fernando';
+  const cuantos = async (ev) => (await sql`select count(*)::int n from public.jugadores j where public._invitado(j.person_id, ${ev})`)[0].n;
+  ok((await sql`select count(*)::int n from public.jugadores where activo`)[0].n === 28, 'la plantilla activa son 28 personas');
+  ok(await cuantos(E.e14) === 27, 'a un entreno responden 27 (las 28 menos Carlos, el entrenador)', String(await cuantos(E.e14)));
+  ok(!(await inv(CARLOS_E, E.e14)) && !(await inv(CARLOS_E, E.mdaJ3)) && !(await inv(CARLOS_E, E.mdlJ3)), 'Carlos (entrenador) no está invitado a nada: ni entrenos ni partidos');
+  ok(await inv('feliz-gomez-edimil', E.e14), 'quien es «solo entreno» (Edimil) sí está invitado a los entrenos');
+  ok(!(await inv('feliz-gomez-edimil', E.mdaJ3)) && !(await inv('feliz-gomez-edimil', E.mdlJ3)), 'pero a ningún partido');
+  ok(await inv(FERNANDO_M, E.e14) && !(await inv(FERNANDO_M, E.mdaJ3)) && !(await inv(FERNANDO_M, E.mdlJ3)), 'aunque «solo entreno» tenga ficha (Fernando M.), nunca se le invita a un partido');
+  ok(await inv('esteban-jon', E.mdaJ3) && await inv('esteban-jon', E.mdlJ3) && await inv('galan-domingo-guillermo', E.mdaJ3) && !(await inv('galan-domingo-guillermo', E.mdlJ3)), 'los demás, a los partidos de su ficha');
+  ok(await cuantos(E.mdaJ3) === 23 && await cuantos(E.mdlJ3) === 21, 'a un partido de MdA responden 23 y a uno de MdL 21 (sin «solo entreno»)', `${await cuantos(E.mdaJ3)} y ${await cuantos(E.mdlJ3)}`);
+  await sql`update public.jugadores set activo = false where person_id = 'vallesi-daniele'`;
+  ok(!(await inv('vallesi-daniele', E.e14)), 'quien está de baja no está invitado');
+  await sql`update public.jugadores set activo = true where person_id = 'vallesi-daniele'`;
+  // Con el interruptor encendido, las funciones de responder rechazan a quien no está invitado.
+  ok((await rpc('responder', { p_evento: E.e14, p_respuesta: 'va' }, edimil.token)).status === 200, 'Edimil responde a un entreno');
+  r = await rpc('responder', { p_evento: E.mdaJ3, p_respuesta: 'va' }, edimil.token);
+  ok(r.status >= 400 && /no_invitado/.test(error(r)), '«solo entreno» no responde a un partido (lo para la base)', `${r.status} ${error(r)}`);
+  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'voy' }, edimil.token);
+  ok(r.status >= 400 && /no_invitado/.test(error(r)), 'ni al domingo', `${r.status} ${error(r)}`);
+  r = await rpc('responder_por', { p_evento: E.e14, p_person: CARLOS_E, p_respuesta: 'va' }, tG);
+  ok(r.status >= 400 && /no_invitado/.test(error(r)), 'ni un gestor responde por Carlos (entrenador): no responde a nada', `${r.status} ${error(r)}`);
+  r = await rpc('responder_por', { p_evento: E.mdaJ3, p_person: FERNANDO_M, p_respuesta: 'va' }, tG);
+  ok(r.status >= 400 && /no_invitado/.test(error(r)), 'ni por un «solo entreno» a un partido', `${r.status} ${error(r)}`);
+  r = await rpc('responder_por', { p_evento: E.e14, p_person: 'esteban-jon', p_respuesta: 'va' }, tG);
+  ok(r.status === 200, 'con el interruptor encendido, «Responder por él» sí funciona', `${r.status} ${error(r)}`);
+  await sql`delete from public.respuestas where person_id in ('esteban-jon', 'feliz-gomez-edimil') and evento_id = ${E.e14}`;
 
   console.log('\n== «Responder por él» (gestores)');
   ok((await rpc('responder_por', { p_evento: E.e14, p_person: 'gianatti-adriano', p_respuesta: 'va' }, jon.token)).status >= 400, 'un jugador NO responde por otro ni con esta función');

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { exigirGestor, origen } from "@/lib/sesion";
+import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import { lineaEquipacion } from "@/lib/equipacion";
 import { convocadosDe, diaCorto } from "@/lib/eventos/dominio";
 import { avisoDeEvento, cargarEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
@@ -30,7 +30,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
   };
   const conAvisos = new Set(((subs ?? []) as { person_id: string | null }[]).map((s) => s.person_id));
   const sinAvisos = convocadosDe(evento, jugadores).filter((j) => !conAvisos.has(j.person_id));
-  const web = await origen();
+  const web = await origenMensajes();
   const siguientes = deLaSerieDesde(todos, evento).length;
   const pe = pistaEfectiva(evento, pistas);
   const nuevo = (evento.sporteasy_cambio ?? "").startsWith("Evento nuevo");

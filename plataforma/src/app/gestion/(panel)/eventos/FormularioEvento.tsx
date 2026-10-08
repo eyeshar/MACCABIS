@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { hhmm, quedadaPorDefecto, TIPOS, TEXTO_ESTADO_PISTA, type EventoFila, type Pista, type TipoEvento } from "@/lib/eventos/dominio";
+import { hhmm, nombreSerie, quedadaPorDefecto, TIPOS, TEXTO_ESTADO_PISTA, type EventoFila, type Pista, type TipoEvento } from "@/lib/eventos/dominio";
 import { TEXTO_HUECO } from "@/lib/avisos/planificador";
 import { textoCambio } from "@/lib/avisos/textos";
 import { crearEvento, guardarEvento } from "./acciones";
@@ -129,7 +129,7 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
       {evento && enSerie && (
         <section className="gs-bloque" aria-labelledby="t-serie">
           <h2 id="t-serie" style={{ fontSize: 24 }}>Entreno semanal</h2>
-          <p style={{ margin: 0 }} className="suave">Este evento es parte de la serie «{evento.serie}» ({nSiguientes} {nSiguientes === 1 ? "sesión" : "sesiones"} desde esta fecha). ¿A qué aplicas el cambio?</p>
+          <p style={{ margin: 0 }} className="suave">Este evento es parte de la {nombreSerie(evento)} ({nSiguientes} {nSiguientes === 1 ? "sesión" : "sesiones"} desde esta fecha). ¿A qué aplicas el cambio?</p>
           <div className="ev-radios" role="radiogroup" aria-label="Alcance del cambio">
             <label><input type="radio" name="alcance" value="este" defaultChecked={alcanceInicial === "este"} />Solo a este miércoles <span className="suave" style={{ fontWeight: 400 }}>(lo normal mientras dure la obra)</span></label>
             <label><input type="radio" name="alcance" value="siguientes" defaultChecked={alcanceInicial === "siguientes"} />A este y a todos los siguientes</label>

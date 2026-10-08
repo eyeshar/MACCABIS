@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Calendario } from "@/components/Iconos";
 import Responder from "@/components/respuestas/Responder";
 import { madrid } from "@/lib/avisos/horario";
 import { sumarDias } from "@/lib/dias";
@@ -76,7 +77,7 @@ export default function Agenda({ eventos, respuestas, ausencias, encendido, hoy 
 
       {encendido && (
         <Link href="/mi-zona/ausencias" className="rw-marcar">
-          <span aria-hidden="true" className="rw-marcar-icono">📅</span>
+          <span aria-hidden="true" className="rw-marcar-icono"><Calendario size={24} /></span>
           <span><strong>Marcar días que no estoy</strong><small>{ausencias.length ? `Tienes ${ausencias.length} ${ausencias.length === 1 ? "ausencia" : "ausencias"} marcada${ausencias.length === 1 ? "" : "s"}` : "Viajes, lesiones… y no te preguntamos esos días"}</small></span>
           <span aria-hidden="true">›</span>
         </Link>

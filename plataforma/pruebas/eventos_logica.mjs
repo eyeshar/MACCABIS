@@ -193,6 +193,14 @@ ok(c.va === 1 && c.no === 1 && c.duda === 1 && c.sin_responder === 2, 'contadore
 const rec = D.recordatorio(miercoles, filas, pistas);
 ok(rec.faltan.join() === 'D' && /Voy \/ No voy \/ Duda/.test(rec.texto), 'el recordatorio pide solo a quien no ha respondido y no está ausente por periodo', rec.faltan.join());
 ok(D.convocadosDe({ tipo: 'liga', equipo: 'MdL' }, plantilla).length === 0 && D.convocadosDe({ tipo: 'entreno', equipo: 'ambos' }, plantilla).length === 5, 'convocados: entreno = quien entrena; MdL = fichas de MdL');
+{
+  const base = { ficha_mda: true, ficha_mdl: true, entrena: true, activo: true, rol: 'jugador' };
+  const gente = [{ person_id: 'j', nombre_visible: 'J', ...base }, { person_id: 'c', nombre_visible: 'C', ...base, ficha_mda: false, ficha_mdl: false, rol: 'entrenador' },
+    { person_id: 's', nombre_visible: 'S', ...base, rol: 'solo_entreno' }, { person_id: 'x', nombre_visible: 'X', ...base, activo: false }];
+  const quien = (e) => D.convocadosDe(e, gente).map((p) => p.person_id).join('');
+  ok(quien({ tipo: 'entreno', equipo: 'ambos' }) === 'js' && quien({ tipo: 'liga', equipo: 'MdA' }) === 'j' && quien({ tipo: 'liga', equipo: 'ambos' }) === 'j', 'quién responde (D105): sin el entrenador, sin bajas y «solo entreno» solo a entrenos', quien({ tipo: 'entreno', equipo: 'ambos' }));
+  ok(D.nombreSerie({ fecha: '2026-10-14', inicio: '20:30:00', fin: '22:30:00' }) === 'serie miércoles 20:30–22:30', 'la serie se nombra «serie miércoles 20:30–22:30», no por su nombre interno');
+}
 const res = A.resumenTemporada([
   { temporada: '2026-27', person_id: 'a', nombre: 'A', ambito: 'entrenos', fueron: 3, total: 4, con_excusa: 1, sin_excusa: 0, no_convocado: 0, lesion: 0 },
   { temporada: '2026-27', person_id: 'a', nombre: 'A', ambito: 'partidos', fueron: 2, total: 2, con_excusa: 0, sin_excusa: 0, no_convocado: 0, lesion: 0 },

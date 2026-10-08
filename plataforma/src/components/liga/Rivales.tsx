@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { textoColores } from "@/lib/colores";
 import { fechaCorta } from "@/lib/estadisticas/calculo";
 import type { Color, DatosRivales, Rival } from "@/lib/estadisticas/liga";
 import { CajaTabla, Control, Nota, SecH, Segmento } from "./Comunes";
@@ -120,7 +121,7 @@ function Ficha({ r, color, onCerrar }: { r: Rival; color: Color | null | undefin
             <h3>{r.nombre}</h3>
             <div className="e-modal-sub">Grupo del {r.grupo} en 2026/27{r.antes.length ? ` · antes: ${r.antes.join(", ")}` : ""}</div>
             <div className="e-modal-sub">{r.temporadas_jdm} de {r.temporadas_disponibles} temporadas en los JDM · mejor: {r.mejor}</div>
-            {color && <div className="e-eqcol"><i className="e-eqdot" style={{ background: color.css }} />camiseta {color.camiseta}, pantalón {color.pantalon}</div>}
+            {color && <div className="e-eqcol"><i className="e-eqdot" style={{ background: color.css }} />{textoColores(color)}</div>}
           </div>
           <button ref={boton} type="button" className="e-cerrar" aria-label="Cerrar" onClick={onCerrar}>✕</button>
         </div>

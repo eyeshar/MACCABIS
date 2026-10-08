@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { exigirGestor, origen as origenWeb } from "@/lib/sesion";
+import { exigirGestor, origenMensajes as origenWeb } from "@/lib/sesion";
 import { diaYNumero, hoyMadrid, sumarDias } from "@/lib/dias";
 import { fechaHora } from "@/lib/fechas";
 import { cargarEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
@@ -177,7 +177,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
                     <td data-label="Respuesta"><span className={l.clase === "no" ? "ev-no" : l.clase === "va" ? "ev-ok" : l.clase === "duda" ? "ev-duda" : "suave"}>{l.texto}</span>{l.origenTxt && <span className="ev-sub" style={{ color: "var(--tinta-tenue)" }}>{l.origenTxt}</span>}</td>
                     <td data-label="Motivo y detalle">{l.motivo ?? <span className="suave">—</span>}</td>
                     <td data-label="Avisos">{l.avisos ? <span className="ev-ok">Sí</span> : <span className="suave">No</span>}</td>
-                    <td data-label="">{l.clase === "sin_responder" && <ResponderPor eventoId={evento.id} personId={l.person_id} nombre={l.nombre} fecha={evento.fecha} domingo={!!dia} opciones={opcionesPor(l)} />}</td>
+                    <td data-label="">{encendido && l.clase === "sin_responder" && <ResponderPor eventoId={evento.id} personId={l.person_id} nombre={l.nombre} fecha={evento.fecha} domingo={!!dia} opciones={opcionesPor(l)} />}</td>
                   </tr>
                 ))}
               </tbody>

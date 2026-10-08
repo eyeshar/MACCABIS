@@ -29,7 +29,7 @@ export async function cargarEvento(sb: Cliente, id: string): Promise<EventoFila 
 }
 
 export async function cargarJugadores(sb: Cliente): Promise<JugadorBasico[]> {
-  const { data, error } = await sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo").order("nombre_visible");
+  const { data, error } = await sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible");
   if (error) throw new Error(`jugadores: ${error.message}`);
   return (data ?? []) as JugadorBasico[];
 }

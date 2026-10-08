@@ -148,5 +148,21 @@ const todos = [
 ];
 ok(!todos.some((x) => /lesi[oó]n|trabajo|viaje|familia|horario|nivel|posici|base|alero|p[ií]vot|exterior|interior/i.test(`${x.titulo} ${x.cuerpo}`)), `ningún texto de aviso lleva motivos, niveles ni posiciones (${todos.length} revisados)`);
 
+// ---------------------------------------------------------------- quién responde (D105): una sola definición
+{
+  const con = (x) => ({ ...x, rol: x.rol ?? 'jugador' });
+  const carlos = con({ ...jug('carlos', false, false), rol: 'entrenador' });
+  const solo = con({ ...jug('fernando', true, true), rol: 'solo_entreno' });       // «solo entreno» con ficha: nunca a partidos
+  const todosJ = [...JUG.map((x) => con(x.person_id === 'edimil' ? { ...x, rol: 'solo_entreno' } : x)), carlos, solo];  // edimil: «solo entreno» sin ficha
+  const ids = (e) => P.invitados(e, todosJ).map((j) => j.person_id).join();
+  ok(ids(entreno14) === 'jon,guille,edimil,fernando', 'entreno: todos menos el entrenador y los de baja', ids(entreno14));
+  ok(!ids(entreno14).includes('carlos') && !ids(mdaJ3).includes('carlos') && !ids(mdlJ3).includes('carlos'), 'Carlos (entrenador) no responde a nada');
+  ok(ids(mdaJ3) === 'jon,guille' && ids(mdlJ3) === 'jon', 'partidos: su ficha, y sin «solo entreno» aunque tenga ficha', `${ids(mdaJ3)} / ${ids(mdlJ3)}`);
+  ok(ids(entreno14).includes('fernando') && ids(entreno14).includes('edimil'), '«solo entreno» sí entra en los entrenos');
+  ok(P.planificar(datos(M('2026-10-12', '19:05'), { jugadores: todosJ })).every((a) => !['carlos'].includes(a.person_id)), 'ningún recordatorio sale para Carlos');
+  const lunes = P.planificar(datos(M('2026-10-12', '19:05'), { jugadores: todosJ })).find((a) => a.person_id === 'fernando');
+  ok(lunes && !lunes.eventos.some((id) => ['mda2', 'mdl2', 'mda3', 'mdl3'].includes(id)), 'a un «solo entreno» el recordatorio del lunes solo le habla de entrenos');
+}
+
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

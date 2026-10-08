@@ -107,6 +107,8 @@ try {
   const sinDesbordar = async (p) => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   const tactiles = async (p, sel) => p.evaluate((s) => [...document.querySelectorAll(s)].filter((x) => x.offsetParent).map((x) => { const r = x.getBoundingClientRect(); return { t: x.textContent.trim().slice(0, 30), h: Math.round(r.height), w: Math.round(r.width) }; }).filter((x) => x.h < 44 || x.w < 44), sel);
   const foto = (p, n) => p.screenshot({ path: path.join(SALIDA, `${n}.png`), fullPage: true }).catch(() => {});
+  const mensajes = async (p) => (await p.locator('.ev-mensaje').allInnerTexts()).join(' ');
+  const urlsMensajes = (t) => [...t.matchAll(/https?:\/\/[^\s)]+/g)].map((m) => m[0]);
 
   console.log('\n== Tarea de avisos: protegida con secreto');
   ok((await fetch(`${APP}/api/avisos/tarea`, { method: 'POST' })).status === 401, 'sin secreto: 401');
@@ -122,6 +124,7 @@ try {
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.getByText('Activa los avisos en este móvil')), 'banda amarilla «Activa los avisos en este móvil»');
   ok(await visto(pj.getByText('Por ahora, responde en SportEasy.')), '«Por ahora, responde en SportEasy»');
+  ok((await pj.locator('.rw-banda svg').count()) === 1 && !(await pj.locator('.rw-banda').innerText()).includes('🔔'), 'la banda lleva la campana dibujada (icono), no el emoji 🔔');
   ok(!(await pj.locator('.rw-btn').count()) && !(await pj.getByText(/Te faltan|Te falta 1/).count()), 'sin botones para responder ni «Te faltan…»');
   ok(!(await pj.locator('nav[aria-label="Mi zona"]').getByText('Ausencias').count()) && !(await pj.getByText('Marcar días que no estoy').count()), 'sin «Ausencias» en la barra ni «Marcar días que no estoy»');
   ok(await sinDesbordar(pj), 'Mi zona a 375 px sin desbordamiento');
@@ -182,6 +185,18 @@ try {
   const pequenos = await tactiles(pj, '.rw-btn, .rw-banda, .rw-marcar, .zb a');
   ok(!pequenos.length, 'botones y enlaces de Mi zona de al menos 44 px', JSON.stringify(pequenos));
   ok(await sinDesbordar(pj), 'Mi zona encendido a 375 px sin desbordamiento');
+  // D105: saludo, banda «Activa los avisos», «Te faltan N», «Tu agenda» y después lo demás; «Lo último que jugaste» nunca sobre el saludo.
+  const ordenMovil = () => pj.evaluate(() => {
+    const falso = !document.querySelector('#ultimo');
+    if (falso) { const s = document.createElement('section'); s.id = 'ultimo'; s.className = 'mz-sec'; s.textContent = 'Lo último que jugaste'; document.querySelector('.mz-ancha').append(s); }
+    const y = (sel) => { const e = document.querySelector(sel); return e ? Math.round(e.getBoundingClientRect().top + scrollY) : null; };
+    const r = { hola: y('.mz-hola'), banda: y('.rw-banda'), faltan: y('.rw-faltan'), agenda: y('#agenda'), marcar: y('.rw-marcar'), domingo: y('#domingo'), ropa: y('#ropa'), ultimo: y('#ultimo'), temporada: y('#temporada') };
+    if (falso) document.querySelector('#ultimo').remove();
+    return r;
+  });
+  const om = await ordenMovil();
+  const crece = (...xs) => xs.every((x) => x != null) && xs.every((x, i) => i === 0 || x > xs[i - 1]);
+  ok(crece(om.hola, om.banda, om.faltan, om.agenda, om.marcar, om.domingo, om.ropa, om.ultimo, om.temporada), 'Mi zona en el móvil: saludo → banda → «Te faltan» → «Tu agenda» → … → «Lo último que jugaste» → temporada', JSON.stringify(om));
   await foto(pj, 'mizona_encendido_375');
   await tarjeta.getByRole('button', { name: 'Voy', exact: true }).click();
   await pj.waitForTimeout(1500);
@@ -229,6 +244,8 @@ try {
   ok(new URL(pj.url()).pathname === '/mi-zona/domingo/2026-10-25', 'abrir un partido de un domingo con dos horas lleva al domingo');
   await pj.goto(`${APP}/mi-zona/domingo/2026-10-18`);
   ok(await visto(pj.getByRole('button', { name: 'Voy', exact: true })) && !(await pj.getByRole('button', { name: 'A los dos' }).count()), 'misma hora (J2): Voy / No voy / Duda');
+  ok(await sinDesbordar(pj), 'domingo con misma hora a 375 px sin desbordamiento');
+  await foto(pj, 'domingo_misma_hora_375');
 
   console.log('\n== Ausencias');
   await pj.goto(`${APP}/mi-zona/ausencias/nueva`);
@@ -277,6 +294,7 @@ try {
   ok(await visto(pg.getByTestId('sin-avisos').getByText(/Sin avisos activados · \d+/)) && await visto(pg.getByTestId('sin-avisos').getByRole('button', { name: /Copiar mensaje/ })), 'tarjeta «Sin avisos activados · N» con «Copiar mensaje»');
   const fila = pg.locator('tr', { hasText: 'Daniele' });
   if (!(await visto(fila.getByRole('button', { name: /^Responder por / })))) console.log('   tabla:', (await pg.locator('main').innerText()).slice(0, 1500));
+  ok(await visto(pg.locator('tr', { hasText: 'Daniele' }).getByRole('button', { name: /^Responder por / })) && !(await pg.locator('tr', { hasText: 'Carlos (entrenador)' }).count()), 'encendido: «Responder por él» aparece; Carlos (entrenador) no está en la lista de quien responde');
   await fila.getByRole('button', { name: /^Responder por / }).click();
   await fila.getByLabel('Respuesta').selectOption('duda');
   await fila.getByRole('button', { name: 'Guardar' }).click();
@@ -303,6 +321,10 @@ try {
 
   console.log('\n== Editar evento: encuentro calculado y aviso de cambio');
   await pg.goto(`${APP}/gestion/eventos/${E.entreno}`);
+  const textoEditar = await pg.locator('main').innerText();
+  ok(/serie miércoles 20:30–22:30/.test(textoEditar) && !/entreno-semanal/.test(textoEditar), 'Editar evento: «serie miércoles 20:30–22:30», sin el nombre interno «entreno-semanal»', textoEditar.match(/Este evento es parte de.{0,80}/)?.[0]);
+  const enlacesEvento = urlsMensajes(await mensajes(pg));
+  ok(enlacesEvento.every((u) => u.startsWith('https://maccabis.vercel.app')), 'y los mensajes del evento llevan la dirección de producción', enlacesEvento.join(' '));
   ok(await visto(pg.getByTestId('encuentro')) && !(await pg.locator('input[name="quedada"][type="time"]').count()), 'el encuentro se muestra calculado (no es un campo libre)');
   ok(await visto(pg.getByTestId('bloque-recordatorios').getByText('Sin recordatorios para este evento')), 'bloque «Recordatorios» con «Sin recordatorios para este evento»');
   await pg.getByLabel('Empieza').fill('20:00');
@@ -323,6 +345,10 @@ try {
   await pg.goto(`${APP}/gestion`);
   ok(await visto(pg.getByTestId('tarjeta-activar')) && (await pg.getByTestId('estado-interruptor').innerText()) === 'Encendido', 'Panel: tarjeta «Respuestas en la web: activar» (Encendido)');
   ok(await visto(pg.getByRole('button', { name: 'Desactivar' })), 'con «Desactivar»');
+  ok(/\d+\/27 jugadores ya han entrado en la web/.test(await pg.getByTestId('tarjeta-activar').innerText()) && /mínimo 20/.test(await pg.getByTestId('tarjeta-activar').innerText()), 'condición 2: «N/27 jugadores ya han entrado» (mínimo 20)', (await pg.getByTestId('tarjeta-activar').innerText()).slice(0, 400));
+  ok(!/Preparar convocatoria|llega en el paso 2/.test(await pg.locator('main').innerText()), 'el panel ya no dice «Preparar convocatoria: llega en el paso 2»');
+  const enlacesPanel = urlsMensajes(await mensajes(pg));
+  ok(enlacesPanel.length > 0 && enlacesPanel.every((u) => u.startsWith('https://maccabis.vercel.app')), 'los mensajes de WhatsApp del panel llevan siempre https://maccabis.vercel.app', enlacesPanel.join(' '));
   await foto(pg, 'gestion_panel_escritorio');
   const pg375 = await nuevaPagina(await nav.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true }));
   await pg375.context().addCookies(await ctxG.cookies());
@@ -381,6 +407,9 @@ try {
   ok(await visto(pj.getByText('Por ahora, responde en SportEasy.')) && !(await pj.locator('.rw-btn').count()), 'apagado otra vez: sin botones');
   await pg.goto(`${APP}/gestion/eventos/${E.entreno}/respuestas`);
   ok(await pg.getByTestId('origen-respuestas').innerText() === 'Leído de SportEasy' && await visto(pg.getByTestId('recordatorio')), 'Gestión vuelve a «Leído de SportEasy» y «Pedir recordatorio a Claude»');
+
+  await pg.goto(`${APP}/gestion/eventos/${E.entreno}/respuestas`);
+  ok(!(await pg.getByRole('button', { name: /^Responder por / }).count()), 'apagado: «Responder por él» no aparece en la lista de respuestas');
 
   ok(!errores.length, 'sin errores de JS en ninguna página', errores.slice(0, 5).join(' | '));
 } finally {

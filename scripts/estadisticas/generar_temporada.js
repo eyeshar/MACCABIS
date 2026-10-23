@@ -259,19 +259,26 @@ async function leerFuentes(temporada, cfg) {
   for (const f of listar(path.join(base, 'actas'), /^Acta-Partido-\d+\.pdf$/i)) actas.push(await leerActa(f));
   const hojas = listar(path.join(base, 'hojas'), /^[^~].*\.xlsx$/i).map(f => leerHoja(f));
   const avisos = [];
-  // Quién jugó en cada hoja (para asignar los "Campeonato" sin equipo de SportEasy a MdA o MdL).
-  const aliasN = cfg.alias_nombres || {};
-  const jugaron = {};
-  for (const h of hojas) {
-    const set = jugaron[h.equipo] || (jugaron[h.equipo] = new Set());
-    for (const j of h.jugadores) { const s = slug(aliasN[j.nombre] || j.nombre); set.add(ALIAS[s] || s); }
-  }
-  const asistencia = leerAsistencia(cfg.asistencia, base, avisos, temporada, Object.keys(jugaron).length ? jugaron : null);
   let calendario = [];
   for (const c of cfg.calendario || []) {
     const f = path.join(ROOT, c.fichero);
     if (fs.existsSync(f)) calendario = calendario.concat(c.formato === 'json' ? JSON.parse(fs.readFileSync(f, 'utf8')).partidos : partidosDelClub(f, cfg.codigos_equipo || {}));
   }
+  // Quién jugó en cada hoja, POR EQUIPO Y FECHA (para asignar los "Campeonato" sin equipo de SportEasy
+  // a MdA o MdL). La hoja no trae fecha: sale del partido del calendario (equipo, local/visitante y
+  // rival). Comparar por fecha y no con toda la temporada evita que, al crecer las hojas, el parecido
+  // de un evento de la J1 baje del umbral (pasó al procesar la J2 el 23/10/2026).
+  const aliasN = cfg.alias_nombres || {};
+  const jugaron = {};
+  for (const h of hojas) {
+    const rival = h.esLocal ? h.visitante : h.local;
+    const cal = calendario.filter(c => c.equipo === h.equipo && !c.descansa && c.local === h.esLocal && normEquipo(c.rival) === normEquipo(rival));
+    const fecha = cal.length === 1 && cal[0].fecha ? cal[0].fecha.slice(8, 10) + '/' + cal[0].fecha.slice(5, 7) + '/' + cal[0].fecha.slice(2, 4) : '?';
+    const porFecha = jugaron[h.equipo] || (jugaron[h.equipo] = {});
+    const set = porFecha[fecha] || (porFecha[fecha] = new Set());
+    for (const j of h.jugadores) { const s = slug(aliasN[j.nombre] || j.nombre); set.add(ALIAS[s] || s); }
+  }
+  const asistencia = leerAsistencia(cfg.asistencia, base, avisos, temporada, Object.keys(jugaron).length ? jugaron : null);
   const fichas = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'fichas_inscripcion.json'), 'utf8'));
   return { actas, hojas, asistencia, calendario, avisos, fichas };
 }

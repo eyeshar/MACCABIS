@@ -27,6 +27,15 @@ const A = require(path.join(REPO, 'data', 'avisos_equipacion.js'));
 const equip = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'equipaciones_2026-27.json'), 'utf8'));
 const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
 const resumen = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'historia_resumen.json'), 'utf8'));
+// Lo que Mi zona debe decirle al jugador de pruebas (Jon) sale de los datos publicados, no de cifras fijas:
+// con cada jornada cambian la ultima jugada y el total de la temporada (la J2 rompio los "30 puntos" de la J1).
+const temporada = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'temporada.json'), 'utf8'));
+const jon = temporada.players.find((p) => p.person_id === 'esteban-jon');
+const jonJugados = jon.games.filter((g) => g.played);
+const jonUltimaJ = Math.max(...jonJugados.map((g) => g.pn));
+const jonUltimos = jonJugados.filter((g) => g.pn === jonUltimaJ);
+const jonEquipos = [...new Set(jonUltimos.map((g) => ({ MDA: 'MdA', MDL: 'MdL' })[g.eq]))].join(' y ');
+const jonPtsUltima = jonUltimos.reduce((s, g) => s + g.pts, 0);
 
 const PUERTO = 3104, PUERTO_WEB = 3105;
 const WEB = `http://127.0.0.1:${PUERTO_WEB}`;
@@ -309,14 +318,14 @@ try {
     // Paso 3 (D99), con «respuestas en la web» apagado: los entrenos salen sin botones y con «Por ahora, responde en SportEasy».
     ok((await agenda.locator('.mz-fila[data-tipo="entreno"]').count()) >= 1 && (await agenda.textContent()).includes('Por ahora, responde en SportEasy'), 'Tu agenda: entrenos y «Por ahora, responde en SportEasy» (interruptor apagado)');
     const ultimo = p.locator('[aria-labelledby="t-ultimo"]');
-    ok((await ultimo.locator('.mz-fila[data-tipo="jugado"]').textContent()).includes('jugaste con MdA y MdL') && (await ultimo.textContent()).includes('30 puntos'), 'Mi zona: J1 jugada con MdA y MdL, 30 puntos');
+    ok((await ultimo.locator('.mz-fila[data-tipo="jugado"]').textContent()).includes(`jugaste con ${jonEquipos}`) && (await ultimo.textContent()).includes(`${jonPtsUltima} puntos`), `Mi zona: J${jonUltimaJ} jugada con ${jonEquipos}, ${jonPtsUltima} puntos`, await ultimo.textContent());
     const domingo = p.locator('[aria-labelledby="t-partidos"]');
     ok((await domingo.locator('.eq-partido').count()) === 2, 'Mi zona (dobla): los dos partidos del proximo domingo');
     if (aMdA?.fecha === '2026-10-18') {
       ok((await domingo.textContent()).includes('no se puede doblar'), 'J2: misma hora, "no se puede doblar"', await domingo.textContent());
       ok((await domingo.locator('.eq-aviso[data-tipo="cambian_ellos"]').count()) === 1, 'Equipacion del domingo: cambian ellos (Litros de Mahou)');
     }
-    ok((await p.locator('[aria-labelledby="t-stats"]').textContent()).includes('30'), 'Tu temporada: 30 puntos');
+    ok((await p.locator('[aria-labelledby="t-stats"]').textContent()).includes(`${jon.tot.pts}`), `Tu temporada: ${jon.tot.pts} puntos`);
     ok(!/nivel|posici[oó]n/i.test(await p.textContent('main, .mz')), 'Mi zona: ni niveles ni posiciones (D39)');
     ok(await sinDesbordar(), 'Mi zona: sin desbordamiento');
     await captura(p, `real_mizona_${etiqueta}`);

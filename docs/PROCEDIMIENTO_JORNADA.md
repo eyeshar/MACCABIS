@@ -37,6 +37,7 @@ Si la FBM no ha publicado el acta, `npm run jornada` publica el partido **solo c
 - **Falta una hoja** (p. ej. una incomparecencia): el partido cuenta, sin estadísticas por jugador. Te lo digo.
 - **Un nombre nuevo que no reconozco**: te pregunto quién es antes de publicar.
 - **Descargaste dos veces el mismo fichero** (`(1)`, `_1` o " 1" en el nombre): no pasa nada, detecto los duplicados por contenido.
+- **Quedan en Descargas hojas o actas de jornadas anteriores:** tampoco pasa nada. Antes de copiar, comparo el contenido de cada fichero con lo que ya hay en `fuentes_fbm/2026-27/` (hojas, liga, actas y asistencia) y descarto lo ya cargado diciendo dónde está. Y si una hoja no puede ser de la jornada a la que iría (nuestra hoja es de otra jornada según el calendario; una hoja de liga de un equipo que juega contra nosotros esa jornada, que ya tiene hoja de esa jornada, o descargada antes de que se jugara), **paro sin copiar nada** y te digo cuál y por qué (`npm run test:duplicados`).
 - **Dos partidos "Campeonato" sin equipo en SportEasy:** se asignan a MdA o MdL cruzando quién consta "A tiempo" con quién jugó en cada hoja; si no es inequívoco, para y pregunta.
 
 ## Estado

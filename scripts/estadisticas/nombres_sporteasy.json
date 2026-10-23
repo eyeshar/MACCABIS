@@ -32,9 +32,20 @@
   "Enyel Santos Artiles": "santos-artiles-enyel-geuris",
   "Edimil Feliz Gomez": "feliz-gomez-edimil",
   "Luis Gomez Pradal": "gomez-pradal-luis",
-  "Tomás Teruel Fernández": "teruel-fernandez-tomas"
+  "Tomás Teruel Fernández": "teruel-fernandez-tomas",
+  "Barrimelo Barreiro": "barreiro-carballal-carlos-jose",
+  "Pablo Ortega Delgado": "ortega-delgado-pablo",
+  "Iván Rodríguez Pérez": "rodriguez-perez-ivan"
  },
  "ignorar": {
-  "2026-27": ["yamin-squicciarini-nicolas", "perchin-garcia-javier", "mateos-aparicio-ignacio"]
+  "2026-27": [
+   "yamin-squicciarini-nicolas",
+   "perchin-garcia-javier",
+   "mateos-aparicio-ignacio",
+   "barreiro-carballal-carlos-jose",
+   "ortega-delgado-pablo",
+   "rodriguez-perez-ivan"
+  ],
+  "_nota": "Personas que NO cuentan en la asistencia de esa temporada aunque respondan en SportEasy, sin aviso: los solo-entreno sin ficha; Carlos Barreiro (entrenador, excluido a propósito, D105); Pablo Ortega Delgado (no está en la plantilla 26/27); Iván Rodríguez Pérez (Iván Canario, no está en la plantilla 26/27 por ahora; quitar de aquí cuando se le dé de alta, D106)."
  }
 }

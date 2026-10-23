@@ -7,6 +7,12 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**Inmediato (23/10/2026):**
+- [ ] **Normativa FBM de esta temporada: desde la J3 (25/10/2026) es obligatorio llevar dorsal en la camiseta de la primera equipación, del mismo color para todo el equipo.** Avisar a la plantilla antes del domingo y tenerlo en cuenta en la convocatoria y en los avisos de equipación (D75).
+- [ ] **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27. **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma.
+- [ ] **Evaluar los CSV de gesdeportiva.fbm.es/clubes** (clasificación y listado completo de partidos, D106) para la **rutina B**: contraste de la clasificación calculada con la oficial (D74) y posible calendario de los dos grupos sin Deportes/web.
+- [ ] **Duplicados en Descargas (`npm run jornada`):** rama `fix/hojas-duplicadas` (23/10/2026, sin mergear, pendiente del OK de Iván): descarta por hash las hojas ya cargadas en `fuentes_fbm/2026-27/` y para si la jornada de una hoja no es la pedida con `--jornada N`.
+
 00. **Rediseño web en tres pasos (D76–D80, `docs/PLAN_TRABAJO_2026-27.md` → «Decisiones del 06/10/2026 (tarde)»)**
    - [x] **Paso 1 — Unificación web** (06/10/2026, rama `feat/rediseno-web`, **mergeado a `main` el 06/10/2026 con el OK de Iván, D88**): portada pública en `/`, sistema visual, calendario con entrenos y feed iCal, Acceso, Mi zona y Gestión con el aspecto nuevo, base instalable, inventario `docs/MIGRACION_WEB.md`. Pruebas: `pruebas:portada` + todas las anteriores.
    - [x] Respuestas de Iván al paso 1 (06/10/2026, noche, D81–D87): fundación 2013; entrenos sin Navidad, Reyes ni Semana Santa y último el 05/05/2027 (festivos comprobados en la fuente oficial); `datos:sync` dentro de `npm run jornada`; indexación de la web pública; página `/club`; motivos de ausencia fuera de los ficheros públicos (P1) y P3 borrado.
@@ -78,7 +84,7 @@
    - [ ] Rutina A: bajar cada lunes las hojas de los dos grupos (`docs/RUTINAS/A_ACTAS.md`); la J2 es la primera vez.
 8. **Tesorería** (solo registro de cuentas, D52).
 
-**Plan B (02/10/2026, D69/D70):** **subida de actas desde la zona de gestión** (hoy: `npm run jornada` con Claude controlando Afición FBM por Enlace Móvil, D70, `docs/PROCEDIMIENTO_JORNADA.md`). Solo se construye si esa vía deja de ser viable (p. ej. si Afición FBM bloquea el acceso remoto).
+**Plan B (02/10/2026, D69/D70; matizado el 23/10/2026, D106):** **subida de actas desde la zona de gestión** (hoy: actas desde la web gesdeportiva.fbm.es con la sesión de Iván en Chrome, D106; hojas con Claude controlando Afición FBM por Enlace Móvil, D70, `docs/PROCEDIMIENTO_JORNADA.md`). Solo se construye si esa vía deja de ser viable (p. ej. si Afición FBM bloquea el acceso remoto).
 
 **Además:**
 - [ ] **Exportar el balance de asistencias de SportEasy antes de apagarlo** (noviembre), para conservar los eventos de 26/27.

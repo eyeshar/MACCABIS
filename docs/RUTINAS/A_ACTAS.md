@@ -1,12 +1,30 @@
-# RUTINA A — Actas y estadísticas (procedimiento, 02/10/2026)
+# RUTINA A — Actas y estadísticas (procedimiento, 02/10/2026; reparto actas/hojas del 23/10/2026, D106)
 
 **Cuándo:** lunes por la mañana (tras la jornada del domingo).
+
+**Reparto de fuentes (D106, 23/10/2026):**
+| Qué | De dónde | Cómo |
+|---|---|---|
+| **Actas** (`Acta-Partido-<nº>.pdf`, las de MdA y MdL) | Web **gesdeportiva.fbm.es/clubes** → Competiciones → Resultados y actas (una sola cuenta ve los dos equipos) | Iván inicia sesión en su Chrome (clave en el gestor de contraseñas); Claude descarga desde ahí con la extensión. Claude **nunca** maneja la clave ni resuelve el «no soy un robot»: si salen, para y avisa. |
+| **Hojas de estadística** (las nuestras y las de toda la liga, D73) | App **Afición FBM** (la web no las ofrece, ni partidos de otros equipos) | Enlace Móvil de Windows con el S22 Ultra (D70), como hasta ahora. |
+| Clasificación y listado completo de partidos (CSV) | La misma web | Pendiente de evaluar para la rutina B (contraste con la oficial, D74). |
+
+Todo a **Descargas**, sin renombrar. Si en Descargas quedan hojas de jornadas anteriores, `npm run jornada` se ejecuta con `--desde` una carpeta que solo tenga los ficheros nuevos (así se hizo con la J2 y con las actas de J1 y J2 el 23/10).
+
+## Actas: web gesdeportiva.fbm.es (D106)
+
+1. Iván abre Chrome con la sesión de gesdeportiva.fbm.es/clubes iniciada (clave del gestor de contraseñas).
+2. Claude: Competiciones → **Resultados y actas** → jornada → **acta** de cada partido de MdA y MdL (`Acta-Partido-<nº>.pdf`, a Descargas).
+3. Si la web pide la clave o un «no soy un robot», Claude para y se lo dice a Iván.
+4. Primera ejecución: 23/10/2026 (4 actas de J1 y J2, las 4 cuadran).
+
+## Hojas: app Afición FBM por Enlace Móvil (D70)
 
 **Vía:** Enlace Móvil de Windows ("Aplicaciones"), con el Samsung S22 Ultra de Iván (D70, matiza D69). Claude abre Afición FBM del móvil en una ventana del PC y la maneja con el control del ordenador. Probado el 02/10/2026: la app carga y responde.
 
 **Condición:** el móvil encendido, con wifi y cerca del PC (puede estar bloqueado).
 
-## Procedimiento técnico
+## Procedimiento técnico (app)
 
 1. Cerrar WhatsApp Desktop (y apps WebView2 como Teams u Outlook nuevo) si tapan la pantalla a Claude.
 2. Abrir "Enlace Móvil"; si está maximizado, restaurarlo (doble clic en la barra de título) para que quede a la derecha.
@@ -25,7 +43,7 @@ Lunes 5/10/2026: sesión de aprendizaje con las actas de la J1. Iván enseña el
 
 ## Alcance desde la J2: todas las hojas de la jornada, de los dos grupos (D73, 06/10/2026)
 
-Cada lunes, además de nuestras actas y hojas, se bajan **todas las hojas de estadística de la jornada de los dos grupos** (G1 y G2: 5 partidos por jornada y grupo, 10 en total; el equipo que descansa no tiene hoja). En la app: Buscador → Partidos → el partido de cada pareja → hoja de estadística. Las actas de los partidos ajenos **no** hacen falta. Todo a Descargas, sin renombrar.
+Cada lunes, además de nuestras actas (web, D106) y hojas, se bajan **todas las hojas de estadística de la jornada de los dos grupos** (G1 y G2: 5 partidos por jornada y grupo, 10 en total; el equipo que descansa no tiene hoja). En la app: Buscador → Partidos → el partido de cada pareja → hoja de estadística. Las actas de los partidos ajenos **no** hacen falta. Todo a Descargas, sin renombrar.
 
 `npm run jornada` hace el resto:
 - Las hojas de partidos donde no jugamos van a `fuentes_fbm/2026-27/liga/` como `liga_J01_G1_<local>_vs_<visitante>_<hash>.xlsx` (copia segura, fuera de git). La jornada se infiere por fecha (la última ya jugada del grupo); si bajas hojas atrasadas, usa `npm run jornada -- --jornada N`.

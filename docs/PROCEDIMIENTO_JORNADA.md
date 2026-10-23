@@ -9,15 +9,16 @@ _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se proce
 
 ## Lo que haces tú (5 minutos, el lunes)
 
-1. Abre la app **Afición FBM** y busca los dos partidos del domingo (MdA y MdL).
-2. De **cada** partido descarga dos cosas:
-   - el **acta** (PDF, se llama `Acta-Partido-<número>.pdf`);
-   - la **hoja de estadística** (Excel, se llama `estadisticaPartido_<fecha de descarga>.xlsx`; si bajas dos el mismo día, la segunda lleva " 1", "_1" o "(1)").
-   En total, **4 ficheros** si jugaron los dos equipos.
+> **Reparto desde el 23/10/2026 (D106):** las **actas** se bajan de la web **gesdeportiva.fbm.es/clubes** (Competiciones → Resultados y actas; una cuenta ve MdA y MdL): tú inicias sesión en tu Chrome con la clave del gestor de contraseñas y Claude descarga desde ahí (nunca maneja la clave ni el «no soy un robot»). Las **hojas de estadística** (las nuestras y las de toda la liga, D73) siguen saliendo de la **app Afición FBM**, porque la web no las ofrece.
+
+1. Deja la sesión de gesdeportiva.fbm.es/clubes iniciada en Chrome; Claude baja las **actas** de los dos partidos del domingo (PDF, `Acta-Partido-<número>.pdf`).
+2. En la app **Afición FBM** descarga la **hoja de estadística** de cada partido (Excel, se llama `estadisticaPartido_<fecha de descarga>.xlsx`; si bajas dos el mismo día, la segunda lleva " 1", "_1" o "(1)") y las de los partidos de los dos grupos (`docs/RUTINAS/A_ACTAS.md`).
+   En total, **4 ficheros nuestros** si jugaron los dos equipos, más las hojas de liga.
 3. **No les cambies el nombre.** El nombre de la hoja **no importa**: el equipo, el rival y si es local o visitante se leen del interior (cabecera "Estadísticas - X vs Y - ..."), y el partido se identifica con el calendario. Déjalos en la carpeta **Descargas** del ordenador
    (si los bajas en el móvil, pásalos a Descargas del PC como hagas siempre).
 4. Opcional: el Excel de asistencia de SportEasy (`bilan_presence…xlsx`), también en Descargas.
 5. Abre Claude Code en la carpeta del proyecto y pídeme: **"procesa la jornada N"**.
+6. Si en Descargas quedan hojas de jornadas anteriores, lo proceso desde una carpeta aparte con solo lo nuevo (`npm run jornada -- --desde <carpeta>`), como con la J2 y con las actas de J1 y J2.
 
 ## Lo que hago yo
 
@@ -29,7 +30,7 @@ _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se proce
    las estadísticas en la web (`data/season_2026-27.json`).
 
 ## Si todavía no hay actas
-Si la FBM no ha publicado el acta, `npm run jornada` publica el partido **solo con la hoja**, marcado "pend. acta" (excepción D71, solo 26/27). Cuando dejes el acta en Descargas y repitas `npm run jornada`, se completan parciales, hora y pista, y se valida el marcador; si no cuadra, para y avisa.
+Si la FBM no ha publicado el acta, `npm run jornada` publica el partido **solo con la hoja**, marcado "pend. acta" (excepción D71, solo 26/27). Cuando el acta esté en Descargas y se repita `npm run jornada`, se completan parciales, hora y pista, y se valida el marcador; si no cuadra, para y avisa. Así se cerraron la J1 y la J2 el 23/10/2026 (4 actas, las 4 cuadran).
 
 ## Si pasa algo
 

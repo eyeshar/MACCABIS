@@ -65,27 +65,31 @@ const ESTADOS = { 'a tiempo': 'fueron', 'con excusa': 'excusa', 'sin excusa': 's
 
 /**
  * Asigna cada evento "Campeonato" a MdA o MdL. `eventos`: [{ clave, fecha, aTiempo:Set(pid) }];
- * `jugaron`: { MDA:Set(pid), MDL:Set(pid) } (quién jugó, según las hojas). Para cada evento se
- * mide el parecido (Jaccard) entre "A tiempo" y los jugadores de cada hoja. Se asigna sólo si el
- * mejor equipo supera 0,7, dobla al otro y no hay dos eventos del mismo día para el mismo equipo.
+ * `jugaron`: { MDA: { 'dd/mm/aa': Set(pid) }, MDL: {...} } (quién jugó en la hoja de cada fecha).
+ * Para cada evento se mide el parecido (Jaccard) entre "A tiempo" y los jugadores de la hoja de
+ * ESA FECHA de cada equipo (sin hoja ese día, 0). Se asigna sólo si el mejor equipo supera 0,7,
+ * dobla al otro y no hay dos eventos del mismo día para el mismo equipo.
  * Lo que no cumpla lanza un Error: decide una persona, no el script.
  */
+const jugaronEl = (jugaron, eq, fecha) => (jugaron[eq] || {})[fecha] || new Set();
+
 function asignarEquipos(eventos, jugaron, avisos) {
   const jac = (a, b) => { const i = [...a].filter(x => b.has(x)).length; return i / (a.size + b.size - i || 1); };
   const res = new Map(), porDia = {};
   for (const e of eventos) {
-    const sc = Object.fromEntries(Object.entries(jugaron).map(([eq, set]) => [eq, jac(e.aTiempo, set)]));
+    const sc = Object.fromEntries(Object.keys(jugaron).map(eq => [eq, jac(e.aTiempo, jugaronEl(jugaron, eq, e.fecha))]));
     const orden = Object.entries(sc).sort((a, b) => b[1] - a[1]);
     const [eq, mejor] = orden[0], otro = orden[1] ? orden[1][1] : 0;
     const det = Object.entries(sc).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(', ');
     if (mejor < 0.7 || otro > mejor / 2)
-      throw new Error(`Asistencia: no puedo asignar con seguridad el "Campeonato" del ${e.fecha} a un equipo (parecido con las hojas: ${det}). Dime a cuál corresponde.`);
+      throw new Error(`Asistencia: no puedo asignar con seguridad el "Campeonato" del ${e.fecha} a un equipo (parecido con las hojas de ese día: ${det}). Dime a cuál corresponde.`);
     const dia = porDia[e.fecha] || (porDia[e.fecha] = new Set());
     if (dia.has(eq)) throw new Error(`Asistencia: dos "Campeonato" del ${e.fecha} salen como ${eq} (${det}). Dime cuál es cuál.`);
     dia.add(eq);
     res.set(e.clave, eq);
-    const lista = [...e.aTiempo].filter(x => !jugaron[eq].has(x)).map(x => `${x} consta "A tiempo" pero no jugó`);
-    for (const x of jugaron[eq]) if (!e.aTiempo.has(x)) lista.push(`${x} jugó pero no consta "A tiempo"`);
+    const hoja = jugaronEl(jugaron, eq, e.fecha);
+    const lista = [...e.aTiempo].filter(x => !hoja.has(x)).map(x => `${x} consta "A tiempo" pero no jugó`);
+    for (const x of hoja) if (!e.aTiempo.has(x)) lista.push(`${x} jugó pero no consta "A tiempo"`);
     avisos.push(`Asistencia: "Campeonato" del ${e.fecha} -> ${eq} (parecido ${det})` + (lista.length ? '; discrepancias SportEasy/hoja (se corrige SportEasy): ' + lista.join('; ') : '; coincide exactamente con la hoja.'));
   }
   return res;
@@ -142,7 +146,7 @@ function leerSportEasy(ficheros, avisos, ignorar = [], jugaron = null) {
     // D72: en partidos de liga manda la hoja de la FBM sobre SportEasy. Quien aparece en la hoja
     // asistió; quien consta "A tiempo" y no está en la hoja, no asistió ("No convocado").
     for (const e of camp.values()) {
-      const lista = jugaron[eqDe.get(e.clave)];
+      const lista = jugaronEl(jugaron, eqDe.get(e.clave), e.fecha);
       for (const [id, { raw, nombre }] of e.estados || []) {
         let est = ESTADOS[raw];
         if (!est) { if (raw) avisos.push(`Asistencia: estado desconocido "${raw}" (${nombre}, ${e.fecha}).`); continue; }

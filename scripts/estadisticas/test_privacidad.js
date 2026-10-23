@@ -121,6 +121,42 @@ const repoTodo = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) =
 const conClave = repoTodo(PLAT).filter((f) => /\.(ts|tsx|js|mjs|json|sql|md)$/.test(f)).filter((f) => /VAPID_PRIVATE_KEY\s*=\s*[A-Za-z0-9_-]{20,}|SUPABASE_SERVICE_ROLE_KEY\s*=\s*ey|AVISOS_SECRETO\s*=\s*[0-9a-f]{32,}/.test(fs.readFileSync(f, 'utf8')));
 ok(conClave.length === 0, 'ninguna clave privada (VAPID, servicio, secreto de la tarea) en el repositorio', conClave.join(', '));
 
+console.log('\n== Convocatoria v1 (D107): niveles y datos privados solo en Gestión');
+const MIG7 = '20261023100000_convocatoria.sql';
+const sql7 = sinComentarios(leer('supabase/migrations', MIG7));
+const tablas7 = [...sql7.matchAll(/create table public\.(\w+)/g)].map((m) => m[1]);
+ok(tablas7.length === 3 && tablas7.every((t) => new RegExp('alter table public\\.' + t + '\\s+enable row level security').test(sql7)), `las ${tablas7.length} tablas nuevas tienen RLS (${tablas7.join(', ')})`);
+ok(!/\bdrop\b|\btruncate\b|\bdelete\b/i.test(sql7) && !/grant[^;]*\bdelete\b/i.test(sql7), 'migración solo aditiva: sin DROP, TRUNCATE, DELETE ni permiso de borrar');
+ok(fs.existsSync(path.join(PLAT, 'supabase', 'migrations', MIG7.replace(/\.sql$/, '.revertir.sql'))), 'con su revertir.sql');
+ok(tablas7.every((t) => new RegExp(`on public\\.${t} for select to authenticated using \\(public\\.is_gestor\\(\\)\\)`).test(sql7)) && !/to anon/.test(sql7), 'solo los gestores leen las tres tablas; nada para anónimos');
+const miConv = sql7.slice(sql7.indexOf('create function public.mi_convocatoria'), sql7.indexOf('alter table public.jugadores_privado'));
+ok(miConv.length > 100 && !/nivel|posicion|dificultad|motivo|origen|propuesta|jugadores_privado/.test(miConv) && /_mi_person_id\(\)/.test(miConv) && /estado = 'aprobada'/.test(miConv), 'mi_convocatoria (lo único del jugador): solo sus equipos de convocatorias aprobadas, sin niveles, posiciones, dificultad ni propuestas');
+const TABLAS_PRIV = ['jugadores_privado', 'convocatorias', 'convocatoria_cambios'];
+const fuera = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(path.join('gestion', '(panel)')) && !f.includes(path.join('lib', 'convocatoria')))
+  .filter((f) => TABLAS_PRIV.some((t) => new RegExp('(from|rpc)\\(["\']' + t + '["\']').test(fs.readFileSync(f, 'utf8'))));
+ok(fuera.length === 0, 'fuera de Gestión nadie lee datos privados, convocatorias ni cambios (Mi zona usa solo mi_convocatoria)', fuera.map((f) => path.relative(ROOT, f)).join(', '));
+ok(/rpc\("mi_convocatoria"\)/.test(leer('src/lib/respuestas/jugador.ts')) && !/jugadores_privado|nivel/.test(leer('src/app/mi-zona/page.tsx')), 'Mi zona: «Convocado» con mi_convocatoria, sin niveles');
+const salidas = leer('src/lib/convocatoria/mensajes.ts').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
+ok(!/nivel|posicion|privado|dobla\b|regla|motivo/i.test(salidas), 'WhatsApp, SportEasy y el aviso «Estás convocado» no usan niveles, posiciones, reglas ni motivos');
+ok(fs.existsSync(path.join(PLAT, 'src/app/gestion/(panel)/convocatoria/page.tsx')) && /exigirGestor/.test(leer('src/app/gestion/(panel)/convocatoria/page.tsx')), 'la pantalla vive dentro del panel de gestión (solo gestores)');
+// Claves de la convocatoria, mirando tambien el valor: «posicion» de un equipo en una fase (rivales) o la «regla» de un
+// _meta no son datos de jugador; una posicion de jugador (base, escolta…), un nivel A-E o una regla personal si.
+const DATO_CONV = { nivel: (v) => /^[A-E]$/.test(v), posicion: (v) => /^(base|escolta|alero|ala_pivot|pivot|ala-p[ií]vot|p[ií]vot)$/i.test(v), regla: (v) => /^(fijo|comodin)$/.test(v) };
+const SIEMPRE_CONV = /^(dobla|base_reserva|regla_equipo|sancionado_hasta_jornada|dificultad|nivelMedio)$/;
+const clavesConv = (o, r = '') => Array.isArray(o) ? o.flatMap((x, i) => clavesConv(x, `${r}[${i}]`))
+  : o && typeof o === 'object' ? Object.entries(o).flatMap(([k, v]) => (SIEMPRE_CONV.test(k) || (DATO_CONV[k] && typeof v === 'string' && DATO_CONV[k](v)) ? [`${r}.${k}`] : []).concat(clavesConv(v, `${r}.${k}`))) : [];
+const jsonPublicos = [path.join(ROOT, 'data'), path.join(PLAT, 'src', 'data'), path.join(PLAT, 'public')].flatMap((d) => (fs.existsSync(d) ? repoTodo(d) : [])).filter((f) => f.endsWith('.json'));
+const conConv = jsonPublicos.map((f) => [f, clavesConv(JSON.parse(fs.readFileSync(f, 'utf8')))]).filter(([, r]) => r.length);
+ok(jsonPublicos.length > 10 && conConv.length === 0, `ningún JSON público (${jsonPublicos.length}) lleva nivel, posición, Dobla, reglas, sanción ni dificultad`, conConv.map(([f, r]) => `${path.relative(ROOT, f)}: ${r.slice(0, 2)}`).join(' | '));
+const { execSync } = require('child_process');
+const enGit = execSync('git ls-files', { cwd: ROOT, encoding: 'utf8' }).split('\n').filter((f) => /\.(csv|tsv|xlsx?)$/i.test(f));
+const csvNiveles = enGit.filter((f) => /\.(csv|tsv)$/i.test(f) && /(^|[;,\t])nivel([;,\t]|$)/im.test(fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n')[0]));
+ok(csvNiveles.length === 0, 'ningún CSV del repositorio tiene una columna «nivel»', csvNiveles.join(', '));
+const pruebasConv = ['convocatoria_motor.mjs', 'rls_convocatoria.mjs', 'convocatoria_pantallas.mjs'].map((f) => leer('pruebas', f)).join('\n');
+const personas = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'personas.json'), 'utf8')).personas.map((x) => x.person_id);
+const reales = personas.filter((id) => pruebasConv.includes(`'${id}'`));
+ok(reales.length === 0, 'las pruebas de la convocatoria usan solo jugadores sintéticos (ningún person_id real)', reales.join(', '));
+
 (async () => {
   if (fs.existsSync(path.join(PLAT, '.next', 'BUILD_ID'))) {
     const { revisar } = await import(pathToFileURL(path.join(PLAT, 'pruebas', 'privacidad_paginas.mjs')).href);

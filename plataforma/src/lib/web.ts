@@ -28,7 +28,7 @@ export const MENU_GESTION: GrupoGestion[] = [
     entradas: [
       { texto: "Panel de la semana", corto: "Panel", descripcion: "Rutinas, partidos del domingo y pendientes", href: "/gestion" },
       { texto: "Eventos y pistas", corto: "Eventos", descripcion: "Partidos, entrenos y la pista de cada semana", href: "/gestion/eventos" },
-      { texto: "Convocatoria", corto: "Convocatoria", descripcion: "Reparto MdA / MdL y aviso de equipación" },
+      { texto: "Convocatoria", corto: "Convocatoria", descripcion: "Propuesta, reparto MdA / MdL y mensaje", href: "/gestion/convocatoria" },
     ],
   },
   {

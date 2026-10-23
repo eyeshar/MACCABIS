@@ -111,7 +111,9 @@ try {
   const PASO3 = ['_mi_person_id', '_mis_eventos', '_quien_va', 'alta_suscripcion', 'baja_suscripcion', 'borrar_ausencia', 'cambiar_interruptor', 'cerrar_ausencia',
     'estado_activacion', 'guardar_ausencia', 'marcar_jornada', 'marcar_sporteasy', 'previsualizar_ausencia', 'responder', 'responder_domingo', 'responder_domingo_por',
     'responder_por', 'respuestas_web_encendido'];
-  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
+  // Convocatoria (D107): las tres de gestor (is_gestor dentro) y mi_convocatoria (solo lo del propio jugador).
+  const CONVOCATORIA = ['convocatoria_aprobar', 'convocatoria_guardar', 'convocatoria_marcar', 'mi_convocatoria'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

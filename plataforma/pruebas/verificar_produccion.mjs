@@ -16,6 +16,10 @@ import { chromium } from 'playwright';
 import { conectar } from '../scripts/db.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Filas del ranking de equipos de Liga consolidada: los equipos que ya tienen algun partido con hoja (crece
+// con las jornadas: 20 en la J1, 22 desde la J2, cuando RIF y 28500 dejaron de descansar).
+const EQUIPOS_CON_PARTIDOS = Object.values(JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'liga.json'), 'utf8')).grupos)
+  .flatMap((g) => g.clasificacion).filter((c) => c.pj > 0).length;
 dotenv.config({ path: path.join(RAIZ, '.env.local') });
 /** Con la redireccion activada (scripts/activar_redirecciones.js) GitHub Pages ya no tiene barra: se omiten sus pruebas. */
 const REDIR_ACTIVA = /var ESTA_ACTIVA = true;/.test(fs.readFileSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'), 'data', 'redireccion_web.js'), 'utf8'));
@@ -132,7 +136,7 @@ try {
     await p.locator('.lg-todos').getByLabel('Buscar').fill('esteban, jon').catch(async () => { await p.locator('.lg-filtros-btn').click(); await p.locator('.lg-todos').getByLabel('Buscar').fill('esteban, jon'); });
     ok((await p.locator('.lg-todos').textContent()).includes('MdA + MdL'), 'tabla: un doblador sale en una sola fila MdA + MdL');
     await p.locator('details.lg-ranking > summary').click();
-    ok((await p.locator('details.lg-ranking tbody tr').count()) === 20 && await sinDesbordar(), 'ranking de equipos (20) sin desbordamiento');
+    ok((await p.locator('details.lg-ranking tbody tr').count()) === EQUIPOS_CON_PARTIDOS && await sinDesbordar(), `ranking de equipos (${EQUIPOS_CON_PARTIDOS}) sin desbordamiento`, String(await p.locator('details.lg-ranking tbody tr').count()));
     ok(errores.length === 0, 'sin errores de JavaScript', errores.join(' | '));
     await ctx.close();
   }

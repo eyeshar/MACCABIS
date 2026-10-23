@@ -8,6 +8,13 @@
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
 **Inmediato (23/10/2026):**
+- [ ] **Convocatoria v1 (D107), rama `feat/convocatoria`, SIN merge — para usarla en la J4 (08/11/2026, solo juega el MdL a las 11:30):**
+   - [ ] OK de Iván a la vista previa y al resumen (incluida la interpretación de la regla 5 con 6 interiores: doblan 2 «Dobla» para 4 y 4 antes de bajar a 3 y 3).
+   - [ ] Migración `20261023100000_convocatoria` en **staging** y después en **producción** (`npm run db:backup` antes; `npm run db:migrar`). Hoy no hay proyecto de staging (D94): decidir si se crea o se aplica en real con las mitigaciones de D94.
+   - [ ] Cargar los datos privados: `npm run db:privado` (simulacro) y `npm run db:privado -- --aplicar` desde `privado/plantilla_2026-27.csv`; después, en `/gestion/convocatoria/datos`: **bases de reserva** (el CSV no tiene esa columna), **reglas personales** (entrenador-jugador «fijo»), sanciones.
+   - [ ] Merge a `main` con el OK de Iván; probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp, SportEasy por Claude).
+   - [ ] **Pruebas antiguas que caducaron con el calendario (no son de esta rama, fallan igual en `main`):** `pruebas:portada` espera «Pendiente de acta oficial» en la J1 (ya tiene acta desde D106) y `pruebas:respuestas-web` responde al entreno del 14/10, que ya pasó («evento_cerrado»). Hay que leer esas fechas y estados de los datos, como se hizo en `e9ef902`.
+   - [ ] Más adelante: «partidos convocado» con las convocatorias aprobadas (hoy sale solo de las hojas cargadas); entrenos de 4 semanas con el pase de lista real cuando exista; la tabla del Panel a tarjetas en móvil.
 - [ ] **Normativa FBM de esta temporada: desde la J3 (25/10/2026) es obligatorio llevar dorsal en la camiseta de la primera equipación, del mismo color para todo el equipo.** Avisar a la plantilla antes del domingo y tenerlo en cuenta en la convocatoria y en los avisos de equipación (D75).
 - [ ] **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27. **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma.
 - [ ] **Evaluar los CSV de gesdeportiva.fbm.es/clubes** (clasificación y listado completo de partidos, D106) para la **rutina B**: contraste de la clasificación calculada con la oficial (D74) y posible calendario de los dos grupos sin Deportes/web.
@@ -75,7 +82,7 @@
 4. **J2 (18/10):** la disponibilidad y la convocatoria las cubre la **rutina C** (aprendizaje lunes 12/10, leyendo SportEasy — `docs/PLAN_TRABAJO_2026-27.md`), no la plataforma: ya no hace falta construir nada de esto para la J2.
    - **Movidas a la Fase 3 (noviembre, `docs/PLAN_TRABAJO_2026-27.md`)** — venían de este punto 4, "Bloque siguiente, para la J2 (18/10)": **calendario único** (carga inicial desde el Ayuntamiento o desde el calendario de los delegados subido una vez); eventos editables por gestores; entreno recurrente con todos los que entrenan convocados; **"Mi semana"** (disponibilidad por partido, plazo martes 22:00); lista de quién va (D46); panel de disponibilidad con recordatorio de WhatsApp; pase de lista posterior; detector de cambios con Aceptar/Ignorar (D47, ver `docs/SONDEO_CALENDARIO_AYTO.md`).
    - **Staging de Supabase (D53)** se mantiene como requisito previo a la Fase 3, antes de tocar esquema o datos en producción.
-5. **Motor de convocatoria v0.1 para la J3 (25/10):** solo restricciones duras (D48, `docs/REGLAS_CONVOCATORIA.md`); nivel y rotación entre la J4 y la J6.
+5. ~~**Motor de convocatoria v0.1 para la J3 (25/10):** solo restricciones duras (D48)~~ → **sustituido por la convocatoria v1 completa (D107, rama `feat/convocatoria`), para la J4.**
 6. **Migración del dashboard** a la plataforma.
 7. **Estadísticas de rivales** (`docs/SONDEO_RIVALES_STATS.md`; datos por jugador de otros equipos solo en gestión).
    - [x] **Liga 26/27 (06/10/2026, D73/D74):** pipeline, `data/liga_2026-27.json`, pestaña pública (en `main`), tablas privadas y pantallas de gestión Scouting rivales y Liga consolidada (rama `feat/plataforma-v0`), migraciones aplicadas al proyecto real y J1 cargada.
@@ -110,7 +117,7 @@
 - [ ] **Pedir al soporte de SportEasy la plantilla Excel de importación del calendario** (vía principal, D36).
 - [ ] **Leer la cláusula literal de SportEasy** (`docs/SPORTEASY.md`) y decidir si se mantiene el agente de carga como plan B (D36).
 - [x] Tabla de posiciones, niveles A–E y Dobla/No dobla de 2026/27 guardada en `privado/plantilla_2026-27.csv` (con `person_id`) y criterios de reparto en `privado/criterios_convocatoria.md`, fuente de la rutina C. Ignorados por git; no se copian a `data/` ni a docs.
-- [ ] **Responder las preguntas abiertas** de `docs/REGLAS_CONVOCATORIA.md` (7 preguntas).
+- [x] **Responder las preguntas abiertas** de `docs/REGLAS_CONVOCATORIA.md`: respondidas por Iván el 23/10/2026 (reglas v1, D107).
 - [ ] **Corregir el delegado del MdA** en la organización (Varas → Barreiro; Barreiro también en el MdL).
 - [ ] **Localizar las 40 hojas XLSX de 25/26** que faltan (sólo si se quiere regenerar la 25/26 con hora, pista y las 3 correcciones; ver ESTADO). No es urgente.
 - [x] ~~Confirmar `docs/PLANTILLA_26-27.md`~~ — HECHO (25/09/2026): 3 personas nuevas creadas, `previsto_2627` actualizado, tabla de motes.

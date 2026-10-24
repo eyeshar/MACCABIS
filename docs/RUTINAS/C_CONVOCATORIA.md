@@ -2,6 +2,11 @@
 
 Cuándo: lunes y martes (la jornada es el domingo). Fuente de las respuestas: SportEasy, en el Chrome de Iván (fase puente, D80). Reglas: `docs/REGLAS_CONVOCATORIA.md`. Datos privados de plantilla (posición, nivel A–E, dobla): solo en `privado/plantilla_2026-27.csv` y `privado/criterios_convocatoria.md` (nunca a git ni a docs).
 
+## 0. Tarea programada «Maccabis · respuestas de SportEasy» (desde el 24/10/2026)
+Tarea programada de Claude en el Chrome de Iván, **de lunes a miércoles a las 9:54**: hace el paso 1 (lee las respuestas de SportEasy de los eventos de la semana y las importa con **Importar → Respuestas**) y avisa a Iván de lo importado y de lo que no se pudo guardar.
+- **Regla de «No seleccionados»:** si un partido ya tiene jugadores en «No seleccionados» en SportEasy, **la convocatoria de ese partido ya está hecha** (a mano en SportEasy) y la tarea **no importa sus respuestas** (sí las del entreno y las del otro partido, si no está convocado). Ahí «No seleccionado» no es un «no voy» del jugador.
+- Primera importación real: 24/10/2026 (J3, entreno del 28/10 y J4: 92 respuestas, todas válidas). Para la J3, ya convocada a mano en SportEasy, Iván decidió contar «No seleccionado» en un partido como «va» si el jugador estaba presente en el otro partido del domingo (decisión puntual, D113).
+
 ## 1. Traer las respuestas a la plataforma (Importar → Respuestas)
 1. En SportEasy (sesión de Iván), abrir los eventos de la semana (entreno del miércoles y partidos del domingo de MdA y MdL) y leer, por jugador: respuesta (va / duda / no / sin responder), **motivo** y detalle de cada «no voy», y los **periodos de no disponibilidad** (D87).
 2. Entrar en `https://maccabis.vercel.app/gestion/eventos/importar?t=respuestas` (sesión de gestor de Iván) y pegar, una línea por dato:

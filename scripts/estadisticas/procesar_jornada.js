@@ -9,6 +9,10 @@
  *   npm run jornada -- --desde <carpeta> (busca en otra carpeta)
  *   npm run jornada -- --jornada N       (las hojas de liga donde no jugamos son de la jornada N)
  *   npm run jornada -- --dry             (sólo dice qué haría)
+ *   npm run jornada -- --no-interactivo  (para la rutina A automática, D66: ante cualquier duda PARA con código
+ *                                        distinto de 0, deshace las copias y no escribe nada; sin ficheros
+ *                                        nuevos dice «Nada nuevo» y sale con 0 sin regenerar)
+ *   npm run jornada -- --resumen <f.json> (deja el resultado en un JSON: estado, jornada, texto, motivo)
  *
  * Qué hace:
  *   1. Localiza los ficheros NUEVOS de la temporada (las actas por su fecha, las hojas por la
@@ -82,7 +86,9 @@ function hojasPorJornada(base, cfg) {
  * Planifica qué copiar. Devuelve { plan, descartes }. Lanza un Error (sin haber copiado nada) si una hoja
  * no puede ser de la jornada a la que iría.
  *
- * @param o { temporada, desde, base, jornadaForzada, sinAsistencia, hoy, log }
+ * @param o { temporada, desde, base, jornadaForzada, sinAsistencia, hoy, log, estricto }
+ *   estricto: (--no-interactivo) lo que de normal solo se avisa y se deja pasar (un fichero que no se puede
+ *   leer, una hoja de liga sin jornada, una hoja nuestra con varios partidos posibles) también lanza un Error.
  */
 async function recoger(o) {
   const cfg = CONFIG[o.temporada];
@@ -97,6 +103,7 @@ async function recoger(o) {
   const yaEnJornada = hojasPorJornada(BASE, cfg);
   const enPlan = new Map();                                // md5 -> origen (duplicados dentro de la propia carpeta)
   const descarta = (origen, motivo) => { descartes.push({ origen, motivo }); log(`  = ${origen}: ${motivo}`); };
+  const duda = msg => { if (o.estricto) throw new Error(msg); log(`  ! ${msg}`); };
   /** true si el fichero ya está cargado (o ya va en el plan) y se ha descartado. */
   const repetido = (f, que) => {
     const h = md5(path.join(DESDE, f));
@@ -109,7 +116,7 @@ async function recoger(o) {
   // Actas: por su fecha (dentro de la temporada) y porque juegue uno de nuestros equipos.
   for (const f of todos.filter(f => /^Acta-Partido-\d+( \(\d+\))?\.pdf$/i.test(f))) {
     let a;
-    try { a = await leerActa(path.join(DESDE, f)); } catch (e) { log(`  ! ${f}: no se puede leer (${e.message})`); continue; }
+    try { a = await leerActa(path.join(DESDE, f)); } catch (e) { duda(`${f}: no se puede leer (${e.message})`); continue; }
     if (!a.fecha || a.fecha < cfg.inicio) continue;
     if (!esNuestro(a.equipoA) && !esNuestro(a.equipoB)) continue;
     if (repetido(f, `acta ${a.num} (${a.fecha})`)) continue;
@@ -134,7 +141,7 @@ async function recoger(o) {
       const que = `hoja de liga ${id.grupo.clave} ${id.hoja.local} - ${id.hoja.visitante}`;
       if (repetido(f, que)) continue;
       const jor = o.jornadaForzada || liga.jornadaPorFecha(id.grupo, o.hoy);
-      if (!jor) { log(`  ! ${f}: no sé de qué jornada es (usa --jornada N).`); continue; }
+      if (!jor) { duda(`${f}: no sé de qué jornada es (usa --jornada N).`); continue; }
       const como = o.jornadaForzada ? `--jornada ${jor}` : `la jornada ${jor}, la última jugada del ${id.grupo.clave}`;
       // La hoja no puede ser de esa jornada si: uno de los dos juega contra nosotros esa jornada (calendario),
       // uno de los dos ya tiene hoja de esa jornada, o se descargó antes de que se jugara.
@@ -154,13 +161,13 @@ async function recoger(o) {
       continue;
     }
     let h;
-    try { h = leerHoja(path.join(DESDE, f)); } catch (e) { log(`  ! ${f}: no se puede leer (${e.message})`); continue; }
+    try { h = leerHoja(path.join(DESDE, f)); } catch (e) { duda(`${f}: no se puede leer (${e.message})`); continue; }
     if (!h.titulo.includes(cfg.etiqueta_fbm)) continue;
     const rival = h.esLocal ? h.visitante : h.local;
     const que = `hoja ${h.titulo.replace(/^Estadísticas - /, '').replace(/ - SenMas.*$/, '')}`;
     if (repetido(f, que)) continue;
     const cal = calendario.filter(c => c.equipo === h.equipo && !c.descansa && c.local === h.esLocal && normEquipo(c.rival) === normEquipo(rival));
-    if (cal.length !== 1) log(`  ! ${f}: ${h.equipo} ${h.esLocal ? 'en casa' : 'fuera'} contra ${rival}: ${cal.length} partidos posibles en el calendario (se copia igualmente; el pipeline decidirá).`);
+    if (cal.length !== 1) duda(`${f}: ${h.equipo} ${h.esLocal ? 'en casa' : 'fuera'} contra ${rival}: ${cal.length} partidos posibles en el calendario (se copia igualmente; el pipeline decidirá).`);
     if (cal.length === 1 && o.jornadaForzada && cal[0].jornada !== o.jornadaForzada)
       throw new Error(`${f} (${h.equipo} contra ${rival}) es de la ${J(cal[0].jornada)} según el calendario, no de la ${J(o.jornadaForzada)} pedida con --jornada. Quítala de la carpeta o procesa esa jornada aparte.`);
     if (cal.length === 1) {
@@ -182,100 +189,166 @@ async function recoger(o) {
   return { plan, descartes, cfg, base: BASE };
 }
 
-/** Copia el plan con copia segura. Devuelve cuántos ficheros nuevos ha copiado. Si algo choca, lanza un Error. */
+/**
+ * Copia el plan con copia segura. Devuelve cuántos ficheros nuevos ha copiado. Si algo choca, lanza un Error.
+ * Si se pasa o.copiados (array), anota ahí la ruta de cada copia nueva (para deshacerlas con --no-interactivo).
+ */
 function copiar(plan, o) {
   const log = o.log || console.log;
   let nuevos = 0;
   for (const p of plan) {
     if (o.dry) { log(`  [dry] ${p.que}: ${p.origen} -> ${path.basename(o.base)}/${p.destino}/${p.nombre}`); continue; }
     const r = copiaSegura(path.join(o.desde, p.origen), path.join(o.base, p.destino), p.nombre);
-    if (r.copiado) { nuevos++; log(`  + ${p.que}  (${p.nombre})`); }
+    if (r.copiado) { nuevos++; log(`  + ${p.que}  (${p.nombre})`); if (o.copiados) o.copiados.push(r.destino); }
   }
   return nuevos;
 }
 
 module.exports = { recoger, copiar, hashesCargados, hojasPorJornada };
 
-if (require.main === module) (async () => {
-  const { generar } = require('./generar_temporada');
+if (require.main === module) {
   const args = process.argv.slice(2);
   const argVal = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
   const TEMPORADA = args.find(a => /^\d{4}-\d{2}$/.test(a)) || '2026-27';
   const DESDE = argVal('--desde', path.join(os.homedir(), 'Downloads'));
   const DRY = args.includes('--dry');
+  const NOINT = args.includes('--no-interactivo');          // rutina A automática (D66): ante cualquier duda, para
+  const RESUMEN = argVal('--resumen', null);
   const JORNADA_FORZADA = +argVal('--jornada', 0) || null;   // jornada de las hojas de liga donde no jugamos (si no, la última con fecha <= hoy)
-  const cfg = CONFIG[TEMPORADA];
-  if (!cfg) { console.error(`No hay configuración para ${TEMPORADA}.`); process.exit(1); }
-  const BASE = path.join(ROOT, cfg.carpeta);
-
-  console.log(`Procesar jornada ${TEMPORADA}: buscando ficheros en ${DESDE}`);
-  let plan, descartes;
-  try {
-    ({ plan, descartes } = await recoger({ temporada: TEMPORADA, desde: DESDE, base: BASE, jornadaForzada: JORNADA_FORZADA, sinAsistencia: args.includes('--sin-asistencia') }));
-  } catch (e) { console.error(`\nERROR: ${e.message}\nNo se ha copiado nada.`); process.exit(1); }
-  if (descartes.length) console.log(`${descartes.length} fichero(s) descartado(s) por estar ya cargados.`);
-  let nuevos = 0;
-  try { nuevos = copiar(plan, { desde: DESDE, base: BASE, dry: DRY }); }
-  catch (e) { console.error(`\nERROR: ${e.message}\nNo se ha tocado nada más.`); process.exit(1); }
-  if (!DRY) console.log(nuevos ? `${nuevos} fichero(s) nuevo(s) copiados a ${cfg.carpeta}/.` : 'No hay ficheros nuevos (ya estaban todos copiados).');
-
-  const antes = fs.existsSync(path.join(ROOT, 'data', `season_${TEMPORADA}.json`))
-    ? JSON.parse(fs.readFileSync(path.join(ROOT, 'data', `season_${TEMPORADA}.json`), 'utf8')) : { partidos: [] };
-  const r = await generar(TEMPORADA, { dry: DRY });
-  console.log(`\n${TEMPORADA}: ${r.fuentes.actas} actas y ${r.fuentes.hojas} hojas -> ${r.json.partidos.length} partidos, ${r.json.players.length} jugadores con estadísticas.`);
-  r.avisos.forEach(a => console.log('  ! ' + a));
-  if (r.errores.length) {
-    console.log('\nERRORES — no se ha escrito nada:'); r.errores.forEach(e => console.log('  X ' + e));
+  const copiados = [];                                       // copias nuevas de esta ejecución (se deshacen si para)
+  // estado: 'nada' (sin ficheros nuevos), 'dry', 'lista' (escrita y lista para publicar) o 'parada' (con motivo).
+  const resumen = { temporada: TEMPORADA, dry: DRY, estado: null, nuevos: 0, jornada: null, texto: null, motivo: null, copiados };
+  const escribeResumen = () => { if (RESUMEN) fs.writeFileSync(RESUMEN, JSON.stringify(resumen, null, 1) + '\n', 'utf8'); };
+  /**
+   * Para con código 1. Con --no-interactivo deshace las copias de esta ejecución en fuentes_fbm/, para que la siguiente
+   * vuelva a verlas como nuevas. Lo que ya se hubiera escrito en data/ lo limpia quien llama (git, rutina_a_publicar.ps1).
+   */
+  const para = (motivo, texto = `\nERROR: ${motivo}`) => {
+    if (texto) console.error(texto);
+    if (NOINT) for (const f of copiados.splice(0)) {
+      try { fs.unlinkSync(f); console.error(`  (deshecha la copia ${path.relative(ROOT, f)})`); } catch (e) { console.error(`  NO se ha podido deshacer ${f}: ${e.message}`); }
+    }
+    Object.assign(resumen, { estado: 'parada', motivo }); escribeResumen();
     process.exit(1);
-  }
-  r.enlaces.forEach(e => console.log(`  ✓ ${e.hoja} -> acta ${e.acta}, jornada ${e.pn}: ${e.acta === "PENDIENTE" ? "provisional" : "puntos de la hoja = marcador"} (${e.validado})`));
+  };
 
-  // Resumen de lo nuevo
-  const ya = new Set(antes.partidos.map(p => p.num));
-  const nuevosP = r.json.partidos.filter(p => !ya.has(p.num));
-  if (nuevosP.length) console.log('\nPartidos nuevos:');
-  for (const p of nuevosP) {
-    const box = r.json.box[p.pn + '_' + p.equipo] || [];
-    const top = box.filter(f => f.pts > 0).slice(0, 3).map(f => `${f.display} ${f.pts}`).join(', ');
-    console.log(`  ${p.fecha} ${p.hora || ''} ${p.pista || ''} · ${p.equipo} ${p.res === 'G' ? 'gana' : p.res === 'P' ? 'pierde' : '?'} ${p.pf}-${p.pc} a ${p.rival} (jornada ${p.pn})${top ? ' · ' + top : ''}${box.length ? '' : ' · SIN HOJA DE ESTADÍSTICA'}`);
-  }
-  if (DRY) { console.log('\n[dry] no se ha escrito nada.'); return; }
+  (async () => {
+    const { generar } = require('./generar_temporada');
+    const cfg = CONFIG[TEMPORADA];
+    if (!cfg) para(`No hay configuración para ${TEMPORADA}.`);
+    const BASE = path.join(ROOT, cfg.carpeta);
 
-  // Liga completa de los dos grupos: data/liga_<temporada>.json (sólo datos por equipo; el detalle por jugador va a Supabase).
-  if (cfg.liga) {
-    const l = liga.construir(TEMPORADA);
-    l.avisos.forEach(a => console.log('  ! ' + a));
-    if (l.errores.length) { console.log(`\nERRORES DE LIGA — no se ha escrito data/liga_${TEMPORADA}.json:`); l.errores.forEach(e => console.log('  X ' + e)); process.exit(1); }
-    fs.writeFileSync(path.join(ROOT, 'data', `liga_${TEMPORADA}.json`), JSON.stringify(l.publico, null, 1) + '\n', 'utf8');
-    console.log(`\nLiga: ${l.fuentes} hojas -> data/liga_${TEMPORADA}.json (clasificación calculada, pendiente de contrastar con la oficial).`);
-  }
+    console.log(`Procesar jornada ${TEMPORADA}: buscando ficheros en ${DESDE}${NOINT ? ' (no interactivo)' : ''}`);
+    let plan, descartes;
+    try {
+      ({ plan, descartes } = await recoger({ temporada: TEMPORADA, desde: DESDE, base: BASE, jornadaForzada: JORNADA_FORZADA, sinAsistencia: args.includes('--sin-asistencia'), estricto: NOINT }));
+    } catch (e) { para(e.message, `\nERROR: ${e.message}\nNo se ha copiado nada.`); }
+    if (descartes.length) console.log(`${descartes.length} fichero(s) descartado(s) por estar ya cargados.`);
+    resumen.nuevos = plan.length;
+    if (NOINT && !plan.length) {
+      console.log('\nNada nuevo: no hay ficheros nuevos de la temporada; no se regenera nada.');
+      resumen.estado = 'nada'; escribeResumen(); return;
+    }
+    let nuevos = 0;
+    try { nuevos = copiar(plan, { desde: DESDE, base: BASE, dry: DRY, copiados }); }
+    catch (e) { para(e.message, `\nERROR: ${e.message}\nNo se ha tocado nada más.`); }
+    if (!DRY) console.log(nuevos ? `${nuevos} fichero(s) nuevo(s) copiados a ${cfg.carpeta}/.` : 'No hay ficheros nuevos (ya estaban todos copiados).');
 
-  // index.json: la temporada entra en el selector en cuanto tiene partidos; la de por defecto no cambia.
-  const idxPath = path.join(ROOT, 'data', 'index.json');
-  const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
-  if (r.json.partidos.length && !idx.seasons.some(s => s.id === TEMPORADA)) {
-    idx.seasons.push({ id: TEMPORADA, label: cfg.label, file: `data/season_${TEMPORADA}.json` });
-    fs.writeFileSync(idxPath, JSON.stringify(idx, null, 1) + '\n', 'utf8');
-    console.log(`\ndata/index.json: añadida ${cfg.label} al selector (la temporada por defecto sigue siendo ${idx.default}).`);
-  }
-  try { execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js'), '--check'], { stdio: 'pipe' }); console.log('Identidades: OK (check:personas).'); }
-  catch (e) { console.log('Identidades: PROBLEMAS\n' + e.stdout); process.exit(1); }
+    const antes = fs.existsSync(path.join(ROOT, 'data', `season_${TEMPORADA}.json`))
+      ? JSON.parse(fs.readFileSync(path.join(ROOT, 'data', `season_${TEMPORADA}.json`), 'utf8')) : { partidos: [], box: {} };
+    // Con --no-interactivo se genera primero en seco: las dudas se miran antes de escribir nada.
+    let r = await generar(TEMPORADA, { dry: DRY || NOINT });
+    console.log(`\n${TEMPORADA}: ${r.fuentes.actas} actas y ${r.fuentes.hojas} hojas -> ${r.json.partidos.length} partidos, ${r.json.players.length} jugadores con estadísticas.`);
+    r.avisos.forEach(a => console.log('  ! ' + a));
+    if (r.errores.length) {
+      console.log('\nERRORES — no se ha escrito nada:'); r.errores.forEach(e => console.log('  X ' + e));
+      para(r.errores[0] + (r.errores.length > 1 ? ` (y ${r.errores.length - 1} error(es) más)` : ''), '');
+    }
+    r.enlaces.forEach(e => console.log(`  ✓ ${e.hoja} -> acta ${e.acta}, jornada ${e.pn}: ${e.acta === "PENDIENTE" ? "provisional" : "puntos de la hoja = marcador"} (${e.validado})`));
 
-  // Privacidad de la asistencia (D82): ningún JSON público puede llevar motivos de ausencia.
-  const { comprobarPublicos } = require('./asistencia_privacidad');
-  const conMotivos = comprobarPublicos();
-  if (conMotivos.length) {
-    console.log('\nERROR: motivos de ausencia en ficheros públicos (D82):');
-    conMotivos.forEach(m => console.log(`  X ${m.fichero}: ${m.rutas.slice(0, 3).join(', ')}`));
-    process.exit(1);
-  }
-  if (r.ficheroAsistencia) console.log(`Asistencia con motivos (solo gestores): ${path.relative(ROOT, r.ficheroAsistencia)} -> Supabase con "npm run db:asistencia" en plataforma/.`);
+    // Resumen de lo nuevo
+    const ya = new Set(antes.partidos.map(p => p.num));
+    const nuevosP = r.json.partidos.filter(p => !ya.has(p.num));
+    if (nuevosP.length) console.log('\nPartidos nuevos:');
+    for (const p of nuevosP) {
+      const box = r.json.box[p.pn + '_' + p.equipo] || [];
+      const top = box.filter(f => f.pts > 0).slice(0, 3).map(f => `${f.display} ${f.pts}`).join(', ');
+      console.log(`  ${p.fecha} ${p.hora || ''} ${p.pista || ''} · ${p.equipo} ${p.res === 'G' ? 'gana' : p.res === 'P' ? 'pierde' : '?'} ${p.pf}-${p.pc} a ${p.rival} (jornada ${p.pn})${top ? ' · ' + top : ''}${box.length ? '' : ' · SIN HOJA DE ESTADÍSTICA'}`);
+    }
 
-  // Portada de la web (D84): copias de data/ en plataforma/src/data/. Solo se llega aquí si la jornada cuadra.
-  try {
-    const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'sincronizar_equipacion.mjs')], { stdio: 'pipe' }).toString().trim();
-    console.log(`Plataforma: ${salida} (npm run datos:sync)`);
-  } catch (e) { console.log('Plataforma: NO se han podido sincronizar las copias de plataforma/src/data/:\n' + (e.stderr || e.message)); process.exit(1); }
+    // Partidos que cambian con esta ejecución (nuevos, o completados: el acta de un partido provisional, una hoja nueva).
+    const clave = p => p.pn + '_' + p.equipo;
+    const huella = (p, box) => JSON.stringify(p) + JSON.stringify((box || {})[clave(p)] || []);
+    const previo = new Map(antes.partidos.map(p => [clave(p), huella(p, antes.box)]));
+    const tocados = r.json.partidos.filter(p => previo.get(clave(p)) !== huella(p, r.json.box));
+    if (NOINT) {
+      const dudas = r.avisos.filter(a => /jornada desconocida|son nuestros|sin ganador conocido/.test(a));
+      for (const p of tocados) if (!p.incomp && !(r.json.box[clave(p)] || []).length)
+        dudas.push(`${p.equipo} ${p.fecha} contra ${p.rival}: falta la hoja de estadística (Afición FBM).`);
+      // D66 exige el cuadre contra el acta: publicar solo con la hoja (D71) fue una excepción puntual, no automática.
+      for (const p of tocados) if (p.pendiente_acta)
+        dudas.push(`${p.equipo} contra ${p.rival} (jornada ${p.pn}): falta el acta (gesdeportiva.fbm.es).`);
+      if (dudas.length) {
+        console.log('\nDUDAS — con --no-interactivo no se publica:'); dudas.forEach(d => console.log('  ? ' + d));
+        para(dudas[0] + (dudas.length > 1 ? ` (y ${dudas.length - 1} duda(s) más)` : ''), '');
+      }
+    }
+    // Texto del aviso: «Jornada N publicada: MdA x–y Rival · Rival x–y MdL» (el local primero, según el calendario).
+    const calendario = cfg.calendario.filter(c => c.formato === 'json' && fs.existsSync(path.join(ROOT, c.fichero)))
+      .flatMap(c => JSON.parse(fs.readFileSync(path.join(ROOT, c.fichero), 'utf8')).partidos);
+    const corto = eq => (cfg.nombres_club[eq] || []).find(n => n !== n.toUpperCase()) || eq;
+    if (tocados.length) {
+      resumen.jornada = Math.max(...tocados.map(p => p.pn));
+      const partes = tocados.filter(p => p.pn === resumen.jornada).map(p => {
+        const c = calendario.find(c => c.equipo === p.equipo && c.jornada === p.pn && !c.descansa);
+        return c && !c.local ? `${p.rival} ${p.pc}–${p.pf} ${corto(p.equipo)}` : `${corto(p.equipo)} ${p.pf}–${p.pc} ${p.rival}`;
+      });
+      resumen.texto = `Jornada ${resumen.jornada} publicada: ${partes.join(' · ')}`;
+    } else resumen.texto = `Liga actualizada (${plan.length} fichero(s) nuevo(s), sin partidos nuestros nuevos)`;
 
-  console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/index.json y plataforma/src/data/.');
-})().catch(e => { console.error('ERROR: ' + e.message); process.exit(1); });
+    if (DRY) { console.log('\n[dry] no se ha escrito nada.'); resumen.estado = 'dry'; escribeResumen(); return; }
+    if (NOINT) {
+      r = await generar(TEMPORADA);
+      if (r.errores.length) para(r.errores[0]);
+    }
+
+    // Liga completa de los dos grupos: data/liga_<temporada>.json (sólo datos por equipo; el detalle por jugador va a Supabase).
+    if (cfg.liga) {
+      const l = liga.construir(TEMPORADA);
+      l.avisos.forEach(a => console.log('  ! ' + a));
+      if (l.errores.length) { console.log(`\nERRORES DE LIGA — no se ha escrito data/liga_${TEMPORADA}.json:`); l.errores.forEach(e => console.log('  X ' + e)); para(`Liga: ${l.errores[0]}`, ''); }
+      fs.writeFileSync(path.join(ROOT, 'data', `liga_${TEMPORADA}.json`), JSON.stringify(l.publico, null, 1) + '\n', 'utf8');
+      console.log(`\nLiga: ${l.fuentes} hojas -> data/liga_${TEMPORADA}.json (clasificación calculada, pendiente de contrastar con la oficial).`);
+    }
+
+    // index.json: la temporada entra en el selector en cuanto tiene partidos; la de por defecto no cambia.
+    const idxPath = path.join(ROOT, 'data', 'index.json');
+    const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
+    if (r.json.partidos.length && !idx.seasons.some(s => s.id === TEMPORADA)) {
+      idx.seasons.push({ id: TEMPORADA, label: cfg.label, file: `data/season_${TEMPORADA}.json` });
+      fs.writeFileSync(idxPath, JSON.stringify(idx, null, 1) + '\n', 'utf8');
+      console.log(`\ndata/index.json: añadida ${cfg.label} al selector (la temporada por defecto sigue siendo ${idx.default}).`);
+    }
+    try { execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js'), '--check'], { stdio: 'pipe' }); console.log('Identidades: OK (check:personas).'); }
+    catch (e) { para('identidades: problemas en check:personas.', 'Identidades: PROBLEMAS\n' + e.stdout); }
+
+    // Privacidad de la asistencia (D82): ningún JSON público puede llevar motivos de ausencia.
+    const { comprobarPublicos } = require('./asistencia_privacidad');
+    const conMotivos = comprobarPublicos();
+    if (conMotivos.length) {
+      console.log('\nERROR: motivos de ausencia en ficheros públicos (D82):');
+      conMotivos.forEach(m => console.log(`  X ${m.fichero}: ${m.rutas.slice(0, 3).join(', ')}`));
+      para(`motivos de ausencia en ficheros públicos (${conMotivos[0].fichero}).`, '');
+    }
+    if (r.ficheroAsistencia) console.log(`Asistencia con motivos (solo gestores): ${path.relative(ROOT, r.ficheroAsistencia)} -> Supabase con "npm run db:asistencia" en plataforma/.`);
+
+    // Portada de la web (D84): copias de data/ en plataforma/src/data/. Solo se llega aquí si la jornada cuadra.
+    try {
+      const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'sincronizar_equipacion.mjs')], { stdio: 'pipe' }).toString().trim();
+      console.log(`Plataforma: ${salida} (npm run datos:sync)`);
+    } catch (e) { para('no se han podido sincronizar las copias de plataforma/src/data/.', 'Plataforma: NO se han podido sincronizar las copias de plataforma/src/data/:\n' + (e.stderr || e.message)); }
+
+    resumen.estado = 'lista'; escribeResumen();
+    console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/index.json y plataforma/src/data/.');
+  })().catch(e => para(e.message, 'ERROR: ' + e.message));
+}

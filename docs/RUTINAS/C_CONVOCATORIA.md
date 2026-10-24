@@ -13,7 +13,7 @@ Tarea programada de Claude en el Chrome de Iván, **de lunes a miércoles a las 
    - `evento;jugador;respuesta;motivo;detalle`, por ejemplo `14/10/2026 entreno;Jon Adrian Esteban Peñas;no voy;trabajo;Turno de tarde`. El evento se da por su fecha y, si hace falta, «entreno», «MdA» o «MdL».
    - `jugador;desde;hasta;motivo` para los periodos.
    El jugador se escribe **exactamente como sale en SportEasy**.
-3. Pulsar **Revisar** y después **Guardar las válidas**. Un nombre que no está en el diccionario **no se empareja nunca por parecido**: bloquea solo su línea. Asignarlo a mano **una vez** con el selector (entra en el diccionario) y volver a guardar. Si una línea da error (evento ambiguo, motivo fuera de la lista: lesión, trabajo, viaje, familia u otro), corregirla y repetir; repetir una importación no duplica nada.
+3. Pulsar **Revisar** y después **Guardar las válidas**. Un nombre que no está en el diccionario **no se empareja nunca por parecido**: bloquea solo su línea. Asignarlo a mano **una vez** con el selector (entra en el diccionario) y volver a guardar. Si una línea da error (evento ambiguo, motivo fuera de la lista: lesión, trabajo, viaje, familia u otro), corregirla y repetir; repetir una importación no duplica nada. **Conflictos (D121):** si una línea sale como «Conflicto: <gestor> puso … ; SportEasy dice …», es que un gestor cambió esa respuesta después (tablero o «Responder por él»): **no marcar «Usar SportEasy»** (se guarda lo del gestor) y contárselo a Iván en el aviso, para que decida.
 4. Comprobar en `/gestion/eventos/<evento>/respuestas`: orden no van → dudan → sin responder → van, motivos y franja de ausencias por periodo.
 
 ## 2. Convocatoria

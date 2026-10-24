@@ -71,8 +71,9 @@ _23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con po
 - **Iván decide siempre.** La web propone y él ajusta. La **modificación manual siempre es posible**: pasar al otro equipo, doblar, quitar, añadir (a cualquiera de la plantilla, aunque no haya respondido o haya dicho «no voy», con aviso) o cambiar la posición para ese partido.
 - **Cada cambio guarda su motivo** (Rotación, Rival, Lesión, Equilibrar, Lo ha pedido, Otro, más una nota opcional), quién y cuándo, para afinar las reglas con el tiempo.
 - Tras cada cambio se recalculan el recuento y los avisos; la **propuesta solo se rehace** con «Recalcular propuesta».
+- **El tablero (D121) es el ajuste manual de un vistazo:** `/gestion/tablero` (o «Abrir tablero» desde la convocatoria) enseña una línea por jugador con su estado en cada partido del domingo; tocar «Convocar» / «Convocado» o seleccionar a varios y pulsar «Al MdA», «Al MdL» o «Quitar convocatoria» guarda en la misma convocatoria, con un solo motivo para el grupo («ajuste manual» por defecto) y quién y cuándo. Solo convoca a quien está disponible para ese partido y nunca deja doblar a la misma hora (1.4). Los avisos de las reglas se recalculan al momento (mínimos, evitar 5 interiores, más de 10, ningún base puro y la diferencia de convocados de D112). Una convocatoria aprobada que se toca queda «cambiada» y sus salidas vuelven a pendientes, como al cambiarla aquí. El motor sigue proponiendo; el tablero no rehace la propuesta.
 - **Encuentro: 20 minutos antes** de la hora del partido (D98).
-- Los niveles **nunca** salen en el mensaje de WhatsApp, ni en los avisos, ni en Mi zona.
+- Los niveles **nunca** salen en el mensaje de WhatsApp, ni en los avisos, ni en el inicio del jugador (antes Mi zona), ni en su calendario personal, ni en los grupos de entreno publicados. En el tablero y en los grupos sin publicar, solo los ven los gestores.
 
 ## Datos que usa
 

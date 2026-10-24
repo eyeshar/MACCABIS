@@ -7,6 +7,14 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**Inmediato (24/10/2026, noche) — `feat/inicio-y-planes` (D117–D122), SIN merge:**
+- [ ] **Revisión de la vista previa por Claude (contra el lienzo «Maccabis · Inicio personal») y OK de Iván al merge.** Capturas en `privado/mockups_liga/inicio-y-planes/`.
+- [ ] **Vercel: añadir `CALENDARIO_SECRETO`** (Production y Preview; un valor aleatorio largo, nunca en el chat ni en git). Sin él, el enlace del calendario personal sale de la clave de servicio, si está; cambiarlo más adelante invalida todos los enlaces.
+- [ ] **No crear planes de prueba en la vista previa sin borrarlos después** (con «Borrar» de un gestor): hasta el merge, la web de `main` en producción no sabe qué es un plan y lo enseñaría en Mi zona y en las listas de Gestión.
+- [ ] **«Responder en SportEasy» al evento exacto:** guardar el id de cada evento en SportEasy (columna nueva, la rellena Claude al copiar) para que el botón del inicio lleve al evento y no al calendario de SportEasy (D117).
+- [ ] Más adelante: aviso al móvil del recordatorio de un plan también si el plan se crea con menos de un día de margen (hoy, sin «un día antes», no sale nada).
+- [ ] Más adelante: los pedidos de ropa de campañas cerradas ya no se ven en el inicio (D117); si se echan de menos, una página «Mis pedidos».
+
 **Inmediato (23/10/2026):**
 - [x] **Gestión → Asistencia atrasada** (24/10/2026, D116, `fix/asistencia-resumen`): la pantalla lee `asistencia_motivos`; `asistencia_resumen` completada en real (de 48 a 58 en 2026/27) y sin uso; `pruebas:eventos-real` al día con el paso 3.
    - [ ] Más adelante, decisión de Iván: retirar `asistencia_resumen` (sin uso desde D116; tiene 6 filas de 2026/27 con valores viejos).

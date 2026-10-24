@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// RLS de eventos, pistas, respuestas, ausencias, diccionario, importaciones y resumen de asistencia CONTRA EL SUPABASE
-// REAL, en SOLO LECTURA (D94, mitigacion 5). No crea ni borra cuentas ni escribe nada:
+// RLS de eventos, pistas, respuestas, ausencias, diccionario, importaciones y asistencia CONTRA EL SUPABASE
+// REAL, en SOLO LECTURA (D94, mitigacion 5). Desde el paso 3 (D99) cada jugador lee sus propias respuestas y ausencias,
+// nunca las de otro. No crea ni borra cuentas ni escribe nada:
 //   - anonimo: por HTTPS con la clave publica, como cualquiera en internet;
 //   - jugador y gestor: con las cuentas que YA existen, dentro de una transaccion READ ONLY que adopta el rol
 //     `authenticated` y los claims de esa cuenta (lo mismo que hace PostgREST), y se deshace al final.
@@ -21,7 +22,9 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const sql = conectar();
 let fallos = 0;
 const ok = (c, que, det = '') => { if (c) console.log(`  OK    ${que}`); else { fallos++; console.log(`  FALLO ${que}${det ? ` -> ${det}` : ''}`); } };
-const PRIVADAS = ['eventos', 'pistas', 'descansos', 'respuestas', 'ausencias_periodo', 'diccionario_sporteasy', 'importaciones', 'asistencia_resumen'];
+const PRIVADAS = ['eventos', 'pistas', 'descansos', 'respuestas', 'ausencias_periodo', 'diccionario_sporteasy', 'importaciones', 'asistencia_resumen', 'asistencia_motivos'];
+// Paso 3 (D99): de estas, el jugador lee SOLO las suyas; del resto, nada.
+const SUYAS = ['respuestas', 'ausencias_periodo'];
 const COLUMNAS_PRIVADAS = ['id', 'origen', 'serie', 'sporteasy_estado', 'sporteasy_cambio', 'sporteasy_copiado_en', 'creado_en', 'actualizado_en', 'pista_id', 'person_id', 'respuesta', 'motivo', 'detalle'];
 
 async function api(ruta, { metodo = 'GET', cuerpo } = {}) {
@@ -78,6 +81,8 @@ try {
 
   console.log('\n== Gestor (cuenta real existente, transacción de solo lectura)');
   const [gestor] = await sql`select user_id from public.gestores where user_id is not null limit 1`;
+  // (Los recuentos «de verdad» se toman fuera de la transacción: la conexión es una sola y dentro está ocupada.)
+  const [{ n: totalMotivos }] = await sql`select count(*)::int n from public.asistencia_motivos`;
   ok(!!gestor, 'hay al menos un gestor con cuenta');
   await como(gestor.user_id, async (tx) => {
     ok((await tx`select public.is_gestor() g`)[0].g === true, 'is_gestor() = true');
@@ -86,20 +91,35 @@ try {
       ok(n >= 0, `el gestor lee ${t} (${n} filas)`);
     }
     ok((await tx`select count(*)::int n from public.eventos`)[0].n === 67, 'el gestor ve los 67 eventos');
-    ok((await tx`select count(*)::int n from public.asistencia_resumen`)[0].n === (await tx`select count(*)::int n from public.asistencia_motivos`)[0].n, 'y el resumen de asistencia = asistencia_motivos');
+    // Gestión → Asistencia lee asistencia_motivos, lo mismo que carga db:asistencia (D116); asistencia_resumen ya no se usa.
+    const [{ n: nMot }] = await tx`select count(*)::int n from public.asistencia_motivos`;
+    ok(nMot > 0 && nMot === totalMotivos, `el gestor lee toda asistencia_motivos, la fuente de Gestión → Asistencia (${nMot} filas; D116)`);
     ok((await intenta(tx, `delete from public.eventos`)).startsWith('rechazado'), 'el gestor NO puede borrar eventos');
     ok((await intenta(tx, `delete from public.diccionario_sporteasy`)).startsWith('rechazado'), 'el gestor NO puede borrar el diccionario');
     ok((await intenta(tx, `update public.asistencia_resumen set fueron = 0`)).startsWith('rechazado'), 'el gestor NO puede cambiar el resumen de asistencia');
   });
 
   console.log('\n== Jugador y no gestor (cuentas reales existentes, transacción de solo lectura)');
-  const jugadores = await sql`select u.id from auth.users u join public.jugadores j on lower(j.email) = lower(u.email) where j.activo
-    and not exists (select 1 from public.gestores g where g.user_id = u.id) limit 2`;
+  // Primero los que tienen respuestas propias, para que «ve las suyas» se compruebe con filas de verdad.
+  const jugadores = await sql`select u.id, j.person_id, (select count(*)::int from public.respuestas r where r.person_id = j.person_id) propias
+    from auth.users u join public.jugadores j on lower(j.email) = lower(u.email) where j.activo
+    and not exists (select 1 from public.gestores g where g.user_id = u.id) order by propias desc, j.person_id limit 2`;
   ok(jugadores.length > 0, `hay ${jugadores.length} jugador(es) sin rol de gestor con cuenta para probar`);
+  for (const j of jugadores) {
+    j.suyas = {};
+    for (const t of SUYAS) j.suyas[t] = (await sql.unsafe(`select count(*)::int n from public.${t} where person_id = $1`, [j.person_id]))[0].n;
+  }
+  ok(jugadores.some((j) => j.propias > 0), `al menos uno tiene respuestas propias en real (${jugadores.map((j) => j.propias).join(' y ')})`);
   for (const j of jugadores) {
     await como(j.id, async (tx) => {
       ok((await tx`select public.is_gestor() g`)[0].g === false, 'is_gestor() = false');
-      for (const t of PRIVADAS) ok((await tx.unsafe(`select count(*)::int n from public.${t}`))[0].n === 0, `el jugador ve 0 filas de ${t}`);
+      for (const t of PRIVADAS) {
+        const [{ n }] = await tx.unsafe(`select count(*)::int n from public.${t}`);
+        if (!SUYAS.includes(t)) { ok(n === 0, `el jugador ve 0 filas de ${t}`); continue; }
+        const [{ ajenas }] = await tx.unsafe(`select count(*)::int ajenas from public.${t} where person_id <> $1`, [j.person_id]);
+        const suyas = j.suyas[t];
+        ok(ajenas === 0 && n === suyas, `el jugador ve sus ${t} (${n} de ${suyas}) y ninguna de otro`, `ve ${n}, suyas ${suyas}, de otros ${ajenas}`);
+      }
       ok((await tx`select count(*)::int n from public.v_eventos_publicos`)[0].n === 67, 'sí ve la vista pública (67)');
       ok((await intenta(tx, `insert into public.eventos (clave, tipo, equipo, fecha) values ('x', 'amistoso', 'MdA', '2026-11-01')`)).startsWith('rechazado'), 'el jugador NO puede crear eventos');
       ok((await intenta(tx, `insert into public.respuestas (evento_id, person_id, respuesta) select id, 'x', 'va' from public.eventos limit 1`)).startsWith('rechazado'), 'el jugador NO puede escribir respuestas');

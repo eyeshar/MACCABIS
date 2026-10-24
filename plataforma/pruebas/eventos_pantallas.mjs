@@ -53,10 +53,14 @@ try {
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;
   await sql`update public.jugadores set email = ${jugadorEmail}, ficha_mda = true, ficha_mdl = true, entrena = true where person_id = 'esteban-jon'`;
   await sql`update public.jugadores set entrena = true, ficha_mda = true where person_id in ('gianatti-adriano', 'romero-barrueco-alonso', 'calahorro-sanchez-manuel')`;
-  // Datos de asistencia de ejemplo (la pila arranca vacia).
-  await sql`insert into public.asistencia_resumen (temporada, person_id, nombre, ambito, fueron, total, con_excusa, lesion) values
+  // Datos de asistencia de ejemplo (la pila arranca vacia), en asistencia_motivos: lo que carga db:asistencia y lee
+  // la pantalla (D116). En asistencia_resumen (la copia del paso 2, ya sin uso) una fila vieja y distinta, para
+  // comprobar que la pantalla no la lee.
+  await sql`insert into public.asistencia_motivos (temporada, person_id, nombre, ambito, fueron, total, excusa, lesion) values
     ('2026-27', 'esteban-jon', 'Jon Esteban', 'entrenos', 3, 4, 1, 0), ('2026-27', 'esteban-jon', 'Jon Esteban', 'partidos', 2, 2, 0, 0),
     ('2025-26', 'esteban-jon', 'Jon Esteban', 'entrenos', 20, 30, 5, 4)`;
+  await sql`insert into public.asistencia_resumen (temporada, person_id, nombre, ambito, fueron, total, con_excusa, lesion) values
+    ('2026-27', 'esteban-jon', 'Jon Esteban', 'entrenos', 1, 9, 0, 0)`;
   const codigoDe = async (email) => (await sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
 
   console.log('\n== Compilacion');
@@ -447,7 +451,7 @@ try {
   console.log('\n== Asistencia y motivos');
   await p.goto(`${APP}/gestion/asistencia`);
   const fa = p.locator('[data-person=esteban-jon]');
-  ok((await fa.textContent()).includes('3 / 4') && (await fa.textContent()).includes('75 %') && (await fa.textContent()).includes('2 / 2') && (await fa.textContent()).includes('100 %'), 'resumen: entrenos 3/4 = 75 %, partidos 2/2 = 100 %');
+  ok((await fa.textContent()).includes('3 / 4') && (await fa.textContent()).includes('75 %') && (await fa.textContent()).includes('2 / 2') && (await fa.textContent()).includes('100 %'), 'resumen: entrenos 3/4 = 75 %, partidos 2/2 = 100 % (de asistencia_motivos, no de la copia vieja de asistencia_resumen; D116)');
   ok((await fa.textContent()).includes('trabajo ×1') && (await fa.textContent()).includes('con excusa ×1'), 'motivos más frecuentes (históricos + «no voy» de la plataforma)');
   await p.goto(`${APP}/gestion/asistencia?t=2025-26`);
   ok((await p.locator('[data-person=esteban-jon]').textContent()).includes('20 / 30') && (await p.locator('[data-person=esteban-jon]').textContent()).includes('67 %'), 'otra temporada: 20/30 = 67 %');

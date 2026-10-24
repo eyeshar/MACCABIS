@@ -17,6 +17,8 @@ export default function ImportarRespuestas({ personas }: { personas: Persona[] }
   const [texto, setTexto] = useState("");
   const [res, setRes] = useState<ResultadoRespuestas | null>(null);
   const [elegida, setElegida] = useState<Record<string, string>>({});
+  // D120: conflictos con un cambio de gestor. Por defecto se mantiene lo del gestor; «Usar SportEasy» lo cambia.
+  const [usarSE, setUsarSE] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [pendiente, empezar] = useTransition();
 
@@ -26,7 +28,7 @@ export default function ImportarRespuestas({ personas }: { personas: Persona[] }
   });
   const guardar = () => empezar(async () => {
     setError(null);
-    try { setRes(await guardarRespuestas(texto)); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar."); }
+    try { setRes(await guardarRespuestas(texto, [...usarSE])); setUsarSE(new Set()); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar."); }
   });
   const asignar = (nombre: string) => empezar(async () => {
     setError(null);
@@ -55,10 +57,16 @@ export default function ImportarRespuestas({ personas }: { personas: Persona[] }
 
       {res && (
         <section className="gs-bloque" aria-labelledby="t-res-r" data-testid="resultado-respuestas">
-          <h2 id="t-res-r" style={{ fontSize: 26 }}>{res.validas} {res.validas === 1 ? "línea válida" : "líneas válidas"}{res.bloqueadas ? ` · ${res.bloqueadas} bloqueadas` : ""}{res.errores ? ` · ${res.errores} con error` : ""}</h2>
+          <h2 id="t-res-r" style={{ fontSize: 26 }}>{res.validas} {res.validas === 1 ? "línea válida" : "líneas válidas"}{res.bloqueadas ? ` · ${res.bloqueadas} bloqueadas` : ""}{res.errores ? ` · ${res.errores} con error` : ""}{res.conflictos ? ` · ${res.conflictos} ${res.conflictos === 1 ? "conflicto" : "conflictos"}` : ""}</h2>
+          {res.conflictos > 0 && !res.guardadas && (
+            <p className="aviso aviso-info" role="note" style={{ margin: 0 }} data-testid="aviso-conflictos">
+              <b>Conflictos con cambios de gestor (D120).</b> Un gestor cambió esas respuestas después (en el tablero o con «Responder por él»): si guardas, <b>se mantiene lo del gestor</b> salvo que marques «Usar SportEasy» en la línea.
+            </p>
+          )}
           {res.guardadas && (
             <div className="aviso aviso-ok" role="status" style={{ margin: 0 }}>
               Guardado: {res.guardadas.respuestas} {res.guardadas.respuestas === 1 ? "respuesta" : "respuestas"} y {res.guardadas.ausencias} {res.guardadas.ausencias === 1 ? "ausencia" : "ausencias"} por periodo. Importación registrada.
+              {res.guardadas.mantenidas ? ` ${res.guardadas.mantenidas} ${res.guardadas.mantenidas === 1 ? "se queda" : "se quedan"} como las dejó el gestor.` : ""}
               {res.bloqueadas ? " Las líneas bloqueadas esperan a que asignes el nombre." : ""}
             </div>
           )}
@@ -71,7 +79,16 @@ export default function ImportarRespuestas({ personas }: { personas: Persona[] }
                     <td data-label="Línea" className="cifra">{l.n}</td>
                     <td data-label="Qué dice">{l.estado === "valida" ? l.resumen : <code className="mono" style={{ textTransform: "none", letterSpacing: 0 }}>{l.crudo}</code>}</td>
                     <td data-label="Estado">
-                      {l.estado === "valida" && <span className="pastilla pastilla-ok">Válida</span>}
+                      {l.estado === "valida" && !l.conflicto && <span className="pastilla pastilla-ok">Válida</span>}
+                      {l.estado === "valida" && l.conflicto && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }} data-testid="conflicto">
+                          <span className="pastilla etiqueta-aviso">Conflicto: {l.conflicto.puestoPor ?? "un gestor"} puso «{l.conflicto.gestor}»{l.conflicto.en ? ` el ${new Date(l.conflicto.en).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}; SportEasy dice «{l.conflicto.sporteasy}»</span>
+                          <label className="ev-radios" style={{ margin: 0 }}>
+                            <input type="checkbox" checked={usarSE.has(l.conflicto.clave)} onChange={() => setUsarSE((s) => { const n = new Set(s); if (n.has(l.conflicto!.clave)) n.delete(l.conflicto!.clave); else n.add(l.conflicto!.clave); return n; })} />
+                            Usar SportEasy
+                          </label>
+                        </div>
+                      )}
                       {l.estado === "error" && <><span className="pastilla etiqueta-mal">Error</span><span className="ev-sub" style={{ color: "var(--error)" }}>{l.error}</span></>}
                       {l.estado === "bloqueada" && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>

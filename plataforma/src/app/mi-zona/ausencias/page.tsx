@@ -16,13 +16,13 @@ const dia = (f: string) => `${diaCorto(f)} ${mes(f)}`;
 // Mis ausencias (D99, 3.6). Con «respuestas en la web» apagado no aparece (3.7).
 export default async function MisAusencias({ searchParams }: { searchParams: Promise<{ guardada?: string }> }) {
   await exigirSesion();
-  if (!(await respuestasWebEncendido())) redirect("/mi-zona");
+  if (!(await respuestasWebEncendido())) redirect("/agenda");
   const { guardada } = await searchParams;
   const hoy = hoyMadrid();
   const lista = (await cargarMisAusencias()).filter((a) => a.hasta == null || a.hasta >= hoy);
   return (
     <main className="pagina rw-ausencias">
-      <p className="rw-volver"><Link href="/mi-zona">← Mi zona</Link></p>
+      <p className="rw-volver"><Link href="/agenda">← Agenda</Link></p>
       <h1>Mis ausencias</h1>
       <p className="suave">Los días que marques no te preguntaremos: tus eventos quedan en «no voy» con el motivo (solo lo ven los gestores).</p>
       {guardada && <p className="aviso aviso-ok" role="status">Ausencia guardada.</p>}

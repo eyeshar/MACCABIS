@@ -55,6 +55,7 @@ try {
   for (const f of ['20261008100000_respuestas_web', '20261008101000_avisos', '20261008102000_quien_responde']) ok(fs.existsSync(path.join(MIGS, `${f}.revertir.sql`)), `${f} tiene su revertir.sql`);
   for (const n of NUEVAS) ok(await tablaExiste(n), `existe public.${n}`);
   const colsAntes = async (t) => (await sql`select column_name from information_schema.columns where table_schema = 'public' and table_name = ${t} order by column_name`).map((c) => c.column_name).join(',');
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261024200000_inicio_y_planes.revertir.sql'), 'utf8')));
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261008102000_quien_responde.revertir.sql'), 'utf8')));
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261008101000_avisos.revertir.sql'), 'utf8')));
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261008100000_respuestas_web.revertir.sql'), 'utf8')));

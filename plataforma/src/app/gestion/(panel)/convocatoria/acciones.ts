@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { entradaDe } from "@/lib/convocatoria/vista";
-import { avisarConvocados } from "@/lib/convocatoria/avisos";
+import { avisarSiAprobada } from "@/lib/convocatoria/salidas";
 import { EQUIPOS, NIVELES, POSICIONES, proponer, vacia, type Convocatoria, type Dificultad, type Equipo } from "@/lib/convocatoria/motor";
 
 // Acciones de la convocatoria (D107). Todo con la sesion del gestor: la base (is_gestor) decide. Las convocatorias se
@@ -25,7 +25,7 @@ const ERRORES: Record<string, string> = {
   equipos_no_validos: "Esa convocatoria no es válida.",
 };
 const error = (m: string) => ERRORES[Object.keys(ERRORES).find((k) => m.includes(k)) ?? ""] ?? `No se pudo guardar: ${m}`;
-const refrescar = () => { revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/mi-zona", "layout"); };
+const refrescar = () => { revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/", "layout"); };
 
 /** Limpia lo que llega del navegador: solo los equipos que juegan, sin repetidos, posiciones validas. */
 function limpiar(conv: Convocatoria, juegan: Equipo[], plantilla: Set<string>): Convocatoria {
@@ -48,17 +48,7 @@ async function contexto(fecha: string) {
 }
 
 /** Avisa «Estás convocado» si ya esta aprobada (solo con el interruptor encendido; si no, queda en espera). */
-async function avisar(sb: Awaited<ReturnType<typeof exigirGestor>>["supabase"], fecha: string) {
-  const ctx = await cargarContexto(sb, fecha);
-  const c = ctx?.convocatoria;
-  if (!ctx || !c || c.estado !== "aprobada") return null;
-  // Si el envio falla (servicio de avisos caido, claves mal puestas…), la convocatoria sigue aprobada y el aviso queda en
-  // espera para «Enviar ahora»: nunca se pierde una aprobacion por un aviso.
-  const r = await avisarConvocados(fecha, c.equipos, c.aviso_base, ctx.partidos)
-    .catch((e: Error) => ({ estado: "en_espera" as const, avisados: 0, motivo: `error: ${e.message}` }));
-  await sb.rpc("convocatoria_marcar", { p_fecha: fecha, p_que: r.estado === "enviado" ? "aviso_enviado" : "aviso_en_espera" });
-  return r;
-}
+const avisar = avisarSiAprobada;
 
 /** «Usar propuesta», «Empezar en blanco (a mano)» y «Recalcular propuesta». */
 export async function empezar(fecha: string, modo: "propuesta" | "blanco" | "recalcular"): Promise<R> {

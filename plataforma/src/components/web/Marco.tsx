@@ -24,7 +24,7 @@ export async function PiePublico() {
         <Link href="/liga">Todas las estadísticas</Link>
         <Link href="/privacidad">Privacidad</Link>
         {!usuario && <Link href="/entrar" className="w-pie-acceso">Acceso jugadores y gestores</Link>}
-        {usuario?.esJugador && <Link href="/mi-zona" className="w-pie-acceso">Mi zona</Link>}
+        {usuario?.esJugador && <Link href="/agenda" className="w-pie-acceso">Tu agenda</Link>}
         {usuario?.esGestor && <Link href="/gestion" className={usuario.esJugador ? "w-pie-zona" : "w-pie-acceso"}>Gestión</Link>}
       </div>
     </footer>

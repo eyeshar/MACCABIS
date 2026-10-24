@@ -6,7 +6,10 @@ import type { MiAusencia, MiDomingo, MiEvento, MiRespuesta } from "./dominio";
 // Lo que lee el jugador con SU sesion (D99): sus eventos (v_mis_eventos), sus respuestas y ausencias (RLS: solo las
 // suyas) y los nombres de "quien va" de sus eventos (v_quien_va: nombre y estado, nada mas). La base decide.
 
-const COLS = "id, tipo, equipo, titulo, jornada, rival, es_local, fecha, inicio, fin, quedada, notas, estado, cambio_visible, cambio_visible_en, pista_nombre, pista_nombre_corto, pista_direccion, numero_pista, pista_por_confirmar, pista_motivo";
+// Su agenda (D116-D118): v_mi_agenda trae los oficiales y los planes no oficiales a los que esta invitado, con el sitio
+// efectivo (pista o ubicacion libre) y quien organiza un plan. Nada de nadie mas.
+const COLS = "id, tipo, equipo, titulo, jornada, rival, rival_texto, es_local, fecha, inicio, fin, quedada, notas, estado, cambio_visible, cambio_visible_en, pista_nombre, pista_nombre_corto, pista_direccion, numero_pista, pista_por_confirmar, pista_motivo, oficial, creado_por, organizador, es_mio, plazas, recordar_un_dia_antes, lugar_nombre, lugar_direccion, lugar_lat, lugar_lng, lugar_enlace, secuencia, actualizado_en";
+const VISTA = "v_mi_agenda";
 
 /** ¿Esta encendido «respuestas en la web»? (sin configurar o sin sesion: no) */
 export const respuestasWebEncendido = cache(async () => {
@@ -18,22 +21,40 @@ export const respuestasWebEncendido = cache(async () => {
 
 export const cargarMisEventos = cache(async (desde: string): Promise<MiEvento[]> => {
   const sb = await clienteSesion();
-  const { data, error } = await sb.from("v_mis_eventos").select(COLS).gte("fecha", desde).eq("temporada", "2026-27").order("fecha").order("inicio", { nullsFirst: false });
-  if (error) throw new Error(`v_mis_eventos: ${error.message}`);
+  const { data, error } = await sb.from(VISTA).select(COLS).gte("fecha", desde).eq("temporada", "2026-27").order("fecha").order("inicio", { nullsFirst: false });
+  if (error) throw new Error(`${VISTA}: ${error.message}`);
   return (data ?? []) as MiEvento[];
 });
 
 export async function cargarMiEvento(id: string): Promise<MiEvento | null> {
   const sb = await clienteSesion();
-  const { data } = await sb.from("v_mis_eventos").select(COLS).eq("id", id).maybeSingle();
+  const { data } = await sb.from(VISTA).select(COLS).eq("id", id).maybeSingle();
   return (data as MiEvento | null) ?? null;
 }
 
 export async function cargarMisEventosDelDia(fecha: string): Promise<MiEvento[]> {
   const sb = await clienteSesion();
-  const { data } = await sb.from("v_mis_eventos").select(COLS).eq("fecha", fecha).order("inicio");
+  const { data } = await sb.from(VISTA).select(COLS).eq("fecha", fecha).order("inicio");
   return (data ?? []) as MiEvento[];
 }
+
+/** Grupos de entreno publicados (D121): en cada entreno, el nombre de SU grupo y sus compañeros. Nada mas. */
+export const cargarMisGrupos = cache(async (): Promise<{ evento_id: string; grupo: string; companeros: string[] }[]> => {
+  if (!configurado()) return [];
+  const sb = await clienteSesion();
+  const { data, error } = await sb.rpc("mis_grupos");
+  if (error) return [];
+  return (data ?? []) as { evento_id: string; grupo: string; companeros: string[] }[];
+});
+
+/** Lo que un gestor le ha dejado al organizador de un plan (D117), sin ver aun. */
+export const cargarAvisosPersonales = cache(async (): Promise<{ id: string; texto: string; url: string; creado_en: string }[]> => {
+  if (!configurado()) return [];
+  const sb = await clienteSesion();
+  const { data, error } = await sb.from("avisos_personales").select("id, texto, url, creado_en").is("visto_en", null).order("creado_en", { ascending: false }).limit(5);
+  if (error) return [];
+  return (data ?? []) as { id: string; texto: string; url: string; creado_en: string }[];
+});
 
 export const cargarMisRespuestas = cache(async (): Promise<MiRespuesta[]> => {
   const sb = await clienteSesion();

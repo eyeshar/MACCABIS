@@ -6,6 +6,8 @@ import { hhmm, nombreSerie, quedadaPorDefecto, TIPOS, TEXTO_ESTADO_PISTA, type E
 import { TEXTO_HUECO } from "@/lib/avisos/planificador";
 import { textoCambio } from "@/lib/avisos/textos";
 import { crearEvento, guardarEvento } from "./acciones";
+import BuscadorLugar from "@/components/lugar/BuscadorLugar";
+import "@/components/inicio/inicio.css";
 
 type Props = {
   evento: EventoFila | null;       // null = evento nuevo
@@ -19,7 +21,8 @@ type Props = {
   invitadosPor?: { entreno: number; MdA: number; MdL: number; ambos: number };
 };
 
-const HUECOS: Record<TipoEvento, (keyof typeof TEXTO_HUECO)[]> = { entreno: ["lunes", "dia"], liga: ["lunes", "martes"], amistoso: ["creado", "24h"], torneo: ["creado", "24h"], interno: ["creado", "24h"] };
+const LIBRE = "__libre";
+const HUECOS: Record<TipoEvento, (keyof typeof TEXTO_HUECO)[]> = { entreno: ["lunes", "dia"], liga: ["lunes", "martes"], amistoso: ["creado", "24h"], torneo: ["creado", "24h"], interno: ["creado", "24h"], quedada: ["creado", "24h"], pachanga: ["creado", "24h"], otro: ["creado", "24h"] };
 
 /** Crear y editar un evento (maqueta EventoEditar, D99 4.3). Un partido del Ayuntamiento solo cambia las notas (el
  *  encuentro es siempre 20 minutos antes, D98). Con «respuestas en la web» encendido: recordatorios, vista previa del
@@ -28,13 +31,15 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
   const [error, accion, enviando] = useActionState(evento ? guardarEvento.bind(null, evento.id) : crearEvento, null);
   const delAyuntamiento = evento?.tipo === "liga" && evento.origen === "ayuntamiento";
   const [tipo, setTipo] = useState<TipoEvento>(evento?.tipo ?? tipoInicial ?? "amistoso");
-  const [pistaId, setPistaId] = useState(evento?.pista_id ?? "");
+  // D118: un evento usa una pista del catalogo o un sitio libre («__libre»: buscador de OpenStreetMap o enlace de Maps).
+  const [pistaId, setPistaId] = useState(evento?.pista_id ?? (evento?.ubicacion_nombre || evento?.ubicacion_enlace ? LIBRE : ""));
   const [equipo, setEquipo] = useState(evento?.equipo ?? "ambos");
   const [fecha, setFecha] = useState(evento?.fecha ?? "");
   const [inicio, setInicio] = useState(hhmm(evento?.inicio) ?? "");
   const [fin, setFin] = useState(hhmm(evento?.fin) ?? "");
   const [numero, setNumero] = useState(evento?.numero_pista ? String(evento.numero_pista) : "");
   const pista = pistas.find((p) => p.id === pistaId);
+  const libre = pistaId === LIBRE;
   const serie = pistas.find((p) => p.es_de_serie && p.uso === "entreno");
   const bloqueado = delAyuntamiento; // solo notas
   const enSerie = Boolean(evento?.serie);
@@ -46,7 +51,7 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
   // erratas no avisan.
   const cambiaDia = !!evento && fecha !== evento.fecha;
   const cambiaHora = !!evento && (inicio !== (hhmm(evento.inicio) ?? "") || fin !== (hhmm(evento.fin) ?? ""));
-  const cambiaPista = !!evento && (pistaId !== (evento.pista_id ?? "") || numero !== (evento.numero_pista ? String(evento.numero_pista) : ""));
+  const cambiaPista = !!evento && ((libre ? "" : pistaId) !== (evento.pista_id ?? "") || numero !== (evento.numero_pista ? String(evento.numero_pista) : ""));
   const avisable = cambiaDia || cambiaHora || cambiaPista;
   const encuentro = quedadaPorDefecto(inicio || null);
   const sitioPista = pista ?? (tipo === "entreno" && serie?.estado === "habitual" ? serie : null);
@@ -101,7 +106,7 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
             {tipo === "liga" && <div className="campo" style={{ margin: 0 }}><label htmlFor="jornada">Jornada</label><input id="jornada" name="jornada" type="number" min={1} defaultValue={evento?.jornada ?? ""} disabled={bloqueado} /></div>}
           </div>
         )}
-        {(tipo === "amistoso" || tipo === "torneo" || tipo === "interno") && (
+        {tipo !== "entreno" && tipo !== "liga" && (
           <div className="campo" style={{ margin: 0 }}><label htmlFor="titulo">Título</label><input id="titulo" name="titulo" type="text" maxLength={80} defaultValue={evento?.titulo ?? ""} placeholder="Torneo de Tres Cantos" /></div>
         )}
         {tipo === "entreno" && <input type="hidden" name="titulo" value={evento?.titulo ?? "Entrenamiento"} />}
@@ -109,10 +114,12 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
         <div className="campo" style={{ margin: 0 }}>
           <label htmlFor="pista">Pista</label>
           <div className="ev-selector">
-            <select id="pista" name="pista" value={pistaId} onChange={(e) => setPistaId(e.target.value)} disabled={bloqueado} className={deLaSerieSinPista && serie?.estado === "en_obras" ? "ev-campo-pista" : undefined} style={{ flex: "1 1 280px" }}>
+            <select id="pista" name={libre ? undefined : "pista"} value={pistaId} onChange={(e) => setPistaId(e.target.value)} disabled={bloqueado} className={deLaSerieSinPista && serie?.estado === "en_obras" ? "ev-campo-pista" : undefined} style={{ flex: "1 1 280px" }}>
               <option value="">{tipo === "entreno" ? `La de la serie${serie ? ` (${serie.nombre.split(" (")[0]}${serie.estado === "habitual" ? "" : `, ${TEXTO_ESTADO_PISTA[serie.estado].toLowerCase()}`})` : ""} · o por confirmar` : "Pista por confirmar"}</option>
               {pistas.filter((p) => p.estado !== "cerrada" || p.id === pistaId).map((p) => <option key={p.id} value={p.id}>{p.nombre}{p.estado === "habitual" ? "" : ` · ${TEXTO_ESTADO_PISTA[p.estado].toLowerCase()}`}</option>)}
+              {!bloqueado && <option value={LIBRE}>Otro sitio (buscar en el mapa)</option>}
             </select>
+            {libre && <input type="hidden" name="pista" value="" />}
             {pista && (pista.num_pistas ?? 0) > 1 && (
               <select name="numero_pista" aria-label="Número de pista" value={numero} onChange={(e) => setNumero(e.target.value)} disabled={bloqueado} style={{ width: 150 }}>
                 <option value="">Nº de pista</option>
@@ -122,6 +129,13 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
             {!bloqueado && <Link className="boton boton-claro" href={`/gestion/eventos/pistas?volver=${encodeURIComponent(volver)}`}>Nueva pista</Link>}
           </div>
           {aviso && <div className="ayuda" style={{ color: "var(--amarillo-tinta)" }}>{aviso}</div>}
+          {libre && (
+            <div style={{ marginTop: 8 }}>
+              <BuscadorLugar etiqueta="Sitio" ayuda="Busca el sitio en el mapa (OpenStreetMap) o pega un enlace de Google Maps."
+                inicial={evento?.ubicacion_nombre || evento?.ubicacion_enlace ? { nombre: evento.ubicacion_nombre ?? "Ubicación de Google Maps", direccion: evento.ubicacion_direccion ?? null, lat: evento.ubicacion_lat ?? null, lng: evento.ubicacion_lng ?? null, enlace: evento.ubicacion_enlace ?? null } : null} />
+            </div>
+          )}
+          {pista && (pista.lat != null || pista.direccion) && <div className="ayuda"><a href={pista.lat != null ? `https://www.google.com/maps/search/?api=1&query=${pista.lat},${pista.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pista.direccion ?? "")}`} target="_blank" rel="noopener noreferrer">Ver en Google Maps</a></div>}
         </div>
         {bloqueado && <><input type="hidden" name="pista" value={evento?.pista_id ?? ""} /><input type="hidden" name="numero_pista" value={evento?.numero_pista ?? ""} /></>}
       </section>

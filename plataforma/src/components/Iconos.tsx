@@ -8,6 +8,7 @@ export const Casa = ({ size = 22 }: P) => <svg {...base(size)}><path d="M3 11l9-
 export const Calendario = ({ size = 22 }: P) => <svg {...base(size)}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>;
 export const CalendarioMas = ({ size = 18 }: P) => <svg {...base(size)}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5" /></svg>;
 export const Barras = ({ size = 22 }: P) => <svg {...base(size)}><path d="M5 20V10M12 20V4M19 20v-7" /></svg>;
+export const Tendencia = ({ size = 22 }: P) => <svg {...base(size)}><path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" /></svg>;
 export const Personas = ({ size = 22 }: P) => <svg {...base(size)}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6 6 0 0 0-4-5.6" /></svg>;
 export const Reloj = ({ size = 22 }: P) => <svg {...base(size)}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>;
 export const Info = ({ size = 18 }: P) => <svg {...base(size)}><circle cx="12" cy="12" r="9" /><path d="M12 8h.01M11 12h1v5h1" /></svg>;

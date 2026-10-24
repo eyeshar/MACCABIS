@@ -13,7 +13,7 @@ export default async function NuevoPedido() {
   const zona = await cargarMiZona();
   if (!zona) return <SinZona />;
   const { campana, jugador } = zona;
-  const volver = "/mi-zona";
+  const volver = "/";
 
   return (
     <>

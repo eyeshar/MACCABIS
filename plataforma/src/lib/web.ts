@@ -17,6 +17,20 @@ export const MENU: Seccion[] = [
   { id: "club", texto: "El club", href: "/club", externo: false },
 ];
 
+/** Menu con sesion (D116): lo de cada persona primero. Escritorio: Inicio · Agenda · Mis números · Liga · Historia (y el
+ *  menu GESTIÓN de los gestores). «Mis números» son sus estadisticas (/mis-numeros lleva a su ficha). */
+export const MENU_SESION: Seccion[] = [
+  { id: "inicio", texto: "Inicio", href: "/", externo: false },
+  { id: "agenda", texto: "Agenda", href: "/agenda", externo: false },
+  { id: "numeros", texto: "Mis números", href: "/mis-numeros", externo: false },
+  { id: "liga", texto: "Liga", href: "/liga", externo: false },
+  { id: "historia", texto: "Historia", href: "/historia", externo: false },
+];
+
+/** Calendario de SportEasy, para «Responder en SportEasy» en la fase puente (D116). No guardamos el id de cada evento en
+ *  SportEasy: el enlace lleva a su calendario (BACKLOG: guardar el id para enlazar al evento). */
+export const SPORTEASY_CALENDARIO = "https://app.sporteasy.net/";
+
 /** Entrada del menu de Gestion. Sin href = aun no existe (llega en el paso 2): se ve en gris, sin enlace. */
 export type EntradaGestion = { texto: string; corto: string; descripcion: string; href?: string };
 export type GrupoGestion = { grupo: string; entradas: EntradaGestion[] };
@@ -29,6 +43,8 @@ export const MENU_GESTION: GrupoGestion[] = [
       { texto: "Panel de la semana", corto: "Panel", descripcion: "Rutinas, partidos del domingo y pendientes", href: "/gestion" },
       { texto: "Eventos y pistas", corto: "Eventos", descripcion: "Partidos, entrenos y la pista de cada semana", href: "/gestion/eventos" },
       { texto: "Convocatoria", corto: "Convocatoria", descripcion: "Propuesta, reparto MdA / MdL y mensaje", href: "/gestion/convocatoria" },
+      { texto: "Tablero", corto: "Tablero", descripcion: "Quién va de un vistazo y ajustes a mano", href: "/gestion/tablero" },
+      { texto: "Grupos", corto: "Grupos", descripcion: "Grupos de entreno para preparar el domingo", href: "/gestion/grupos" },
     ],
   },
   {
@@ -46,15 +62,6 @@ export const MENU_GESTION: GrupoGestion[] = [
       { texto: "Liga consolidada", corto: "Liga consolidada", descripcion: "Líderes y todos los jugadores de la liga", href: "/gestion/liga" },
     ],
   },
-];
-
-/** Secciones de Mi zona (su barra propia, D99): Resumen, Mi agenda y Estadísticas son anclas de la misma pagina;
- *  Ausencias es su pagina (solo con «respuestas en la web» encendido). */
-export const MENU_MI_ZONA = [
-  { id: "inicio", texto: "Resumen", href: "/mi-zona" },
-  { id: "agenda", texto: "Mi agenda", href: "/mi-zona#agenda" },
-  { id: "ausencias", texto: "Ausencias", href: "/mi-zona/ausencias", soloEncendido: true },
-  { id: "temporada", texto: "Estadísticas", href: "/mi-zona#temporada" },
 ];
 
 /** Pagina de la cuenta, una para jugadores y gestores (D90). */

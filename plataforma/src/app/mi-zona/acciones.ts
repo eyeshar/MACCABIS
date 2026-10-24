@@ -12,7 +12,7 @@ export async function guardarPedidoJugador(datos: DatosPedido): Promise<Resultad
   const supabase = await clienteSesion();
   const { data, error } = await supabase.rpc("guardar_pedido", { p_pedido: pedido });
   if (error) return { ok: false, error: "datos_invalidos" };
-  revalidatePath("/mi-zona");
+  revalidatePath("/", "layout");
   return data as Resultado;
 }
 
@@ -26,5 +26,5 @@ export async function comprobarDorsalJugador(campana: string, dorsal: number, pe
 export async function anularPedidoJugador(pedido: string) {
   const supabase = await clienteSesion();
   await supabase.rpc("anular_pedido", { p_pedido: pedido });
-  revalidatePath("/mi-zona");
+  revalidatePath("/", "layout");
 }

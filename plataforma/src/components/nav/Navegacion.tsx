@@ -3,24 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { salir } from "@/app/entrar/acciones";
-import { MENU, MENU_GESTION, RUTA_CUENTA, type GrupoGestion, type Seccion } from "@/lib/web";
+import { MENU, MENU_GESTION, MENU_SESION, RUTA_CUENTA, type GrupoGestion, type Seccion } from "@/lib/web";
 import type { Usuario } from "@/lib/usuario";
-import { Barras, Calendario, Candado, Casa, Mas, Persona } from "@/components/Iconos";
+import { Barras, Calendario, Candado, Casa, Mas, Panel, Tendencia } from "@/components/Iconos";
 import { useDesplegable } from "./useDesplegable";
 
-// Navegacion unica de toda la web (D89, maquetas NavCabecera y NavMovil): cabecera con menu, "Mi zona", menu de
-// Gestion (D90) y menu de usuario; en movil, barra inferior de 5 y la hoja "Mas". La sesion la lee el servidor
-// (Cabecera.tsx) y llega aqui ya resuelta: nada de parpadeos de "Acceso" con la sesion iniciada.
+// Navegacion unica de toda la web (D89, maquetas NavCabecera y NavMovil; D116 con sesion). Sin sesion: la de siempre
+// (Inicio · Partidos · Liga · Plantilla · Historia · El club). Con sesion, lo de cada persona primero: en escritorio
+// Inicio · Agenda · Mis números · Liga · Historia (y el menu GESTIÓN de los gestores); en el movil, barra de 5: jugador
+// Inicio · Agenda · Mis números · Liga · Más; gestor Inicio · Agenda · Mis números · Gestión · Más (Liga pasa a «Más»).
+// La sesion la lee el servidor (Cabecera.tsx) y llega aqui ya resuelta: nada de parpadeos de "Acceso".
 
-type Zona = "inicio" | "club" | "mizona" | "gestion" | "cuenta" | "acceso" | null;
+type Zona = "inicio" | "agenda" | "numeros" | "club" | "gestion" | "cuenta" | "acceso" | "liga" | "historia" | "plantilla" | null;
 
-function zonaDe(ruta: string): Zona {
+function zonaDe(ruta: string, personId: string | null): Zona {
   if (ruta === "/") return "inicio";
   if (ruta === "/club" || ruta === "/privacidad") return "club";
-  if (ruta.startsWith("/mi-zona") || ruta.startsWith("/guia-tallas")) return "mizona";
+  if (ruta.startsWith("/agenda") || ruta.startsWith("/planes") || ruta.startsWith("/mi-zona") || ruta.startsWith("/guia-tallas")) return "agenda";
+  if (ruta === "/mis-numeros" || (personId && ruta === `/jugador/${personId}`)) return "numeros";
   if (ruta.startsWith("/gestion")) return "gestion";
   if (ruta.startsWith(RUTA_CUENTA)) return "cuenta";
   if (ruta.startsWith("/entrar")) return "acceso";
+  if (ruta.startsWith("/liga")) return "liga";
+  if (ruta.startsWith("/historia")) return "historia";
+  if (ruta.startsWith("/plantilla") || ruta.startsWith("/jugador")) return "plantilla";
   return null;
 }
 
@@ -102,9 +108,11 @@ function MenuGestion({ ruta, dentro }: { ruta: string; dentro: boolean }) {
 }
 
 /** Hoja "Mas" del movil: el resto de la web, Gestion (gestores), Mi cuenta y Salir. */
-function HojaMas({ usuario, ruta }: { usuario: Usuario | null; ruta: string }) {
+function HojaMas({ usuario, ruta, zona }: { usuario: Usuario | null; ruta: string; zona: Zona }) {
   const { abierto, cerrar, propsBoton, propsPanel } = useDesplegable({ modal: true });
-  const resto = MENU.filter((s) => ["plantilla", "historia", "club"].includes(s.id));
+  // Con sesion de jugador y gestor, Liga sale de la barra y pasa aqui (D116).
+  const ids = usuario?.esJugador && usuario.esGestor ? ["liga", "plantilla", "historia", "club"] : ["plantilla", "historia", "club"];
+  const resto = MENU.filter((s) => ids.includes(s.id));
   return (
     <>
       <button {...propsBoton} className="nv-barra-item" aria-controls="nv-hoja-mas" aria-haspopup="dialog">
@@ -120,7 +128,7 @@ function HojaMas({ usuario, ruta }: { usuario: Usuario | null; ruta: string }) {
         <nav aria-label="Menú">
           <div className="nv-grupo">
             <div className="nv-grupo-titulo">La web</div>
-            {resto.map((s) => <Enlace key={s.id} s={s} actual={zonaDe(ruta) === s.id} className="nv-entrada"><b>{s.texto}</b></Enlace>)}
+            {resto.map((s) => <Enlace key={s.id} s={s} actual={zona === s.id} className="nv-entrada"><b>{s.texto}</b></Enlace>)}
           </div>
           {usuario?.esGestor && (
             <div className="nv-hoja-gestion">
@@ -131,7 +139,7 @@ function HojaMas({ usuario, ruta }: { usuario: Usuario | null; ruta: string }) {
           {usuario && (
             <div className="nv-grupo">
               <div className="nv-grupo-titulo">{usuario.completo}</div>
-              <Link href={RUTA_CUENTA} className="nv-entrada" aria-current={zonaDe(ruta) === "cuenta" ? "page" : undefined}><b>Mi cuenta</b></Link>
+              <Link href={RUTA_CUENTA} className="nv-entrada" aria-current={zona === "cuenta" ? "page" : undefined}><b>Mi cuenta</b></Link>
             </div>
           )}
         </nav>
@@ -143,8 +151,13 @@ function HojaMas({ usuario, ruta }: { usuario: Usuario | null; ruta: string }) {
 
 export default function Navegacion({ usuario, escudo }: { usuario: Usuario | null; escudo: React.ReactNode }) {
   const ruta = usePathname();
-  const zona = zonaDe(ruta);
+  const zona = zonaDe(ruta, usuario?.personId ?? null);
   const liga = MENU.find((s) => s.id === "liga")!;
+  // Con ficha de jugador, el menu de cada persona (D116); sin sesion o gestor sin ficha, el de la web publica.
+  const personal = Boolean(usuario?.esJugador);
+  const menu = personal ? MENU_SESION : MENU;
+  const actual = (s: Seccion) => zona === s.id;
+  const cur = (z: Zona) => (zona === z ? ("page" as const) : undefined);
   return (
     <>
       <header className="nv-cab">
@@ -154,36 +167,40 @@ export default function Navegacion({ usuario, escudo }: { usuario: Usuario | nul
             <span>MACCABIS</span>
           </Link>
           <nav aria-label="Principal" className="nv-menu">
-            {MENU.map((s) => <Enlace key={s.id} s={s} actual={zona === s.id} />)}
-            {usuario?.esJugador && (
-              <>
-                <span className="nv-sep" aria-hidden="true" />
-                <Link href="/mi-zona" className="nv-mizona" aria-current={zona === "mizona" ? "page" : undefined}><Persona size={18} />Mi zona</Link>
-              </>
-            )}
+            {menu.map((s) => <Enlace key={s.id} s={s} actual={actual(s)} />)}
           </nav>
           <div className="nv-derecha">
             {usuario?.esGestor && <MenuGestion ruta={ruta} dentro={zona === "gestion"} />}
             {usuario ? (
               <MenuUsuario usuario={usuario} actual={zona === "cuenta"} />
             ) : (
-              <Link href="/entrar" className="nv-acceso" aria-current={zona === "acceso" ? "page" : undefined}><Candado />Acceso</Link>
+              <Link href="/entrar" className="nv-acceso" aria-current={cur("acceso")}><Candado />Acceso</Link>
             )}
           </div>
         </div>
       </header>
       <nav aria-label="Secciones" className="nv-barra">
-        <Link href="/" className="nv-barra-item" aria-current={zona === "inicio" ? "page" : undefined}><Casa />Inicio</Link>
-        <Link href="/#calendario" className="nv-barra-item"><Calendario />Partidos</Link>
-        <a href={liga.href} className="nv-barra-item"><Barras />Liga</a>
-        {usuario?.esJugador ? (
-          <Link href="/mi-zona" className="nv-barra-item" aria-current={zona === "mizona" ? "page" : undefined}><Persona />Mi zona</Link>
-        ) : usuario?.esGestor ? (
-          <Link href="/gestion" className="nv-barra-item" aria-current={zona === "gestion" ? "page" : undefined}><Persona />Gestión</Link>
+        <Link href="/" className="nv-barra-item" aria-current={cur("inicio")}><Casa />Inicio</Link>
+        {personal ? (
+          <>
+            <Link href="/agenda" className="nv-barra-item" aria-current={cur("agenda")}><Calendario />Agenda</Link>
+            <Link href="/mis-numeros" className="nv-barra-item" aria-current={cur("numeros")}><Tendencia />Mis números</Link>
+            {usuario?.esGestor
+              ? <Link href="/gestion" className="nv-barra-item" aria-current={cur("gestion")}><Panel size={22} />Gestión</Link>
+              : <Link href={liga.href} className="nv-barra-item" aria-current={cur("liga")}><Barras />Liga</Link>}
+          </>
         ) : (
-          <Link href="/entrar" className="nv-barra-item" aria-current={zona === "acceso" ? "page" : undefined}><Candado size={22} />Acceso</Link>
+          <>
+            <Link href="/#calendario" className="nv-barra-item"><Calendario />Partidos</Link>
+            <a href={liga.href} className="nv-barra-item"><Barras />Liga</a>
+            {usuario?.esGestor ? (
+              <Link href="/gestion" className="nv-barra-item" aria-current={cur("gestion")}><Panel size={22} />Gestión</Link>
+            ) : (
+              <Link href="/entrar" className="nv-barra-item" aria-current={cur("acceso")}><Candado size={22} />Acceso</Link>
+            )}
+          </>
         )}
-        <HojaMas usuario={usuario} ruta={ruta} />
+        <HojaMas usuario={usuario} ruta={ruta} zona={zona} />
       </nav>
     </>
   );

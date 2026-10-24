@@ -157,8 +157,9 @@ export const descansaEl = (fecha: string, f: FuenteCalendario = FUENTE_FICHEROS)
 type PartidoTemporada = { equipo: Equipo; fecha: string; rival: string; pf: number | null; pc: number | null; res: string | null; incomp: boolean; hora?: string; pista?: string; pendiente_acta?: boolean };
 type Jugador = {
   person_id: string; display: string; dorsales: string[]; equipos: Equipo[]; pj: number; min_tot: number | null;
-  tot: { pts: number; p2a: number; p2i: number; p3a: number; p3i: number; tla: number; tli: number; fc: number };
-  games: { pn: number; eq: Equipo; rival: string; local: boolean; sec: number | null; played: boolean; pts: number; p2a: number; p3a: number; tla: number; tli: number }[];
+  tot: { pts: number; p2a: number; p2i: number; p3a: number; p3i: number; tla: number; tli: number; fc: number; pm?: number };
+  games: { pn: number; eq: Equipo; rival: string; local: boolean; sec: number | null; played: boolean; pts: number; p2a: number; p3a: number; tla: number; tli: number; pm?: number }[];
+  asist_entr?: { fueron: number; total: number; pct: number | null };
 };
 const TEMPORADA = temporadaJson as unknown as { season: string; partidos: PartidoTemporada[]; players: Jugador[]; plantilla: { person_id: string; display: string; fichas: Equipo[] }[] };
 
@@ -238,9 +239,13 @@ export function temporadaDe(personId: string) {
   const partidos = j.games.filter((g) => g.played).map((g) => {
     const r = TEMPORADA.partidos.find((p) => p.equipo === g.eq && (p.rival === g.rival || p.rival.toLowerCase() === g.rival.toLowerCase()));
     const cal = r ? CALENDARIO.partidos.find((c) => c.equipo === g.eq && c.fecha === r.fecha) : undefined;
-    return { equipo: g.eq, rival: nombreRival(cal?.rival ?? g.rival), local: g.local, pts: g.pts, fecha: r?.fecha ?? null, jornada: cal?.jornada ?? null, pf: r?.pf ?? null, pc: r?.pc ?? null };
+    return {
+      equipo: g.eq, rival: nombreRival(cal?.rival ?? g.rival), local: g.local, pts: g.pts, fecha: r?.fecha ?? null, jornada: cal?.jornada ?? null, pf: r?.pf ?? null, pc: r?.pc ?? null,
+      minutos: g.sec != null ? Math.round(g.sec / 60) : null, masMenos: g.pm ?? null,
+    };
   });
-  return { display: j.display, dorsales: j.dorsales, pj: j.pj, minutos: j.min_tot, tot: j.tot, partidos };
+  // Mas/menos con el en pista, minutos y entrenos (D116: «Tu temporada» del inicio personal; datos ya publicos).
+  return { display: j.display, dorsales: j.dorsales, pj: j.pj, minutos: j.min_tot, tot: j.tot, partidos, masMenos: j.tot.pm ?? null, entrenos: j.asist_entr ?? null };
 }
 
 export const enPlantilla = (personId: string) => TEMPORADA.plantilla.find((p) => p.person_id === personId) ?? null;

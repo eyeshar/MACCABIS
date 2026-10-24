@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { exigirSesion } from "@/lib/sesion";
+import { exigirSesion, origen } from "@/lib/sesion";
+import { miEnlace } from "@/lib/calendario/enlace";
+import CalendarioMovil from "@/components/inicio/CalendarioMovil";
+import "@/components/inicio/inicio.css";
 import { usuarioActual } from "@/lib/usuario";
 import { salir } from "@/app/entrar/acciones";
 import Instalar from "./Instalar";
@@ -11,8 +14,9 @@ export const metadata: Metadata = { title: "Mi cuenta · Maccabis", robots: { in
 // Mi cuenta (D90): una sola pagina para jugadores y gestores, a la que se llega desde el menu de usuario. Sustituye a
 // /gestion/cuenta (redirige aqui) y a la seccion "Mi cuenta" de Mi zona.
 export default async function Cuenta() {
-  const { user } = await exigirSesion();
+  const { user, supabase } = await exigirSesion();
   const u = await usuarioActual();
+  const enlace = u?.personId ? await miEnlace(supabase, u.personId, await origen()).catch(() => null) : null;
   return (
     <main className="pagina cuenta">
       <h1>Mi cuenta</h1>
@@ -22,7 +26,7 @@ export default async function Cuenta() {
         {u?.papel && <p className="suave" style={{ marginBottom: 12 }}>{u.papel}</p>}
         <p style={{ margin: 0 }}>Entras con <strong>{user.email}</strong>, con Google o con un código a este correo (D68): no hay contraseña que cambiar.</p>
         <div className="botones">
-          {u?.esJugador && <Link className="boton boton-claro" href="/mi-zona">Mi zona</Link>}
+          {u?.esJugador && <Link className="boton boton-claro" href="/">Tu inicio</Link>}
           {u?.esGestor && <Link className="boton boton-claro" href="/gestion">Gestión</Link>}
           <form action={salir}><button className="boton boton-claro" type="submit">Salir</button></form>
         </div>
@@ -37,6 +41,7 @@ export default async function Cuenta() {
         </ul>
         <Link className="boton boton-amarillo" href="/avisos">Activar los avisos en este móvil</Link>
       </section>
+      {u?.esJugador && <CalendarioMovil enlace={enlace} />}
       <p className="pie">¿Algo no cuadra? Habla con Iván, Carlos o Edu. · <Link href="/privacidad">Privacidad</Link></p>
     </main>
   );

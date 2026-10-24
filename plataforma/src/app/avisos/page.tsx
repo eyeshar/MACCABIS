@@ -23,7 +23,7 @@ export default async function Avisos() {
           <li><strong>Android (Chrome):</strong> mantén pulsado el icono de Maccabis → Información de la aplicación → Notificaciones → actívalas. O en Chrome: ⋮ → Configuración → Configuración de sitios → Notificaciones → maccabis.vercel.app → Permitir.</li>
         </ul>
       </details>
-      <p className="pie"><Link href="/mi-zona">Volver a Mi zona</Link> · <Link href="/cuenta">Mi cuenta</Link></p>
+      <p className="pie"><Link href="/">Volver al inicio</Link> · <Link href="/cuenta">Mi cuenta</Link></p>
     </main>
   );
 }

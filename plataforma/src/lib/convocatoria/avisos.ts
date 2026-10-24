@@ -22,7 +22,7 @@ export async function avisarConvocados(fecha: string, conv: Convocatoria, base: 
   const envio = horaDeEnvio(ahora, inicio);
   const filas: FilaAviso[] = [...nuevos.entries()].map(([person_id, equipos]) => ({
     ...textoEstasConvocado(fecha, partidos, equipos), clave: `convocatoria:${fecha}:${ahora.getTime()}:${person_id}`, tipo: "cambio",
-    person_id, eventos: [], url: "/mi-zona#domingo", programado_para: envio,
+    person_id, eventos: [], url: "/#proximo-partido", programado_para: envio,
   }));
   await encolar(sb, filas);
   await enviarPendientes(sb, ahora);

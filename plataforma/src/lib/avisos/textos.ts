@@ -2,7 +2,7 @@
 // sale aqui lo ve la pantalla de bloqueo del movil (test:privacidad lo comprueba).
 
 export type EventoTexto = {
-  id: string; tipo: "entreno" | "liga" | "amistoso" | "torneo" | "interno"; equipo: "MdA" | "MdL" | "ambos";
+  id: string; tipo: "entreno" | "liga" | "amistoso" | "torneo" | "interno" | "quedada" | "pachanga" | "otro"; equipo: "MdA" | "MdL" | "ambos";
   fecha: string; inicio: string | null; fin: string | null; quedada: string | null; titulo: string | null;
   /** "Antonio Díaz Miguel, pista 3" o "pista por confirmar" */
   sitio: string;
@@ -16,7 +16,7 @@ export const nombreDia = (f: string) => `${DIAS[new Date(`${f}T12:00:00Z`).getUT
 export const listaY = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} y ${xs.at(-1)}`);
 const mayus = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-const NOMBRE_TIPO = { entreno: "entreno", liga: "partido", amistoso: "amistoso", torneo: "torneo", interno: "partido entre nosotros" } as const;
+const NOMBRE_TIPO = { entreno: "entreno", liga: "partido", amistoso: "amistoso", torneo: "torneo", interno: "partido entre nosotros", quedada: "plan", pachanga: "plan", otro: "plan" } as const;
 /** "entreno del miércoles 14", "partido del domingo 18" */
 export const queEs = (e: Pick<EventoTexto, "tipo" | "fecha">) => `${NOMBRE_TIPO[e.tipo]} del ${nombreDia(e.fecha)}`;
 
@@ -57,6 +57,14 @@ export function textoOtro(e: EventoTexto, cuando: "creado" | "24h"): Texto {
   return {
     titulo: cuando === "creado" ? `Nuevo ${que}: ¿vas?` : `Mañana: ${que}. ¿Vas?`,
     cuerpo: `${mayus(nombreDia(e.fecha))}, ${horas(e)} en ${e.sitio}. Aún no has respondido.`.replace(" en pista por confirmar", ", pista por confirmar"),
+  };
+}
+
+/** Plan no oficial (D117) con «recordar un día antes»: a los invitados que no han respondido. */
+export function textoPlanManana(e: EventoTexto): Texto {
+  return {
+    titulo: `Mañana: ${e.titulo ?? "plan"}. ¿Te apuntas?`,
+    cuerpo: `${mayus(nombreDia(e.fecha))}, ${horas(e)}${e.sitio && e.sitio !== "pista por confirmar" ? ` en ${e.sitio}` : ""}. Plan no oficial: aún no has respondido.`,
   };
 }
 

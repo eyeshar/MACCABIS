@@ -19,6 +19,7 @@ import { arrancar } from './pila.mjs';
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
 const SALIDA = path.join(REPO, 'privado', 'mockups_liga');
+const DEUDA = path.join(SALIDA, 'deuda-octubre');
 fs.mkdirSync(SALIDA, { recursive: true });
 const require = createRequire(import.meta.url);
 const A = require(path.join(REPO, 'data', 'avisos_equipacion.js'));
@@ -164,6 +165,12 @@ try {
     ok((await prox.locator('.eq-aviso').count()) === nAvisos, `Inicio de gestion: ${nAvisos} aviso(s), los de los rivales que chocan`, String(await prox.locator('.eq-aviso').count()));
     ok(await sinDesbordar(pg), 'Inicio de gestion: sin desbordamiento horizontal');
     await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_${etiqueta}.png`), fullPage: true });
+    // Tarjetas por debajo de 640 px, tabla en escritorio (deuda-octubre).
+    const fila = prox.locator('.gs-tabla tr.eq-partido').first();
+    ok((await fila.evaluate((el) => getComputedStyle(el).display)) === (movil ? 'flex' : 'table-row'), `Partidos del domingo: ${movil ? 'tarjetas' : 'tabla'} a ${etiqueta}`);
+    if (movil) ok((await prox.locator('.gs-tabla tr.eq-partido').first().evaluate((el) => el.getBoundingClientRect().width <= 375 - 24)), 'Partidos del domingo: la tarjeta cabe en 375 px');
+    fs.mkdirSync(DEUDA, { recursive: true });
+    await prox.screenshot({ path: path.join(DEUDA, `panel_partidos_domingo_${etiqueta}.png`) });
 
     await pg.goto(`${APP}/gestion/scouting`);
     const bloque = pg.locator('.lg-prox');

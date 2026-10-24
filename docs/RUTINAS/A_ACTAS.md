@@ -28,9 +28,19 @@ Todo a **Descargas**, sin renombrar. Si en Descargas quedan hojas de jornadas an
 
 ## Publicación automática: `scripts/rutina_a_publicar.ps1` (D66, 24/10/2026)
 
-Tarea **«\Maccabis\Rutina A - publicar jornada»** del Programador de tareas de Windows: lunes y jueves a las 13:00, solo con la sesión de Iván iniciada; si el PC estaba apagado a esa hora, se ejecuta al encenderlo. Ejecuta `scripts\rutina_a_publicar.ps1` de la carpeta del proyecto (`C:\Users\Iván\Proyectos\Maccabis`). Es un script determinista: no usa agentes.
+Tarea **«\Maccabis\Rutina A - publicar jornada»** del Programador de tareas de Windows: lunes y jueves a las 13:00, solo con la sesión de Iván iniciada; si el PC estaba apagado a esa hora, se ejecuta al encenderlo. Ejecuta `scripts\rutina_a_publicar.ps1` de la **copia dedicada `C:\Users\Iván\Proyectos\Maccabis-rutina-a`** (directorio de trabajo de la tarea: esa misma carpeta), **nunca de la carpeta de trabajo** (D114). Es un script determinista: no usa agentes.
 
-1. **main al día:** para si la carpeta no está en `main`, si hay cambios locales sin commitear o commits sin subir; después `git pull --ff-only`.
+**La copia dedicada** (24/10/2026): un **clon aparte** del repositorio (no un worktree: un worktree no puede tener `main` mientras la carpeta del proyecto también lo tiene), **solo para publicar y siempre en `main`**. Nadie trabaja en ella. Lo que no está en git:
+| Qué | Cómo | Por qué |
+|---|---|---|
+| `privado/` | **Enlazado** (unión de directorios) a `C:\Users\Iván\Proyectos\Maccabis\privado` | Un solo registro (`registro_rutina_a.log`) y una sola asistencia privada (la que lee `db:asistencia`) |
+| `fuentes_fbm/` | **Enlazado** (unión de directorios) a `C:\Users\Iván\Proyectos\Maccabis\fuentes_fbm` | `npm run jornada` decide qué ficheros son nuevos mirando lo que ya hay ahí: con una copia aparte volvería a cargarlo todo |
+| `plataforma/.env.local` | **Copiado** de la carpeta del proyecto | Un enlace de fichero pide permisos de administrador. Si cambian las claves, se borra en la copia y el script la vuelve a copiar |
+| `node_modules` (raíz y `plataforma/`) | `npm ci` propio | |
+El script crea lo que falte (enlaces, `.env.local`, `npm ci`) al empezar; todo está en `.gitignore` y nada sube a git.
+
+0. **La copia:** para si se lanza desde otra carpeta que no sea `Maccabis-rutina-a`; **para y avisa si la copia tiene cambios locales** (no toca nada); `git checkout main` y `git pull --ff-only`; enlaza o copia lo que falte (tabla de arriba); `npm ci` si faltan los `node_modules` o si el pull ha cambiado un `package-lock.json`.
+1. **main al día:** para si hay commits sin subir.
 2. **`npm run jornada -- --no-interactivo`:** ante cualquier duda **para con código distinto de 0** en lugar de seguir: un nombre que no está en `personas.json`, una hoja que no es de la jornada, un acta que no cuadra con su hoja, un fichero que no se puede leer, una hoja de liga sin jornada, un partido nuestro **sin hoja** (aún no bajada de Afición FBM) o **sin acta** (la excepción D71 no se aplica sola). Antes de escribir genera en seco; si para, deshace las copias que hizo en `fuentes_fbm/`, para que la siguiente pasada vuelva a ver esos ficheros como nuevos. **Sin ficheros nuevos, sale sin hacer nada** («Nada nuevo»).
 3. **Pruebas:** `test:regresion`, `test:liga`, `test:privacidad` y `check:copias`.
 4. **Publica:** commit de `data/` y `plataforma/src/data/` con el mensaje «datos(2026-27): jornada N (automático)» y push a `main`.
@@ -42,7 +52,7 @@ Tarea **«\Maccabis\Rutina A - publicar jornada»** del Programador de tareas de
 
 **Aviso:** notificación de Windows al terminar: «Jornada N publicada: MdA x–y Rival · Rival x–y MdL» (el local primero) o «Rutina A parada: <motivo>». Sin ficheros nuevos no avisa (queda en el registro).
 
-**A mano:** `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\rutina_a_publicar.ps1` (de verdad) o con `-Dry` (en seco: no hace pull, no copia ni escribe nada; la rama y los cambios locales solo se avisan). Probado en seco el 24/10/2026 sobre lo ya cargado: «Nada nuevo».
+**A mano:** desde `C:\Users\Iván\Proyectos\Maccabis-rutina-a`, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\rutina_a_publicar.ps1` (de verdad) o con `-Dry` (en seco: no hace checkout ni pull, no enlaza, no copia ni escribe nada; la carpeta, la rama y los cambios locales solo se avisan). Probado en seco el 24/10/2026 sobre lo ya cargado: «Nada nuevo».
 
 **Si para:** mirar el motivo en el aviso o en el registro, arreglar (bajar la hoja que falta, confirmar un nombre nuevo en `personas.json`…) y relanzar a mano o esperar a la pasada del jueves. Las dudas las resuelve una persona: el script nunca adivina.
 

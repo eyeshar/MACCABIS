@@ -42,6 +42,8 @@ async function como(userId, fn) {
     });
   } catch (e) { if (e.message !== '__deshacer__') throw e; }
 }
+// Cada sonda en su savepoint: un «permiso denegado» (lo esperado) no aborta la transaccion de solo lectura.
+const contar = (tx, t) => tx.savepoint((s) => s.unsafe(`select count(*)::int n from public.${t}`)).then((r) => r[0].n, () => -1);
 const intento = async (tx, consulta) => { try { await tx.savepoint(async (s) => { await consulta(s); }); return 'hecho'; } catch (e) { return e.message; } };
 
 try {
@@ -71,7 +73,7 @@ try {
   ok(Boolean(jug?.id) && Boolean(ges?.id), 'hay un jugador y un gestor con cuenta para la prueba');
   await como(jug.id, async (tx) => {
     for (const t of ['jugadores_privado', 'convocatorias', ...(ANTES ? [] : NUEVAS.filter((x) => x !== 'avisos_personales'))]) {
-      const [{ n }] = await tx.unsafe(`select count(*)::int n from public.${t}`).catch(() => [{ n: -1 }]);
+      const n = await contar(tx, t);
       ok(n === 0 || n === -1, `el jugador no lee ${t} (${n === -1 ? 'sin permiso' : '0 filas'})`);
     }
     const [{ n: ev }] = await tx`select count(*)::int n from public.v_mis_eventos`;
@@ -86,7 +88,7 @@ try {
       ok(/solo_gestores/.test(await intento(tx, (s) => s`select public.tablero_responder('00000000-0000-0000-0000-000000000000'::uuid, array['x'], 'va')`)), 'tablero_responder: solo gestores');
       ok(/solo_gestores/.test(await intento(tx, (s) => s`select public.hacer_oficial('00000000-0000-0000-0000-000000000000'::uuid)`)), 'hacer_oficial: solo gestores');
       ok(/read-only|solo lectura|sin_ficha|fecha/i.test(await intento(tx, (s) => s`select public.crear_plan(${{ tipo: 'quedada', titulo: 'Prueba', fecha: '2026-12-31', inicio: '20:00' }}::jsonb)`)), 'crear un plan en una transacción de solo lectura no escribe nada');
-      const [{ n: tok }] = await tx.unsafe('select count(*)::int n from public.calendario_tokens').catch(() => [{ n: -1 }]);
+      const tok = await contar(tx, 'calendario_tokens');
       ok(tok <= 0, 'no lee los hashes del calendario');
     }
   });

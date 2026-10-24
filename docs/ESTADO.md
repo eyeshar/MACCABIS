@@ -8,10 +8,16 @@ _Última actualización: 24/10/2026: **convocatoria v1 EN PRODUCCIÓN** (`feat/c
 - **En producción:** `maccabis.vercel.app/gestion/convocatoria` (solo los 3 gestores); el jugador ve solo «Convocado» en Mi zona. Tras el merge, todas las pruebas en verde (las 3 de la convocatoria, `test:privacidad` y la de permisos en real en solo lectura incluidas) salvo `pruebas:activacion`, obsoleta (ver BACKLOG).
 - **Pendiente:** la **primera importación de respuestas de SportEasy para la J4** (Importar → Respuestas; nunca se ha hecho en real), para que la propuesta use los disponibles de verdad.
 
+## Deuda de octubre (24/10/2026) — rama `fix/deuda-octubre`, **SIN merge**
+- **Ropa en el Panel:** salía «Abierta» con la fecha límite pasada. `campanaAbiertaAhora` (`lib/fechas.ts`) es la única definición (estado = abierta y día límite, incluido, no pasado, en hora de Madrid) y la usan el Panel y `/gestion/ropa`. Prueba nueva `pruebas:campana` (fecha pasada, de hoy, futura, sin fecha, invierno y verano).
+- **`pruebas:activacion`** reescrita para el estado actual (redirección activa, `index.html` sin la barra, cada caso de `ACTIVAR_REDIRECCIONES.md` redirige a su ruta); ya pasa en verde.
+- **Panel en móvil:** «Partidos del domingo» pasa a tarjetas por debajo de 640 px (patrón de Scouting); escritorio sin cambios. `pruebas:avisos` lo comprueba. Capturas en `privado/mockups_liga/deuda-octubre/` para que Iván las revise.
+- No se ha tocado el esquema ni los datos de Supabase.
+
 ## Convocatoria v1: nivel antes que rotación (24/10/2026; D109)
 - **Regla 4.1 corregida:** primero se cubren las líneas; después más nivel; a igual nivel, menos partidos convocado; después entrenos; los «solo entreno», al final. **Regla 4.2 nueva:** quien lleva 2 domingos disponible y fuera entra por delante del nivel, con el aviso «entra por rotación (2 domingos fuera)». El historial sale de las respuestas a partidos ya jugados, las hojas de estadística y las convocatorias aprobadas.
 - **Datos (Supabase real, gestores):** 3 bases de reserva marcados en `jugadores_privado` (copia previa en `privado/backups/`); la regla «fijo» del entrenador-jugador sigue sin asignar hasta que Iván lo diga. Prueba de permisos en real repetida: en verde.
-- **Pruebas:** `fix/pruebas-datos-fijos` mergeada en `main` (24/10, OK de Iván). En `main` y en la rama, todas las suites locales en verde salvo `pruebas:activacion`, que prueba el paso de activar las redirecciones y quedó obsoleta al aplicarse (`7a9b041`): falla igual en las dos. Convocatoria: motor 86, RLS 67, pantallas 60, `test:privacidad` y `typecheck` en verde.
+- **Pruebas:** `fix/pruebas-datos-fijos` mergeada en `main` (24/10, OK de Iván). En `main` y en la rama, todas las suites locales en verde salvo `pruebas:activacion` (obsoleta al aplicarse el paso de activar las redirecciones, `7a9b041`; reescrita después en `fix/deuda-octubre`). Convocatoria: motor 86, RLS 67, pantallas 60, `test:privacidad` y `typecheck` en verde.
 
 ## Convocatoria v1: ajustes de Iván y paso a producción de la base (24/10/2026; D108) — rama `feat/convocatoria`, **SIN merge**
 - **Ajustes (D108):** solo se dobla para cubrir mínimos (con 6 interiores, 3 y 3); dificultad «media, pocos datos» si el rival lleva menos de 3 partidos; sin disponibles, un solo mensaje por equipo; la pantalla dice cuándo fue la última «Importar → Respuestas» y enlaza a Importar.

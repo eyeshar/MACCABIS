@@ -1,6 +1,6 @@
 # Reglas de convocatoria — versión 1
 
-_23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con pocos datos, mensajes sin disponibles; D109: el nivel va antes que la rotación y deuda de 2 domingos fuera; D110: en 2026/27 no hay entrenador-jugador fijo; D112: con rivales parejos, convocados igualados). Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
+_23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con pocos datos, mensajes sin disponibles; D109: el nivel va antes que la rotación y deuda de 2 domingos fuera; D110: en 2026/27 no hay entrenador-jugador fijo; D112: con rivales parejos, convocados igualados; D115: nadie dobla por bases). Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
 
 > **Privacidad (D39).** Este documento no lleva nombres de jugadores ni niveles. Los datos por jugador (posición, base de reserva, nivel A–E, Dobla / No dobla, reglas personales, sanciones) viven **solo en la zona de gestión** (tabla `jugadores_privado` de Supabase, con RLS: solo los 3 gestores) y en `privado/` (fuera de git) como copia de Iván. **Nunca** en JSON públicos, mensajes de WhatsApp, avisos ni páginas de jugador. «Solo entreno» y las fichas siguen en la plantilla (`jugadores`).
 
@@ -20,7 +20,7 @@ _23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con po
 
 ## 2. Posiciones (en cada equipo)
 
-- **2.1 Bases:** ideal **2 puros**. Los **bases de reserva** (exteriores que suben el balón) **cuentan como base** cuando faltan: «1 + 1 res.» está en el mínimo (amarillo). Dos de reserva es el último recurso (5.4).
+- **2.1 Bases:** ideal **2 puros**. Los **bases de reserva** (exteriores que suben el balón) **cuentan como base** cuando faltan: «1 + 1 res.» está en el mínimo (amarillo). Dos de reserva es el último recurso (5.4). **2 bases es lo ideal, no un mínimo para doblar (D115):** si un equipo no llega a 2 bases puros, el hueco lo cubre un base de reserva disponible para ese partido; si no hay ninguno, sale el aviso 2.1, pero **nadie dobla por bases**.
 - **2.2 Exteriores** (escoltas y aleros): ideal **4**, mínimo 3. Si faltan, **los bases que sobran cuentan como exteriores**.
 - **2.3 Interiores** (pívots y ala-pívots): ideal **4**, mínimo **3**, **evitar 5**.
 - En la pantalla, cada línea sale en **verde** si cumple el ideal, en **amarillo** si está en el mínimo y en **rojo** si está por debajo.
@@ -41,12 +41,12 @@ _23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con po
 
 ## 5. Si no se llega a los mínimos: orden de sacrificio (pregunta 5)
 
-**Solo se dobla para cubrir mínimos, nunca para llegar al ideal** (D108). Los mínimos de cada equipo: 7 jugadores (1.3), 2 bases contando los de reserva con al menos 1 puro (2.1) y **3 interiores** (2.3). Con 6 interiores entre los dos equipos la propuesta es **3 y 3**, sin doblar; las excepciones las hace Iván a mano. Si no se llega a un mínimo:
+**Solo se dobla para cubrir mínimos, nunca para llegar al ideal** (D108). Los mínimos de cada equipo: 7 jugadores (1.3) y **3 interiores** (2.3). **Por bases no se dobla nunca** (D115): el hueco de base lo cubre un base de reserva y, si no hay, aviso 2.1. Con 6 interiores entre los dos equipos la propuesta es **3 y 3**, sin doblar; las excepciones las hace Iván a mano. Si no se llega a un mínimo:
 
 - **5.1** Dobla un **«Dobla»** (primero quien menos ha doblado esta temporada).
 - **5.2** Si no hay, dobla un **«No dobla»**, con aviso.
 - **5.3** Con 3 interiores se juega: no se dobla para tener el cuarto.
-- **5.4** Y por último, **dos bases de reserva**, con aviso.
+- **5.4** Bases: sin bases puros, **dos bases de reserva**, con aviso; nunca se dobla un base para cubrirlo (D115).
 - **Nunca menos de 7 por equipo** (si no se llega ni doblando, error en rojo para que Iván decida).
 - **«Dobla / No dobla» es una recomendación, no una regla:** Iván hace excepciones por partido (por eso el motor puede proponer a un «No dobla», con aviso, y la pantalla deja doblar a cualquiera, salvo a la misma hora).
 

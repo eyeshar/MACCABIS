@@ -46,7 +46,7 @@
 - **Rutinas programadas:** cada ejecución es una sesión nueva; no arrastran historial. Lo que deben recordar está en su procedimiento.
 
 ## 7. Normas heredadas que siguen vigentes
-Prompts para Code en un único bloque · los docs del repo son la fuente de verdad · nunca dar algo por hecho sin verificar (git, pruebas) · mockup aprobado antes de construir · cambios de esquema directamente en el Supabase real, siempre con las protecciones de §10 (D111; ya no hay «staging antes de producción») · cierre exhaustivo de bloque · no inventar datos deportivos · privacidad de adultos de primer orden · niveles de jugador confidenciales (D39) · ninguna clave privada en el chat ni en el repositorio.
+Prompts para Code en un único bloque · los docs del repo son la fuente de verdad · nunca dar algo por hecho sin verificar (git, pruebas) · mockup aprobado antes de construir · cambios de esquema directamente en el Supabase real, siempre con las protecciones de §10 (D111; ya no hay «staging antes de producción») · una sesión, un worktree (§11, D114) · cierre exhaustivo de bloque · no inventar datos deportivos · privacidad de adultos de primer orden · niveles de jugador confidenciales (D39) · ninguna clave privada en el chat ni en el repositorio.
 
 ## 8. SportEasy
 - Se mantiene **completo como respaldo hasta que acabe la suscripción (septiembre de 2027)**. No se quita antes.
@@ -62,3 +62,8 @@ No hay entorno de pruebas (staging) y no se va a crear: los cambios de esquema s
 3. **Prueba de permisos en real, en solo lectura, antes y después** de aplicar.
 4. **Recuento de cuentas de `auth.users` antes y después** (tiene que salir igual).
 - **Si un cambio no puede ser aditivo, se para y se consulta a Iván.** Nunca se borra ni se cambia nada existente sin su OK expreso.
+
+## 11. Sesiones en paralelo: una sesión, un worktree (D114)
+- Cada sesión de Claude Code que trabaje en paralelo usa **su propio `git worktree`** (`git worktree add ../Maccabis-<tema> <rama>`), con su `node_modules` y su `.env.local` (copiados, nunca en git).
+- **Nunca dos sesiones en la misma carpeta.** **Nunca `git stash`** (ni `checkout`/`reset` que descarten) **sobre cambios que no sean tuyos**: si en tu carpeta aparecen cambios ajenos, para y avisa.
+- La **carpeta principal del proyecto queda en `main`**: ahí solo se mergea y se verifica. La rutina A publica desde su propia copia (`Maccabis-rutina-a`, ver `RUTINAS/A_ACTAS.md`).

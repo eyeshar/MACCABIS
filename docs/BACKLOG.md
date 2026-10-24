@@ -8,9 +8,9 @@
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
 **Inmediato (23/10/2026):**
-- [ ] **Convocatoria: arreglo del reparto con rivales parejos (D112), sin fijo (D110) y sin staging (D111) — rama `fix/convocatoria-reparto`, SIN merge (24/10/2026).** Todas las suites de la convocatoria, `test:privacidad` y `typecheck` en verde. **Pendiente solo de:**
-   - [ ] (a) Comprobar en la vista previa el reparto corregido de la **J3 (25/10)** y la **J4 (08/11)** con las respuestas reales ya importadas (con los datos reales, en solo lectura: J3 9/8, antes 10/7; J4 MdL 10).
-   - [ ] (b) OK de Iván y merge a `main`.
+- [x] **Convocatoria: arreglo del reparto con rivales parejos (D112), sin fijo (D110), sin staging (D111) y nadie dobla por bases (D115) — `fix/convocatoria-reparto` (24/10/2026).**
+   - [x] (a) Vista previa de la J3 y la J4 revisada por Iván: de ahí sale D115 (J3 real: 9/8, nadie dobla; J4: MdL 10, aviso 2.1).
+   - [x] (b) OK de Iván al merge a `main`.
 - [ ] **Convocatoria v1 (D107–D109), EN PRODUCCIÓN desde el 24/10/2026 — para usarla en la J4 (08/11/2026, solo juega el MdL a las 11:30):**
    - [x] Respuestas de Iván a la revisión (24/10/2026, D108): interiores (solo mínimos), dificultad con pocos datos, un mensaje sin disponibles, última importación, hoja `jugadores_2026-27.xlsx` con «Ataque (usar)».
    - [x] Migración `20261023100000_convocatoria` **aplicada en el Supabase real** el 24/10/2026 (excepción a staging, D108): volcado previo, prueba de permisos en real en verde, datos privados cargados desde la hoja (24 jugadores).

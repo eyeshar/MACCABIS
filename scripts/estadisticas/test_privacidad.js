@@ -174,15 +174,15 @@ ok(fs.existsSync(path.join(PLAT, 'supabase', 'migrations', MIG8.replace(/\.sql$/
 const anon8 = [...sql8.matchAll(/grant[^;]*\bto anon\b[^;]*;/gi)].map((m) => m[0].replace(/\s+/g, ' '));
 ok(anon8.length === 1 && /calendario_personal\(text\) to anon, authenticated/.test(anon8[0]), 'a anon solo se le da calendario_personal (D119, excepción acotada a D68)', anon8.join(' | '));
 const cuerpo8 = (ini, fin) => sql8.slice(sql8.indexOf(ini), sql8.indexOf(fin));
-const calP = cuerpo8('create function public.calendario_personal', '-- ---------------------------------------------------------------- tablero');
+const calP = cuerpo8('create function public.calendario_personal', 'alter table public.respuestas add column sporteasy_descartado');
 ok(calP.length > 500 && !/\.motivo|\.detalle|nivel|posicion|jugadores_privado|sporteasy_|puesto_por/.test(calP) && /r\.person_id = j\.person_id/.test(calP) && /_invitado\(j\.person_id, e\.id\)/.test(calP), 'calendario_personal: solo sus eventos y SU respuesta; sin motivos, detalles, niveles, posiciones ni nada de SportEasy');
 ok(/where hash = encode\(sha256/.test(calP) && /not j\.activo/.test(calP) && /peticiones >= 120/.test(calP), 'el enlace se busca por su hash; un inactivo no lee nada; límite de 120 lecturas por hora');
 ok(/hash\s+text unique/.test(sql8) && !/token\s+text/.test(sql8.slice(sql8.indexOf('create table public.calendario_tokens'), sql8.indexOf('create function public.mi_calendario_version'))), 'calendario_tokens guarda el hash, nunca el enlace');
-const misG = cuerpo8('create function public.mis_grupos', '-- ---------------------------------------------------------------- RLS');
+const misG = cuerpo8('create function public.mis_grupos', 'alter table public.avisos_personales  enable row level security');
 ok(misG.length > 200 && !/explica|nivel|posicion|jugadores_privado/.test(misG) && /'grupo'/.test(misG) && /'companeros'/.test(misG) && /g\.publicado/.test(misG), 'mis_grupos: solo el nombre de su grupo publicado y los motes de sus compañeros (sin niveles ni el criterio)');
 const agenda8 = cuerpo8('create function public._mi_agenda', 'create view public.v_mi_agenda');
 ok(!/\.motivo|\.detalle|nivel|posicion|sporteasy_|respuesta/.test(agenda8.replace(/pista_motivo/g, '')), 'v_mi_agenda: sin motivos, detalles, niveles, posiciones, respuestas ni estado de SportEasy');
-const miPos = cuerpo8('create function public.mi_posicion', '-- ---------------------------------------------------------------- avisos que quedan');
+const miPos = cuerpo8('create function public.mi_posicion', 'create table public.avisos_personales');
 ok(/select p\.posicion from public\.jugadores_privado p where p\.person_id = public\._mi_person_id\(\)/.test(miPos) && !/nivel/.test(miPos), 'mi_posicion: solo SU posición, nunca su nivel');
 ok(/v_eventos_publicos[\s\S]*where e\.oficial and e\.borrado_en is null/.test(sql8), 'la vista pública deja fuera los planes no oficiales y los borrados');
 const icsP = leer('src/lib/calendario/icsPersonal.ts').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');

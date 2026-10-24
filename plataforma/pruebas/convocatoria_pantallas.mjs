@@ -244,6 +244,10 @@ try {
   console.log('\n== Datos de los jugadores (solo gestores)');
   await pg.goto(`${APP}/gestion/convocatoria/datos`);
   ok((await pg.locator('form.cv-ficha').count()) === 18, '18 fichas (solo los activos; los sintéticos)');
+  // Sin ningún jugador fijo (D110: en 2026/27 no hay entrenador-jugador): la página carga con todas las reglas vacías.
+  const [{ n: nFijos }] = await sql`select count(*)::int n from public.jugadores_privado where regla = 'fijo'`;
+  const reglas = await pg.locator('form.cv-ficha').getByLabel('Regla personal').evaluateAll((xs) => xs.map((x) => x.value));
+  ok(nFijos === 0 && reglas.length === 18 && reglas.every((v) => v !== 'fijo-MdA' && v !== 'fijo-MdL'), 'sin ningún jugador fijo: la página carga y ninguna ficha sale «Fijo» (D110)', `${nFijos} fijos; ${reglas.join(',')}`);
   const f5 = pg.locator('form.cv-ficha[data-person="sint-05"]');
   await f5.getByLabel('Regla personal').selectOption('fijo-MdA');
   await f5.getByRole('button', { name: 'Guardar' }).click();

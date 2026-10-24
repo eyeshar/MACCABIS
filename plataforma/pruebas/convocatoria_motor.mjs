@@ -2,8 +2,9 @@
 // Motor de convocatoria v1 (D107) con DATOS SINTÉTICOS: ni nombres reales ni niveles reales (D39). Cubre: dos partidos
 // a distinta hora, misma hora, un solo equipo, 20 o más disponibles, faltan interiores, falta base, un «No dobla»
 // necesario, un sancionado, desempate por entrenos, empate de dificultad, edición manual con avisos, reglas personales,
-// propuesta de dificultad, nivel antes que rotación con la deuda de 2 domingos fuera (D109) y que el motor es
-// determinista (misma entrada = misma salida, también desordenada).
+// propuesta de dificultad, nivel antes que rotación con la deuda de 2 domingos fuera (D109), ningún jugador fijo (D110),
+// rivales parejos con los convocados igualados aunque un equipo tenga 5 interiores solo suyos (D112, el caso de la J3),
+// nadie dobla por bases (D115) y que el motor es determinista (misma entrada = misma salida, también desordenada).
 //
 //   npm run pruebas:convocatoria-motor
 
@@ -145,7 +146,7 @@ console.log('\n== Faltan interiores (por debajo de 3): dobla un «Dobla»; si no
 }
 
 // ---------------------------------------------------------------- 6. falta base
-console.log('\n== Falta base: base de reserva; si no llega, dobla un base; si no, dos de reserva con aviso');
+console.log('\n== Falta base: base de reserva; si no hay, aviso 2.1; nadie dobla por bases (D115); dos de reserva con aviso');
 {
   reset();
   const tres = plantilla([
@@ -164,8 +165,9 @@ console.log('\n== Falta base: base de reserva; si no llega, dobla un base; si no
   ]);
   const r2 = proponer({ partidos: [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'baja')], jugadores: uno });
   const a = ids(r2.convocatoria, 'MdA'), l = ids(r2.convocatoria, 'MdL');
-  ok(a.includes('sint-01') && l.includes('sint-01'), 'un solo base puro: dobla para que los dos equipos tengan base');
-  ok(r2.recuento.MdA.bases.estado !== 'mal' && r2.recuento.MdL.bases.estado !== 'mal', 'los dos equipos llegan a 2 bases contando el de reserva', `${r2.recuento.MdA.bases.texto} / ${r2.recuento.MdL.bases.texto}`);
+  ok(!(a.includes('sint-01') && l.includes('sint-01')) && !avisosDe(r2, '5.1').length && !avisosDe(r2, '5.2').length, 'un solo base puro: nadie dobla por bases (2 bases es lo ideal, no un mínimo; D115)');
+  const sinPuro = r2.recuento.MdA.bases.puros ? 'MdL' : 'MdA';
+  ok(r2.recuento[sinPuro].bases.texto === '0 + 1 res.' && avisosDe(r2, '2.1').some((x) => x.equipo === sinPuro && /Solo 1 base/.test(x.texto)), `el equipo sin base puro (${sinPuro}) lleva un base de reserva y el aviso 2.1`, `${r2.recuento.MdA.bases.texto} / ${r2.recuento.MdL.bases.texto}`);
   const soloA = uno.map((j) => (j.person_id === 'sint-01' ? { ...j, ficha: { MdA: true, MdL: false } } : j));
   const r4 = proponer({ partidos: [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'baja')], jugadores: soloA });
   ok(r4.recuento.MdA.bases.texto === '1 + 1 res.' && avisosDe(r4, '2.1').some((x) => x.equipo === 'MdL' && /Solo 1 base/.test(x.texto)), 'si el único base no puede doblar: el reserva va al prioritario (MdA, «1 + 1 res.») y el MdL avisa «solo 1 base»', `${r4.recuento.MdA.bases.texto} / ${r4.recuento.MdL.bases.texto}`);
@@ -256,6 +258,74 @@ console.log('\n== Empate de dificultad: equilibrio por líneas; prioridad al MdA
   ok(Math.abs(r.recuento.MdA.nivelMedio - r.recuento.MdL.nivelMedio) < 0.5, `nivel medio parecido (${r.recuento.MdA.nivelMedio.toFixed(2)} / ${r.recuento.MdL.nivelMedio.toFixed(2)})`);
   ok(r.convocatoria.MdA.some((c) => c.person_id === 'sint-01'), 'empate: el MdA tiene prioridad y elige primero (el base A va al MdA)');
   ok(!avisosDe(r, '3.2').length, 'sin aviso 3.2 (ninguna línea desequilibrada)');
+}
+
+// ---------------------------------------------------------------- 10 bis. rivales parejos: convocados igualados (D112, la J3)
+console.log('\n== Rivales parejos: el número de convocados queda igualado (D112, el caso de la J3)');
+{
+  // Equivalente sintético de la J3 (24/10/2026): 5 interiores solo disponibles para el MdA y 12 para los dos partidos
+  // (2 bases, 8 exteriores con 2 de reserva y 2 interiores). Antes del arreglo: MdA 10 y MdL 7.
+  reset();
+  const soloA = { resp: { MdA: 'va', MdL: 'no' } };
+  const jugadores = plantilla([
+    ['pivot', 'B', soloA], ['pivot', 'C', soloA], ['ala_pivot', 'C', soloA], ['ala_pivot', 'D', soloA], ['pivot', 'E', soloA],
+    ['base', 'B'], ['base', 'C'],
+    ['escolta', 'A', { reserva: true }], ['alero', 'B'], ['escolta', 'B', { reserva: true }], ['alero', 'C'], ['escolta', 'C'], ['alero', 'D'], ['escolta', 'D'],
+    ['alero', 'E'], ['pivot', 'B'], ['ala_pivot', 'C'],
+  ]);
+  const entrada = { partidos: [P('MdA', '09:00', 'media'), P('MdL', '14:00', 'media')], jugadores };
+  const r = proponer(entrada);
+  const a = ids(r.convocatoria, 'MdA'), l = ids(r.convocatoria, 'MdL');
+  ok(Math.abs(a.length - l.length) <= 1 && a.length + l.length === 17, `convocados igualados: ${a.length} y ${l.length} (diferencia máxima de 1; antes 10 y 7)`);
+  ok(a.length < 10 && l.length < 10, 'el máximo de 10 es un tope, no un objetivo: ningún equipo se llena');
+  ok(['sint-01', 'sint-02', 'sint-03', 'sint-04', 'sint-05'].every((id) => a.includes(id) && !l.includes(id)), 'los 5 interiores solo disponibles para el MdA siguen en el MdA (no se mueve a nadie que no esté disponible)');
+  ok(avisosDe(r, '2.3').some((x) => x.equipo === 'MdA' && /5 interiores/.test(x.texto)), 'el aviso «evitar 5» sigue saliendo en el MdA (regla 2.3)');
+  ok(!a.filter((x) => l.includes(x)).length || avisosDe(r, '5.1').length + avisosDe(r, '5.2').length > 0, 'nadie dobla sin su aviso');
+  ok(r.recuento.MdL.bases.puros >= 1 && r.recuento.MdA.bases.puros >= 1, 'cada equipo con al menos un base puro');
+  ok(JSON.stringify(r) === JSON.stringify(proponer({ ...entrada, jugadores: [...jugadores].reverse() })), 'determinista también con la entrada desordenada');
+  // Con dificultad distinta no se toca: el más difícil sigue eligiendo primero (3.1).
+  const rd = proponer({ partidos: [P('MdA', '09:00', 'alta'), P('MdL', '14:00', 'baja')], jugadores });
+  ok(ids(rd.convocatoria, 'MdA').length <= 10 && ids(rd.convocatoria, 'MdL').length >= 7, `dificultad distinta: dentro de los límites (${ids(rd.convocatoria, 'MdA').length} y ${ids(rd.convocatoria, 'MdL').length})`);
+  // Los 18 normales con rivales parejos: 9 y 9, como antes.
+  const r18 = proponer({ partidos: [P('MdA', '09:00', 'media'), P('MdL', '12:45', 'media')], jugadores: dieciocho() });
+  ok(ids(r18.convocatoria, 'MdA').length === 9 && ids(r18.convocatoria, 'MdL').length === 9, '18 disponibles con rivales parejos: 9 y 9');
+}
+
+// ---------------------------------------------------------------- 10 quater. nadie dobla por bases (D115, la J3)
+console.log('\n== Nadie dobla por bases: el hueco lo cubre un base de reserva (D115, el caso de la J3)');
+{
+  // Equivalente sintético de la J3 en la vista previa (24/10/2026): 5 interiores solo del MdA y 12 para los dos
+  // partidos (2 bases puros, 3 de reserva, 5 exteriores más y 2 interiores). Antes del arreglo, el reequilibrio de D112
+  // pasaba al MdL el base de reserva del MdA y después doblaba un base «para tener 2 bases»: MdA 10 / MdL 8.
+  reset();
+  const soloA = { resp: { MdA: 'va', MdL: 'no' } };
+  const jugadores = plantilla([
+    ['ala_pivot', 'D', soloA], ['pivot', 'A', soloA], ['pivot', 'A', soloA], ['ala_pivot', 'C', soloA], ['ala_pivot', 'D', soloA],
+    ['base', 'D'], ['base', 'A'],
+    ['alero', 'C', { reserva: true }], ['escolta', 'B', { reserva: true }], ['escolta', 'C', { reserva: true }],
+    ['escolta', 'C'], ['escolta', 'B'], ['alero', 'B'], ['escolta', 'C'], ['escolta', 'C'],
+    ['pivot', 'C'], ['pivot', 'E'],
+  ]);
+  const r = proponer({ partidos: [P('MdA', '09:00', 'media'), P('MdL', '14:00', 'media')], jugadores });
+  const a = ids(r.convocatoria, 'MdA'), l = ids(r.convocatoria, 'MdL');
+  const doblan = a.filter((x) => l.includes(x));
+  ok(doblan.length === 0 && !avisosDe(r, '5.1').length && !avisosDe(r, '5.2').length, 'nadie dobla (tampoco «para tener 2 bases»)', doblan.join(','));
+  ok(new Set([...a, ...l]).size === 17 && Math.abs(a.length - l.length) <= 1, `9 y 8 contando a cada jugador una vez (${a.length} y ${l.length}, D112)`);
+  ok(['MdA', 'MdL'].every((e) => r.recuento[e].bases.puros + r.recuento[e].bases.reserva >= 2), 'cada equipo con 2 bases contando los de reserva (el reserva se queda donde cubre el hueco)', `${r.recuento.MdA.bases.texto} / ${r.recuento.MdL.bases.texto}`);
+  ok(avisosDe(r, '2.3').some((x) => x.equipo === 'MdA' && /5 interiores/.test(x.texto)), 'el aviso «evitar 5» del MdA sigue saliendo');
+}
+
+// ---------------------------------------------------------------- 10 ter. ningún jugador fijo (D110)
+console.log('\n== Sin ningún jugador fijo (D110: en 2026/27 no hay entrenador-jugador)');
+{
+  const jugadores = dieciocho();
+  ok(jugadores.every((j) => j.privado.regla === null), 'ninguna regla personal');
+  for (const partidos of [[P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'baja')], [P('MdA', '09:00'), P('MdL', '12:45')], [P('MdL', '11:30')]]) {
+    const r = proponer({ partidos, jugadores });
+    const dentro = new Set(partidos.flatMap((p) => ids(r.convocatoria, p.equipo)));
+    ok(!avisosDe(r, '6.1').length && !r.sinConvocar.some((s) => s.regla === '6.1') && dentro.size > 0 && r.avisos.every((a) => a.regla && a.texto),
+      `${partidos.map((p) => `${p.equipo} ${p.dificultad}`).join(' / ')}: propuesta sin avisos ni motivos de «fijo» (${partidos.map((p) => ids(r.convocatoria, p.equipo).length).join(' y ')})`);
+  }
 }
 
 // ---------------------------------------------------------------- 11. edicion manual con avisos

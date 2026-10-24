@@ -8,23 +8,27 @@
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
 **Inmediato (23/10/2026):**
+- [x] **Convocatoria: arreglo del reparto con rivales parejos (D112), sin fijo (D110), sin staging (D111) y nadie dobla por bases (D115) — `fix/convocatoria-reparto` (24/10/2026).**
+   - [x] (a) Vista previa de la J3 y la J4 revisada por Iván: de ahí sale D115 (J3 real: 9/8, nadie dobla; J4: MdL 10, aviso 2.1).
+   - [x] (b) OK de Iván al merge a `main`.
 - [ ] **Convocatoria v1 (D107–D109), EN PRODUCCIÓN desde el 24/10/2026 — para usarla en la J4 (08/11/2026, solo juega el MdL a las 11:30):**
    - [x] Respuestas de Iván a la revisión (24/10/2026, D108): interiores (solo mínimos), dificultad con pocos datos, un mensaje sin disponibles, última importación, hoja `jugadores_2026-27.xlsx` con «Ataque (usar)».
    - [x] Migración `20261023100000_convocatoria` **aplicada en el Supabase real** el 24/10/2026 (excepción a staging, D108): volcado previo, prueba de permisos en real en verde, datos privados cargados desde la hoja (24 jugadores).
    - [x] OK de Iván y merge a `main` (24/10/2026); desplegada en producción.
    - [x] Bases de reserva marcados en `/gestion/convocatoria/datos` (24/10/2026, D109).
-   - [ ] **Asignar la regla «fijo» del entrenador-jugador, si aplica** (sin asignar hasta que Iván lo diga). Sanciones, si las hay.
+   - [x] **Regla del entrenador-jugador («fijo»): no aplica en 2026/27** (24/10/2026, D110). Ningún jugador fijo; motor y «Datos de los jugadores» probados sin ninguno.
+   - [ ] Sanciones, si las hay (las pone un gestor en «Datos de los jugadores»).
    - [ ] **Recalibrar el umbral de anotación mínima (45 puntos esperados) tras la J6** (provisional, pestaña «Parametros» de la hoja privada).
-   - [ ] **Primera importación de respuestas de SportEasy para la J4** (Importar → Respuestas; nunca se ha hecho en real) para que la propuesta use los disponibles de verdad.
+   - [x] **Primera importación de respuestas de SportEasy** (24/10/2026): en real, 46 respuestas de la J3 y 22 de la J4. Con ellas, la prueba en la sombra de la J3 encontró el fallo del reparto (D112).
    - [x] Rotación frente a nivel (D109): el nivel va antes; deuda de 2 domingos fuera (regla 4.2).
-   - [ ] **Crear el entorno de pruebas de Supabase (staging).** Dos bloques seguidos (D94, D108) se han aplicado en real por no tenerlo.
+   - [x] ~~Deuda: crear staging~~ **Cerrada por D111 (24/10/2026):** no se crea; los cambios de esquema van al Supabase real con las protecciones obligatorias (volcado, migración aditiva con `.revertir.sql` probado en local, permisos en real en solo lectura antes y después, recuento de cuentas de auth). Si un cambio no puede ser aditivo, se para y se consulta a Iván (`NORMAS_DE_TRABAJO.md` §10).
    - [x] `fix/pruebas-datos-fijos` mergeada en `main` (24/10/2026); `feat/convocatoria` rebasada encima, todas las suites en verde.
    - [ ] **Reescribir o retirar `pruebas:activacion`**: está obsoleta (prueba el paso de activar redirecciones, ya aplicado en `7a9b041`): reescribirla sobre la versión anterior a la activación o retirarla.
    - [ ] Probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp, SportEasy por Claude).
    - [x] **Pruebas antiguas que caducaron con el calendario:** comparadas de verdad en `main` y en la rama (mismos fallos); arregladas en `fix/pruebas-datos-fijos` (leen cifras y fechas de los datos; las de respuestas adelantan los eventos de la base de pruebas semanas enteras).
    - [ ] Más adelante: «partidos convocado» con las convocatorias aprobadas (hoy sale solo de las hojas cargadas); entrenos de 4 semanas con el pase de lista real cuando exista; la tabla del Panel a tarjetas en móvil.
 - [ ] **Normativa FBM de esta temporada: desde la J3 (25/10/2026) es obligatorio llevar dorsal en la camiseta de la primera equipación, del mismo color para todo el equipo.** Avisar a la plantilla antes del domingo y tenerlo en cuenta en la convocatoria y en los avisos de equipación (D75).
-- [ ] **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27. **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma.
+- [ ] **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27; **a 24/10/2026 sigue fuera de la plantilla 26/27** (`nombres_sporteasy.json` sin cambios). **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma.
 - [ ] **Evaluar los CSV de gesdeportiva.fbm.es/clubes** (clasificación y listado completo de partidos, D106) para la **rutina B**: contraste de la clasificación calculada con la oficial (D74) y posible calendario de los dos grupos sin Deportes/web.
 - [x] **Duplicados en Descargas (`npm run jornada`):** mergeado a `main` el 23/10/2026 con el OK de Iván (merge `--no-ff` `009ede4`): descarta por hash lo ya cargado en `fuentes_fbm/2026-27/` y para si una hoja no puede ser de la jornada a la que iría (`npm run test:duplicados`).
    - [ ] Mejora menor: la «fecha de descarga» de una hoja de liga se toma de la fecha de modificación del fichero. Si un fichero se copia conservando una fecha antigua (p. ej. una hoja bajada tarde pero con la fecha original), la comprobación «descargada antes de que se jugara la jornada» puede dar una **parada en falso** (también con `--jornada N`); la salida es actualizar la fecha del fichero (volver a guardarlo o bajarlo de nuevo). Si molesta, cambiar esa comprobación por un aviso o quitarla.

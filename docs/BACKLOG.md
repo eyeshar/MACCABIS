@@ -8,6 +8,8 @@
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
 **Inmediato (23/10/2026):**
+- [x] **Gestión → Asistencia atrasada** (24/10/2026, D116, `fix/asistencia-resumen`): la pantalla lee `asistencia_motivos`; `asistencia_resumen` completada en real (de 48 a 58 en 2026/27) y sin uso; `pruebas:eventos-real` al día con el paso 3.
+   - [ ] Más adelante, decisión de Iván: retirar `asistencia_resumen` (sin uso desde D116; tiene 6 filas de 2026/27 con valores viejos).
 - [x] **Convocatoria: arreglo del reparto con rivales parejos (D112), sin fijo (D110), sin staging (D111) y nadie dobla por bases (D115) — `fix/convocatoria-reparto` (24/10/2026).**
    - [x] (a) Vista previa de la J3 y la J4 revisada por Iván: de ahí sale D115 (J3 real: 9/8, nadie dobla; J4: MdL 10, aviso 2.1).
    - [x] (b) OK de Iván al merge a `main`.

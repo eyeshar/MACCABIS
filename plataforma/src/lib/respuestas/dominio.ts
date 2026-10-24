@@ -99,13 +99,23 @@ export function estadoDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAuse
   const vals = rs.map((_, i) => valor(i));
   if (vals.includes("sin_responder")) return { clase: "responde", texto: "Responde", pendiente: true };
   if (vals.every((v) => v === "va")) return { clase: "vas", texto: u.modo === "distintas" ? "Vas a los dos" : "Vas", pendiente: false };
-  if (u.modo === "distintas" && vals.includes("va")) {
-    const i = vals.indexOf("va");
-    return { clase: "vas", texto: `Vas · solo ${hhmm(u.eventos[i].inicio)}`, pendiente: false };
+  // Un domingo con dos partidos y respuestas distintas en cada uno (importadas, o puestas por un gestor): manda la de
+  // CADA partido. «Vas al MdA · no al MdL» (o «duda en el MdL»), nunca «a los dos».
+  if (u.eventos.length > 1 && vals.includes("va")) {
+    const i = vals.indexOf("va"), j = vals.findIndex((v) => v !== "va");
+    const otro = vals[j] === "duda" ? `duda en el ${u.eventos[j].equipo}` : `no al ${u.eventos[j].equipo}`;
+    return { clase: "vas", texto: `Vas al ${u.eventos[i].equipo} · ${otro}`, pendiente: false };
   }
   if (vals.includes("duda")) return { clase: "duda", texto: "Duda", pendiente: false };
   const m = rs.find((r) => r?.motivo && r.motivo !== "horario")?.motivo;
   return { clase: "novas", texto: `No vas${m ? ` · ${TEXTO_MOTIVO_TODO[m]}` : ""}`, pendiente: false };
+}
+
+/** Partidos de un domingo que se le enseñan en «Tu próximo partido» (sin convocatoria): los que no ha dicho que no. Si
+ *  no va a ninguno, todos (la pastilla ya dice «No vas»). */
+export function partidosQueVa(u: Pick<Unidad, "eventos">, respuestas: MiRespuesta[]): MiEvento[] {
+  const suyos = u.eventos.filter((e) => respuestas.find((r) => r.evento_id === e.id)?.respuesta !== "no");
+  return suyos.length ? suyos : u.eventos;
 }
 
 // ---------------------------------------------------------------- opciones del domingo (D99.3)

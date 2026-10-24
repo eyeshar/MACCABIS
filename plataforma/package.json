@@ -47,6 +47,7 @@
     "pruebas:fuente-eventos": "node pruebas/fuente_eventos.mjs",
     "pruebas:respuestas-web": "node pruebas/rls_respuestas_web.mjs",
     "pruebas:avisos-logica": "node pruebas/avisos_logica.mjs",
+    "pruebas:respuestas-dominio": "node pruebas/respuestas_dominio.mjs",
     "pruebas:respuestas-pantallas": "node pruebas/respuestas_pantallas.mjs",
     "pruebas:respuestas-real": "node pruebas/rls_respuestas_real.mjs",
     "avisos:claves": "node scripts/avisos_claves.mjs",

@@ -17,7 +17,7 @@ import {
   cargarQuienVa, respuestasWebEncendido,
 } from "@/lib/respuestas/jugador";
 import {
-  enlaceLugar, esPlan, estadoDe, fechaTitular, hhmm, lugarTexto, restar20, unidades, type MiEvento, type Unidad,
+  enlaceLugar, esPlan, estadoDe, fechaTitular, hhmm, lugarTexto, partidosQueVa, restar20, unidades, type MiEvento, type Unidad,
 } from "@/lib/respuestas/dominio";
 import { sumarDias, hoyMadrid } from "@/lib/dias";
 import { clienteSesion } from "@/lib/supabase";
@@ -108,7 +108,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
     : noVa ? { clase: "novas", texto: "No vas" }
     : conv ? { clase: "pendiente", texto: "No convocado esta vez" }
     : { clase: "pendiente", texto: "Convocatoria pendiente" };
-  const partidosVer = domingo ? (conv?.equipos.length ? domingo.eventos.filter((e) => conv.equipos.includes(e.equipo as "MdA" | "MdL")) : domingo.eventos) : [];
+  // Convocado: sus partidos. Sin convocatoria: los que no ha dicho que no (con «no» al MdL, solo el MdA).
+  const partidosVer = domingo ? (conv?.equipos.length ? domingo.eventos.filter((e) => conv.equipos.includes(e.equipo as "MdA" | "MdL")) : partidosQueVa(domingo, respuestas)) : [];
   const temporada = temporadaDe(jugador.person_id);
   const dorsales = temporada?.dorsales ?? [];
   const dorsalDe = (eq: string) => {

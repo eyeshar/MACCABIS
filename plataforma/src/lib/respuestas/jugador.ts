@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { clienteSesion, configurado } from "@/lib/supabase";
+import { cargarMiZona } from "@/app/mi-zona/datos";
 import type { MiAusencia, MiDomingo, MiEvento, MiRespuesta } from "./dominio";
 
 // Lo que lee el jugador con SU sesion (D99): sus eventos (v_mis_eventos), sus respuestas y ausencias (RLS: solo las
@@ -56,24 +57,34 @@ export const cargarAvisosPersonales = cache(async (): Promise<{ id: string; text
   return (data ?? []) as { id: string; texto: string; url: string; creado_en: string }[];
 });
 
+// SIEMPRE filtradas por SU person_id: a un jugador la RLS ya le da solo las suyas, pero a un GESTOR le da las de todos,
+// y sin el filtro su inicio y su agenda tomaban la respuesta de otro jugador al mismo partido (fallo de la J3, 25/10).
+const miPersonId = cache(async () => (await cargarMiZona())?.jugador.person_id ?? null);
+
 export const cargarMisRespuestas = cache(async (): Promise<MiRespuesta[]> => {
+  const yo = await miPersonId();
+  if (!yo) return [];
   const sb = await clienteSesion();
-  const { data, error } = await sb.from("respuestas").select("evento_id, respuesta, motivo, detalle, ausencia_id, origen, puesto_por_nombre");
+  const { data, error } = await sb.from("respuestas").select("evento_id, respuesta, motivo, detalle, ausencia_id, origen, puesto_por_nombre").eq("person_id", yo);
   if (error) throw new Error(`respuestas: ${error.message}`);
   return (data ?? []) as MiRespuesta[];
 });
 
 export const cargarMisAusencias = cache(async (): Promise<MiAusencia[]> => {
+  const yo = await miPersonId();
+  if (!yo) return [];
   const sb = await clienteSesion();
-  const { data, error } = await sb.from("ausencias_periodo").select("id, desde, hasta, motivo, detalle, borrada_en, origen").is("borrada_en", null).order("desde");
+  const { data, error } = await sb.from("ausencias_periodo").select("id, desde, hasta, motivo, detalle, borrada_en, origen").eq("person_id", yo).is("borrada_en", null).order("desde");
   if (error) throw new Error(`ausencias: ${error.message}`);
   return (data ?? []) as MiAusencia[];
 });
 
 /** Su respuesta unica a un domingo (D103), si la hay y sigue vigente. */
 export async function cargarMiDomingo(fecha: string): Promise<MiDomingo | null> {
+  const yo = await miPersonId();
+  if (!yo) return null;
   const sb = await clienteSesion();
-  const { data } = await sb.from("respuestas_domingo").select("fecha, opcion, solo_evento, vigente").eq("fecha", fecha).eq("vigente", true).maybeSingle();
+  const { data } = await sb.from("respuestas_domingo").select("fecha, opcion, solo_evento, vigente").eq("person_id", yo).eq("fecha", fecha).eq("vigente", true).maybeSingle();
   return (data as MiDomingo | null) ?? null;
 }
 

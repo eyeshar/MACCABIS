@@ -17,8 +17,11 @@ const PUERTO = 3121;
 const e = await preparar({ puerto: PUERTO });
 const { sql, APP } = e;
 try {
-  const F = await adelantar(sql, semanas('2026-10-25'));
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const F = await adelantar(sql, semanas('2026-10-25'));
+  // La J3 tiene que ser el proximo domingo con partido. Un domingo, la J2 adelantada cae HOY y, antes de su hora,
+  // seria el «próximo partido»: se le pone la hora 00:01 (ya empezado).
+  if (F('2026-10-18') === hoy) await sql`update public.eventos set inicio = '00:01', fin = null where tipo = 'liga' and fecha = ${hoy}`;
   const ids = async (clave) => (await sql`select id from public.eventos where clave = ${clave}`)[0].id;
   const P = await personas(e.pila, {
     jugadores: [['esteban-jon', 'jon@pruebas.local'], ['galan-domingo-guillermo', 'guille@pruebas.local'], ['gianatti-adriano', 'adri@pruebas.local']],
@@ -37,6 +40,17 @@ try {
   const api = (f, args, token) => fetch(`${e.pila.url}/rest/v1/rpc/${f}`, { method: 'POST', headers: { apikey: e.pila.anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(args) }).then((r) => r.json());
   const plan = await api('crear_plan', { p: { tipo: 'quedada', titulo: 'Cañas del jueves', fecha: ent.fecha, inicio: '22:40', equipo: 'ambos', ubicacion_nombre: 'Bar La Esquina', ubicacion_lat: 40.4, ubicacion_lng: -3.63 } }, P['gianatti-adriano'].token);
   await sql`insert into public.grupos_repartos (evento_id, nombre, grupos, publicado) values (${ent.id}, '5 contra 5', ${sql.json([{ nombre: 'Azules', personas: ['esteban-jon', 'gianatti-adriano'] }, { nombre: 'Rojos', personas: ['galan-domingo-guillermo'] }])}, true)`;
+  // Fallo de la J3 (25/10): Ivan (gestor y jugador de los dos equipos), importado «va» al MdA y «no» al MdL; otros
+  // jugadores, «va» a los dos. Su inicio decia «Vas a los dos»: tomaba la respuesta de otro (un gestor las lee todas).
+  const j3 = await sql`select id, equipo from public.eventos where tipo = 'liga' and fecha = ${F('2026-10-25')} order by inicio`;
+  const j3de = (eq) => j3.find((x) => x.equipo === eq).id;
+  await sql`update public.jugadores set ficha_mda = true, ficha_mdl = true where person_id = 'villaescusa-silva-ivan'`;
+  // Las de los otros, ANTES que las suyas: sin el filtro por person_id, el inicio cogia la primera fila de cada partido.
+  await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen) values
+    (${j3de('MdA')}, 'galan-domingo-guillermo', 'va', 'sporteasy'), (${j3de('MdL')}, 'galan-domingo-guillermo', 'va', 'sporteasy'),
+    (${j3de('MdA')}, 'gianatti-adriano', 'va', 'sporteasy'), (${j3de('MdL')}, 'gianatti-adriano', 'va', 'sporteasy')`;
+  await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen) values
+    (${j3de('MdA')}, 'villaescusa-silva-ivan', 'va', 'sporteasy'), (${j3de('MdL')}, 'villaescusa-silva-ivan', 'no', 'sporteasy')`;
 
   console.log('\n== Anónimo: la portada pública, sin cambios');
   let r = await fetch(`${APP}/`);
@@ -73,7 +87,7 @@ try {
   // Proximo partido
   const pp = pj.getByTestId('proximo-partido');
   ok((await pj.getByTestId('estado-partido').innerText()) === 'Convocado · MdA', 'próximo partido: «Convocado · MdA» (mi_convocatoria)');
-  ok((await pp.locator('.in-titular').innerText()).includes(diaLargo(F('2026-10-25'))), `fecha en titular («${diaLargo(F('2026-10-25'))}»)`, await pp.locator('.in-titular').innerText());
+  ok((await pp.locator('.in-titular').innerText()).toLowerCase().includes(diaLargo(F('2026-10-25'))), `fecha en titular («${diaLargo(F('2026-10-25'))}»)`, await pp.locator('.in-titular').innerText());
   ok(await visto(pp.getByText('Quedada')) && await visto(pp.getByText('Partido', { exact: true })), 'casillas Quedada y Partido');
   ok((await pp.locator('.in-partido-uno').count()) === 1, 'solo su partido (el del MdA)');
   const tp = await pp.getByTestId('te-pones').innerText();
@@ -141,6 +155,18 @@ try {
   ok(yPend <= cols[0].y, 'la fila de pendientes, encima de las tres columnas');
   ok(await sinDesbordar(pi), '1280 px sin desbordamiento');
   await foto(pi, 'inicio_gestor_1280');
+  console.log('\n== Respuestas distintas por partido del domingo (J3: «va» al MdA, «no» al MdL), siendo gestor');
+  const pIvan = pi.getByTestId('proximo-partido');
+  const partidosIvan = await pIvan.locator('.in-partido-uno').evaluateAll((xs) => xs.map((x) => x.dataset.equipo));
+  ok(partidosIvan.join(',') === 'MDA', '«Tu próximo partido»: solo el MdA (no el MdL al que dijo que no)', partidosIvan.join(','));
+  await pi.goto(`${APP}/agenda`);
+  const fJ3 = pi.locator(`a[data-testid="fila-agenda"][href="/mi-zona/domingo/${F('2026-10-25')}"]`);
+  const tJ3 = (await fJ3.count()) ? await fJ3.first().locator('.in-pastilla').innerText() : '(sin fila)';
+  ok(tJ3 === 'Vas al MdA · no al MdL', 'agenda: la J3 dice «Vas al MdA · no al MdL», nunca «Vas a los dos»', tJ3);
+  await pi.goto(`${APP}/mi-zona/domingo/${F('2026-10-25')}`);
+  const txtDom = await pi.locator('main').innerText();
+  ok(!/Vas a los dos/.test(txtDom), 'la página del domingo tampoco dice «Vas a los dos»');
+  await pi.goto(`${APP}/`);
   await banda.getByRole('button', { name: 'Ocultar' }).click();
   ok(await banda.locator('#in-gestion-lista').isHidden(), 'la banda se pliega');
   await pi.reload();

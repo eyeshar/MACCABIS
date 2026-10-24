@@ -1,6 +1,6 @@
 # Reglas de convocatoria — versión 1
 
-_23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con pocos datos, mensajes sin disponibles). Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
+_23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con pocos datos, mensajes sin disponibles; D109: el nivel va antes que la rotación y deuda de 2 domingos fuera). Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
 
 > **Privacidad (D39).** Este documento no lleva nombres de jugadores ni niveles. Los datos por jugador (posición, base de reserva, nivel A–E, Dobla / No dobla, reglas personales, sanciones) viven **solo en la zona de gestión** (tabla `jugadores_privado` de Supabase, con RLS: solo los 3 gestores) y en `privado/` (fuera de git) como copia de Iván. **Nunca** en JSON públicos, mensajes de WhatsApp, avisos ni páginas de jugador. «Solo entreno» y las fichas siguen en la plantilla (`jugadores`).
 
@@ -35,7 +35,8 @@ _23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con po
 ## 4. Prioridad y rotación
 
 - **Prioridad entre partidos cuando no se llega a todo (pregunta 2):** primero el **partido más difícil**; si están igualados, el **MdA**.
-- **4.1 Rotación (pregunta 3):** «quien menos ha jugado» = **partidos convocado en la temporada, sumando MdA y MdL** (de las hojas de estadística). Orden de prioridad para ir convocado: (1) quien menos partidos lleva convocado; (2) a igual rotación, más nivel; (3) **a igual nivel, quien más ha entrenado en las últimas 4 semanas** (pregunta 4); (4) los «solo entreno», siempre al final. Cuando hay que dejar a alguien fuera por el tope, sale primero quien está en una línea que pasa del ideal y, dentro de ella, el de menos prioridad.
+- **4.1 Orden para ir convocado (D109: el nivel va antes que la rotación):** (1) **cubrir las líneas** (bases, exteriores, interiores) según las secciones 2 y 5; (2) **más nivel total**; (3) a igual nivel, **menos partidos convocado en la temporada**, sumando MdA y MdL (de las hojas de estadística); (4) a igualdad, **quien más ha entrenado en las últimas 4 semanas** (pregunta 4); (5) los «solo entreno», siempre al final. Cuando hay que dejar a alguien fuera por el tope, sale primero quien está en una línea que pasa del ideal y, dentro de ella, el de menos prioridad.
+- **4.2 Deuda de rotación (D109):** si un jugador estuvo disponible y no fue convocado en los **2 últimos domingos en que estuvo disponible**, entra **por delante del nivel** (criterio 2 de la 4.1; las líneas siguen primero y los «solo entreno» siguen al final), con el aviso «entra por rotación (2 domingos fuera)». Los domingos en que no estuvo disponible no cuentan ni cortan la cuenta; la cuenta se para en el último domingo en que fue convocado. «Disponible» = dijo «voy» a algún partido de liga de ese domingo con un equipo del que tiene ficha; «convocado» = sale en las hojas de estadística de ese domingo o en su convocatoria aprobada.
 - Entrenos de las últimas 4 semanas: las respuestas «voy» a los entrenos de los 28 días anteriores al domingo (de SportEasy en la fase puente; de la web cuando se encienda el interruptor). No es todavía el pase de lista real.
 
 ## 5. Si no se llega a los mínimos: orden de sacrificio (pregunta 5)
@@ -81,6 +82,7 @@ _23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con po
 | Fichas y «solo entreno» | `jugadores` (Gestión → Jugadores) | Fichas sí |
 | Disponibles del domingo | `respuestas` por partido (de la respuesta única del domingo, D103, o importadas de SportEasy) | Los jugadores ven quién va (D46) |
 | Partidos convocado y doblajes | Hojas de estadística (`season_2026-27.json`) | Sí |
+| Domingos disponible y fuera (4.2) | Respuestas «voy» a los partidos ya jugados, hojas de estadística y convocatorias aprobadas | Solo gestores |
 | Entrenos de las últimas 4 semanas | Respuestas «voy» a los entrenos | Solo gestores |
 | Dificultad | Propuesta desde `data/liga_2026-27.json`, corregida por Iván (`convocatorias.dificultad`) | Solo gestores |
 | Posición, nivel (el de Iván), Dobla, ataque usado, defensa, total, minutos y pts/min | Hoja de Iván `privado/jugadores_2026-27.xlsx` (pestañas «Jugadores» y «Parametros»), cargada con `npm run db:privado` en `jugadores_privado` (solo gestores). El ataque es el de la columna **«Ataque (usar)»** (con 300 minutos o más sale de los puntos por minuto; si no, la letra de Iván); el **nivel que usa el motor es «Nivel (tuyo)»**; el total es solo de referencia | **No. Nunca.** |

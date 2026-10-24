@@ -7,7 +7,7 @@ import { avisoDeEvento, cargarEventos, cargarPistas, type Cliente } from "@/lib/
 import { limpiarRival, pistaEfectiva, quedadaPorDefecto, hhmm, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { nombreRival } from "@/lib/equipacion";
 import { quienResponde } from "@/lib/respuestas/dominio";
-import { proponerDificultad, type DatosPrivados, type Equipo, type RespuestaPartido } from "./motor";
+import { domingosFueraDe, proponerDificultad, type DatosPrivados, type Equipo, type RespuestaPartido } from "./motor";
 import type { Cambio, Contexto, FilaConvocatoria, FilaPrivada, JugadorVista, PartidoVista } from "./vista";
 
 // Lectura de todo lo que necesita la convocatoria de un domingo (D107), con la sesion del GESTOR: la base (RLS +
@@ -17,11 +17,12 @@ const NOMBRE_GRUPO: Record<Equipo, "G1" | "G2"> = { MdA: "G1", MdL: "G2" };
 type Liga = { grupos: Record<string, { jornadas_cargadas: number[]; clasificacion: { pos: number; equipo: string; pj: number; dif: number }[] }> };
 type Season = { partidos: { pn: number; equipo: string; fecha: string }[]; players: { person_id?: string; conv: number; games: { pn: number; eq: string; played?: boolean }[] }[] };
 
-/** Partidos convocado y domingos doblados en la temporada, de las hojas de estadistica (public: sin datos privados). */
+/** Partidos convocado, domingos doblados y fechas en que fue convocado en la temporada, de las hojas de estadistica
+ *  (public: sin datos privados). */
 export function estadisticasTemporada() {
   const s = seasonJson as unknown as Season;
   const fechaDe = new Map(s.partidos.map((p) => [`${p.pn}-${p.equipo}`, p.fecha]));
-  const out = new Map<string, { convocados: number; doblajes: number }>();
+  const out = new Map<string, { convocados: number; doblajes: number; fechas: Set<string> }>();
   for (const p of s.players) {
     if (!p.person_id) continue;
     const porFecha = new Map<string, Set<string>>();
@@ -29,7 +30,7 @@ export function estadisticasTemporada() {
       const f = fechaDe.get(`${g.pn}-${g.eq}`);
       if (f) porFecha.set(f, new Set([...(porFecha.get(f) ?? []), g.eq]));
     }
-    out.set(p.person_id, { convocados: p.conv ?? 0, doblajes: [...porFecha.values()].filter((x) => x.size === 2).length });
+    out.set(p.person_id, { convocados: p.conv ?? 0, doblajes: [...porFecha.values()].filter((x) => x.size === 2).length, fechas: new Set(porFecha.keys()) });
   }
   return out;
 }
@@ -61,8 +62,10 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   const jornada = delDia[0]?.jornada ?? null;
   const ids = delDia.map((e) => e.id);
   const entrenos = eventos.filter((e) => e.tipo === "entreno" && e.estado === "programado" && e.fecha >= sumarDias(fecha, -28) && e.fecha < fecha && e.fecha <= hoy).map((e) => e.id);
+  // Domingos ya jugados (regla 4.2, D109): para saber quien estuvo disponible y se quedo fuera.
+  const pasados = liga.filter((e) => e.fecha < fecha && e.fecha < hoy);
 
-  const [jug, resp, respEnt, priv, conv, enc, imp] = await Promise.all([
+  const [jug, resp, respEnt, priv, conv, enc, imp, respPas, convPas] = await Promise.all([
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
@@ -70,6 +73,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     sb.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle(),
     sb.rpc("respuestas_web_encendido"),
     sb.from("importaciones").select("en").eq("tipo", "respuestas").order("en", { ascending: false }).limit(1),
+    pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
+    sb.from("convocatorias").select("fecha, equipos").eq("estado", "aprobada").lt("fecha", fecha),
   ]);
   if (jug.error) throw new Error(`jugadores: ${jug.error.message}`);
   if (resp.error) throw new Error(`respuestas: ${resp.error.message}`);
@@ -87,6 +92,22 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   const stats = estadisticasTemporada();
   const entrenosDe = new Map<string, number>();
   for (const r of (respEnt.data ?? []) as { person_id: string }[]) entrenosDe.set(r.person_id, (entrenosDe.get(r.person_id) ?? 0) + 1);
+  // Historial de domingos: disponible = dijo «voy» a algun partido de liga de ese domingo con un equipo del que tiene
+  // ficha; convocado = sale en las hojas de estadistica de ese domingo o en su convocatoria aprobada.
+  const eventoPasado = new Map(pasados.map((e) => [e.id, e]));
+  const disponibleEl = new Map<string, Set<string>>(); // fecha -> person_id|equipo
+  for (const r of (respPas.data ?? []) as { evento_id: string; person_id: string }[]) {
+    const e = eventoPasado.get(r.evento_id);
+    if (e) disponibleEl.set(e.fecha, new Set([...(disponibleEl.get(e.fecha) ?? []), `${r.person_id}|${e.equipo}`]));
+  }
+  const convocadoEl = new Map<string, Set<string>>(); // fecha -> person_id
+  for (const c of (sinMigracion ? [] : convPas.data ?? []) as { fecha: string; equipos: Record<string, { person_id: string }[]> }[])
+    convocadoEl.set(c.fecha, new Set(Object.values(c.equipos ?? {}).flat().map((x) => x.person_id)));
+  const fechasPasadas = [...new Set(pasados.map((e) => e.fecha))].sort().reverse();
+  const domingosFuera = (j: { person_id: string; ficha_mda: boolean; ficha_mdl: boolean }) => domingosFueraDe(fechasPasadas.map((f) => ({
+    disponible: [...(disponibleEl.get(f) ?? [])].some((k) => k === `${j.person_id}|MdA` ? j.ficha_mda : k === `${j.person_id}|MdL` ? j.ficha_mdl : false),
+    convocado: !!stats.get(j.person_id)?.fechas.has(f) || !!convocadoEl.get(f)?.has(j.person_id),
+  })));
 
   const partidos: PartidoVista[] = delDia.map((e) => {
     const eq = e.equipo as Equipo;
@@ -123,7 +144,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     return {
       person_id: j.person_id, nombre: j.nombre_visible, ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, solo_entreno: j.rol === "solo_entreno",
       respuesta, privado, sancionado: !!(p?.sancionado_hasta_jornada && jornada != null && p.sancionado_hasta_jornada >= jornada),
-      convocados: st?.convocados ?? 0, doblajes: st?.doblajes ?? 0, entrenos4: entrenosDe.get(j.person_id) ?? 0,
+      convocados: st?.convocados ?? 0, doblajes: st?.doblajes ?? 0, entrenos4: entrenosDe.get(j.person_id) ?? 0, domingosFuera: domingosFuera(j),
       invitado: delDia.some((e) => quienResponde(e, j)), invitadoA: delDia.filter((e) => quienResponde(e, j)).map((e) => e.equipo as Equipo),
       motivoNo, sancionHasta: p?.sancionado_hasta_jornada ?? null,
     };

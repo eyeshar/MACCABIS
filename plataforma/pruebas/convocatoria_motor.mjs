@@ -2,11 +2,12 @@
 // Motor de convocatoria v1 (D107) con DATOS SINTÉTICOS: ni nombres reales ni niveles reales (D39). Cubre: dos partidos
 // a distinta hora, misma hora, un solo equipo, 20 o más disponibles, faltan interiores, falta base, un «No dobla»
 // necesario, un sancionado, desempate por entrenos, empate de dificultad, edición manual con avisos, reglas personales,
-// propuesta de dificultad y que el motor es determinista (misma entrada = misma salida, también desordenada).
+// propuesta de dificultad, nivel antes que rotación con la deuda de 2 domingos fuera (D109) y que el motor es
+// determinista (misma entrada = misma salida, también desordenada).
 //
 //   npm run pruebas:convocatoria-motor
 
-import { proponer, revisar, proponerDificultad, diferencias, recuentoDe, maximoPorEquipo } from '../src/lib/convocatoria/motor.ts';
+import { proponer, revisar, proponerDificultad, diferencias, recuentoDe, maximoPorEquipo, domingosFueraDe, LINEA_DE } from '../src/lib/convocatoria/motor.ts';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -21,10 +22,18 @@ function J(pos, nivel, o = {}) {
     ficha: o.ficha ?? { MdA: true, MdL: true }, solo_entreno: o.solo ?? false,
     respuesta: o.resp ?? { MdA: 'va', MdL: 'va' },
     privado: o.sinDatos ? null : { posicion: pos, base_reserva: o.reserva ?? false, nivel, dobla: o.dobla ?? true, regla: o.regla ?? null },
-    sancionado: o.sancion ?? false, convocados: o.conv ?? 0, doblajes: o.dobl ?? 0, entrenos4: o.ent ?? 2,
+    sancionado: o.sancion ?? false, convocados: o.conv ?? 0, doblajes: o.dobl ?? 0, entrenos4: o.ent ?? 2, domingosFuera: o.fuera ?? 0,
   };
 }
 const reset = () => { n = 0; };
+const VAL = { A: 5, B: 4, C: 3, D: 2, E: 1 };
+/** Dentro de cada línea, ningún disponible que sale por el tope tiene más nivel que un convocado (sin deuda) de esa línea. */
+function nivelRespetado(r, jugadores, e) {
+  const de = new Map(jugadores.map((j) => [j.person_id, j]));
+  const dentro = ids(r.convocatoria, e).map((id) => de.get(id)).filter((j) => j.domingosFuera < 2);
+  const fuera = r.sinConvocar.filter((s) => s.regla === '1.1').map((s) => de.get(s.person_id));
+  return fuera.every((f) => dentro.filter((j) => LINEA_DE[j.privado.posicion] === LINEA_DE[f.privado.posicion]).every((j) => VAL[j.privado.nivel] >= VAL[f.privado.nivel]));
+}
 const P = (equipo, inicio, dificultad = 'media') => ({ evento_id: `ev-${equipo}`, equipo, inicio, dificultad });
 const ids = (c, e) => (c[e] ?? []).map((x) => x.person_id);
 const avisosDe = (r, regla) => r.avisos.filter((a) => a.regla === regla);
@@ -93,8 +102,7 @@ console.log('\n== Un solo equipo juega (el otro descansa)');
   ok(!l.includes('sint-01') && r.sinConvocar.some((s) => s.person_id === 'sint-01' && s.regla === '1.5'), 'el de ficha solo del MdA queda fuera por la regla 1.5');
   ok(r.sinConvocar.filter((s) => s.regla === '1.1').length === 7, '17 con ficha del MdL: 7 fuera por el tope de 10 (regla 1.1)', JSON.stringify(r.sinConvocar));
   ok(r.recuento.MdL.bases.puros >= 2 && r.recuento.MdL.interiores.n === 4, 'con sobrantes, el tope respeta 2 bases y 4 interiores', JSON.stringify(r.recuento.MdL));
-  const fueraTope = r.sinConvocar.filter((s) => s.regla === '1.1').map((s) => jugadores.find((j) => j.person_id === s.person_id).convocados);
-  ok(Math.min(...fueraTope) >= 1, 'rotación (4.1): los que salen por el tope llevan más partidos convocado', fueraTope.join(','));
+  ok(nivelRespetado(r, jugadores, 'MdL'), 'nivel (4.1): nadie sale por el tope con más nivel que un convocado de su línea');
 }
 
 // ---------------------------------------------------------------- 4. 20 o más disponibles
@@ -193,7 +201,47 @@ console.log('\n== Desempate por entrenos (a igual rotación y nivel)');
   const l = ids(r.convocatoria, 'MdL');
   ok(l.includes('sint-entrena-mucho') && !l.includes('sint-entrena-poco'), 'misma rotación y mismo nivel: va quien más ha entrenado en las últimas 4 semanas', l.join(','));
   const sinEnt = proponer({ partidos: [P('MdL', '11:30')], jugadores: jugadores.map((j) => (j.person_id === 'sint-entrena-poco' ? j : { ...j, convocados: 1 })) });
-  ok(ids(sinEnt.convocatoria, 'MdL').includes('sint-entrena-poco'), 'pero la rotación manda: si lleva menos partidos convocado, va antes aunque entrene menos');
+  ok(ids(sinEnt.convocatoria, 'MdL').includes('sint-entrena-poco'), 'a igual nivel, la rotación va antes que los entrenos: si lleva menos partidos convocado, va aunque entrene menos');
+}
+
+// ---------------------------------------------------------------- 9 bis. nivel antes que rotación y deuda de 2 domingos (D109)
+console.log('\n== Nivel antes que rotación; deuda de 2 domingos fuera (D109)');
+{
+  // 22 disponibles para un solo partido (J4): máximo 12. Dos A llevan un partido más que el resto.
+  const veintidos = (o = {}) => {
+    reset();
+    return plantilla([
+      ['base', 'A'], ['base', 'B'], ['base', 'C'], ['base', 'D'],
+      ['escolta', 'A', { id: 'sint-a1', conv: 3 }], ['alero', 'A', { id: 'sint-a2', conv: 3 }], ['escolta', 'B'], ['alero', 'B'], ['escolta', 'C'], ['alero', 'C'],
+      ['escolta', 'C'], ['alero', 'D'], ['escolta', 'D'], ['alero', 'E', { id: 'sint-e', ...o.e }],
+      ['pivot', 'A'], ['ala_pivot', 'B'], ['pivot', 'B'], ['ala_pivot', 'C'], ['pivot', 'C'], ['ala_pivot', 'D'], ['pivot', 'D'], ['ala_pivot', 'E'],
+    ]).map((j) => ({ ...j, convocados: j.person_id.startsWith('sint-a') ? 3 : 2, respuesta: { MdL: 'va' } }));
+  };
+  const js = veintidos();
+  const r = proponer({ partidos: [P('MdL', '11:30', 'media')], jugadores: js });
+  const l = ids(r.convocatoria, 'MdL');
+  ok(r.disponibles === 22 && r.maximo === 12 && l.length === 12, '22 disponibles, 12 plazas, 12 convocados', `${r.disponibles}/${r.maximo}/${l.length}`);
+  ok(l.includes('sint-a1') && l.includes('sint-a2'), 'dos A con un partido más convocado NO se quedan fuera (el nivel va antes que la rotación)', l.join(','));
+  ok(nivelRespetado(r, js, 'MdL'), 'con 22 disponibles y 12 plazas, el orden por nivel se respeta en cada línea');
+  ok(r.recuento.MdL.bases.puros >= 2 && r.recuento.MdL.interiores.n >= 4 && r.recuento.MdL.exteriores.n >= 4, 'primero se cubren las líneas', JSON.stringify(r.recuento.MdL));
+  ok(!l.includes('sint-e') && avisosDe(r, '4.2').length === 0, 'sin deuda, el E se queda fuera y no hay aviso de rotación');
+
+  const conDeuda = veintidos({ e: { fuera: 2 } });
+  const r2 = proponer({ partidos: [P('MdL', '11:30', 'media')], jugadores: conDeuda });
+  const l2 = ids(r2.convocatoria, 'MdL');
+  ok(l2.includes('sint-e') && l2.length === 12, 'un E que lleva 2 domingos disponible y fuera entra (por delante del nivel)', l2.join(','));
+  const av = avisosDe(r2, '4.2');
+  ok(av.length === 1 && av[0].person_id === 'sint-e' && /entra por rotación \(2 domingos fuera\)/.test(av[0].texto) && av[0].gravedad === 'info', `aviso «${av[0]?.texto}» (regla 4.2)`);
+  ok(l2.includes('sint-a1') && l2.includes('sint-a2'), 'y los dos A siguen dentro');
+  ok(proponer({ partidos: [P('MdL', '11:30', 'media')], jugadores: veintidos({ e: { fuera: 1 } }) }).convocatoria.MdL.every((c) => c.person_id !== 'sint-e'), 'con 1 domingo fuera todavía no tiene deuda');
+  const soloEnt = veintidos({ e: { fuera: 3, solo: true } });
+  ok(!ids(proponer({ partidos: [P('MdL', '11:30', 'media')], jugadores: soloEnt }).convocatoria, 'MdL').includes('sint-e'), 'un «solo entreno» con deuda sigue al final (20 o más disponibles: no va)');
+
+  const H = (s) => s.split('').map((c) => ({ disponible: c !== '-', convocado: c === 'c' }));
+  ok(domingosFueraDe(H('ff')) === 2, 'domingosFueraDe: fuera, fuera → 2');
+  ok(domingosFueraDe(H('f-f')) === 2, 'los domingos en que no estuvo disponible no cuentan ni cortan');
+  ok(domingosFueraDe(H('fcf')) === 1 && domingosFueraDe(H('cff')) === 0, 'se para en el último domingo en que fue convocado');
+  ok(domingosFueraDe([]) === 0, 'sin historial → 0');
 }
 
 // ---------------------------------------------------------------- 10. empate de dificultad

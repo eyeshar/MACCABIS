@@ -399,7 +399,7 @@ function HojaCambio({ hoja, ctx, conv, porId, mismaHora, pendiente, onCerrar, on
             <p className="pequeno" style={{ margin: 0 }}>
               <b>{j.nombre}</b> · {j.privado?.posicion ? TEXTO_POSICION[j.privado.posicion] : "sin posición"} · nivel {j.privado?.nivel ?? "–"} · {j.privado ? (j.privado.dobla ? "Dobla" : "No dobla") : "sin datos"}<br />
               {juegan.map((x) => <span key={x} className="suave">{x}: {estadoPara(j, x).texto}. </span>)}
-              <span className="suave">{j.convocados} partidos convocado · {j.entrenos4} entrenos en 4 semanas.</span>
+              <span className="suave">{j.convocados} partidos convocado · {j.entrenos4} entrenos en 4 semanas{j.domingosFuera ? ` · ${j.domingosFuera} domingo${j.domingosFuera === 1 ? "" : "s"} disponible y fuera` : ""}.</span>
             </p>
             {hoja.tipo === "cambiar" && (
               <fieldset className="cv-opciones">

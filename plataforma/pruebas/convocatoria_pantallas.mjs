@@ -68,6 +68,15 @@ try {
       await sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo) values (${e.id}, ${s.id}, ${no ? 'no' : 'va'}, ${no ? 'trabajo' : null}) on conflict do nothing`;
     }
   }
+  // Deuda de rotacion (regla 4.2, D109): Sint 17 dijo «voy» en los 2 ultimos domingos ya jugados y no salio convocado
+  // (los sinteticos no estan en las hojas de estadistica); Sint 16, solo en uno.
+  const jugados = [...new Set((await sql`select fecha::text from public.eventos where tipo = 'liga' and estado = 'programado' and fecha < ${hoy} order by fecha desc`).map((r) => r.fecha))].slice(0, 2);
+  for (const [i, f] of jugados.entries()) {
+    for (const ev of await sql`select id from public.eventos where tipo = 'liga' and estado = 'programado' and fecha = ${f}`) {
+      await sql`insert into public.respuestas (evento_id, person_id, respuesta) values (${ev.id}, 'sint-17', 'va') on conflict do nothing`;
+      if (i === 0) await sql`insert into public.respuestas (evento_id, person_id, respuesta) values (${ev.id}, 'sint-16', 'va') on conflict do nothing`;
+    }
+  }
   const jugadorEmail = 'sint01@pruebas.local', gestorEmail = 'gestor@pruebas.local';
   await sql`update public.jugadores set email = ${jugadorEmail} where person_id = 'sint-01'`;
   await pila.crearUsuario(jugadorEmail, 'x');
@@ -129,6 +138,10 @@ try {
   ok(/del G\d tras la J\d|Sin partidos jugados|Pocos datos \(\d partidos? tras la J\d\)/.test(await pg.getByTestId('cv-porque-MdA').innerText()), 'dificultad propuesta con su porqué (con menos de 3 partidos, «pocos datos»)', await pg.getByTestId('cv-porque-MdA').innerText());
   ok(/encuentro \d\d:\d\d/i.test(await pg.getByTestId('cv-equipo-MdA').innerText()), 'hora de encuentro (20 minutos antes)');
   ok(await visto(pg.getByTestId('cv-casillas-MdA').getByText('bases')), 'casillas por línea (bases, exteriores, interiores)');
+  if (jugados.length === 2) {
+    const cuerpo = await pg.locator('main').innerText();
+    ok(cuerpo.includes('Sint 17 entra por rotación (2 domingos fuera).') && !/Sint 16 entra por rotación/.test(cuerpo), 'deuda de rotación: «Sint 17 entra por rotación (2 domingos fuera)»; Sint 16 (1 domingo) no (regla 4.2)');
+  } else ok(true, 'deuda de rotación: aún no hay 2 domingos jugados en el calendario (se comprueba en el motor)');
   ok(await sinDesbordar(pg), 'a 375 px sin desbordar');
   await foto(pg, 'convocatoria_propuesta_375');
   await pg.getByRole('button', { name: 'Usar propuesta' }).click();

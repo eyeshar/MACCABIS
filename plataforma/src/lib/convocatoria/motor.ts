@@ -32,6 +32,7 @@ export const LIMITES = {
   ideal: { base: 2, exterior: 4, interior: 4 } as Record<Linea, number>,
   minimoLinea: { base: 2, exterior: 3, interior: 3 } as Record<Linea, number>,
   evitarInteriores: 5,
+  deudaDomingos: 2, // disponible y sin convocar en sus 2 ultimos domingos disponibles: entra por rotacion (regla 4.2)
 };
 
 // ---------------------------------------------------------------- reglas (cada aviso dice cual lo causa)
@@ -49,7 +50,8 @@ export const REGLAS = {
   "2.3": "Interiores: ideal 4, mínimo 3, evitar 5",
   "3.1": "El partido más difícil lleva más nivel medio",
   "3.2": "Con rivales parejos, se equilibra por líneas",
-  "4.1": "Rotación: antes quien menos partidos lleva convocado",
+  "4.1": "Prioridad: más nivel; a igual nivel, quien menos partidos lleva convocado",
+  "4.2": "Rotación: 2 domingos disponible y fuera, entra por delante",
   "5.1": "Si no se llega: doblan los «Dobla»",
   "5.2": "Si no se llega: dobla un «No dobla», con aviso",
   "5.3": "Interiores: con 3 se juega (solo se dobla por debajo de 3)",
@@ -82,6 +84,9 @@ export type JugadorEntrada = {
   doblajes: number;
   /** Entrenos a los que fue en las 4 semanas anteriores al domingo. */
   entrenos4: number;
+  /** De sus ultimos domingos en que estuvo disponible, cuantos seguidos (del mas reciente hacia atras) se quedo sin
+   *  convocar. Con 2 o mas entra por rotacion (regla 4.2). Lo calcula domingosFueraDe. */
+  domingosFuera: number;
 };
 export type Entrada = { partidos: PartidoEntrada[]; jugadores: JugadorEntrada[] };
 
@@ -132,15 +137,31 @@ const nivelDe = (j: JugadorEntrada) => VALOR_NIVEL[datos(j).nivel ?? "C"];
 const disponibleEn = (j: JugadorEntrada, e: Equipo) => j.respuesta[e] === "va";
 const porId = (a: { person_id: string }, b: { person_id: string }) => (a.person_id < b.person_id ? -1 : a.person_id > b.person_id ? 1 : 0);
 
-/** Orden de prioridad para ir convocado (regla 4.1 y la respuesta a la pregunta 4): los «solo entreno» al final;
- *  antes quien menos partidos lleva convocado; a igual rotacion, mas nivel; a igual nivel, quien mas ha entrenado en
- *  las ultimas 4 semanas; y por ultimo el identificador (para que el orden no dependa de nada mas). */
+export const tieneDeuda = (j: JugadorEntrada) => j.domingosFuera >= LIMITES.deudaDomingos;
+
+/** Orden de prioridad para ir convocado (reglas 4.1 y 4.2, D109), una vez cubiertas las lineas: los «solo entreno» al
+ *  final; antes quien lleva 2 domingos disponible y fuera (deuda de rotacion); despues mas nivel; a igual nivel, quien
+ *  menos partidos lleva convocado; a igualdad, quien mas ha entrenado en las ultimas 4 semanas; y por ultimo el
+ *  identificador (para que el orden no dependa de nada mas). */
 export function compararPrioridad(a: JugadorEntrada, b: JugadorEntrada) {
   return Number(a.solo_entreno) - Number(b.solo_entreno)
-    || a.convocados - b.convocados
+    || Number(tieneDeuda(b)) - Number(tieneDeuda(a))
     || nivelDe(b) - nivelDe(a)
+    || a.convocados - b.convocados
     || b.entrenos4 - a.entrenos4
     || porId(a, b);
+}
+
+/** Domingos seguidos fuera (regla 4.2): `historial` son los domingos ya jugados, del mas reciente al mas antiguo. Solo
+ *  cuentan los domingos en que estuvo disponible; se para en el primero en que fue convocado. */
+export function domingosFueraDe(historial: { disponible: boolean; convocado: boolean }[]) {
+  let n = 0;
+  for (const d of historial) {
+    if (!d.disponible) continue;
+    if (d.convocado) break;
+    n++;
+  }
+  return n;
 }
 /** Para elegir dentro de una linea al repartir niveles: primero el nivel y despues la prioridad. */
 const compararNivel = (a: JugadorEntrada, b: JugadorEntrada) => nivelDe(b) - nivelDe(a) || compararPrioridad(a, b);
@@ -247,6 +268,7 @@ export function revisar(entrada: Entrada, convocatoria: Convocatoria, sinConvoca
       if (j.solo_entreno && disponibles >= LIMITES.umbralAmpliar) avisos.push({ regla: "1.2", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} es «solo entreno» y hay ${disponibles} disponibles.` });
       if (d.regla?.tipo === "fijo" && d.regla.equipo !== e) avisos.push({ regla: "6.1", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} es fijo del ${d.regla.equipo}.` });
       if (!j.privado || !d.posicion || !d.nivel) avisos.push({ regla: "0.2", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `Faltan datos privados de ${j.nombre} (${[!d.posicion && "posición", !d.nivel && "nivel"].filter(Boolean).join(" y ") || "todos"}): cuenta como exterior de nivel C.` });
+      if (tieneDeuda(j)) avisos.push({ regla: "4.2", gravedad: "info", equipo: e, person_id: j.person_id, texto: `${j.nombre} entra por rotación (${j.domingosFuera} domingos fuera).` });
       if (c.posicion && c.posicion !== d.posicion) avisos.push({ regla: "6.3", gravedad: "info", equipo: e, person_id: j.person_id, texto: `${j.nombre} juega de ${TEXTO_POSICION[c.posicion].toLowerCase()} en este partido${d.posicion ? ` (es ${TEXTO_POSICION[d.posicion].toLowerCase()})` : ""}.` });
       // Doblar: se avisa una sola vez, en el partido del segundo equipo por orden de prioridad.
       if (delOtro.has(j.person_id) && p === partidos[1]) {

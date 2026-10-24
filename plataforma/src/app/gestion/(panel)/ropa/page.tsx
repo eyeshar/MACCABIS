@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { exigirGestor } from "@/lib/sesion";
 import { PRENDAS, TALLAS, type PrendaId } from "@/lib/ropa";
-import { fechaHora } from "@/lib/fechas";
+import { campanaAbiertaAhora, fechaHora } from "@/lib/fechas";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import { borrarPedidoGestor, crearCampana } from "../acciones";
 import FormularioCampana from "./FormularioCampana";
@@ -59,7 +59,7 @@ export default async function RopaGestion({ searchParams }: { searchParams: Prom
     }
   }
   const tallasUsadas = TALLAS.filter((t) => PRENDAS.some((x) => recuento[x.id][t]));
-  const abiertaAhora = campana.estado === "abierta" && (!campana.fecha_limite || new Date(campana.fecha_limite) >= new Date());
+  const abiertaAhora = campanaAbiertaAhora(campana);
 
   return (
     <>

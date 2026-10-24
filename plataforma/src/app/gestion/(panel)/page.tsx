@@ -12,7 +12,7 @@ import {
   chipEquipacion, entrenoHabitual, estadoClasificacion, eventosEntrenos, proximosPartidos, ultimosResultados, type Evento,
 } from "@/lib/publico";
 import { diaMes, diaSemanaCorto, hoyMadrid, textoSemana } from "@/lib/dias";
-import { fechaCorta } from "@/lib/fechas";
+import { campanaAbiertaAhora, fechaCorta } from "@/lib/fechas";
 import { NOMBRE_EQUIPO } from "@/lib/web";
 
 export const metadata = { title: "Gestión · Maccabis" };
@@ -99,7 +99,8 @@ export default async function InicioGestion() {
   if (sinActa.length) pendientes.push(`J${sinActa[0].jornada ?? "?"} publicada sin acta: completarla cuando la FBM suba las actas (rutina A).`);
   if (/pendiente de contrastar/i.test(estadoClasificacion())) pendientes.push("Contrastar la clasificación calculada con la oficial (rutina B, jueves).");
   if (sinCorreo > 0) pendientes.push(`${sinCorreo} ${sinCorreo === 1 ? "jugador sin correo: no puede" : "jugadores sin correo: no pueden"} entrar.`);
-  if (campana?.estado === "abierta") pendientes.push(`Pedido de ropa abierto${campana.fecha_limite ? ` hasta el ${fechaCorta(campana.fecha_limite)}` : ""}: ${pedidos ?? 0} pedidos.`);
+  const ropaAbierta = campana ? campanaAbiertaAhora(campana) : false;
+  if (campana && ropaAbierta) pendientes.push(`Pedido de ropa abierto${campana.fecha_limite ? ` hasta el ${fechaCorta(campana.fecha_limite)}` : ""}: ${pedidos ?? 0} pedidos.`);
 
   return (
     <>
@@ -153,8 +154,8 @@ export default async function InicioGestion() {
                           <td><span className={`chip-eq chip-${e.equipo}`}>{NOMBRE_EQUIPO[e.equipo!]}</span></td>
                           <td style={{ fontWeight: 600 }}>{cruce(e)}</td>
                           <td className="cifra" style={{ whiteSpace: "nowrap" }}>{e.inicio ?? "¿?"} · P{e.partido?.campo ?? "?"}</td>
-                          <td>{chip ? <span className={`pastilla pastilla-${chip.tipo}`}>{chip.texto}</span> : <span className="pastilla">Negra</span>}</td>
-                          <td><Link href={`/gestion/convocatoria?fecha=${e.fecha}`} className={convDomingo ? undefined : "tenue"}>{convocados(e)}</Link></td>
+                          <td data-label="Equipación">{chip ? <span className={`pastilla pastilla-${chip.tipo}`}>{chip.texto}</span> : <span className="pastilla">Negra</span>}</td>
+                          <td data-label="Convocados"><Link href={`/gestion/convocatoria?fecha=${e.fecha}`} className={convDomingo ? undefined : "tenue"}>{convocados(e)}</Link></td>
                         </tr>
                       );
                     })}
@@ -224,7 +225,7 @@ export default async function InicioGestion() {
           <section className="gs-bloque" aria-labelledby="t-ropa">
             <h2 id="t-ropa">Pedido de ropa</h2>
             {campana ? (
-              <p style={{ margin: 0 }}>{campana.nombre}: <span className={`etiqueta ${campana.estado === "abierta" ? "etiqueta-abierta" : "etiqueta-cerrada"}`}>{campana.estado === "abierta" ? "Abierta" : "Cerrada"}</span> · {pedidos ?? 0} pedidos.</p>
+              <p style={{ margin: 0 }}>{campana.nombre}: <span className={`etiqueta ${ropaAbierta ? "etiqueta-abierta" : "etiqueta-cerrada"}`}>{ropaAbierta ? "Abierta" : "Cerrada"}</span> · {pedidos ?? 0} pedidos.</p>
             ) : <p style={{ margin: 0 }}>No hay ninguna campaña.</p>}
             <Link href="/gestion/ropa" style={{ fontWeight: 600 }}>Ver pedido de ropa →</Link>
           </section>

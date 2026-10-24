@@ -635,6 +635,19 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .gs-bloque-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .gs-tabla th { font-family: var(--f-cifras); font-weight: 400; font-size: 12px; color: var(--tinta-tenue); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 0; }
 .gs-tabla td { padding: 14px 6px; border-bottom: 0; border-top: 1px solid var(--linea-suave); vertical-align: middle; }
+/* Partidos del domingo: por debajo de 640 px cada fila es una tarjeta como las de Scouting (equipo, partido, hora · pista, equipación, convocados). */
+@media (max-width: 639.98px) {
+  .gs-tabla, .gs-tabla tbody { display: block; }
+  .gs-tabla thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .gs-tabla tr { display: flex; flex-direction: column; gap: 6px; padding: 16px; margin-bottom: 12px; border-radius: 12px; background: var(--panel-3); border: 1px solid var(--borde-fuerte); }
+  .gs-tabla tr:last-child { margin-bottom: 0; }
+  .gs-tabla td { display: block; padding: 0; border-top: 0; }
+  .gs-tabla td:first-child { margin-bottom: 2px; }
+  .gs-tabla td:nth-child(2) { font-size: 18px; }
+  .gs-tabla td:nth-child(3) { font-size: 14px; color: var(--tinta-suave); }
+  .gs-tabla td:nth-child(n+4) { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
+  .gs-tabla td:nth-child(n+4)::before { content: attr(data-label); flex: none; min-width: 92px; font-family: var(--f-cifras); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-tenue); }
+}
 .gs-scouting { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px; }
 .gs-scouting a { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 12px; background: var(--panel-3); border: 1px solid var(--borde-fuerte); color: var(--tinta); text-decoration: none; }
 .gs-scouting a:hover { color: var(--tinta); outline: 2px solid var(--c-amarillo); }

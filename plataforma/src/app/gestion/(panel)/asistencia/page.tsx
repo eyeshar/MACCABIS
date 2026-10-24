@@ -8,12 +8,13 @@ import type { Motivo } from "@/lib/eventos/dominio";
 export const metadata = { title: "Asistencia y motivos · Gestión Maccabis" };
 
 // Resumen de la temporada por jugador: entrenos y partidos asistidos / total / % y motivos mas frecuentes. Solo gestores
-// (D46, D82): lee asistencia_resumen (copia de asistencia_motivos) y las respuestas «no voy» con motivo.
+// (D46, D82): lee asistencia_motivos, lo mismo que carga `npm run db:asistencia` (D116: una sola fuente; la copia
+// asistencia_resumen del paso 2 ya no se usa), y las respuestas «no voy» con motivo.
 export default async function Asistencia({ searchParams }: { searchParams: Promise<{ t?: string }> }) {
   const { t } = await searchParams;
   const { supabase } = await exigirGestor();
-  const { data: filas, error } = await supabase.from("asistencia_resumen")
-    .select("temporada, person_id, nombre, ambito, fueron, total, con_excusa, sin_excusa, no_convocado, lesion");
+  const { data: filas, error } = await supabase.from("asistencia_motivos")
+    .select("temporada, person_id, nombre, ambito, fueron, total, con_excusa:excusa, sin_excusa, no_convocado:no_conv, lesion");
   if (error) throw new Error(error.message);
   const todas = (filas ?? []) as FilaResumen[];
   const temporadas = [...new Set([...todas.map((f) => f.temporada), TEMPORADA])].sort().reverse();

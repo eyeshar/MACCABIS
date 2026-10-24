@@ -3,9 +3,16 @@
 
   La lanza el Programador de tareas de Windows (lunes y jueves a las 13:00, con la sesión de Iván iniciada),
   después de que la tarea programada de Claude «Maccabis · actas del lunes» (8:34) baje las actas a Descargas.
-  Las hojas de estadística las baja Iván desde la app Afición FBM. Script determinista, sin agentes:
+  Las hojas de estadística las baja Iván desde la app Afición FBM. Script determinista, sin agentes.
 
-    1. main al día: para si no está en main, si hay cambios locales sin commitear o commits sin subir; git pull.
+  Se ejecuta SIEMPRE desde la copia dedicada C:\Users\Iván\Proyectos\Maccabis-rutina-a (un clon aparte, solo
+  para publicar y siempre en main), nunca desde la carpeta de trabajo (D114): si se lanza desde otra carpeta, para.
+
+    0. La copia: para si tiene cambios locales; git checkout main y git pull --ff-only. Si le faltan privado/ o
+       fuentes_fbm/ (fuera de git), los enlaza (unión de directorios) a los de la carpeta del proyecto, para que el
+       estado sea uno solo; si le falta plataforma/.env.local, lo copia de allí. npm ci si faltan los node_modules
+       o si el pull ha cambiado un package-lock.json.
+    1. main al día: para si hay commits sin subir.
     2. npm run jornada -- --no-interactivo: ante cualquier duda para (código distinto de 0); sin ficheros nuevos,
        sale sin hacer nada.
     3. test:regresion, test:liga, test:privacidad y check:copias.
@@ -30,8 +37,12 @@ $OutputEncoding = [Text.Encoding]::UTF8
 
 $Temporada = '2026-27'
 $Repo = Split-Path -Parent $PSScriptRoot
+$CopiaDedicada = 'Maccabis-rutina-a'                              # carpeta desde la que publica (D114)
+$Principal = Join-Path (Split-Path -Parent $Repo) 'Maccabis'      # carpeta del proyecto: privado/, fuentes_fbm/, .env.local
 $Plataforma = Join-Path $Repo 'plataforma'
-$Log = Join-Path $Repo 'privado\registro_rutina_a.log'
+# El registro va siempre al privado/ de la carpeta del proyecto (el de la copia es un enlace a ese): escribirlo en la
+# copia antes de enlazar crearía allí un privado/ normal que impediría el enlace.
+$Log = Join-Path $Principal 'privado\registro_rutina_a.log'
 $Resumen = Join-Path $env:TEMP "rutina_a_resumen_$PID.json"
 $EsperaDespliegue = 240          # segundos que se deja a Vercel desplegar el push antes de verificar producción
 
@@ -65,7 +76,6 @@ function Registrar([string]$Resultado, [string]$Texto, [switch]$ConDetalle) {
   $lineas = @('{0}  {1}{2}  {3}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Resultado, $(if ($Dry) { ' (en seco)' } else { '' }), $Texto)
   if ($ConDetalle -and $script:ultimo.Count) { $lineas += @($script:ultimo | Select-Object -Last 40 | ForEach-Object { "      $_" }) }
   try {
-    New-Item -ItemType Directory -Force -Path (Split-Path $Log) | Out-Null
     Add-Content -LiteralPath $Log -Value $lineas -Encoding UTF8
   } catch { Linea "(no se ha podido escribir en $Log`: $($_.Exception.Message))" }
 }
@@ -92,23 +102,73 @@ function Limpiar {
   foreach ($f in $script:copiados) { if ($f -and (Test-Path -LiteralPath $f)) { Remove-Item -LiteralPath $f -Force } }
 }
 
+<# Lo que la copia dedicada necesita y no está en git: privado/ y fuentes_fbm/ se enlazan (unión de directorios, sin
+   permisos de administrador) a los de la carpeta del proyecto, para que el registro, la asistencia privada y las
+   fuentes ya cargadas sean los mismos en las dos; plataforma/.env.local se copia (un enlace de fichero pediría
+   permisos de administrador). Todo está en .gitignore: nada de esto sube a git. #>
+function PrepararCopia {
+  foreach ($d in 'privado', 'fuentes_fbm') {
+    $aqui = Join-Path $Repo $d
+    if (Test-Path -LiteralPath $aqui) {
+      if ($Repo -ne $Principal -and -not ((Get-Item -LiteralPath $aqui -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        Parar "$d/ de la copia es una carpeta normal, no un enlace a ${Principal}\${d}: se revisa a mano."
+      }
+      continue
+    }
+    $alli = Join-Path $Principal $d
+    if (-not (Test-Path -LiteralPath $alli)) { Parar "falta $d/ en la copia y tampoco está en $Principal." }
+    if ($Dry) { Linea "!  falta $d/: se enlazaría a $alli (en seco no se hace)."; continue }
+    New-Item -ItemType Junction -Path $aqui -Target $alli | Out-Null
+    Linea "== $d/ enlazado a $alli"
+  }
+  $envLocal = Join-Path $Plataforma '.env.local'
+  if (-not (Test-Path -LiteralPath $envLocal)) {
+    $origen = Join-Path $Principal 'plataforma\.env.local'
+    if (-not (Test-Path -LiteralPath $origen)) { Parar "falta plataforma/.env.local en la copia y tampoco está en $Principal." }
+    if ($Dry) { Linea "!  falta plataforma/.env.local: se copiaría de $origen (en seco no se hace)." }
+    else { Copy-Item -LiteralPath $origen -Destination $envLocal; Linea "== plataforma/.env.local copiado de $origen" }
+  }
+}
+
+<# npm ci donde falten los node_modules o donde el pull haya cambiado el package-lock.json. #>
+function Dependencias([string[]]$Cambiados) {
+  foreach ($par in @(@('.', $Repo), @('plataforma', $Plataforma))) {
+    $lock = if ($par[0] -eq '.') { 'package-lock.json' } else { 'plataforma/package-lock.json' }
+    if ((Test-Path -LiteralPath (Join-Path $par[1] 'node_modules')) -and -not ($Cambiados -contains $lock)) { continue }
+    if ($Dry) { Linea "!  haría npm ci en $($par[0]) (en seco no se hace)."; continue }
+    if ((Ejecutar "npm ci ($($par[0]))" $par[1] 'npm ci --no-audit --no-fund') -ne 0) { Parar "falla npm ci en $($par[0])." }
+  }
+}
+
 try {
   Linea "Rutina A $Temporada$(if ($Dry) { ' (en seco)' }) en $Repo"
 
-  # 1. main al día y limpio (en seco solo se avisa)
-  $rama = @(GitOk @('rev-parse', '--abbrev-ref', 'HEAD'))[0]
-  if ($rama -ne 'main') {
-    if ($Dry) { Linea "!  el repositorio está en la rama $rama, no en main (en seco se sigue)." }
-    else { Parar "el repositorio está en la rama $rama, no en main." }
+  # 0. Solo desde la copia dedicada, limpia, en main y al día (D114)
+  if ((Split-Path -Leaf $Repo) -ne $CopiaDedicada) {
+    if ($Dry) { Linea "!  no es la copia dedicada ($CopiaDedicada), sino $Repo (en seco se sigue)." }
+    else { Parar "se ha lanzado desde $Repo; la rutina A solo publica desde la copia dedicada $CopiaDedicada." }
   }
   $sucio = GitOk @('status', '--porcelain')
   if ($sucio.Count) {
     $lista = ($sucio | Select-Object -First 3 | ForEach-Object { $_.Substring(3) }) -join ', '
     if ($Dry) { Linea "!  hay $($sucio.Count) cambio(s) local(es) sin commitear ($lista; en seco se sigue)." }
-    else { Parar "hay $($sucio.Count) cambio(s) local(es) sin commitear ($lista)." }
+    else { Parar "la copia dedicada tiene $($sucio.Count) cambio(s) local(es) ($lista): no se toca nada." }
   }
+  $rama = @(GitOk @('rev-parse', '--abbrev-ref', 'HEAD'))[0]
   if (-not $Dry) {
+    if ($rama -ne 'main' -and (Ejecutar 'git checkout main' $Repo 'git checkout --quiet main') -ne 0) { Parar 'git checkout main ha fallado.' }
+    $antes = @(GitOk @('rev-parse', 'HEAD'))[0]
     if ((Ejecutar 'git pull' $Repo 'git pull --ff-only --quiet') -ne 0) { Parar 'git pull ha fallado.' }
+    $cambiados = @(GitOk @('diff', '--name-only', $antes, 'HEAD'))
+  } else {
+    if ($rama -ne 'main') { Linea "!  la copia está en la rama $rama; de verdad haría git checkout main (en seco se sigue)." }
+    $cambiados = @()
+  }
+  PrepararCopia
+  Dependencias $cambiados
+
+  # 1. Sin commits sin subir
+  if (-not $Dry) {
     $sinSubir = @(GitOk @('rev-list', '--count', 'origin/main..HEAD'))[0]
     if ($sinSubir -ne '0') { Parar "main tiene $sinSubir commit(s) sin subir." }
   }

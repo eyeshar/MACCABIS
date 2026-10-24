@@ -1,67 +1,89 @@
-# Reglas de convocatoria — versión 0
+# Reglas de convocatoria — versión 1
 
-_25/09/2026. Dictadas por Iván. **Sólo documentadas: no hay nada construido.** Se validan con las jornadas 1 y 2 (4/10 y siguiente), que Iván convoca con ayuda del chat de diseño aplicando estas reglas a mano (D40). La convocatoria nueva se estrena en la jornada 3 (D34)._
+_23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con pocos datos, mensajes sin disponibles; D109: el nivel va antes que la rotación y deuda de 2 domingos fuera). Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
 
-> **Privacidad.** Este documento no lleva nombres de jugadores ni niveles. Los datos por jugador (posición, si es base secundario, nivel A/B/C, si puede doblar, si entrena) los guarda Iván en `privado/`, que está fuera de git (`.gitignore`). **Nunca** entran en el repositorio ni se copian a `data/`. Los niveles son confidenciales: sólo acceden Iván, Carlos Barreiro y Eduardo Martín-Ortega (D39).
+> **Privacidad (D39).** Este documento no lleva nombres de jugadores ni niveles. Los datos por jugador (posición, base de reserva, nivel A–E, Dobla / No dobla, reglas personales, sanciones) viven **solo en la zona de gestión** (tabla `jugadores_privado` de Supabase, con RLS: solo los 3 gestores) y en `privado/` (fuera de git) como copia de Iván. **Nunca** en JSON públicos, mensajes de WhatsApp, avisos ni páginas de jugador. «Solo entreno» y las fichas siguen en la plantilla (`jugadores`).
 
-> **Actualizado el 26/09/2026** (bloque "Plataforma v0"): tamaño de la convocatoria, quién solo entrena, bases, interiores y exteriores, suelo por equipo y doblaje. El motor se construye por fases (D48): en la J3 solo estas restricciones duras; nivel y rotación entre la J4 y la J6.
+## 0. Quién está disponible
+
+- **0.1** Solo están disponibles para un partido quienes responden «voy» a ese partido (la respuesta única del domingo, D103, ya se guarda por partido; en la fase puente, las respuestas importadas de SportEasy). «Duda», «no voy» y «sin responder» no cuentan; Iván puede convocarlos a mano y la pantalla lo avisa.
+- **0.2** Si a un jugador le faltan datos privados (posición o nivel), cuenta como **exterior de nivel C** y sin doblar, con aviso, hasta que se carguen.
 
 ## 1. Límites duros
 
-1. **Máximo 10 por equipo por defecto.** Más de 10 solo si ese fin de semana hay **más de 20 disponibles**, y nunca más de **12** (tope de la ficha de partido).
-2. **Con 20 o más disponibles, los que solo entrenan no van convocados.**
-3. **Suelo por equipo: 7 jugadores. Ideal: 10.**
-4. **Doblaje (D33):** un jugador solo juega con el MdA y el MdL el mismo domingo si **los horarios no se solapan** y **puede doblar** (dato privado). Qué margen cuenta como "no solapar" sigue por fijar (pregunta 7).
-5. **Hay jugadores con ficha en un solo equipo** (en 26/27, dos solo tienen ficha del MdA). Solo pueden ir convocados con ese equipo.
-6. **Sancionados (D51):** un jugador marcado "sancionado hasta la jornada X" no se convoca.
+- **1.1 Máximo 10 por equipo.** Más de 10 solo si ese domingo hay **más de 20 disponibles**: entonces el máximo es el reparto de los disponibles entre los partidos, con **tope de 12** (ficha de partido).
+- **1.2 Con 20 o más disponibles, los «solo entreno» no van.** Por debajo de 20, un «solo entreno» entra solo para cubrir un hueco: va el último en el orden de prioridad (4.1) y es el primero en salir por el tope.
+- **1.3 Nunca menos de 7 por equipo.** Ideal: 10.
+- **1.4 Doblar (D33, pregunta 7):** se puede doblar siempre que los dos partidos **no empiecen a la misma hora exacta** (se juega en el mismo pabellón). A la misma hora (p. ej. la J13), **nadie dobla**: la pantalla lo bloquea y la web también lo rechaza al guardar.
+- **1.5** Quien tiene ficha de un solo equipo solo va con ese equipo.
+- **1.6 Sancionados (D51):** «sancionado hasta la jornada X» (lo pone un gestor en los datos del jugador) no se convoca hasta esa jornada incluida.
 
-## 2. Posiciones (en cada equipo convocado)
+## 2. Posiciones (en cada equipo)
 
-- **Bases, por orden de preferencia:** 2 bases puros > 1 puro + 1 de reserva > 2 de reserva. Lo último es **excepcional y lleva aviso** al gestor.
-  - "Base de reserva" = exterior capaz de subir el balón (el antiguo "base secundario"). Si hace de base, cuenta como base, no como exterior.
-- **Interiores** (pívots y ala-pívots, intercambiables): **mínimo 3, ideal 4**.
-- **Exteriores** (escoltas y aleros, intercambiables): **ideal 4**; si faltan, **los bases cuentan como exteriores**.
-- Fuera de esa excepción, los bases no cambian de posición (regla v0).
+- **2.1 Bases:** ideal **2 puros**. Los **bases de reserva** (exteriores que suben el balón) **cuentan como base** cuando faltan: «1 + 1 res.» está en el mínimo (amarillo). Dos de reserva es el último recurso (5.4).
+- **2.2 Exteriores** (escoltas y aleros): ideal **4**, mínimo 3. Si faltan, **los bases que sobran cuentan como exteriores**.
+- **2.3 Interiores** (pívots y ala-pívots): ideal **4**, mínimo **3**, **evitar 5**.
+- En la pantalla, cada línea sale en **verde** si cumple el ideal, en **amarillo** si está en el mínimo y en **rojo** si está por debajo.
 
-## Datos por jugador
+## 3. Nivel y dificultad del rival
 
-Posición, si es base de reserva, nivel, si puede doblar y si entrena están en **`privado/`** y **nunca entran en git** (D39). En la plataforma vivirán solo en la zona de gestión y nunca se enseñan a los jugadores (D46).
+- **Niveles de jugador: A, B, C, D y E** (A el más alto). Confidenciales (D39). No hay números fijos de cuántos de cada nivel.
+- **Dificultad del rival: alta / media / baja.** La web la **propone** con la clasificación y la diferencia de puntos de la liga en curso (`data/liga_2026-27.json`) y **Iván la corrige** en la tarjeta del partido. Regla de la propuesta: si el rival ha jugado **menos de 3 partidos**, **media** con el porqué «pocos datos (N partidos)» (D108). Con 3 o más: **alta** si el rival está en el tercio de arriba con diferencia positiva o hace +15 o más por partido; **baja** si está en el tercio de abajo con diferencia negativa o hace −15 o menos por partido; **media** el resto y sin partidos jugados. El porqué sale al lado («10.º del G1 tras la J2 (-5 por partido)»).
+- **3.1** El partido **más difícil** del domingo lleva **más nivel medio**. El motor reparte cada línea alternando, y el equipo del partido más difícil elige primero en cada ronda.
+- **3.2** Si los dos rivales tienen la **misma dificultad**, se **equilibran los equipos por líneas** (bases, exteriores, interiores), no solo en el total (pregunta 1, D98): el reparto de cada línea va en serpiente.
 
-## 3. Niveles y dificultad
+## 4. Prioridad y rotación
 
-- **Niveles de jugador:** A (titular) / B / C. Confidenciales (ver arriba).
-- **Dificultad del rival:** alta / media / baja. La plataforma la **propone** a partir del histórico de rivales (pestaña Rivales 26/27: trayectoria, balance en pista y cara a cara) e **Iván la corrige**.
-- **Más jugadores A en el partido más difícil** del domingo.
+- **Prioridad entre partidos cuando no se llega a todo (pregunta 2):** primero el **partido más difícil**; si están igualados, el **MdA**.
+- **4.1 Orden para ir convocado (D109: el nivel va antes que la rotación):** (1) **cubrir las líneas** (bases, exteriores, interiores) según las secciones 2 y 5; (2) **más nivel total**; (3) a igual nivel, **menos partidos convocado en la temporada**, sumando MdA y MdL (de las hojas de estadística); (4) a igualdad, **quien más ha entrenado en las últimas 4 semanas** (pregunta 4); (5) los «solo entreno», siempre al final. Cuando hay que dejar a alguien fuera por el tope, sale primero quien está en una línea que pasa del ideal y, dentro de ella, el de menos prioridad.
+- **4.2 Deuda de rotación (D109):** si un jugador estuvo disponible y no fue convocado en los **2 últimos domingos en que estuvo disponible**, entra **por delante del nivel** (criterio 2 de la 4.1; las líneas siguen primero y los «solo entreno» siguen al final), con el aviso «entra por rotación (2 domingos fuera)». Los domingos en que no estuvo disponible no cuentan ni cortan la cuenta; la cuenta se para en el último domingo en que fue convocado. «Disponible» = dijo «voy» a algún partido de liga de ese domingo con un equipo del que tiene ficha; «convocado» = sale en las hojas de estadística de ese domingo o en su convocatoria aprobada.
+- Entrenos de las últimas 4 semanas: las respuestas «voy» a los entrenos de los 28 días anteriores al domingo (de SportEasy en la fase puente; de la web cuando se encienda el interruptor). No es todavía el pase de lista real.
 
-## 4. Rotación
+## 5. Si no se llega a los mínimos: orden de sacrificio (pregunta 5)
 
-- **Prioridad a quien menos ha jugado.**
-- **Quien sólo entrena** entra sólo para **cubrir un hueco de posición**.
-- **Doblajes sólo para cubrir mínimos**, empezando por **quien menos ha doblado**, y sólo entre quienes **pueden doblar**.
+**Solo se dobla para cubrir mínimos, nunca para llegar al ideal** (D108). Los mínimos de cada equipo: 7 jugadores (1.3), 2 bases contando los de reserva con al menos 1 puro (2.1) y **3 interiores** (2.3). Con 6 interiores entre los dos equipos la propuesta es **3 y 3**, sin doblar; las excepciones las hace Iván a mano. Si no se llega a un mínimo:
 
-## 5. Quién decide
+- **5.1** Dobla un **«Dobla»** (primero quien menos ha doblado esta temporada).
+- **5.2** Si no hay, dobla un **«No dobla»**, con aviso.
+- **5.3** Con 3 interiores se juega: no se dobla para tener el cuarto.
+- **5.4** Y por último, **dos bases de reserva**, con aviso.
+- **Nunca menos de 7 por equipo** (si no se llega ni doblando, error en rojo para que Iván decida).
+- **«Dobla / No dobla» es una recomendación, no una regla:** Iván hace excepciones por partido (por eso el motor puede proponer a un «No dobla», con aviso, y la pantalla deja doblar a cualquiera, salvo a la misma hora).
 
-- **Iván decide siempre.** La plataforma propone y él ajusta.
-- **Cada ajuste se anota con su motivo**, para afinar las reglas con el tiempo (qué regla se quedó corta, qué faltaba).
+## 5 bis. Sin disponibles
 
-## 6. Preguntas abiertas (las responde Iván)
+- Mientras nadie haya dicho «voy» y no haya nadie convocado a mano, cada equipo muestra **un solo mensaje**: «Todavía no hay disponibles para este domingo», en vez de un aviso por cada regla. Los avisos por regla salen en cuanto hay propuesta o convocatoria (D108).
+- En la fase puente las respuestas llegan de SportEasy con **Importar → Respuestas**: la pantalla dice cuándo fue la última importación y si ese domingo aún no tiene ninguna, con el enlace a Importar.
 
-1. ¿Cuántos jugadores A según la dificultad del rival (alta / media / baja)?
-2. ¿Qué prioridad hay entre el MdA (G1) y el MdL (G2) cuando no se llega a todo?
-3. ¿Qué significa exactamente "quien no ha jugado esa semana"? (¿partidos del domingo anterior?, ¿ninguno de los dos equipos?)
-4. A igual nivel, ¿quien no entrena va por detrás de quien entrena?
-5. Cuando no se llega a los mínimos, ¿qué se sacrifica primero? (¿el máximo de doblajes, un mínimo de posición, el reparto de niveles?)
-6. ~~(De la regla 2) ¿Se confirma la interpretación de los bases secundarios?~~ **Resuelta (26/09/2026):** orden de preferencia de bases en el apartado 2.
-7. (De D33) ¿Cuántos minutos de margen hacen falta entre los dos partidos de un mismo domingo para poder doblar?
+## 6. Reglas personales (privadas, las configura Iván en «Datos de los jugadores»)
 
-## Qué datos harán falta para automatizarlo (cuando toque)
+- **6.1 Fijo a un equipo:** solo va con ese equipo. Así se marca también al **entrenador-jugador**, que va fijo a su equipo.
+- **6.2 Va al equipo al que le falte un jugador** (comodín): se coloca el último, en el equipo con menos jugadores.
+- **6.3** Iván puede **cambiar la posición de un jugador solo para un partido** (cuenta en las líneas de ese partido).
+
+## 7. Casos especiales
+
+- **Domingo con un solo equipo** (p. ej. la **J4, 08/11/2026**: el MdA descansa y el MdL juega a las 11:30): una sola tarjeta; van los disponibles con ficha de ese equipo, hasta el máximo.
+- **Misma hora** (p. ej. la **J13**): nadie dobla (1.4); el motor reparte a los disponibles entre los dos equipos.
+
+## 8. Quién decide y cómo se cambia
+
+- **Iván decide siempre.** La web propone y él ajusta. La **modificación manual siempre es posible**: pasar al otro equipo, doblar, quitar, añadir (a cualquiera de la plantilla, aunque no haya respondido o haya dicho «no voy», con aviso) o cambiar la posición para ese partido.
+- **Cada cambio guarda su motivo** (Rotación, Rival, Lesión, Equilibrar, Lo ha pedido, Otro, más una nota opcional), quién y cuándo, para afinar las reglas con el tiempo.
+- Tras cada cambio se recalculan el recuento y los avisos; la **propuesta solo se rehace** con «Recalcular propuesta».
+- **Encuentro: 20 minutos antes** de la hora del partido (D98).
+- Los niveles **nunca** salen en el mensaje de WhatsApp, ni en los avisos, ni en Mi zona.
+
+## Datos que usa
 
 | Dato | De dónde | ¿Público? |
 |---|---|---|
-| Calendario con hora y pista | Datos abiertos 211549 o calendario manual (`data/calendario_2026-27.json`) | Sí |
-| Fichas de cada jugador (MdA, MdL o ambas) | Hojas de inscripción (`data/fichas_inscripcion.json`, `plantilla` de `season_2026-27.json`) | Sí |
-| Partidos jugados y doblajes por jugador | Estadísticas (`data/season_2026-27.json`) | Sí |
-| Disponibilidad de la semana | La plataforma, desde la J2 ("Mi semana", D44) | Los jugadores ven quién va, no va o no ha contestado (D46) |
-| Asistencia a entrenamientos | SportEasy (export del balance) | Ya se publica agregada |
-| Posición, base secundario, nivel, puede doblar, entrena | `privado/` (Iván) | **No. Nunca en git.** |
-| Dificultad de cada rival | Propuesta desde Rivales 26/27, corregida por Iván | Por decidir (la propuesta sí; la corrección, de gestión) |
+| Calendario (hora, pista, local/visitante) | Tabla de eventos (D95) | Sí |
+| Fichas y «solo entreno» | `jugadores` (Gestión → Jugadores) | Fichas sí |
+| Disponibles del domingo | `respuestas` por partido (de la respuesta única del domingo, D103, o importadas de SportEasy) | Los jugadores ven quién va (D46) |
+| Partidos convocado y doblajes | Hojas de estadística (`season_2026-27.json`) | Sí |
+| Domingos disponible y fuera (4.2) | Respuestas «voy» a los partidos ya jugados, hojas de estadística y convocatorias aprobadas | Solo gestores |
+| Entrenos de las últimas 4 semanas | Respuestas «voy» a los entrenos | Solo gestores |
+| Dificultad | Propuesta desde `data/liga_2026-27.json`, corregida por Iván (`convocatorias.dificultad`) | Solo gestores |
+| Posición, nivel (el de Iván), Dobla, ataque usado, defensa, total, minutos y pts/min | Hoja de Iván `privado/jugadores_2026-27.xlsx` (pestañas «Jugadores» y «Parametros»), cargada con `npm run db:privado` en `jugadores_privado` (solo gestores). El ataque es el de la columna **«Ataque (usar)»** (con 300 minutos o más sale de los puntos por minuto; si no, la letra de Iván); el **nivel que usa el motor es «Nivel (tuyo)»**; el total es solo de referencia | **No. Nunca.** |
+| Base de reserva, reglas personales, sanción | Gestión → Convocatoria → Datos de los jugadores (`jugadores_privado`) | **No. Nunca.** |

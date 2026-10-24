@@ -56,6 +56,13 @@ export default async function InicioGestion() {
   const jornada = delDomingo[0]?.jornada;
   const mismaHora = delDomingo.length === 2 && delDomingo[0].inicio && delDomingo[0].inicio === delDomingo[1].inicio;
   const conAviso = delDomingo.filter((e) => e.aviso?.hay);
+  // Convocatoria del domingo (D107): cuántos van por equipo y su estado (sin la migración aplicada, «Pendiente»).
+  const { data: convDomingo } = fecha ? await supabase.from("convocatorias").select("estado, origen, equipos").eq("fecha", fecha).maybeSingle() : { data: null };
+  const convocados = (e: Evento) => {
+    const c = convDomingo as { estado: string; origen: string | null; equipos: Record<string, unknown[]> } | null;
+    if (!c?.origen) return "Pendiente";
+    return `${(c.equipos[NOMBRE_EQUIPO[e.equipo!]] ?? []).length} · ${c.estado === "aprobada" ? "aprobada" : "borrador"}`;
+  };
   const resultados = ultimosResultados(hoy);
   const sinActa = resultados.filter((r) => r.pendienteActa);
   const entreno = eventosEntrenos(fuente).find((e) => e.fecha >= hoy);
@@ -147,7 +154,7 @@ export default async function InicioGestion() {
                           <td style={{ fontWeight: 600 }}>{cruce(e)}</td>
                           <td className="cifra" style={{ whiteSpace: "nowrap" }}>{e.inicio ?? "¿?"} · P{e.partido?.campo ?? "?"}</td>
                           <td>{chip ? <span className={`pastilla pastilla-${chip.tipo}`}>{chip.texto}</span> : <span className="pastilla">Negra</span>}</td>
-                          <td className="tenue">Pendiente</td>
+                          <td><Link href={`/gestion/convocatoria?fecha=${e.fecha}`} className={convDomingo ? undefined : "tenue"}>{convocados(e)}</Link></td>
                         </tr>
                       );
                     })}

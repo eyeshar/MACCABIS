@@ -73,3 +73,13 @@ export async function cargarQuienVa(eventoIds: string[]): Promise<Map<string, Qu
   for (const q of m.values()) for (const l of [q.va, q.duda, q.no]) l.sort((a, b) => a.localeCompare(b, "es"));
   return m;
 }
+
+/** Sus convocatorias APROBADAS de hoy en adelante (D107): fecha y en qué equipos está él (vacío si no está). Nada más:
+ *  ni niveles, ni posiciones, ni a quién más se convoca. Sin la migración aplicada, lista vacía. */
+export const cargarMiConvocatoria = cache(async (): Promise<{ fecha: string; equipos: ("MdA" | "MdL")[] }[]> => {
+  if (!configurado()) return [];
+  const sb = await clienteSesion();
+  const { data, error } = await sb.rpc("mi_convocatoria");
+  if (error) return [];
+  return (data ?? []) as { fecha: string; equipos: ("MdA" | "MdL")[] }[];
+});

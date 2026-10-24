@@ -16,7 +16,8 @@ import { diaMes, diaSemanaCorto, hoyMadrid } from "@/lib/dias";
 import { NOMBRE_EQUIPO, RUTA_CUENTA } from "@/lib/web";
 
 import { cargarFuente } from "@/lib/eventos/fuente";
-import { cargarMisAusencias, cargarMisEventos, cargarMisRespuestas, respuestasWebEncendido } from "@/lib/respuestas/jugador";
+import { cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisRespuestas, respuestasWebEncendido } from "@/lib/respuestas/jugador";
+import { restar20 } from "@/lib/respuestas/dominio";
 import { estadoDe, unidades } from "@/lib/respuestas/dominio";
 import BandaAvisos from "@/components/avisos/BandaAvisos";
 import Agenda from "./Agenda";
@@ -90,9 +91,13 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
   const conAviso = delDomingo.filter((e) => e.aviso?.hay);
 
   // Agenda (D99): sus eventos (v_mis_eventos), sus respuestas y ausencias; y lo ultimo que jugo.
-  const [encendido, misEventos, misRespuestas, misAusencias] = await Promise.all([
+  const [encendido, misEventos, misRespuestas, misAusencias, misConvocatorias] = await Promise.all([
     respuestasWebEncendido(), cargarMisEventos(hoy).catch(() => []), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
+    cargarMiConvocatoria().catch(() => []),
   ]);
+  // Convocatoria aprobada de ese domingo (D107): solo «Convocado» con su equipo, la hora y el encuentro.
+  const miConvocatoria = fechaDomingo ? misConvocatorias.find((c) => c.fecha === fechaDomingo) ?? null : null;
+  const convocadoEn = delDomingo.filter((e) => miConvocatoria?.equipos.includes(NOMBRE_EQUIPO[e.equipo!] as "MdA" | "MdL"));
   const unidadDomingo = fechaDomingo ? unidades(misEventos).find((u) => u.tipo === "domingo" && u.fecha === fechaDomingo) : undefined;
   const estadoDomingo = unidadDomingo ? estadoDe(unidadDomingo, misRespuestas, misAusencias) : null;
   const temporada = temporadaDe(jugador.person_id);
@@ -177,8 +182,11 @@ export default async function MiZona({ searchParams }: { searchParams: Promise<{
               <article className="mz-lista mz-domingo">
                 <div className="mz-sec-cab">
                   <span className="cifra pequeno suave">J{delDomingo[0].jornada} · {[...new Set(delDomingo.map((e) => e.inicio ?? "hora por confirmar"))].join(" y ")}</span>
-                  <span className="pastilla pastilla-pendiente">Convocatoria: pendiente</span>
+                  {convocadoEn.length ? <span className="pastilla pastilla-ok" data-testid="mz-convocado">Convocado · {convocadoEn.map((e) => NOMBRE_EQUIPO[e.equipo!]).join(" y ")}</span>
+                    : miConvocatoria ? <span className="pastilla" data-testid="mz-convocatoria-hecha">Convocatoria publicada</span>
+                    : <span className="pastilla pastilla-pendiente">Convocatoria: pendiente</span>}
                 </div>
+                {convocadoEn.map((e) => <p key={e.id} className="mz-convocado" style={{ margin: 0 }} data-testid="mz-convocado-detalle"><b>Convocado con el {NOMBRE_EQUIPO[e.equipo!]}</b>: {e.inicio ?? "hora por confirmar"}{e.inicio ? ` · encuentro ${restar20(e.inicio)}` : ""}</p>)}
                 {mismaHora && <p className="suave" style={{ margin: 0 }}>MdA y MdL juegan a la misma hora: esta jornada no se puede doblar.</p>}
                 {descansan.length > 0 && <p className="suave" style={{ margin: 0 }}>{descansan.map((e) => NOMBRE_EQUIPO[e]).join(" y ")} descansa esta jornada.</p>}
                 <div className="mz-partidos">

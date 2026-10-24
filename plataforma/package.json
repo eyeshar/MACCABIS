@@ -49,7 +49,12 @@
     "pruebas:respuestas-pantallas": "node pruebas/respuestas_pantallas.mjs",
     "pruebas:respuestas-real": "node pruebas/rls_respuestas_real.mjs",
     "avisos:claves": "node scripts/avisos_claves.mjs",
-    "avisos:programar": "node scripts/programar_tarea_avisos.mjs"
+    "avisos:programar": "node scripts/programar_tarea_avisos.mjs",
+    "pruebas:convocatoria-motor": "node pruebas/convocatoria_motor.mjs",
+    "pruebas:convocatoria-rls": "node pruebas/rls_convocatoria.mjs",
+    "pruebas:convocatoria-pantallas": "node pruebas/convocatoria_pantallas.mjs",
+    "pruebas:convocatoria-real": "node pruebas/rls_convocatoria_real.mjs",
+    "db:privado": "node scripts/cargar_privado.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

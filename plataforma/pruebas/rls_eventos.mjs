@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { cargarEventos, diccionarioInicial } from '../scripts/cargar_eventos.mjs';
 import { cuadrar } from '../scripts/cuadre_eventos.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -95,8 +95,10 @@ try {
   const lineas = [];
   const q = await cuadrar(sql, { log: (l) => lineas.push(l) });
   ok(q.fallos === 0 && q.partidos === 40 && q.descansos === 4 && q.entrenos === 27, `el cuadre sale OK (${q.comprobaciones} comprobaciones)`, lineas.filter((l) => l.includes('FALLO')).slice(0, 3).join(' | '));
+  // Cuantos nombres hay en el diccionario sale del propio fichero (crece cuando se resuelven nombres nuevos, D106).
+  const NOMBRES = diccionarioInicial().length;
   const [{ n: nDic }] = await sql`select count(*)::int n from public.diccionario_sporteasy`;
-  ok(nDic === 32, 'diccionario de SportEasy: 32 nombres', String(nDic));
+  ok(nDic === NOMBRES, `diccionario de SportEasy: ${NOMBRES} nombres (los de nombres_sporteasy.json)`, String(nDic));
   const [{ n: nPistas }] = await sql`select count(*)::int n from public.pistas`;
   ok(nPistas === 3, 'catálogo de pistas: 3');
   const pst = Object.fromEntries((await sql`select slug, estado, uso, num_pistas, direccion, es_de_serie from public.pistas`).map((p) => [p.slug, p]));
@@ -142,7 +144,7 @@ try {
     await api(`/importaciones?id=not.is.null`, { metodo: 'DELETE', token });
     void quien;
   }
-  ok((await sql`select count(*)::int n from public.eventos`)[0].n === 68 && (await sql`select count(*)::int n from public.pistas`)[0].n === 3 && (await sql`select count(*)::int n from public.diccionario_sporteasy`)[0].n === 32, 'ni el gestor puede BORRAR eventos, pistas ni diccionario por la API');
+  ok((await sql`select count(*)::int n from public.eventos`)[0].n === 68 && (await sql`select count(*)::int n from public.pistas`)[0].n === 3 && (await sql`select count(*)::int n from public.diccionario_sporteasy`)[0].n === NOMBRES, 'ni el gestor puede BORRAR eventos, pistas ni diccionario por la API');
   for (const t of TABLAS_PRIVADAS) {
     const [{ d, ins_anon }] = await sql`select has_table_privilege('authenticated', ${'public.' + t}, 'delete') d, has_table_privilege('anon', ${'public.' + t}, 'select') ins_anon`;
     ok(!d && !ins_anon, `${t}: authenticated sin DELETE y anon sin SELECT`);

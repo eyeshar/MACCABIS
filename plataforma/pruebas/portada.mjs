@@ -207,7 +207,10 @@ try {
     ok((await avA.count()) === 1 && (await avA.getAttribute('data-tipo')) === 'cambian_ellos' && (await avA.textContent()).includes('Coinciden colores: cambia Litros de Mahou'), 'J2 MdA: aviso CAMBIAN ELLOS');
     ok((await mdl.locator('.eq-aviso').count()) === 0 && (await mdl.locator('[data-tipo="sin_choque"]').count()) === 1, 'J2 MdL (Quinto Tiempo): sin choque de color');
     const banda = await p.locator('section[aria-label="Últimos resultados"]').textContent();
-    ok(banda.includes('14 – 62') && banda.includes('59 – 38') && banda.includes('Pendiente de acta oficial'), 'ultimos resultados de la J1 (14-62 y 59-38), pendientes de acta');
+    // Si la J1 sigue pendiente de acta o ya la tiene lo dicen los datos (desde D106, con acta).
+    const j1 = JSON.parse(fs.readFileSync(path.join(RAIZ, '..', 'data', 'season_2026-27.json'), 'utf8')).partidos.filter((x) => x.fecha === '2026-10-04');
+    const pendJ1 = j1.some((x) => x.pendiente_acta);
+    ok(banda.includes('14 – 62') && banda.includes('59 – 38') && banda.includes('Pendiente de acta oficial') === pendJ1, `ultimos resultados de la J1 (14-62 y 59-38), ${pendJ1 ? 'pendientes de acta' : 'ya con acta (sin «Pendiente de acta»)'}`);
     ok((await p.locator('.w-clas-grupo[data-grupo="G1"] tr.w-nuestro-MDA').textContent()).includes('MdA') && (await p.locator('.w-clas-grupo[data-grupo="G2"] tr.w-nuestro-MDL').count()) === 1, 'clasificacion G1 y G2 con MdA y MdL resaltados');
     ok((await p.locator('.w-clas-grupo[data-grupo="G1"] tbody tr').count()) <= 7, 'clasificacion: top 5 (+ nuestro equipo si va mas abajo)');
     ok((await p.locator('[data-lider]').count()) === 4 && (await p.locator('[data-lider="puntos"]').textContent()).includes('Jon Esteban'), 'lideres Maccabis: 4 tarjetas, puntos = Jon Esteban');

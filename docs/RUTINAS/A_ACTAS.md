@@ -1,6 +1,13 @@
-# RUTINA A — Actas y estadísticas (procedimiento, 02/10/2026; reparto actas/hojas del 23/10/2026, D106)
+# RUTINA A — Actas y estadísticas (procedimiento, 02/10/2026; reparto actas/hojas del 23/10/2026, D106; publicación automática del 24/10/2026, D66)
 
-**Cuándo:** lunes por la mañana (tras la jornada del domingo).
+**Cuándo:** lunes (tras la jornada del domingo), con una segunda pasada el jueves para lo que llegue tarde.
+
+**Reparto desde el 24/10/2026 (quién hace qué):**
+| Quién | Qué | Cuándo |
+|---|---|---|
+| **Claude** (tarea programada «Maccabis · actas del lunes», en el Chrome de Iván) | Baja de gesdeportiva.fbm.es las **actas** que falten a Descargas | Lunes y jueves, 8:34 |
+| **Iván** | Baja las **hojas de estadística** (las nuestras y las de liga) de la app **Afición FBM** del móvil y las deja en Descargas del PC | Domingo noche o lunes por la mañana |
+| **`scripts/rutina_a_publicar.ps1`** (Programador de tareas de Windows, sin agentes) | Procesa (`npm run jornada -- --no-interactivo`) y, **si todo cuadra, publica solo** (D66); si no, para sin publicar nada | Lunes y jueves, 13:00 |
 
 **Reparto de fuentes (D106, 23/10/2026):**
 | Qué | De dónde | Cómo |
@@ -17,6 +24,27 @@ Todo a **Descargas**, sin renombrar. Si en Descargas quedan hojas de jornadas an
 2. Claude: Competiciones → **Resultados y actas** → jornada → **acta** de cada partido de MdA y MdL (`Acta-Partido-<nº>.pdf`, a Descargas).
 3. Si la web pide la clave o un «no soy un robot», Claude para y se lo dice a Iván.
 4. Primera ejecución: 23/10/2026 (4 actas de J1 y J2, las 4 cuadran).
+5. **Desde el 24/10/2026 lo hace una tarea programada de Claude**, «Maccabis · actas del lunes» (lunes y jueves a las 8:34): baja solo las actas que falten en Descargas. Necesita el Chrome de Iván abierto con la sesión iniciada.
+
+## Publicación automática: `scripts/rutina_a_publicar.ps1` (D66, 24/10/2026)
+
+Tarea **«\Maccabis\Rutina A - publicar jornada»** del Programador de tareas de Windows: lunes y jueves a las 13:00, solo con la sesión de Iván iniciada; si el PC estaba apagado a esa hora, se ejecuta al encenderlo. Ejecuta `scripts\rutina_a_publicar.ps1` de la carpeta del proyecto (`C:\Users\Iván\Proyectos\Maccabis`). Es un script determinista: no usa agentes.
+
+1. **main al día:** para si la carpeta no está en `main`, si hay cambios locales sin commitear o commits sin subir; después `git pull --ff-only`.
+2. **`npm run jornada -- --no-interactivo`:** ante cualquier duda **para con código distinto de 0** en lugar de seguir: un nombre que no está en `personas.json`, una hoja que no es de la jornada, un acta que no cuadra con su hoja, un fichero que no se puede leer, una hoja de liga sin jornada, un partido nuestro **sin hoja** (aún no bajada de Afición FBM) o **sin acta** (la excepción D71 no se aplica sola). Antes de escribir genera en seco; si para, deshace las copias que hizo en `fuentes_fbm/`, para que la siguiente pasada vuelva a ver esos ficheros como nuevos. **Sin ficheros nuevos, sale sin hacer nada** («Nada nuevo»).
+3. **Pruebas:** `test:regresion`, `test:liga`, `test:privacidad` y `check:copias`.
+4. **Publica:** commit de `data/` y `plataforma/src/data/` con el mensaje «datos(2026-27): jornada N (automático)» y push a `main`.
+5. **En `plataforma/`:** `npm run db:liga`, `npm run db:asistencia` y, tras 4 minutos para que Vercel despliegue (y un segundo intento si falla), `node pruebas/verificar_produccion.mjs`. Lo ya publicado no se deshace: un fallo aquí se avisa.
+
+**Si falla antes del push no publica nada** y deja el repositorio como estaba (`git reset --hard` al commit de partida y limpieza de `data/` y `plataforma/src/data/`).
+
+**Registro:** cada ejecución añade fecha, resultado (`PUBLICADA`, `NADA NUEVO`, `PARADA`, `PUBLICADA CON FALLOS`…) y resumen a `privado/registro_rutina_a.log` (fuera de git); si para, también las últimas líneas del paso que falló.
+
+**Aviso:** notificación de Windows al terminar: «Jornada N publicada: MdA x–y Rival · Rival x–y MdL» (el local primero) o «Rutina A parada: <motivo>». Sin ficheros nuevos no avisa (queda en el registro).
+
+**A mano:** `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\rutina_a_publicar.ps1` (de verdad) o con `-Dry` (en seco: no hace pull, no copia ni escribe nada; la rama y los cambios locales solo se avisan). Probado en seco el 24/10/2026 sobre lo ya cargado: «Nada nuevo».
+
+**Si para:** mirar el motivo en el aviso o en el registro, arreglar (bajar la hoja que falta, confirmar un nombre nuevo en `personas.json`…) y relanzar a mano o esperar a la pasada del jueves. Las dudas las resuelve una persona: el script nunca adivina.
 
 ## Hojas: app Afición FBM por Enlace Móvil (D70)
 

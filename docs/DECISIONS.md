@@ -645,3 +645,7 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 3. **Datos:** los bases de reserva se marcan en «Datos de los jugadores» (Supabase, nunca en el repo); la regla «fijo» del entrenador-jugador queda sin asignar hasta que Iván lo diga.
 
 **Cómo se aplica:** `compararPrioridad` y `domingosFueraDe` en `plataforma/src/lib/convocatoria/motor.ts`; el historial (respuestas a partidos ya jugados, hojas de estadística y convocatorias aprobadas) lo lee `datos.ts`. Pruebas: `pruebas:convocatoria-motor` (dos A con un partido más no se quedan fuera; un E con 2 domingos fuera entra con su aviso; con 22 disponibles y 12 plazas se respeta el orden por nivel en cada línea) y `pruebas:convocatoria-pantallas` (el aviso en la pantalla).
+
+## D113 — J3: «No seleccionado» cuenta como «va» si el jugador estaba en el otro partido del domingo (Iván, 24/10/2026) — DECISIÓN PUNTUAL
+**Decisión de Iván:** en la primera importación real de respuestas de SportEasy (24/10/2026: J3, entreno del 28/10 y J4; 92 respuestas, todas válidas), la J3 ya estaba convocada a mano en SportEasy. Para esa jornada, un jugador que sale en «No seleccionados» de un partido cuenta como **«va»** si estaba presente en el otro partido del domingo. Es **puntual, solo para la J3**.
+**Cómo se aplica desde entonces:** la tarea programada de Claude «Maccabis · respuestas de SportEasy» no importa un partido que ya tenga «No seleccionados» en SportEasy (su convocatoria ya está hecha); ver `docs/RUTINAS/C_CONVOCATORIA.md`.

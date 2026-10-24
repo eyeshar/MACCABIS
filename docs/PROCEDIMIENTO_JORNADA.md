@@ -7,6 +7,14 @@
 
 _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se procesa el lunes 5/10._
 
+## Reparto desde el 24/10/2026: se publica solo si todo cuadra (D66)
+
+- **Actas:** las baja Claude con la tarea programada «Maccabis · actas del lunes» (lunes y jueves, 8:34) desde gesdeportiva.fbm.es, en tu Chrome con la sesión iniciada.
+- **Hojas de estadística:** las bajas tú desde la app **Afición FBM** del móvil (las nuestras y las de liga) y las dejas en Descargas del PC, sin renombrar.
+- **Procesar y publicar:** `scripts/rutina_a_publicar.ps1`, desde el Programador de tareas de Windows (lunes y jueves, 13:00): `npm run jornada -- --no-interactivo`, pruebas, commit y push, `db:liga`, `db:asistencia` y `verificar_produccion`. Ante cualquier duda (nombre desconocido, hoja que no es de la jornada, acta que no cuadra, falta una hoja o un acta) **para sin publicar nada** y te avisa con una notificación de Windows («Rutina A parada: <motivo>»); si publica, «Jornada N publicada: MdA x–y Rival · Rival x–y MdL». Registro en `privado/registro_rutina_a.log`. Detalle en `docs/RUTINAS/A_ACTAS.md`.
+
+Lo de abajo sigue valiendo para hacerlo a mano (o cuando la rutina para).
+
 ## Lo que haces tú (5 minutos, el lunes)
 
 > **Reparto desde el 23/10/2026 (D106):** las **actas** se bajan de la web **gesdeportiva.fbm.es/clubes** (Competiciones → Resultados y actas; una cuenta ve MdA y MdL): tú inicias sesión en tu Chrome con la clave del gestor de contraseñas y Claude descarga desde ahí (nunca maneja la clave ni el «no soy un robot»). Las **hojas de estadística** (las nuestras y las de toda la liga, D73) siguen saliendo de la **app Afición FBM**, porque la web no las ofrece.
@@ -44,3 +52,5 @@ Si la FBM no ha publicado el acta, `npm run jornada` publica el partido **solo c
 
 La herramienta (`npm run jornada`) está en `main` desde el 26/09/2026 (merge `f69a39f`) y su
 prueba de regresión con toda la 2025/26 da "RESULTADO: OK". Lista para la jornada 1.
+Publicación automática (`scripts/rutina_a_publicar.ps1`, `--no-interactivo`): rama `feat/rutina-a-auto` (24/10/2026),
+pendiente de la revisión de Iván; la tarea del Programador de tareas ya está creada y no hace nada hasta que el script esté en `main`.

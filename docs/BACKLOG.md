@@ -15,7 +15,7 @@
    - [x] Bases de reserva marcados en `/gestion/convocatoria/datos` (24/10/2026, D109).
    - [ ] **Asignar la regla «fijo» del entrenador-jugador, si aplica** (sin asignar hasta que Iván lo diga). Sanciones, si las hay.
    - [ ] **Recalibrar el umbral de anotación mínima (45 puntos esperados) tras la J6** (provisional, pestaña «Parametros» de la hoja privada).
-   - [ ] **Primera importación de respuestas de SportEasy para la J4** (Importar → Respuestas; nunca se ha hecho en real) para que la propuesta use los disponibles de verdad.
+   - [x] **Primera importación de respuestas de SportEasy** (24/10/2026, Claude): J3, entreno del 28/10 y J4, 92 respuestas, todas válidas. J3 con la regla puntual de D113. Desde entonces, tarea programada «Maccabis · respuestas de SportEasy» (lunes a miércoles 9:54; no importa partidos con «No seleccionados»).
    - [x] Rotación frente a nivel (D109): el nivel va antes; deuda de 2 domingos fuera (regla 4.2).
    - [ ] **Crear el entorno de pruebas de Supabase (staging).** Dos bloques seguidos (D94, D108) se han aplicado en real por no tenerlo.
    - [x] `fix/pruebas-datos-fijos` mergeada en `main` (24/10/2026); `feat/convocatoria` rebasada encima, todas las suites en verde.
@@ -23,6 +23,9 @@
    - [ ] Probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp, SportEasy por Claude).
    - [x] **Pruebas antiguas que caducaron con el calendario:** comparadas de verdad en `main` y en la rama (mismos fallos); arregladas en `fix/pruebas-datos-fijos` (leen cifras y fechas de los datos; las de respuestas adelantan los eventos de la base de pruebas semanas enteras).
    - [ ] Más adelante: «partidos convocado» con las convocatorias aprobadas (hoy sale solo de las hojas cargadas); entrenos de 4 semanas con el pase de lista real cuando exista; la tabla del Panel a tarjetas en móvil.
+- [ ] **Rutina A automática (`feat/rutina-a-auto`, 24/10/2026, D66): revisión de Iván y merge.** `scripts/rutina_a_publicar.ps1` + `npm run jornada -- --no-interactivo`; la tarea de Windows («\Maccabis\Rutina A - publicar jornada», lunes y jueves 13:00) ya está creada y no hace nada hasta el merge. Tras el merge, la carpeta del proyecto tiene que quedar en `main` y limpia, o la rutina para.
+- [ ] **Borrar en SportEasy el evento «Prueba Claude - no responder» del 30/10** (lo hace Iván).
+- [ ] **Explorar una tablet Android siempre encendida, vinculada a Enlace Móvil**, para automatizar también la descarga de las hojas de Afición FBM (hoy las baja Iván desde el móvil; D69/D70: la app no se instala en emuladores).
 - [ ] **Normativa FBM de esta temporada: desde la J3 (25/10/2026) es obligatorio llevar dorsal en la camiseta de la primera equipación, del mismo color para todo el equipo.** Avisar a la plantilla antes del domingo y tenerlo en cuenta en la convocatoria y en los avisos de equipación (D75).
 - [ ] **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27. **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma.
 - [ ] **Evaluar los CSV de gesdeportiva.fbm.es/clubes** (clasificación y listado completo de partidos, D106) para la **rutina B**: contraste de la clasificación calculada con la oficial (D74) y posible calendario de los dos grupos sin Deportes/web.

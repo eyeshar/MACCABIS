@@ -1,6 +1,6 @@
 # Reglas de convocatoria — versión 1
 
-_23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con pocos datos, mensajes sin disponibles; D109: el nivel va antes que la rotación y deuda de 2 domingos fuera). Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
+_23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con pocos datos, mensajes sin disponibles; D109: el nivel va antes que la rotación y deuda de 2 domingos fuera; D110: en 2026/27 no hay entrenador-jugador fijo; D112: con rivales parejos, convocados igualados). Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
 
 > **Privacidad (D39).** Este documento no lleva nombres de jugadores ni niveles. Los datos por jugador (posición, base de reserva, nivel A–E, Dobla / No dobla, reglas personales, sanciones) viven **solo en la zona de gestión** (tabla `jugadores_privado` de Supabase, con RLS: solo los 3 gestores) y en `privado/` (fuera de git) como copia de Iván. **Nunca** en JSON públicos, mensajes de WhatsApp, avisos ni páginas de jugador. «Solo entreno» y las fichas siguen en la plantilla (`jugadores`).
 
@@ -30,7 +30,7 @@ _23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con po
 - **Niveles de jugador: A, B, C, D y E** (A el más alto). Confidenciales (D39). No hay números fijos de cuántos de cada nivel.
 - **Dificultad del rival: alta / media / baja.** La web la **propone** con la clasificación y la diferencia de puntos de la liga en curso (`data/liga_2026-27.json`) y **Iván la corrige** en la tarjeta del partido. Regla de la propuesta: si el rival ha jugado **menos de 3 partidos**, **media** con el porqué «pocos datos (N partidos)» (D108). Con 3 o más: **alta** si el rival está en el tercio de arriba con diferencia positiva o hace +15 o más por partido; **baja** si está en el tercio de abajo con diferencia negativa o hace −15 o menos por partido; **media** el resto y sin partidos jugados. El porqué sale al lado («10.º del G1 tras la J2 (-5 por partido)»).
 - **3.1** El partido **más difícil** del domingo lleva **más nivel medio**. El motor reparte cada línea alternando, y el equipo del partido más difícil elige primero en cada ronda.
-- **3.2** Si los dos rivales tienen la **misma dificultad**, se **equilibran los equipos por líneas** (bases, exteriores, interiores), no solo en el total (pregunta 1, D98): el reparto de cada línea va en serpiente.
+- **3.2** Si los dos rivales tienen la **misma dificultad**, se **equilibran los equipos por líneas** (bases, exteriores, interiores), no solo en el total (pregunta 1, D98): el reparto de cada línea va en serpiente. **Y el número de convocados queda igualado: diferencia máxima de 1** (D112). Los disponibles para los dos partidos se reparten hacia el equipo con menos convocados; el máximo de 10 (1.1) es un tope, no un objetivo a llenar. Si un equipo lleva 5 interiores porque esos interiores solo están disponibles para su partido, no es un error: sale el aviso «evitar 5» (2.3), pero no se mueve a nadie que no esté disponible para el otro partido.
 
 ## 4. Prioridad y rotación
 
@@ -57,7 +57,7 @@ _23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con po
 
 ## 6. Reglas personales (privadas, las configura Iván en «Datos de los jugadores»)
 
-- **6.1 Fijo a un equipo:** solo va con ese equipo. Así se marca también al **entrenador-jugador**, que va fijo a su equipo.
+- **6.1 Fijo a un equipo:** solo va con ese equipo. Así se marca también al **entrenador-jugador**, que va fijo a su equipo. **En 2026/27 no hay entrenador-jugador: nadie es fijo** (D110).
 - **6.2 Va al equipo al que le falte un jugador** (comodín): se coloca el último, en el equipo con menos jugadores.
 - **6.3** Iván puede **cambiar la posición de un jugador solo para un partido** (cuenta en las líneas de ese partido).
 

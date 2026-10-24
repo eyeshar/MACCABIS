@@ -46,7 +46,7 @@
 - **Rutinas programadas:** cada ejecución es una sesión nueva; no arrastran historial. Lo que deben recordar está en su procedimiento.
 
 ## 7. Normas heredadas que siguen vigentes
-Prompts para Code en un único bloque · los docs del repo son la fuente de verdad · nunca dar algo por hecho sin verificar (git, pruebas) · mockup aprobado antes de construir · staging antes de producción para esquema o datos · cierre exhaustivo de bloque · no inventar datos deportivos · privacidad de adultos de primer orden · niveles de jugador confidenciales (D39) · ninguna clave privada en el chat ni en el repositorio.
+Prompts para Code en un único bloque · los docs del repo son la fuente de verdad · nunca dar algo por hecho sin verificar (git, pruebas) · mockup aprobado antes de construir · cambios de esquema directamente en el Supabase real, siempre con las protecciones de §10 (D111; ya no hay «staging antes de producción») · cierre exhaustivo de bloque · no inventar datos deportivos · privacidad de adultos de primer orden · niveles de jugador confidenciales (D39) · ninguna clave privada en el chat ni en el repositorio.
 
 ## 8. SportEasy
 - Se mantiene **completo como respaldo hasta que acabe la suscripción (septiembre de 2027)**. No se quita antes.
@@ -54,3 +54,11 @@ Prompts para Code en un único bloque · los docs del repo son la fuente de verd
 
 ## 9. Publicación automática de estadísticas
 - La rutina A (actas y estadísticas) **publica sola** cuando todo cuadra (puntos del boxscore = marcador del acta), y avisa a Iván de lo publicado. **Si algo no cuadra, no publica y avisa** del motivo para que Iván decida. Ver D66.
+
+## 10. Cambios de esquema en el Supabase real (D111)
+No hay entorno de pruebas (staging) y no se va a crear: los cambios de esquema se aplican **directamente en el Supabase real**. **Cada cambio**, sin excepción, lleva estas protecciones (las de D94 y D108), en este orden:
+1. **Volcado completo previo, fuera de git** (`privado/backups/AAAA-MM-DD_pre-<bloque>.sql`), comprobado que existe, que pesa más de 0 y que git lo ignora.
+2. **Migración solo aditiva**, con su **`.revertir.sql`** al lado **probado en la pila local** (se deshace limpia y se vuelve a aplicar).
+3. **Prueba de permisos en real, en solo lectura, antes y después** de aplicar.
+4. **Recuento de cuentas de `auth.users` antes y después** (tiene que salir igual).
+- **Si un cambio no puede ser aditivo, se para y se consulta a Iván.** Nunca se borra ni se cambia nada existente sin su OK expreso.

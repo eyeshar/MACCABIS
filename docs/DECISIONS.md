@@ -645,3 +645,24 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 3. **Datos:** los bases de reserva se marcan en «Datos de los jugadores» (Supabase, nunca en el repo); la regla «fijo» del entrenador-jugador queda sin asignar hasta que Iván lo diga.
 
 **Cómo se aplica:** `compararPrioridad` y `domingosFueraDe` en `plataforma/src/lib/convocatoria/motor.ts`; el historial (respuestas a partidos ya jugados, hojas de estadística y convocatorias aprobadas) lo lee `datos.ts`. Pruebas: `pruebas:convocatoria-motor` (dos A con un partido más no se quedan fuera; un E con 2 domingos fuera entra con su aviso; con 22 disponibles y 12 plazas se respeta el orden por nivel en cada línea) y `pruebas:convocatoria-pantallas` (el aviso en la pantalla).
+## Bloque «Convocatoria: prueba en la sombra de la J3, sin fijo y sin staging» (24/10/2026, rama `fix/convocatoria-reparto`, SIN merge)
+
+## D110 — Entrenador-jugador «fijo»: no aplica en 2026/27 (Iván, 24/10/2026) — CIERRA lo pendiente de D109.3
+**Decisión de Iván:** este año no hay ningún entrenador-jugador. La regla personal «fijo» (6.1) queda **vacía**: ningún jugador fijo en `jugadores_privado` (comprobado en el Supabase real, 24/10, solo lectura: 0). La regla sigue en el motor y en «Datos de los jugadores» por si hace falta otra temporada.
+**Cómo se comprueba:** `pruebas:convocatoria-motor` (sin ningún fijo, con dificultad distinta, igual y un solo equipo: propuesta sin avisos ni motivos de la 6.1) y `pruebas:convocatoria-pantallas` (`/gestion/convocatoria/datos` carga con 0 fijos y ninguna ficha sale «Fijo»).
+
+## D111 — Sin entorno de pruebas: los cambios de esquema se aplican directamente en el Supabase real, con protecciones obligatorias (Iván, 24/10/2026) — SUSTITUYE la norma «staging antes de producción» y GENERALIZA las excepciones de D94 y D108
+**Decisión de Iván:** no se crea el proyecto de Supabase de pruebas (staging). Los cambios de esquema se siguen aplicando en el Supabase real, y **cada cambio** lleva, en este orden, las protecciones de D94/D108:
+1. **Volcado completo previo, fuera de git** (`pg_dump` a `privado/backups/AAAA-MM-DD_pre-<bloque>.sql`), comprobado: existe, pesa más de 0 y `git check-ignore` lo confirma.
+2. **Migración solo aditiva** (crear tablas, columnas, vistas, políticas, funciones; insertar), con su **`.revertir.sql`** al lado, **probado en la pila local**: se deshace limpia y se vuelve a aplicar.
+3. **Prueba de permisos en real, en solo lectura, antes y después** de aplicar (anónimo por HTTPS; jugador y gestor con cuentas que ya existen, dentro de una transacción `READ ONLY` que se deshace).
+4. **Recuento de cuentas de `auth.users` antes y después**: tiene que salir igual.
+**Si un cambio no puede ser aditivo** (borrar o cambiar tablas, columnas o datos existentes), **se para y se consulta a Iván** antes de tocar nada. Queda como norma en `NORMAS_DE_TRABAJO.md` §10. La tarea «Deuda: crear staging» del BACKLOG se cierra.
+
+## D112 — Rivales parejos: el número de convocados de los dos equipos queda igualado (Iván, 24/10/2026) — CORRIGE la regla 3.2 de D107
+**El fallo (prueba en la sombra con la J3, respuestas reales importadas el 24/10):** con los dos rivales en dificultad media, el motor llenaba el MdA hasta 10 y dejaba el MdL con 7. El MdA tenía 5 interiores disponibles solo para su partido; el reparto por líneas mandaba los interiores que podían ir a los dos al MdL y repartía bases y exteriores a medias, sin mirar el total.
+**Decisión de Iván:**
+1. Con **rivales parejos** (regla 3.2), el número de convocados de los dos equipos queda **igualado: diferencia máxima de 1**. Los disponibles para los dos partidos se reparten hacia el equipo con menos convocados.
+2. El **máximo de 10 (1.1) es un tope, no un objetivo** a llenar.
+3. **No es un error** que un equipo lleve 5 interiores cuando esos interiores solo están disponibles para ese partido: el aviso «evitar 5» (2.3) sigue saliendo, pero el motor **no mueve a nadie que no esté disponible** para el otro partido para «arreglarlo».
+**Cómo se aplica:** en `proponer` (`plataforma/src/lib/convocatoria/motor.ts`), tras el reparto por líneas y solo con dificultad igual: mientras la diferencia sea de más de 1, pasa al equipo corto a un disponible para los dos (nunca un «fijo»), el que menos descoloca las líneas y, a igualdad, el que deja el nivel medio más parecido. Con dificultad distinta no cambia nada (3.1). Prueba: `pruebas:convocatoria-motor`, caso «Rivales parejos» con un equivalente sintético de la J3 (sin el arreglo, 10 y 7; con él, 9 y 8; los 5 interiores siguen en el MdA con su aviso 2.3). Con los datos reales (lectura en solo lectura, 24/10): la J3 pasa de 10/7 a **9/8**.

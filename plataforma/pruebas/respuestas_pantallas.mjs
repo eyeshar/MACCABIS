@@ -24,6 +24,7 @@ import { chromium } from 'playwright';
 import webpush from 'web-push';
 import { arrancar } from './pila.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { adelantar, semanas, ddmm, diaLargo, diaMesCorto, diaNumero, mesAno } from './fechas_prueba.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -61,6 +62,9 @@ let app, nav;
 try {
   const { sql, url, anonKey } = pila;
   await cargarEventos(sql, { log: () => {} });
+  // Fechas que no caducan (pruebas/fechas_prueba.mjs): los eventos se adelantan semanas enteras para que la J2 (18/10, la
+  // primera que la prueba necesita abierta) sea futura y la ausencia del 25 al 28 no cruce de mes.
+  const F = await adelantar(sql, semanas('2026-10-18', { vale: (G) => G('2026-10-25').slice(5, 7) === G('2026-10-28').slice(5, 7) }));
   const id = async (clave) => (await sql`select id from public.eventos where clave = ${clave}`)[0].id;
   // Un entreno abierto en los próximos días (para el bloque «Te faltan»), J3 (horas distintas) y J2 (misma hora).
   const [e1] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > ${hoy} order by fecha limit 1`;
@@ -230,19 +234,19 @@ try {
   const textoEvento = await pj.locator('main').innerText();
   ok(textoEvento.includes('Adriano') && !textoEvento.includes('Rodilla') && !/Lesi[oó]n/.test(textoEvento.split('Quién va')[1] ?? ''), '«Quién va»: Adriano en «No van», sin su motivo');
 
-  console.log('\n== Domingo con horas distintas (J3, 25/10)');
-  await pj.goto(`${APP}/mi-zona/domingo/2026-10-25`);
+  console.log(`\n== Domingo con horas distintas (J3, ${ddmm(F('2026-10-25'))})`);
+  await pj.goto(`${APP}/mi-zona/domingo/${F('2026-10-25')}`);
   ok((await pj.locator('.rw-partido').count()) === 2 && await visto(pj.getByText('Estar disponible no es estar convocado: en la convocatoria te decimos en qué equipo juegas.')), 'las dos tarjetas de partido y la nota de convocatoria');
   for (const o of ['A los dos', 'Solo al de las 09:00 (MdA)', 'Solo al de las 14:00 (MdL)', 'No voy', 'Duda']) ok(await visto(pj.getByRole('button', { name: o })), `opción «${o}»`);
   await pj.getByRole('button', { name: 'Solo al de las 09:00 (MdA)' }).click();
   await pj.waitForTimeout(1500);
-  const d3 = Object.fromEntries((await sql`select e.equipo, r.respuesta, r.motivo from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-25' and e.tipo = 'liga' and r.person_id = 'esteban-jon'`).map((x) => [x.equipo, `${x.respuesta}${x.motivo ? '·' + x.motivo : ''}`]));
+  const d3 = Object.fromEntries((await sql`select e.equipo, r.respuesta, r.motivo from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and e.tipo = 'liga' and r.person_id = 'esteban-jon'`).map((x) => [x.equipo, `${x.respuesta}${x.motivo ? '·' + x.motivo : ''}`]));
   ok(d3.MdA === 'va' && d3.MdL === 'no·horario', '«Solo al de las 09:00» → va en MdA y «no · horario» en MdL', JSON.stringify(d3));
   ok(await sinDesbordar(pj) && !(await tactiles(pj, '.rw-opcion')).length, 'domingo a 375 px sin desbordamiento y opciones de 44 px o más');
   await foto(pj, 'domingo_375');
   await pj.goto(`${APP}/mi-zona/evento/${E.mdaJ3}`);
-  ok(new URL(pj.url()).pathname === '/mi-zona/domingo/2026-10-25', 'abrir un partido de un domingo con dos horas lleva al domingo');
-  await pj.goto(`${APP}/mi-zona/domingo/2026-10-18`);
+  ok(new URL(pj.url()).pathname === `/mi-zona/domingo/${F('2026-10-25')}`, 'abrir un partido de un domingo con dos horas lleva al domingo');
+  await pj.goto(`${APP}/mi-zona/domingo/${F('2026-10-18')}`);
   ok(await visto(pj.getByRole('button', { name: 'Voy', exact: true })) && !(await pj.getByRole('button', { name: 'A los dos' }).count()), 'misma hora (J2): Voy / No voy / Duda');
   ok(await sinDesbordar(pj), 'domingo con misma hora a 375 px sin desbordamiento');
   await foto(pj, 'domingo_misma_hora_375');
@@ -251,9 +255,9 @@ try {
   await pj.goto(`${APP}/mi-zona/ausencias/nueva`);
   ok(await sinDesbordar(pj), 'nueva ausencia a 375 px sin desbordamiento');
   // Mes de la J3: avanzar hasta octubre/noviembre según hoy
-  while (!(await pj.getByText('Octubre 2026').count())) await pj.getByRole('button', { name: 'Mes siguiente' }).click();
-  await pj.getByRole('button', { name: /^domingo 25 de octubre/ }).click();
-  await pj.getByRole('button', { name: /^miércoles 28 de octubre/ }).click();
+  while (!(await pj.getByText(mesAno(F('2026-10-25'))).count())) await pj.getByRole('button', { name: 'Mes siguiente' }).click();
+  await pj.getByRole('button', { name: new RegExp(`^${diaLargo(F('2026-10-25'))}`) }).click();
+  await pj.getByRole('button', { name: new RegExp(`^${diaLargo(F('2026-10-28'))}`) }).click();
   await pj.locator('label.rw-motivo', { hasText: 'Viaje' }).click();
   await pj.getByText(/Pondremos «no voy» en/).waitFor({ timeout: 10000 });
   ok(await visto(pj.getByText(/Pondremos «no voy» en \d+ eventos?/)), 'resumen «Pondremos «no voy» en N eventos: …»');
@@ -264,15 +268,15 @@ try {
   await foto(pj, 'ausencia_nueva_375');
   await pj.getByRole('button', { name: 'Guardar ausencia' }).click();
   await pj.waitForURL(/\/mi-zona\/ausencias/, { timeout: 15000 });
-  ok(await visto(pj.getByText('Ausencia guardada.')) && await visto(pj.getByText(/Del domingo 25 oct al miércoles 28 oct/)), 'la ausencia sale en «Mis ausencias»');
-  const d3b = (await sql`select r.respuesta, r.motivo from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-25' and e.tipo = 'liga' and r.person_id = 'esteban-jon'`);
+  ok(await visto(pj.getByText('Ausencia guardada.')) && await visto(pj.getByText(`Del ${diaMesCorto(F('2026-10-25'))} al ${diaMesCorto(F('2026-10-28'))}`)), 'la ausencia sale en «Mis ausencias»');
+  const d3b = (await sql`select r.respuesta, r.motivo from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and e.tipo = 'liga' and r.person_id = 'esteban-jon'`);
   ok(d3b.every((x) => x.respuesta === 'no' && x.motivo === 'viaje'), 'los partidos del 25 pasan a «no · viaje»');
   ok(await sinDesbordar(pj), 'Mis ausencias a 375 px sin desbordamiento');
   await foto(pj, 'ausencias_375');
   pj.once('dialog', (d) => d.accept());
   await pj.getByRole('button', { name: 'Borrar' }).click();
   await pj.waitForTimeout(1500);
-  ok((await sql`select count(*)::int n from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-25' and r.person_id = 'esteban-jon' and r.respuesta = 'sin_responder'`)[0].n === 2, 'al borrarla, el domingo vuelve a «sin responder»');
+  ok((await sql`select count(*)::int n from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and r.person_id = 'esteban-jon' and r.respuesta = 'sin_responder'`)[0].n === 2, 'al borrarla, el domingo vuelve a «sin responder»');
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.locator('.rw-estado').first()), '«Tu agenda» con estado por evento');
   const htmlJ = await pj.content();
@@ -313,7 +317,7 @@ try {
   await pg.goto(`${APP}/gestion/eventos/${E.mdaJ3}/respuestas`);
   const cajas3 = await pg.getByTestId('contadores').innerText();
   ok(/a los dos/.test(cajas3) && /solo 09:00/.test(cajas3) && /solo 14:00/.test(cajas3), 'domingo: vista de día con «a los dos / solo 09:00 / solo 14:00»', cajas3);
-  await sql`insert into public.respuestas_domingo (fecha, person_id, opcion, solo_evento, origen) values ('2026-10-25', 'vallesi-daniele', 'solo', ${E.mdlJ3}, 'gestor')
+  await sql`insert into public.respuestas_domingo (fecha, person_id, opcion, solo_evento, origen) values (${F('2026-10-25')}, 'vallesi-daniele', 'solo', ${E.mdlJ3}, 'gestor')
             on conflict (fecha, person_id) do update set opcion = 'solo', solo_evento = excluded.solo_evento, vigente = true`;
   await pg.reload();
   ok(/Solo 14:00 \(MdL\)/.test(await pg.locator('tr', { hasText: 'Daniele' }).innerText()), 'la respuesta guardada del domingo se lee tal cual: «Solo 14:00 (MdL)» (D103)');
@@ -362,7 +366,9 @@ try {
   const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
   const dma = (f) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
   const NOMBRE = { MDA: 'Maccabi de Acostar', MDL: 'Maccabi de Levantar' };
-  const bloque = cal.partidos.map((p) => {
+  // Las líneas pegadas llevan las fechas movidas igual que los eventos de la prueba (F, pruebas/fechas_prueba.mjs).
+  const bloque = cal.partidos.map((p0) => {
+    const p = { ...p0, fecha: F(p0.fecha) };
     const g = p.equipo === 'MDA' ? 'G1' : 'G2';
     if (p.descansa) return `${g};${p.jornada};${NOMBRE[p.equipo]} descansa;;${dma(p.fecha)};;`;
     const [l, v] = p.local ? [NOMBRE[p.equipo], p.rival] : [p.rival, NOMBRE[p.equipo]];
@@ -385,7 +391,7 @@ try {
   const conAvisar = sinAvisar.map((l) => (l.startsWith('G1;2;') ? l.replace(';10:15;', ';11:30;') : l));
   await importar(conAvisar, /^Aplicar y avisar/);
   const avJ2 = await sql`select titulo, cuerpo from public.avisos_registro where tipo = 'cambio' and ${E.mdaJ2} = any(eventos)`;
-  ok(avJ2.length > 10 && avJ2.every((a) => a.titulo === 'Cambio en el partido del domingo 18' && /11:30/.test(a.cuerpo)), `«Aplicar y avisar»: aviso de cambio a los invitados del MdA (${avJ2.length})`, JSON.stringify(avJ2[0]));
+  ok(avJ2.length > 10 && avJ2.every((a) => a.titulo === `Cambio en el partido del ${diaNumero(F('2026-10-18'))}` && /11:30/.test(a.cuerpo)), `«Aplicar y avisar»: aviso de cambio a los invitados del MdA (${avJ2.length})`, JSON.stringify(avJ2[0]));
   const [vj2] = await sql`select cambio_visible, inicio::text from public.eventos where id = ${E.mdaJ2}`;
   ok(vj2.inicio.startsWith('11:30') && vj2.cambio_visible?.campos?.includes('hora') && /10:15/.test(vj2.cambio_visible.antes), 'y la línea amarilla «Cambió la hora … (antes: 10:15)»', JSON.stringify(vj2.cambio_visible));
 

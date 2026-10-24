@@ -38,7 +38,7 @@ export async function exigirGestor() {
   return { supabase, user, nombre: (g?.nombre as string | undefined) ?? user.email ?? "gestor" };
 }
 
-// A donde va cada cual tras entrar (D116): quien tiene ficha de jugador (sea o no gestor) -> su inicio («/», con la
+// A donde va cada cual tras entrar (D117): quien tiene ficha de jugador (sea o no gestor) -> su inicio («/», con la
 // banda «Gestión esta semana» si es gestor); gestor sin ficha -> gestion; ninguna (no deberia pasar: lista blanca) -> aviso.
 export async function destinoTrasEntrar(supabase: Awaited<ReturnType<typeof clienteSesion>>) {
   const [{ data: esGestor }, { data: zona }] = await Promise.all([

@@ -14,7 +14,7 @@ import { FUNDACION, GRUPO_EQUIPO, NOMBRE_EQUIPO } from "@/lib/web";
 import { origen } from "@/lib/sesion";
 
 // Portada publica (D76, maquetas Main y PortadaMovil): sin login, solo datos publicos (lib/publico.ts). Con sesion, «/»
-// es el inicio personal (D116): lo de cada persona y lo que tiene que hacer.
+// es el inicio personal (D117): lo de cada persona y lo que tiene que hacer.
 import { cargarFuente } from "@/lib/eventos/fuente";
 import { usuarioActual } from "@/lib/usuario";
 import InicioPersonal from "@/components/inicio/InicioPersonal";

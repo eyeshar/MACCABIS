@@ -1,4 +1,4 @@
-// Ubicacion de los eventos (D118): funciones PURAS (las usan las pantallas, el servidor y las pruebas con `node`). Sin
+// Ubicacion de los eventos (D119): funciones PURAS (las usan las pantallas, el servidor y las pruebas con `node`). Sin
 // mapas incrustados ni claves de pago: los enlaces abren Google Maps con una busqueda; las sugerencias salen de
 // OpenStreetMap (Nominatim) desde el servidor.
 

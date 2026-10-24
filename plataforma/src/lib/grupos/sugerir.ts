@@ -1,4 +1,4 @@
-// Grupos de entreno (D121): la sugerencia, PURA y determinista (la usan la pantalla de Gestion y las pruebas).
+// Grupos de entreno (D122): la sugerencia, PURA y determinista (la usan la pantalla de Gestion y las pruebas).
 // Base: los que dicen «Voy» al entreno. Junta a los que van a jugar juntos el siguiente domingo con partido (la
 // convocatoria aprobada o, si no la hay, la propuesta del motor); dentro de cada equipo, grupos equilibrados por linea
 // (base, exteriores, interiores) y por nivel. Quien no juega el domingo completa los grupos mas cortos, priorizando la

@@ -2,7 +2,7 @@
 
 import { Children, useEffect, useRef, useState } from "react";
 
-/** «Te faltan N respuestas» (D116): en el movil, un carrusel horizontal con scroll-snap (una tarjeta visible y asomando
+/** «Te faltan N respuestas» (D117): en el movil, un carrusel horizontal con scroll-snap (una tarjeta visible y asomando
  *  la siguiente) y el contador «1 de N», que cambia al desplazar; en escritorio, las tarjetas en fila. */
 export default function Carrusel({ children, etiqueta }: { children: React.ReactNode; etiqueta: string }) {
   const caja = useRef<HTMLDivElement>(null);

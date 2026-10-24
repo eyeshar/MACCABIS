@@ -7,7 +7,7 @@ import { avisarSiAprobada } from "@/lib/convocatoria/salidas";
 import { EQUIPOS, type Convocatoria, type Equipo } from "@/lib/convocatoria/motor";
 import { MOTIVOS, type Motivo } from "@/lib/eventos/dominio";
 
-// Acciones del tablero (D120). Solo gestores (la base lo vuelve a comprobar). Convocar o quitar guarda en la
+// Acciones del tablero (D121). Solo gestores (la base lo vuelve a comprobar). Convocar o quitar guarda en la
 // convocatoria con las funciones de siempre (convocatoria_guardar, D107: un solo motivo por grupo, «ajuste manual» por
 // defecto); cambiar respuestas, con tablero_responder («puesta por <gestor>», tambien con el interruptor apagado).
 

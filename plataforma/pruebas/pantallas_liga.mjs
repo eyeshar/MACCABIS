@@ -83,7 +83,7 @@ try {
   await entrar(pa, jugadorEmail);
   for (const r of ['/gestion/scouting', '/gestion/liga']) {
     await pa.goto(`${APP}${r}`);
-    ok(new URL(pa.url()).pathname === '/' && pa.url().includes('no_gestor=1'), `un jugador (no gestor) en ${r}: va a su inicio (D116)`, pa.url());
+    ok(new URL(pa.url()).pathname === '/' && pa.url().includes('no_gestor=1'), `un jugador (no gestor) en ${r}: va a su inicio (D117)`, pa.url());
     ok(!(await pa.textContent('body')).includes('Hernando'), `un jugador no ve ni un nombre de rival en ${r}`);
   }
   await ctxA.close();

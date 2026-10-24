@@ -104,8 +104,8 @@ try {
   // de PUBLIC por defecto (el fallo real: revocar solo "from anon" no basta
   // si el grant lo tiene el pseudo-rol PUBLIC; hay que revocarlo tambien).
   const anonFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
-  // Unica excepcion (D119, acotada a D68): el calendario personal, que piden las apps de calendario sin sesion con el enlace secreto.
-  ok(JSON.stringify(anonFunciones) === JSON.stringify(['calendario_personal']), 'anon no puede ejecutar ninguna funcion de public (D68) salvo calendario_personal (D119)', anonFunciones.join(', '));
+  // Unica excepcion (D120, acotada a D68): el calendario personal, que piden las apps de calendario sin sesion con el enlace secreto.
+  ok(JSON.stringify(anonFunciones) === JSON.stringify(['calendario_personal']), 'anon no puede ejecutar ninguna funcion de public (D68) salvo calendario_personal (D120)', anonFunciones.join(', '));
   const authFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
   // Paso 3 (D99): las del jugador (responder, ausencias, suscripcion), las de gestor (comprueban is_gestor dentro) y las
   // tres internas que solo devuelven lo de quien consulta (_mi_person_id, _mis_eventos, _quien_va).
@@ -114,7 +114,7 @@ try {
     'responder_por', 'respuestas_web_encendido'];
   // Convocatoria (D107): las tres de gestor (is_gestor dentro) y mi_convocatoria (solo lo del propio jugador).
   const CONVOCATORIA = ['convocatoria_aprobar', 'convocatoria_guardar', 'convocatoria_marcar', 'mi_convocatoria'];
-  // Inicio y planes (D116-D121): planes (comprueban organizador o gestor dentro), su agenda y su posicion (solo lo suyo),
+  // Inicio y planes (D117-D122): planes (comprueban organizador o gestor dentro), su agenda y su posicion (solo lo suyo),
   // el calendario personal, el tablero (is_gestor dentro) y sus grupos publicados.
   const INICIO = ['_mi_agenda', 'borrar_plan', 'calendario_personal', 'cancelar_plan', 'crear_plan', 'editar_plan', 'hacer_oficial', 'marcar_aviso_visto',
     'mi_calendario_regenerar', 'mi_calendario_registrar', 'mi_calendario_version', 'mi_posicion', 'mis_grupos', 'responder_plan', 'tablero_deshacer', 'tablero_responder'];
@@ -211,7 +211,7 @@ try {
   await pAnon.goto(`${APP}/gestion/jugadores`);
   ok(pAnon.url().includes('/entrar'), '/gestion/jugadores sin sesion manda a "Entrar"');
   await pAnon.goto(`${APP}/mi-zona`);
-  ok(new URL(pAnon.url()).pathname === '/' && await pAnon.getByText('Dos equipos.').isVisible(), '/mi-zona sin sesion lleva a la portada publica (D116)');
+  ok(new URL(pAnon.url()).pathname === '/' && await pAnon.getByText('Dos equipos.').isVisible(), '/mi-zona sin sesion lleva a la portada publica (D117)');
   await pAnon.goto(`${APP}/agenda`);
   ok(pAnon.url().includes('/entrar'), '/agenda sin sesion manda a "Entrar"');
   const xl = await fetch(`${APP}/gestion/ropa/excel?c=${campana.id}`, { redirect: 'manual' });
@@ -249,7 +249,7 @@ try {
   await pG.waitForURL(`${APP}/gestion`);
   ok(await pG.getByText('Panel de gestión', { exact: false }).first().isVisible() && await pG.getByRole('heading', { level: 1 }).isVisible(), 'el gestor entra al panel');
   await pG.goto(`${APP}/gestion/ropa`);
-  ok(!(await pA.locator('#ropa').count()), 'con la campana cerrada, el inicio del jugador no enseña la ropa (D116)');
+  ok(!(await pA.locator('#ropa').count()), 'con la campana cerrada, el inicio del jugador no enseña la ropa (D117)');
   await pG.getByLabel('Estado').selectOption('abierta');
   await pG.getByLabel('Fecha límite (incluida)').fill('2026-12-31');
   await pG.getByRole('button', { name: 'Guardar campaña' }).click();
@@ -487,7 +487,7 @@ try {
   ok(r.datos?.error === 'campana_cerrada', 'con la campana cerrada no se puede anular', JSON.stringify(r.datos));
   await pA.goto(`${APP}/`);
   ok(!(await pA.locator('#ropa').count()) && (await pA.getByRole('link', { name: /Hacer/ }).count()) === 0 && (await pA.getByRole('link', { name: 'Modificar' }).count()) === 0,
-    'con la campana cerrada, el inicio ya no enseña la ropa: sin boton de pedir ni de modificar (D116)');
+    'con la campana cerrada, el inicio ya no enseña la ropa: sin boton de pedir ni de modificar (D117)');
   await pA.goto(`${APP}/mi-zona/ropa/nuevo`);
   ok(await pA.getByText('El pedido de ropa está cerrado').isVisible(), 'el formulario de pedido dice que esta cerrado');
   // Plazo vencido con la campana "abierta": tambien rechaza.

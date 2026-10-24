@@ -1,4 +1,4 @@
-// Piezas comunes de las pruebas de extremo a extremo del bloque «Inicio personal y planes» (D116-D121): la pila local,
+// Piezas comunes de las pruebas de extremo a extremo del bloque «Inicio personal y planes» (D117-D122): la pila local,
 // la web compilada de verdad con el entorno que se pida, Chrome y las ayudas de siempre (entrar con codigo, sin
 // desbordamiento, capturas). Cada suite sigue siendo independiente (npm run pruebas:<suite>).
 import fs from 'node:fs';

@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { calendarioPersonal, type EventoPersonal } from "@/lib/calendario/icsPersonal";
 import { URL_PRODUCCION } from "@/lib/indexacion";
 
-// Calendario PERSONAL suscribible (D119): /cal/<enlace secreto>.ics. Lo piden Google Calendar, iPhone u Outlook, que no
+// Calendario PERSONAL suscribible (D120): /cal/<enlace secreto>.ics. Lo piden Google Calendar, iPhone u Outlook, que no
 // pueden iniciar sesion: por eso un enlace secreto por persona, solo de lectura (excepcion acotada a D68). La base
 // (calendario_personal, con la clave anonima) solo devuelve algo con un enlace vigente de alguien activo, y como mucho
 // 120 lecturas por hora. Fuera de los buscadores (noindex y Disallow /cal en robots.txt) y del sitemap.

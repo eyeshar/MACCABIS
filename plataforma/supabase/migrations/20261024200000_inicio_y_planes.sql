@@ -1,25 +1,25 @@
 -- =============================================================================
--- Inicio personal y planes (D116-D121): un solo paso en el Supabase real (D111).
+-- Inicio personal y planes (D117-D122): un solo paso en el Supabase real (D111).
 --
 -- SOLO ADITIVA (D111): columnas, tablas, vistas, politicas y funciones nuevas. Lo unico que cambia de lo existente, sin
 -- perder ningun dato (la reversion lo deja como estaba):
 --   - el check de eventos.tipo admite ademas 'quedada', 'pachanga' y 'otro' (relajacion);
 --   - v_eventos_publicos deja fuera los planes no oficiales (todo lo que ya existe es oficial: no cambia nada de lo que
 --     se ve hoy);
---   - _invitado: los planes no oficiales y los tipos nuevos invitan segun «para quien» (D117);
+--   - _invitado: los planes no oficiales y los tipos nuevos invitan segun «para quien» (D118);
 --   - las tres pistas del catalogo reciben sus coordenadas (columnas nuevas, de OpenStreetMap).
 -- Reversion al lado: 20261024200000_inicio_y_planes.revertir.sql (db:migrar nunca la aplica).
 --
---  B (D117) planes no oficiales: eventos.oficial (todo lo que existe, true), creado_por, plazas, recordar_un_dia_antes,
+--  B (D118) planes no oficiales: eventos.oficial (todo lo que existe, true), creado_por, plazas, recordar_un_dia_antes,
 --     rival_texto, borrado_en; los jugadores escriben SOLO con funciones (crear_plan, editar_plan, cancelar_plan,
 --     responder_plan) y los gestores ademas borrar_plan y hacer_oficial. avisos_personales: lo que le queda en el inicio
 --     al organizador cuando un gestor toca su plan.
---  C (D118) ubicacion: eventos.ubicacion_* (nombre, direccion, lat, lng, enlace) y pistas.lat / pistas.lng.
---  D (D119) calendario personal: calendario_tokens (solo el HASH del enlace) y calendario_personal(token), la unica
+--  C (D119) ubicacion: eventos.ubicacion_* (nombre, direccion, lat, lng, enlace) y pistas.lat / pistas.lng.
+--  D (D120) calendario personal: calendario_tokens (solo el HASH del enlace) y calendario_personal(token), la unica
 --     funcion que puede llamar anon: devuelve SOLO los eventos de esa persona, sin nada de nadie mas.
---  E (D120) tablero: tablero_responder / tablero_deshacer (funcionan con el interruptor apagado), tablero_registro y
+--  E (D121) tablero: tablero_responder / tablero_deshacer (funcionan con el interruptor apagado), tablero_registro y
 --     respuestas.sporteasy_descartado (una importacion no pisa un cambio de gestor: sale como conflicto).
---  F (D121) grupos de entreno: grupos_repartos (solo gestores) y mis_grupos() (el jugador: SOLO su grupo publicado).
+--  F (D122) grupos de entreno: grupos_repartos (solo gestores) y mis_grupos() (el jugador: SOLO su grupo publicado).
 -- Horas: Europe/Madrid.
 -- =============================================================================
 
@@ -40,11 +40,11 @@ alter table public.eventos add column ubicacion_direccion text check (ubicacion_
 alter table public.eventos add column ubicacion_lat double precision check (ubicacion_lat is null or ubicacion_lat between -90 and 90);
 alter table public.eventos add column ubicacion_lng double precision check (ubicacion_lng is null or ubicacion_lng between -180 and 180);
 alter table public.eventos add column ubicacion_enlace text check (ubicacion_enlace is null or (ubicacion_enlace ~ '^https://' and length(ubicacion_enlace) <= 500));
--- SEQUENCE del calendario personal (D119): sube en cada cambio que se ve en el calendario.
+-- SEQUENCE del calendario personal (D120): sube en cada cambio que se ve en el calendario.
 alter table public.eventos add column secuencia int not null default 0;
 alter table public.eventos add constraint plan_con_organizador check (oficial or creado_por is not null);
-comment on column public.eventos.oficial is 'false = plan no oficial de un jugador (D117): no cuenta para nada del club ni sale en lo publico.';
-comment on column public.eventos.creado_por is 'person_id de quien propuso el plan (D117).';
+comment on column public.eventos.oficial is 'false = plan no oficial de un jugador (D118): no cuenta para nada del club ni sale en lo publico.';
+comment on column public.eventos.creado_por is 'person_id de quien propuso el plan (D118).';
 
 alter table public.pistas add column lat double precision check (lat is null or lat between -90 and 90);
 alter table public.pistas add column lng double precision check (lng is null or lng between -180 and 180);
@@ -90,7 +90,7 @@ left join public.pistas p  on p.id = e.pista_id
 left join public.pistas ps on e.pista_id is null and e.tipo = 'entreno' and ps.es_de_serie and ps.uso = 'entreno'
 where e.oficial and e.borrado_en is null;
 
--- ---------------------------------------------------------------- quien esta invitado (D105 + D117)
+-- ---------------------------------------------------------------- quien esta invitado (D105 + D118)
 -- Igual que antes para todo lo que ya existe. Planes no oficiales y tipos nuevos (quedada, pachanga, otro): «para
 -- quien» = toda la plantilla (quien entrena o tiene ficha), solo MdA o solo MdL. La web tiene la misma definicion
 -- (quienResponde en lib/respuestas/dominio.ts).
@@ -145,13 +145,13 @@ as $$
 $$;
 create view public.v_mi_agenda as select * from public._mi_agenda();
 
--- ---------------------------------------------------------------- su posicion, para el saludo del inicio (D116)
+-- ---------------------------------------------------------------- su posicion, para el saludo del inicio (D117)
 /** SOLO la posicion de quien consulta (la suya). Ni su nivel ni nada de nadie mas (D39). */
 create function public.mi_posicion()
 returns text language sql stable security definer set search_path = ''
 as $$ select p.posicion from public.jugadores_privado p where p.person_id = public._mi_person_id() $$;
 
--- ---------------------------------------------------------------- avisos que quedan en el inicio (D117)
+-- ---------------------------------------------------------------- avisos que quedan en el inicio (D118)
 create table public.avisos_personales (
   id         uuid primary key default gen_random_uuid(),
   person_id  text not null,
@@ -162,7 +162,7 @@ create table public.avisos_personales (
 );
 create index avisos_personales_persona_idx on public.avisos_personales (person_id) where visto_en is null;
 
--- ---------------------------------------------------------------- planes no oficiales (D117)
+-- ---------------------------------------------------------------- planes no oficiales (D118)
 create function public._plan_valido(p jsonb, p_es_gestor boolean)
 returns void language plpgsql immutable set search_path = ''
 as $$
@@ -327,7 +327,7 @@ begin
   return found;
 end $$;
 
--- ---------------------------------------------------------------- calendario personal (D119, excepcion acotada a D68)
+-- ---------------------------------------------------------------- calendario personal (D120, excepcion acotada a D68)
 -- Un enlace secreto por persona, solo de lectura. Aqui solo vive el HASH (sha256) del enlace: el enlace lo calcula el
 -- servidor con su secreto y la version (cambiar el enlace sube la version y el anterior deja de valer).
 create table public.calendario_tokens (
@@ -427,7 +427,7 @@ begin
       where e.temporada = '2026-27' and e.fecha >= v_desde and public._invitado(j.person_id, e.id)), '[]'::jsonb));
 end $$;
 
--- ---------------------------------------------------------------- tablero de asistencias y convocatoria (D120)
+-- ---------------------------------------------------------------- tablero de asistencias y convocatoria (D121)
 -- Una importacion de SportEasy no pisa un cambio de gestor mas reciente: el valor de SportEasy que se decidio no usar
 -- queda aqui, y solo vuelve a salir como conflicto si SportEasy dice otra cosa.
 alter table public.respuestas add column sporteasy_descartado text check (sporteasy_descartado is null or sporteasy_descartado in ('va', 'duda', 'no', 'sin_responder'));
@@ -450,7 +450,7 @@ create table public.tablero_registro (
 create index tablero_registro_evento_idx on public.tablero_registro (evento_id, en);
 
 /** Cambiar la respuesta de varios jugadores a un evento desde el tablero (solo gestores). Funciona tambien con el
- *  interruptor apagado (fase puente, D120). Queda «puesta por <gestor>» con fecha y hora; «No van» pide motivo. */
+ *  interruptor apagado (fase puente, D121). Queda «puesta por <gestor>» con fecha y hora; «No van» pide motivo. */
 create function public.tablero_responder(p_evento uuid, p_personas text[], p_respuesta text, p_motivo text default null,
                                          p_detalle text default null)
 returns jsonb language plpgsql security definer set search_path = ''
@@ -508,7 +508,7 @@ begin
   return jsonb_build_object('deshecho', g.id);
 end $$;
 
--- ---------------------------------------------------------------- grupos de entreno (D121)
+-- ---------------------------------------------------------------- grupos de entreno (D122)
 create table public.grupos_repartos (
   id                  uuid primary key default gen_random_uuid(),
   evento_id           uuid not null references public.eventos (id),

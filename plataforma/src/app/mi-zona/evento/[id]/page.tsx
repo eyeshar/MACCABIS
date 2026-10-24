@@ -55,7 +55,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
         <h2 id="t-pista" className="solo-lectores">Pista</h2>
         <strong>{e.pista_nombre || !e.lugar_nombre ? pistaTexto(e) : e.lugar_nombre}</strong>
         {(e.lugar_direccion ?? e.pista_direccion) && <span className="suave">{e.lugar_direccion ?? e.pista_direccion}</span>}
-        {/* D118: «Cómo llegar» abre Google Maps con las coordenadas (o la dirección); nada de mapas incrustados. */}
+        {/* D119: «Cómo llegar» abre Google Maps con las coordenadas (o la dirección); nada de mapas incrustados. */}
         {enlaceLugar(e) && <a className="boton boton-claro rw-mapa" href={enlaceLugar(e)!} target="_blank" rel="noopener noreferrer">Cómo llegar</a>}
         {e.notas && !/^\s*pista\s+\d+\s*\.?\s*$/i.test(e.notas) && <span className="pequeno">{e.notas}</span>}
       </section>

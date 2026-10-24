@@ -31,7 +31,7 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
   const [error, accion, enviando] = useActionState(evento ? guardarEvento.bind(null, evento.id) : crearEvento, null);
   const delAyuntamiento = evento?.tipo === "liga" && evento.origen === "ayuntamiento";
   const [tipo, setTipo] = useState<TipoEvento>(evento?.tipo ?? tipoInicial ?? "amistoso");
-  // D118: un evento usa una pista del catalogo o un sitio libre («__libre»: buscador de OpenStreetMap o enlace de Maps).
+  // D119: un evento usa una pista del catalogo o un sitio libre («__libre»: buscador de OpenStreetMap o enlace de Maps).
   const [pistaId, setPistaId] = useState(evento?.pista_id ?? (evento?.ubicacion_nombre || evento?.ubicacion_enlace ? LIBRE : ""));
   const [equipo, setEquipo] = useState(evento?.equipo ?? "ambos");
   const [fecha, setFecha] = useState(evento?.fecha ?? "");

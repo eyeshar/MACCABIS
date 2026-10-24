@@ -271,7 +271,7 @@ try {
   await pj.goto(`${APP}/gestion/convocatoria/datos`);
   ok(!new URL(pj.url()).pathname.startsWith('/gestion'), 'ni en los datos de los jugadores');
   await pj.goto(`${APP}/mi-zona`);
-  // Desde D116, «Tu próximo partido» del inicio personal (/mi-zona redirige a «/»).
+  // Desde D117, «Tu próximo partido» del inicio personal (/mi-zona redirige a «/»).
   ok(suEquipo && (await pj.getByTestId('estado-partido').innerText()) === `Convocado · ${suEquipo}`, `inicio: «Convocado · ${suEquipo}»`, await pj.getByTestId('estado-partido').innerText().catch(() => ''));
   const casillas = await pj.getByTestId('proximo-partido').locator('.in-partido-uno .in-casilla').allInnerTexts();
   ok(casillas.length === 2 && /Quedada\s*\d\d:\d\d/i.test(casillas[0]) && /Partido\s*\d\d:\d\d/i.test(casillas[1]), 'con la hora y el encuentro (Quedada / Partido)', casillas.join(' | '));

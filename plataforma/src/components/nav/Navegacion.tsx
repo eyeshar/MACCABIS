@@ -8,7 +8,7 @@ import type { Usuario } from "@/lib/usuario";
 import { Barras, Calendario, Candado, Casa, Mas, Panel, Tendencia } from "@/components/Iconos";
 import { useDesplegable } from "./useDesplegable";
 
-// Navegacion unica de toda la web (D89, maquetas NavCabecera y NavMovil; D116 con sesion). Sin sesion: la de siempre
+// Navegacion unica de toda la web (D89, maquetas NavCabecera y NavMovil; D117 con sesion). Sin sesion: la de siempre
 // (Inicio · Partidos · Liga · Plantilla · Historia · El club). Con sesion, lo de cada persona primero: en escritorio
 // Inicio · Agenda · Mis números · Liga · Historia (y el menu GESTIÓN de los gestores); en el movil, barra de 5: jugador
 // Inicio · Agenda · Mis números · Liga · Más; gestor Inicio · Agenda · Mis números · Gestión · Más (Liga pasa a «Más»).
@@ -110,7 +110,7 @@ function MenuGestion({ ruta, dentro }: { ruta: string; dentro: boolean }) {
 /** Hoja "Mas" del movil: el resto de la web, Gestion (gestores), Mi cuenta y Salir. */
 function HojaMas({ usuario, ruta, zona }: { usuario: Usuario | null; ruta: string; zona: Zona }) {
   const { abierto, cerrar, propsBoton, propsPanel } = useDesplegable({ modal: true });
-  // Con sesion de jugador y gestor, Liga sale de la barra y pasa aqui (D116).
+  // Con sesion de jugador y gestor, Liga sale de la barra y pasa aqui (D117).
   const ids = usuario?.esJugador && usuario.esGestor ? ["liga", "plantilla", "historia", "club"] : ["plantilla", "historia", "club"];
   const resto = MENU.filter((s) => ids.includes(s.id));
   return (
@@ -153,7 +153,7 @@ export default function Navegacion({ usuario, escudo }: { usuario: Usuario | nul
   const ruta = usePathname();
   const zona = zonaDe(ruta, usuario?.personId ?? null);
   const liga = MENU.find((s) => s.id === "liga")!;
-  // Con ficha de jugador, el menu de cada persona (D116); sin sesion o gestor sin ficha, el de la web publica.
+  // Con ficha de jugador, el menu de cada persona (D117); sin sesion o gestor sin ficha, el de la web publica.
   const personal = Boolean(usuario?.esJugador);
   const menu = personal ? MENU_SESION : MENU;
   const actual = (s: Seccion) => zona === s.id;

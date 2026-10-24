@@ -32,7 +32,7 @@ const NOMBRE_GRUPO = { MDA: "grupo 1", MDL: "grupo 2" } as const;
 const dec1 = (x: number) => x.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const conSigno = (x: number) => (x > 0 ? `+${x}` : String(x));
 
-/** Inicio personal (D116, lienzo «Maccabis · Inicio personal»): con sesion, «/» enseña lo de cada persona y lo que
+/** Inicio personal (D117, lienzo «Maccabis · Inicio personal»): con sesion, «/» enseña lo de cada persona y lo que
  *  tiene que hacer. Orden: (gestores) «Gestión esta semana» · saludo · «Te faltan N respuestas» · y, debajo (en
  *  escritorio, tres columnas que se apilan solas): próximo partido con avisos | agenda | temporada con el club. */
 export default async function InicioPersonal({ usuario, aviso }: { usuario: Usuario; aviso?: "guardado" | "no_gestor" | null }) {
@@ -84,7 +84,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const limite = sumarDias(hoy, 14);
 
   // «Te faltan N respuestas»: encendido, lo que la web pide (14 dias, D102); apagado (fase puente), lo que SportEasy da
-  // como «sin responder» en la ultima importacion. Los planes no oficiales, siempre (D117).
+  // como «sin responder» en la ultima importacion. Los planes no oficiales, siempre (D118).
   const pendientes = todas.filter((u) => {
     if (!abierta(u)) return false;
     const est = estadoDe(u, respuestas, ausencias);

@@ -7,7 +7,7 @@ import { borrarPlan, cancelarPlan, hacerOficial, responderPlan } from "../accion
 
 type R = "va" | "duda" | "no";
 
-/** «¿Te apuntas?» de un plan (D117): Voy / No voy / Duda, sin motivo. Con plazas llenas, «Voy» pasa a «Completo». */
+/** «¿Te apuntas?» de un plan (D118): Voy / No voy / Duda, sin motivo. Con plazas llenas, «Voy» pasa a «Completo». */
 export function ResponderPlan({ id, actual, completo, nombre }: { id: string; actual: R | null; completo: boolean; nombre: string }) {
   const router = useRouter();
   const [marcada, setMarcada] = useState<R | null>(actual);

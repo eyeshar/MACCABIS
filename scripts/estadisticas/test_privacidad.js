@@ -112,7 +112,7 @@ const quien = sql3.slice(sql3.indexOf('create function public._quien_va'), sql3.
 ok(/returns table \(evento_id uuid, nombre text, estado text\)/.test(quien) && !/\.motivo|\.detalle|origen|nivel|posici/.test(quien), 'v_quien_va: solo evento, nombre y estado (sin motivos, detalles, origen, niveles ni posiciones)');
 const jugadorTs = ['src/lib/respuestas/jugador.ts', 'src/app/mi-zona/respuestas-acciones.ts'].map((f) => leer(f)).join('\n');
 ok(!/\.from\("(eventos|jugadores|asistencia_\w+|alertas_gestores|avisos_registro)"\)/.test(jugadorTs), 'lo del jugador lee sus vistas y lo suyo; nunca tablas de eventos, plantilla, asistencia, alertas ni registro de avisos');
-ok(/v_mi_agenda/.test(jugadorTs) && /v_quien_va/.test(jugadorTs), 'y usa v_mi_agenda (D116: su agenda con los planes) y v_quien_va');
+ok(/v_mi_agenda/.test(jugadorTs) && /v_quien_va/.test(jugadorTs), 'y usa v_mi_agenda (D117: su agenda con los planes) y v_quien_va');
 const textos = leer('src/lib/avisos/textos.ts').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
 ok(!/motivo|lesi[oó]n|trabajo|viaje|familia|nivel|posici/i.test(textos.replace(/Sin motivos, niveles ni posiciones/g, '')), 'los textos de los avisos (pantalla de bloqueo) no llevan motivos, niveles ni posiciones');
 const sw = fs.readFileSync(path.join(PLAT, 'public', 'sw.js'), 'utf8');
@@ -132,7 +132,7 @@ ok(tablas7.every((t) => new RegExp(`on public\\.${t} for select to authenticated
 const miConv = sql7.slice(sql7.indexOf('create function public.mi_convocatoria'), sql7.indexOf('alter table public.jugadores_privado'));
 ok(miConv.length > 100 && !/nivel|posicion|dificultad|motivo|origen|propuesta|jugadores_privado/.test(miConv) && /_mi_person_id\(\)/.test(miConv) && /estado = 'aprobada'/.test(miConv), 'mi_convocatoria (lo único del jugador): solo sus equipos de convocatorias aprobadas, sin niveles, posiciones, dificultad ni propuestas');
 const TABLAS_PRIV = ['jugadores_privado', 'convocatorias', 'convocatoria_cambios'];
-// El tablero (D120) y los grupos (D121) leen datos privados en su codigo de servidor (lib/tablero, lib/grupos), que solo
+// El tablero (D121) y los grupos (D122) leen datos privados en su codigo de servidor (lib/tablero, lib/grupos), que solo
 // usan las pantallas de Gestion.
 const fuera = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(path.join('gestion', '(panel)')) && !f.includes(path.join('lib', 'convocatoria')) && !f.includes(path.join('lib', 'tablero')) && !f.includes(path.join('lib', 'grupos')))
   .filter((f) => TABLAS_PRIV.some((t) => new RegExp('(from|rpc)\\(["\']' + t + '["\']').test(fs.readFileSync(f, 'utf8'))));
@@ -162,7 +162,7 @@ const personas = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'personas.js
 const reales = personas.filter((id) => pruebasConv.includes(`'${id}'`));
 ok(reales.length === 0, 'las pruebas de la convocatoria usan solo jugadores sintéticos (ningún person_id real)', reales.join(', '));
 
-console.log('\n== Inicio personal y planes (D116-D121): calendario personal, grupos y tablero');
+console.log('\n== Inicio personal y planes (D117-D122): calendario personal, grupos y tablero');
 const MIG8 = '20261024200000_inicio_y_planes.sql';
 const sql8 = sinComentarios(leer('supabase/migrations', MIG8));
 const tablas8 = [...sql8.matchAll(/create table public\.(\w+)/g)].map((m) => m[1]);
@@ -172,7 +172,7 @@ ok(drops8.length === 1 && /drop constraint eventos_tipo_check/.test(drops8[0]) &
 ok(!/\btruncate\b|\bdelete\b/i.test(sql8) && !/grant[^;]*\bdelete\b/i.test(sql8), 'sin TRUNCATE, DELETE ni permiso de borrar (un plan borrado queda marcado)');
 ok(fs.existsSync(path.join(PLAT, 'supabase', 'migrations', MIG8.replace(/\.sql$/, '.revertir.sql'))), 'con su revertir.sql');
 const anon8 = [...sql8.matchAll(/grant[^;]*\bto anon\b[^;]*;/gi)].map((m) => m[0].replace(/\s+/g, ' '));
-ok(anon8.length === 1 && /calendario_personal\(text\) to anon, authenticated/.test(anon8[0]), 'a anon solo se le da calendario_personal (D119, excepción acotada a D68)', anon8.join(' | '));
+ok(anon8.length === 1 && /calendario_personal\(text\) to anon, authenticated/.test(anon8[0]), 'a anon solo se le da calendario_personal (D120, excepción acotada a D68)', anon8.join(' | '));
 const cuerpo8 = (ini, fin) => sql8.slice(sql8.indexOf(ini), sql8.indexOf(fin));
 const calP = cuerpo8('create function public.calendario_personal', 'alter table public.respuestas add column sporteasy_descartado');
 ok(calP.length > 500 && !/\.motivo|\.detalle|nivel|posicion|jugadores_privado|sporteasy_|puesto_por/.test(calP) && /r\.person_id = j\.person_id/.test(calP) && /_invitado\(j\.person_id, e\.id\)/.test(calP), 'calendario_personal: solo sus eventos y SU respuesta; sin motivos, detalles, niveles, posiciones ni nada de SportEasy');

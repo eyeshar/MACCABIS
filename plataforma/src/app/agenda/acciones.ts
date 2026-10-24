@@ -5,7 +5,7 @@ import { exigirSesion } from "@/lib/sesion";
 import { cargarMiZona } from "@/app/mi-zona/datos";
 import { nuevoEnlace } from "@/lib/calendario/enlace";
 
-/** «Cambiar mi enlace» del calendario personal (D119): el anterior deja de funcionar al momento. */
+/** «Cambiar mi enlace» del calendario personal (D120): el anterior deja de funcionar al momento. */
 export async function cambiarMiEnlace(): Promise<{ ok: boolean; error?: string }> {
   const { supabase } = await exigirSesion();
   const zona = await cargarMiZona();

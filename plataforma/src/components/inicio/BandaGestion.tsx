@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 const CLAVE = "maccabis:banda-gestion-plegada";
 
-/** «Gestión esta semana» (D116): arriba del todo del inicio de un gestor, con las tareas de «Pendiente esta semana» del
+/** «Gestión esta semana» (D117): arriba del todo del inicio de un gestor, con las tareas de «Pendiente esta semana» del
  *  Panel, cada una enlazada, y «Abrir gestión». Plegable: recuerda el estado en este navegador. */
 export default function BandaGestion({ pendientes }: { pendientes: { texto: string; href: string }[] }) {
   const [plegada, setPlegada] = useState(false);

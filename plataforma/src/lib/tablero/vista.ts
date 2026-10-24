@@ -1,4 +1,4 @@
-// Tablero de asistencias y convocatoria (D120): funciones PURAS (las usan la pantalla, que recalcula al momento, y las
+// Tablero de asistencias y convocatoria (D121): funciones PURAS (las usan la pantalla, que recalcula al momento, y las
 // pruebas). El motor sigue proponiendo; el tablero es para ver de un vistazo quien va y ajustar a mano.
 import { LINEA_DE, revisar, type Convocatoria, type Entrada, type Equipo, type Linea, type Nivel, type Posicion, type RespuestaPartido } from "../convocatoria/motor.ts";
 

@@ -73,7 +73,7 @@ function leerFormulario(f: FormData, base: EventoFila | null): { campos?: Campos
   const titulo = delAyuntamiento ? base!.titulo : texto(f, "titulo") || null;
   if (tipo === "liga" && !delAyuntamiento && !rival) return { error: "Un partido de liga necesita rival." };
   if (tipo !== "liga" && tipo !== "entreno" && !titulo && !rival) return { error: "Ponle un título o un rival." };
-  // D118: sin pista del catalogo, un sitio libre (buscador de OpenStreetMap o enlace de Google Maps).
+  // D119: sin pista del catalogo, un sitio libre (buscador de OpenStreetMap o enlace de Google Maps).
   const libre = !pista_id && !delAyuntamiento;
   const ubicacion = libre ? {
     ubicacion_nombre: texto(f, "ubicacion_nombre").slice(0, 120) || null, ubicacion_direccion: texto(f, "ubicacion_direccion").slice(0, 240) || null,
@@ -346,7 +346,7 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
 }
 
 // ---------------------------------------------------------------- importar: respuestas y ausencias de SportEasy
-/** D120: una importacion NO pisa un cambio de gestor mas reciente (el tablero, «Responder por el»): sale como conflicto
+/** D121: una importacion NO pisa un cambio de gestor mas reciente (el tablero, «Responder por el»): sale como conflicto
  *  para que se decida. Si se decide mantener lo del gestor, el valor de SportEasy queda descartado y no vuelve a salir
  *  como conflicto mientras SportEasy diga lo mismo. */
 export type Conflicto = { clave: string; gestor: string; puestoPor: string | null; en: string | null; sporteasy: string };
@@ -399,7 +399,7 @@ export async function analizarRespuestas(textoPegado: string): Promise<Resultado
 }
 
 /** Guarda las lineas validas (una respuesta por persona y evento) y registra la importacion. Las bloqueadas esperan.
- *  Un conflicto con un cambio de gestor (D120) se queda como lo dejo el gestor salvo que se elija «Usar SportEasy». */
+ *  Un conflicto con un cambio de gestor (D121) se queda como lo dejo el gestor salvo que se elija «Usar SportEasy». */
 export async function guardarRespuestas(textoPegado: string, usarSportEasy: string[] = []): Promise<ResultadoRespuestas> {
   const { supabase, nombre, user, lineas, actuales } = await leerConLaBase(textoPegado);
   const ahora = new Date().toISOString();

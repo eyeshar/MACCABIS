@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Tablero de asistencias y convocatoria (D120), de extremo a extremo: pila local, web compilada y Chrome.
+// Tablero de asistencias y convocatoria (D121), de extremo a extremo: pila local, web compilada y Chrome.
 //   - domingo: una linea por jugador con su estado en cada partido (Convocado / Convocar / no va / duda / sin ficha);
 //     «Juegan (N) · M sin convocar»; convocar y quitar desde la casilla; doblaje marcado; los cuatro «Agrupar por» (que
 //     no cambian la convocatoria y se recuerdan); acciones en grupo entre bloques; avisos recalculados; una aprobada que

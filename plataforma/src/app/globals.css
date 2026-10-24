@@ -560,7 +560,7 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .mz-hola { order: 1; }
 .mz .rw-banda { order: 2; }
 .mz .rw-faltan { order: 3; }
-/* Solo dentro de .mz (la Mi zona antigua): el inicio personal (D116) usa los mismos id con su propio orden. */
+/* Solo dentro de .mz (la Mi zona antigua): el inicio personal (D117) usa los mismos id con su propio orden. */
 .mz #agenda { order: 4; }
 .mz .rw-marcar { order: 5; }
 .mz #domingo { order: 6; }

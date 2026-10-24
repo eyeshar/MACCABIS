@@ -6,7 +6,7 @@ import "./tablero.css";
 export const metadata = { title: "Tablero · Gestión Maccabis" };
 export const dynamic = "force-dynamic";
 
-// Tablero de asistencias y convocatoria (D120): solo gestores. Un DOMINGO de partidos (una linea por jugador, con su
+// Tablero de asistencias y convocatoria (D121): solo gestores. Un DOMINGO de partidos (una linea por jugador, con su
 // estado en cada partido) o un EVENTO SUELTO (Van · Duda o sin responder · No van). Complementa al motor de
 // convocatorias, que sigue proponiendo: aqui se ve de un vistazo y se ajusta a mano.
 export default async function PaginaTablero({ searchParams }: { searchParams: Promise<{ domingo?: string; evento?: string }> }) {

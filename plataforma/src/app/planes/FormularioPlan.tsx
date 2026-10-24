@@ -19,8 +19,8 @@ export type PlanInicial = {
   plazas: number | null; notas: string | null; recordar: boolean; rival_texto: string | null; lugar: Lugar | null;
 };
 
-/** «Proponer un plan» (D117, lienzo «Inicio personal»): tipo en cuatro botones, título, día, quedada, empieza, dónde
- *  (buscador, D118), contra quién (solo amistoso), para quién, plazas, algo más y «Recordar un día antes». Se publica al
+/** «Proponer un plan» (D118, lienzo «Inicio personal»): tipo en cuatro botones, título, día, quedada, empieza, dónde
+ *  (buscador, D119), contra quién (solo amistoso), para quién, plazas, algo más y «Recordar un día antes». Se publica al
  *  momento como plan no oficial. El mismo formulario edita un plan. */
 export default function FormularioPlan({ plan, hoy, volver }: { plan?: PlanInicial; hoy: string; volver: string }) {
   const [estado, accion, enviando] = useActionState(plan ? editarPlan.bind(null, plan.id) : crearPlan, null);

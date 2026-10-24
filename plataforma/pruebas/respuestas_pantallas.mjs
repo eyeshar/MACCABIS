@@ -127,7 +127,7 @@ try {
   await entrar(pj, jugadorEmail);
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.getByText('Activa los avisos en este móvil')), 'banda amarilla «Activa los avisos en este móvil»');
-  ok(/se responden en SportEasy/.test(await pj.getByTestId('regla-recordatorios').innerText()), 'inicio (D116): «los partidos y entrenos se responden en SportEasy»');
+  ok(/se responden en SportEasy/.test(await pj.getByTestId('regla-recordatorios').innerText()), 'inicio (D117): «los partidos y entrenos se responden en SportEasy»');
   ok((await pj.locator('.rw-banda svg').count()) === 1 && !(await pj.locator('.rw-banda').innerText()).includes('🔔'), 'la banda lleva la campana dibujada (icono), no el emoji 🔔');
   ok(!(await pj.locator('.rw-btn').count()) && !(await pj.getByText(/Te faltan|Te falta 1/).count()), 'sin botones para responder ni «Te faltan…»');
   await pj.goto(`${APP}/agenda`);
@@ -190,7 +190,7 @@ try {
   const pequenos = await tactiles(pj, '.rw-btn, .rw-banda, .rw-marcar, .zb a');
   ok(!pequenos.length, 'botones y enlaces de Mi zona de al menos 44 px', JSON.stringify(pequenos));
   ok(await sinDesbordar(pj), 'Mi zona encendido a 375 px sin desbordamiento');
-  // D116 (inicio personal, antes Mi zona): saludo, banda «Activa los avisos», «Te faltan N», próximo partido, agenda y temporada.
+  // D117 (inicio personal, antes Mi zona): saludo, banda «Activa los avisos», «Te faltan N», próximo partido, agenda y temporada.
   const om = await pj.evaluate(() => { const y = (sel) => { const e = document.querySelector(sel); return e ? Math.round(e.getBoundingClientRect().top + scrollY) : null; }; return { hola: y('.in-hola'), banda: y('.rw-banda'), faltan: y('#pendientes'), partido: y('#proximo-partido'), agenda: y('#agenda'), temporada: y('#temporada') }; });
   const crece = (...xs) => xs.every((x) => x != null) && xs.every((x, i) => i === 0 || x > xs[i - 1]);
   ok(crece(om.hola, om.banda, om.faltan, om.partido, om.agenda, om.temporada), 'inicio en el móvil: saludo → banda → «Te faltan» → próximo partido → «Tu agenda» → temporada', JSON.stringify(om));

@@ -22,7 +22,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
     supabase.rpc("respuestas_web_encendido"), supabase.from("suscripciones_avisos").select("person_id").eq("activa", true),
   ]);
   if (!evento) notFound();
-  // Un plan no oficial (D117) se gestiona en su ficha (Editar · Hacer oficial · Borrar).
+  // Un plan no oficial (D118) se gestiona en su ficha (Editar · Hacer oficial · Borrar).
   if (evento.oficial === false) redirect(`/planes/${evento.id}`);
   const invitadosPor = {
     entreno: convocadosDe({ tipo: "entreno", equipo: "ambos" }, jugadores).length,
@@ -56,7 +56,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
         </div>
         <div className="ev-botones">
           <Link className="boton boton-contorno" href={`/gestion/eventos/${evento.id}/respuestas`}>Respuestas y motivos</Link>
-          {/* D120 y D121: el tablero (quien va y ajustes a mano) y, en un entreno, los grupos. */}
+          {/* D121 y D122: el tablero (quien va y ajustes a mano) y, en un entreno, los grupos. */}
           <Link className="boton boton-contorno" href={evento.tipo === "liga" ? `/gestion/tablero?domingo=${evento.fecha}` : `/gestion/tablero?evento=${evento.id}`}>Abrir tablero</Link>
           {evento.tipo === "entreno" && <Link className="boton boton-contorno" href={`/gestion/grupos/${evento.id}`}>Grupos</Link>}
         </div>

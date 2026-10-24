@@ -7,7 +7,7 @@ import {
 } from "@/lib/respuestas/dominio";
 import { SPORTEASY_CALENDARIO } from "@/lib/web";
 
-// Piezas del inicio personal y de la Agenda (D116): la tarjeta de «Te faltan N respuestas» y la fila de «Tu agenda».
+// Piezas del inicio personal y de la Agenda (D117): la tarjeta de «Te faltan N respuestas» y la fila de «Tu agenda».
 
 export type Convocatorias = { fecha: string; equipos: ("MdA" | "MdL")[] }[];
 
@@ -68,7 +68,7 @@ export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, enc
 
 /** Tarjeta de «Te faltan N respuestas»: tipo, fecha en grande, casillas Quedada / Empieza (o Partido), titulo y sitio.
  *  Encendido: Voy / No voy / Duda (No voy con su hoja de motivo). Apagado (fase puente): «Responder en SportEasy».
- *  Los planes se responden aqui siempre (D117). */
+ *  Los planes se responden aqui siempre (D118). */
 export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u: Unidad; encendido: boolean; respuestas: MiRespuesta[]; plazasLlenas?: boolean }) {
   const e = u.eventos[0];
   const h = horasDe(u);

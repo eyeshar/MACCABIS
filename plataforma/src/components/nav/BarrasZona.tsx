@@ -29,5 +29,5 @@ export function BarraGestion() {
   );
 }
 
-// La barra propia de Mi zona (D99) ya no existe (D116): Inicio, Agenda y Mis números estan en la navegacion de toda la
+// La barra propia de Mi zona (D99) ya no existe (D117): Inicio, Agenda y Mis números estan en la navegacion de toda la
 // web y las paginas de /mi-zona/* (evento, domingo, ausencias, ropa) marcan «Agenda».

@@ -1,4 +1,4 @@
-/* ===== Tablero de asistencias y convocatoria (D120) =====
+/* ===== Tablero de asistencias y convocatoria (D121) =====
    Verde para Van, gris para Duda, rojo suave para No van; MdA amarillo y MdL naranja. Toque >= 44 px. En el movil la
    tabla del domingo se desplaza en horizontal dentro de su caja, con la columna del jugador fija a la izquierda. */
 .tb { display: flex; flex-direction: column; gap: 14px; padding-bottom: 96px; }

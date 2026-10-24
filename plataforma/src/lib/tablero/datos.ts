@@ -7,7 +7,7 @@ import { convocadosDe, tituloEvento, TEXTO_MOTIVO, type Motivo } from "@/lib/eve
 import { hoyMadrid, sumarDias } from "@/lib/dias";
 import type { FilaTablero, PartidoTablero } from "./vista";
 
-// Lo que lee el tablero (D120), con la sesion del GESTOR: la base (RLS + is_gestor) decide. Nada de esto llega nunca a
+// Lo que lee el tablero (D121), con la sesion del GESTOR: la base (RLS + is_gestor) decide. Nada de esto llega nunca a
 // un jugador.
 
 export type Registro = { id: string; en: string; por: string; texto: string };

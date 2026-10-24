@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Grupos de entreno (D121).
+// Grupos de entreno (D122).
 //   - la sugerencia (pura): junta a los del mismo equipo del domingo, equilibra lineas y nivel, coloca a quien no juega
 //     en los grupos mas cortos con la linea que falte y a quien dobla segun la regla (partido mas dificil; si igual, el
 //     equipo con menos); sin partido, reparto equilibrado; cada grupo explica de donde sale;

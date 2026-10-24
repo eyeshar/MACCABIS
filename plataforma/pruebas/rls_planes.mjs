@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Planes no oficiales (D117), contra la pila LOCAL (Postgres + PostgREST reales con NUESTRAS migraciones):
+// Planes no oficiales (D118), contra la pila LOCAL (Postgres + PostgREST reales con NUESTRAS migraciones):
 //   - la migracion conjunta (20261024200000) es solo aditiva y reversible (su .revertir.sql la deshace limpia);
 //   - RLS y funciones: un jugador crea y edita lo suyo y NO lo ajeno; NO borra ni hace oficial; un gestor edita, borra
 //     y hace oficial cualquier plan (y al organizador le queda un aviso en su inicio);

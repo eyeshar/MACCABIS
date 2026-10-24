@@ -21,8 +21,8 @@ export const metadata: Metadata = { title: "Agenda · Maccabis", robots: { index
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-// Agenda (D116): toda su agenda, oficiales y planes no oficiales (D117), por meses; «Proponer un plan», «Marcar días que
-// no estoy» (con respuestas en la web) y «Tu calendario en el móvil» (D119).
+// Agenda (D117): toda su agenda, oficiales y planes no oficiales (D118), por meses; «Proponer un plan», «Marcar días que
+// no estoy» (con respuestas en la web) y «Tu calendario en el móvil» (D120).
 export default async function Agenda() {
   const { supabase } = await exigirSesion();
   const zona = await cargarMiZona();

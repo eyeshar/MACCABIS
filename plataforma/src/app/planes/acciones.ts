@@ -6,7 +6,7 @@ import { exigirSesion } from "@/lib/sesion";
 import { textoError } from "@/lib/respuestas/dominio";
 import { avisarOrganizador } from "@/lib/avisos/servidor";
 
-// Planes no oficiales (D117). Todo pasa por funciones de la base (crear_plan, editar_plan, cancelar_plan, borrar_plan,
+// Planes no oficiales (D118). Todo pasa por funciones de la base (crear_plan, editar_plan, cancelar_plan, borrar_plan,
 // hacer_oficial, responder_plan), que comprueban quien es el organizador, si es gestor, la invitacion y las plazas.
 // La pantalla solo pinta.
 

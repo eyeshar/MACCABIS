@@ -7,7 +7,7 @@ import { convocadosDe } from "@/lib/eventos/dominio";
 import { hoyMadrid } from "@/lib/dias";
 import type { DomingoGrupos, JugadorGrupo } from "./sugerir";
 
-// Lo que leen los grupos de entreno (D121), con la sesion del GESTOR (RLS: solo gestores). Niveles y el criterio de la
+// Lo que leen los grupos de entreno (D122), con la sesion del GESTOR (RLS: solo gestores). Niveles y el criterio de la
 // sugerencia viven solo aqui; a un jugador solo le llega su grupo publicado (mis_grupos()).
 
 export type Reparto = { id: string; nombre: string; tamano: number; grupos: { nombre: string; personas: string[]; explica?: string }[]; publicado: boolean; cambiado_en: string; cambiado_por_nombre: string | null };

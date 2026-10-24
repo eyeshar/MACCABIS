@@ -244,7 +244,7 @@ export function temporadaDe(personId: string) {
       minutos: g.sec != null ? Math.round(g.sec / 60) : null, masMenos: g.pm ?? null,
     };
   });
-  // Mas/menos con el en pista, minutos y entrenos (D116: «Tu temporada» del inicio personal; datos ya publicos).
+  // Mas/menos con el en pista, minutos y entrenos (D117: «Tu temporada» del inicio personal; datos ya publicos).
   return { display: j.display, dorsales: j.dorsales, pj: j.pj, minutos: j.min_tot, tot: j.tot, partidos, masMenos: j.tot.pm ?? null, entrenos: j.asist_entr ?? null };
 }
 

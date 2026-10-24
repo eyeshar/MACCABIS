@@ -19,14 +19,14 @@ export type MiEvento = {
   cambio_visible: { campos: string[]; antes: string } | null; cambio_visible_en: string | null;
   pista_nombre: string | null; pista_nombre_corto: string | null; pista_direccion: string | null; numero_pista: number | null;
   pista_por_confirmar: boolean; pista_motivo: string | null;
-  /** D117: plan no oficial de un jugador (oficial = false), quien lo organiza y sus plazas. */
+  /** D118: plan no oficial de un jugador (oficial = false), quien lo organiza y sus plazas. */
   oficial?: boolean; creado_por?: string | null; organizador?: string | null; es_mio?: boolean; plazas?: number | null;
   rival_texto?: string | null; recordar_un_dia_antes?: boolean;
-  /** D118: el sitio efectivo (la pista del catalogo o la ubicacion libre). */
+  /** D119: el sitio efectivo (la pista del catalogo o la ubicacion libre). */
   lugar_nombre?: string | null; lugar_direccion?: string | null; lugar_lat?: number | null; lugar_lng?: number | null; lugar_enlace?: string | null;
   secuencia?: number; actualizado_en?: string;
 };
-/** Un plan no oficial (D117). */
+/** Un plan no oficial (D118). */
 export const esPlan = (e: Pick<MiEvento, "oficial">) => e.oficial === false;
 export type MiRespuesta = { evento_id: string; respuesta: Resp; motivo: MotivoTodo | null; detalle: string | null; ausencia_id: string | null; origen?: string; puesto_por_nombre?: string | null };
 export type MiAusencia = { id: string; desde: string; hasta: string | null; motivo: MotivoJugador; detalle: string | null; borrada_en: string | null; origen?: string };
@@ -46,7 +46,7 @@ export type PersonaResponde = { ficha_mda: boolean; ficha_mdl: boolean; entrena:
 export const respondeEnGeneral = (j: Pick<PersonaResponde, "activo" | "rol">) => j.activo && j.rol !== "entrenador";
 
 /** ¿Está invitado a este evento? Entreno o «entre nosotros»: quien entrena o tiene ficha; partido: su ficha, y nunca «solo entreno».
- *  Planes no oficiales y tipos nuevos (quedada, pachanga, otro; D117): «para quién» = toda la plantilla, solo MdA o solo MdL. */
+ *  Planes no oficiales y tipos nuevos (quedada, pachanga, otro; D118): «para quién» = toda la plantilla, solo MdA o solo MdL. */
 export function quienResponde(e: { tipo: string; equipo: string; oficial?: boolean }, j: PersonaResponde) {
   if (!respondeEnGeneral(j)) return false;
   if (e.oficial === false || e.tipo === "quedada" || e.tipo === "pachanga" || e.tipo === "otro") {
@@ -152,7 +152,7 @@ export const fechaLarga = (f: string) => `${DIAS[new Date(`${f}T12:00:00Z`).getU
 /** "miércoles 14" */
 export const diaCorto = (f: string) => `${DIAS[new Date(`${f}T12:00:00Z`).getUTCDay()]} ${+f.slice(8, 10)}`;
 const mas1 = (f: string) => { const d = new Date(`${f}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
-/** Fecha en titular (D116): «Hoy, miércoles 28 de octubre», «Mañana, domingo 25 de octubre», «Miércoles 28 de octubre». */
+/** Fecha en titular (D117): «Hoy, miércoles 28 de octubre», «Mañana, domingo 25 de octubre», «Miércoles 28 de octubre». */
 export const fechaTitular = (f: string, hoy: string) => {
   const larga = fechaLarga(f);
   if (f === hoy) return `Hoy, ${larga}`;
@@ -181,7 +181,7 @@ export const TEXTO_TIPO: Record<TipoMiEvento, string> = {
 export function tituloDe(e: Pick<MiEvento, "tipo" | "equipo" | "titulo" | "rival" | "es_local"> & { oficial?: boolean; rival_texto?: string | null }) {
   if (e.tipo === "entreno") return e.titulo && e.titulo !== "Entrenamiento semanal" ? e.titulo : "Entreno";
   if (e.tipo === "liga") { const n = NOMBRE_EQ[e.equipo]; const r = limpiar(e.rival); return e.es_local === false ? `${r} – ${n}` : `${n} – ${r}`; }
-  // Un plan (D117) se llama como lo titulo quien lo propuso.
+  // Un plan (D118) se llama como lo titulo quien lo propuso.
   if (e.oficial === false || e.tipo === "quedada" || e.tipo === "pachanga" || e.tipo === "otro") return e.titulo ?? TEXTO_TIPO[e.tipo];
   const tipo = TEXTO_TIPO[e.tipo];
   return e.titulo ? `${tipo} «${e.titulo}»` : e.rival ? `${tipo} contra ${limpiar(e.rival)}` : tipo;
@@ -205,7 +205,7 @@ export function pistaTexto(e: Pick<MiEvento, "pista_nombre" | "pista_nombre_cort
   return `${e.pista_nombre_corto ?? e.pista_nombre}${n ? ` · pista ${n}` : ""}`;
 }
 export const enlaceMapa = (direccion: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
-/** «Ver en Google Maps» / «Cómo llegar» de un evento (D118): coordenadas, si no la dirección; si no, el enlace guardado. */
+/** «Ver en Google Maps» / «Cómo llegar» de un evento (D119): coordenadas, si no la dirección; si no, el enlace guardado. */
 export function enlaceLugar(e: Pick<MiEvento, "lugar_lat" | "lugar_lng" | "lugar_direccion" | "lugar_nombre" | "lugar_enlace" | "pista_direccion">) {
   if (e.lugar_lat != null && e.lugar_lng != null) return `https://www.google.com/maps/search/?api=1&query=${e.lugar_lat},${e.lugar_lng}`;
   const dir = e.lugar_direccion ?? e.pista_direccion;
@@ -241,7 +241,7 @@ export const ERRORES: Record<string, string> = {
   opcion_no_valida: "Esa opción no vale para este domingo.",
   fechas_no_validas: "El último día no puede ser antes que el primero.",
   ausencia_no_encontrada: "Esa ausencia ya no existe.",
-  // Planes no oficiales (D117)
+  // Planes no oficiales (D118)
   completo: "Ya está completo: no quedan plazas.",
   plan_no_encontrado: "Ese plan ya no existe.",
   no_es_tuyo: "Solo quien organiza el plan (o un gestor) puede cambiarlo.",

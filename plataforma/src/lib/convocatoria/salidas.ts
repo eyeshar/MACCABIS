@@ -4,7 +4,7 @@ import { avisarConvocados } from "./avisos";
 import { cargarContexto } from "./datos";
 
 /** Si la convocatoria del domingo esta aprobada, avisa «Estás convocado» a los nuevos (solo con el interruptor
- *  encendido; si no, queda «en espera»). La usan la pantalla de convocatoria y el tablero (D120), igual que hasta ahora.
+ *  encendido; si no, queda «en espera»). La usan la pantalla de convocatoria y el tablero (D121), igual que hasta ahora.
  *  Si el envio falla, la convocatoria sigue aprobada y el aviso queda en espera para «Enviar ahora». */
 export async function avisarSiAprobada(sb: Cliente, fecha: string) {
   const ctx = await cargarContexto(sb, fecha);

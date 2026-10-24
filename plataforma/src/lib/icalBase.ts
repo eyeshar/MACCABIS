@@ -1,5 +1,5 @@
 // Piezas comunes de los calendarios iCal (RFC 5545), PURAS: el publico (/calendario.ics, lib/ical.ts) y el personal
-// (/cal/<enlace>.ics, D119). CRLF, lineas plegadas a 75 octetos y texto escapado.
+// (/cal/<enlace>.ics, D120). CRLF, lineas plegadas a 75 octetos y texto escapado.
 
 export const escapar = (t: string) => t.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 

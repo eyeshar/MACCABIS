@@ -60,7 +60,7 @@ export function textoOtro(e: EventoTexto, cuando: "creado" | "24h"): Texto {
   };
 }
 
-/** Plan no oficial (D117) con «recordar un día antes»: a los invitados que no han respondido. */
+/** Plan no oficial (D118) con «recordar un día antes»: a los invitados que no han respondido. */
 export function textoPlanManana(e: EventoTexto): Texto {
   return {
     titulo: `Mañana: ${e.titulo ?? "plan"}. ¿Te apuntas?`,

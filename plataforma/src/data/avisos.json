@@ -1,5 +1,5 @@
 {
-  "descripcion": "Avisos de la jornada del inicio personal (D116). Cada aviso: id, texto, desde y hasta (AAAA-MM-DD, ambos incluidos) y para (todos | MdA | MdL). Se ve en «Tu próximo partido» de quien tiene ficha de ese equipo. Se copia a plataforma/src/data/ con npm run datos:sync. Sin nombres ni datos personales.",
+  "descripcion": "Avisos de la jornada del inicio personal (D117). Cada aviso: id, texto, desde y hasta (AAAA-MM-DD, ambos incluidos) y para (todos | MdA | MdL). Se ve en «Tu próximo partido» de quien tiene ficha de ese equipo. Se copia a plataforma/src/data/ con npm run datos:sync. Sin nombres ni datos personales.",
   "avisos": [
     {
       "id": "cambio-hora-2026-10-25",

@@ -5,7 +5,7 @@ import { exigirGestor } from "@/lib/sesion";
 import { cargarGrupos } from "@/lib/grupos/datos";
 import { sugerirGrupos, type Grupo } from "@/lib/grupos/sugerir";
 
-// Grupos de entreno (D121). Solo gestores (RLS de grupos_repartos: is_gestor). La sugerencia se calcula en el servidor
+// Grupos de entreno (D122). Solo gestores (RLS de grupos_repartos: is_gestor). La sugerencia se calcula en el servidor
 // con los datos de la base; lo que se guarda se valida contra los invitados al entreno.
 
 export type R<T = undefined> = { ok: true; dato?: T } | { ok: false; error: string };

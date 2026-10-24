@@ -2,7 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 import type { clienteSesion } from "@/lib/supabase";
 
-// Enlace secreto del calendario personal (D119, excepcion acotada a D68): /cal/<token>.ics. El token lo calcula el
+// Enlace secreto del calendario personal (D120, excepcion acotada a D68): /cal/<token>.ics. El token lo calcula el
 // servidor (HMAC con un secreto del servidor, la persona y la version); la base solo guarda su hash. «Cambiar mi
 // enlace» sube la version: el anterior deja de funcionar. El secreto: CALENDARIO_SECRETO (o, si no esta, uno derivado de
 // la clave de servicio). Cambiar el secreto invalida todos los enlaces.

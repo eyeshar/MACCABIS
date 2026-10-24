@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Plan · Maccabis" };
 
 const PARA = { ambos: "toda la plantilla", MdA: "los del MdA", MdL: "los del MdL" } as const;
 
-// Ficha de un plan no oficial (D117, lienzo «Inicio personal»): etiquetas, titulo, quien lo organiza y para quien, fecha
+// Ficha de un plan no oficial (D118, lienzo «Inicio personal»): etiquetas, titulo, quien lo organiza y para quien, fecha
 // en titular, casillas Quedada / Empieza, donde con «Cómo llegar», nota, «¿Te apuntas?» y «Quién va» (solo nombres). Al
 // organizador, Editar y Cancelar; a los gestores, «Como gestor»: Editar · Hacer oficial · Borrar.
 export default async function FichaPlan({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ nuevo?: string; guardado?: string }> }) {

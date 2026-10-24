@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 export const metadata = { title: "Grupos de entreno · Gestión Maccabis" };
 export const dynamic = "force-dynamic";
 
-// Grupos de entreno (D121): los proximos entrenos y sus repartos. Sin parametros, al del proximo entreno.
+// Grupos de entreno (D122): los proximos entrenos y sus repartos. Sin parametros, al del proximo entreno.
 export default async function PaginaGrupos({ searchParams }: { searchParams: Promise<{ lista?: string }> }) {
   const { lista } = await searchParams;
   const { supabase } = await exigirGestor();

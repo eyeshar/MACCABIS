@@ -122,7 +122,7 @@ try {
       p.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
       if (conf.email) {
         await entrar(p, conf.email);
-        if (rol === 'gestor') ok(new URL(p.url()).pathname === '/', 'gestor que tambien es jugador: entra en su inicio (con la banda de gestion, D116)', p.url());
+        if (rol === 'gestor') ok(new URL(p.url()).pathname === '/', 'gestor que tambien es jugador: entra en su inicio (con la banda de gestion, D117)', p.url());
       }
 
       const firmas = new Map();
@@ -180,7 +180,7 @@ try {
       const cab = p.locator('header.nv-cab');
       const barra = p.locator('nav[aria-label="Secciones"]');
       const acceso = cab.getByRole('link', { name: 'Acceso' });
-      // D116: con sesion de jugador, «Agenda» y «Mis números» (lo de cada persona) en la cabecera y en la barra.
+      // D117: con sesion de jugador, «Agenda» y «Mis números» (lo de cada persona) en la cabecera y en la barra.
       const miZonaVisible = movil ? await barra.getByRole('link', { name: 'Agenda' }).isVisible() : await cab.getByRole('link', { name: 'Agenda' }).isVisible();
       const botonGestion = cab.getByRole('button', { name: /GESTIÓN/ });
       const botonUsuario = cab.locator('button.nv-avatar');
@@ -269,7 +269,7 @@ try {
         const mas = barra.getByRole('button', { name: 'Más' });
         const textos = await barra.locator(':scope > a, :scope > button').allTextContents();
         const barraPrevista = { anon: ['Inicio', 'Partidos', 'Liga', 'Acceso', 'Más'], jugador: ['Inicio', 'Agenda', 'Mis números', 'Liga', 'Más'], gestor: ['Inicio', 'Agenda', 'Mis números', 'Gestión', 'Más'] }[rol];
-        ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(barraPrevista), `barra inferior: ${barraPrevista.join(' · ')} (D116)`, textos.join(','));
+        ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(barraPrevista), `barra inferior: ${barraPrevista.join(' · ')} (D117)`, textos.join(','));
         await mas.click();
         const hoja = p.getByRole('dialog', { name: 'Más' });
         ok(await hoja.isVisible() && (await mas.getAttribute('aria-expanded')) === 'true', '"Más" abre la hoja desde abajo');
@@ -292,7 +292,7 @@ try {
         await foto(p, `cabecera_${rol}_${etiqueta}`, false);
       } else if (rol !== 'gestor') await foto(p, `cabecera_${rol}_${etiqueta}`, false);
 
-      // ---- Inicio personal (D116): «/» con sesion; /mi-zona redirige ahi y ya no hay barra propia de Mi zona
+      // ---- Inicio personal (D117): «/» con sesion; /mi-zona redirige ahi y ya no hay barra propia de Mi zona
       if (rol !== 'anon') {
         await p.goto(`${APP}/mi-zona`);
         ok(new URL(p.url()).pathname === '/' && (await p.locator('nav[aria-label="Mi zona"]').count()) === 0, 'inicio: /mi-zona lleva a «/» y no hay barra propia de Mi zona (Inicio · Agenda · Mis números están en la navegación)');

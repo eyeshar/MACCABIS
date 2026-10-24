@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { sesionActual } from "@/lib/sesion";
 import { deNominatim, type FilaNominatim, type Lugar } from "@/lib/ubicacion";
 
-// Buscador del campo «Dónde» (D118): sugerencias de OpenStreetMap (Nominatim) pedidas DESDE EL SERVIDOR, con cache y
+// Buscador del campo «Dónde» (D119): sugerencias de OpenStreetMap (Nominatim) pedidas DESDE EL SERVIDOR, con cache y
 // respetando su politica de uso (como mucho una peticion por segundo, identificando la web en el User-Agent). Coste
 // cero: sin Google Places ni claves de pago. Solo con sesion (no es un buscador abierto). LUGARES_URL permite a las
 // pruebas usar un servicio simulado (nunca se llama a OpenStreetMap en las pruebas).

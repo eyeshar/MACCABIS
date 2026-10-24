@@ -1,4 +1,4 @@
-/* ===== Inicio personal, agenda, planes y calendario personal (D116-D119) =====
+/* ===== Inicio personal, agenda, planes y calendario personal (D117-D120) =====
    Sistema visual de globals.css: tema oscuro, Barlow Condensed para titulares y cifras grandes, Barlow para el texto,
    amarillo MdA, naranja MdL; los planes no oficiales con su etiqueta en violeta suave. Toque >= 44 px, contraste AA,
    sin desbordamiento a 375 px. */
@@ -126,7 +126,7 @@
 .confirmar { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--error) 40%, transparent); background: var(--error-fondo); }
 .confirmar-pregunta { margin: 0; font-weight: 600; }
 
-/* --- planes no oficiales (D117) --- */
+/* --- planes no oficiales (D118) --- */
 .pl-etq-plan { display: inline-flex; align-self: flex-start; align-items: center; padding: 2px 10px; border-radius: 999px; background: var(--plan-fondo); color: var(--plan-tinta); border: 1px solid var(--plan-borde); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; }
 .pl-etq-tipo { display: inline-flex; padding: 2px 10px; border-radius: 999px; background: var(--borde); color: var(--tinta-suave); font-size: 0.78rem; font-weight: 700; }
 .pl-etiquetas { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -154,7 +154,7 @@
 @media (min-width: 720px) { .pl-tipos-fila { grid-template-columns: repeat(4, 1fr); } }
 .rw-btn-completo { color: var(--tinta-tenue); border-color: var(--borde-fuerte); cursor: not-allowed; }
 
-/* --- buscador de sitios (D118) --- */
+/* --- buscador de sitios (D119) --- */
 .lg { position: relative; }
 .lg-buscar { display: flex; flex-direction: column; gap: 4px; }
 .lg-buscar label { font-weight: 700; font-size: 14px; }

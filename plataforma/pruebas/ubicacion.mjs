@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Ubicacion en todos los eventos (D118). El buscador de OpenStreetMap se SIMULA (un servidor local con respuestas fijas):
+// Ubicacion en todos los eventos (D119). El buscador de OpenStreetMap se SIMULA (un servidor local con respuestas fijas):
 // las pruebas nunca llaman a OpenStreetMap.
 //   - enlaces de Google Maps: largo (con nombre y coordenadas) y corto (maps.app.goo.gl: se guarda tal cual);
 //   - /api/lugares: solo con sesion, identifica la web (User-Agent), cache (la misma busqueda no vuelve a salir);

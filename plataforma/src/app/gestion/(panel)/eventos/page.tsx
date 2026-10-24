@@ -19,7 +19,7 @@ const FILTROS = [
   { id: "amistosos", texto: "Amistosos y torneos" },
   { id: "pendientes", texto: "Pendientes de SportEasy" },
   { id: "pasados", texto: "Pasados" },
-  // D117: los planes no oficiales de los jugadores (no cuentan para nada del club; aqui se ven, se editan o se hacen oficiales).
+  // D118: los planes no oficiales de los jugadores (no cuentan para nada del club; aqui se ven, se editan o se hacen oficiales).
   { id: "planes", texto: "Planes de jugadores" },
 ] as const;
 type Filtro = (typeof FILTROS)[number]["id"];
@@ -37,7 +37,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
     supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, aceptadas, bloqueadas").order("en", { ascending: false }).limit(4),
     supabase.rpc("respuestas_web_encendido"),
   ]);
-  // Los planes no oficiales (D117) solo salen en su filtro: el resto de la pantalla es lo del club.
+  // Los planes no oficiales (D118) solo salen en su filtro: el resto de la pantalla es lo del club.
   const eventos = todos.filter((e) => !esPlanFila(e));
   const resp = new Map<string, { respuesta: Respuesta }[]>();
   let ultimaLectura: string | null = null;

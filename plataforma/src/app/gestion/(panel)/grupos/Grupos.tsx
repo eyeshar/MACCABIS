@@ -11,7 +11,7 @@ type G = { nombre: string; personas: string[]; explica?: string };
 const TEXTO_POS: Record<string, string> = { base: "Base", escolta: "Escolta", alero: "Alero", ala_pivot: "Ala-pívot", pivot: "Pívot" };
 const FUERA = -1;
 
-/** Grupos de entreno (D121, lienzo «Inicio personal»): varios repartos por entreno, «Sugerir grupos» (de 3 a 6 por
+/** Grupos de entreno (D122, lienzo «Inicio personal»): varios repartos por entreno, «Sugerir grupos» (de 3 a 6 por
  *  grupo), mover con seleccion multiple («Mover N a…») o arrastrando en escritorio, renombrar, añadir o quitar grupos,
  *  duplicar, borrar, «Publicar a la plantilla» (desactivado por defecto) y el mensaje de WhatsApp. */
 export default function Grupos({ d }: { d: DatosGrupos }) {

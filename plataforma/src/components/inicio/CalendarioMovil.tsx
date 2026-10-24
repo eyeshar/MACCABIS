@@ -4,7 +4,7 @@ import { useState } from "react";
 import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
 import { cambiarMiEnlace } from "@/app/agenda/acciones";
 
-/** «Tu calendario en el móvil» (D119): suscribirse a SU calendario desde Google Calendar, el iPhone u Outlook. */
+/** «Tu calendario en el móvil» (D120): suscribirse a SU calendario desde Google Calendar, el iPhone u Outlook. */
 export default function CalendarioMovil({ enlace }: { enlace: { https: string; webcal: string } | null }) {
   const [copiado, setCopiado] = useState(false);
   return (

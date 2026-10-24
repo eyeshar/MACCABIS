@@ -111,7 +111,7 @@ try {
   const proximo = entrenosFuturos[0];
   const aviso = p.getByTestId('aviso-sin-pista');
   ok(await aviso.isVisible() && (await aviso.textContent()).includes('Valdebernardo está cerrado por obras') && (await aviso.textContent()).includes('Elegir pista del día'), 'aviso de entrenos sin pista con acceso directo («Elegir pista del día N»)', await aviso.textContent().catch(() => ''));
-  ok((await p.locator('.ev-filtros a').allTextContents()).map((t) => t.replace(/\s*\d+$/, '').trim()).join('|') === 'Próximos|Entrenos|Liga|Amistosos y torneos|Pendientes de SportEasy|Pasados|Planes de jugadores', 'filtros: próximos, entrenos, liga, amistosos y torneos, pendientes de SportEasy, pasados y planes de jugadores (D117)');
+  ok((await p.locator('.ev-filtros a').allTextContents()).map((t) => t.replace(/\s*\d+$/, '').trim()).join('|') === 'Próximos|Entrenos|Liga|Amistosos y torneos|Pendientes de SportEasy|Pasados|Planes de jugadores', 'filtros: próximos, entrenos, liga, amistosos y torneos, pendientes de SportEasy, pasados y planes de jugadores (D118)');
   const filas = await p.locator('[data-testid=tabla-eventos] tbody tr').count();
   const futuros = (await sql`select count(*)::int n from public.eventos where fecha >= ${hoy}`)[0].n;
   ok(filas === Math.min(30, futuros), `Próximos: ${filas} filas (los ${Math.min(30, futuros)} primeros de ${futuros})`, String(filas));

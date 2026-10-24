@@ -102,7 +102,7 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
           {fila && (
             <span className={`pastilla ${fila.estado === "aprobada" ? "pastilla-ok" : "pastilla-pendiente"}`} data-testid="cv-estado">{fila.estado === "aprobada" ? "Aprobada" : "Borrador"}</span>
           )}
-          {/* D120: el tablero, para ver de un vistazo quién va y ajustar a mano. */}
+          {/* D121: el tablero, para ver de un vistazo quién va y ajustar a mano. */}
           <Link className="boton boton-contorno" href={`/gestion/tablero?domingo=${ctx.fecha}`}>Abrir tablero</Link>
         </div>
       </div>

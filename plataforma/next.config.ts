@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
   turbopack: { root: path.join(__dirname) },
   // Una sola pagina de cuenta para jugadores y gestores (D90): la antigua de gestion lleva a la nueva.
-  // D116: /mi-zona es ahora el inicio personal («/» con sesion); sus paginas (evento, domingo, ausencias, ropa) siguen.
+  // D117: /mi-zona es ahora el inicio personal («/» con sesion); sus paginas (evento, domingo, ausencias, ropa) siguen.
   async redirects() {
     return [
       { source: "/gestion/cuenta", destination: "/cuenta", permanent: true },

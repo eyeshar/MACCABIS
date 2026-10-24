@@ -4,7 +4,7 @@ import { esGestorActual } from "@/lib/sesion";
 import { cargarMiEvento, cargarQuienVa, type QuienVa } from "@/lib/respuestas/jugador";
 import type { MiEvento } from "@/lib/respuestas/dominio";
 
-// Lectura de un plan no oficial (D117). El jugador lo lee de SU agenda (v_mi_agenda: solo si esta invitado); un gestor
+// Lectura de un plan no oficial (D118). El jugador lo lee de SU agenda (v_mi_agenda: solo si esta invitado); un gestor
 // lo lee siempre (RLS de gestores sobre eventos), aunque no este invitado (p. ej. un plan solo para el MdL).
 
 const COLS = "id, tipo, equipo, titulo, jornada, rival, rival_texto, es_local, fecha, inicio, fin, quedada, notas, estado, cambio_visible, cambio_visible_en, oficial, creado_por, plazas, recordar_un_dia_antes, pista_id, numero_pista, ubicacion_nombre, ubicacion_direccion, ubicacion_lat, ubicacion_lng, ubicacion_enlace, secuencia, actualizado_en, borrado_en";

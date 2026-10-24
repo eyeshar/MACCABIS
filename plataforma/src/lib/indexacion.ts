@@ -2,7 +2,7 @@
 // no (noindex y Disallow en robots.txt). Las vistas previas de Vercel nunca se indexan.
 // La lista se repite en next.config.ts (cabecera X-Robots-Tag), que no puede importar de src/: pruebas:portada
 // comprueba que las dos coinciden.
-// D116-D119: la agenda, los planes, «Mis números» y el calendario personal (/cal/<enlace secreto>.ics) tambien.
+// D117-D120: la agenda, los planes, «Mis números» y el calendario personal (/cal/<enlace secreto>.ics) tambien.
 export const RUTAS_PRIVADAS = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal"];
 
 /** Despliegue de vista previa o desarrollo en Vercel (VERCEL_ENV lo pone Vercel; en local no existe). */

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Inicio personal (D116), de extremo a extremo: pila local, web compilada y Chrome.
+// Inicio personal (D117), de extremo a extremo: pila local, web compilada y Chrome.
 //   - anonimo: «/» es la portada publica de siempre; /mi-zona redirige a «/» (308);
 //   - jugador: lo suyo (saludo con posicion, fichas y dorsal; «Te faltan N» con carrusel y contador «1 de N»; proximo
 //     partido con «Convocado», casillas, «Te pones» y el color del rival aparte; avisos de la jornada; agenda con planes

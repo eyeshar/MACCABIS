@@ -99,7 +99,7 @@ try {
     ok(x.status >= 300 && x.status < 400 && (x.headers.get('location') || '').includes('/entrar'), `${ruta} sin sesion redirige a /entrar`, `${x.status} ${x.headers.get('location')}`);
   }
   const mz = await fetch(`${APP}/mi-zona`, { redirect: 'manual' });
-  ok(mz.status === 308 && new URL(mz.headers.get('location'), APP).pathname === '/', '/mi-zona redirige a «/» (308): con sesion, el inicio personal (D116)', `${mz.status} ${mz.headers.get('location')}`);
+  ok(mz.status === 308 && new URL(mz.headers.get('location'), APP).pathname === '/', '/mi-zona redirige a «/» (308): con sesion, el inicio personal (D117)', `${mz.status} ${mz.headers.get('location')}`);
   r = await fetch(`${APP}/entrar`);
   ok(r.status === 200 && (await r.text()).includes('Acceso Maccabis'), '/entrar: 200 con el acceso nuevo');
 
@@ -315,7 +315,7 @@ try {
     await p.getByText('No hemos podido mandar el código').waitFor({ timeout: 5000 }).catch(() => {});
     ok(await p.getByText('No hemos podido mandar el código').isVisible(), 'acceso: correo fuera de la lista blanca, aviso generico (logica D68 intacta)');
 
-    // jugador (dobla): su inicio personal («/», D116; Mi zona ya no existe como pagina propia)
+    // jugador (dobla): su inicio personal («/», D117; Mi zona ya no existe como pagina propia)
     await entrar(p, jugadorEmail);
     ok(new URL(p.url()).pathname === '/', 'un jugador entra en su inicio («/»)', p.url());
     ok(await p.getByRole('heading', { name: /Hola,\s*Jon/ }).isVisible(), 'inicio: "Hola, <nombre>"');

@@ -1,4 +1,4 @@
-// Calendario PERSONAL (D119): el .ics de una persona, PURO (lo usan la ruta /cal/<enlace>.ics y las pruebas). Solo sus
+// Calendario PERSONAL (D120): el .ics de una persona, PURO (lo usan la ruta /cal/<enlace>.ics y las pruebas). Solo sus
 // eventos y SU estado: nunca motivos, niveles, nombres de otros jugadores ni respuestas ajenas.
 // Para que las apps lo actualicen bien: UID estable por evento, SEQUENCE y LAST-MODIFIED que cambian en cada cambio,
 // los cancelados con STATUS:CANCELLED (no desaparecen de golpe), Europe/Madrid con su VTIMEZONE y REFRESH-INTERVAL /

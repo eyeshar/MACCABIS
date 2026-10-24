@@ -14,7 +14,7 @@ import { quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
 import { horaDeEnvio, lunesDe, madrid, sumarDias } from "./horario.ts";
 import { queEs, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
 
-/** `oficial = false`: plan no oficial de un jugador (D117). No entra en ningun recordatorio del club: solo, si el
+/** `oficial = false`: plan no oficial de un jugador (D118). No entra en ningun recordatorio del club: solo, si el
  *  organizador lo marco, un aviso un dia antes (planificarPlanes). */
 export type EventoPlan = EventoTexto & {
   estado: "programado" | "cancelado"; sin_recordatorios: boolean; creado_en: string;
@@ -72,7 +72,7 @@ export function huecos(e: EventoPlan): Hueco[] {
 
 export function planificar(datos: DatosPlan): AvisoPlan[] {
   if (!datos.encendidoDesde) return [];
-  // Los planes no oficiales no cuentan para nada del club (D117): fuera de estos recordatorios.
+  // Los planes no oficiales no cuentan para nada del club (D118): fuera de estos recordatorios.
   const d = { ...datos, eventos: datos.eventos.filter((e) => e.oficial !== false) };
   const ahora = d.ahora.getTime();
   const salida: AvisoPlan[] = [];
@@ -154,7 +154,7 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
   return salida;
 }
 
-/** Planes no oficiales (D117): si el organizador marco «recordar un dia antes», UN aviso 24 h antes a los invitados que
+/** Planes no oficiales (D118): si el organizador marco «recordar un dia antes», UN aviso 24 h antes a los invitados que
  *  no han respondido (una ausencia cuenta como respondido), con las horas de silencio. Ningun otro aviso automatico. No
  *  depende del interruptor de respuestas en la web: los planes solo se responden aqui. */
 export function planificarPlanes(d: Omit<DatosPlan, "encendidoDesde">): AvisoPlan[] {

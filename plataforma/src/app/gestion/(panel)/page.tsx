@@ -94,7 +94,7 @@ export default async function InicioGestion() {
 
   const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
   const mensajeEntrar = `Hola, ${faltan.join(", ")}: aún no habéis entrado en la web de Maccabis. Entrad una vez con vuestro correo (os llega un código) para tenerlo listo: ${web}/entrar. Si podéis, instaladla en el móvil y activad los avisos: ${web}/avisos`;
-  // «Pendiente esta semana»: la misma lista (con enlaces) que la banda «Gestión esta semana» del inicio (D116).
+  // «Pendiente esta semana»: la misma lista (con enlaces) que la banda «Gestión esta semana» del inicio (D117).
   const pendientes = await cargarPendientesSemana(supabase);
   const ropaAbierta = campana ? campanaAbiertaAhora(campana) : false;
 

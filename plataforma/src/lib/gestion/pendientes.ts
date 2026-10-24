@@ -6,7 +6,7 @@ import { campanaAbiertaAhora, fechaCorta } from "@/lib/fechas";
 import type { Cliente } from "@/lib/eventos/datos";
 
 // «Pendiente esta semana» del Panel de Gestion (D76), en un solo sitio: lo usan el Panel y la banda «Gestión esta
-// semana» del inicio personal de los gestores (D116). Cada tarea lleva su enlace.
+// semana» del inicio personal de los gestores (D117). Cada tarea lleva su enlace.
 export type Pendiente = { texto: string; href: string };
 
 export async function cargarPendientesSemana(supabase: Cliente): Promise<Pendiente[]> {

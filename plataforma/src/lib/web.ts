@@ -17,7 +17,7 @@ export const MENU: Seccion[] = [
   { id: "club", texto: "El club", href: "/club", externo: false },
 ];
 
-/** Menu con sesion (D116): lo de cada persona primero. Escritorio: Inicio · Agenda · Mis números · Liga · Historia (y el
+/** Menu con sesion (D117): lo de cada persona primero. Escritorio: Inicio · Agenda · Mis números · Liga · Historia (y el
  *  menu GESTIÓN de los gestores). «Mis números» son sus estadisticas (/mis-numeros lleva a su ficha). */
 export const MENU_SESION: Seccion[] = [
   { id: "inicio", texto: "Inicio", href: "/", externo: false },
@@ -27,7 +27,7 @@ export const MENU_SESION: Seccion[] = [
   { id: "historia", texto: "Historia", href: "/historia", externo: false },
 ];
 
-/** Calendario de SportEasy, para «Responder en SportEasy» en la fase puente (D116). No guardamos el id de cada evento en
+/** Calendario de SportEasy, para «Responder en SportEasy» en la fase puente (D117). No guardamos el id de cada evento en
  *  SportEasy: el enlace lleva a su calendario (BACKLOG: guardar el id para enlazar al evento). */
 export const SPORTEASY_CALENDARIO = "https://app.sporteasy.net/";
 

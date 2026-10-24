@@ -16,7 +16,7 @@ export async function cargarPistas(sb: Cliente): Promise<Pista[]> {
   return (data ?? []) as Pista[];
 }
 
-/** Eventos de la temporada. Por defecto SOLO los oficiales: los planes no oficiales de los jugadores (D117) no cuentan
+/** Eventos de la temporada. Por defecto SOLO los oficiales: los planes no oficiales de los jugadores (D118) no cuentan
  *  para nada del club (asistencia, convocatoria, rotacion, copia a SportEasy, importaciones). Quien los quiera (la lista
  *  de Gestion → Eventos con el filtro «Planes de jugadores»), con `conPlanes`. Los planes borrados, nunca. */
 export async function cargarEventos(sb: Cliente, { conPlanes = false }: { conPlanes?: boolean } = {}): Promise<EventoFila[]> {

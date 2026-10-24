@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { enlaceGoogle, esEnlaceGoogle, leerEnlaceGoogle, type Lugar } from "@/lib/ubicacion";
 
-// Campo «Dónde» (D118): escribes y salen sugerencias de OpenStreetMap (las pide el servidor, /api/lugares); tambien se
+// Campo «Dónde» (D119): escribes y salen sugerencias de OpenStreetMap (las pide el servidor, /api/lugares); tambien se
 // puede pegar un enlace de Google Maps (si trae coordenadas se leen; un enlace corto se guarda tal cual) o usar lo
 // escrito como nombre. Elegido el sitio: nombre, direccion, «Ver en Google Maps» y «Cambiar sitio». Los valores viajan
 // en campos ocultos del formulario (ubicacion_nombre, ubicacion_direccion, ubicacion_lat, ubicacion_lng, ubicacion_enlace).

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Inicio y planes (D116-D121) CONTRA EL SUPABASE REAL, en SOLO LECTURA (D111, como pruebas:convocatoria-real). Se ejecuta
+// Inicio y planes (D117-D122) CONTRA EL SUPABASE REAL, en SOLO LECTURA (D111, como pruebas:convocatoria-real). Se ejecuta
 // ANTES (con --antes) y DESPUES de aplicar 20261024200000_inicio_y_planes. No crea ni borra cuentas ni escribe nada:
 //   - anonimo por HTTPS con la clave publica;
 //   - un jugador y un gestor con cuentas que YA existen, dentro de una transaccion READ ONLY que adopta su rol y claims
@@ -58,7 +58,7 @@ try {
   const pub = await api('/v_eventos_publicos?select=clave&limit=500');
   ok(Array.isArray(pub.datos) && pub.datos.length > 0 && !pub.datos.some((x) => /^plan-/.test(x.clave)), `la vista pública responde (${pub.datos?.length} eventos) y no tiene planes`);
   const anonFn = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
-  ok(JSON.stringify(anonFn) === JSON.stringify(ANTES ? [] : ['calendario_personal']), `anónimo solo ejecuta ${ANTES ? 'ninguna función' : 'calendario_personal (D119)'}`, anonFn.join(', '));
+  ok(JSON.stringify(anonFn) === JSON.stringify(ANTES ? [] : ['calendario_personal']), `anónimo solo ejecuta ${ANTES ? 'ninguna función' : 'calendario_personal (D120)'}`, anonFn.join(', '));
   if (!ANTES) {
     const r = await api('/rpc/calendario_personal', { metodo: 'POST', cuerpo: { p_token: 'x'.repeat(43) } });
     ok(r.status === 200 && r.datos === null, 'calendario_personal con un enlace inventado: nada (null)');

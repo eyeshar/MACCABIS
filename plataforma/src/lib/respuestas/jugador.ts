@@ -6,7 +6,7 @@ import type { MiAusencia, MiDomingo, MiEvento, MiRespuesta } from "./dominio";
 // Lo que lee el jugador con SU sesion (D99): sus eventos (v_mis_eventos), sus respuestas y ausencias (RLS: solo las
 // suyas) y los nombres de "quien va" de sus eventos (v_quien_va: nombre y estado, nada mas). La base decide.
 
-// Su agenda (D116-D118): v_mi_agenda trae los oficiales y los planes no oficiales a los que esta invitado, con el sitio
+// Su agenda (D117-D119): v_mi_agenda trae los oficiales y los planes no oficiales a los que esta invitado, con el sitio
 // efectivo (pista o ubicacion libre) y quien organiza un plan. Nada de nadie mas.
 const COLS = "id, tipo, equipo, titulo, jornada, rival, rival_texto, es_local, fecha, inicio, fin, quedada, notas, estado, cambio_visible, cambio_visible_en, pista_nombre, pista_nombre_corto, pista_direccion, numero_pista, pista_por_confirmar, pista_motivo, oficial, creado_por, organizador, es_mio, plazas, recordar_un_dia_antes, lugar_nombre, lugar_direccion, lugar_lat, lugar_lng, lugar_enlace, secuencia, actualizado_en";
 const VISTA = "v_mi_agenda";
@@ -38,7 +38,7 @@ export async function cargarMisEventosDelDia(fecha: string): Promise<MiEvento[]>
   return (data ?? []) as MiEvento[];
 }
 
-/** Grupos de entreno publicados (D121): en cada entreno, el nombre de SU grupo y sus compañeros. Nada mas. */
+/** Grupos de entreno publicados (D122): en cada entreno, el nombre de SU grupo y sus compañeros. Nada mas. */
 export const cargarMisGrupos = cache(async (): Promise<{ evento_id: string; grupo: string; companeros: string[] }[]> => {
   if (!configurado()) return [];
   const sb = await clienteSesion();
@@ -47,7 +47,7 @@ export const cargarMisGrupos = cache(async (): Promise<{ evento_id: string; grup
   return (data ?? []) as { evento_id: string; grupo: string; companeros: string[] }[];
 });
 
-/** Lo que un gestor le ha dejado al organizador de un plan (D117), sin ver aun. */
+/** Lo que un gestor le ha dejado al organizador de un plan (D118), sin ver aun. */
 export const cargarAvisosPersonales = cache(async (): Promise<{ id: string; texto: string; url: string; creado_en: string }[]> => {
   if (!configurado()) return [];
   const sb = await clienteSesion();

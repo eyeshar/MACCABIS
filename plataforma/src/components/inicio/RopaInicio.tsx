@@ -26,7 +26,7 @@ function TablaPedido({ pedido }: { pedido: Pedido }) {
   );
 }
 
-/** El pedido de ropa en el inicio (D116): solo con una campaña abierta (campanaAbiertaAhora) o con un pedido suyo en una
+/** El pedido de ropa en el inicio (D117): solo con una campaña abierta (campanaAbiertaAhora) o con un pedido suyo en una
  *  campaña abierta. Con ella, como en la Mi zona de siempre: «Hacer mi pedido» y sus pedidos (modificar o anular). */
 export default function RopaInicio({ campana, pedidos }: { campana: (Campana & { abierta_ahora?: boolean }) | null; pedidos: Pedido[] }) {
   const abiertos = pedidos.filter((p) => p.campana_abierta);

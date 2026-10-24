@@ -129,7 +129,7 @@ try {
     const errJ = [];
     pj.on('pageerror', (e) => errJ.push(String(e)));
     await entrar(pj, jugadorEmail);
-    // Desde D116, «Tu próximo partido» del inicio personal («/»; /mi-zona redirige ahi).
+    // Desde D117, «Tu próximo partido» del inicio personal («/»; /mi-zona redirige ahi).
     await pj.goto(`${APP}/mi-zona`);
     const zona = pj.getByTestId('proximo-partido');
     const aMdA = proxReal('MDA'), aMdL = proxReal('MDL');

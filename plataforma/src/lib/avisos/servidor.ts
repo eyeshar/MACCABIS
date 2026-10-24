@@ -154,7 +154,7 @@ export async function ejecutarTarea(ahora = new Date()) {
     encolados = await encolar(sb, plan.map((p) => ({ ...p, person_id: p.person_id })));
     encolados += await encolarAlertasGestores(sb, base, ahora);
   }
-  // Planes no oficiales con «recordar un dia antes» (D117): con el interruptor encendido o apagado.
+  // Planes no oficiales con «recordar un dia antes» (D118): con el interruptor encendido o apagado.
   encolados += await encolar(sb, planificarPlanes({ ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias }));
   const envio = await enviarPendientes(sb, ahora);
   return { encendido, encolados, ...envio };
@@ -205,7 +205,7 @@ export async function recordatorioManual(eventoId: string) {
   return { avisados: filas.length, programado: envio };
 }
 
-/** Plan no oficial (D117): si un gestor cambia, cancela, borra o hace oficial el plan de otro, al organizador le llega un
+/** Plan no oficial (D118): si un gestor cambia, cancela, borra o hace oficial el plan de otro, al organizador le llega un
  *  push (si tiene los avisos activados; si no, le queda en su inicio, avisos_personales). No depende del interruptor:
  *  los planes solo existen en la web. Pasa por las horas de silencio. */
 export async function avisarOrganizador(personId: string, eventoId: string, titulo: string, cuerpo: string, url: string) {

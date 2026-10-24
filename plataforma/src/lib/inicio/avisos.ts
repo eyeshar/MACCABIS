@@ -1,6 +1,6 @@
 import avisosJson from "@/data/avisos.json";
 
-// Avisos de la jornada del inicio personal (D116): los del fichero data/avisos.json (copiado a src/data con
+// Avisos de la jornada del inicio personal (D117): los del fichero data/avisos.json (copiado a src/data con
 // npm run datos:sync) vigentes hoy y para su equipo, mas el automatico «pista por confirmar» del proximo entreno.
 type AvisoFichero = { id: string; texto: string; desde: string; hasta: string; para: "todos" | "MdA" | "MdL" };
 export type AvisoJornada = { id: string; texto: string; tipo: "fichero" | "pista" };

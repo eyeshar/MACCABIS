@@ -45,7 +45,7 @@ export function FilaPista({ pista }: { pista: Pista }) {
           <label htmlFor={`nota-${pista.id}`}>Nota</label>
           <input id={`nota-${pista.id}`} name="nota" type="text" defaultValue={pista.nota ?? ""} />
         </div>
-        {/* D118: coordenadas para «Cómo llegar» (de OpenStreetMap o de un enlace de Google Maps). */}
+        {/* D119: coordenadas para «Cómo llegar» (de OpenStreetMap o de un enlace de Google Maps). */}
         <div className="campo" style={{ margin: 0 }}>
           <label htmlFor={`coords-${pista.id}`}>Coordenadas (latitud, longitud)</label>
           <input id={`coords-${pista.id}`} name="coordenadas" type="text" inputMode="decimal" defaultValue={pista.lat != null ? `${pista.lat}, ${pista.lng}` : ""} placeholder="40.3975, -3.6316" />

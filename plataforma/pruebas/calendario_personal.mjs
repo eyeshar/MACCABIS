@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Calendario personal suscribible (D119), de extremo a extremo: pila local, web compilada (con su secreto de prueba) y
+// Calendario personal suscribible (D120), de extremo a extremo: pila local, web compilada (con su secreto de prueba) y
 // Chrome.
 //   - «Tu calendario en el móvil» (Agenda y Mi cuenta): Google Calendar, iPhone (webcal://) y «Copiar enlace»;
 //   - el .ics: solo SUS eventos (un plan solo del MdL no le sale a quien solo tiene ficha del MdA), con su estado y sin

@@ -17,7 +17,7 @@ export default function ImportarRespuestas({ personas }: { personas: Persona[] }
   const [texto, setTexto] = useState("");
   const [res, setRes] = useState<ResultadoRespuestas | null>(null);
   const [elegida, setElegida] = useState<Record<string, string>>({});
-  // D120: conflictos con un cambio de gestor. Por defecto se mantiene lo del gestor; «Usar SportEasy» lo cambia.
+  // D121: conflictos con un cambio de gestor. Por defecto se mantiene lo del gestor; «Usar SportEasy» lo cambia.
   const [usarSE, setUsarSE] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [pendiente, empezar] = useTransition();
@@ -60,7 +60,7 @@ export default function ImportarRespuestas({ personas }: { personas: Persona[] }
           <h2 id="t-res-r" style={{ fontSize: 26 }}>{res.validas} {res.validas === 1 ? "línea válida" : "líneas válidas"}{res.bloqueadas ? ` · ${res.bloqueadas} bloqueadas` : ""}{res.errores ? ` · ${res.errores} con error` : ""}{res.conflictos ? ` · ${res.conflictos} ${res.conflictos === 1 ? "conflicto" : "conflictos"}` : ""}</h2>
           {res.conflictos > 0 && !res.guardadas && (
             <p className="aviso aviso-info" role="note" style={{ margin: 0 }} data-testid="aviso-conflictos">
-              <b>Conflictos con cambios de gestor (D120).</b> Un gestor cambió esas respuestas después (en el tablero o con «Responder por él»): si guardas, <b>se mantiene lo del gestor</b> salvo que marques «Usar SportEasy» en la línea.
+              <b>Conflictos con cambios de gestor (D121).</b> Un gestor cambió esas respuestas después (en el tablero o con «Responder por él»): si guardas, <b>se mantiene lo del gestor</b> salvo que marques «Usar SportEasy» en la línea.
             </p>
           )}
           {res.guardadas && (

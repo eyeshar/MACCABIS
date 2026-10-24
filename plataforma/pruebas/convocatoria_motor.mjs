@@ -3,8 +3,8 @@
 // a distinta hora, misma hora, un solo equipo, 20 o más disponibles, faltan interiores, falta base, un «No dobla»
 // necesario, un sancionado, desempate por entrenos, empate de dificultad, edición manual con avisos, reglas personales,
 // propuesta de dificultad, nivel antes que rotación con la deuda de 2 domingos fuera (D109), ningún jugador fijo (D110),
-// rivales parejos con los convocados igualados aunque un equipo tenga 5 interiores solo suyos (D112, el caso de la J3) y
-// que el motor es determinista (misma entrada = misma salida, también desordenada).
+// rivales parejos con los convocados igualados aunque un equipo tenga 5 interiores solo suyos (D112, el caso de la J3),
+// nadie dobla por bases (D115) y que el motor es determinista (misma entrada = misma salida, también desordenada).
 //
 //   npm run pruebas:convocatoria-motor
 
@@ -146,7 +146,7 @@ console.log('\n== Faltan interiores (por debajo de 3): dobla un «Dobla»; si no
 }
 
 // ---------------------------------------------------------------- 6. falta base
-console.log('\n== Falta base: base de reserva; si no llega, dobla un base; si no, dos de reserva con aviso');
+console.log('\n== Falta base: base de reserva; si no hay, aviso 2.1; nadie dobla por bases (D115); dos de reserva con aviso');
 {
   reset();
   const tres = plantilla([
@@ -165,8 +165,9 @@ console.log('\n== Falta base: base de reserva; si no llega, dobla un base; si no
   ]);
   const r2 = proponer({ partidos: [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'baja')], jugadores: uno });
   const a = ids(r2.convocatoria, 'MdA'), l = ids(r2.convocatoria, 'MdL');
-  ok(a.includes('sint-01') && l.includes('sint-01'), 'un solo base puro: dobla para que los dos equipos tengan base');
-  ok(r2.recuento.MdA.bases.estado !== 'mal' && r2.recuento.MdL.bases.estado !== 'mal', 'los dos equipos llegan a 2 bases contando el de reserva', `${r2.recuento.MdA.bases.texto} / ${r2.recuento.MdL.bases.texto}`);
+  ok(!(a.includes('sint-01') && l.includes('sint-01')) && !avisosDe(r2, '5.1').length && !avisosDe(r2, '5.2').length, 'un solo base puro: nadie dobla por bases (2 bases es lo ideal, no un mínimo; D115)');
+  const sinPuro = r2.recuento.MdA.bases.puros ? 'MdL' : 'MdA';
+  ok(r2.recuento[sinPuro].bases.texto === '0 + 1 res.' && avisosDe(r2, '2.1').some((x) => x.equipo === sinPuro && /Solo 1 base/.test(x.texto)), `el equipo sin base puro (${sinPuro}) lleva un base de reserva y el aviso 2.1`, `${r2.recuento.MdA.bases.texto} / ${r2.recuento.MdL.bases.texto}`);
   const soloA = uno.map((j) => (j.person_id === 'sint-01' ? { ...j, ficha: { MdA: true, MdL: false } } : j));
   const r4 = proponer({ partidos: [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'baja')], jugadores: soloA });
   ok(r4.recuento.MdA.bases.texto === '1 + 1 res.' && avisosDe(r4, '2.1').some((x) => x.equipo === 'MdL' && /Solo 1 base/.test(x.texto)), 'si el único base no puede doblar: el reserva va al prioritario (MdA, «1 + 1 res.») y el MdL avisa «solo 1 base»', `${r4.recuento.MdA.bases.texto} / ${r4.recuento.MdL.bases.texto}`);
@@ -288,6 +289,30 @@ console.log('\n== Rivales parejos: el número de convocados queda igualado (D112
   // Los 18 normales con rivales parejos: 9 y 9, como antes.
   const r18 = proponer({ partidos: [P('MdA', '09:00', 'media'), P('MdL', '12:45', 'media')], jugadores: dieciocho() });
   ok(ids(r18.convocatoria, 'MdA').length === 9 && ids(r18.convocatoria, 'MdL').length === 9, '18 disponibles con rivales parejos: 9 y 9');
+}
+
+// ---------------------------------------------------------------- 10 quater. nadie dobla por bases (D115, la J3)
+console.log('\n== Nadie dobla por bases: el hueco lo cubre un base de reserva (D115, el caso de la J3)');
+{
+  // Equivalente sintético de la J3 en la vista previa (24/10/2026): 5 interiores solo del MdA y 12 para los dos
+  // partidos (2 bases puros, 3 de reserva, 5 exteriores más y 2 interiores). Antes del arreglo, el reequilibrio de D112
+  // pasaba al MdL el base de reserva del MdA y después doblaba un base «para tener 2 bases»: MdA 10 / MdL 8.
+  reset();
+  const soloA = { resp: { MdA: 'va', MdL: 'no' } };
+  const jugadores = plantilla([
+    ['ala_pivot', 'D', soloA], ['pivot', 'A', soloA], ['pivot', 'A', soloA], ['ala_pivot', 'C', soloA], ['ala_pivot', 'D', soloA],
+    ['base', 'D'], ['base', 'A'],
+    ['alero', 'C', { reserva: true }], ['escolta', 'B', { reserva: true }], ['escolta', 'C', { reserva: true }],
+    ['escolta', 'C'], ['escolta', 'B'], ['alero', 'B'], ['escolta', 'C'], ['escolta', 'C'],
+    ['pivot', 'C'], ['pivot', 'E'],
+  ]);
+  const r = proponer({ partidos: [P('MdA', '09:00', 'media'), P('MdL', '14:00', 'media')], jugadores });
+  const a = ids(r.convocatoria, 'MdA'), l = ids(r.convocatoria, 'MdL');
+  const doblan = a.filter((x) => l.includes(x));
+  ok(doblan.length === 0 && !avisosDe(r, '5.1').length && !avisosDe(r, '5.2').length, 'nadie dobla (tampoco «para tener 2 bases»)', doblan.join(','));
+  ok(new Set([...a, ...l]).size === 17 && Math.abs(a.length - l.length) <= 1, `9 y 8 contando a cada jugador una vez (${a.length} y ${l.length}, D112)`);
+  ok(['MdA', 'MdL'].every((e) => r.recuento[e].bases.puros + r.recuento[e].bases.reserva >= 2), 'cada equipo con 2 bases contando los de reserva (el reserva se queda donde cubre el hueco)', `${r.recuento.MdA.bases.texto} / ${r.recuento.MdL.bases.texto}`);
+  ok(avisosDe(r, '2.3').some((x) => x.equipo === 'MdA' && /5 interiores/.test(x.texto)), 'el aviso «evitar 5» del MdA sigue saliendo');
 }
 
 // ---------------------------------------------------------------- 10 ter. ningún jugador fijo (D110)

@@ -398,11 +398,14 @@ export function proponer(entrada: Entrada): Propuesta {
     // descoloca las lineas y, a igualdad, a quien deja el nivel medio mas parecido. El maximo (1.1) es un tope, no un
     // objetivo; y a quien solo esta disponible para un partido no se le mueve (el aviso «evitar 5» sigue saliendo).
     if (!distintos) {
+      // Los bases pesan mas que el resto (D115): a un equipo no se le quita el base de reserva que le cubre el hueco de
+      // base, porque despues nadie dobla por bases.
       const penal = (lista: JugadorEntrada[]) => {
         const r = recuentoDe(lista.map((j) => ({ person_id: j.person_id })), mapa);
         const b = r.bases.puros + r.bases.reserva, ext = r.exteriores.n, int = r.interiores.n;
-        const bajoMinimo = Math.max(0, LIMITES.minimoLinea.base - b) + Number(r.bases.puros === 0) + Math.max(0, LIMITES.minimoLinea.exterior - ext) + Math.max(0, LIMITES.minimoLinea.interior - int);
-        return 10 * bajoMinimo + Math.max(0, LIMITES.ideal.base - b) + Math.max(0, LIMITES.ideal.exterior - ext) + Math.abs(LIMITES.ideal.interior - int);
+        const sinBases = Math.max(0, LIMITES.ideal.base - b) + Number(r.bases.puros === 0);
+        const bajoMinimo = Math.max(0, LIMITES.minimoLinea.exterior - ext) + Math.max(0, LIMITES.minimoLinea.interior - int);
+        return 20 * sinBases + 10 * bajoMinimo + Math.max(0, LIMITES.ideal.exterior - ext) + Math.abs(LIMITES.ideal.interior - int);
       };
       const media = (lista: JugadorEntrada[]) => (lista.length ? lista.reduce((s, j) => s + nivelDe(j), 0) / lista.length : 0);
       while (Math.abs(conv[P].length - conv[S].length) > 1) {
@@ -435,16 +438,16 @@ export function proponer(entrada: Entrada): Propuesta {
     }
   }
 
-  // 4. Solo se dobla para cubrir MINIMOS (seccion 5, D108): 7 por equipo, 2 bases contando los de reserva con al menos
-  //    1 puro, y 3 interiores. Nunca para llegar al ideal (4 interiores): las excepciones las hace Ivan a mano. Primero
-  //    los «Dobla»; despues un «No dobla», con aviso; y si no, dos bases de reserva. Nunca a la misma hora.
+  // 4. Solo se dobla para cubrir MINIMOS (seccion 5, D108): 7 por equipo y 3 interiores. Nunca para llegar al ideal
+  //    (4 interiores) ni por bases (D115: 2 bases es lo ideal; el hueco lo cubre un base de reserva disponible para ese
+  //    partido y, si no hay, sale el aviso 2.1). Las excepciones las hace Ivan a mano. Primero los «Dobla»; despues un
+  //    «No dobla», con aviso. Nunca a la misma hora.
   const extra: Aviso[] = [];
   const dobladores = new Set<string>();
   if (eqs.length === 2 && !mismaHora) {
     const falta = (e: Equipo, l: Linea) => LIMITES.ideal[l] - conv[e].filter((j) => lineaDe(j) === l).length;
-    const huecos: { tipo: "total" | "base" | "interior"; falta: (e: Equipo) => boolean; vale: (j: JugadorEntrada) => boolean }[] = [
+    const huecos: { tipo: "total" | "interior"; falta: (e: Equipo) => boolean; vale: (j: JugadorEntrada) => boolean }[] = [
       { tipo: "total", falta: (e) => conv[e].length < LIMITES.minimo, vale: () => true },
-      { tipo: "base", falta: (e) => { const b = recuentoDe(conv[e].map((j) => ({ person_id: j.person_id })), mapa).bases; return b.puros === 0 || b.puros + b.reserva < LIMITES.ideal.base; }, vale: (j) => lineaDe(j) === "base" },
       { tipo: "interior", falta: (e) => conv[e].filter((j) => lineaDe(j) === "interior").length < LIMITES.minimoLinea.interior, vale: (j) => lineaDe(j) === "interior" },
     ];
     for (const h of huecos) {
@@ -457,7 +460,7 @@ export function proponer(entrada: Entrada): Propuesta {
           if (!j) break;
           conv[e].push(j);
           dobladores.add(j.person_id);
-          const para = h.tipo === "total" ? `llegar a ${LIMITES.minimo}` : h.tipo === "base" ? "tener 2 bases" : `tener ${LIMITES.minimoLinea.interior} interiores`;
+          const para = h.tipo === "total" ? `llegar a ${LIMITES.minimo}` : `tener ${LIMITES.minimoLinea.interior} interiores`;
           extra.push(datos(j).dobla
             ? { regla: "5.1", gravedad: "info", equipo: e, person_id: j.person_id, texto: `${j.nombre} dobla para ${para} en el ${e}.` }
             : { regla: "5.2", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} («No dobla») dobla para ${para} en el ${e}: no hay ningún «Dobla» que lo cubra.` });

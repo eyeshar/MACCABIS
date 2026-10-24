@@ -4,7 +4,8 @@
 -- SOLO ADITIVA (D94): tres tablas nuevas, sus politicas y funciones nuevas. No toca nada de lo que ya existe.
 -- Reversion al lado: 20261023100000_convocatoria.revertir.sql (db:migrar nunca la aplica).
 --
---  - jugadores_privado:    posicion, base de reserva, nivel A-E, Dobla / No dobla (recomendacion), regla personal
+--  - jugadores_privado:    posicion, base de reserva, nivel A-E, notas (ataque, defensa, total, minutos y puntos por
+--                          minuto, D108), Dobla / No dobla (recomendacion), regla personal
 --                          ("fijo a un equipo" o "va al equipo al que le falte un jugador") y sancion. Confidencial
 --                          (D39): SOLO los gestores la leen y la escriben. "Solo entreno" y las fichas siguen en
 --                          public.jugadores (rol y ficha_mda / ficha_mdl), como hasta ahora.
@@ -29,6 +30,16 @@ create table public.jugadores_privado (
   regla_equipo              text check (regla_equipo in ('MdA', 'MdL')),
   sancionado_hasta_jornada  int check (sancionado_hasta_jornada > 0),
   nota                      text,
+  -- Notas de referencia de la hoja de Ivan (privado/jugadores_2026-27.xlsx, D108): ataque USADO (con 300 minutos o mas,
+  -- de los puntos por minuto; si no, el de Ivan), defensa, total calculado, minutos, puntos y puntos por minuto.
+  -- El nivel que usa el motor es «nivel» (el que fija Ivan a mano), no el total.
+  nota_ataque               text check (nota_ataque in ('A', 'B', 'C', 'D', 'E')),
+  nota_defensa              text check (nota_defensa in ('A', 'B', 'C', 'D', 'E')),
+  nota_total                text check (nota_total in ('A', 'B', 'C', 'D', 'E')),
+  minutos                   int check (minutos >= 0),
+  puntos                    int check (puntos >= 0),
+  pts_min                   numeric(6, 4) check (pts_min >= 0),
+  notas_fuente              text,
   cambiado_en               timestamptz not null default now(),
   cambiado_por_nombre       text,
   constraint regla_fijo_con_equipo check ((regla = 'fijo') = (regla_equipo is not null))

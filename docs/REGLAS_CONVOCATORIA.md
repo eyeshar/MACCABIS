@@ -1,6 +1,6 @@
 # Reglas de convocatoria — versión 1
 
-_23/10/2026. Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
+_23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con pocos datos, mensajes sin disponibles). Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2026, D40 y D48). Las aplica el **motor de convocatoria** (`plataforma/src/lib/convocatoria/motor.ts`) y cada aviso de la pantalla dice qué regla lo causa con el **mismo número** que aquí (p. ej. «Regla 5.2»)._
 
 > **Privacidad (D39).** Este documento no lleva nombres de jugadores ni niveles. Los datos por jugador (posición, base de reserva, nivel A–E, Dobla / No dobla, reglas personales, sanciones) viven **solo en la zona de gestión** (tabla `jugadores_privado` de Supabase, con RLS: solo los 3 gestores) y en `privado/` (fuera de git) como copia de Iván. **Nunca** en JSON públicos, mensajes de WhatsApp, avisos ni páginas de jugador. «Solo entreno» y las fichas siguen en la plantilla (`jugadores`).
 
@@ -28,7 +28,7 @@ _23/10/2026. Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2
 ## 3. Nivel y dificultad del rival
 
 - **Niveles de jugador: A, B, C, D y E** (A el más alto). Confidenciales (D39). No hay números fijos de cuántos de cada nivel.
-- **Dificultad del rival: alta / media / baja.** La web la **propone** con la clasificación y la diferencia de puntos de la liga en curso (`data/liga_2026-27.json`) y **Iván la corrige** en la tarjeta del partido. Regla de la propuesta: **alta** si el rival está en el tercio de arriba con diferencia positiva o hace +15 o más por partido; **baja** si está en el tercio de abajo con diferencia negativa o hace −15 o menos por partido; **media** el resto y sin partidos jugados. El porqué sale al lado («10.º del G1 tras la J2 (-5 por partido)»).
+- **Dificultad del rival: alta / media / baja.** La web la **propone** con la clasificación y la diferencia de puntos de la liga en curso (`data/liga_2026-27.json`) y **Iván la corrige** en la tarjeta del partido. Regla de la propuesta: si el rival ha jugado **menos de 3 partidos**, **media** con el porqué «pocos datos (N partidos)» (D108). Con 3 o más: **alta** si el rival está en el tercio de arriba con diferencia positiva o hace +15 o más por partido; **baja** si está en el tercio de abajo con diferencia negativa o hace −15 o menos por partido; **media** el resto y sin partidos jugados. El porqué sale al lado («10.º del G1 tras la J2 (-5 por partido)»).
 - **3.1** El partido **más difícil** del domingo lleva **más nivel medio**. El motor reparte cada línea alternando, y el equipo del partido más difícil elige primero en cada ronda.
 - **3.2** Si los dos rivales tienen la **misma dificultad**, se **equilibran los equipos por líneas** (bases, exteriores, interiores), no solo en el total (pregunta 1, D98): el reparto de cada línea va en serpiente.
 
@@ -40,15 +40,19 @@ _23/10/2026. Dictadas por Iván (D107). Sustituyen a la versión 0 (25–26/09/2
 
 ## 5. Si no se llega a los mínimos: orden de sacrificio (pregunta 5)
 
-Objetivos de cada equipo: 7 jugadores (1.3), 2 bases contando los de reserva con al menos 1 puro (2.1) y 4 interiores (2.3). Si no se llega:
+**Solo se dobla para cubrir mínimos, nunca para llegar al ideal** (D108). Los mínimos de cada equipo: 7 jugadores (1.3), 2 bases contando los de reserva con al menos 1 puro (2.1) y **3 interiores** (2.3). Con 6 interiores entre los dos equipos la propuesta es **3 y 3**, sin doblar; las excepciones las hace Iván a mano. Si no se llega a un mínimo:
 
 - **5.1** Dobla un **«Dobla»** (primero quien menos ha doblado esta temporada).
 - **5.2** Si no hay, dobla un **«No dobla»**, con aviso.
-- **5.3** Si tampoco, se **baja a 3 interiores**.
+- **5.3** Con 3 interiores se juega: no se dobla para tener el cuarto.
 - **5.4** Y por último, **dos bases de reserva**, con aviso.
 - **Nunca menos de 7 por equipo** (si no se llega ni doblando, error en rojo para que Iván decida).
 - **«Dobla / No dobla» es una recomendación, no una regla:** Iván hace excepciones por partido (por eso el motor puede proponer a un «No dobla», con aviso, y la pantalla deja doblar a cualquiera, salvo a la misma hora).
-- Interpretación del motor (para confirmar): como bajar a 3 interiores va **después** de doblar, con 6 interiores entre los dos equipos el motor hace doblar a 2 interiores «Dobla» para llegar a 4 y 4. Si Iván prefiere 3 y 3 sin doblar en ese caso, se cambia el orden.
+
+## 5 bis. Sin disponibles
+
+- Mientras nadie haya dicho «voy» y no haya nadie convocado a mano, cada equipo muestra **un solo mensaje**: «Todavía no hay disponibles para este domingo», en vez de un aviso por cada regla. Los avisos por regla salen en cuanto hay propuesta o convocatoria (D108).
+- En la fase puente las respuestas llegan de SportEasy con **Importar → Respuestas**: la pantalla dice cuándo fue la última importación y si ese domingo aún no tiene ninguna, con el enlace a Importar.
 
 ## 6. Reglas personales (privadas, las configura Iván en «Datos de los jugadores»)
 
@@ -79,4 +83,5 @@ Objetivos de cada equipo: 7 jugadores (1.3), 2 bases contando los de reserva con
 | Partidos convocado y doblajes | Hojas de estadística (`season_2026-27.json`) | Sí |
 | Entrenos de las últimas 4 semanas | Respuestas «voy» a los entrenos | Solo gestores |
 | Dificultad | Propuesta desde `data/liga_2026-27.json`, corregida por Iván (`convocatorias.dificultad`) | Solo gestores |
-| Posición, base de reserva, nivel, Dobla, reglas personales, sanción | `jugadores_privado` (solo gestores) | **No. Nunca.** |
+| Posición, nivel (el de Iván), Dobla, ataque usado, defensa, total, minutos y pts/min | Hoja de Iván `privado/jugadores_2026-27.xlsx` (pestañas «Jugadores» y «Parametros»), cargada con `npm run db:privado` en `jugadores_privado` (solo gestores). El ataque es el de la columna **«Ataque (usar)»** (con 300 minutos o más sale de los puntos por minuto; si no, la letra de Iván); el **nivel que usa el motor es «Nivel (tuyo)»**; el total es solo de referencia | **No. Nunca.** |
+| Base de reserva, reglas personales, sanción | Gestión → Convocatoria → Datos de los jugadores (`jugadores_privado`) | **No. Nunca.** |

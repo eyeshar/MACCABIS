@@ -126,7 +126,7 @@ try {
   ok(await visto(pg.getByRole('link', { name: 'Recordar a los que no han respondido →' })), 'enlace «Recordar a los que no han respondido» (respuestas del paso 3)');
   ok(await visto(pg.getByRole('button', { name: 'Usar propuesta' })) && await visto(pg.getByRole('button', { name: 'Empezar en blanco (a mano)' })), 'botones «Usar propuesta» y «Empezar en blanco (a mano)»');
   ok((await pg.locator('[data-testid^="cv-equipo-"]').count()) === 2, 'una tarjeta por equipo (dos)');
-  ok(/del G\d tras la J\d|Sin partidos jugados/.test(await pg.getByTestId('cv-porque-MdA').innerText()), 'dificultad propuesta con su porqué', await pg.getByTestId('cv-porque-MdA').innerText());
+  ok(/del G\d tras la J\d|Sin partidos jugados|Pocos datos \(\d partidos? tras la J\d\)/.test(await pg.getByTestId('cv-porque-MdA').innerText()), 'dificultad propuesta con su porqué (con menos de 3 partidos, «pocos datos»)', await pg.getByTestId('cv-porque-MdA').innerText());
   ok(/encuentro \d\d:\d\d/i.test(await pg.getByTestId('cv-equipo-MdA').innerText()), 'hora de encuentro (20 minutos antes)');
   ok(await visto(pg.getByTestId('cv-casillas-MdA').getByText('bases')), 'casillas por línea (bases, exteriores, interiores)');
   ok(await sinDesbordar(pg), 'a 375 px sin desbordar');
@@ -213,6 +213,20 @@ try {
   ok(/solo juega el Md[AL]/.test(await pg.getByTestId('cv-fecha').innerText()), '«solo juega el …»');
   ok(await sinDesbordar(pg), 'a 375 px sin desbordar');
   await foto(pg, 'convocatoria_un_equipo_375');
+
+  console.log('\n== Domingo sin respuestas (fase puente, sin importar)');
+  const F0 = fechas.find((f) => ![F2, F1, proximo].includes(f));
+  await pg.goto(`${APP}/gestion/convocatoria?fecha=${F0}`);
+  const cont0 = await pg.getByTestId('cv-contadores').innerText();
+  ok(/0\s*van/.test(cont0) && /0\s*no van/.test(cont0), `${F0}: 0 van y 0 no van`, cont0.replace(/\s+/g, ' '));
+  ok(await visto(pg.getByTestId('cv-importacion').getByText(/Última importación:\s*ninguna/)) && await visto(pg.getByTestId('cv-importacion').getByText('Para este domingo todavía no hay ninguna respuesta importada.')), '«Última importación: ninguna» y que este domingo no tiene respuestas importadas');
+  ok(await visto(pg.getByTestId('cv-importacion').getByRole('link', { name: 'Importar respuestas →' })), 'con el enlace a Importar');
+  const cajas0 = await pg.locator('.cv-aviso').allInnerTexts();
+  ok(cajas0.length === porFecha.get(F0).length && cajas0.every((t) => t.startsWith('Todavía no hay disponibles para este domingo.')), `un solo mensaje por equipo (${cajas0.length}), ninguna caja por regla`, cajas0.join(' | ').slice(0, 200));
+  ok(!(await pg.locator('.cv-aviso-error').count()), 'ninguna caja roja');
+  await foto(pg, 'convocatoria_sin_respuestas_375');
+  const [{ n: nImp }] = await sql`select count(*)::int n from public.importaciones`;
+  ok(nImp === 0, 'la prueba no ha importado nada (la línea dice «ninguna» de verdad)');
 
   console.log('\n== Datos de los jugadores (solo gestores)');
   await pg.goto(`${APP}/gestion/convocatoria/datos`);

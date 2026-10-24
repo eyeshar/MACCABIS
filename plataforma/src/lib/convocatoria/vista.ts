@@ -7,6 +7,8 @@ export type FilaPrivada = {
   person_id: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null; dobla: boolean;
   regla: "fijo" | "comodin" | null; regla_equipo: Equipo | null; sancionado_hasta_jornada: number | null; nota: string | null;
   cambiado_en?: string; cambiado_por_nombre?: string | null;
+  /** Notas de referencia de la hoja de Ivan (D108): solo se muestran en «Datos de los jugadores». */
+  nota_ataque?: Nivel | null; nota_defensa?: Nivel | null; nota_total?: Nivel | null; minutos?: number | null; pts_min?: number | null;
 };
 export type FilaConvocatoria = {
   id: string; fecha: string; jornada: number | null; estado: "borrador" | "aprobada"; origen: "propuesta" | "blanco" | null;
@@ -36,6 +38,8 @@ export type Contexto = {
   convocatoria: FilaConvocatoria | null; cambios: Cambio[];
   contadores: { van: number; sin: number; no: number; dudan: number; invitados: number };
   eventoRespuestas: string | null; encendido: boolean;
+  /** Fase puente (D95, D103): cuando se importaron por ultima vez respuestas de SportEasy, y cuantas hay de este domingo. */
+  ultimaImportacion: string | null; respuestasDelDomingo: number;
   /** La migracion de la convocatoria aun no esta aplicada en esta base: se ve la propuesta, no se guarda nada. */
   sinMigracion: boolean;
   sinDatosPrivados: number;

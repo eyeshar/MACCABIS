@@ -123,6 +123,13 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
           <div><b>{ctx.contadores.sin}</b><span>sin responder{ctx.contadores.dudan ? ` (${ctx.contadores.dudan} duda${ctx.contadores.dudan === 1 ? "" : "n"})` : ""}</span></div>
           <div><b className="ev-no">{ctx.contadores.no}</b><span>no van</span></div>
         </div>
+        {!ctx.encendido && (
+          <p className="pequeno cv-importacion" data-testid="cv-importacion">
+            Fase puente: las respuestas llegan de SportEasy. Última importación: <b>{ctx.ultimaImportacion ? new Date(ctx.ultimaImportacion).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "ninguna"}</b>.
+            {ctx.respuestasDelDomingo === 0 && " Para este domingo todavía no hay ninguna respuesta importada."}{" "}
+            <Link href="/gestion/eventos/importar?t=respuestas">Importar respuestas →</Link>
+          </p>
+        )}
         {ctx.eventoRespuestas && <Link href={`/gestion/eventos/${ctx.eventoRespuestas}/respuestas#t-rec`} className="cv-enlace">Recordar a los que no han respondido →</Link>}
         {!empezada ? (
           <div className="cv-empezar">

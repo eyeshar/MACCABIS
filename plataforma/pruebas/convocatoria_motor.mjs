@@ -51,8 +51,8 @@ console.log('\n== Dos partidos a distinta hora (18 disponibles, MdA más difíci
   ok(new Set([...a, ...l]).size === 18, 'los 18 disponibles van', `${a.length}+${l.length}`);
   ok(a.length <= 10 && l.length <= 10 && a.length >= 7 && l.length >= 7, 'entre 7 y 10 por equipo', `${a.length} y ${l.length}`);
   ok(r.recuento.MdA.bases.puros === 2 && r.recuento.MdL.bases.puros === 2, '2 bases puros en cada equipo');
-  ok(r.recuento.MdA.interiores.n === 4 && r.recuento.MdL.interiores.n === 4 && doblan.length === 2, '6 interiores: antes de bajar a 3 (5.3) doblan 2 interiores «Dobla» (5.1): 4 y 4', `${r.recuento.MdA.interiores.n}/${r.recuento.MdL.interiores.n}, doblan ${doblan.length}`);
-  ok(avisosDe(r, '5.1').length === 2 && avisosDe(r, '5.1').every((x) => /4 interiores/.test(x.texto)), 'cada doblaje lleva su aviso 5.1 con el porqué');
+  ok(r.recuento.MdA.interiores.n === 3 && r.recuento.MdL.interiores.n === 3 && doblan.length === 0, '6 interiores: 3 y 3, nadie dobla (solo se dobla para mínimos, no para el ideal de 4; D108)', `${r.recuento.MdA.interiores.n}/${r.recuento.MdL.interiores.n}, doblan ${doblan.length}`);
+  ok(a.length === 9 && l.length === 9 && !avisosDe(r, '5.1').length && !avisosDe(r, '5.2').length, '9 y 9, sin avisos de doblaje');
   ok(r.recuento.MdA.nivelMedio > r.recuento.MdL.nivelMedio, `el más difícil (MdA) lleva más nivel medio (${r.recuento.MdA.nivelMedio.toFixed(2)} > ${r.recuento.MdL.nivelMedio.toFixed(2)})`);
   ok(!avisosDe(r, '3.1').length, 'sin aviso 3.1 (nivel al revés)');
   ok(r.sinConvocar.length === 0, 'nadie disponible se queda fuera');
@@ -113,7 +113,7 @@ console.log('\n== 20 o más disponibles');
 }
 
 // ---------------------------------------------------------------- 5. faltan interiores / 7. un «No dobla» necesario
-console.log('\n== Faltan interiores: dobla un «Dobla»; si no hay, un «No dobla» con aviso; si no, 3 interiores');
+console.log('\n== Faltan interiores (por debajo de 3): dobla un «Dobla»; si no hay, un «No dobla» con aviso');
 {
   reset();
   const mk = (dobla) => plantilla([
@@ -124,7 +124,7 @@ console.log('\n== Faltan interiores: dobla un «Dobla»; si no hay, un «No dobl
   const r = proponer({ partidos: [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'media')], jugadores: mk(true) });
   const a = ids(r.convocatoria, 'MdA'), l = ids(r.convocatoria, 'MdL');
   const dobladores = a.filter((x) => l.includes(x));
-  ok(dobladores.length >= 1 && r.recuento.MdA.interiores.n === 4 && r.recuento.MdL.interiores.n === 4, '5 interiores: doblan los que hagan falta para 4 y 4', `${dobladores.length} doblan · ${r.recuento.MdA.interiores.n}/${r.recuento.MdL.interiores.n}`);
+  ok(dobladores.length === 1 && Math.min(r.recuento.MdA.interiores.n, r.recuento.MdL.interiores.n) === 3, '5 interiores (3 y 2): dobla uno para llegar al mínimo de 3, no al ideal de 4', `${dobladores.length} doblan · ${r.recuento.MdA.interiores.n}/${r.recuento.MdL.interiores.n}`);
   ok(avisosDe(r, '5.1').length === dobladores.length && !avisosDe(r, '5.2').length, 'avisos 5.1 (dobla un «Dobla»), ninguno 5.2');
   reset();
   const r2 = proponer({ partidos: [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'media')], jugadores: mk(false) });
@@ -255,14 +255,30 @@ console.log('\n== Reglas personales y datos que faltan');
   ok(avisosDe(fijoOtro, '6.1').length === 1, 'fijo del MdL puesto a mano en el MdA: aviso 6.1');
 }
 
+// ---------------------------------------------------------------- 0 disponibles
+console.log('\n== Sin disponibles: un solo mensaje por equipo (D108)');
+{
+  const jugadores = dieciocho({ resp: { MdA: 'sin_responder', MdL: 'sin_responder' } });
+  const partidos = [P('MdA', '09:00'), P('MdL', '14:00')];
+  const r = proponer({ partidos, jugadores });
+  ok(r.disponibles === 0 && r.avisos.length === 2 && r.avisos.every((a) => a.texto === 'Todavía no hay disponibles para este domingo.' && a.gravedad === 'info'), 'propuesta: un mensaje por equipo y ningún aviso por regla', JSON.stringify(r.avisos.map((a) => a.regla)));
+  const rv = revisar({ partidos, jugadores }, { MdA: [{ person_id: 'sint-01' }], MdL: [] });
+  ok(rv.avisos.some((a) => a.regla === '1.3') && rv.avisos.some((a) => a.regla === '0.1' && a.person_id === 'sint-01'), 'en cuanto hay alguien convocado a mano, vuelven los avisos por regla');
+}
+
 // ---------------------------------------------------------------- dificultad propuesta
 console.log('\n== Dificultad propuesta con la clasificación');
 {
-  const d1 = proponerDificultad({ pos: 10, equipo: 'X', pj: 1, dif: -5 }, 11, 'G1', 2);
-  ok(d1.dificultad === 'baja' && d1.porque === '10.º del G1 tras la J2 (-5 por partido)', `10.º del G1 → baja: «${d1.porque}»`);
-  const d2 = proponerDificultad({ pos: 4, equipo: 'X', pj: 2, dif: 29 }, 11, 'G2', 2);
+  const d1 = proponerDificultad({ pos: 10, equipo: 'X', pj: 4, dif: -20 }, 11, 'G1', 4);
+  ok(d1.dificultad === 'baja' && d1.porque === '10.º del G1 tras la J4 (-5 por partido)', `10.º del G1 → baja: «${d1.porque}»`);
+  const d2 = proponerDificultad({ pos: 4, equipo: 'X', pj: 4, dif: 60 }, 11, 'G2', 4);
   ok(d2.dificultad === 'alta', `4.º de 11 con +15 por partido → alta («${d2.porque}»)`);
-  const d3 = proponerDificultad({ pos: 6, equipo: 'X', pj: 2, dif: 0 }, 11, 'G2', 2);
+  const pocos = proponerDificultad({ pos: 10, equipo: 'X', pj: 1, dif: -5 }, 11, 'G1', 2);
+  ok(pocos.dificultad === 'media' && pocos.porque === 'Pocos datos (1 partido tras la J2): media por defecto', `menos de 3 partidos → media, «${pocos.porque}» (D108)`);
+  const dos = proponerDificultad({ pos: 1, equipo: 'X', pj: 2, dif: 120 }, 11, 'G1', 2);
+  ok(dos.dificultad === 'media' && /Pocos datos \(2 partidos/.test(dos.porque), 'aunque vaya 1.º con +60 por partido: con 2 partidos, media');
+  ok(proponerDificultad({ pos: 2, equipo: 'X', pj: 3, dif: 60 }, 11, 'G1', 3).dificultad === 'alta', 'con 3 partidos ya cuenta');
+  const d3 = proponerDificultad({ pos: 6, equipo: 'X', pj: 4, dif: 0 }, 11, 'G2', 4);
   ok(d3.dificultad === 'media', '6.º con 0 → media');
   const d4 = proponerDificultad(null, 11, 'G1', null);
   ok(d4.dificultad === 'media' && /Sin partidos/.test(d4.porque), 'sin partidos → media por defecto');

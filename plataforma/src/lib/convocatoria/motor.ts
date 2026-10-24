@@ -52,7 +52,7 @@ export const REGLAS = {
   "4.1": "Rotación: antes quien menos partidos lleva convocado",
   "5.1": "Si no se llega: doblan los «Dobla»",
   "5.2": "Si no se llega: dobla un «No dobla», con aviso",
-  "5.3": "Si no se llega: se baja a 3 interiores",
+  "5.3": "Interiores: con 3 se juega (solo se dobla por debajo de 3)",
   "5.4": "Si no se llega: dos bases de reserva, con aviso",
   "6.1": "Regla personal: fijo a un equipo",
   "6.2": "Regla personal: va al equipo al que le falte un jugador",
@@ -204,6 +204,16 @@ export function revisar(entrada: Entrada, convocatoria: Convocatoria, sinConvoca
   const recuento: Partial<Record<Equipo, Recuento>> = {};
   const nombre = (id: string) => jugadores.get(id)?.nombre ?? id;
   const enEquipo = (e: Equipo) => new Set((convocatoria[e] ?? []).map((c) => c.person_id));
+
+  // Sin disponibles y sin nadie convocado no hay nada que revisar (D108): un solo mensaje por equipo, en vez de un
+  // aviso por cada regla que no se cumple con el equipo vacio.
+  if (disponibles === 0 && partidos.every((p) => !(convocatoria[p.equipo]?.length))) {
+    for (const p of partidos) recuento[p.equipo] = recuentoDe([], jugadores);
+    return {
+      maximo, disponibles, mismaHora, recuento, sinConvocar: [],
+      avisos: partidos.map((p) => ({ regla: "0.1" as const, gravedad: "info" as const, equipo: p.equipo, texto: "Todavía no hay disponibles para este domingo." })),
+    };
+  }
 
   for (const p of partidos) {
     const e = p.equipo;
@@ -377,8 +387,9 @@ export function proponer(entrada: Entrada): Propuesta {
     }
   }
 
-  // 4. Si no se llega a los minimos (seccion 5): doblan los «Dobla»; despues un «No dobla», con aviso; y si no, se
-  //    acepta 3 interiores o dos bases de reserva. Nunca con dos partidos a la misma hora.
+  // 4. Solo se dobla para cubrir MINIMOS (seccion 5, D108): 7 por equipo, 2 bases contando los de reserva con al menos
+  //    1 puro, y 3 interiores. Nunca para llegar al ideal (4 interiores): las excepciones las hace Ivan a mano. Primero
+  //    los «Dobla»; despues un «No dobla», con aviso; y si no, dos bases de reserva. Nunca a la misma hora.
   const extra: Aviso[] = [];
   const dobladores = new Set<string>();
   if (eqs.length === 2 && !mismaHora) {
@@ -386,7 +397,7 @@ export function proponer(entrada: Entrada): Propuesta {
     const huecos: { tipo: "total" | "base" | "interior"; falta: (e: Equipo) => boolean; vale: (j: JugadorEntrada) => boolean }[] = [
       { tipo: "total", falta: (e) => conv[e].length < LIMITES.minimo, vale: () => true },
       { tipo: "base", falta: (e) => { const b = recuentoDe(conv[e].map((j) => ({ person_id: j.person_id })), mapa).bases; return b.puros === 0 || b.puros + b.reserva < LIMITES.ideal.base; }, vale: (j) => lineaDe(j) === "base" },
-      { tipo: "interior", falta: (e) => conv[e].filter((j) => lineaDe(j) === "interior").length < LIMITES.ideal.interior, vale: (j) => lineaDe(j) === "interior" },
+      { tipo: "interior", falta: (e) => conv[e].filter((j) => lineaDe(j) === "interior").length < LIMITES.minimoLinea.interior, vale: (j) => lineaDe(j) === "interior" },
     ];
     for (const h of huecos) {
       for (const e of eqs) {
@@ -398,7 +409,7 @@ export function proponer(entrada: Entrada): Propuesta {
           if (!j) break;
           conv[e].push(j);
           dobladores.add(j.person_id);
-          const para = h.tipo === "total" ? `llegar a ${LIMITES.minimo}` : h.tipo === "base" ? "tener 2 bases" : "tener 4 interiores";
+          const para = h.tipo === "total" ? `llegar a ${LIMITES.minimo}` : h.tipo === "base" ? "tener 2 bases" : `tener ${LIMITES.minimoLinea.interior} interiores`;
           extra.push(datos(j).dobla
             ? { regla: "5.1", gravedad: "info", equipo: e, person_id: j.person_id, texto: `${j.nombre} dobla para ${para} en el ${e}.` }
             : { regla: "5.2", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} («No dobla») dobla para ${para} en el ${e}: no hay ningún «Dobla» que lo cubra.` });
@@ -419,6 +430,7 @@ export function proponer(entrada: Entrada): Propuesta {
 
 // ---------------------------------------------------------------- dificultad del rival (la propone la web, la corrige Ivan)
 export type FilaClasificacion = { pos: number; equipo: string; pj: number; dif: number };
+export const MIN_PARTIDOS_DIFICULTAD = 3;
 
 /** Propuesta de dificultad con la clasificacion de la liga en curso: puesto y diferencia de puntos por partido.
  *  Alta: en el tercio de arriba con diferencia positiva, o +15 por partido o mas. Baja: en el tercio de abajo con
@@ -426,6 +438,8 @@ export type FilaClasificacion = { pos: number; equipo: string; pj: number; dif: 
 export function proponerDificultad(fila: FilaClasificacion | null, equiposGrupo: number, grupo: string, jornada: number | null): { dificultad: Dificultad; porque: string } {
   const tras = jornada ? ` tras la J${jornada}` : "";
   if (!fila || fila.pj === 0) return { dificultad: "media", porque: `Sin partidos jugados${tras}: media por defecto` };
+  // Con menos de 3 partidos la clasificacion no dice nada todavia (D108): media.
+  if (fila.pj < MIN_PARTIDOS_DIFICULTAD) return { dificultad: "media", porque: `Pocos datos (${fila.pj} partido${fila.pj === 1 ? "" : "s"}${tras}): media por defecto` };
   const dpp = fila.dif / fila.pj;
   const tercio = Math.ceil(equiposGrupo / 3);
   // Guion normal (no «−»): el porque se guarda en la base y la pila local de pruebas es WIN1252 (D95).

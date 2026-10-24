@@ -11,6 +11,7 @@
 //   npm run pruebas:convocatoria-rls
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
@@ -108,16 +109,40 @@ try {
   r = await api('/jugadores_privado?person_id=eq.sint-01', { metodo: 'DELETE', token: tG });
   ok(r.status >= 400 && (await sql`select count(*)::int n from public.jugadores_privado`)[0].n === 1, 'ni un gestor borra por la API', String(r.status));
 
-  console.log('\n== Carga del CSV privado (npm run db:privado), con un CSV sintético');
-  const { leerCsv, cargarPrivado } = await import('../scripts/cargar_privado.mjs');
-  const csv = leerCsv('person_id;mote;posicion;nivel;dobla;base_reserva;regla\nsint-02;S2;Ala-pívot;C;No;No;fijo MdA\nsint-03;S3;Escolta;E;Sí;Sí;comodin\n');
-  ok(csv.errores.length === 0 && csv.filas[0].posicion === 'ala_pivot' && csv.filas[0].regla_equipo === 'MdA' && csv.filas[1].base_reserva === true, 'lee posiciones con tildes, Sí/No y reglas');
-  ok(leerCsv('person_id;nivel\nsint-02;F\n').errores.length === 1, 'un nivel fuera de A-E es un error (no se carga nada)');
-  ok((await cargarPrivado(sql, csv.filas, { log: () => {} })) === 0 && (await sql`select count(*)::int n from public.jugadores_privado where person_id in ('sint-02','sint-03')`)[0].n === 0, 'simulacro por defecto: no escribe');
-  ok((await cargarPrivado(sql, csv.filas, { aplicar: true, log: () => {} })) === 2 && (await sql`select nivel from public.jugadores_privado where person_id = 'sint-03'`)[0].nivel === 'E', 'con --aplicar carga los dos');
-  ok((await cargarPrivado(sql, [{ person_id: 'sint-01', dobla: true }], { aplicar: true, log: () => {} })) === 1 && (await sql`select nivel from public.jugadores_privado where person_id = 'sint-01'`)[0].nivel === 'A', 'actualiza solo las columnas que trae el CSV (el nivel puesto en la web se queda)');
-  let errCsv = ''; try { await cargarPrivado(sql, [{ person_id: 'no-existe' }], { aplicar: true, log: () => {} }); } catch (e) { errCsv = e.message; }
-  ok(/no están en la plantilla/.test(errCsv), 'un person_id que no está en la plantilla para la carga entera');
+  console.log('\n== Carga de la hoja privada (npm run db:privado), con una hoja SINTÉTICA');
+  const { leerHoja, cargarPrivado } = await import('../scripts/cargar_privado.mjs');
+  const ExcelJS = (await import('exceljs')).default;
+  const hojaSintetica = async (filas, nombre = 'sint.xlsx') => {
+    const wb = new ExcelJS.Workbook();
+    const h = wb.addWorksheet('Jugadores');
+    h.addRow(['Mote', 'Nombre', 'Apellido 1', 'Apellido 2', 'Posición', 'Nivel (tuyo)', 'Ataque (tuyo)', 'Defensa (tuya)', 'Dobla', 'Minutos 25/26+26/27', 'Puntos 25/26+26/27', 'Pts/min', 'Ataque (usar)', 'Total calculado']);
+    for (const f of filas) h.addRow(f);
+    const p = wb.addWorksheet('Parametros');
+    [['Parámetro', 'Valor'], ['Minutos mínimos para usar el dato', 300], ['Corte A (pts/min ≥)', 0.35], ['Corte B (pts/min ≥)', 0.2], ['Corte C (pts/min ≥)', 0.14], ['Corte D (pts/min ≥)', 0.08]].forEach((x) => p.addRow(x));
+    const f = path.join(os.tmpdir(), `maccabis-${process.pid}-${nombre}`);
+    await wb.xlsx.writeFile(f);
+    return f;
+  };
+  // sint-02 (por nombre completo «Sintetico, 1»): 400 min y 0,25 pts/min → su ataque C pasa a B; total de B y D = C.
+  // sint-03 (por mote «Sint 2»): 100 min → manda su letra (E).
+  const buena = await hojaSintetica([
+    ['Otro mote', '1', 'Sintetico', '', 'Ala-pívot', 'C', 'C', 'D', 'No', 400, 100, 0.25, 'B', 'C'],
+    ['Sint 2', 'Nadie', 'Que', 'No Existe', 'Escolta', 'E', 'E', 'E', 'Sí', 100, 10, 0.1, 'E', 'E'],
+    ['Leyenda: esto no es un jugador'],
+  ]);
+  const h = await leerHoja(buena);
+  ok(h.errores.length === 0 && h.filas.length === 2, 'lee las dos filas y salta la leyenda', h.errores.join(' | '));
+  ok(h.filas[0].posicion === 'ala_pivot' && h.filas[0].nota_ataque === 'B' && h.filas[0].ataque_tuyo === 'C' && h.filas[1].dobla === true, 'usa «Ataque (usar)» (B), no «Ataque (tuyo)» (C); posiciones con tildes y Sí/No');
+  const mala = await leerHoja(await hojaSintetica([['Sint 1', '1', 'Sintetico', '', 'Base', 'B', 'C', 'B', 'No', 400, 100, 0.25, 'C', 'C']], 'mala.xlsx'));
+  ok(mala.errores.some((e) => /Ataque \(usar\)/.test(e)), '«Ataque (usar)» que no cuadra con Parametros (hoja sin recalcular): error y no se carga');
+  ok((await cargarPrivado(sql, h.filas, { log: () => {} })) === 0 && (await sql`select count(*)::int n from public.jugadores_privado where person_id in ('sint-02','sint-03')`)[0].n === 0, 'simulacro por defecto: no escribe');
+  await sql`update public.jugadores_privado set regla = 'comodin', regla_equipo = null where person_id = 'sint-01'`;
+  ok((await cargarPrivado(sql, h.filas, { aplicar: true, log: () => {} })) === 2, 'con --aplicar carga los dos');
+  const [s2] = await sql`select nivel, nota_ataque, nota_total, minutos, pts_min::float pm from public.jugadores_privado where person_id = 'sint-02'`;
+  ok(s2.nivel === 'C' && s2.nota_ataque === 'B' && s2.nota_total === 'C' && s2.minutos === 400 && s2.pm === 0.25, 'el nivel es «Nivel (tuyo)» y las notas quedan al lado');
+  ok((await sql`select count(*)::int n from public.jugadores_privado where person_id = 'sint-03'`)[0].n === 1, 'el que no casa por nombre completo entra por su mote (nombre visible)');
+  let errHoja = ''; try { await cargarPrivado(sql, [{ ...h.filas[0], fila: 9, completo: 'nadie, nadie', mote: 'Nadie' }], { aplicar: true, log: () => {} }); } catch (e) { errHoja = e.message; }
+  ok(/no se encuentra en la plantilla/.test(errHoja), 'una fila que no está en la plantilla para la carga entera');
 
   console.log('\n== Convocatoria: guardar, motivo, aprobar y salidas (solo gestores, solo con funciones)');
   const fecha = sumar(hoy, 7), pasada = sumar(hoy, -7);

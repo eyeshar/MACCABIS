@@ -14,7 +14,7 @@ export default async function DatosConvocatoria() {
   const { supabase } = await exigirGestor();
   const [{ data: jug }, priv] = await Promise.all([
     supabase.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, rol, activo").eq("activo", true).order("nombre_visible"),
-    supabase.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, cambiado_en, cambiado_por_nombre"),
+    supabase.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, cambiado_en, cambiado_por_nombre, nota_ataque, nota_defensa, nota_total, minutos, pts_min"),
   ]);
   const sinMigracion = !!priv.error;
   const porId = new Map(((priv.data ?? []) as FilaPrivada[]).map((p) => [p.person_id, p]));
@@ -30,7 +30,7 @@ export default async function DatosConvocatoria() {
         </div>
       </div>
       {sinMigracion && <div className="ev-aviso" role="alert"><span><b>Falta aplicar la migración de la convocatoria en esta base.</b> Hasta entonces no se pueden guardar estos datos.</span></div>}
-      <p className="pequeno suave">«Solo entreno» y las fichas (MdA / MdL) se cambian en <Link href="/gestion/jugadores">Jugadores</Link>. El entrenador-jugador se marca con «Fijo a un equipo».</p>
+      <p className="pequeno suave">El nivel que usa la propuesta es el tuyo. Ataque, defensa y total salen de tu hoja (<code>npm run db:privado</code>, privado/jugadores_2026-27.xlsx) y son solo de referencia. «Solo entreno» y las fichas (MdA / MdL) se cambian en <Link href="/gestion/jugadores">Jugadores</Link>. El entrenador-jugador se marca con «Fijo a un equipo».</p>
       <div className="cv-datos-lista">
         {jugadores.map((j) => (
           <FichaPrivada key={j.person_id} personId={j.person_id} nombre={j.nombre_visible} fichas={[j.ficha_mda && "MdA", j.ficha_mdl && "MdL"].filter(Boolean).join(" y ") || "sin ficha"}

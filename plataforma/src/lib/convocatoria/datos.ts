@@ -62,13 +62,14 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   const ids = delDia.map((e) => e.id);
   const entrenos = eventos.filter((e) => e.tipo === "entreno" && e.estado === "programado" && e.fecha >= sumarDias(fecha, -28) && e.fecha < fecha && e.fecha <= hoy).map((e) => e.id);
 
-  const [jug, resp, respEnt, priv, conv, enc] = await Promise.all([
+  const [jug, resp, respEnt, priv, conv, enc, imp] = await Promise.all([
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota"),
     sb.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle(),
     sb.rpc("respuestas_web_encendido"),
+    sb.from("importaciones").select("en").eq("tipo", "respuestas").order("en", { ascending: false }).limit(1),
   ]);
   if (jug.error) throw new Error(`jugadores: ${jug.error.message}`);
   if (resp.error) throw new Error(`respuestas: ${resp.error.message}`);
@@ -142,6 +143,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   return {
     fecha, jornada, partidos, jugadores, convocatoria: fila, cambios, contadores,
     eventoRespuestas: delDia[0]?.id ?? null, encendido: enc.data === true, sinMigracion,
+    ultimaImportacion: ((imp.data ?? []) as { en: string }[])[0]?.en ?? null,
+    respuestasDelDomingo: ((resp.data ?? []) as { respuesta: string }[]).filter((r) => r.respuesta !== "sin_responder").length,
     sinDatosPrivados: jugadores.filter((j) => j.invitado && (!j.privado || !j.privado.posicion || !j.privado.nivel)).length,
     domingos: domingos.slice(0, 6),
   };

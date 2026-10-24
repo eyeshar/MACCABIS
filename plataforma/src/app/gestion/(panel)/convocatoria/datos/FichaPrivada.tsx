@@ -31,6 +31,9 @@ export default function FichaPrivada({ personId, nombre, fichas, soloEntreno, in
   return (
     <form className="cv-ficha" data-person={personId} onSubmit={(e) => { e.preventDefault(); guardar(); }}>
       <div className="cv-ficha-cab"><b>{nombre}</b><small className="suave">{fichas}{soloEntreno ? " · solo entreno" : ""}</small></div>
+      {inicial?.nota_ataque && (
+        <small className="suave" data-testid="cv-notas">Ataque {inicial.nota_ataque} · defensa {inicial.nota_defensa ?? "–"} · total {inicial.nota_total ?? "–"}{inicial.minutos != null ? ` · ${inicial.minutos} min` : ""}{inicial.pts_min != null ? ` · ${Number(inicial.pts_min).toFixed(2).replace(".", ",")} pts/min` : ""}</small>
+      )}
       <div className="cv-ficha-campos">
         <label htmlFor={id("pos")}>Posición
           <select id={id("pos")} value={f.posicion} onChange={(e) => cambia("posicion", e.target.value)} disabled={desactivado}>

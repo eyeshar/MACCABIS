@@ -15,7 +15,8 @@ export default async function GruposEntreno({ params }: { params: Promise<{ even
   const { supabase } = await exigirGestor();
   const d = await cargarGrupos(supabase, evento);
   if (!d) notFound();
-  const clave = d.repartos.map((r) => `${r.id}:${r.cambiado_en}:${r.publicado}`).join("|") || "nuevo";
+  // El editor no se vuelve a montar al guardar (conserva lo que se está viendo y el aviso); lee los repartos de las props.
+  const clave = d.evento.id;
   return (
     <>
       <div className="gs-titulo">

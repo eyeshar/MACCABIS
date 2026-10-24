@@ -129,14 +129,15 @@ try {
     const errJ = [];
     pj.on('pageerror', (e) => errJ.push(String(e)));
     await entrar(pj, jugadorEmail);
+    // Desde D116, «Tu próximo partido» del inicio personal («/»; /mi-zona redirige ahi).
     await pj.goto(`${APP}/mi-zona`);
-    const zona = pj.locator('[aria-labelledby="t-partidos"]');
+    const zona = pj.getByTestId('proximo-partido');
     const aMdA = proxReal('MDA'), aMdL = proxReal('MDL');
-    ok((await zona.locator('.eq-partido').count()) === 1, 'Mi zona: solo el proximo partido de SU equipo (ficha MdA)');
-    ok((await zona.textContent()).includes(cruce('MdA', aMdA)) && !(await zona.textContent()).includes(bonito(aMdL.rival)), `Mi zona: "${cruce('MdA', aMdA)}" y no el de MdL`);
+    ok((await zona.locator('.in-partido-uno').count()) === 1, 'Mi zona: solo el proximo partido de SU equipo (ficha MdA)');
+    ok((await zona.textContent()).includes(bonito(aMdA.rival)) && !(await zona.textContent()).includes(bonito(aMdL.rival)), `Mi zona: el MdA contra ${bonito(aMdA.rival)} y no el de MdL`);
     ok((await zona.locator('.eq-aviso').count()) === (eti(avisoReal('MDA')) ? 1 : 0), 'Mi zona: aviso si y solo si el proximo rival de MdA choca', String(await zona.locator('.eq-aviso').count()));
     if (eti(avisoReal('MDA'))) ok((await zona.locator('.eq-aviso').textContent()).includes('Coinciden colores: cambia') && (await zona.locator('.eq-aviso').getAttribute('data-tipo')) === 'cambian_ellos', 'Mi zona: aviso informativo "cambian ellos" (somos locales)');
-    ok((await zona.locator('[data-testid="color-rival"]').first().textContent()).includes('camiseta'), 'Mi zona: color del rival visible');
+    ok((await zona.locator('[data-testid="color-rival-inicio"]').first().textContent()).includes('camiseta'), 'Mi zona: color del rival visible (aparte de «Te pones»)');
     ok(!/camiseta (negro|blanco|amarillo|rojo)/.test(await pj.locator('main').innerText()) && !/\((negro|blanco|amarillo|rojo)\)/.test(await pj.locator('main').innerText()), 'Mi zona: ningún «camiseta negro» ni color suelto sin concordar');
     ok(await sinDesbordar(pj), 'Mi zona: sin desbordamiento horizontal');
     await zona.scrollIntoViewIfNeeded();
@@ -144,10 +145,10 @@ try {
     // jugador de MdL: su partido, sin el de MdA
     await sql`update public.jugadores set ficha_mda = false, ficha_mdl = true where person_id = 'esteban-jon'`;
     await pj.goto(`${APP}/mi-zona`);
-    ok((await zona.locator('.eq-partido').count()) === 1 && (await zona.textContent()).includes(cruce('MdL', aMdL)), 'Mi zona (ficha MdL): solo el proximo partido de MdL');
+    ok((await zona.locator('.in-partido-uno').count()) === 1 && (await zona.textContent()).includes(bonito(aMdL.rival)), 'Mi zona (ficha MdL): solo el proximo partido de MdL');
     await sql`update public.jugadores set ficha_mda = true, ficha_mdl = true where person_id = 'esteban-jon'`;
     await pj.goto(`${APP}/mi-zona`);
-    ok((await zona.locator('.eq-partido').count()) === 2, 'Mi zona (dobla): los dos proximos partidos');
+    ok((await zona.locator('.in-partido-uno').count()) === (aMdA.fecha === aMdL.fecha ? 2 : 1), 'Mi zona (dobla): los partidos de su proximo domingo');
     ok(errJ.length === 0, 'Mi zona: sin errores de JavaScript', errJ.join(' | '));
     await cj.close();
 

@@ -91,13 +91,13 @@ export default function BuscadorLugar({ inicial, etiqueta = "Dónde", ayuda, onC
               {opciones.map((o, i) => (
                 <li key={`${o.lat},${o.lng},${i}`} id={`${id}-o${i}`} role="option" aria-selected={activa === i} className="lg-opcion"
                   onMouseDown={(e) => { e.preventDefault(); elegir(o); }}>
-                  <strong>{o.nombre}</strong>{o.direccion && <span>{o.direccion}</span>}
+                  <strong>{o.nombre}</strong>{o.direccion && <>{" "}<span>{o.direccion}</span></>}
                 </li>
               ))}
               {libre && (
                 <li id={`${id}-o${opciones.length}`} role="option" aria-selected={activa === opciones.length} className="lg-opcion lg-libre"
                   onMouseDown={(e) => { e.preventDefault(); elegir(libre); }}>
-                  <strong>Usar «{libre.nombre}»</strong><span>tal cual, sin mapa</span>
+                  <strong>Usar «{libre.nombre}»</strong>{" "}<span>tal cual, sin mapa</span>
                 </li>
               )}
             </ul>

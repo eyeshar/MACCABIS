@@ -206,7 +206,7 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
               <td key={p.equipo} data-label={p.equipo}>
                 <button type="button" className={`tb-celda tb-c-${c} tb-eq-${p.equipo}`} disabled={!activa || pendiente} aria-pressed={c === "convocado"}
                   aria-label={`${TEXTO_CELDA[c]} · ${f.nombre} · ${p.equipo}`} data-celda={c}
-                  onClick={() => ejecutar(c === "convocado" ? "quitar" : p.equipo, [f.person_id])}>{TEXTO_CELDA[c]}</button>
+                  onClick={() => (c === "convocado" ? empezar(() => convocar([f.person_id], p.equipo, "quitar")) : ejecutar(p.equipo, [f.person_id]))}>{TEXTO_CELDA[c]}</button>
               </td>
             );
           })}

@@ -48,7 +48,8 @@
 .in-pendiente { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: var(--panel-3); border: 1px solid var(--borde-fuerte); min-width: 0; }
 .in-pendiente.es-plan { border-color: var(--plan-borde); }
 .in-pendiente-cab { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.in-pendiente-fecha { font-family: var(--f-titulos); font-weight: 800; font-size: 1.9rem; line-height: 1; color: var(--tinta); text-decoration: none; }
+.in-pendiente-fecha { display: flex; align-items: center; min-height: var(--toque); font-family: var(--f-titulos); font-weight: 800; font-size: 1.9rem; line-height: 1; color: var(--tinta); text-decoration: none; }
+.in-llegar-mini { align-self: flex-start; font-size: 0.92rem; }
 .in-pendiente-titulo { font-size: 1.05rem; }
 .in-pendiente-lugar { font-size: 0.92rem; }
 .in-pendiente .rw-responder { margin-top: auto; }

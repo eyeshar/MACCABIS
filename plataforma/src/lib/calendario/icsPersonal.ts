@@ -42,14 +42,18 @@ const masMinutos = (h: string, m: number) => {
   return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 };
 
+const diaSiguiente = (f: string) => { const d = new Date(`${f}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+
 export function vevento(e: EventoPersonal, base: string): string[] {
   const modificado = sello(new Date(e.actualizado_en));
   const l = [`UID:${e.id}@personal.maccabis`, `DTSTAMP:${modificado}`, `LAST-MODIFIED:${modificado}`, `SEQUENCE:${e.secuencia}`];
   const inicio = hh(e.inicio), fin = hh(e.fin);
   if (inicio) {
     l.push(`DTSTART;TZID=Europe/Madrid:${fechaHora(e.fecha, inicio)}`);
-    // Sin hora de fin: 1 h 30 un partido, 2 h lo demas (para que ocupe su hueco en el calendario).
-    l.push(`DTEND;TZID=Europe/Madrid:${fechaHora(e.fecha, fin && fin > inicio ? fin : masMinutos(inicio, e.tipo === "liga" ? 90 : 120))}`);
+    // Sin hora de fin: 1 h 30 un partido, 2 h lo demas (para que ocupe su hueco en el calendario). Si pasa de la
+    // medianoche (una cena a las 22:40), acaba al dia siguiente.
+    const finReal = fin && fin > inicio ? fin : masMinutos(inicio, e.tipo === "liga" ? 90 : 120);
+    l.push(`DTEND;TZID=Europe/Madrid:${fechaHora(finReal > inicio ? e.fecha : diaSiguiente(e.fecha), finReal)}`);
   } else {
     l.push(`DTSTART;VALUE=DATE:${e.fecha.replace(/-/g, "")}`);
   }

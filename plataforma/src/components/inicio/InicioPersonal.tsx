@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { cargarMiZona } from "@/app/mi-zona/datos";
 import BandaAvisos from "@/components/avisos/BandaAvisos";
-import { Bolsa, Flecha } from "@/components/Iconos";
+import { AvisoCaja } from "@/components/ProximoPartido";
+import { Flecha } from "@/components/Iconos";
 import { madrid } from "@/lib/avisos/horario";
 import { textoColores } from "@/lib/colores";
 import { TEXTO_POSICION, type Posicion } from "@/lib/convocatoria/motor";
 import { avisoDeEvento } from "@/lib/eventos/datos";
 import { coloresDe } from "@/lib/equipacion";
-import { fechaCorta } from "@/lib/fechas";
 import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
 import { avisosDeLaJornada } from "@/lib/inicio/avisos";
 import { fichaEstadisticas } from "@/lib/mensajes";
@@ -23,6 +23,7 @@ import { sumarDias, hoyMadrid } from "@/lib/dias";
 import { clienteSesion } from "@/lib/supabase";
 import type { Usuario } from "@/lib/usuario";
 import AvisoPersonal from "./AvisoPersonal";
+import RopaInicio from "./RopaInicio";
 import BandaGestion from "./BandaGestion";
 import Carrusel from "./Carrusel";
 import { FilaAgenda, TarjetaPendiente } from "./piezas";
@@ -183,7 +184,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
                         <span className="mono tenue">Te pones</span>
                         <b>{a?.tipo === "nos_toca" ? "Equipación amarilla" : "Equipación negra"}{dorsal ? ` con tu dorsal ${dorsal}` : ""}</b>
                         {a?.hay && a.tipo !== "nos_toca" && <span className="pequeno">Lleva también la amarilla, por si acaso.</span>}
-                        {a?.tipo === "nos_toca" && <span className="pequeno">Nos toca cambiar: vamos en segundo lugar.</span>}
+                        {/* El aviso de choque de equipacion de siempre (D79), el mismo que en la portada y en Gestion. */}
+                        {a?.hay && <AvisoCaja a={a} />}
                       </div>
                       {rival && <p className="in-rival pequeno" data-testid="color-rival-inicio"><i className="eq-punto" style={{ background: rival.css }} aria-hidden="true" /> El rival: {textoColores(rival)}</p>}
                     </article>
@@ -242,24 +244,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
         </div>
       </div>
 
-      {ropa && (
-        <section className="in-sec in-ropa" id="ropa" aria-labelledby="t-ropa">
-          <h2 id="t-ropa">Pedido de ropa</h2>
-          {campana?.abierta_ahora && (
-            <Link href="/mi-zona/ropa/nuevo" className="mz-ropa">
-              <span className="mz-ropa-icono"><Bolsa size={24} /></span>
-              <span style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", gap: 2 }}>
-                <strong>Pedido de ropa abierto</strong>
-                <span className="pequeno tenue">{campana.fecha_limite ? `Hasta el ${fechaCorta(campana.fecha_limite)}` : "Mientras siga abierto"} · {campana.nombre}</span>
-              </span>
-              <Flecha />
-            </Link>
-          )}
-          {pedidos.filter((p) => p.campana_abierta).map((p) => (
-            <Link key={p.id} href={`/mi-zona/ropa/${p.id}`} className="in-mas">Tu pedido {p.para === "yo" ? "" : `para ${p.nombre_completo} `}· {p.campana_nombre}: cambiarlo <Flecha size={16} /></Link>
-          ))}
-        </section>
-      )}
+      {ropa && <RopaInicio campana={campana} pedidos={pedidos} />}
     </main>
   );
 }

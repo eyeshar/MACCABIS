@@ -27,10 +27,13 @@ function repartir(js: JugadorGrupo[], k: number): JugadorGrupo[][] {
   const g: JugadorGrupo[][] = Array.from({ length: Math.max(1, k) }, () => []);
   const orden = [...js].sort((a, b) => ORDEN_LINEA[linea(a)] - ORDEN_LINEA[linea(b)] || nivel(b) - nivel(a) || a.person_id.localeCompare(b.person_id));
   const suma = (x: JugadorGrupo[]) => x.reduce((s, j) => s + nivel(j), 0);
+  const cabe = Math.ceil(js.length / g.length);
   for (const j of orden) {
     const l = linea(j);
-    let mejor = 0;
-    for (let i = 1; i < g.length; i++) {
+    let mejor = -1;
+    for (let i = 0; i < g.length; i++) {
+      if (g[i].length >= cabe) continue;
+      if (mejor < 0) { mejor = i; continue; }
       const a = g[i], b = g[mejor];
       const la = a.filter((x) => linea(x) === l).length, lb = b.filter((x) => linea(x) === l).length;
       if (la < lb || (la === lb && (suma(a) < suma(b) || (suma(a) === suma(b) && a.length < b.length)))) mejor = i;

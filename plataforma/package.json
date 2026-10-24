@@ -55,7 +55,14 @@
     "pruebas:convocatoria-rls": "node pruebas/rls_convocatoria.mjs",
     "pruebas:convocatoria-pantallas": "node pruebas/convocatoria_pantallas.mjs",
     "pruebas:convocatoria-real": "node pruebas/rls_convocatoria_real.mjs",
-    "db:privado": "node scripts/cargar_privado.mjs"
+    "db:privado": "node scripts/cargar_privado.mjs",
+    "pruebas:planes": "node pruebas/rls_planes.mjs",
+    "pruebas:inicio-personal": "node pruebas/inicio_personal.mjs",
+    "pruebas:ubicacion": "node pruebas/ubicacion.mjs",
+    "pruebas:calendario-personal": "node pruebas/calendario_personal.mjs",
+    "pruebas:tablero": "node pruebas/tablero.mjs",
+    "pruebas:grupos": "node pruebas/grupos.mjs",
+    "pruebas:inicio-real": "node pruebas/rls_inicio_real.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

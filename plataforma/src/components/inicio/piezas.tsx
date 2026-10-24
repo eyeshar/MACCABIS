@@ -88,7 +88,8 @@ export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u
         <div className="in-casilla"><small>{u.tipo === "domingo" ? "Partido" : "Empieza"}</small><b className="cifra">{h.inicio ?? "—"}</b></div>
       </div>
       <strong className="in-pendiente-titulo">{tituloUnidad(u)}</strong>
-      <span className="suave in-pendiente-lugar">{lugarTexto(e)}{mapa && <> · <a href={mapa} target="_blank" rel="noopener noreferrer">Cómo llegar</a></>}</span>
+      <span className="suave in-pendiente-lugar">{lugarTexto(e)}</span>
+      {mapa && <a className="in-mas in-llegar-mini" href={mapa} target="_blank" rel="noopener noreferrer">Cómo llegar</a>}
       {plan ? (
         <ResponderPlan id={e.id} actual={null} completo={Boolean(plazasLlenas)} nombre={e.titulo ?? "el plan"} />
       ) : encendido ? (

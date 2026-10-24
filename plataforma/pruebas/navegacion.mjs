@@ -48,8 +48,8 @@ const PUBLICAS = ['/', '/club', '/privacidad'];
 const GESTION = ['/gestion', '/gestion/jugadores', '/gestion/ropa', '/gestion/ropa/nuevo', '/gestion/scouting', '/gestion/liga'];
 const ROLES = {
   anon: { paginas: PUBLICAS },
-  jugador: { email: 'jugador@pruebas.local', paginas: [...PUBLICAS, '/mi-zona', '/cuenta'] },
-  gestor: { email: 'gestor@pruebas.local', paginas: [...PUBLICAS, '/mi-zona', '/cuenta', ...GESTION] },
+  jugador: { email: 'jugador@pruebas.local', paginas: [...PUBLICAS, '/agenda', '/cuenta'] },
+  gestor: { email: 'gestor@pruebas.local', paginas: [...PUBLICAS, '/agenda', '/cuenta', ...GESTION] },
 };
 const TAMANOS = [['375', 375, 812, true], ['escritorio', 1440, 900, false]];
 
@@ -122,7 +122,7 @@ try {
       p.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
       if (conf.email) {
         await entrar(p, conf.email);
-        if (rol === 'gestor') ok(p.url().endsWith('/entrar/elegir'), 'gestor que tambien es jugador: elige zona al entrar', p.url());
+        if (rol === 'gestor') ok(new URL(p.url()).pathname === '/', 'gestor que tambien es jugador: entra en su inicio (con la banda de gestion, D116)', p.url());
       }
 
       const firmas = new Map();
@@ -170,25 +170,28 @@ try {
       if (movil) ok(problemas.tapa.length === 0, 'la barra inferior (fija) no tapa el contenido', problemas.tapa.join(' | '));
 
       // ---- Lo que ve cada rol
-      await p.goto(`${APP}/`);
+      // Con sesion, «/» es el inicio personal (sin pie): el pie de la web publica se mira en /club.
+      await p.goto(`${APP}/club`);
       const pie = await p.locator('footer#pie a').evaluateAll((a) => a.map((x) => `${x.textContent.trim()}|${x.getAttribute('href')}`));
-      const piePrevisto = { anon: ['Acceso jugadores y gestores|/entrar'], jugador: ['Mi zona|/mi-zona'], gestor: ['Mi zona|/mi-zona', 'Gestión|/gestion'] }[rol];
-      const pieZonas = pie.filter((x) => /\|\/(entrar|mi-zona|gestion)$/.test(x));
+      const piePrevisto = { anon: ['Acceso jugadores y gestores|/entrar'], jugador: ['Tu agenda|/agenda'], gestor: ['Tu agenda|/agenda', 'Gestión|/gestion'] }[rol];
+      const pieZonas = pie.filter((x) => /\|\/(entrar|agenda|gestion)$/.test(x));
+      await p.goto(`${APP}/`);
       ok(JSON.stringify(pieZonas) === JSON.stringify(piePrevisto), `pie de la portada con la misma sesion que la cabecera (${rol}): ${piePrevisto.map((x) => x.split('|')[0]).join(' y ')}`, pie.join(', '));
       const cab = p.locator('header.nv-cab');
       const barra = p.locator('nav[aria-label="Secciones"]');
       const acceso = cab.getByRole('link', { name: 'Acceso' });
-      const miZonaVisible = movil ? await barra.getByRole('link', { name: 'Mi zona' }).isVisible() : await cab.getByRole('link', { name: 'Mi zona' }).isVisible();
+      // D116: con sesion de jugador, «Agenda» y «Mis números» (lo de cada persona) en la cabecera y en la barra.
+      const miZonaVisible = movil ? await barra.getByRole('link', { name: 'Agenda' }).isVisible() : await cab.getByRole('link', { name: 'Agenda' }).isVisible();
       const botonGestion = cab.getByRole('button', { name: /GESTIÓN/ });
       const botonUsuario = cab.locator('button.nv-avatar');
       if (rol === 'anon') {
         ok(await acceso.isVisible() && (await acceso.getAttribute('href')) === '/entrar', 'sin sesion: boton "Acceso" a /entrar');
-        ok(!miZonaVisible && (await p.getByRole('link', { name: 'Mi zona' }).count()) === 0, 'sin sesion: no ve Mi zona');
+        ok(!miZonaVisible && (await p.getByRole('link', { name: 'Agenda' }).count()) === 0 && (await p.getByRole('link', { name: 'Mis números' }).count()) === 0, 'sin sesion: no ve Agenda ni Mis números');
         ok((await botonGestion.count()) === 0 && (await p.locator('#nv-menu-gestion, .nv-hoja-gestion').count()) === 0, 'sin sesion: no ve Gestion');
         if (movil) ok(await barra.getByRole('link', { name: 'Acceso' }).isVisible(), 'movil sin sesion: "Acceso" en la barra inferior');
       } else {
         ok((await acceso.count()) === 0, `${rol}: la portada reconoce la sesion (sin "Acceso")`);
-        ok(miZonaVisible, `${rol}: ve Mi zona`);
+        ok(miZonaVisible, `${rol}: ve Agenda (y Mis números)`);
         ok(await botonUsuario.isVisible() && (await botonUsuario.textContent()).includes(rol === 'jugador' ? 'J' : 'E'), `${rol}: boton con su inicial${movil ? '' : ' y nombre'}`);
         if (!movil) ok((await botonUsuario.textContent()).includes(rol === 'jugador' ? 'Jon' : 'Edu'), `${rol}: su nombre en la cabecera`);
         if (rol === 'jugador') ok((await botonGestion.count()) === 0 && (await p.locator('#nv-menu-gestion, .nv-hoja-gestion').count()) === 0, 'jugador: no ve Gestion');
@@ -196,10 +199,16 @@ try {
       }
       if (!movil) {
         const menu = await p.$$eval('nav[aria-label="Principal"] a', (a) => a.map((x) => x.textContent.trim()));
-        ok(['Inicio', 'Partidos', 'Liga', 'Plantilla', 'Historia', 'El club'].every((t, i) => menu[i] === t), 'menu: Inicio · Partidos · Liga · Plantilla · Historia · El club', menu.join(','));
-        ok((await p.locator('nav[aria-label="Principal"] a[href="/"]').getAttribute('aria-current')) === 'page', 'en la portada, "Inicio" marcado (aria-current)');
-        await p.goto(`${APP}/club`);
-        ok((await p.locator('nav[aria-label="Principal"] a[href="/club"]').getAttribute('aria-current')) === 'page', 'en /club, "El club" marcado');
+        const previsto = rol === 'anon' ? ['Inicio', 'Partidos', 'Liga', 'Plantilla', 'Historia', 'El club'] : ['Inicio', 'Agenda', 'Mis números', 'Liga', 'Historia'];
+        ok(JSON.stringify(menu) === JSON.stringify(previsto), `menu: ${previsto.join(' · ')}`, menu.join(','));
+        ok((await p.locator('nav[aria-label="Principal"] a[href="/"]').getAttribute('aria-current')) === 'page', 'en «/», "Inicio" marcado (aria-current)');
+        if (rol === 'anon') {
+          await p.goto(`${APP}/club`);
+          ok((await p.locator('nav[aria-label="Principal"] a[href="/club"]').getAttribute('aria-current')) === 'page', 'en /club, "El club" marcado');
+        } else {
+          await p.goto(`${APP}/agenda`);
+          ok((await p.locator('nav[aria-label="Principal"] a[href="/agenda"]').getAttribute('aria-current')) === 'page', 'en /agenda, "Agenda" marcado');
+        }
         await p.goto(`${APP}/`);
       }
 
@@ -238,7 +247,7 @@ try {
         const columnas = await pg.locator('.nv-grupo').evaluateAll((g) => g.map((x) => Math.round(x.getBoundingClientRect().left)));
         ok(new Set(columnas).size === 3, 'menu de Gestion: los tres grupos en columnas', columnas.join(','));
         const enlaces = await pg.locator('a.nv-entrada').evaluateAll((a) => a.map((x) => [x.querySelector('b').textContent.trim(), x.getAttribute('href'), x.querySelector('span')?.textContent.trim()]));
-        ok(JSON.stringify(enlaces.map((e) => e[0])) === JSON.stringify(['Panel de la semana', 'Eventos y pistas', 'Convocatoria', 'Jugadores', 'Asistencia y motivos', 'Pedido de ropa', 'Scouting rivales', 'Liga consolidada']) && enlaces.every((e) => e[2]) && enlaces.find((e) => e[0] === 'Eventos y pistas')[1] === '/gestion/eventos' && enlaces.find((e) => e[0] === 'Asistencia y motivos')[1] === '/gestion/asistencia' && enlaces.find((e) => e[0] === 'Convocatoria')[1] === '/gestion/convocatoria', 'menu de Gestion: todas las entradas con enlace y una linea de descripcion (Convocatoria ya enlazada, D107)', JSON.stringify(enlaces));
+        ok(JSON.stringify(enlaces.map((e) => e[0])) === JSON.stringify(['Panel de la semana', 'Eventos y pistas', 'Convocatoria', 'Tablero', 'Grupos', 'Jugadores', 'Asistencia y motivos', 'Pedido de ropa', 'Scouting rivales', 'Liga consolidada']) && enlaces.every((e) => e[2]) && enlaces.find((e) => e[0] === 'Eventos y pistas')[1] === '/gestion/eventos' && enlaces.find((e) => e[0] === 'Asistencia y motivos')[1] === '/gestion/asistencia' && enlaces.find((e) => e[0] === 'Convocatoria')[1] === '/gestion/convocatoria', 'menu de Gestion: todas las entradas con enlace y una linea de descripcion (Convocatoria ya enlazada, D107)', JSON.stringify(enlaces));
         const paso2 = await pg.locator('.nv-paso2').evaluateAll((s) => s.map((x) => ({ t: x.textContent, a: x.getAttribute('aria-disabled'), tag: x.tagName, href: x.getAttribute('href') })));
         ok(paso2.length === 0, 'menu de Gestion: ninguna entrada lleva ya "paso 2" (Convocatoria enlazada, D107)', JSON.stringify(paso2));
         ok((await pg.textContent()).includes('Mi cuenta') === false, '"Mi cuenta" ya no esta en el menu de Gestion (solo en el de usuario)');
@@ -259,7 +268,8 @@ try {
       if (movil) {
         const mas = barra.getByRole('button', { name: 'Más' });
         const textos = await barra.locator(':scope > a, :scope > button').allTextContents();
-        ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(['Inicio', 'Partidos', 'Liga', rol === 'anon' ? 'Acceso' : 'Mi zona', 'Más']), 'barra inferior: Inicio · Partidos · Liga · Mi zona/Acceso · Más', textos.join(','));
+        const barraPrevista = { anon: ['Inicio', 'Partidos', 'Liga', 'Acceso', 'Más'], jugador: ['Inicio', 'Agenda', 'Mis números', 'Liga', 'Más'], gestor: ['Inicio', 'Agenda', 'Mis números', 'Gestión', 'Más'] }[rol];
+        ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(barraPrevista), `barra inferior: ${barraPrevista.join(' · ')} (D116)`, textos.join(','));
         await mas.click();
         const hoja = p.getByRole('dialog', { name: 'Más' });
         ok(await hoja.isVisible() && (await mas.getAttribute('aria-expanded')) === 'true', '"Más" abre la hoja desde abajo');
@@ -268,7 +278,8 @@ try {
         ok(['Plantilla', 'Historia', 'El club'].every((t) => ht.includes(t)) && /la web/i.test(ht), 'hoja: LA WEB con Plantilla, Historia y El club');
         if (rol === 'gestor') {
           const g = hoja.locator('.nv-hoja-gestion');
-          ok(await g.isVisible() && (await g.locator('a.nv-entrada').count()) === 8 && (await g.locator('.nv-paso2').count()) === 0, 'hoja (gestor): GESTIÓN con las mismas 8 entradas, todas enlazadas');
+          ok(await g.isVisible() && (await g.locator('a.nv-entrada').count()) === 10 && (await g.locator('.nv-paso2').count()) === 0, 'hoja (gestor): GESTIÓN con las mismas 10 entradas (con Tablero y Grupos), todas enlazadas');
+          ok(ht.includes('Liga'), 'hoja (gestor): Liga pasa a «Más»');
         } else ok((await hoja.locator('.nv-hoja-gestion').count()) === 0, `hoja (${rol}): sin Gestion`);
         if (rol !== 'anon') ok(ht.includes('Mi cuenta') && ht.includes('Salir'), 'hoja: Mi cuenta y Salir');
         else ok(!ht.includes('Salir'), 'hoja sin sesion: sin Mi cuenta ni Salir');
@@ -281,29 +292,20 @@ try {
         await foto(p, `cabecera_${rol}_${etiqueta}`, false);
       } else if (rol !== 'gestor') await foto(p, `cabecera_${rol}_${etiqueta}`, false);
 
-      // ---- Mi zona
+      // ---- Inicio personal (D116): «/» con sesion; /mi-zona redirige ahi y ya no hay barra propia de Mi zona
       if (rol !== 'anon') {
         await p.goto(`${APP}/mi-zona`);
-        const bz = p.locator('nav[aria-label="Mi zona"]');
-        ok(JSON.stringify((await bz.locator('a').allTextContents()).map((t) => t.trim())) === JSON.stringify(['Resumen', 'Mi agenda', 'Estadísticas']), 'Mi zona: barra propia (Resumen · Mi agenda · Estadísticas; «Ausencias» solo con respuestas en la web, D99)');
-        await p.evaluate(() => window.scrollTo(0, 700));
-        await p.waitForTimeout(150);
-        ok(Math.abs((await bz.evaluate((b) => b.getBoundingClientRect().top))) < 1, 'Mi zona: la barra queda fija arriba al hacer scroll');
-        await bz.getByRole('link', { name: 'Estadísticas' }).click();
-        await p.waitForTimeout(400);
-        const alFinal = await p.evaluate(() => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2);
-        ok(((await p.locator('#temporada').evaluate((s) => s.getBoundingClientRect().top)) < 200 || alFinal) && (await bz.getByRole('link', { name: 'Estadísticas' }).getAttribute('aria-current')) !== null, 'Mi zona: "Estadísticas" lleva a su seccion y la marca');
-        ok(await p.evaluate(() => { const s = document.getElementById('temporada').getBoundingClientRect(); const b = document.querySelector('nav[aria-label="Mi zona"]').getBoundingClientRect(); return s.top >= b.bottom - 2; }), 'Mi zona: la seccion no queda debajo de la barra');
-        const pos = await p.evaluate(() => Object.fromEntries(['hola', 'agenda', 'domingo', 'ropa', 'temporada'].map((id) => { const e = id === 'hola' ? document.querySelector('.mz-hola') : document.getElementById(id); const r = e.getBoundingClientRect(); return [id, { x: Math.round(r.left), y: Math.round(r.top + scrollY), d: Math.round(r.right) }]; })));
-        if (movil) ok(pos.hola.y < pos.agenda.y && pos.agenda.y < pos.domingo.y && pos.domingo.y < pos.ropa.y && pos.ropa.y < pos.temporada.y, 'Mi zona movil: una columna (saludo, agenda, domingo, ropa, temporada)', JSON.stringify(pos));
-        else ok(pos.domingo.x > pos.agenda.d && pos.ropa.x === pos.domingo.x && pos.temporada.x === pos.agenda.x && pos.hola.x === pos.agenda.x, 'Mi zona escritorio: dos columnas (ancha: saludo, agenda y temporada; estrecha: domingo y ropa)', JSON.stringify(pos));
-        const anchoMz = await p.evaluate(() => document.querySelector('.mz').getBoundingClientRect().width);
-        if (!movil) ok(anchoMz > 1100, 'Mi zona escritorio: dentro del ancho maximo de la portada, no una columna de movil', String(anchoMz));
-        const cuerpo = await p.textContent('main');
-        ok(!/Marcar d[ií]as/i.test(cuerpo) && !/\[N\]/.test(cuerpo), 'Mi zona: sin "Marcar días que no estoy" (paso 3) ni cifras de ejemplo [N]');
-        ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(14, 13, 18)', 'Mi zona: tema oscuro de la portada');
-        await p.evaluate(() => window.scrollTo(0, 0));
-        await fotoEstatica(p, `mizona_${rol}_${etiqueta}`);
+        ok(new URL(p.url()).pathname === '/' && (await p.locator('nav[aria-label="Mi zona"]').count()) === 0, 'inicio: /mi-zona lleva a «/» y no hay barra propia de Mi zona (Inicio · Agenda · Mis números están en la navegación)');
+        const pos = await p.evaluate(() => Object.fromEntries(['.in-hola', '#pendientes', '#proximo-partido', '#agenda', '#temporada'].map((s) => { const r = document.querySelector(s).getBoundingClientRect(); return [s, { x: Math.round(r.left), y: Math.round(r.top + scrollY) }]; })));
+        if (movil) ok(pos['.in-hola'].y < pos['#pendientes'].y && pos['#pendientes'].y < pos['#proximo-partido'].y && pos['#proximo-partido'].y < pos['#agenda'].y && pos['#agenda'].y < pos['#temporada'].y, 'inicio movil: una columna (saludo, pendientes, próximo partido, agenda, temporada)', JSON.stringify(pos));
+        else ok(pos['#proximo-partido'].x < pos['#agenda'].x && pos['#agenda'].x < pos['#temporada'].x && pos['#proximo-partido'].y === pos['#agenda'].y, 'inicio escritorio: tres columnas (próximo partido | agenda | temporada)', JSON.stringify(pos));
+        const ancho = await p.evaluate(() => document.querySelector('.in').getBoundingClientRect().width);
+        if (!movil) ok(ancho > 1100, 'inicio escritorio: dentro del ancho máximo, no una columna de móvil', String(ancho));
+        ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(14, 13, 18)', 'inicio: tema oscuro');
+        await p.goto(`${APP}/mis-numeros`);
+        ok(/\/jugador\/[a-z-]+$/.test(new URL(p.url()).pathname) && (await (movil ? barra : cab).getByRole('link', { name: 'Mis números' }).getAttribute('aria-current')) === 'page', '«Mis números» lleva a su ficha y queda marcado', p.url());
+        await p.goto(`${APP}/`);
+        await fotoEstatica(p, `inicio_${rol}_${etiqueta}`);
       }
 
       // ---- Gestion
@@ -369,9 +371,10 @@ try {
     ok(p.url().endsWith('/gestion'), 'entra en /gestion', p.url());
     const textos = await p.locator('nav[aria-label="Secciones"] > a, nav[aria-label="Secciones"] > button').allTextContents();
     await p.goto(`${APP}/`);
-    const pie = await p.locator('footer#pie a').evaluateAll((a) => a.map((x) => `${x.textContent.trim()}|${x.getAttribute('href')}`).filter((x) => /\|\/(entrar|mi-zona|gestion)$/.test(x)));
+    await p.goto(`${APP}/club`);
+    const pie = await p.locator('footer#pie a').evaluateAll((a) => a.map((x) => `${x.textContent.trim()}|${x.getAttribute('href')}`).filter((x) => /\|\/(entrar|agenda|gestion)$/.test(x)));
     ok(JSON.stringify(pie) === JSON.stringify(['Gestión|/gestion']), 'pie de la portada (gestor sin ficha): solo "Gestión"', pie.join(', '));
-    ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(['Inicio', 'Partidos', 'Liga', 'Gestión', 'Más']) && (await p.getByRole('link', { name: 'Mi zona' }).count()) === 0, 'barra inferior con "Gestión" en lugar de Mi zona; sin Mi zona', textos.join(','));
+    ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(['Inicio', 'Partidos', 'Liga', 'Gestión', 'Más']) && (await p.getByRole('link', { name: 'Agenda' }).count()) === 0, 'barra inferior con "Gestión"; sin Agenda ni Mis números (no tiene ficha)', textos.join(','));
     await ctx.close();
   }
 

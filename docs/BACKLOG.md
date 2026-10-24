@@ -9,11 +9,16 @@
 
 **Inmediato (23/10/2026):**
 - [ ] **Convocatoria v1 (D107), rama `feat/convocatoria`, SIN merge — para usarla en la J4 (08/11/2026, solo juega el MdL a las 11:30):**
-   - [ ] OK de Iván a la vista previa y al resumen (incluida la interpretación de la regla 5 con 6 interiores: doblan 2 «Dobla» para 4 y 4 antes de bajar a 3 y 3).
-   - [ ] Migración `20261023100000_convocatoria` en **staging** y después en **producción** (`npm run db:backup` antes; `npm run db:migrar`). Hoy no hay proyecto de staging (D94): decidir si se crea o se aplica en real con las mitigaciones de D94.
-   - [ ] Cargar los datos privados: `npm run db:privado` (simulacro) y `npm run db:privado -- --aplicar` desde `privado/plantilla_2026-27.csv`; después, en `/gestion/convocatoria/datos`: **bases de reserva** (el CSV no tiene esa columna), **reglas personales** (entrenador-jugador «fijo»), sanciones.
+   - [x] Respuestas de Iván a la revisión (24/10/2026, D108): interiores (solo mínimos), dificultad con pocos datos, un mensaje sin disponibles, última importación, hoja `jugadores_2026-27.xlsx` con «Ataque (usar)».
+   - [x] Migración `20261023100000_convocatoria` **aplicada en el Supabase real** el 24/10/2026 (excepción a staging, D108): volcado previo, prueba de permisos en real en verde, datos privados cargados desde la hoja (24 jugadores).
+   - [ ] OK de Iván a la vista previa y al resumen; merge.
+   - [ ] En `/gestion/convocatoria/datos`: **bases de reserva** (la hoja no los trae), **regla del entrenador-jugador** («fijo») y sanciones, si las hay.
+   - [ ] **Importar las respuestas de SportEasy de la J4** (Importar → Respuestas; nunca se ha hecho en real) para que la propuesta use los disponibles de verdad.
+   - [ ] Revisar con Iván si la rotación (partidos convocado) debe pesar tanto frente al nivel: en la simulación de la J4 deja fuera a jugadores de nivel A por llevar 3 partidos.
+   - [ ] **Deuda: crear el entorno de pruebas de Supabase (staging).** Dos bloques seguidos (D94, D108) se han aplicado en real por no tenerlo.
+   - [ ] `fix/pruebas-datos-fijos` (las 7 suites en verde, sin merge): OK de Iván y merge.
    - [ ] Merge a `main` con el OK de Iván; probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp, SportEasy por Claude).
-   - [ ] **Pruebas antiguas que caducaron con el calendario (no son de esta rama, fallan igual en `main`):** `pruebas:portada` espera «Pendiente de acta oficial» en la J1 (ya tiene acta desde D106) y `pruebas:respuestas-web` responde al entreno del 14/10, que ya pasó («evento_cerrado»). Hay que leer esas fechas y estados de los datos, como se hizo en `e9ef902`.
+   - [x] **Pruebas antiguas que caducaron con el calendario:** comparadas de verdad en `main` y en la rama (mismos fallos); arregladas en `fix/pruebas-datos-fijos` (leen cifras y fechas de los datos; las de respuestas adelantan los eventos de la base de pruebas semanas enteras).
    - [ ] Más adelante: «partidos convocado» con las convocatorias aprobadas (hoy sale solo de las hojas cargadas); entrenos de 4 semanas con el pase de lista real cuando exista; la tabla del Panel a tarjetas en móvil.
 - [ ] **Normativa FBM de esta temporada: desde la J3 (25/10/2026) es obligatorio llevar dorsal en la camiseta de la primera equipación, del mismo color para todo el equipo.** Avisar a la plantilla antes del domingo y tenerlo en cuenta en la convocatoria y en los avisos de equipación (D75).
 - [ ] **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27. **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma.

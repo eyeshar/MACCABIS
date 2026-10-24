@@ -36,24 +36,28 @@ try {
   const liga = leerLiga('2026-27');
   const partidos = liga.privado;
   const esperadoJug = partidos.reduce((s, p) => s + p.equipos.reduce((t, e) => t + e.jugadores.length, 0), 0);
+  // Cifras leidas de los datos (crecen cada jornada): partidos cargados, jornadas y partidos nuestros (MdA o MdL).
+  const N = partidos.length;
+  const jornadas = [...new Set(partidos.map((p) => p.jornada))].sort((a, b) => a - b);
+  const NUESTROS = partidos.filter((p) => ['MdA', 'MdL'].some((n) => n === p.local || n === p.visitante)).length;
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   const cuenta = async () => ({
     p: (await sql`select count(*)::int n from public.liga_partidos`)[0].n,
     j: (await sql`select count(*)::int n from public.liga_estadisticas_jugador`)[0].n,
   });
   let c = await cuenta();
-  ok(c.p === partidos.length && c.p === 10, `10 partidos cargados (los de la J1 de G1 y G2)`, String(c.p));
+  ok(c.p === N && N > 0, `${N} partidos cargados (J${jornadas.join(', J')} de G1 y G2)`, String(c.p));
   ok(c.j === esperadoJug, `${esperadoJug} filas de jugador cargadas`, String(c.j));
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   c = await cuenta();
-  ok(c.p === 10 && c.j === esperadoJug, 'cargar dos veces no duplica nada (idempotente)');
+  ok(c.p === N && c.j === esperadoJug, 'cargar dos veces no duplica nada (idempotente)');
   const [{ n: sumas }] = await sql`
     select count(*)::int n from public.liga_partidos p
     where p.pts_local = (select sum(pts) from public.liga_estadisticas_jugador e where e.partido_id = p.id and e.equipo = p.local)
       and p.pts_visitante = (select sum(pts) from public.liga_estadisticas_jugador e where e.partido_id = p.id and e.equipo = p.visitante)`;
-  ok(sumas === 10, 'en los 10 partidos, la suma de puntos por jugador = marcador de cada equipo');
+  ok(sumas === N, `en los ${N} partidos, la suma de puntos por jugador = marcador de cada equipo`, String(sumas));
   const [{ nuestros }] = await sql`select count(*)::int nuestros from public.liga_partidos where nuestro`;
-  ok(nuestros === 2, 'solo 2 partidos marcados como nuestros (MdA y MdL)');
+  ok(nuestros === NUESTROS && NUESTROS === 2 * jornadas.length, `solo ${NUESTROS} partidos marcados como nuestros (MdA y MdL, ${jornadas.length} jornadas)`, String(nuestros));
 
   // Usuarios: un gestor, un jugador (con correo en la lista blanca) y un intruso sin ninguna ficha.
   await sql`update public.jugadores set email = 'jugador@pruebas.local' where person_id = 'esteban-jon'`;
@@ -110,7 +114,7 @@ try {
     ok(rg.status === 200 && rg.datos.length === n, `gestor lee ${t} (${n} filas)`, `status ${rg.status} / ${rg.datos?.length}`);
   }
   let r = await api('/liga_partidos?select=*', { token: tGestor });
-  ok(r.status === 200 && r.datos.length === 10, 'gestor lee los 10 partidos', `status ${r.status} / ${r.datos?.length}`);
+  ok(r.status === 200 && r.datos.length === N, `gestor lee los ${N} partidos`, `status ${r.status} / ${r.datos?.length}`);
   r = await api('/liga_estadisticas_jugador?select=*', { token: tGestor });
   ok(r.status === 200 && r.datos.length === esperadoJug, `gestor lee las ${esperadoJug} filas de jugador`, `status ${r.status} / ${r.datos?.length}`);
   r = await api('/v_liga_jugadores?select=*&order=pts.desc&limit=3', { token: tGestor });
@@ -126,7 +130,7 @@ try {
     await api('/liga_partidos?jornada=eq.1', { metodo: 'DELETE', token });
   }
   c = await cuenta();
-  ok(c.p === 10 && c.j === esperadoJug, 'tras los intentos de escritura y borrado no ha cambiado nada');
+  ok(c.p === N && c.j === esperadoJug, 'tras los intentos de escritura y borrado no ha cambiado nada');
 
   console.log('\n== Permisos de base de datos');
   for (const t of [...tablas]) {

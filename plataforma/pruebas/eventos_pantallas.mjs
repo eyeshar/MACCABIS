@@ -115,8 +115,12 @@ try {
   ok((await copia.textContent()).includes('Copia a SportEasy') && (await copia.textContent()).includes('entrenos de la serie'), 'tarjeta «Copia a SportEasy» (los 27 entrenos de la serie por comprobar)');
   ok((await p.getByTestId('ultimas-lecturas').textContent()).includes('todavía no se ha leído'), '«Últimas lecturas»: aún ninguna');
   ok((await p.locator('aside').textContent()).includes('Valdebernardo (Faustina Valladolid)') && (await p.locator('aside').textContent()).includes('Caja Mágica') && (await p.locator('aside').textContent()).includes('CDM Moratalaz'), 'catálogo de pistas: Valdebernardo, Caja Mágica y CDM Moratalaz');
+  // La J2 (18/10) ya puede haber pasado: entonces sale en «Pasados» y no en «Próximos» (lo dice la fecha, no la prueba).
+  const j2Pasada = (await sql`select fecha::text f from public.eventos where clave = 'mda-j2'`)[0].f < hoy;
+  if (j2Pasada) await p.goto(`${APP}/gestion/eventos?f=pasados`);
   const a2 = p.locator('tr[data-evento="mda-j2"]');
-  ok(await a2.count() === 1 && (await a2.textContent()).includes('encuentro 09:55') && (await a2.textContent()).includes('Moratalaz · Pista 2') && (await a2.textContent()).includes('Cambian ellos'), 'J2 MdA: hora, encuentro 09:55, Moratalaz · Pista 2 y aviso de equipación');
+  ok(await a2.count() === 1 && (await a2.textContent()).includes('encuentro 09:55') && (await a2.textContent()).includes('Moratalaz · Pista 2') && (await a2.textContent()).includes('Cambian ellos'), `J2 MdA${j2Pasada ? ' (en «Pasados»)' : ''}: hora, encuentro 09:55, Moratalaz · Pista 2 y aviso de equipación`);
+  if (j2Pasada) await p.goto(`${APP}/gestion/eventos`);
   const ent0 = p.locator(`tr[data-evento="entreno-semanal-${proximo.fecha.toISOString().slice(0, 10)}"]`);
   ok((await ent0.textContent()).includes('Pista por confirmar') && (await ent0.textContent()).includes('Valdebernardo en obras') && !(await ent0.textContent()).includes('Se abre al fijar pista'), 'entreno sin pista: «Pista por confirmar · Valdebernardo en obras», sin «Se abre al fijar pista» (no bloquea respuestas)');
   await p.screenshot({ path: path.join(SALIDA, 'real_eventos_escritorio.png'), fullPage: true });
@@ -240,13 +244,16 @@ try {
   await p.goto(`${APP}/gestion/eventos`);
   const antesPend = (await sql`select count(*)::int n from public.eventos where sporteasy_estado = 'pendiente' and fecha >= ${hoy} and (sporteasy_cambio is null or sporteasy_cambio not like 'Carga inicial%')`)[0].n;
   ok((await p.getByTestId('copia-sporteasy').locator('input[name=id]:not([disabled])').count()) === antesPend, `la tarjeta lista ${antesPend} cambios, todos marcados`);
+  const marcAntes = (await sql`select sporteasy_estado, sporteasy_cambio, sporteasy_copiado_en from public.eventos where clave = 'mda-j2'`)[0];
   p.once('dialog', (d) => d.accept());
   await p.getByTestId('copia-sporteasy').getByRole('button', { name: 'Marcar como copiado' }).click();
   await p.waitForLoadState('networkidle');
   const despPend = (await sql`select count(*)::int n from public.eventos where sporteasy_estado = 'pendiente' and fecha >= ${hoy} and (sporteasy_cambio is null or sporteasy_cambio not like 'Carga inicial%')`)[0].n;
   ok(despPend === 0, 'tras «Marcar como copiado» no queda ningún cambio pendiente');
   const marc = (await sql`select sporteasy_cambio, sporteasy_copiado_en from public.eventos where clave = 'mda-j2'`)[0];
-  ok(marc.sporteasy_cambio === null && marc.sporteasy_copiado_en !== null, 'queda la fecha de copia y sin cambio pendiente');
+  // Un evento ya pasado no cuenta como pendiente de copiar (D96): si la J2 ya pasó, la tarjeta no la lista y sigue igual.
+  if (j2Pasada) ok(JSON.stringify((await sql`select sporteasy_estado, sporteasy_cambio, sporteasy_copiado_en from public.eventos where clave = 'mda-j2'`)[0]) === JSON.stringify(marcAntes), 'la J2 ya pasó: no entra en la tarjeta y queda como estaba (D96)');
+  else ok(marc.sporteasy_cambio === null && marc.sporteasy_copiado_en !== null, 'queda la fecha de copia y sin cambio pendiente');
   ok((await p.getByTestId('copia-sporteasy').textContent()).includes('Todo al día') || (await p.getByTestId('copia-sporteasy').textContent()).includes('entrenos de la serie'), 'la tarjeta vuelve a «Todo al día» (o deja solo lo que Claude aún no ha comprobado)');
 
   // ---------------------------------------------------------------- pistas

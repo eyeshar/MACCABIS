@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { adelantar, semanas, hoyMadrid as fpHoy, sumarDias as fpSumar } from './fechas_prueba.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const MIGS = path.join(AQUI, '..', 'supabase', 'migrations');
@@ -74,6 +75,10 @@ try {
     await sql`insert into public.liga_calendario (temporada, equipo, jornada, fecha, hora, local, descansa, rival, campo) values ('2026-27', ${c.equipo}, ${c.jornada}, ${c.fecha}, ${c.hora}, ${c.local}, ${!!c.descansa}, ${c.rival}, ${c.campo})`;
   }
   const carga = await cargarEventos(sql, { log: () => {} });
+  // Fechas que no caducan (pruebas/fechas_prueba.mjs): todos los eventos se adelantan semanas enteras para que el entreno
+  // del 14/10 (el primero que la prueba necesita abierto) sea futuro; el del 07/10 se deja en el pasado.
+  const F = await adelantar(sql, semanas('2026-10-14'));
+  await sql`update public.eventos set fecha = ${fpSumar(fpHoy(), -7)} where clave = 'entreno-semanal-2026-10-07'`;
   ok(carga.nuevos === 67, 'carga inicial: 67 eventos');
   const id = async (clave) => (await sql`select id from public.eventos where clave = ${clave}`)[0].id;
   const E = { mdaJ2: await id('mda-j2'), mdlJ2: await id('mdl-j2'), mdaJ3: await id('mda-j3'), mdlJ3: await id('mdl-j3'), mdlJ4: await id('mdl-j4'), e14: await id('entreno-semanal-2026-10-14'), e21: await id('entreno-semanal-2026-10-21') };
@@ -99,9 +104,9 @@ try {
   console.log('\n== Interruptor APAGADO: nadie responde en la web (también en la base, no solo en la pantalla)');
   let r = await rpc('responder', { p_evento: E.e14, p_respuesta: 'va' }, jon.token);
   ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'con el interruptor apagado un jugador NO responde', `${r.status} ${error(r)}`);
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'ambos' }, jon.token);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'ambos' }, jon.token);
   ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'ni al domingo');
-  r = await rpc('guardar_ausencia', { p_id: null, p_desde: '2026-11-01', p_hasta: '2026-11-10', p_motivo: 'viaje' }, jon.token);
+  r = await rpc('guardar_ausencia', { p_id: null, p_desde: F('2026-11-01'), p_hasta: F('2026-11-10'), p_motivo: 'viaje' }, jon.token);
   ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'ni marca ausencias');
   r = await rpc('alta_suscripcion', { p_endpoint: 'https://push.example/jon-1', p_p256dh: 'clave', p_auth: 'auth', p_navegador: 'Safari iPhone' }, jon.token);
   ok(r.status === 200, 'pero SÍ activa los avisos en su móvil (D99.12)', `${r.status} ${error(r)}`);
@@ -109,7 +114,7 @@ try {
   // D105: en la fase puente las respuestas vienen solo de Importar; «Responder por él» tampoco vale (ni de un evento ni del domingo).
   r = await rpc('responder_por', { p_evento: E.e14, p_person: 'esteban-jon', p_respuesta: 'va' }, tG);
   ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'con el interruptor apagado ni un gestor usa «Responder por él» (evento)', `${r.status} ${error(r)}`);
-  r = await rpc('responder_domingo_por', { p_fecha: '2026-10-25', p_person: 'esteban-jon', p_opcion: 'ambos' }, tG);
+  r = await rpc('responder_domingo_por', { p_fecha: F('2026-10-25'), p_person: 'esteban-jon', p_opcion: 'ambos' }, tG);
   ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'ni el de la vista de domingo', `${r.status} ${error(r)}`);
   ok((await sql`select count(*)::int n from public.respuestas where person_id = 'esteban-jon'`)[0].n === 0, 'y no ha quedado ninguna respuesta escrita');
 
@@ -227,61 +232,61 @@ try {
   ok(/evento_cerrado/.test(error(await rpc('responder', { p_evento: hoyEv.id, p_respuesta: 'va' }, jon.token))), 'el mismo día, en cuanto empieza (hora de Madrid), se cierra');
 
   console.log('\n== Domingo: una sola respuesta (D99.3)');
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'voy' }, jon.token);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'voy' }, jon.token);
   ok(/opcion_no_valida/.test(error(r)), 'horas distintas (J3, 09:00 y 14:00): «Voy» a secas no vale');
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'ambos' }, jon.token);
-  const j3 = async (p = 'esteban-jon') => Object.fromEntries((await sql`select e.equipo, r.respuesta, r.motivo from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-25' and e.tipo = 'liga' and r.person_id = ${p}`).map((x) => [x.equipo, `${x.respuesta}${x.motivo ? '·' + x.motivo : ''}`]));
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'ambos' }, jon.token);
+  const j3 = async (p = 'esteban-jon') => Object.fromEntries((await sql`select e.equipo, r.respuesta, r.motivo from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and e.tipo = 'liga' and r.person_id = ${p}`).map((x) => [x.equipo, `${x.respuesta}${x.motivo ? '·' + x.motivo : ''}`]));
   ok(r.status === 200 && JSON.stringify(await j3()) === JSON.stringify({ MdA: 'va', MdL: 'va' }) || ((await j3()).MdA === 'va' && (await j3()).MdL === 'va'), '«A los dos» = va en los dos', JSON.stringify(await j3()));
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'solo', p_evento: E.mdaJ3 }, jon.token);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'solo', p_evento: E.mdaJ3 }, jon.token);
   let x3 = await j3();
   ok(r.status === 200 && x3.MdA === 'va' && x3.MdL === 'no·horario', '«Solo al de las 09:00 (MdA)» = va en MdA y «no · horario» en MdL', JSON.stringify(x3));
-  const dom = async (p = 'esteban-jon', f = '2026-10-25') => (await sql`select opcion, solo_evento, motivo, origen, vigente from public.respuestas_domingo where fecha = ${f} and person_id = ${p}`)[0];
+  const dom = async (p = 'esteban-jon', f = F('2026-10-25')) => (await sql`select opcion, solo_evento, motivo, origen, vigente from public.respuestas_domingo where fecha = ${f} and person_id = ${p}`)[0];
   let d0 = await dom();
   ok(d0 && d0.opcion === 'solo' && d0.solo_evento === E.mdaJ3 && d0.vigente && d0.origen === 'jugador', 'se GUARDA la respuesta única del domingo: «solo», con el partido elegido (D103)', JSON.stringify(d0));
   ok((await api('/respuestas_domingo?select=*', { token: jon.token })).datos.length === 1 && (await api('/respuestas_domingo?select=*', { token: guille.token })).datos.length === 0, 'cada jugador lee solo su respuesta del domingo');
-  ok((await api('/respuestas_domingo', { metodo: 'POST', cuerpo: { fecha: '2026-10-25', person_id: 'esteban-jon', opcion: 'voy', origen: 'jugador' }, token: jon.token })).status >= 400, 'nadie la escribe directamente en la tabla');
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'no' }, jon.token);
+  ok((await api('/respuestas_domingo', { metodo: 'POST', cuerpo: { fecha: F('2026-10-25'), person_id: 'esteban-jon', opcion: 'voy', origen: 'jugador' }, token: jon.token })).status >= 400, 'nadie la escribe directamente en la tabla');
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'no' }, jon.token);
   ok(/falta_motivo/.test(error(r)), '«No voy» del domingo exige motivo');
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'no', p_motivo: 'familia' }, jon.token);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'no', p_motivo: 'familia' }, jon.token);
   x3 = await j3();
   ok(x3.MdA === 'no·familia' && x3.MdL === 'no·familia', '«No voy» con motivo en los dos');
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'duda' }, jon.token);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'duda' }, jon.token);
   x3 = await j3();
   ok(x3.MdA === 'duda' && x3.MdL === 'duda', '«Duda» en los dos');
-  ok(/opcion_no_valida/.test(error(await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'solo', p_evento: E.e14 }, jon.token))), '«solo» con un evento que no es de ese domingo no vale');
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-18', p_opcion: 'ambos' }, jon.token);
+  ok(/opcion_no_valida/.test(error(await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'solo', p_evento: E.e14 }, jon.token))), '«solo» con un evento que no es de ese domingo no vale');
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-18'), p_opcion: 'ambos' }, jon.token);
   ok(/opcion_no_valida/.test(error(r)), 'misma hora (J2, 10:15 los dos): «A los dos» no existe');
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-18', p_opcion: 'voy' }, jon.token);
-  const j2 = (await sql`select r.respuesta from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-18' and e.tipo = 'liga' and r.person_id = 'esteban-jon'`).map((x) => x.respuesta);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-18'), p_opcion: 'voy' }, jon.token);
+  const j2 = (await sql`select r.respuesta from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-18')} and e.tipo = 'liga' and r.person_id = 'esteban-jon'`).map((x) => x.respuesta);
   ok(r.status === 200 && j2.length === 2 && j2.every((x) => x === 'va'), 'misma hora: «Voy» = disponible para cualquiera de los dos (va en los dos)');
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'voy' }, guille.token);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'voy' }, guille.token);
   ok(r.status === 200 && JSON.stringify(await j3('galan-domingo-guillermo')) === JSON.stringify({ MdA: 'va' }), 'una sola ficha: responde solo su partido (Guillermo, MdA)');
-  r = await rpc('responder_domingo', { p_fecha: '2026-11-08', p_opcion: 'voy' }, guille.token);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-11-08'), p_opcion: 'voy' }, guille.token);
   ok(/no_invitado/.test(error(r)), 'su equipo descansa (08/11, MdA): no hay nada que responder');
-  ok((await dom('esteban-jon', '2026-10-18'))?.opcion === 'voy' && (await dom()).opcion === 'duda', 'la respuesta del domingo sigue a la última (J2 «voy», J3 «duda»)');
+  ok((await dom('esteban-jon', F('2026-10-18')))?.opcion === 'voy' && (await dom()).opcion === 'duda', 'la respuesta del domingo sigue a la última (J2 «voy», J3 «duda»)');
   // Si un partido cambia por otro camino (Importar, «Responder por él» de un partido, una ausencia...), la del domingo deja de valer.
   await sql`select public._escribir_respuesta(${E.mdlJ3}, 'esteban-jon', 'va', null, null, 'sporteasy', null, null, null)`;
   d0 = await dom();
   ok(d0.vigente === false, 'si un partido cambia por otro camino (p. ej. Importar de SportEasy), la respuesta del domingo deja de valer y manda lo de cada partido');
-  await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'duda' }, jon.token);
+  await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'duda' }, jon.token);
   ok((await dom()).vigente === true, 'y vuelve a valer en cuanto el jugador responde al domingo otra vez');
-  const asis = await sql`select e.equipo, r.respuesta from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-25' and e.tipo = 'liga' and r.person_id = 'esteban-jon' order by e.equipo`;
+  const asis = await sql`select e.equipo, r.respuesta from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and e.tipo = 'liga' and r.person_id = 'esteban-jon' order by e.equipo`;
   ok(asis.length === 2 && asis.every((x) => x.respuesta === 'duda'), 'Importar, Asistencia y la convocatoria siguen leyendo una respuesta por partido (derivada)');
 
   console.log('\n== Periodos de no disponibilidad');
   await rpc('responder', { p_evento: E.e21, p_respuesta: 'va' }, jon.token);
-  r = await rpc('previsualizar_ausencia', { p_desde: '2026-10-20', p_hasta: '2026-11-02' }, jon.token);
+  r = await rpc('previsualizar_ausencia', { p_desde: F('2026-10-20'), p_hasta: F('2026-11-02') }, jon.token);
   const prev = r.datos ?? [];
   ok(r.status === 200 && prev.length >= 3 && prev.some((e) => e.id === E.e21 && e.respuesta === 'va'), `resumen antes de guardar: ${prev.length} eventos, con el «voy» del 21/10 señalado`, JSON.stringify(prev).slice(0, 200));
   ok(!(await sql`select count(*)::int n from public.ausencias_periodo`)[0].n, 'el resumen no escribe nada');
-  ok(/fechas_no_validas/.test(error(await rpc('guardar_ausencia', { p_id: null, p_desde: '2026-11-02', p_hasta: '2026-10-20', p_motivo: 'viaje' }, jon.token))), 'una ausencia con el último día antes del primero no vale');
-  ok(/falta_motivo/.test(error(await rpc('guardar_ausencia', { p_id: null, p_desde: '2026-10-20', p_hasta: '2026-11-02', p_motivo: null }, jon.token))), 'una ausencia sin motivo no vale');
-  r = await rpc('guardar_ausencia', { p_id: null, p_desde: '2026-10-20', p_hasta: '2026-11-02', p_motivo: 'viaje', p_detalle: 'Londres' }, jon.token);
+  ok(/fechas_no_validas/.test(error(await rpc('guardar_ausencia', { p_id: null, p_desde: F('2026-11-02'), p_hasta: F('2026-10-20'), p_motivo: 'viaje' }, jon.token))), 'una ausencia con el último día antes del primero no vale');
+  ok(/falta_motivo/.test(error(await rpc('guardar_ausencia', { p_id: null, p_desde: F('2026-10-20'), p_hasta: F('2026-11-02'), p_motivo: null }, jon.token))), 'una ausencia sin motivo no vale');
+  r = await rpc('guardar_ausencia', { p_id: null, p_desde: F('2026-10-20'), p_hasta: F('2026-11-02'), p_motivo: 'viaje', p_detalle: 'Londres' }, jon.token);
   const ausId = r.datos?.id;
   ok(r.status === 200 && r.datos.eventos === prev.length, `guardada: pone «no voy» en ${r.datos?.eventos} eventos`);
-  const enPeriodo = await sql`select e.clave, r.respuesta, r.motivo, r.ausencia_id from public.respuestas r join public.eventos e on e.id = r.evento_id where r.person_id = 'esteban-jon' and e.fecha between '2026-10-20' and '2026-11-02'`;
+  const enPeriodo = await sql`select e.clave, r.respuesta, r.motivo, r.ausencia_id from public.respuestas r join public.eventos e on e.id = r.evento_id where r.person_id = 'esteban-jon' and e.fecha between ${F('2026-10-20')} and ${F('2026-11-02')}`;
   ok(enPeriodo.length === prev.length && enPeriodo.every((x) => x.respuesta === 'no' && x.motivo === 'viaje' && x.ausencia_id === ausId), 'todos «no · viaje», el «voy» del 21/10 incluido, ligados a la ausencia');
-  const [nuevo] = await sql`insert into public.eventos (clave, tipo, equipo, titulo, fecha, inicio) values ('x-amistoso', 'amistoso', 'ambos', 'Amistoso', '2026-10-31', '11:00') returning id`;
+  const [nuevo] = await sql`insert into public.eventos (clave, tipo, equipo, titulo, fecha, inicio) values ('x-amistoso', 'amistoso', 'ambos', 'Amistoso', ${F('2026-10-31')}, '11:00') returning id`;
   const [enNuevo] = await sql`select respuesta, motivo from public.respuestas where evento_id = ${nuevo.id} and person_id = 'esteban-jon'`;
   ok(enNuevo?.respuesta === 'no' && enNuevo.motivo === 'viaje', 'un evento creado DESPUÉS dentro del periodo también queda «no · viaje»');
   const [enNuevoOtro] = await sql`select respuesta from public.respuestas where evento_id = ${nuevo.id} and person_id = 'gianatti-adriano'`;
@@ -290,7 +295,7 @@ try {
   ok((await api('/ausencias_periodo?select=*', { token: jon.token })).datos.length === 1, 'Jon ve la suya');
   ok(/ausencia_no_encontrada/.test(error(await rpc('borrar_ausencia', { p_id: ausId }, guille.token))), 'otro jugador NO borra la ausencia de Jon');
   r = await rpc('borrar_ausencia', { p_id: ausId }, jon.token);
-  const trasBorrar = await sql`select r.respuesta from public.respuestas r join public.eventos e on e.id = r.evento_id where r.person_id = 'esteban-jon' and e.fecha between '2026-10-20' and '2026-11-02'`;
+  const trasBorrar = await sql`select r.respuesta from public.respuestas r join public.eventos e on e.id = r.evento_id where r.person_id = 'esteban-jon' and e.fecha between ${F('2026-10-20')} and ${F('2026-11-02')}`;
   ok(r.status === 200 && trasBorrar.every((x) => x.respuesta === 'sin_responder'), 'al borrarla, esos eventos vuelven a «sin responder»');
   ok((await sql`select borrada_en from public.ausencias_periodo where id = ${ausId}`)[0].borrada_en, 'la ausencia no se borra de la tabla: queda marcada como borrada');
   ok((await api('/ausencias_periodo?select=*', { token: jon.token })).datos.every((a) => a.borrada_en), 'y el jugador la ve como borrada (la web no la enseña)');
@@ -307,9 +312,9 @@ try {
   const [cerrada] = await sql`select hasta::text, borrada_en from public.ausencias_periodo where id = ${r.datos.id}`;
   ok(cerrada.hasta === ayer && !cerrada.borrada_en, `si empezó antes de hoy, el periodo se cierra con el último día = ayer (${cerrada.hasta})`);
   // Gestor: crear la misma ausencia otra vez (franja reutilizada) y editarla
-  r = await rpc('guardar_ausencia', { p_id: null, p_desde: '2026-10-20', p_hasta: '2026-11-02', p_motivo: 'viaje' }, jon.token);
+  r = await rpc('guardar_ausencia', { p_id: null, p_desde: F('2026-10-20'), p_hasta: F('2026-11-02'), p_motivo: 'viaje' }, jon.token);
   ok(r.status === 200 && r.datos.id === ausId, 'volver a marcar la misma franja reutiliza la ausencia borrada');
-  r = await rpc('guardar_ausencia', { p_id: ausId, p_desde: '2026-10-20', p_hasta: '2026-10-22', p_motivo: 'trabajo' }, jon.token);
+  r = await rpc('guardar_ausencia', { p_id: ausId, p_desde: F('2026-10-20'), p_hasta: F('2026-10-22'), p_motivo: 'trabajo' }, jon.token);
   const tras = Object.fromEntries((await sql`select e.clave, r.respuesta, r.motivo from public.respuestas r join public.eventos e on e.id = r.evento_id where r.person_id = 'esteban-jon' and e.clave in ('entreno-semanal-2026-10-21', 'mda-j3')`).map((x) => [x.clave, `${x.respuesta}${x.motivo ? '·' + x.motivo : ''}`]));
   ok(tras['entreno-semanal-2026-10-21'] === 'no·trabajo' && tras['mda-j3'] === 'sin_responder', 'al acortarla, lo que queda fuera vuelve a «sin responder» y lo de dentro cambia de motivo', JSON.stringify(tras));
   await rpc('borrar_ausencia', { p_id: ausId }, jon.token);
@@ -319,12 +324,12 @@ try {
   await rpc('responder', { p_evento: E.e21, p_respuesta: 'duda' }, guille.token);
   await sql`update public.eventos set inicio = '20:00', fin = '22:00' where id = ${E.e21}`;
   ok((await sql`select count(*)::int n from public.respuestas where evento_id = ${E.e21} and respuesta <> 'sin_responder'`)[0].n === 2, 'cambiar la hora (o la pista) mantiene las respuestas');
-  await sql`insert into public.ausencias_periodo (person_id, desde, hasta, motivo, fuente, origen) values ('gianatti-adriano', '2026-10-22', '2026-10-23', 'viaje', 'web', 'gestor')`;
-  await sql`update public.eventos set fecha = '2026-10-22' where id = ${E.e21}`;
+  await sql`insert into public.ausencias_periodo (person_id, desde, hasta, motivo, fuente, origen) values ('gianatti-adriano', ${F('2026-10-22')}, ${F('2026-10-23')}, 'viaje', 'web', 'gestor')`;
+  await sql`update public.eventos set fecha = ${F('2026-10-22')} where id = ${E.e21}`;
   const tr = Object.fromEntries((await sql`select person_id, respuesta, motivo from public.respuestas where evento_id = ${E.e21}`).map((x) => [x.person_id, `${x.respuesta}${x.motivo ? '·' + x.motivo : ''}`]));
   ok(tr['esteban-jon'] === 'sin_responder' && tr['galan-domingo-guillermo'] === 'sin_responder', 'cambiar el DÍA deja todas las respuestas en «sin responder»', JSON.stringify(tr));
   ok(tr['gianatti-adriano'] === 'no·viaje', 'y se vuelven a aplicar las ausencias del nuevo día');
-  await sql`update public.eventos set fecha = '2026-10-21' where id = ${E.e21}`;
+  await sql`update public.eventos set fecha = ${F('2026-10-21')} where id = ${E.e21}`;
 
   console.log('\n== Alerta a los gestores: cambios de un partido después del martes a las 10:00');
   // Un partido de liga en los próximos días cuyo martes 10:00 ya pasó, y otro de la semana que viene (aún no).
@@ -373,7 +378,7 @@ try {
   ok((await rpc('responder', { p_evento: E.e14, p_respuesta: 'va' }, edimil.token)).status === 200, 'Edimil responde a un entreno');
   r = await rpc('responder', { p_evento: E.mdaJ3, p_respuesta: 'va' }, edimil.token);
   ok(r.status >= 400 && /no_invitado/.test(error(r)), '«solo entreno» no responde a un partido (lo para la base)', `${r.status} ${error(r)}`);
-  r = await rpc('responder_domingo', { p_fecha: '2026-10-25', p_opcion: 'voy' }, edimil.token);
+  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'voy' }, edimil.token);
   ok(r.status >= 400 && /no_invitado/.test(error(r)), 'ni al domingo', `${r.status} ${error(r)}`);
   r = await rpc('responder_por', { p_evento: E.e14, p_person: CARLOS_E, p_respuesta: 'va' }, tG);
   ok(r.status >= 400 && /no_invitado/.test(error(r)), 'ni un gestor responde por Carlos (entrenador): no responde a nada', `${r.status} ${error(r)}`);
@@ -391,11 +396,11 @@ try {
   const [pp] = await sql`select origen, puesto_por, puesto_por_nombre from public.respuestas where evento_id = ${E.e14} and person_id = 'vallesi-daniele'`;
   ok(r.status === 200 && pp.origen === 'gestor' && pp.puesto_por === gestorUid && pp.puesto_por_nombre === 'Iván', 'queda guardado que la puso un gestor y quién («puesto por Iván»)');
   ok(/no_invitado/.test(error(await rpc('responder_por', { p_evento: E.mdlJ3, p_person: 'galan-domingo-guillermo', p_respuesta: 'va' }, tG))), 'ni el gestor responde por alguien a un evento al que no está invitado');
-  r = await rpc('responder_domingo_por', { p_fecha: '2026-10-25', p_person: 'vallesi-daniele', p_opcion: 'solo', p_evento: E.mdlJ3 }, tG);
+  r = await rpc('responder_domingo_por', { p_fecha: F('2026-10-25'), p_person: 'vallesi-daniele', p_opcion: 'solo', p_evento: E.mdlJ3 }, tG);
   const dd = await j3('vallesi-daniele');
   ok(r.status === 200 && dd.MdL === 'va' && dd.MdA === 'no·horario', 'en la vista de domingo, el gestor pone «solo al de las 14:00» (y el otro queda «no · horario»)', `${r.status} ${error(r)} ${JSON.stringify(dd)}`);
-  ok((await sql`select count(*)::int n from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = '2026-10-25' and r.person_id = 'vallesi-daniele' and r.origen = 'gestor' and r.puesto_por_nombre = 'Iván'`)[0].n === 2, 'con origen «gestor» y su nombre en los dos partidos');
-  ok((await rpc('responder_domingo_por', { p_fecha: '2026-10-25', p_person: 'esteban-jon', p_opcion: 'ambos' }, jon.token)).status >= 400, 'un jugador no usa la función del gestor');
+  ok((await sql`select count(*)::int n from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and r.person_id = 'vallesi-daniele' and r.origen = 'gestor' and r.puesto_por_nombre = 'Iván'`)[0].n === 2, 'con origen «gestor» y su nombre en los dos partidos');
+  ok((await rpc('responder_domingo_por', { p_fecha: F('2026-10-25'), p_person: 'esteban-jon', p_opcion: 'ambos' }, jon.token)).status >= 400, 'un jugador no usa la función del gestor');
 
   console.log('\n== Suscripciones de avisos');
   ok((await api('/suscripciones_avisos?select=*', { token: jon.token })).datos.length === 1, 'Jon ve su suscripción');
@@ -427,7 +432,7 @@ try {
   r = await rpc('cambiar_interruptor', { p_encender: false }, tG);
   ok(r.status === 200 && r.datos.encendido === false && (await sql`select count(*)::int n from public.respuestas`)[0].n === antesN, 'apagado: las respuestas siguen ahí');
   ok(/respuestas_apagadas/.test(error(await rpc('responder', { p_evento: E.e14, p_respuesta: 'va' }, jon.token))), 'y la web vuelve a no aceptar respuestas');
-  await sql`update public.eventos set fecha = '2026-10-29' where id = ${E.e21}`;
+  await sql`update public.eventos set fecha = ${F('2026-10-29')} where id = ${E.e21}`;
   ok((await sql`select count(*)::int n from public.respuestas where evento_id = ${E.e21} and respuesta <> 'sin_responder'`)[0].n > 0, 'con el interruptor apagado, cambiar el día no toca las respuestas (vienen de SportEasy)');
 } finally {
   await pila.parar();

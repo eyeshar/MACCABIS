@@ -41,6 +41,19 @@ try {
   await sql`update public.jugadores set email = ${jugadorEmail} where person_id = 'esteban-jon'`;
   const codigoDe = async (email) => (await sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
 
+  // Lo esperado se lee de los datos (crecen cada jornada) y de la fecha de hoy, no se escribe a mano.
+  const REPO = path.join(RAIZ, '..');
+  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8')).partidos;
+  const proximo = (eq) => cal.filter((x) => x.equipo === eq && !x.descansa && x.rival && x.fecha && x.fecha >= hoy).sort((a, b) => (a.fecha < b.fecha ? -1 : 1))[0];
+  const PROX = { MDA: proximo('MDA'), MDL: proximo('MDL') };
+  const normal = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const dm = (f) => `${+f.slice(8, 10)}/${+f.slice(5, 7)}`;
+  const ligaJson = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'liga_2026-27.json'), 'utf8'));
+  const clas = Object.values(ligaJson.grupos).flatMap((g) => g.clasificacion);
+  const CON_PARTIDOS = clas.filter((c) => c.pj > 0).length;
+  const PF = { MdA: clas.find((c) => c.id === 'mda').pf, MdL: clas.find((c) => c.id === 'mdl').pf };
+
   console.log('\n== Compilacion');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
   const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
@@ -88,8 +101,9 @@ try {
     const menuEntero = () => p.evaluate(() => { const f = document.querySelector('nav[aria-label="Gestión"] .zb-fila'); return f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === 'auto'; });
 
     await p.goto(`${APP}/gestion/scouting`);
-    ok((await p.textContent('h2')).includes('Litros de Mahou'), 'scouting: por defecto, el proximo rival del MdA (Litros de Mahou)');
-    ok((await p.textContent('.lg-prox')).includes('J2') && (await p.textContent('.lg-prox')).includes('18/10') && (await p.textContent('.lg-prox')).includes('en casa'), 'scouting: proximo partido contra nosotros (J2 · 18/10 · en casa)');
+    ok(normal(await p.textContent('h2')).includes(normal(PROX.MDA.rival)), `scouting: por defecto, el proximo rival del MdA (${PROX.MDA.rival})`, await p.textContent('h2'));
+    const prox = await p.textContent('.lg-prox');
+    ok(prox.includes(`J${PROX.MDA.jornada} ·`) && prox.includes(dm(PROX.MDA.fecha)) && prox.includes(PROX.MDA.local ? 'en casa' : 'fuera'), `scouting: proximo partido contra nosotros (J${PROX.MDA.jornada} · ${dm(PROX.MDA.fecha)} · ${PROX.MDA.local ? 'en casa' : 'fuera'})`, prox);
     ok((await p.locator('.lg-max').count()) === 3, 'scouting: 3 maximos anotadores');
     ok(await menuEntero(), 'el menu de gestion no se corta (cabe o se desplaza en su fila)');
     ok(await sinDesbordar(), 'scouting: sin desbordamiento horizontal');
@@ -102,7 +116,7 @@ try {
     await p.screenshot({ path: path.join(SALIDA, `real_b_scouting_${etiqueta}.png`), fullPage: true });
     await p.getByRole('link', { name: /^MdL:/ }).click();
     await p.waitForURL(/v=mdl/);
-    ok((await p.textContent('h2')).includes('Quinto Tiempo'), 'scouting: el selector pasa al proximo rival del MdL (Quinto Tiempo)');
+    ok(normal(await p.textContent('h2')).includes(normal(PROX.MDL.rival)), `scouting: el selector pasa al proximo rival del MdL (${PROX.MDL.rival})`, await p.textContent('h2'));
     await p.selectOption('select[name="e"]', 'Craps');
     await p.getByRole('button', { name: 'Ver' }).click();
     await p.waitForURL(/e=Craps/);
@@ -121,7 +135,7 @@ try {
     ok(await menuEntero() && await sinDesbordar(), 'liga: menu entero y sin desbordamiento');
     await p.screenshot({ path: path.join(SALIDA, `real_c_liga_plegado_${etiqueta}.png`), fullPage: true });
     await p.locator('details.lg-ranking > summary').click();
-    ok((await p.locator('details.lg-ranking tbody tr').count()) === 20, 'liga: el ranking desplegado tiene los 20 equipos con partidos');
+    ok((await p.locator('details.lg-ranking tbody tr').count()) === CON_PARTIDOS, `liga: el ranking desplegado tiene los ${CON_PARTIDOS} equipos con partidos`, String(await p.locator('details.lg-ranking tbody tr').count()));
     ok(await sinDesbordar(), 'liga: desplegado, sin desbordamiento de pagina');
     const cab = await p.$$eval('details.lg-ranking thead th', (ths) => ths.filter((t) => t.getBoundingClientRect().width > 0).map((t) => t.textContent.trim()));
     const cabEsperada = movil ? ['#', 'Equipo', 'G-P', '%V', 'Dif/p'] : ['#', 'Equipo', 'PJ', 'G', 'P', '%V', 'PF/p', 'PC/p', 'Dif/p', 'Pts'];
@@ -131,7 +145,7 @@ try {
     const celdasEnPantalla = await p.evaluate(() => [...document.querySelectorAll('details.lg-ranking tr')].every((tr) => [...tr.children].filter((c) => c.getBoundingClientRect().width > 0).every((c) => c.getBoundingClientRect().right <= window.innerWidth + 1)));
     ok(celdasEnPantalla, 'ranking: ninguna celda visible se sale de la pantalla');
     const textoLideres = await p.textContent('.lg-sub');
-    ok(/de los 20 equipos con partidos jugados/.test(textoLideres), 'liga: el texto de lideres cuenta los equipos con partidos (20), igual que el ranking', textoLideres);
+    ok(textoLideres.includes(`de los ${CON_PARTIDOS} equipos con partidos jugados`), `liga: el texto de lideres cuenta los equipos con partidos (${CON_PARTIDOS}), igual que el ranking`, textoLideres);
     await p.screenshot({ path: path.join(SALIDA, `real_c_liga_desplegado_${etiqueta}.png`), fullPage: true });
 
     // ---- Indice, lideres (totales / por partido) y tabla "Todos los jugadores"
@@ -149,7 +163,8 @@ try {
     ok(JSON.stringify(await titulos()) === JSON.stringify(['Puntos por partido', '2P por partido', '3P por partido', 'TL anotados por partido', 'TL%', 'Faltas por partido', 'Minutos por partido']), 'lideres Por partido: las 7 listas', (await titulos()).join(','));
     const valores = await L.locator('.lg-lider li > b:last-child').allTextContents();
     ok(valores.length > 0 && valores.every((v) => /^\d+,\d$|^\d+%$/.test(v)), 'lideres Por partido: valores con una decimal (o %)', valores.slice(0, 6).join(' '));
-    ok((await L.locator('.lg-lider').first().textContent()).includes('28,0') && (await L.locator('.lg-lider').first().textContent()).includes('Esteban, Jon'), 'lideres Por partido: Puntos por partido arranca en 28,0 y el doblador sale con sus partidos sumados (15,0)');
+    const ppp = (await L.locator('.lg-lider').first().locator('li > b:last-child').allTextContents()).map((v) => Number(v.replace(',', '.')));
+    ok(ppp.length > 0 && ppp.every((v, i) => i === 0 || ppp[i - 1] >= v), `lideres Por partido: Puntos por partido de mayor a menor (arranca en ${String(ppp[0]).replace('.', ',')})`, ppp.join(' '));
     ok((await L.locator('.lg-nota').last().textContent()).includes('Mínimo de partidos «Automático»'), 'lideres Por partido: la nota explica el minimo automatico');
     ok((await p.locator('.lg-todos .lg-conmutador button.on').textContent()) === 'Totales', 'el interruptor de los lideres es independiente del de la tabla');
     await L.scrollIntoViewIfNeeded();
@@ -214,9 +229,9 @@ try {
     await T.locator('label', { hasText: /^Equipo/ }).locator('select').selectOption('MdL');
     ok((await T.locator('.lg-nuestro').first().textContent()).includes('solo ficha MdL'), 'tabla: con filtro de equipo MdL, solo la ficha MdL');
     await T.getByLabel('Buscar').fill('');
-    ok((await sumaPts()) === 59, 'tabla: con equipo MdL, la suma de PTS de las filas (59) = puntos a favor de MdL en la clasificacion', String(await sumaPts()));
+    ok((await sumaPts()) === PF.MdL, `tabla: con equipo MdL, la suma de PTS de las filas (${PF.MdL}) = puntos a favor de MdL en la clasificacion`, String(await sumaPts()));
     await T.locator('label', { hasText: /^Equipo/ }).locator('select').selectOption('MdA');
-    ok((await sumaPts()) === 62, 'tabla: con equipo MdA, la suma de PTS de las filas (62) = puntos a favor de MdA en la clasificacion', String(await sumaPts()));
+    ok((await sumaPts()) === PF.MdA, `tabla: con equipo MdA, la suma de PTS de las filas (${PF.MdA}) = puntos a favor de MdA en la clasificacion`, String(await sumaPts()));
     await T.getByLabel('Solo Maccabis').check();
     await T.getByLabel('Buscar').fill('esteban, jon');
     const sumadaMacc = await T.locator('.lg-nuestro').first().textContent();

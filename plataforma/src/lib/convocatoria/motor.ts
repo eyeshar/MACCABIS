@@ -392,6 +392,32 @@ export function proponer(entrada: Entrada): Propuesta {
         : LIMITES.ideal[lineaDe(j)] - cuenta(S, lineaDe(j)) > LIMITES.ideal[lineaDe(j)] - cuenta(P, lineaDe(j)) ? S : P;
       conv[lleno(e) ? otro(e) : e].push(j);
     }
+    // Rivales parejos (regla 3.2, D112): el numero de convocados queda igualado (diferencia maxima de 1). El reparto por
+    // lineas puede dejar un equipo mucho mas largo cuando tiene jugadores que solo estan disponibles para el (p. ej. 5
+    // interiores): se pasan al equipo con menos convocados solo los disponibles para los dos, eligiendo a quien menos
+    // descoloca las lineas y, a igualdad, a quien deja el nivel medio mas parecido. El maximo (1.1) es un tope, no un
+    // objetivo; y a quien solo esta disponible para un partido no se le mueve (el aviso «evitar 5» sigue saliendo).
+    if (!distintos) {
+      const penal = (lista: JugadorEntrada[]) => {
+        const r = recuentoDe(lista.map((j) => ({ person_id: j.person_id })), mapa);
+        const b = r.bases.puros + r.bases.reserva, ext = r.exteriores.n, int = r.interiores.n;
+        const bajoMinimo = Math.max(0, LIMITES.minimoLinea.base - b) + Number(r.bases.puros === 0) + Math.max(0, LIMITES.minimoLinea.exterior - ext) + Math.max(0, LIMITES.minimoLinea.interior - int);
+        return 10 * bajoMinimo + Math.max(0, LIMITES.ideal.base - b) + Math.max(0, LIMITES.ideal.exterior - ext) + Math.abs(LIMITES.ideal.interior - int);
+      };
+      const media = (lista: JugadorEntrada[]) => (lista.length ? lista.reduce((s, j) => s + nivelDe(j), 0) / lista.length : 0);
+      while (Math.abs(conv[P].length - conv[S].length) > 1) {
+        const [g, c] = conv[P].length > conv[S].length ? [P, S] : [S, P];
+        if (lleno(c)) break;
+        const opciones = conv[g].filter((j) => disponibleEn(j, c) && j.ficha[c] && datos(j).regla?.tipo !== "fijo").map((j) => {
+          const queda = conv[g].filter((x) => x !== j), recibe = [...conv[c], j];
+          return { j, penal: penal(queda) + penal(recibe), nivel: Math.abs(media(queda) - media(recibe)) };
+        }).sort((a, b) => a.penal - b.penal || a.nivel - b.nivel || porId(a.j, b.j));
+        if (!opciones.length) break;
+        const j = opciones[0].j;
+        conv[g].splice(conv[g].indexOf(j), 1);
+        conv[c].push(j);
+      }
+    }
   } else if (eqs.length === 1) {
     conv[eqs[0]].push(...flexibles, ...comodines);
   }

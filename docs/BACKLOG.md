@@ -8,18 +8,19 @@
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
 **Inmediato (23/10/2026):**
-- [ ] **Convocatoria v1 (D107), rama `feat/convocatoria`, SIN merge — para usarla en la J4 (08/11/2026, solo juega el MdL a las 11:30):**
+- [ ] **Convocatoria v1 (D107–D109), EN PRODUCCIÓN desde el 24/10/2026 — para usarla en la J4 (08/11/2026, solo juega el MdL a las 11:30):**
    - [x] Respuestas de Iván a la revisión (24/10/2026, D108): interiores (solo mínimos), dificultad con pocos datos, un mensaje sin disponibles, última importación, hoja `jugadores_2026-27.xlsx` con «Ataque (usar)».
    - [x] Migración `20261023100000_convocatoria` **aplicada en el Supabase real** el 24/10/2026 (excepción a staging, D108): volcado previo, prueba de permisos en real en verde, datos privados cargados desde la hoja (24 jugadores).
-   - [ ] OK de Iván a la vista previa y al resumen; merge.
+   - [x] OK de Iván y merge a `main` (24/10/2026); desplegada en producción.
    - [x] Bases de reserva marcados en `/gestion/convocatoria/datos` (24/10/2026, D109).
-   - [ ] **Regla del entrenador-jugador** («fijo»): sin asignar hasta que Iván lo diga. Sanciones, si las hay.
-   - [ ] **Importar las respuestas de SportEasy de la J4** (Importar → Respuestas; nunca se ha hecho en real) para que la propuesta use los disponibles de verdad.
+   - [ ] **Asignar la regla «fijo» del entrenador-jugador, si aplica** (sin asignar hasta que Iván lo diga). Sanciones, si las hay.
+   - [ ] **Recalibrar el umbral de anotación mínima (45 puntos esperados) tras la J6** (provisional, pestaña «Parametros» de la hoja privada).
+   - [ ] **Primera importación de respuestas de SportEasy para la J4** (Importar → Respuestas; nunca se ha hecho en real) para que la propuesta use los disponibles de verdad.
    - [x] Rotación frente a nivel (D109): el nivel va antes; deuda de 2 domingos fuera (regla 4.2).
-   - [ ] **Deuda: crear el entorno de pruebas de Supabase (staging).** Dos bloques seguidos (D94, D108) se han aplicado en real por no tenerlo.
+   - [ ] **Crear el entorno de pruebas de Supabase (staging).** Dos bloques seguidos (D94, D108) se han aplicado en real por no tenerlo.
    - [x] `fix/pruebas-datos-fijos` mergeada en `main` (24/10/2026); `feat/convocatoria` rebasada encima, todas las suites en verde.
-   - [ ] `pruebas:activacion` está obsoleta (prueba el paso de activar redirecciones, ya aplicado en `7a9b041`): reescribirla sobre la versión anterior a la activación o retirarla.
-   - [ ] Merge a `main` con el OK de Iván; probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp, SportEasy por Claude).
+   - [ ] **Reescribir o retirar `pruebas:activacion`**: está obsoleta (prueba el paso de activar redirecciones, ya aplicado en `7a9b041`): reescribirla sobre la versión anterior a la activación o retirarla.
+   - [ ] Probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp, SportEasy por Claude).
    - [x] **Pruebas antiguas que caducaron con el calendario:** comparadas de verdad en `main` y en la rama (mismos fallos); arregladas en `fix/pruebas-datos-fijos` (leen cifras y fechas de los datos; las de respuestas adelantan los eventos de la base de pruebas semanas enteras).
    - [ ] Más adelante: «partidos convocado» con las convocatorias aprobadas (hoy sale solo de las hojas cargadas); entrenos de 4 semanas con el pase de lista real cuando exista; la tabla del Panel a tarjetas en móvil.
 - [ ] **Normativa FBM de esta temporada: desde la J3 (25/10/2026) es obligatorio llevar dorsal en la camiseta de la primera equipación, del mismo color para todo el equipo.** Avisar a la plantilla antes del domingo y tenerlo en cuenta en la convocatoria y en los avisos de equipación (D75).

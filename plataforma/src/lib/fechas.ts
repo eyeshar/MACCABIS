@@ -23,3 +23,13 @@ export function ymdMadrid(iso: string | null | undefined) {
   if (!iso) return "";
   return new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
 }
+
+/** Estado efectivo de una campaña de ropa: abierta solo si su estado es «abierta» y la fecha límite, incluida, no ha pasado (día de Madrid). Sin fecha: no caduca. */
+export function campanaAbiertaAhora(
+  campana: { estado: string; fecha_limite: string | null | undefined },
+  ahora: Date = new Date(),
+) {
+  if (campana.estado !== "abierta") return false;
+  if (!campana.fecha_limite) return true;
+  return ymdMadrid(campana.fecha_limite) >= ymdMadrid(ahora.toISOString());
+}

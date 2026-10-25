@@ -2,7 +2,7 @@ import Link from "next/link";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { diferencias, EQUIPOS } from "@/lib/convocatoria/motor";
-import { destinatariosAviso, diaTexto, firmaConvocatoria, mensajeConvocatoria, textoCambioConvocatoria, textoEstasConvocado, textoSportEasy } from "@/lib/convocatoria/mensajes";
+import { destinatariosAviso, diaTexto, firmaConvocatoria, sinAvisosTexto, mensajeConvocatoria, textoCambioConvocatoria, textoEstasConvocado, textoSportEasy } from "@/lib/convocatoria/mensajes";
 import CopiarTexto from "../../eventos/CopiarTexto";
 import { BotonAvisar, BotonMarcar } from "./Botones";
 
@@ -79,12 +79,12 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
         <section className="gs-bloque" aria-labelledby="t-aviso" data-testid="cv-salida-aviso">
           <div className="cv-salida-cab"><h2 id="t-aviso">2 · Aviso en la web</h2>
             <Estado al={avisoAlDia} texto={avisoAlDia ? "Enviado" : "Pendiente"} /></div>
-          <p className="pequeno" style={{ margin: 0 }}>{porAvisar.cambio ? "A quien entra, cambia de equipo o sale" : "Cada convocado"} recibe en el móvil: <b>«{ejemplo.titulo}»</b> — {ejemplo.cuerpo}</p>
+          {!avisoAlDia && <p className="pequeno" style={{ margin: 0 }}>{porAvisar.cambio ? "A quien entra, cambia de equipo o sale" : "Cada convocado"} recibe en el móvil: <b>«{ejemplo.titulo}»</b> — {ejemplo.cuerpo}</p>}
           {!avisoAlDia && <p className="pequeno" style={{ margin: 0 }} data-testid="cv-aviso-a">Al pulsar, a {porAvisar.personas.length} {porAvisar.personas.length === 1 ? "persona" : "personas"}: {porAvisar.personas.map((x) => nombre(x.person_id)).sort((a, b) => a.localeCompare(b, "es")).join(", ") || "nadie"}.</p>}
           {!avisoAlDia && <BotonAvisar fecha={ctx.fecha} />}
           {ultimoEnvio && (
             <div data-testid="cv-aviso-resultado">
-              <p className="pequeno" style={{ margin: 0 }}><b>{avisoAlDia ? "Enviado" : "Último envío"}{c.aviso_en ? ` el ${fechaHora(c.aviso_en)}` : ""}: a {ultimoEnvio.n} de {ultimoEnvio.m}</b>{ultimoEnvio.m - ultimoEnvio.n ? ` (los otros ${ultimoEnvio.m - ultimoEnvio.n} no tienen avisos activados)` : ""}.{ultimoEnvio.programado ? ` Sale a las ${fechaHora(ultimoEnvio.programado)} (horas de silencio).` : ""}</p>
+              <p className="pequeno" style={{ margin: 0 }}><b>{avisoAlDia ? "Enviado" : "Último envío"}{c.aviso_en ? ` el ${fechaHora(c.aviso_en)}` : ""}: a {ultimoEnvio.n} de {ultimoEnvio.m}</b>{ultimoEnvio.m - ultimoEnvio.n ? ` (${sinAvisosTexto(ultimoEnvio.m - ultimoEnvio.n)})` : ""}.{ultimoEnvio.programado ? ` Sale a las ${fechaHora(ultimoEnvio.programado)} (horas de silencio).` : ""}</p>
               {ultimoEnvio.sinAvisos.length > 0 && (
                 <>
                   <p className="pequeno" style={{ margin: "6px 0 0" }} data-testid="cv-sin-avisos">Sin avisos: {ultimoEnvio.sinAvisos.join(", ")}. Lo ven en su inicio; mándales por WhatsApp el enlace a <Link href="/avisos">/avisos</Link> para que los activen:</p>

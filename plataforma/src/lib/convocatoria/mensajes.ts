@@ -94,3 +94,6 @@ export function destinatariosAviso(conv: Convocatoria, base: Convocatoria | null
     personas: ids.filter((id) => (ahora.get(id) ?? []).join() !== (antes.get(id) ?? []).join()).map((person_id) => ({ person_id, equipos: ahora.get(person_id) ?? [] })),
   };
 }
+
+/** «(los otros 3 no tienen avisos activados)» / «(el otro no tiene avisos activados)» */
+export const sinAvisosTexto = (n: number) => (n === 1 ? "el otro no tiene avisos activados" : `los otros ${n} no tienen avisos activados`);

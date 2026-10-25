@@ -5,6 +5,7 @@ import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { entradaDe } from "@/lib/convocatoria/vista";
 import { enviarAvisoConvocatoria } from "@/lib/convocatoria/salidas";
+import { sinAvisosTexto } from "@/lib/convocatoria/mensajes";
 import { EQUIPOS, NIVELES, POSICIONES, proponer, vacia, type Convocatoria, type Dificultad, type Equipo } from "@/lib/convocatoria/motor";
 
 // Acciones de la convocatoria (D107). Todo con la sesion del gestor: la base (is_gestor) decide. Las convocatorias se
@@ -136,7 +137,7 @@ export async function avisarAhora(fecha: string): Promise<R> {
   const n = r.destinatarios.length, m = r.conAvisos.length;
   if (!n) return { ok: true, texto: "No había nadie a quien avisar: la convocatoria no ha cambiado desde el último aviso." };
   const cuando = r.programado ? ` Sale a las ${r.programado.toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })} (horas de silencio).` : "";
-  return { ok: true, texto: `${r.cambio ? "Cambio en la convocatoria" : "Estás convocado"}: enviado a ${m} de ${n}${n - m ? ` (los otros ${n - m} no tienen avisos activados)` : ""}.${cuando}` };
+  return { ok: true, texto: `${r.cambio ? "Cambio en la convocatoria" : "Estás convocado"}: enviado a ${m} de ${n}${n - m ? ` (${sinAvisosTexto(n - m)})` : ""}.${cuando}` };
 }
 
 /** Modo rapido (D125): mover a uno o a varios (arrastrar o «Mover a…»), sin preguntar, con el motivo «ajuste manual».

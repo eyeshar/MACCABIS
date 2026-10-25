@@ -235,7 +235,7 @@ try {
     ok(/pocos datos/.test(t), `${eq}: «pocos datos» (los sintéticos no tienen minutos)`);
   }
   await pg.getByTestId('cv-proyeccion-MdL').getByText('Quién aporta').click();
-  const aporte = await pg.getByTestId('cv-proyeccion-MdL').locator('.cv-aporte').allInnerTexts();
+  const aporte = await pg.getByTestId('cv-proyeccion-MdL').locator('.cv-aporte').allTextContents();
   ok(aporte.length === (await equipoDe(pg, 'MdL')).length && aporte.every((x) => /\d+(,\d)? pts/.test(x)), `«Quién aporta»: cada convocado con sus puntos esperados (${aporte.length})`, aporte.slice(0, 2).join(' | '));
   ok(await visto(pg.getByTestId('cv-acierto').getByText(/^Acierto de la proyección: error medio [\d,]+ puntos en \d+ partidos?\.$/)), '«Acierto de la proyección: error medio N puntos en M partidos»');
 
@@ -262,7 +262,7 @@ try {
   ok((await equipoDe(pd, 'MdA')).includes('sint-18') && !(await equipoDe(pd, 'MdL')).includes('sint-18'), 'Sint 18 pasa al MdA');
   const [c1] = await sql`select accion, motivo, nota, equipo from public.convocatoria_cambios order by en desc limit 1`;
   ok(c1.accion === 'mover' && c1.motivo === 'otro' && c1.nota === 'ajuste manual' && c1.equipo === 'MdA' && (await sql`select count(*)::int n from public.convocatoria_cambios`)[0].n === nCambios0 + 1, 'en el historial: «ajuste manual», sin preguntar', JSON.stringify(c1));
-  ok(await visto(pd.getByTestId('cv-proyeccion-MdA').getByText('Quién aporta')) && (await pd.getByTestId('cv-proyeccion-MdA').locator('.cv-aporte').allInnerTexts()).some((x) => x.startsWith('Sint 18')), 'la proyección del MdA se recalcula con él dentro', antesA);
+  ok(await visto(pd.getByTestId('cv-proyeccion-MdA').getByText('Quién aporta')) && (await pd.getByTestId('cv-proyeccion-MdA').locator('.cv-aporte').allTextContents()).some((x) => x.startsWith('Sint 18')), 'la proyección del MdA se recalcula con él dentro', antesA);
   ok((await pd.getByTestId('cv-equipo-MdA').locator('.cv-aviso').allInnerTexts()).some((t) => t.includes('Sint 18 dijo «no voy» a este partido.')), 'y los avisos del equipo también');
   await foto(pd, 'convocatoria_arrastrar_1280');
   await pd.getByTestId('cv-mensaje').getByRole('button', { name: 'Deshacer' }).click();
@@ -322,7 +322,7 @@ try {
   catch { throw new Error(`Aprobar no llega a la salida: ${pg.url()} ${(await pg.locator('[role=alert], [role=status]').allInnerTexts()).join(' | ')} ${errores.join(' | ')}`); }
   const msg = await pg.locator('#cv-mensaje').innerText();
   ok(/^Convocatoria del domingo \d\d\/\d\d \(J\d+\)/.test(msg), 'mensaje: «Convocatoria del domingo DD/MM (Jn)»', msg.slice(0, 60));
-  ok(/encuentro \d\d:\d\d/.test(msg) && /Valdebernardo/.test(msg) && /\(local\)|\(visitante\)/.test(msg), 'con hora, encuentro, pista, dirección y local/visitante');
+  ok(/encuentro \d\d:\d\d/.test(msg) && /Valdebernardo/.test(msg) && !/\(local\)|\(visitante\)|en casa|fuera/.test(msg) && /Md[AL] · \S/.test(msg), 'con hora, encuentro, pista y dirección; el cartel «A – B», sin «local/visitante» (D129)');
   ok(/Convocados \(\d+\): .*Sint 18/.test(msg) && /Recordad: el dorsal es obligatorio\./.test(msg), 'con la lista de convocados y el dorsal obligatorio');
   ok(!/nivel|\b[A-E]\)|Escolta|Pívot|Base de reserva|Dobla/.test(msg), 'sin niveles, posiciones ni «Dobla»');
   await pg.getByRole('button', { name: 'Copiar mensaje' }).click();
@@ -346,7 +346,7 @@ try {
   const dentro01 = Object.values(convF2).flat().some((c) => c.person_id === 'sint-01');
   await pg.getByRole('button', { name: 'Enviar ahora' }).click();
   const silencio = HOR.horaDeEnvio(new Date(), HOR.madrid(F2, '08:00')) > new Date();
-  ok(await visto(pg.getByTestId('cv-salida-aviso').getByText(new RegExp(`Estás convocado: enviado a ${dentro01 ? 1 : 0} de ${M} \\(los otros ${M - (dentro01 ? 1 : 0)} no tienen avisos activados\\)`))), `«Estás convocado: enviado a ${dentro01 ? 1 : 0} de ${M} (los otros … no tienen avisos activados)»`, await pg.getByTestId('cv-salida-aviso').innerText());
+  ok(await visto(pg.getByTestId('cv-aviso-resultado').getByText(new RegExp(`a ${dentro01 ? 1 : 0} de ${M} \\(los otros ${M - (dentro01 ? 1 : 0)} no tienen avisos activados\\)`))), `«Enviado …: a ${dentro01 ? 1 : 0} de ${M} (los otros ${M - (dentro01 ? 1 : 0)} no tienen avisos activados)»`, await pg.getByTestId('cv-salida-aviso').innerText());
   const regs = await sql`select person_id, titulo, cuerpo, enviado_en, resultado from public.avisos_registro where clave like ${`convocatoria:${F2}:%`}`;
   ok(regs.length === M && regs.every((r) => r.titulo.startsWith('Estás convocado · ')), `un aviso por convocado en el registro (${regs.length}), «Estás convocado · …»`);
   ok(regs.every((r) => /^Md[AL] a las \d\d:\d\d \(quedada \d\d:\d\d\)/.test(r.cuerpo) && !/nivel|posici|motivo/i.test(r.cuerpo)), '«MdA a las HH:MM (quedada HH:MM)», sin niveles ni motivos', regs[0]?.cuerpo);
@@ -373,7 +373,7 @@ try {
   ok(await visto(pg.getByTestId('cv-salida-aviso').getByText(/«Cambio en la convocatoria · domingo/)), 'y lo que le llegará: «Cambio en la convocatoria · …»');
   const antesDeCambio = (await sql`select count(*)::int n from public.avisos_registro where clave like ${`convocatoria:${F2}:%`}`)[0].n;
   await pg.getByRole('button', { name: 'Enviar ahora' }).click();
-  ok(await visto(pg.getByTestId('cv-salida-aviso').getByText(/Cambio en la convocatoria: enviado a 0 de 1/)), '«Cambio en la convocatoria: enviado a 0 de 1»');
+  ok(await visto(pg.getByTestId('cv-aviso-resultado').getByText(/a 0 de 1 \(el otro no tiene avisos activados\)/)), 'tras el cambio: «Enviado …: a 0 de 1 (el otro no tiene avisos activados)»');
   const nuevos = await sql`select person_id, titulo, cuerpo from public.avisos_registro where clave like ${`convocatoria:${F2}:%`} order by creado_en desc nulls last, programado_para desc limit 1`;
   const total = (await sql`select count(*)::int n from public.avisos_registro where clave like ${`convocatoria:${F2}:%`}`)[0].n;
   ok(total === antesDeCambio + 1 && nuevos[0]?.person_id === 'sint-18' && nuevos[0]?.titulo.startsWith('Cambio en la convocatoria · ') && nuevos[0]?.cuerpo === 'Ya no estás convocado este domingo.', 'un solo aviso nuevo, a Sint 18: «Ya no estás convocado este domingo.» (los demás no reciben nada otra vez)', JSON.stringify(nuevos[0]));

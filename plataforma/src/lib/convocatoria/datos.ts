@@ -1,12 +1,17 @@
 import "server-only";
 import ligaJson from "@/data/liga.json";
 import seasonJson from "@/data/estadisticas/season_2026-27.json";
-import { clave } from "@/data/avisosEquipacion";
+import seasonAnteriorJson from "@/data/estadisticas/season_2025-26.json";
+import equipJson from "@/data/equipaciones.json";
+import { clave, equipoPorNombre, type Equipaciones } from "@/data/avisosEquipacion";
 import { hoyMadrid, sumarDias } from "@/lib/dias";
+import { madrid } from "@/lib/avisos/horario";
+import { estadoImportacion } from "@/lib/eventos/importacionAuto";
 import { avisoDeEvento, cargarEventos, cargarPistas, type Cliente } from "@/lib/eventos/datos";
 import { limpiarRival, pistaEfectiva, quedadaPorDefecto, hhmm, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { nombreRival } from "@/lib/equipacion";
 import { quienResponde } from "@/lib/respuestas/dominio";
+import { calibrar, estadisticasGrupo, historiales, resumenCalibracion, tasasPorLetra, type DatosProyeccion, type LigaJson, type Letra, type SeasonJson } from "./proyeccion";
 import { domingosFueraDe, proponerDificultad, type DatosPrivados, type Equipo, type RespuestaPartido } from "./motor";
 import type { Cambio, Contexto, FilaConvocatoria, FilaPrivada, JugadorVista, PartidoVista } from "./vista";
 
@@ -43,6 +48,31 @@ export function dificultadPropuesta(equipo: Equipo, rival: string | null) {
   return proponerDificultad(fila, g?.clasificacion.length ?? 0, NOMBRE_GRUPO[equipo], g ? Math.max(0, ...g.jornadas_cargadas) || null : null);
 }
 
+/** Nombres de equipo comparables entre la liga, el calendario y las hojas («Mejorada 2012 C.B..» = «Mejorada 2012»). */
+const claveEquipo = (n: string) => clave(equipoPorNombre(equipJson as unknown as Equipaciones, n)?.nombre ?? n);
+
+/** Datos de la proyeccion de anotacion (D124): historial de cada jugador (temporada actual y anterior), su letra de
+ *  Ataque (privada), la tasa de cada letra, el rival de cada partido del domingo y la calibracion con lo ya jugado. */
+export function datosProyeccion(jugadores: { person_id: string; nombre: string }[], letras: Map<string, Letra | null>, partidos: { equipo: Equipo; rival: string | null; jornada: number | null }[]): DatosProyeccion {
+  const actual = seasonJson as unknown as SeasonJson, anterior = seasonAnteriorJson as unknown as SeasonJson, liga = ligaJson as unknown as LigaJson;
+  const hist = historiales(actual, anterior);
+  const ids = jugadores.map((j) => j.person_id);
+  const tasas = tasasPorLetra(ids.map((id) => ({ letra: letras.get(id) ?? null, hist: hist(id) })));
+  const nombre = new Map(jugadores.map((j) => [j.person_id, j.nombre]));
+  const puntos = calibrar({ actual, anterior, liga, clave: claveEquipo, letra: (id) => letras.get(id) ?? null, nombre: (id) => nombre.get(id) ?? id, plantilla: ids });
+  const r = resumenCalibracion(puntos);
+  return {
+    hist: Object.fromEntries(ids.map((id) => [id, hist(id)])),
+    letras: Object.fromEntries(ids.map((id) => [id, letras.get(id) ?? null])),
+    tasas: { tasas: tasas.tasas, media: tasas.media },
+    partidos: Object.fromEntries(partidos.map((p) => {
+      const est = estadisticasGrupo(liga, NOMBRE_GRUPO[p.equipo], claveEquipo, p.jornada ?? undefined);
+      return [p.equipo, { rival: est.rival(p.rival), grupo: est.grupo, jornadas: est.jornadas }];
+    })),
+    calibracion: r ? { ...r, puntos } : null,
+  };
+}
+
 const faltaTabla = (e: { code?: string; message?: string } | null) => !!e && (e.code === "42P01" || e.code === "PGRST205" || /does not exist|schema cache/.test(e.message ?? ""));
 
 export function sitioDe(e: EventoFila, pistas: Pista[]) {
@@ -69,10 +99,10 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
-    sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota"),
+    sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque"),
     sb.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle(),
     sb.rpc("respuestas_web_encendido"),
-    sb.from("importaciones").select("en").eq("tipo", "respuestas").order("en", { ascending: false }).limit(1),
+    sb.from("importaciones").select("en, por_nombre").eq("tipo", "respuestas").order("en", { ascending: false }).limit(1),
     pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     sb.from("convocatorias").select("fecha, equipos").eq("estado", "aprobada").lt("fecha", fecha),
   ]);
@@ -165,6 +195,11 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     fecha, jornada, partidos, jugadores, convocatoria: fila, cambios, contadores,
     eventoRespuestas: delDia[0]?.id ?? null, encendido: enc.data === true, sinMigracion,
     ultimaImportacion: ((imp.data ?? []) as { en: string }[])[0]?.en ?? null,
+    ultimaImportacionPor: ((imp.data ?? []) as { por_nombre: string }[])[0]?.por_nombre ?? null,
+    importacion: estadoImportacion(((imp.data ?? []) as { en: string }[])[0]?.en ?? null, ((imp.data ?? []) as { por_nombre: string }[])[0]?.por_nombre ?? null,
+      madrid(fecha, partidos.map((p) => p.inicio).filter(Boolean).sort()[0] ?? "10:00")),
+    proyeccion: datosProyeccion(jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre })), new Map(jugadores.map((j) => [j.person_id, ((privados.get(j.person_id) as FilaPrivada | undefined)?.nota_ataque ?? null) as Letra | null])),
+      delDia.map((e) => ({ equipo: e.equipo as Equipo, rival: e.rival, jornada: e.jornada }))),
     respuestasDelDomingo: ((resp.data ?? []) as { respuesta: string }[]).filter((r) => r.respuesta !== "sin_responder").length,
     sinDatosPrivados: jugadores.filter((j) => j.invitado && (!j.privado || !j.privado.posicion || !j.privado.nivel)).length,
     domingos: domingos.slice(0, 6),

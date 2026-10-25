@@ -1,30 +1,33 @@
 import "server-only";
-import { clienteServicio, configuradoEnvio, encolar, enviarPendientes, estadoInterruptor, type FilaAviso } from "@/lib/avisos/servidor";
+import { clienteServicio, configuradoEnvio, encolar, enviarPendientes, type FilaAviso } from "@/lib/avisos/servidor";
 import { horaDeEnvio, madrid } from "@/lib/avisos/horario";
-import { EQUIPOS, type Convocatoria, type Equipo } from "./motor";
-import { textoEstasConvocado, type PartidoMensaje } from "./mensajes";
+import type { Convocatoria } from "./motor";
+import { destinatariosAviso, firmaConvocatoria, textoCambioConvocatoria, textoEstasConvocado, type PartidoMensaje } from "./mensajes";
 
-// Aviso «Estás convocado» en la web (D107): preparado siempre, pero SOLO sale con el interruptor de «respuestas en la
-// web» encendido (D99); si no, queda «en espera». Va a quien entra en la convocatoria respecto a la ultima vez que se
-// aviso (aviso_base): aprobar avisa a todos; un cambio despues, solo a los nuevos. Pasa por las horas de silencio.
-// Usa el registro de avisos del paso 3 (clave unica: repetir no duplica) con tipo «cambio» y clave «convocatoria:…».
+// Aviso «Estás convocado» en la web (D107, D127). Desde D127 NO depende del interruptor de «respuestas en la web»:
+// avisar de la convocatoria no pide respuestas (no choca con D64). Sale SOLO al pulsar «Enviar ahora» con la
+// convocatoria aprobada. Va a los convocados (la primera vez) o a quien entra, cambia de equipo o sale respecto a lo ya
+// avisado (aviso_base, «Cambio en la convocatoria»). Pasa por las horas de silencio. La clave de cada aviso lleva la
+// firma de la convocatoria: pulsar dos veces o repetir con la misma convocatoria no manda nada doble.
 
-export async function avisarConvocados(fecha: string, conv: Convocatoria, base: Convocatoria | null, partidos: PartidoMensaje[]) {
-  if (!configuradoEnvio()) return { estado: "en_espera" as const, avisados: 0, motivo: "sin_configurar" };
+export type ResultadoAviso = { estado: "enviado" | "sin_configurar"; destinatarios: string[]; conAvisos: string[]; programado: Date | null; cambio: boolean };
+
+export async function avisarConvocados(fecha: string, conv: Convocatoria, base: Convocatoria | null, partidos: PartidoMensaje[]): Promise<ResultadoAviso> {
+  const { cambio, personas } = destinatariosAviso(conv, base);
+  if (!configuradoEnvio()) return { estado: "sin_configurar", destinatarios: personas.map((p) => p.person_id), conAvisos: [], programado: null, cambio };
   const sb = clienteServicio();
-  if (!(await estadoInterruptor(sb)).encendido) return { estado: "en_espera" as const, avisados: 0, motivo: "apagado" };
-  const antes = new Set(EQUIPOS.flatMap((e) => (base?.[e] ?? []).map((c) => `${e}|${c.person_id}`)));
-  const nuevos = new Map<string, Equipo[]>();
-  for (const e of EQUIPOS) for (const c of conv[e] ?? []) if (!antes.has(`${e}|${c.person_id}`)) nuevos.set(c.person_id, [...(nuevos.get(c.person_id) ?? []), e]);
   const primero = partidos.filter((p) => p.inicio).map((p) => p.inicio!).sort()[0] ?? "10:00";
   const ahora = new Date();
-  const inicio = madrid(fecha, primero);
-  const envio = horaDeEnvio(ahora, inicio);
-  const filas: FilaAviso[] = [...nuevos.entries()].map(([person_id, equipos]) => ({
-    ...textoEstasConvocado(fecha, partidos, equipos), clave: `convocatoria:${fecha}:${ahora.getTime()}:${person_id}`, tipo: "cambio",
-    person_id, eventos: [], url: "/#proximo-partido", programado_para: envio,
+  const envio = horaDeEnvio(ahora, madrid(fecha, primero));
+  const firma = firmaConvocatoria(conv);
+  const filas: FilaAviso[] = personas.map(({ person_id, equipos }) => ({
+    ...(cambio ? textoCambioConvocatoria(fecha, partidos, equipos) : textoEstasConvocado(fecha, partidos, equipos)),
+    clave: `convocatoria:${fecha}:${firma}:${person_id}`, tipo: "cambio", person_id, eventos: [], url: `/mi-zona/domingo/${fecha}`, programado_para: envio,
   }));
   await encolar(sb, filas);
   await enviarPendientes(sb, ahora);
-  return { estado: "enviado" as const, avisados: filas.length, motivo: envio > ahora ? "silencio" : "enviado" };
+  const ids = personas.map((p) => p.person_id);
+  const { data } = ids.length ? await sb.from("suscripciones_avisos").select("person_id").eq("activa", true).in("person_id", ids) : { data: [] };
+  const con = new Set(((data ?? []) as { person_id: string }[]).map((s) => s.person_id));
+  return { estado: "enviado", destinatarios: ids, conAvisos: ids.filter((id) => con.has(id)), programado: envio > ahora ? envio : null, cambio };
 }

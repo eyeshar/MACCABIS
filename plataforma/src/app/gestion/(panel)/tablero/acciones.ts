@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
-import { avisarSiAprobada } from "@/lib/convocatoria/salidas";
 import { EQUIPOS, type Convocatoria, type Equipo } from "@/lib/convocatoria/motor";
 import { MOTIVOS, type Motivo } from "@/lib/eventos/dominio";
 
@@ -63,10 +62,9 @@ export async function cambiarConvocatoria(fecha: string, cambio: { accion: "anad
       p_nota: cambio.nota?.trim() || "ajuste manual", p_detalle: { personas: afectados, origen: "tablero" },
     });
     if (e1) return { ok: false, error: error(e1.message) };
-    // Una aprobada que se toca: salidas pendientes y el aviso de la web como siempre (D107).
-    const aviso = ctx.convocatoria?.estado === "aprobada" ? await avisarSiAprobada(supabase, fecha) : null;
+    // Una aprobada que se toca: sus salidas vuelven a pendiente; el aviso a los convocados se envia desde la salida (D127).
     refrescar();
-    return { ok: true, aviso: aviso ? (aviso.estado === "enviado" ? `Aviso «Estás convocado» a ${aviso.avisados}.` : "Aviso de la web en espera.") : undefined };
+    return { ok: true, aviso: ctx.convocatoria?.estado === "aprobada" ? "Salidas pendientes: el aviso a los convocados se envía desde la salida." : undefined };
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
@@ -80,7 +78,6 @@ export async function restaurarConvocatoria(fecha: string, equipos: Convocatoria
     const limpia: Convocatoria = Object.fromEntries(ctx.partidos.map((p) => [p.equipo, (equipos[p.equipo] ?? []).filter((c) => plantilla.has(c.person_id)).map((c) => (c.posicion ? { person_id: c.person_id, posicion: c.posicion } : { person_id: c.person_id }))]));
     const { error: e } = await supabase.rpc("convocatoria_guardar", { p_fecha: fecha, p_jornada: ctx.jornada, p_equipos: limpia, p_dificultad: null, p_accion: "mover", p_motivo: "otro", p_nota: "deshacer el último cambio del tablero", p_detalle: { origen: "tablero", deshacer: true } });
     if (e) return { ok: false, error: error(e.message) };
-    if (ctx.convocatoria?.estado === "aprobada") await avisarSiAprobada(supabase, fecha);
     refrescar();
     return { ok: true };
   } catch (e) { return { ok: false, error: (e as Error).message }; }

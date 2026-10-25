@@ -348,6 +348,15 @@ if (require.main === module) {
       console.log(`Plataforma: ${salida} (npm run datos:sync)`);
     } catch (e) { para('no se han podido sincronizar las copias de plataforma/src/data/.', 'Plataforma: NO se han podido sincronizar las copias de plataforma/src/data/:\n' + (e.stderr || e.message)); }
 
+    // Calibración de la proyección de anotación (D124): proyección y resultado de cada partido nuestro, a privado/ (fuera
+    // de git). Nunca para la jornada: si falla (sin conexión, sin plataforma), solo se avisa.
+    try {
+      const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'calibrar_proyeccion.mjs')], { stdio: 'pipe', cwd: path.join(ROOT, 'plataforma') }).toString().trim();
+      console.log(salida.split('
+')[0]);
+    } catch (e) { console.log('Proyección: no se ha podido calibrar (' + String(e.stderr || e.message).split('
+')[0] + '). No afecta a la jornada.'); }
+
     resumen.estado = 'lista'; escribeResumen();
     console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/index.json y plataforma/src/data/.');
   })().catch(e => para(e.message, 'ERROR: ' + e.message));

@@ -103,3 +103,9 @@ button.tb-celda:not(:disabled) { cursor: pointer; }
 .tb-mensaje { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 0; }
 @media (max-width: 768px) { .tb-barra { bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom)); padding-bottom: 10px; } }
 .tb-registro { max-width: 760px; }
+
+/* D124: proyeccion de anotacion en el resumen de cada equipo (solo gestores). */
+.tb-proyeccion { display: flex; flex-direction: column; gap: 2px; font-size: 0.9rem; overflow-wrap: anywhere; }
+.tb-proyeccion p { margin: 0; }
+.tb-proyeccion summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+.tb-proyeccion ul { margin: 0; padding-left: 18px; }

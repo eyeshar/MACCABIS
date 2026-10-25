@@ -101,6 +101,34 @@ try {
       });
     }
   }
+  console.log('\n== Página del domingo del jugador (D128, migración 20261025100000)');
+  const [m9] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261025100000'`;
+  if (!m9.n) console.log('  (aún no aplicada: nada que comprobar)');
+  else {
+    const f9 = await sql`select proname, has_function_privilege('anon', oid, 'execute') anon from pg_proc where pronamespace = 'public'::regnamespace and proname in ('convocados_del_domingo', 'ultima_importacion_respuestas')`;
+    ok(f9.length === 2 && f9.every((f) => !f.anon), 'convocados_del_domingo y ultima_importacion_respuestas existen y anónimo no las ejecuta');
+    const rA = await api('/rpc/convocados_del_domingo', { metodo: 'POST', cuerpo: { p_fecha: '2026-10-25' } });
+    ok(rA.status >= 400 || rA.datos === null, 'anónimo (HTTPS): convocados_del_domingo no le da nada', `${rA.status}`);
+    const [apr] = await sql`select fecha::text, equipos from public.convocatorias where estado = 'aprobada' order by fecha desc limit 1`;
+    const [bor] = await sql`select fecha::text from public.convocatorias where estado <> 'aprobada' order by fecha desc limit 1`;
+    if (jug) {
+      await como(jug.id, async (tx) => {
+        if (apr) {
+          const r = await intenta(tx, 'select public.convocados_del_domingo($1::date) r', [apr.fecha]);
+          const v = r.ok ? r.r[0].r : null;
+          const bien = v && Object.keys(v).every((k) => ['MdA', 'MdL'].includes(k)) && Object.entries(v).every(([k, xs]) => Array.isArray(xs) && xs.every((x) => typeof x === 'string') && xs.length === (apr.equipos[k] ?? []).length);
+          ok(bien, `jugador, convocatoria aprobada del ${apr.fecha}: solo nombres por equipo (${v ? Object.entries(v).map(([k, xs]) => `${k} ${xs.length}`).join(', ') : '—'})`, r.ok ? '' : r.error);
+        } else console.log('  (no hay ninguna convocatoria aprobada todavía)');
+        if (bor) {
+          const r = await intenta(tx, 'select public.convocados_del_domingo($1::date) r', [bor.fecha]);
+          ok(r.ok && r.r[0].r === null, `jugador, convocatoria sin aprobar del ${bor.fecha}: nada (null)`);
+        }
+        const u = await intenta(tx, 'select public.ultima_importacion_respuestas() r');
+        ok(u.ok && (u.r[0].r === null || u.r[0].r instanceof Date), 'jugador: ultima_importacion_respuestas da solo una hora');
+      });
+    }
+  }
+
   const cuentas1 = (await sql`select count(*)::int n from auth.users`)[0].n;
   ok(cuentas0 === cuentas1, `no se ha creado ni borrado ninguna cuenta (${cuentas0} antes y después)`);
 } finally {

@@ -115,3 +115,22 @@ export const cargarMiConvocatoria = cache(async (): Promise<{ fecha: string; equ
   if (error) return [];
   return (data ?? []) as { fecha: string; equipos: ("MdA" | "MdL")[] }[];
 });
+
+/** Los convocados de un domingo con la convocatoria APROBADA (D128): solo el nombre visible de cada uno, por equipo y en
+ *  orden alfabetico (lo mismo que se manda por WhatsApp). Sin aprobar, null. Nada mas de nadie: lo decide la base. */
+export async function cargarConvocadosDomingo(fecha: string): Promise<Partial<Record<"MdA" | "MdL", string[]>> | null> {
+  if (!configurado()) return null;
+  const sb = await clienteSesion();
+  const { data, error } = await sb.rpc("convocados_del_domingo", { p_fecha: fecha });
+  if (error) return null;
+  return (data as Partial<Record<"MdA" | "MdL", string[]>> | null) ?? null;
+}
+
+/** Cuando se importaron por ultima vez las respuestas de SportEasy (solo la hora; fase puente, D128). */
+export const cargarUltimaImportacion = cache(async (): Promise<string | null> => {
+  if (!configurado()) return null;
+  const sb = await clienteSesion();
+  const { data, error } = await sb.rpc("ultima_importacion_respuestas");
+  if (error) return null;
+  return (data as string | null) ?? null;
+});

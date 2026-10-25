@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { entradaDe } from "@/lib/convocatoria/vista";
-import { avisarSiAprobada } from "@/lib/convocatoria/salidas";
+import { enviarAvisoConvocatoria } from "@/lib/convocatoria/salidas";
 import { EQUIPOS, NIVELES, POSICIONES, proponer, vacia, type Convocatoria, type Dificultad, type Equipo } from "@/lib/convocatoria/motor";
 
 // Acciones de la convocatoria (D107). Todo con la sesion del gestor: la base (is_gestor) decide. Las convocatorias se
@@ -47,9 +47,6 @@ async function contexto(fecha: string) {
   return { ...s, ctx };
 }
 
-/** Avisa «Estás convocado» si ya esta aprobada (solo con el interruptor encendido; si no, queda en espera). */
-const avisar = avisarSiAprobada;
-
 /** «Usar propuesta», «Empezar en blanco (a mano)» y «Recalcular propuesta». */
 export async function empezar(fecha: string, modo: "propuesta" | "blanco" | "recalcular"): Promise<R> {
   try {
@@ -62,7 +59,6 @@ export async function empezar(fecha: string, modo: "propuesta" | "blanco" | "rec
       p_detalle: modo === "blanco" ? {} : { avisos: proponer(entradaDe(ctx)).avisos.length },
     });
     if (e) return { ok: false, error: error(e.message) };
-    if (ctx.convocatoria?.estado === "aprobada") await avisar(supabase, fecha);
     refrescar();
     return { ok: true };
   } catch (e) { return { ok: false, error: (e as Error).message }; }
@@ -87,7 +83,6 @@ export async function guardarCambio(fecha: string, conv: Convocatoria, cambio: {
       p_person: cambio.person_id, p_equipo: cambio.equipo, p_motivo: cambio.motivo, p_nota: cambio.nota?.trim() || null,
     });
     if (e) return { ok: false, error: error(e.message) };
-    if (ctx.convocatoria.estado === "aprobada") await avisar(supabase, fecha);
     refrescar();
     return { ok: true };
   } catch (e) { return { ok: false, error: (e as Error).message }; }
@@ -111,15 +106,14 @@ export async function cambiarDificultad(fecha: string, equipo: Equipo, valor: Di
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
-/** «Aprobar convocatoria»: aprobada, WhatsApp y SportEasy pendientes y el aviso de la web (o «en espera»). */
+/** «Aprobar convocatoria»: aprobada y las tres salidas pendientes. El aviso de la web sale con «Enviar ahora» (D127). */
 export async function aprobar(fecha: string): Promise<R> {
   try {
     const { supabase } = await contexto(fecha);
     const { error: e } = await supabase.rpc("convocatoria_aprobar", { p_fecha: fecha });
     if (e) return { ok: false, error: error(e.message) };
-    const r = await avisar(supabase, fecha);
     refrescar();
-    return { ok: true, texto: r?.estado === "enviado" ? `Aviso «Estás convocado» a ${r.avisados}.` : "Aviso de la web en espera (interruptor apagado)." };
+    return { ok: true };
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
@@ -132,13 +126,63 @@ export async function marcar(fecha: string, que: "whatsapp" | "sporteasy"): Prom
   return { ok: true };
 }
 
-/** «Enviar ahora» el aviso de la web que quedo en espera (cuando el interruptor ya esta encendido). */
+/** «Enviar ahora» el aviso «Estás convocado» (D127): con el interruptor de respuestas en la web encendido o apagado. */
 export async function avisarAhora(fecha: string): Promise<R> {
   const { supabase } = await exigirGestor();
-  const r = await avisar(supabase, fecha);
+  const r = await enviarAvisoConvocatoria(supabase, fecha);
   refrescar();
   if (!r) return { ok: false, error: ERRORES.sin_aprobar };
-  return r.estado === "enviado" ? { ok: true, texto: `Aviso a ${r.avisados}.` } : { ok: false, error: "El interruptor de respuestas en la web está apagado: el aviso sigue en espera." };
+  if (r.estado !== "enviado") return { ok: false, error: "El envío de avisos no está configurado en este servidor." };
+  const n = r.destinatarios.length, m = r.conAvisos.length;
+  if (!n) return { ok: true, texto: "No había nadie a quien avisar: la convocatoria no ha cambiado desde el último aviso." };
+  const cuando = r.programado ? ` Sale a las ${r.programado.toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })} (horas de silencio).` : "";
+  return { ok: true, texto: `${r.cambio ? "Cambio en la convocatoria" : "Estás convocado"}: enviado a ${m} de ${n}${n - m ? ` (los otros ${n - m} no tienen avisos activados)` : ""}.${cuando}` };
+}
+
+/** Modo rapido (D125): mover a uno o a varios (arrastrar o «Mover a…»), sin preguntar, con el motivo «ajuste manual».
+ *  Valida contra la base: nadie entra en un equipo del que no tiene ficha (regla 1.5) ni dobla a la misma hora (1.4). */
+export async function ajusteRapido(fecha: string, conv: Convocatoria, cambio: { accion: "mover" | "anadir" | "quitar"; personas: string[]; equipo: Equipo | null }): Promise<R> {
+  if (!["mover", "anadir", "quitar"].includes(cambio.accion) || !cambio.personas.length) return { ok: false, error: "Cambio no válido." };
+  try {
+    const { supabase, ctx } = await contexto(fecha);
+    if (!ctx.convocatoria?.origen) return { ok: false, error: ERRORES.sin_convocatoria };
+    const juegan = ctx.partidos.map((p) => p.equipo);
+    const limpia = limpiar(conv, juegan, new Set(ctx.jugadores.map((j) => j.person_id)));
+    const antes = ctx.convocatoria.equipos;
+    const nombreDe = (id: string) => ctx.jugadores.find((j) => j.person_id === id)?.nombre ?? id;
+    for (const e of juegan) {
+      const nuevos = (limpia[e] ?? []).filter((c) => !(antes[e] ?? []).some((x) => x.person_id === c.person_id));
+      const sinFicha = nuevos.filter((c) => !ctx.jugadores.find((j) => j.person_id === c.person_id)?.ficha[e]);
+      if (sinFicha.length) return { ok: false, error: `Sin ficha del ${e}: ${sinFicha.map((c) => nombreDe(c.person_id)).join(", ")} (regla 1.5).` };
+    }
+    const mismaHora = ctx.partidos.length === 2 && ctx.partidos[0].inicio && ctx.partidos[0].inicio === ctx.partidos[1].inicio;
+    if (mismaHora && (limpia.MdA ?? []).some((c) => (limpia.MdL ?? []).some((x) => x.person_id === c.person_id))) {
+      return { ok: false, error: "Los dos partidos empiezan a la misma hora: nadie puede doblar (regla 1.4)." };
+    }
+    const { error: e } = await supabase.rpc("convocatoria_guardar", {
+      p_fecha: fecha, p_jornada: ctx.jornada, p_equipos: limpia, p_dificultad: null, p_accion: cambio.accion,
+      p_person: cambio.personas.length === 1 ? cambio.personas[0] : null, p_equipo: cambio.equipo, p_motivo: "otro",
+      p_nota: "ajuste manual", p_detalle: { personas: cambio.personas, origen: "rapido" },
+    });
+    if (e) return { ok: false, error: error(e.message) };
+    refrescar();
+    return { ok: true };
+  } catch (e) { return { ok: false, error: (e as Error).message }; }
+}
+
+/** «Deshacer» el ultimo movimiento rapido: deja lo que habia (queda en el historial). */
+export async function deshacerRapido(fecha: string, equipos: Convocatoria): Promise<R> {
+  try {
+    const { supabase, ctx } = await contexto(fecha);
+    const limpia = limpiar(equipos, ctx.partidos.map((p) => p.equipo), new Set(ctx.jugadores.map((j) => j.person_id)));
+    const { error: e } = await supabase.rpc("convocatoria_guardar", {
+      p_fecha: fecha, p_jornada: ctx.jornada, p_equipos: limpia, p_dificultad: null, p_accion: "mover", p_motivo: "otro",
+      p_nota: "deshacer el último movimiento", p_detalle: { origen: "rapido", deshacer: true },
+    });
+    if (e) return { ok: false, error: error(e.message) };
+    refrescar();
+    return { ok: true };
+  } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
 // ---------------------------------------------------------------- datos privados por jugador (solo gestores, D39)

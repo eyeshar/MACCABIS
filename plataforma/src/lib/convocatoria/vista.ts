@@ -2,6 +2,8 @@
 // (datos.ts) y los componentes de cliente de Gestion.
 import type { Convocatoria, Dificultad, Entrada, Equipo, JugadorEntrada, Nivel, Posicion } from "./motor";
 import type { PartidoMensaje } from "./mensajes";
+import type { DatosProyeccion } from "./proyeccion";
+import type { EstadoImportacion } from "../eventos/importacionAuto";
 
 export type FilaPrivada = {
   person_id: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null; dobla: boolean;
@@ -39,7 +41,11 @@ export type Contexto = {
   contadores: { van: number; sin: number; no: number; dudan: number; invitados: number };
   eventoRespuestas: string | null; encendido: boolean;
   /** Fase puente (D95, D103): cuando se importaron por ultima vez respuestas de SportEasy, y cuantas hay de este domingo. */
-  ultimaImportacion: string | null; respuestasDelDomingo: number;
+  ultimaImportacion: string | null; ultimaImportacionPor: string | null; respuestasDelDomingo: number;
+  /** Proyeccion de anotacion (D124): solo gestores. */
+  proyeccion: DatosProyeccion;
+  /** Estado de la importacion de SportEasy y proxima automatica (D126). */
+  importacion: EstadoImportacion;
   /** La migracion de la convocatoria aun no esta aplicada en esta base: se ve la propuesta, no se guarda nada. */
   sinMigracion: boolean;
   sinDatosPrivados: number;
@@ -52,3 +58,35 @@ export const entradaDe = (ctx: Pick<Contexto, "partidos" | "jugadores">): Entrad
   partidos: ctx.partidos.map((p) => ({ evento_id: p.evento_id, equipo: p.equipo, inicio: p.inicio, dificultad: p.dificultad.valor })),
   jugadores: ctx.jugadores.map(({ invitado: _i, invitadoA: _a, motivoNo: _m, sancionHasta: _s, ...j }) => j),
 });
+
+// ---------------------------------------------------------------- modo rapido (D125): arrastrar o «Mover a…»
+export type Zona = Equipo | "sin";
+
+/** Mover a uno o a varios a un equipo o a «Disponibles sin convocar». Mover es exclusivo: quien va a un equipo sale del
+ *  otro (para doblar, «Cambiar»); a «sin convocar», sale del equipo de donde viene (o de los dos si no se sabe). */
+export function moverRapido(conv: Convocatoria, ids: string[], desde: Zona | null, destino: Zona, juegan: Equipo[]): { conv: Convocatoria; accion: "mover" | "anadir" | "quitar" } {
+  const out: Convocatoria = Object.fromEntries(juegan.map((e) => [e, [...(conv[e] ?? [])]]));
+  const en = (e: Equipo, id: string) => (out[e] ?? []).some((c) => c.person_id === id);
+  if (destino === "sin") {
+    for (const e of juegan) if (desde === null || desde === "sin" || desde === e) out[e] = (out[e] ?? []).filter((c) => !ids.includes(c.person_id));
+    return { conv: out, accion: "quitar" };
+  }
+  const estaban = ids.some((id) => juegan.some((e) => en(e, id)));
+  for (const e of juegan) if (e !== destino) out[e] = (out[e] ?? []).filter((c) => !ids.includes(c.person_id));
+  out[destino] = [...(out[destino] ?? []), ...ids.filter((id) => !en(destino, id)).map((person_id) => ({ person_id }))];
+  return { conv: out, accion: estaban ? "mover" : "anadir" };
+}
+
+/** ¿Se puede soltar a estos en esa zona? Sin ficha del equipo, no (la zona se marca como no valida, regla 1.5). Quien dijo
+ *  «no voy» a ese partido se puede soltar, con aviso. */
+export function validarDestino(ids: string[], destino: Zona, jugadores: Pick<JugadorVista, "person_id" | "nombre" | "ficha" | "respuesta">[]) {
+  if (destino === "sin") return { valido: true, motivo: null as string | null, avisos: [] as string[] };
+  const de = (id: string) => jugadores.find((j) => j.person_id === id);
+  const sinFicha = ids.filter((id) => !de(id)?.ficha[destino]);
+  const noVan = ids.filter((id) => de(id)?.respuesta[destino] === "no");
+  return {
+    valido: sinFicha.length === 0,
+    motivo: sinFicha.length ? `Sin ficha del ${destino}: ${sinFicha.map((id) => de(id)?.nombre ?? id).join(", ")}` : null,
+    avisos: noVan.map((id) => `${de(id)?.nombre ?? id} dijo «no voy» a este partido.`),
+  };
+}

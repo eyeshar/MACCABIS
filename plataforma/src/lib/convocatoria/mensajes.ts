@@ -29,7 +29,7 @@ export function mensajeConvocatoria(fecha: string, jornada: number | null, parti
     const ids = (conv[p.equipo] ?? []).map((c) => c.person_id);
     const hora = p.inicio ? `${p.inicio}${p.encuentro ? ` (encuentro ${p.encuentro})` : ""}` : "hora por confirmar";
     const sitio = p.sitio === "pista por confirmar" ? "pista por confirmar" : `en ${p.sitio}${p.direccion ? ` — ${p.direccion.replace(/\.$/, "")}` : ""}`;
-    lineas.push(`${p.equipo} · ${cruce(p)} (${p.es_local === false ? "visitante" : "local"})`);
+    lineas.push(`${p.equipo} · ${cruce(p)}`);
     lineas.push(`${hora} ${sitio}.`);
     lineas.push(p.lineaEquipacion ?? "Equipación habitual (negra).");
     lineas.push(ids.length ? `Convocados (${ids.length}): ${nombres(ids, nombre).join(", ")}.` : "Convocados: por confirmar.");
@@ -50,9 +50,47 @@ export function textoSportEasy(fecha: string, jornada: number | null, partidos: 
   return lineas.join("\n");
 }
 
-/** Aviso al móvil «Estás convocado» (pantalla de bloqueo: sin niveles ni motivos). */
+/** Firma corta y estable de una convocatoria (para la clave unica del aviso: mismo estado = misma clave, nada doble). */
+export function firmaConvocatoria(conv: Convocatoria) {
+  const t = (["MdA", "MdL"] as Equipo[]).map((e) => `${e}:${(conv[e] ?? []).map((c) => c.person_id).sort().join(",")}`).join("|");
+  let h = 5381;
+  for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+const detallePartidos = (suyos: PartidoMensaje[]) => suyos.map((p) => `${p.equipo} a las ${p.inicio ?? "?"}${p.encuentro ? ` (quedada ${p.encuentro})` : ""}`).join(" y ");
+const lineasJornada = (suyos: PartidoMensaje[]) => [...new Set(suyos.map((p) => p.lineaEquipacion).filter(Boolean) as string[])].map((l) => (/[.!?]$/.test(l) ? l : `${l}.`)).join(" ");
+
+/** Aviso al móvil «Estás convocado» (D127; pantalla de bloqueo: sin niveles ni motivos). Con la equipación de la jornada
+ *  si toca cambiarla. */
 export function textoEstasConvocado(fecha: string, partidos: PartidoMensaje[], equipos: Equipo[]) {
   const suyos = partidos.filter((p) => equipos.includes(p.equipo));
-  const detalle = suyos.map((p) => `${p.equipo} a las ${p.inicio ?? "?"}${p.encuentro ? ` (encuentro ${p.encuentro})` : ""}`).join(" y ");
-  return { titulo: `Estás convocado · ${diaTexto(fecha)}`, cuerpo: `${detalle}. El dorsal es obligatorio.` };
+  const extra = lineasJornada(suyos);
+  return { titulo: `Estás convocado · ${diaTexto(fecha)}`, cuerpo: `${detallePartidos(suyos)}.${extra ? ` ${extra}` : ""}` };
+}
+
+/** Tras un cambio de la convocatoria ya avisada: a quien entra, cambia de equipo o sale. */
+export function textoCambioConvocatoria(fecha: string, partidos: PartidoMensaje[], equipos: Equipo[]) {
+  const titulo = `Cambio en la convocatoria · ${diaTexto(fecha)}`;
+  if (!equipos.length) return { titulo, cuerpo: "Ya no estás convocado este domingo." };
+  const suyos = partidos.filter((p) => equipos.includes(p.equipo));
+  const extra = lineasJornada(suyos);
+  return { titulo, cuerpo: `Estás convocado: ${detallePartidos(suyos)}.${extra ? ` ${extra}` : ""}` };
+}
+
+/** A quien hay que avisar respecto a lo ya avisado (`base`): sin base, a todos los convocados; con base, a quien entra,
+ *  cambia de equipo o sale (con sus equipos de ahora; vacio = sale). */
+export function destinatariosAviso(conv: Convocatoria, base: Convocatoria | null) {
+  const equiposDe = (c: Convocatoria | null) => {
+    const m = new Map<string, Equipo[]>();
+    for (const e of ["MdA", "MdL"] as Equipo[]) for (const x of c?.[e] ?? []) m.set(x.person_id, [...(m.get(x.person_id) ?? []), e]);
+    return m;
+  };
+  const ahora = equiposDe(conv), antes = equiposDe(base);
+  if (!base) return { cambio: false, personas: [...ahora.entries()].map(([person_id, equipos]) => ({ person_id, equipos })) };
+  const ids = [...new Set([...ahora.keys(), ...antes.keys()])];
+  return {
+    cambio: true,
+    personas: ids.filter((id) => (ahora.get(id) ?? []).join() !== (antes.get(id) ?? []).join()).map((person_id) => ({ person_id, equipos: ahora.get(person_id) ?? [] })),
+  };
 }

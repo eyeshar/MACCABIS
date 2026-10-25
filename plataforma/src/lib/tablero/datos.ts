@@ -1,6 +1,8 @@
 import "server-only";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { entradaDe, type Contexto } from "@/lib/convocatoria/vista";
+import type { DatosProyeccion } from "@/lib/convocatoria/proyeccion";
+import type { EstadoImportacion } from "@/lib/eventos/importacionAuto";
 import type { Convocatoria, Entrada, Equipo, Nivel, Posicion, RespuestaPartido } from "@/lib/convocatoria/motor";
 import { cargarEvento, cargarEventos, cargarJugadores, type Cliente } from "@/lib/eventos/datos";
 import { convocadosDe, tituloEvento, TEXTO_MOTIVO, type Motivo } from "@/lib/eventos/dominio";
@@ -40,6 +42,8 @@ export async function opcionesSelector(sb: Cliente): Promise<OpcionSelector[]> {
 export type TableroDomingo = {
   vista: "domingo"; fecha: string; jornada: number | null; partidos: (PartidoTablero & { evento_id: string })[]; filas: FilaTablero[];
   conv: Convocatoria; estado: "sin" | "borrador" | "aprobada" | "cambiada"; entrada: Entrada; registro: Registro[]; encendido: boolean;
+  /** Proyeccion de anotacion (D124) y estado de la importacion de SportEasy (D126). Solo gestores. */
+  proyeccion: DatosProyeccion; importacion: EstadoImportacion;
 };
 
 export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise<TableroDomingo | null> {
@@ -70,6 +74,7 @@ export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise
     vista: "domingo", fecha: ctx.fecha, jornada: ctx.jornada,
     partidos: ctx.partidos.map((p) => ({ evento_id: p.evento_id, equipo: p.equipo, rival: p.rival ?? "rival por confirmar", inicio: p.inicio, dificultad: p.dificultad.valor })),
     filas, conv: c?.equipos ?? {}, estado, entrada: entradaDe(ctx), registro, encendido: ctx.encendido,
+    proyeccion: ctx.proyeccion, importacion: ctx.importacion,
   };
 }
 

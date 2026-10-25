@@ -63,7 +63,10 @@
     "pruebas:calendario-personal": "node pruebas/calendario_personal.mjs",
     "pruebas:tablero": "node pruebas/tablero.mjs",
     "pruebas:grupos": "node pruebas/grupos.mjs",
-    "pruebas:inicio-real": "node pruebas/rls_inicio_real.mjs"
+    "pruebas:inicio-real": "node pruebas/rls_inicio_real.mjs",
+    "proyeccion:calibrar": "node scripts/calibrar_proyeccion.mjs",
+    "pruebas:proyeccion": "node pruebas/proyeccion.mjs",
+    "pruebas:domingo": "node pruebas/domingo_jugador.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

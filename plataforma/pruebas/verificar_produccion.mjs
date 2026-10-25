@@ -98,8 +98,7 @@ try {
   ok(['/', '/club', '/privacidad'].every((x) => sitemap.includes(`<loc>https://maccabis.vercel.app${x === '/' ? '/' : x}</loc>`)) && !/entrar|mi-zona|gestion|cuenta|agenda|planes|\/cal\//.test(sitemap), 'sitemap.xml: solo la web publica');
 
   // Web instalable (D78): el manifiesto unico, sin sesion, valido para instalarla en Android; y el service worker.
-  console.log('
-== Web instalable (manifiesto y service worker)');
+  console.log('\n== Web instalable (manifiesto y service worker)');
   const manResp = await fetch(BASE + '/manifest.webmanifest');
   let man = null;
   try { man = JSON.parse(await manResp.text()); } catch {}

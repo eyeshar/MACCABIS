@@ -7,6 +7,17 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**`feat/convocatoria-proyeccion` (D124–D129), SIN merge (25/10/2026):**
+- [ ] **Revisión de la vista previa por Claude** (convocatoria con proyección y modo rápido, salida con «Enviar ahora», tablero, Importar → Respuestas, página del domingo de un jugador, /liga y la página de partido) y OK de Iván al merge.
+- [x] Migración `20261025100000_convocados_domingo` aplicada en el Supabase real (25/10, D111: volcado, revertir ensayado en local, permisos en solo lectura antes y después, 25 cuentas de auth antes y después). `main` no la usa hasta el merge.
+- [ ] Tras el merge: `verificar_produccion` y comprobar en la J4 (08/11) la proyección del MdL, el modo rápido y «Enviar ahora» de verdad.
+- [ ] **Al publicar la J3:** mirar el error de la proyección (MdA ≈ 47, MdL ≈ 42) en «Acierto de la proyección» y en `privado/proyecciones_2026-27.json`.
+- [ ] **Recalibrar tras la J6** (ya estaba: umbral de anotación mínima de 45) y, con más jornadas, revisar los parámetros de la proyección (pesos, 60 minutos, 240/40, ±15/±10 %) con el error medio acumulado.
+- [ ] «Cambiar en SportEasy» al evento exacto: sigue pendiente guardar el id de cada evento de SportEasy (el botón lleva al calendario; misma tarea que la del inicio, D117).
+- [ ] D129: pista de los partidos entre rivales (el calendario que tenemos solo trae la de MdA y MdL); si se carga el calendario completo del Ayuntamiento, la página de partido la enseña.
+- [ ] D129: páginas de partido en `sitemap.ts` si se quieren en Google (son públicas e indexables, pero no están en el sitemap); añadir una a `verificar_produccion` (con y sin sesión) tras el merge.
+- [ ] `index.html` (la web anterior, ya redirigida) sigue pintando «En casa / Fuera»: no se toca porque `pruebas:cuadre` la usa de referencia.
+
 **`feat/inicio-y-planes` (D117–D122), mergeada en `main` el 25/10/2026:**
 - [x] Revisión de la vista previa por Claude (25/10; de ahí, el arreglo de las respuestas por partido del domingo) y OK de Iván al merge.
 - [x] `CALENDARIO_SECRETO` en Vercel, Production y Preview (confirmado por Iván con captura, 25/10). **No cambiarlo:** invalidaría todos los enlaces del calendario personal.

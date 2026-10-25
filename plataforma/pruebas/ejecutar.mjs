@@ -118,7 +118,10 @@ try {
   // el calendario personal, el tablero (is_gestor dentro) y sus grupos publicados.
   const INICIO = ['_mi_agenda', 'borrar_plan', 'calendario_personal', 'cancelar_plan', 'crear_plan', 'editar_plan', 'hacer_oficial', 'marcar_aviso_visto',
     'mi_calendario_regenerar', 'mi_calendario_registrar', 'mi_calendario_version', 'mi_posicion', 'mis_grupos', 'responder_plan', 'tablero_deshacer', 'tablero_responder'];
-  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
+  // Pagina del domingo (D128): nombres de la convocatoria aprobada y la hora de la ultima importacion (solo plantilla
+  // activa y gestores, dentro de la funcion).
+  const DOMINGO = ['convocados_del_domingo', 'ultima_importacion_respuestas'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

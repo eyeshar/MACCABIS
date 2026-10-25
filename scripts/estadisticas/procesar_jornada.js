@@ -352,10 +352,8 @@ if (require.main === module) {
     // de git). Nunca para la jornada: si falla (sin conexión, sin plataforma), solo se avisa.
     try {
       const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'calibrar_proyeccion.mjs')], { stdio: 'pipe', cwd: path.join(ROOT, 'plataforma') }).toString().trim();
-      console.log(salida.split('
-')[0]);
-    } catch (e) { console.log('Proyección: no se ha podido calibrar (' + String(e.stderr || e.message).split('
-')[0] + '). No afecta a la jornada.'); }
+      console.log(salida.split('\n')[0]);
+    } catch (e) { console.log('Proyección: no se ha podido calibrar (' + String(e.stderr || e.message).split('\n')[0] + '). No afecta a la jornada.'); }
 
     resumen.estado = 'lista'; escribeResumen();
     console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/index.json y plataforma/src/data/.');

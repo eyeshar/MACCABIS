@@ -108,6 +108,9 @@ try {
   const man = await r.json();
   ok(r.status === 200 && man.name === 'Maccabis' && man.short_name === 'Maccabis' && man.display === 'standalone' && man.start_url === '/' && man.theme_color === '#0E0D12', 'manifiesto: Maccabis, standalone, empieza en /, theme-color');
   ok(man.icons.some((i) => i.sizes === '192x192') && man.icons.some((i) => i.sizes === '512x512' && i.purpose === 'any') && man.icons.some((i) => i.purpose === 'maskable'), 'iconos 192, 512 y maskable');
+  ok((r.headers.get('content-type') || '').startsWith('application/manifest+json') && man.id === '/' && man.scope === '/', 'manifiesto: application/manifest+json, id y alcance «/»', r.headers.get('content-type'));
+  const viejo = await fetch(`${APP}/mi-zona/manifest.webmanifest`, { redirect: 'manual' });
+  ok(viejo.status === 308 && new URL(viejo.headers.get('location'), APP).pathname === '/manifest.webmanifest', 'el antiguo /mi-zona/manifest.webmanifest redirige (308) al unico, sin sesion', `${viejo.status} ${viejo.headers.get('location')}`);
   for (const i of man.icons) { const x = await fetch(`${APP}${i.src}`); ok(x.status === 200 && x.headers.get('content-type') === 'image/png', `icono ${i.src} servido`); }
   for (const f of ['/icon.png', '/apple-icon.png', '/sw.js']) ok((await fetch(`${APP}${f}`)).status === 200, `${f} servido`);
   ok(!/addEventListener\(['"]fetch/.test(await (await fetch(`${APP}/sw.js`)).text()), 'service worker sin cache ni manejador fetch (no cambia como carga la web)');

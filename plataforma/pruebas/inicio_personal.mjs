@@ -115,6 +115,10 @@ try {
   await foto(pj, 'inicio_jugador_375');
   const html375 = await pj.content();
   ok(!/nivel|motivo/i.test(html375.replace(/<script[\s\S]*?<\/script>/g, '')), 'sin niveles ni motivos en la pantalla');
+  // Fallo de produccion (25/10): el inicio de un jugador enlazaba /mi-zona/manifest.webmanifest, que leia mi_zona y daba
+  // «permission denied». Un solo manifiesto, el de toda la web.
+  const manifiestos = await pj.locator('link[rel="manifest"]').evaluateAll((l) => l.map((x) => x.getAttribute('href')));
+  ok(manifiestos.length === 1 && manifiestos[0] === '/manifest.webmanifest', 'el inicio del jugador enlaza el manifiesto de toda la web (/manifest.webmanifest), no uno bajo /mi-zona', JSON.stringify(manifiestos));
 
   console.log('\n== Responder un plan desde la tarjeta: sale y el contador baja');
   await tarjetaPlan.getByRole('button', { name: 'Voy', exact: true }).click();

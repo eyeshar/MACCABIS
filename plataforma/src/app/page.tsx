@@ -25,8 +25,9 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   const usuario = await usuarioActual().catch(() => null);
   if (!usuario) return { title: "Maccabis · Baloncesto en Madrid" };
-  // El inicio personal exige login: fuera de los buscadores (D85). Al instalarla, el icono abre el inicio.
-  return { title: "Inicio · Maccabis", robots: { index: false, follow: false }, manifest: usuario.esJugador ? "/mi-zona/manifest.webmanifest" : undefined };
+  // El inicio personal exige login: fuera de los buscadores (D85). El manifiesto es el de toda la web (layout,
+  // /manifest.webmanifest): empieza en «/», que con sesion ya es el inicio; nunca uno bajo /mi-zona (necesitaba sesion).
+  return { title: "Inicio · Maccabis", robots: { index: false, follow: false } };
 }
 
 const TEMPORADA = "26/27";

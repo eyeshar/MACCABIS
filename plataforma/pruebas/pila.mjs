@@ -25,7 +25,10 @@ import { migrar, semilla } from '../scripts/db.mjs';
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const BIN = path.join(AQUI, '.bin');
 const POSTGREST_VERSION = 'v12.2.12';
-export const PUERTOS = { pg: 54329, rest: 54330, pasarela: 54321 };
+// PILA_PUERTO_BASE (opcional) desplaza los tres puertos: dos sesiones en worktrees distintos (D114) pueden levantar su pila
+// a la vez sin pelearse (p. ej. PILA_PUERTO_BASE=55321 -> 55329, 55330 y 55321).
+const BASE = Number(process.env.PILA_PUERTO_BASE) || 54321;
+export const PUERTOS = { pg: BASE + 8, rest: BASE + 9, pasarela: BASE };
 export const JWT_SECRET = 'secreto-solo-para-pruebas-locales-de-maccabis-000000';
 const clave = new TextEncoder().encode(JWT_SECRET);
 

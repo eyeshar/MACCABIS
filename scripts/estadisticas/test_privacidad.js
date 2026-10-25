@@ -224,6 +224,36 @@ ok(/rpc\("convocados_del_domingo"/.test(leer('src/lib/respuestas/jugador.ts')) &
 const avConv = leer('src/lib/convocatoria/avisos.ts');
 ok(/import "server-only"/.test(avConv) && !/estadoInterruptor/.test(avConv) && /firmaConvocatoria/.test(avConv), 'aviso de convocatoria: solo en el servidor, sin depender del interruptor y con clave única por convocatoria');
 
+console.log('\n== Página de partido de la liga (D129): por equipo en público; los rivales por jugador, solo gestores');
+{
+  const PAG = 'src/app/liga/[temporada]/partido/[id]/page.tsx';
+  const pag = leer(PAG);
+  const sinCom = pag.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
+  ok(!/^\s*["']use client["']/.test(pag), 'la página de partido es de servidor (los datos por jugador de los rivales no viajan a un componente de cliente)');
+  // La unica lectura de datos por jugador de terceros esta dentro de la funcion que antes comprueba que es gestor.
+  const fn = sinCom.slice(sinCom.indexOf('async function rivalesPorJugador'), sinCom.indexOf('const pct ='));
+  ok(fn.length > 100 && /if \(!\(await esGestorActual\(\)\)\) return null;/.test(fn) && fn.indexOf('esGestorActual') < fn.indexOf('liga_estadisticas_jugador'),
+    'rival por jugador: lo primero es comprobar que es gestor (is_gestor de la sesión); sin sesión de gestor no se consulta nada');
+  const fuera = sinCom.replace(fn, '');
+  ok(!/liga_estadisticas_jugador|liga_partidos|v_liga_jugadores/.test(fuera), 'ninguna otra parte de la página lee datos por jugador de la liga');
+  ok(/from\("liga_estadisticas_jugador"\)/.test(fn) && !/SERVICE_ROLE|service_role|clienteServicio/i.test(sinCom), 'se lee con la sesión del gestor (RLS de gestores, como Scouting), nunca con la clave de servicio');
+  ok(/export const dynamic = "force-dynamic"/.test(pag), 'la página se genera en cada petición (lo del gestor nunca queda en una página cacheada para otros)');
+  // El resto de la Liga pública no lee nada por jugador de la liga (solo el JSON por equipo y las temporadas públicas).
+  const ligaPub = ['src/app/liga', 'src/components/liga', 'src/lib/estadisticas', 'src/components/inicio', 'src/app/page.tsx', 'src/components/web']
+    .flatMap((d) => { const b = path.join(PLAT, d); return !fs.existsSync(b) ? [] : fs.statSync(b).isFile() ? [b] : repoTodo(b); })
+    .filter((f) => /\.(ts|tsx)$/.test(f) && !f.endsWith(path.join('partido', '[id]', 'page.tsx')))
+    .filter((f) => /liga_estadisticas_jugador|v_liga_jugadores|from\("liga_partidos"\)/.test(fs.readFileSync(f, 'utf8')));
+  ok(ligaPub.length === 0, 'el resto de páginas públicas de la liga, la portada y el inicio no leen datos por jugador de la liga', ligaPub.map((f) => path.relative(ROOT, f)).join(', '));
+  // El JSON público solo lleva, por partido, los totales de cada equipo.
+  const ligaPubJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'liga_2026-27.json'), 'utf8'));
+  const res = Object.values(ligaPubJson.grupos).flatMap((g) => g.resultados);
+  const clavesEst = new Set(res.filter((r) => r.est).flatMap((r) => [r.est.local, r.est.visitante].flatMap((e) => Object.keys(e))));
+  ok(res.length > 0 && res.every((r) => r.id) && [...clavesEst].every((k) => ['pts', 't2', 't3', 'tl', 'tl_int', 'faltas'].includes(k)),
+    `cada partido del JSON público lleva su id y solo totales por equipo (${[...clavesEst].join(', ')})`);
+  const pruebaPt = leer('pruebas', 'liga_partidos.mjs');
+  ok(/rival-por-jugador-seccion/.test(pruebaPt) && /anonimo/.test(pruebaPt) && /jugador/.test(pruebaPt), 'la prueba de pantallas de la página de partido comprueba que ni anónimos ni jugadores ven «Rival por jugador» (npm run pruebas:liga-partidos)');
+}
+
 (async () => {
   if (fs.existsSync(path.join(PLAT, '.next', 'BUILD_ID'))) {
     const { revisar } = await import(pathToFileURL(path.join(PLAT, 'pruebas', 'privacidad_paginas.mjs')).href);

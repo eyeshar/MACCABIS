@@ -26,7 +26,7 @@ export const NSigned1 = ({ v }: { v: number | null | undefined }) => (
 export const Tiros = ({ a, i, conIntentos }: { a: number | null | undefined; i: number | null | undefined; conIntentos: boolean }) =>
   a == null ? <Dash /> : <>{conIntentos && i != null ? `${a}/${i}` : String(a)}</>;
 
-export function Kpi({ lab, val, foot, tono }: { lab: string; val: ReactNode; foot?: ReactNode; tono?: "win" | "accent" | "gold" | "grape" | "" }) {
+export function Kpi({ lab, val, foot, tono }: { lab: string; val: ReactNode; foot?: ReactNode; tono?: "win" | "loss" | "accent" | "gold" | "grape" | "" }) {
   return (
     <div className={`e-kpi ${tono ?? ""}`}>
       <div className="e-kpi-tira" />

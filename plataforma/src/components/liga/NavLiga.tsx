@@ -8,9 +8,10 @@ import { usePathname, useRouter } from "next/navigation";
 export function NavLiga({ temporadaPorDefecto }: { temporadaPorDefecto: string }) {
   const ruta = usePathname();
   const partes = [
-    { t: "Liga 26/27", href: "/liga", activa: ruta === "/liga" },
+    // La pagina de un partido (D129) es de la Liga 26/27, aunque cuelgue de /liga/<temporada>/partido/<id>.
+    { t: "Liga 26/27", href: "/liga", activa: ruta === "/liga" || /^\/liga\/\d{4}-\d{2}\/partido\//.test(ruta) },
     { t: "Rivales 26/27", href: "/liga/rivales", activa: ruta === "/liga/rivales" },
-    { t: "Estadísticas por temporada", href: `/liga/${temporadaPorDefecto}/equipo`, activa: /^\/liga\/\d{4}-\d{2}(\/|$)/.test(ruta) },
+    { t: "Estadísticas por temporada", href: `/liga/${temporadaPorDefecto}/equipo`, activa: /^\/liga\/\d{4}-\d{2}(\/|$)/.test(ruta) && !ruta.includes("/partido/") },
   ];
   return (
     <nav className="e-nav" aria-label="Liga">
@@ -27,6 +28,8 @@ export function NavTemporada({ temporada, temporadas, pestanas }: {
   const ruta = usePathname();
   const router = useRouter();
   const actual = ruta.split("/")[3] ?? "equipo";
+  // En la pagina de un partido (D129) no hay selector de temporada ni pestañas: es de la Liga 26/27.
+  if (actual === "partido") return null;
   return (
     <div className="e-temporada">
       <div className="e-ctl e-selector">

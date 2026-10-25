@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 export type GrupoClas = {
@@ -7,8 +8,8 @@ export type GrupoClas = {
   equipo: "MDA" | "MDL";
   nombre: string;
   tras: number | null;
-  filas: { pos: number; equipo: string; nuestro: boolean; g: number; p: number; dif: number; pts: number | null }[];
-  nuestroAbajo: { pos: number; equipo: string; nuestro: boolean; g: number; p: number; dif: number; pts: number | null } | null;
+  filas: { pos: number; equipo: string; nuestro: boolean; g: number; p: number; dif: number; pts: number | null; href?: string | null }[];
+  nuestroAbajo: { pos: number; equipo: string; nuestro: boolean; g: number; p: number; dif: number; pts: number | null; href?: string | null } | null;
 };
 
 const dif = (n: number) => (n > 0 ? `+${n}` : String(n));
@@ -38,7 +39,7 @@ export default function Clasificacion({ grupos }: { grupos: GrupoClas[] }) {
                 {[...g.filas, ...(g.nuestroAbajo ? [null, g.nuestroAbajo] : [])].map((f, i) =>
                   f ? (
                     <tr key={f.equipo} className={f.nuestro ? `w-nuestro-${g.equipo}` : undefined}>
-                      <td>{f.pos}</td><td>{f.equipo}</td><td>{f.g}-{f.p}</td><td>{dif(f.dif)}</td><td>{f.pts ?? "—"}</td>
+                      <td>{f.pos}</td><td>{f.href ? <Link href={f.href} className="w-enlace-eq">{f.equipo}</Link> : f.equipo}</td><td>{f.g}-{f.p}</td><td>{dif(f.dif)}</td><td>{f.pts ?? "—"}</td>
                     </tr>
                   ) : (
                     <tr key={`salto-${i}`} className="w-salto" aria-hidden="true"><td colSpan={5}>···</td></tr>

@@ -66,7 +66,8 @@
     "pruebas:inicio-real": "node pruebas/rls_inicio_real.mjs",
     "proyeccion:calibrar": "node scripts/calibrar_proyeccion.mjs",
     "pruebas:proyeccion": "node pruebas/proyeccion.mjs",
-    "pruebas:domingo": "node pruebas/domingo_jugador.mjs"
+    "pruebas:domingo": "node pruebas/domingo_jugador.mjs",
+    "pruebas:liga-partidos": "node pruebas/liga_partidos.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

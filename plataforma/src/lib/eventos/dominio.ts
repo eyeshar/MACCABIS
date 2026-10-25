@@ -151,7 +151,8 @@ export function describirCambios(antes: CamposEditables, despues: CamposEditable
   if (antes.tipo !== despues.tipo) c.push(`tipo: ${textoTipo(antes.tipo)} → ${textoTipo(despues.tipo)}`);
   if (antes.equipo !== despues.equipo) c.push(`equipo: ${antes.equipo} → ${despues.equipo}`);
   if ((antes.rival ?? "") !== (despues.rival ?? "")) c.push(`rival: ${antes.rival ?? "—"} → ${despues.rival ?? "—"}`);
-  if (antes.es_local !== despues.es_local) c.push(`${despues.es_local ? "ahora juega de local" : "ahora juega de visitante"}`);
+  // D129: sin «local / visitante» en lo que ve la gente; si cambia, se dice el cartel nuevo tal cual (el orden del calendario).
+  if (antes.es_local !== despues.es_local) c.push(`cartel: ${tituloEvento(antes)} → ${tituloEvento(despues)}`);
   if ((antes.titulo ?? "") !== (despues.titulo ?? "")) c.push(`título: ${despues.titulo ?? "—"}`);
   return c;
 }

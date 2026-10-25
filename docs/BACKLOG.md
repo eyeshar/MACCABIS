@@ -11,7 +11,8 @@
 - [x] Revisión de la vista previa por Claude (25/10; de ahí, el arreglo de las respuestas por partido del domingo) y OK de Iván al merge.
 - [x] `CALENDARIO_SECRETO` en Vercel, Production y Preview (confirmado por Iván con captura, 25/10). **No cambiarlo:** invalidaría todos los enlaces del calendario personal.
 - [x] Sin planes de prueba en la base real antes del merge (0 el 25/10).
-- [ ] **Revisar la tabla `gestores` del real:** tiene 1 fila y los documentos hablan de 3 gestores (visto en `verificar_produccion` el 25/10; ni la migración ni la verificación la tocan). Confirmar con Iván si los otros dos aún no se han dado de alta.
+- [x] Tabla `gestores` del real: tenía solo a Iván. **Carlos Barreiro y Eduardo Martín-Ortega dados de alta el 25/10** con `db:gestor` y el correo de su ficha (D111: copia previa, recuentos y permisos en solo lectura antes y después).
+- [ ] **Cuando Carlos entre por primera vez:** comprobar que su plaza se vinculó sola (`npm run db:estado`: 3 gestores vinculados) y que ve Gestión, el tablero y la banda del inicio. Aún no tiene cuenta (simulado en una transacción deshecha: se vincula y ve los niveles).
 - [ ] **«Responder en SportEasy» al evento exacto:** guardar el id de cada evento en SportEasy (columna nueva, la rellena Claude al copiar) para que el botón del inicio lleve al evento y no al calendario de SportEasy (D117).
 - [ ] Más adelante: aviso al móvil del recordatorio de un plan también si el plan se crea con menos de un día de margen (hoy, sin «un día antes», no sale nada).
 - [ ] Más adelante: los pedidos de ropa de campañas cerradas ya no se ven en el inicio (D117); si se echan de menos, una página «Mis pedidos».

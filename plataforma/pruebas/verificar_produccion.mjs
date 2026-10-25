@@ -155,7 +155,7 @@ try {
     ok(await sinDesbordar(), '«/» con sesion sin desbordamiento');
     for (const [ruta, eyebrow] of [['/gestion/tablero', 'Tablero'], ['/gestion/grupos', 'Grupos de entreno']]) {
       const resp = await p.goto(`${BASE}${ruta}`);
-      ok(resp.status() === 200 && (await p.locator('.gs-eyebrow').first().innerText()).includes(eyebrow) && (await p.locator('h1').count()) > 0, `${ruta} carga (${(await p.locator('h1').first().innerText().catch(() => '')).slice(0, 40)})`, `HTTP ${resp.status()}`);
+      ok(resp.status() === 200 && (await p.locator('.gs-eyebrow').first().textContent()).includes(eyebrow) && (await p.locator('h1').count()) > 0, `${ruta} carga (${(await p.locator('h1').first().innerText().catch(() => '')).slice(0, 40)})`, `HTTP ${resp.status()}`);
       ok(await sinDesbordar(), `${ruta} sin desbordamiento`);
     }
 

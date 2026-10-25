@@ -98,9 +98,10 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
           <div className="ev-cuatro">
             <div className="campo" style={{ margin: 0 }}><label htmlFor="rival">Rival</label><input id="rival" name="rival" type="text" defaultValue={evento?.rival ?? ""} disabled={bloqueado} /></div>
             <div className="campo" style={{ margin: 0 }}>
-              <label htmlFor="local">Local o visitante</label>
+              {/* D129: se guarda local/visitante (lo usa la regla de equipacion), pero se pregunta por el orden del cartel. */}
+              <label htmlFor="local">Orden en el cartel</label>
               <select id="local" name="local" defaultValue={evento?.es_local == null ? "" : evento.es_local ? "local" : "visitante"} disabled={bloqueado}>
-                <option value="">—</option><option value="local">Local</option><option value="visitante">Visitante</option>
+                <option value="">—</option><option value="local">Nosotros primero</option><option value="visitante">El rival primero</option>
               </select>
             </div>
             {tipo === "liga" && <div className="campo" style={{ margin: 0 }}><label htmlFor="jornada">Jornada</label><input id="jornada" name="jornada" type="number" min={1} defaultValue={evento?.jornada ?? ""} disabled={bloqueado} /></div>}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import AvisoTarjeta from "@/components/AvisoTarjeta";
 import { textoColores } from "@/lib/colores";
 import { fechaCorta } from "@/lib/estadisticas/calculo";
@@ -9,7 +9,7 @@ import type { Color, ContraNosotros, Grupo, GrupoLiga } from "@/lib/estadisticas
 import { CajaTabla, Control, Kpi, Nota, SecH, Segmento } from "./Comunes";
 
 // Liga 26/27 (migrada de GitHub Pages): clasificación calculada con las Bases del 47 JDM, resultados por jornada y ficha
-// por equipo. Solo datos por equipo (D73).
+// por equipo. Solo datos por equipo (D73). D129: cada equipo enlaza a su ficha y cada partido a su página; sin «casa/fuera».
 const sig = (v: number) => (v > 0 ? "+" : "") + v;
 const dec = (v: number | null | undefined) => (v == null ? "–" : v.toFixed(1).replace(".", ","));
 
@@ -18,14 +18,14 @@ function Colores({ color }: { color: Color | null | undefined }) {
   return <div className="e-eqcol"><i className="e-eqdot" style={{ background: color.css }} />{textoColores(color)}</div>;
 }
 
-export default function LigaGrupoPanel({ grupos, generado, colores, contra, grupoInicial, sinRastro }: {
+export default function LigaGrupoPanel({ grupos, generado, colores, contra, grupoInicial, sinRastro, enlaces, partidos }: {
   grupos: Record<Grupo, GrupoLiga>; generado: string; colores: Record<string, Color | null>;
   contra: Record<string, ContraNosotros | null>; grupoInicial: Grupo; sinRastro: string[];
+  enlaces: Record<Grupo, Record<string, string>>; partidos: Record<string, string>;
 }) {
   const [g, setG] = useState<Grupo>(grupoInicial);
   const [jornada, setJornada] = useState<number | null>(null);
   const [equipo, setEquipo] = useState<string | null>(null);
-  const fichaRef = useRef<HTMLDivElement>(null);
   const G = grupos[g];
   const nuestro = G.nuestro === "MDL" ? "MdL" : "MdA";
   const js = G.jornadas_cargadas;
@@ -64,7 +64,7 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
               <tr key={x.id} className={x.nuestro ? "e-nos" : undefined} data-equipo={x.id}>
                 <td className="e-mono">{x.pos}</td>
                 <td className="e-eq">
-                  <button type="button" className="e-enlace-boton" onClick={() => { setEquipo(G.equipos[x.id].nombre); fichaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{x.equipo}</button>
+                  <Link href={enlaces[g][x.id]} className="e-enlace-eq">{x.equipo}</Link>
                   {x.nuestro && <span className="e-chip-nos">Nosotros</span>}
                   {x.incomparecencias ? <> <i className="e-incomp" title="Incomparecencia: sus puntos salen de la clasificación oficial">{x.incomparecencias} incomp.</i></> : null}
                 </td>
@@ -91,10 +91,12 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
           const nos = r.local === nuestro || r.visitante === nuestro;
           return (
             <div key={i}>
-              <div className={`e-partido${nos ? " e-nos-partido" : ""}`}>
-                <span className={`e-pl${(r.pl ?? 0) > (r.pv ?? 0) ? " e-gan" : ""}`}>{r.local}</span>
-                {r.incomparecencia ? <span className="e-m" title="Incomparecencia">incomp.</span> : <span className="e-m">{r.pl} – {r.pv}</span>}
-                <span className={(r.pv ?? 0) > (r.pl ?? 0) ? "e-gan" : ""}>{r.visitante}</span>
+              <div className={`e-partido${nos ? " e-nos-partido" : ""}`} data-partido={r.id}>
+                <span className={`e-pl${(r.pl ?? 0) > (r.pv ?? 0) ? " e-gan" : ""}`}><Link href={enlaces[g][r.local_id]} className="e-enlace-eq">{r.local}</Link></span>
+                <Link href={partidos[r.id]} className="e-m e-m-enlace" aria-label={`Ver el partido ${r.local} – ${r.visitante}`} title={r.incomparecencia ? "Incomparecencia" : "Ver el partido"}>
+                  {r.incomparecencia ? "incomp." : `${r.pl} – ${r.pv}`}
+                </Link>
+                <span className={(r.pv ?? 0) > (r.pl ?? 0) ? "e-gan" : ""}><Link href={enlaces[g][r.visitante_id]} className="e-enlace-eq">{r.visitante}</Link></span>
               </div>
               {r.incomparecencia && <div className="e-desc">No se presentó: {r.no_presentado}.</div>}
             </div>
@@ -110,20 +112,15 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
           {eqs.map((x) => <option key={x.id}>{x.nombre}</option>)}
         </select>
       </div>
-      <div className="e-ficha" ref={fichaRef} data-testid="liga-ficha">
+      <div className="e-ficha" id="ficha" data-testid="liga-ficha">
         <h3>{e.nombre}{e.nuestro && <span className="e-chip-nos">Nosotros</span>}</h3>
         <div className="e-kpis">
           <Kpi tono="accent" lab="Puntos a favor" val={dec(e.media_pf)} foot="media por partido" />
           <Kpi tono="grape" lab="En contra" val={dec(e.media_pc)} foot="media por partido" />
           <Kpi tono="gold" lab="Diferencia" val={e.media_dif == null ? "–" : sig(e.media_dif).replace(".", ",")} foot="por partido" />
-          <Kpi tono="win" lab="Racha" val={e.racha ? e.racha.n + e.racha.tipo : "–"} foot={e.ultimos.length ? e.ultimos.map((c, i) => <span key={i} className={`e-pastilla e-pastilla-${c} e-pastilla-mini`}>{c}</span>) : "sin partidos"} />
+          {/* La racha toma el color de su ultimo resultado: G en verde, P en rojo (D129). */}
+          <Kpi tono={e.racha ? (e.racha.tipo === "G" ? "win" : "loss") : ""} lab="Racha" val={e.racha ? e.racha.n + e.racha.tipo : "–"} foot={e.ultimos.length ? e.ultimos.map((c, i) => <span key={i} className={`e-pastilla e-pastilla-${c} e-pastilla-mini`}>{c}</span>) : "sin partidos"} />
         </div>
-        <div className="e-dos">
-          {([["En casa", e.casa], ["Fuera", e.fuera]] as const).map(([t, c]) => (
-            <div key={t} className="e-mini"><div className="e-mini-t">{t}</div><div className="e-mini-v">{c.g}–{c.p}</div><div className="e-mini-s">{dec(c.media_pf)} / {dec(c.media_pc)} por partido</div></div>
-          ))}
-        </div>
-        <Nota>Casa y fuera: ganados–perdidos y media de puntos a favor / en contra.</Nota>
         <div className="e-colores">
           <Colores color={colores[`${g}:${e.id}`]} />
           {cont && (
@@ -133,11 +130,9 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
             </>
           )}
         </div>
-        {!e.nuestro && (
-          <Link className="e-boton-enlace" href={`/liga/rivales?g=${nuestro}&r=${encodeURIComponent(e.id)}`}>
-            {sinRastro.includes(e.id) ? "Ver Rivales 26/27 (sin historial en datos abiertos) →" : "Ver su ficha en Rivales 26/27 →"}
-          </Link>
-        )}
+        <Link className="e-boton-enlace" href={enlaces[g][e.id]}>
+          {e.nuestro ? `Ver la ficha del ${e.nombre} (partidos y boxscore) →` : sinRastro.includes(e.id) ? "Ver su ficha en Rivales 26/27 (sin historial en datos abiertos) →" : "Ver su ficha en Rivales 26/27 →"}
+        </Link>
       </div>
       <div className="e-fuente">Fuente: hojas de estadística de la FBM (app Afición FBM) hasta la jornada {js[js.length - 1]}. Sólo datos por equipo. Generado el {fechaCorta(generado)}.</div>
     </>

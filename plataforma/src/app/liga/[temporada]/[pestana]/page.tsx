@@ -8,6 +8,7 @@ import MdaPestana from "@/components/liga/Mda";
 import RankingsPestana from "@/components/liga/Rankings";
 import { metricasDe } from "@/lib/estadisticas/calculo";
 import { PESTANAS, TEMPORADA_POR_DEFECTO, TEXTO_PESTANA, cargarTemporada, equiposDe, pestanasDe, type Pestana } from "@/lib/estadisticas/datos";
+import { TEMPORADA_LIGA, enlacesPartidosNuestros } from "@/lib/estadisticas/liga";
 
 export async function generateMetadata({ params }: { params: Promise<{ temporada: string; pestana: string }> }): Promise<Metadata> {
   const { temporada, pestana } = await params;
@@ -22,8 +23,11 @@ export async function generateMetadata({ params }: { params: Promise<{ temporada
 
 // Una pestaña de estadísticas de una temporada. Los datos son los de data/season_<t>.json (copiados por npm run datos:sync);
 // a la pantalla solo llega lo que esa pestaña pinta (sin los partidos de cada jugador, que son de la ficha).
-export default async function PestanaTemporada({ params }: { params: Promise<{ temporada: string; pestana: string }> }) {
+export default async function PestanaTemporada({ params, searchParams }: {
+  params: Promise<{ temporada: string; pestana: string }>; searchParams: Promise<{ eq?: string }>;
+}) {
   const { temporada, pestana } = await params;
+  const { eq } = await searchParams;
   const t = await cargarTemporada(temporada);
   if (!t && /^[0-9]{4}-[0-9]{2}$/.test(temporada)) redirect(`/liga/${TEMPORADA_POR_DEFECTO}/equipo`);
   if (!t) notFound();
@@ -44,7 +48,12 @@ export default async function PestanaTemporada({ params }: { params: Promise<{ t
 
   const contenido = (() => {
     switch (pestana as Pestana) {
-      case "equipo": return <EquipoPestana key={temporada} partidos={t.partidos} box={t.box} M={M} equipos={equipos} />;
+      // ?eq=MDA|MDL abre la pestaña con ese equipo (es la ficha de MdA y MdL a la que enlazan /liga y las fichas, D129).
+      case "equipo": return (
+        <EquipoPestana key={temporada + (eq ?? "")} partidos={t.partidos} box={t.box} M={M} equipos={equipos}
+          equipoInicial={multi && (eq === "MDA" || eq === "MDL") ? eq : "ALL"}
+          enlaces={temporada === TEMPORADA_LIGA ? enlacesPartidosNuestros(t.partidos) : undefined} />
+      );
       case "jugadores": return <JugadoresPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} />;
       case "rankings": return <RankingsPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} temporada={temporada} />;
       case "cuartos": return <CuartosPestana key={temporada} qstats={t.qstats!} multiEquipo={multi} />;

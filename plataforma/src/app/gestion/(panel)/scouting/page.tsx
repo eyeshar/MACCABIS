@@ -102,8 +102,9 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
           {prox && (
             <div className="lg-prox">
               <div className="lg-prox-e">Próximo partido contra nosotros</div>
-              <div className="lg-prox-f">{nombreNuestro(grupo)} {prox.local ? "vs" : "en"} {elegido.equipo}</div>
-              <div className="lg-prox-d">J{prox.jornada} · {prox.fecha ? fechaCorta(prox.fecha) : ""} · {prox.hora} · pista {prox.campo} · {prox.local ? "en casa" : "fuera"}</div>
+              {/* D129: todos juegan en Moratalaz; sin «en casa / fuera», el cartel tal cual sale en el calendario oficial. */}
+              <div className="lg-prox-f">{prox.local === false ? `${elegido.equipo} – ${nombreNuestro(grupo)}` : `${nombreNuestro(grupo)} – ${elegido.equipo}`}</div>
+              <div className="lg-prox-d">J{prox.jornada} · {prox.fecha ? fechaCorta(prox.fecha) : ""} · {prox.hora} · pista {prox.campo}</div>
               {aviso?.hay && <AvisoCaja a={aviso} />}
             </div>
           )}

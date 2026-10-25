@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -15,6 +16,19 @@ const PUERTO = 3212, APP = `http://127.0.0.1:${PUERTO}`;
 const indice = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'index.json'), 'utf8'));
 const temporadas = indice.seasons.map((s) => s.id);
 const rivales = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'rivales_2026-27_web.json'), 'utf8')).rivales;
+const liga = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'liga_2026-27.json'), 'utf8'));
+/** D129: la pagina de cada partido de la liga (los dos grupos). */
+const PARTIDOS = Object.values(liga.grupos).flatMap((g) => g.resultados.map((r) => `/liga/2026-27/partido/${r.id}`));
+
+/** Nombres de jugadores de OTROS equipos (de las hojas, fuera de git): no pueden salir en ninguna pagina publica (D73).
+ *  Sin fuentes_fbm/ en este equipo, se omite (null). */
+function nombresRivales() {
+  try {
+    const { construir } = createRequire(import.meta.url)(path.join(REPO, 'scripts', 'estadisticas', 'liga.js'));
+    const nuestros = new Set(['MdA', 'MdL']);
+    return [...new Set(construir('2026-27').privado.flatMap((p) => p.equipos.filter((e) => !nuestros.has(e.equipo)).flatMap((e) => e.jugadores.map((j) => j.nombre))))];
+  } catch { return null; }
+}
 
 /** Una ficha por jugador y temporada (todas las de GitHub Pages). */
 function personasPorTemporada() {
@@ -31,6 +45,7 @@ export const RUTAS = [
   '/liga', '/liga?g=G2', '/liga/rivales', '/liga/rivales?g=MdL',
   ...rivales.filter((r) => !r.sin_rastro).slice(0, 6).map((r) => `/liga/rivales?g=${r.grupo}&r=${r.id}`),
   ...temporadas.flatMap((t) => ['equipo', 'jugadores', 'rankings', 'cuartos', 'asistencia', 'mda'].map((p) => `/liga/${t}/${p}`)),
+  ...PARTIDOS, '/liga/2026-27/equipo?eq=MDA', '/liga/2026-27/equipo?eq=MDL',
 ];
 
 /** Claves de datos personales o privados: si salen como clave JSON en la carga de la pagina, fallo. */
@@ -49,9 +64,17 @@ export async function revisar({ log = console.log } = {}) {
   try {
     const fin = Date.now() + 60000;
     for (;;) { try { await fetch(`${APP}/liga`); break; } catch { if (Date.now() > fin) throw new Error('la web no arranca'); await new Promise((r) => setTimeout(r, 300)); } }
+    const terceros = nombresRivales();
     for (const ruta of RUTAS) {
       const r = await fetch(APP + ruta, { redirect: 'follow' });
       let html = await r.text();
+      // D73/D129: sin sesion, ni la pagina de partido ni ninguna otra lleva un jugador de otro equipo ni la seccion de gestores.
+      if (ruta.startsWith('/liga') || ruta.startsWith('/?') || ruta === '/') {
+        const norm = (t) => t.toUpperCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ');
+        const sube = norm(html);
+        const fuga = (terceros ?? []).find((n) => n.length > 6 && sube.includes(norm(n)));
+        if (fuga || /rival-por-jugador|Rival por jugador/.test(html)) { fallos++; log(`  FALLO ${ruta} -> ${fuga ? `sale un jugador de otro equipo (${fuga})` : 'sale la sección «Rival por jugador» sin sesión de gestor'}`); }
+      }
       // El .ics lleva fechas como 19700329T020000 (no son DNI): se quitan las lineas de fecha y UID antes de buscar.
       if (ruta.endsWith('.ics')) html = html.replace(/^(DTSTART|DTEND|DTSTAMP|UID)[^\r\n]*/gm, '');
       const malos = [];
@@ -60,6 +83,7 @@ export async function revisar({ log = console.log } = {}) {
       if (r.status !== 200 || malos.length) { fallos++; log(`  FALLO ${ruta} -> ${r.status !== 200 ? 'estado ' + r.status : ''} ${malos.join(', ')}`); }
     }
     log(`  ${fallos ? 'FALLO' : 'OK   '} ${RUTAS.length} paginas publicas migradas: sin motivos de ausencia, niveles, DNI, telefonos, correos ni fechas de nacimiento`);
+    log(`  ${fallos ? 'FALLO' : 'OK   '} ${PARTIDOS.length} paginas de partido (D129) y el resto de la Liga, sin sesion: ni un jugador de otro equipo ${terceros ? `(${terceros.length} nombres de las hojas)` : '(sin fuentes_fbm/: solo se comprueba la seccion de gestores)'} ni la seccion «Rival por jugador»`);
   } finally { app.kill(); }
   return fallos;
 }

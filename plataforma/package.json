@@ -63,7 +63,8 @@
     "pruebas:calendario-personal": "node pruebas/calendario_personal.mjs",
     "pruebas:tablero": "node pruebas/tablero.mjs",
     "pruebas:grupos": "node pruebas/grupos.mjs",
-    "pruebas:inicio-real": "node pruebas/rls_inicio_real.mjs"
+    "pruebas:inicio-real": "node pruebas/rls_inicio_real.mjs",
+    "pruebas:liga-partidos": "node pruebas/liga_partidos.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

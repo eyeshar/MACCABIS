@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AvisoTarjeta from "@/components/AvisoTarjeta";
 import { textoColores } from "@/lib/colores";
 import LigaGrupoPanel from "@/components/liga/LigaGrupo";
 import { SecH } from "@/components/liga/Comunes";
-import { datosLiga, RIVALES, type Grupo } from "@/lib/estadisticas/liga";
+import { datosLiga, fichasPorNombre, grupoParaPantalla, hrefEquipo, hrefPartido, RIVALES, type Grupo } from "@/lib/estadisticas/liga";
 import { diaLargo, hoyMadrid } from "@/lib/dias";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,13 @@ export default async function Liga({ searchParams }: { searchParams: Promise<{ g
   const hoy = hoyPrueba && /^\d{4}-\d{2}-\d{2}$/.test(hoyPrueba) ? hoyPrueba : hoyMadrid();
   const { liga, colores, contra, proximos } = datosLiga(hoy);
   const grupo: Grupo = g === "G2" ? "G2" : "G1";
+  const fichas = fichasPorNombre();
+  // Enlaces de cada equipo y de cada partido (D129), calculados aqui para que el panel no lleve la logica.
+  const enlaces = {
+    G1: Object.fromEntries(Object.keys(liga.grupos.G1.equipos).map((id) => [id, hrefEquipo("G1", id)])),
+    G2: Object.fromEntries(Object.keys(liga.grupos.G2.equipos).map((id) => [id, hrefEquipo("G2", id)])),
+  };
+  const partidos = Object.fromEntries((["G1", "G2"] as const).flatMap((k) => liga.grupos[k].resultados.map((r) => [r.id, hrefPartido(r.id)])));
   return (
     <>
       <SecH titulo="Próximos partidos" tag="MdA y MdL" />
@@ -27,11 +35,15 @@ export default async function Liga({ searchParams }: { searchParams: Promise<{ g
         {(["MDA", "MDL"] as const).map((eq, i) => {
           const p = proximos[i], n = eq === "MDA" ? "MdA" : "MdL";
           if (!p) return <div key={eq} className="e-eqp"><div className="e-eqp-t">{n}</div><div className="e-eqp-s">No quedan partidos en el calendario.</div></div>;
+          // D129: en esta liga todos juegan en Moratalaz. Sin «en casa / fuera»: el cartel tal cual sale en el calendario oficial.
+          const fichaRival = fichas[`${eq === "MDA" ? "G1" : "G2"}|${p.rival}`];
+          const rival = fichaRival ? <Link href={fichaRival} className="e-enlace-eq">{p.rival}</Link> : <>{p.rival}</>;
+          const nuestro = <Link href={fichas[`${eq === "MDA" ? "G1" : "G2"}|${n}`]} className="e-enlace-eq">{n}</Link>;
           return (
             <div key={eq} className="e-eqp" data-eq={eq}>
               <div className="e-eqp-t">{n} · J{p.jornada}</div>
-              <div className="e-eqp-v">{n} {p.local ? "vs" : "en"} {p.rival}</div>
-              <div className="e-eqp-s">{p.fecha ? diaLargo(p.fecha) : "fecha por confirmar"} · {p.hora ?? "hora por confirmar"} · pista {p.campo ?? "por confirmar"} · {p.local ? "en casa" : "fuera"}</div>
+              <div className="e-eqp-v">{p.local === false ? <>{rival} – {nuestro}</> : <>{nuestro} – {rival}</>}</div>
+              <div className="e-eqp-s">{p.fecha ? diaLargo(p.fecha) : "fecha por confirmar"} · {p.hora ?? "hora por confirmar"} · pista {p.campo ?? "por confirmar"}</div>
               {p.color && <div className="e-eqcol"><i className="e-eqdot" style={{ background: p.color.css }} />{textoColores(p.color)}</div>}
               <AvisoTarjeta aviso={p.aviso} />
             </div>
@@ -39,7 +51,8 @@ export default async function Liga({ searchParams }: { searchParams: Promise<{ g
         })}
       </div>
       <LigaGrupoPanel
-        grupos={liga.grupos} generado={liga.generado} colores={colores} contra={contra} grupoInicial={grupo}
+        grupos={{ G1: grupoParaPantalla(liga.grupos.G1), G2: grupoParaPantalla(liga.grupos.G2) }} generado={liga.generado} colores={colores} contra={contra} grupoInicial={grupo}
+        enlaces={enlaces} partidos={partidos}
         sinRastro={RIVALES.rivales.filter((r) => r.sin_rastro).map((r) => r.id)}
       />
     </>

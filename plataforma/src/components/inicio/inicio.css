@@ -166,3 +166,6 @@
 .lg-elegido { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; border: 1px solid var(--borde-fuerte); background: var(--panel-2); }
 .lg-etq { font-family: var(--f-cifras); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.72rem; color: var(--tinta-suave); }
 .lg-botones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+/* D129: equipos y partidos enlazados (a su ficha y a la página del partido) */
+.in-enlace-equipo, .in-enlace-partido { color: inherit; text-decoration: none; }
+.in-enlace-equipo:hover, .in-enlace-equipo:focus-visible, .in-enlace-partido:hover, .in-enlace-partido:focus-visible { color: var(--c-amarillo); text-decoration: underline; text-underline-offset: 3px; }

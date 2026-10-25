@@ -41,10 +41,11 @@ export default function ProximoPartido({ partido }: { partido: Partido }) {
   return (
     <div className="eq-partido">
       <p style={{ margin: 0 }}>
-        <b>{NOMBRE[partido.equipo]} {partido.local ? "vs" : "en"} {nombreRival(partido.rival)}</b>
+        {/* D129: sin «en casa / fuera»; el cartel tal cual sale en el calendario oficial. */}
+        <b>{partido.local === false ? `${nombreRival(partido.rival)} – ${NOMBRE[partido.equipo]}` : `${NOMBRE[partido.equipo]} – ${nombreRival(partido.rival)}`}</b>
       </p>
       <p className="pequeno suave" style={{ margin: "2px 0 6px" }}>
-        J{partido.jornada} · {partido.fecha ? diaLargo(partido.fecha) : ""} · {partido.hora} · pista {partido.campo} · {partido.local ? "en casa" : "fuera"}
+        J{partido.jornada} · {partido.fecha ? diaLargo(partido.fecha) : ""} · {partido.hora} · pista {partido.campo}
       </p>
       <p className="pequeno" style={{ margin: "0 0 6px" }}>{partido.rival && <Camiseta rival={partido.rival} />}</p>
       <AvisoEquipacion partido={partido} />

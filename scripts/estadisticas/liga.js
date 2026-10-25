@@ -13,8 +13,10 @@
  * + TL = puntos; ningún equipo juega dos veces en la misma jornada; el local/visitante de nuestros partidos
  * coincide con el calendario. Si algo no cuadra, NO se escribe nada.
  *
- * Salida PÚBLICA: data/liga_<temporada>.json, SOLO datos por equipo (resultados, clasificación, puntos a favor y en
- * contra, medias, racha, casa/fuera). Nunca nombres ni dorsales de jugadores (D73): los datos por jugador de otros
+ * Salida PÚBLICA: data/liga_<temporada>.json, SOLO datos por equipo (resultados con su id y los totales de cada equipo
+ * —puntos, tiros de 2, de 3 y libres, faltas— para la página de partido de D129, clasificación, puntos a favor y en
+ * contra, medias y racha; casa/fuera se sigue calculando, pero la web ya no lo enseña: en esta liga todos juegan en
+ * Moratalaz, D129). Nunca nombres ni dorsales de jugadores (D73): los datos por jugador de otros
  * equipos son de terceros y sólo van a Supabase (plataforma/scripts/cargar_liga.mjs), para los gestores.
  *
  * Puntuación (Bases de los 47 JDM, deportes de equipo, 2.10.1 Baloncesto): 2 puntos por victoria y 1 por derrota; perder
@@ -190,6 +192,13 @@ function estadisticasEquipo(x) {
   };
 }
 
+/** Id estable de un partido (D129): grupo, jornada y los dos equipos en el orden del calendario oficial. */
+const idPartido = (grupo, jornada, local, visitante) => `${grupo.toLowerCase()}-j${String(jornada).padStart(2, '0')}-${local}-${visitante}`;
+
+/** Totales de un equipo en un partido, de su fila TOTALES de la hoja (sólo datos por equipo, D73). En 2P y 3P la hoja
+ *  sólo registra los acertados; los tiros libres llevan anotados e intentados. */
+const estEquipo = t => ({ pts: t.pts, t2: t.p2a, t3: t.p3a, tl: t.tla, tl_int: t.tli, faltas: t.fc });
+
 function construir(temporada) {
   const ctx = contexto(temporada);
   const cfgLiga = ctx.cfg.liga;
@@ -221,7 +230,8 @@ function construir(temporada) {
     const juegos = mios.map(p => {
       const h = p.hoja, [l, v] = h.equipos;
       const eq = n => g.equipos.get(normEquipo(n));
-      const j = { jornada: p.jornada, fecha: g.fechas[p.jornada] || null, local: eq(h.local), visitante: eq(h.visitante), pl: l.totales.pts, pv: v.totales.pts, nuestro: p.propio };
+      const j = { jornada: p.jornada, fecha: g.fechas[p.jornada] || null, local: eq(h.local), visitante: eq(h.visitante), pl: l.totales.pts, pv: v.totales.pts, nuestro: p.propio,
+        est: { local: estEquipo(l.totales), visitante: estEquipo(v.totales) } };
       if (j.pl === j.pv) errores.push(`${h.fichero}: empate ${j.pl}-${j.pv}; en baloncesto hay prórroga, revisa la hoja.`);
       privado.push({ grupo: g.clave, jornada: p.jornada, fecha: j.fecha, local: j.local.nombre, visitante: j.visitante.nombre, pl: j.pl, pv: j.pv, fichero: h.fichero, equipos: h.equipos.map((e, i) => ({ equipo: (i ? j.visitante : j.local).nombre, jugadores: e.jugadores, totales: e.totales })) });
       return j;
@@ -250,9 +260,13 @@ function construir(temporada) {
       clasificacion: tabla.map((x, i) => ({ pos: i + 1, id: x.id, equipo: x.nombre, nuestro: x.nuestro, pj: x.pj, g: x.g, p: x.p, pf: x.pf, pc: x.pc, dif: x.dif,
         pts: x.pts_pendiente ? null : x.pts, ...(x.np ? { incomparecencias: x.np, pts_fuente: x.pts_fuente || 'pendiente de la oficial' } : {}) })),
       orden_provisional: tabla.some(x => x.pts_pendiente) || undefined,
-      resultados: juegos.map(j => (j.incomp
-        ? { jornada: j.jornada, fecha: j.fecha, local: j.local.nombre, visitante: j.visitante.nombre, incomparecencia: true, no_presentado: (j.no_presentado === j.local.id ? j.local : j.visitante).nombre }
-        : { jornada: j.jornada, fecha: j.fecha, local: j.local.nombre, visitante: j.visitante.nombre, pl: j.pl, pv: j.pv })),
+      // Cada partido con su id (página /liga/<temporada>/partido/<id>, D129) y, si hay hoja, los totales POR EQUIPO.
+      resultados: juegos.map(j => {
+        const base = { id: idPartido(g.clave, j.jornada, j.local.id, j.visitante.id), jornada: j.jornada, fecha: j.fecha, local: j.local.nombre, local_id: j.local.id, visitante: j.visitante.nombre, visitante_id: j.visitante.id };
+        return j.incomp
+          ? { ...base, incomparecencia: true, no_presentado: (j.no_presentado === j.local.id ? j.local : j.visitante).nombre }
+          : { ...base, pl: j.pl, pv: j.pv, ...(j.est ? { est: j.est } : {}) };
+      }),
       descansan,
       equipos: Object.fromEntries(tabla.map(x => [x.id, { nombre: x.nombre, nuestro: x.nuestro, ...estadisticasEquipo(x) }])),
     };
@@ -260,7 +274,7 @@ function construir(temporada) {
   return { publico, privado, errores, avisos, fuentes: partidos.length };
 }
 
-module.exports = { construir, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar };
+module.exports = { construir, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido };
 
 if (require.main === module) {
   const args = process.argv.slice(2);

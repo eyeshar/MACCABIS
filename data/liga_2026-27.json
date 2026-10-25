@@ -1,6 +1,6 @@
 {
  "temporada": "2026-27",
- "generado": "2026-10-23",
+ "generado": "2026-10-25",
  "clasificacion_estado": "Clasificación calculada con las Bases del 47 JDM a partir de las hojas de estadística; pendiente de contrastar con la oficial (las incomparecencias restan puntos y no generan hoja, D29).",
  "puntuacion": {
   "victoria": 2,
@@ -165,84 +165,294 @@
    ],
    "resultados": [
     {
+     "id": "g1-j01-chavalitros-vallekas-basket",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Chavalitros",
+     "local_id": "chavalitros",
      "visitante": "Vallekas Basket",
+     "visitante_id": "vallekas-basket",
      "pl": 56,
-     "pv": 16
+     "pv": 16,
+     "est": {
+      "local": {
+       "pts": 56,
+       "t2": 22,
+       "t3": 2,
+       "tl": 6,
+       "tl_int": 14,
+       "faltas": 7
+      },
+      "visitante": {
+       "pts": 16,
+       "t2": 5,
+       "t3": 2,
+       "tl": 0,
+       "tl_int": 2,
+       "faltas": 15
+      }
+     }
     },
     {
+     "id": "g1-j01-chupitimanguis-nabuco-td",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Chupitimanguis",
+     "local_id": "chupitimanguis",
      "visitante": "Nabuco TD",
+     "visitante_id": "nabuco-td",
      "pl": 38,
-     "pv": 49
+     "pv": 49,
+     "est": {
+      "local": {
+       "pts": 38,
+       "t2": 12,
+       "t3": 2,
+       "tl": 8,
+       "tl_int": 14,
+       "faltas": 13
+      },
+      "visitante": {
+       "pts": 49,
+       "t2": 16,
+       "t3": 3,
+       "tl": 8,
+       "tl_int": 15,
+       "faltas": 14
+      }
+     }
     },
     {
+     "id": "g1-j01-enfermos-del-aro-mda",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Enfermos del Aro",
+     "local_id": "enfermos-del-aro",
      "visitante": "MdA",
+     "visitante_id": "mda",
      "pl": 14,
-     "pv": 62
+     "pv": 62,
+     "est": {
+      "local": {
+       "pts": 14,
+       "t2": 5,
+       "t3": 1,
+       "tl": 1,
+       "tl_int": 6,
+       "faltas": 20
+      },
+      "visitante": {
+       "pts": 62,
+       "t2": 22,
+       "t3": 3,
+       "tl": 9,
+       "tl_int": 23,
+       "faltas": 8
+      }
+     }
     },
     {
+     "id": "g1-j01-litros-de-mahou-los-khinkis-rusos",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Litros de Mahou",
+     "local_id": "litros-de-mahou",
      "visitante": "Los Khinkis Rusos",
+     "visitante_id": "los-khinkis-rusos",
      "pl": 49,
-     "pv": 44
+     "pv": 44,
+     "est": {
+      "local": {
+       "pts": 49,
+       "t2": 12,
+       "t3": 7,
+       "tl": 4,
+       "tl_int": 11,
+       "faltas": 14
+      },
+      "visitante": {
+       "pts": 44,
+       "t2": 15,
+       "t3": 1,
+       "tl": 11,
+       "tl_int": 19,
+       "faltas": 12
+      }
+     }
     },
     {
+     "id": "g1-j01-tropicaleros-wild-boys",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Tropicaleros",
+     "local_id": "tropicaleros",
      "visitante": "Wild Boys",
+     "visitante_id": "wild-boys",
      "pl": 59,
-     "pv": 23
+     "pv": 23,
+     "est": {
+      "local": {
+       "pts": 59,
+       "t2": 23,
+       "t3": 3,
+       "tl": 4,
+       "tl_int": 7,
+       "faltas": 8
+      },
+      "visitante": {
+       "pts": 23,
+       "t2": 10,
+       "t3": 0,
+       "tl": 3,
+       "tl_int": 8,
+       "faltas": 6
+      }
+     }
     },
     {
+     "id": "g1-j02-mda-litros-de-mahou",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "MdA",
+     "local_id": "mda",
      "visitante": "Litros de Mahou",
+     "visitante_id": "litros-de-mahou",
      "pl": 74,
-     "pv": 17
+     "pv": 17,
+     "est": {
+      "local": {
+       "pts": 74,
+       "t2": 24,
+       "t3": 6,
+       "tl": 8,
+       "tl_int": 12,
+       "faltas": 7
+      },
+      "visitante": {
+       "pts": 17,
+       "t2": 4,
+       "t3": 2,
+       "tl": 3,
+       "tl_int": 4,
+       "faltas": 10
+      }
+     }
     },
     {
+     "id": "g1-j02-nabuco-td-enfermos-del-aro",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "Nabuco TD",
+     "local_id": "nabuco-td",
      "visitante": "Enfermos del Aro",
+     "visitante_id": "enfermos-del-aro",
      "pl": 58,
-     "pv": 25
+     "pv": 25,
+     "est": {
+      "local": {
+       "pts": 58,
+       "t2": 18,
+       "t3": 5,
+       "tl": 7,
+       "tl_int": 14,
+       "faltas": 7
+      },
+      "visitante": {
+       "pts": 25,
+       "t2": 7,
+       "t3": 3,
+       "tl": 2,
+       "tl_int": 6,
+       "faltas": 15
+      }
+     }
     },
     {
+     "id": "g1-j02-rif-tropicaleros",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "RIF",
+     "local_id": "rif",
      "visitante": "Tropicaleros",
+     "visitante_id": "tropicaleros",
      "pl": 44,
-     "pv": 55
+     "pv": 55,
+     "est": {
+      "local": {
+       "pts": 44,
+       "t2": 9,
+       "t3": 7,
+       "tl": 5,
+       "tl_int": 10,
+       "faltas": 17
+      },
+      "visitante": {
+       "pts": 55,
+       "t2": 18,
+       "t3": 2,
+       "tl": 13,
+       "tl_int": 16,
+       "faltas": 16
+      }
+     }
     },
     {
+     "id": "g1-j02-vallekas-basket-chupitimanguis",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "Vallekas Basket",
+     "local_id": "vallekas-basket",
      "visitante": "Chupitimanguis",
+     "visitante_id": "chupitimanguis",
      "pl": 29,
-     "pv": 77
+     "pv": 77,
+     "est": {
+      "local": {
+       "pts": 29,
+       "t2": 6,
+       "t3": 4,
+       "tl": 5,
+       "tl_int": 8,
+       "faltas": 21
+      },
+      "visitante": {
+       "pts": 77,
+       "t2": 27,
+       "t3": 3,
+       "tl": 14,
+       "tl_int": 24,
+       "faltas": 11
+      }
+     }
     },
     {
+     "id": "g1-j02-wild-boys-chavalitros",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "Wild Boys",
+     "local_id": "wild-boys",
      "visitante": "Chavalitros",
+     "visitante_id": "chavalitros",
      "pl": 11,
-     "pv": 44
+     "pv": 44,
+     "est": {
+      "local": {
+       "pts": 11,
+       "t2": 4,
+       "t3": 0,
+       "tl": 3,
+       "tl_int": 7,
+       "faltas": 12
+      },
+      "visitante": {
+       "pts": 44,
+       "t2": 15,
+       "t3": 2,
+       "tl": 8,
+       "tl_int": 22,
+       "faltas": 13
+      }
+     }
     }
    ],
    "descansan": {
@@ -782,84 +992,294 @@
    ],
    "resultados": [
     {
+     "id": "g2-j01-castanazo-vanner",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Castañazo",
+     "local_id": "castanazo",
      "visitante": "Vanner",
+     "visitante_id": "vanner",
      "pl": 66,
-     "pv": 42
+     "pv": 42,
+     "est": {
+      "local": {
+       "pts": 66,
+       "t2": 27,
+       "t3": 2,
+       "tl": 6,
+       "tl_int": 10,
+       "faltas": 4
+      },
+      "visitante": {
+       "pts": 42,
+       "t2": 13,
+       "t3": 5,
+       "tl": 1,
+       "tl_int": 3,
+       "faltas": 9
+      }
+     }
     },
     {
+     "id": "g2-j01-craps-trascendedores-c-b",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "Craps",
+     "local_id": "craps",
      "visitante": "Trascendedores C.B.",
+     "visitante_id": "trascendedores-c-b",
      "pl": 40,
-     "pv": 51
+     "pv": 51,
+     "est": {
+      "local": {
+       "pts": 40,
+       "t2": 10,
+       "t3": 3,
+       "tl": 11,
+       "tl_int": 18,
+       "faltas": 14
+      },
+      "visitante": {
+       "pts": 51,
+       "t2": 12,
+       "t3": 7,
+       "tl": 6,
+       "tl_int": 20,
+       "faltas": 18
+      }
+     }
     },
     {
+     "id": "g2-j01-f-t-floppers-suanzes-motor",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "F.T. Floppers",
+     "local_id": "f-t-floppers",
      "visitante": "Suanzes Motor",
+     "visitante_id": "suanzes-motor",
      "pl": 32,
-     "pv": 48
+     "pv": 48,
+     "est": {
+      "local": {
+       "pts": 32,
+       "t2": 12,
+       "t3": 2,
+       "tl": 2,
+       "tl_int": 10,
+       "faltas": 23
+      },
+      "visitante": {
+       "pts": 48,
+       "t2": 15,
+       "t3": 2,
+       "tl": 12,
+       "tl_int": 27,
+       "faltas": 12
+      }
+     }
     },
     {
+     "id": "g2-j01-la-cancha-roja-quinto-tiempo",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "La Cancha Roja",
+     "local_id": "la-cancha-roja",
      "visitante": "Quinto Tiempo",
+     "visitante_id": "quinto-tiempo",
      "pl": 48,
-     "pv": 16
+     "pv": 16,
+     "est": {
+      "local": {
+       "pts": 48,
+       "t2": 11,
+       "t3": 7,
+       "tl": 5,
+       "tl_int": 12,
+       "faltas": 11
+      },
+      "visitante": {
+       "pts": 16,
+       "t2": 6,
+       "t3": 1,
+       "tl": 1,
+       "tl_int": 7,
+       "faltas": 10
+      }
+     }
     },
     {
+     "id": "g2-j01-mdl-mejorada-2012-c-b",
      "jornada": 1,
      "fecha": "2026-10-04",
      "local": "MdL",
+     "local_id": "mdl",
      "visitante": "Mejorada 2012 C.B.",
+     "visitante_id": "mejorada-2012-c-b",
      "pl": 59,
-     "pv": 38
+     "pv": 38,
+     "est": {
+      "local": {
+       "pts": 59,
+       "t2": 17,
+       "t3": 4,
+       "tl": 13,
+       "tl_int": 27,
+       "faltas": 18
+      },
+      "visitante": {
+       "pts": 38,
+       "t2": 10,
+       "t3": 4,
+       "tl": 6,
+       "tl_int": 16,
+       "faltas": 21
+      }
+     }
     },
     {
+     "id": "g2-j02-28500-castanazo",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "28500",
+     "local_id": "28500",
      "visitante": "Castañazo",
+     "visitante_id": "castanazo",
      "pl": 42,
-     "pv": 65
+     "pv": 65,
+     "est": {
+      "local": {
+       "pts": 42,
+       "t2": 16,
+       "t3": 1,
+       "tl": 7,
+       "tl_int": 12,
+       "faltas": 15
+      },
+      "visitante": {
+       "pts": 65,
+       "t2": 14,
+       "t3": 9,
+       "tl": 10,
+       "tl_int": 14,
+       "faltas": 13
+      }
+     }
     },
     {
+     "id": "g2-j02-quinto-tiempo-mdl",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "Quinto Tiempo",
+     "local_id": "quinto-tiempo",
      "visitante": "MdL",
+     "visitante_id": "mdl",
      "pl": 22,
-     "pv": 51
+     "pv": 51,
+     "est": {
+      "local": {
+       "pts": 22,
+       "t2": 6,
+       "t3": 2,
+       "tl": 4,
+       "tl_int": 13,
+       "faltas": 16
+      },
+      "visitante": {
+       "pts": 51,
+       "t2": 20,
+       "t3": 1,
+       "tl": 8,
+       "tl_int": 18,
+       "faltas": 16
+      }
+     }
     },
     {
+     "id": "g2-j02-suanzes-motor-la-cancha-roja",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "Suanzes Motor",
+     "local_id": "suanzes-motor",
      "visitante": "La Cancha Roja",
+     "visitante_id": "la-cancha-roja",
      "pl": 31,
-     "pv": 47
+     "pv": 47,
+     "est": {
+      "local": {
+       "pts": 31,
+       "t2": 11,
+       "t3": 2,
+       "tl": 3,
+       "tl_int": 18,
+       "faltas": 11
+      },
+      "visitante": {
+       "pts": 47,
+       "t2": 13,
+       "t3": 6,
+       "tl": 3,
+       "tl_int": 10,
+       "faltas": 18
+      }
+     }
     },
     {
+     "id": "g2-j02-trascendedores-c-b-f-t-floppers",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "Trascendedores C.B.",
+     "local_id": "trascendedores-c-b",
      "visitante": "F.T. Floppers",
+     "visitante_id": "f-t-floppers",
      "pl": 60,
-     "pv": 42
+     "pv": 42,
+     "est": {
+      "local": {
+       "pts": 60,
+       "t2": 28,
+       "t3": 0,
+       "tl": 4,
+       "tl_int": 14,
+       "faltas": 8
+      },
+      "visitante": {
+       "pts": 42,
+       "t2": 18,
+       "t3": 1,
+       "tl": 3,
+       "tl_int": 7,
+       "faltas": 14
+      }
+     }
     },
     {
+     "id": "g2-j02-vanner-craps",
      "jornada": 2,
      "fecha": "2026-10-18",
      "local": "Vanner",
+     "local_id": "vanner",
      "visitante": "Craps",
+     "visitante_id": "craps",
      "pl": 32,
-     "pv": 56
+     "pv": 56,
+     "est": {
+      "local": {
+       "pts": 32,
+       "t2": 8,
+       "t3": 3,
+       "tl": 7,
+       "tl_int": 17,
+       "faltas": 14
+      },
+      "visitante": {
+       "pts": 56,
+       "t2": 17,
+       "t3": 5,
+       "tl": 7,
+       "tl_int": 16,
+       "faltas": 18
+      }
+     }
     }
    ],
    "descansan": {

@@ -10,7 +10,7 @@ export async function GET() {
     name: "Maccabis",
     short_name: "Maccabis",
     lang: "es",
-    start_url: "/mi-zona",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     background_color: "#0E0D12",

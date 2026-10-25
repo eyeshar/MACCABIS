@@ -51,7 +51,7 @@ console.log('\n== Lunes 19:00: un solo aviso por jugador con todo lo que le falt
 let a = P.planificar(datos(M('2026-10-12', '19:05')));
 const jon = de(a, 'jon');
 ok(jon.length === 1 && jon[0].titulo === 'Te faltan 2 respuestas' && jon[0].cuerpo === 'Entreno del miércoles 14 y partido del domingo 18. Toca para responder.', 'Jon (dos fichas): «Te faltan 2 respuestas» / «Entreno del miércoles 14 y partido del domingo 18. Toca para responder.» (el domingo con dos partidos cuenta una vez)', JSON.stringify(jon));
-ok(jon[0].url === '/mi-zona' && jon[0].eventos.length === 3 && jon[0].clave === 'rec:lunes:2026-10-12:jon', 'abre Mi zona y lleva los 3 eventos; clave única por lunes y jugador');
+ok(jon[0].url === '/' && jon[0].eventos.length === 3 && jon[0].clave === 'rec:lunes:2026-10-12:jon', 'abre su inicio (D117) y lleva los 3 eventos; clave única por lunes y jugador');
 ok(de(a, 'edimil').length === 1 && de(a, 'edimil')[0].titulo === 'Te falta 1 respuesta' && de(a, 'edimil')[0].url === '/mi-zona/evento/e14', 'quien solo entrena: «Te falta 1 respuesta», abre el entreno');
 ok(de(a, 'baja').length === 0, 'a quien está de baja no le llega nada');
 ok(iso(jon[0].programado_para) === '2026-10-12T17:00:00.000Z', 'sale a las 19:00 de Madrid');

@@ -560,12 +560,13 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .mz-hola { order: 1; }
 .mz .rw-banda { order: 2; }
 .mz .rw-faltan { order: 3; }
-#agenda { order: 4; }
+/* Solo dentro de .mz (la Mi zona antigua): el inicio personal (D117) usa los mismos id con su propio orden. */
+.mz #agenda { order: 4; }
 .mz .rw-marcar { order: 5; }
-#domingo { order: 6; }
-#ropa { order: 7; }
-#ultimo { order: 8; }
-#temporada { order: 9; }
+.mz #domingo { order: 6; }
+.mz #ropa { order: 7; }
+.mz #ultimo { order: 8; }
+.mz #temporada { order: 9; }
 .mz-pie { padding: 0 16px; }
 .mz-sec { padding: 16px 16px 4px; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 60px; }
 @media (min-width: 1024px) {

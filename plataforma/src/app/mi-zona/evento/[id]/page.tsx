@@ -6,14 +6,14 @@ import Responder from "@/components/respuestas/Responder";
 import { madrid } from "@/lib/avisos/horario";
 import { cargarMiEvento, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, respuestasWebEncendido } from "@/lib/respuestas/jugador";
 import {
-  ausenciaQueCubre, enlaceMapa, fechaLarga, horario, lineaCambio, nombreCorto, pistaTexto, TEXTO_MOTIVO_TODO, tituloDe,
+  ausenciaQueCubre, enlaceLugar, enlaceMapa, fechaLarga, horario, lineaCambio, nombreCorto, pistaTexto, TEXTO_MOTIVO_TODO, TEXTO_TIPO, tituloDe,
   type MotivoJugador,
 } from "@/lib/respuestas/dominio";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Evento · Maccabis", robots: { index: false, follow: false } };
 
-const TIPO = { entreno: "Entreno", liga: "Partido de liga", amistoso: "Amistoso", torneo: "Torneo", interno: "Entre nosotros" } as const;
+const TIPO = TEXTO_TIPO;
 
 // Evento del jugador (D99, 3.3): se abre al tocar un aviso. Tipo, fecha, horas y encuentro, pista con mapa, linea
 // amarilla si cambio algo, «¿Vas?» y «Quién va» (solo nombres, D46). Apagado: solo la informacion (3.7).
@@ -41,7 +41,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="pagina rw-evento">
-      <p className="rw-volver"><Link href="/mi-zona">← Mi zona</Link></p>
+      <p className="rw-volver"><Link href="/agenda">← Agenda</Link></p>
       <header className="rw-ev-cab" data-tipo={e.tipo}>
         <span className="rw-ev-tipo">{TIPO[e.tipo]}{e.tipo === "liga" && e.jornada ? ` · J${e.jornada}` : ""}{e.equipo !== "ambos" ? ` · ${e.equipo}` : ""}</span>
         <h1>{tituloDe(e)}</h1>
@@ -53,9 +53,10 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
 
       <section className="tarjeta rw-pista" aria-labelledby="t-pista">
         <h2 id="t-pista" className="solo-lectores">Pista</h2>
-        <strong>{pistaTexto(e)}</strong>
-        {e.pista_direccion && <span className="suave">{e.pista_direccion}</span>}
-        {e.pista_direccion && <a className="boton boton-claro rw-mapa" href={enlaceMapa(e.pista_direccion)} target="_blank" rel="noopener noreferrer">Abrir en el mapa</a>}
+        <strong>{e.pista_nombre || !e.lugar_nombre ? pistaTexto(e) : e.lugar_nombre}</strong>
+        {(e.lugar_direccion ?? e.pista_direccion) && <span className="suave">{e.lugar_direccion ?? e.pista_direccion}</span>}
+        {/* D119: «Cómo llegar» abre Google Maps con las coordenadas (o la dirección); nada de mapas incrustados. */}
+        {enlaceLugar(e) && <a className="boton boton-claro rw-mapa" href={enlaceLugar(e)!} target="_blank" rel="noopener noreferrer">Cómo llegar</a>}
         {e.notas && !/^\s*pista\s+\d+\s*\.?\s*$/i.test(e.notas) && <span className="pequeno">{e.notas}</span>}
       </section>
 

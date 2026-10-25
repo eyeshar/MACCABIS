@@ -34,7 +34,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
 
   return (
     <main className="pagina rw-evento rw-domingo">
-      <p className="rw-volver"><Link href="/mi-zona">← Mi zona</Link></p>
+      <p className="rw-volver"><Link href="/agenda">← Agenda</Link></p>
       <header className="rw-ev-cab" data-tipo="liga">
         <span className="rw-ev-tipo">Partidos de liga{partidos[0].jornada ? ` · J${partidos[0].jornada}` : ""}</span>
         <h1>{fechaLarga(fecha).replace(/^./, (c) => c.toUpperCase())}</h1>

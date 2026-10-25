@@ -18,6 +18,8 @@ export type Usuario = {
   esGestor: boolean;
   /** "Jugador · MdA y MdL", "Gestor · Jugador · MdA", "Gestor". */
   papel: string;
+  /** Su ficha (para marcar «Mis números» en /jugador/<su id>). */
+  personId: string | null;
 };
 
 export const usuarioActual = cache(async (): Promise<Usuario | null> => {
@@ -42,5 +44,6 @@ export const usuarioActual = cache(async (): Promise<Usuario | null> => {
     esJugador: Boolean(zona),
     esGestor,
     papel: [esGestor ? "Gestor" : null, jugador].filter(Boolean).join(" · "),
+    personId: zona?.jugador.person_id ?? null,
   };
 });

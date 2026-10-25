@@ -12,9 +12,14 @@
 
 import { quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
 import { horaDeEnvio, lunesDe, madrid, sumarDias } from "./horario.ts";
-import { queEs, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, type EventoTexto, type Texto } from "./textos.ts";
+import { queEs, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
 
-export type EventoPlan = EventoTexto & { estado: "programado" | "cancelado"; sin_recordatorios: boolean; creado_en: string };
+/** `oficial = false`: plan no oficial de un jugador (D118). No entra en ningun recordatorio del club: solo, si el
+ *  organizador lo marco, un aviso un dia antes (planificarPlanes). */
+export type EventoPlan = EventoTexto & {
+  estado: "programado" | "cancelado"; sin_recordatorios: boolean; creado_en: string;
+  oficial?: boolean; recordar_un_dia_antes?: boolean; borrado_en?: string | null;
+};
 export type JugadorPlan = { person_id: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: PersonaResponde["rol"] };
 export type RespuestaPlan = { evento_id: string; person_id: string; respuesta: "va" | "duda" | "no" | "sin_responder" };
 export type AusenciaPlan = { person_id: string; desde: string; hasta: string | null; borrada_en?: string | null };
@@ -39,12 +44,12 @@ export type AvisoPlan = Texto & {
 export const MARGEN_MS = 3 * 3600 * 1000;
 
 /** Invitados a un evento (D105): la definicion unica `quienResponde`, igual que en la base. */
-export function invitados(e: Pick<EventoPlan, "tipo" | "equipo">, jugadores: JugadorPlan[]) {
+export function invitados(e: Pick<EventoPlan, "tipo" | "equipo" | "oficial">, jugadores: JugadorPlan[]) {
   return jugadores.filter((j) => quienResponde(e, j));
 }
 
 export const inicioDe = (e: Pick<EventoPlan, "fecha" | "inicio">) => madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00");
-export const urlEvento = (e: Pick<EventoPlan, "id">) => `/mi-zona/evento/${e.id}`;
+export const urlEvento = (e: Pick<EventoPlan, "id"> & { oficial?: boolean }) => (e.oficial === false ? `/planes/${e.id}` : `/mi-zona/evento/${e.id}`);
 export const urlDomingo = (fecha: string) => `/mi-zona/domingo/${fecha}`;
 
 /** Estado de un jugador en un evento a efectos de recordatorio: su respuesta, y una ausencia que cubre el dia = "no". */
@@ -65,8 +70,10 @@ export function huecos(e: EventoPlan): Hueco[] {
   return [{ tipo: "creado", toca: new Date(e.creado_en) }, { tipo: "24h", toca: new Date(ini.getTime() - 24 * 3600 * 1000) }];
 }
 
-export function planificar(d: DatosPlan): AvisoPlan[] {
-  if (!d.encendidoDesde) return [];
+export function planificar(datos: DatosPlan): AvisoPlan[] {
+  if (!datos.encendidoDesde) return [];
+  // Los planes no oficiales no cuentan para nada del club (D118): fuera de estos recordatorios.
+  const d = { ...datos, eventos: datos.eventos.filter((e) => e.oficial !== false) };
   const ahora = d.ahora.getTime();
   const salida: AvisoPlan[] = [];
   // Un hueco vale si ya toca (con el silencio aplicado), aun no ha pasado el margen, el evento no ha empezado y el
@@ -104,7 +111,7 @@ export function planificar(d: DatosPlan): AvisoPlan[] {
       }
       salida.push({
         clave: `rec:lunes:${lunes}:${p}`, tipo: "recordatorio", person_id: p, eventos: unidades.flatMap((u) => u.ids),
-        ...textoLunes(unidades.map((u) => u.texto)), url: unidades.length === 1 ? unidades[0].url : "/mi-zona", toca: g.toca, programado_para: g.envio,
+        ...textoLunes(unidades.map((u) => u.texto)), url: unidades.length === 1 ? unidades[0].url : "/", toca: g.toca, programado_para: g.envio,
       });
     }
   }
@@ -142,6 +149,28 @@ export function planificar(d: DatosPlan): AvisoPlan[] {
         const t = h.tipo === "dia" ? textoEntrenoHoy(e) : textoOtro(e, h.tipo === "creado" ? "creado" : "24h");
         salida.push({ clave: `rec:${h.tipo}:${e.id}:${j.person_id}`, tipo: "recordatorio", person_id: j.person_id, eventos: [e.id], ...t, url: urlEvento(e), toca: h.toca, programado_para: envio });
       }
+    }
+  }
+  return salida;
+}
+
+/** Planes no oficiales (D118): si el organizador marco «recordar un dia antes», UN aviso 24 h antes a los invitados que
+ *  no han respondido (una ausencia cuenta como respondido), con las horas de silencio. Ningun otro aviso automatico. No
+ *  depende del interruptor de respuestas en la web: los planes solo se responden aqui. */
+export function planificarPlanes(d: Omit<DatosPlan, "encendidoDesde">): AvisoPlan[] {
+  const ahora = d.ahora.getTime();
+  const salida: AvisoPlan[] = [];
+  for (const e of d.eventos) {
+    if (e.oficial !== false || !e.recordar_un_dia_antes || e.estado !== "programado" || e.borrado_en) continue;
+    const ini = inicioDe(e);
+    const toca = new Date(ini.getTime() - 24 * 3600 * 1000);
+    const envio = horaDeEnvio(toca, ini);
+    // Un plan creado con menos de un dia de margen no tiene «un dia antes»: no sale nada.
+    if (new Date(e.creado_en).getTime() > toca.getTime()) continue;
+    if (!(envio.getTime() <= ahora && ahora < envio.getTime() + MARGEN_MS && ahora < ini.getTime())) continue;
+    for (const j of invitados(e, d.jugadores)) {
+      if (estadoPara(j.person_id, e, d.respuestas, d.ausencias) !== "sin_responder") continue;
+      salida.push({ clave: `rec:plan:${e.id}:${j.person_id}`, tipo: "recordatorio", person_id: j.person_id, eventos: [e.id], ...textoPlanManana(e), url: urlEvento(e), toca, programado_para: envio });
     }
   }
   return salida;

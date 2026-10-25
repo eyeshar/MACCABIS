@@ -5,7 +5,7 @@ import { diaYNumero, hoyMadrid } from "@/lib/dias";
 import { fechaHora } from "@/lib/fechas";
 import { avisoDeEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
 import {
-  contarRespuestas, convocadosDe, hhmm, pistaEfectiva, rangoHoras, resumenCopia, cambioParaVer, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,
+  contarRespuestas, convocadosDe, esPlanFila, hhmm, pistaEfectiva, rangoHoras, resumenCopia, cambioParaVer, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,
   type EventoFila, type Pista, type Respuesta,
 } from "@/lib/eventos/dominio";
 import FormularioCopia, { MarcarTodos } from "./FormularioCopia";
@@ -19,22 +19,26 @@ const FILTROS = [
   { id: "amistosos", texto: "Amistosos y torneos" },
   { id: "pendientes", texto: "Pendientes de SportEasy" },
   { id: "pasados", texto: "Pasados" },
+  // D118: los planes no oficiales de los jugadores (no cuentan para nada del club; aqui se ven, se editan o se hacen oficiales).
+  { id: "planes", texto: "Planes de jugadores" },
 ] as const;
 type Filtro = (typeof FILTROS)[number]["id"];
 
 const MAX_PROXIMOS = 30;
 
-export default async function Eventos({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
-  const { f } = await searchParams;
+export default async function Eventos({ searchParams }: { searchParams: Promise<{ f?: string; borrado?: string }> }) {
+  const { f, borrado } = await searchParams;
   const filtro: Filtro = FILTROS.some((x) => x.id === f) ? (f as Filtro) : "proximos";
   const { supabase } = await exigirGestor();
   const hoy = hoyMadrid();
-  const [eventos, pistas, jugadores, { data: filasResp }, { data: importaciones }, { data: encendidoWeb }] = await Promise.all([
-    cargarEventos(supabase), cargarPistas(supabase), cargarJugadores(supabase),
+  const [todos, pistas, jugadores, { data: filasResp }, { data: importaciones }, { data: encendidoWeb }] = await Promise.all([
+    cargarEventos(supabase, { conPlanes: true }), cargarPistas(supabase), cargarJugadores(supabase),
     supabase.from("respuestas").select("evento_id, respuesta, leido_en"),
     supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, aceptadas, bloqueadas").order("en", { ascending: false }).limit(4),
     supabase.rpc("respuestas_web_encendido"),
   ]);
+  // Los planes no oficiales (D118) solo salen en su filtro: el resto de la pantalla es lo del club.
+  const eventos = todos.filter((e) => !esPlanFila(e));
   const resp = new Map<string, { respuesta: Respuesta }[]>();
   let ultimaLectura: string | null = null;
   for (const r of (filasResp ?? []) as { evento_id: string; respuesta: Respuesta; leido_en: string }[]) {
@@ -42,6 +46,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
     if (!ultimaLectura || r.leido_en > ultimaLectura) ultimaLectura = r.leido_en;
   }
 
+  const planes = todos.filter((e) => esPlanFila(e) && e.fecha >= hoy);
   const futuros = eventos.filter((e) => e.fecha >= hoy);
   const sinPista = futuros.filter((e) => e.tipo === "entreno" && e.estado === "programado" && pistaEfectiva(e, pistas).porConfirmar);
   const { concretos, deSerie } = resumenCopia(eventos, hoy);
@@ -54,12 +59,14 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
       case "amistosos": return eventos.filter((e) => ["amistoso", "torneo", "interno"].includes(e.tipo));
       case "pendientes": return pendientesTodos;
       case "pasados": return eventos.filter((e) => e.fecha < hoy).reverse();
+      case "planes": return planes;
       default: return futuros.slice(0, MAX_PROXIMOS);
     }
   })();
   const cuenta: Record<Filtro, number> = {
     proximos: futuros.length, entrenos: futuros.filter((e) => e.tipo === "entreno").length, liga: eventos.filter((e) => e.tipo === "liga").length,
     amistosos: eventos.filter((e) => ["amistoso", "torneo", "interno"].includes(e.tipo)).length, pendientes: pendientesTodos.length, pasados: eventos.filter((e) => e.fecha < hoy).length,
+    planes: planes.length,
   };
   const proximoEntreno = futuros.find((e) => e.tipo === "entreno" && e.estado === "programado" && e.serie);
   const habitual = pistas.find((p) => p.es_de_serie && p.uso === "entreno");
@@ -79,6 +86,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
         </div>
       </div>
 
+      {borrado && <div className="aviso aviso-ok" role="status">Plan borrado. A quien lo organizaba le ha llegado un aviso.</div>}
       {sinPista.length > 0 && primeraSinPista && (
         <div className="ev-aviso" role="status" data-testid="aviso-sin-pista">
           <span>
@@ -97,7 +105,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
           <nav className="ev-filtros" aria-label="Filtrar eventos">
             {FILTROS.map((x) => (
               <Link key={x.id} href={x.id === "proximos" ? "/gestion/eventos" : `/gestion/eventos?f=${x.id}`} aria-current={filtro === x.id ? "true" : undefined}>
-                {x.texto} {(x.id === "pendientes" || x.id === "pasados") && cuenta[x.id] > 0 && <small>{cuenta[x.id]}</small>}
+                {x.texto} {(x.id === "pendientes" || x.id === "pasados" || x.id === "planes") && cuenta[x.id] > 0 && <small>{cuenta[x.id]}</small>}
               </Link>
             ))}
           </nav>
@@ -221,8 +229,9 @@ function Fila({ e, pistas, respuestas, convocados, casilla }: { casilla?: boolea
       </td>
       <td data-label="Evento">
         <span className={`ev-tipo ${equipoClase}`}>{e.tipo === "liga" ? `${e.equipo}${e.jornada ? ` · J${e.jornada}` : ""}` : textoTipo(e.tipo).toUpperCase()}</span>
+        {esPlanFila(e) && <span className="pl-etq-plan" style={{ marginLeft: 6 }}>Plan no oficial</span>}
         {cancelado && <span className="ev-tipo" style={{ marginLeft: 6, background: "var(--error-fondo)", color: "var(--error)" }}>CANCELADO</span>}
-        <span className="ev-titulo"><Link href={`/gestion/eventos/${e.id}`}>{tituloEvento(e)}</Link></span>
+        <span className="ev-titulo"><Link href={esPlanFila(e) ? `/planes/${e.id}` : `/gestion/eventos/${e.id}`}>{tituloEvento(e)}</Link></span>
         {e.notas && <span className="ev-sub">{e.notas}</span>}
         {aviso && <span className="ev-sub ev-sub-info">{aviso.texto}</span>}
       </td>
@@ -241,7 +250,7 @@ function Fila({ e, pistas, respuestas, convocados, casilla }: { casilla?: boolea
         ) : e.tipo === "liga" ? <span className="suave">Convocatoria el martes</span> : <span className="suave">—</span>}
       </td>
       <td data-label="SportEasy">
-        {e.sporteasy_estado === "copiado"
+        {esPlanFila(e) ? <span className="suave">No se copia</span> : e.sporteasy_estado === "copiado"
           ? <span className="ev-copia ev-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10" /></svg>Al día</span>
           : <span className="pastilla etiqueta-aviso" title={cambioParaVer(e.sporteasy_cambio) ?? undefined}>{cancelado ? "Cancelación pendiente" : "Pendiente de copiar"}</span>}
       </td>

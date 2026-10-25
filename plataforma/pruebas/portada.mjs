@@ -94,10 +94,12 @@ try {
   ok(html.includes('Dos equipos.') && html.includes('Una plantilla.'), 'portada: heroe "Dos equipos. Una plantilla."');
   ok(/<meta name="theme-color" content="#0E0D12"/i.test(html), 'theme-color #0E0D12');
   ok(html.includes('rel="manifest" href="/manifest.webmanifest"'), 'la portada enlaza el manifiesto');
-  for (const ruta of ['/mi-zona', '/gestion', '/gestion/liga']) {
+  for (const ruta of ['/agenda', '/gestion', '/gestion/liga']) {
     const x = await fetch(`${APP}${ruta}`, { redirect: 'manual' });
     ok(x.status >= 300 && x.status < 400 && (x.headers.get('location') || '').includes('/entrar'), `${ruta} sin sesion redirige a /entrar`, `${x.status} ${x.headers.get('location')}`);
   }
+  const mz = await fetch(`${APP}/mi-zona`, { redirect: 'manual' });
+  ok(mz.status === 308 && new URL(mz.headers.get('location'), APP).pathname === '/', '/mi-zona redirige a «/» (308): con sesion, el inicio personal (D117)', `${mz.status} ${mz.headers.get('location')}`);
   r = await fetch(`${APP}/entrar`);
   ok(r.status === 200 && (await r.text()).includes('Acceso Maccabis'), '/entrar: 200 con el acceso nuevo');
 
@@ -154,7 +156,7 @@ try {
     const cuerpo = await x.text();
     ok(!(x.headers.get('x-robots-tag') || '').includes('noindex') && /<meta name="robots" content="index, follow"/.test(cuerpo), `${ruta}: indexable (sin X-Robots-Tag noindex, meta robots index)`);
   }
-  for (const ruta of ['/entrar', '/mi-zona', '/gestion', '/gestion/liga', '/entrar/elegir']) {
+  for (const ruta of ['/entrar', '/mi-zona/ausencias', '/agenda', '/planes/nuevo', '/gestion', '/gestion/liga', '/entrar/elegir']) {
     const x = await fetch(`${APP}${ruta}`, { redirect: 'manual' });
     ok((x.headers.get('x-robots-tag') || '').includes('noindex'), `${ruta}: X-Robots-Tag noindex`, String(x.headers.get('x-robots-tag')));
   }
@@ -313,24 +315,22 @@ try {
     await p.getByText('No hemos podido mandar el código').waitFor({ timeout: 5000 }).catch(() => {});
     ok(await p.getByText('No hemos podido mandar el código').isVisible(), 'acceso: correo fuera de la lista blanca, aviso generico (logica D68 intacta)');
 
-    // jugador (dobla): Mi zona
+    // jugador (dobla): su inicio personal («/», D117; Mi zona ya no existe como pagina propia)
     await entrar(p, jugadorEmail);
-    ok(p.url().endsWith('/mi-zona'), 'un jugador entra en /mi-zona', p.url());
-    ok(await p.getByRole('heading', { name: /Hola, Jon/ }).isVisible(), 'Mi zona: "Hola, <nombre>"');
-    const agenda = p.locator('[aria-labelledby="t-agenda"]');
-    // Paso 3 (D99), con «respuestas en la web» apagado: los entrenos salen sin botones y con «Por ahora, responde en SportEasy».
-    ok((await agenda.locator('.mz-fila[data-tipo="entreno"]').count()) >= 1 && (await agenda.textContent()).includes('Por ahora, responde en SportEasy'), 'Tu agenda: entrenos y «Por ahora, responde en SportEasy» (interruptor apagado)');
-    const ultimo = p.locator('[aria-labelledby="t-ultimo"]');
-    ok((await ultimo.locator('.mz-fila[data-tipo="jugado"]').textContent()).includes(`jugaste con ${jonEquipos}`) && (await ultimo.textContent()).includes(`${jonPtsUltima} puntos`), `Mi zona: J${jonUltimaJ} jugada con ${jonEquipos}, ${jonPtsUltima} puntos`, await ultimo.textContent());
-    const domingo = p.locator('[aria-labelledby="t-partidos"]');
-    ok((await domingo.locator('.eq-partido').count()) === 2, 'Mi zona (dobla): los dos partidos del proximo domingo');
+    ok(new URL(p.url()).pathname === '/', 'un jugador entra en su inicio («/»)', p.url());
+    ok(await p.getByRole('heading', { name: /Hola,\s*Jon/ }).isVisible(), 'inicio: "Hola, <nombre>"');
+    const agenda = p.locator('#agenda');
+    // Con «respuestas en la web» apagado: la agenda con sus entrenos; los partidos y entrenos se responden en SportEasy.
+    ok((await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').count()) >= 1 && /SportEasy/.test(await p.getByTestId('regla-recordatorios').innerText()), 'Tu agenda: entrenos; y «se responden en SportEasy» (interruptor apagado)');
+    const domingo = p.getByTestId('proximo-partido');
+    ok((await domingo.locator('.in-partido-uno').count()) >= 1, 'Tu próximo partido (dobla): los partidos de su próximo domingo');
     if (aMdA?.fecha === '2026-10-18') {
       ok((await domingo.textContent()).includes('no se puede doblar'), 'J2: misma hora, "no se puede doblar"', await domingo.textContent());
-      ok((await domingo.locator('.eq-aviso[data-tipo="cambian_ellos"]').count()) === 1, 'Equipacion del domingo: cambian ellos (Litros de Mahou)');
+      ok((await domingo.locator('.eq-aviso[data-tipo="cambian_ellos"]').count()) >= 1, 'Equipacion del domingo: cambian ellos (Litros de Mahou)');
     }
-    ok((await p.locator('[aria-labelledby="t-stats"]').textContent()).includes(`${jon.tot.pts}`), `Tu temporada: ${jon.tot.pts} puntos`);
-    ok(!/nivel|posici[oó]n/i.test(await p.textContent('main, .mz')), 'Mi zona: ni niveles ni posiciones (D39)');
-    ok(await sinDesbordar(), 'Mi zona: sin desbordamiento');
+    ok((await p.getByTestId('tu-temporada').textContent()).includes(`${jon.tot.pts}`), `Tu temporada: ${jon.tot.pts} puntos`);
+    ok(!/nivel|posici[oó]n/i.test(await p.textContent('main')), 'inicio: ni niveles ni posiciones (D39)');
+    ok(await sinDesbordar(), 'inicio: sin desbordamiento');
     await captura(p, `real_mizona_${etiqueta}`);
     ok(errores.length === 0, 'acceso y Mi zona: sin errores de JavaScript', errores.join(' | '));
     await c.close();

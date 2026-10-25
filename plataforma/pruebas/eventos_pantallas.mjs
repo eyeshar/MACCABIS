@@ -95,7 +95,7 @@ try {
   await entrar(pj, jugadorEmail);
   for (const ruta of ['/gestion/eventos', '/gestion/asistencia', '/gestion/eventos/importar']) {
     await pj.goto(`${APP}${ruta}`);
-    ok(new URL(pj.url()).pathname.startsWith('/mi-zona'), `un jugador NO entra en ${ruta}`, pj.url());
+    ok(new URL(pj.url()).pathname === '/' && pj.url().includes('no_gestor=1'), `un jugador NO entra en ${ruta} (vuelve a su inicio)`, pj.url());
   }
   await ctxJ.close();
 
@@ -111,7 +111,7 @@ try {
   const proximo = entrenosFuturos[0];
   const aviso = p.getByTestId('aviso-sin-pista');
   ok(await aviso.isVisible() && (await aviso.textContent()).includes('Valdebernardo está cerrado por obras') && (await aviso.textContent()).includes('Elegir pista del día'), 'aviso de entrenos sin pista con acceso directo («Elegir pista del día N»)', await aviso.textContent().catch(() => ''));
-  ok((await p.locator('.ev-filtros a').allTextContents()).map((t) => t.replace(/\s*\d+$/, '').trim()).join('|') === 'Próximos|Entrenos|Liga|Amistosos y torneos|Pendientes de SportEasy|Pasados', 'filtros: próximos, entrenos, liga, amistosos y torneos, pendientes de SportEasy, pasados');
+  ok((await p.locator('.ev-filtros a').allTextContents()).map((t) => t.replace(/\s*\d+$/, '').trim()).join('|') === 'Próximos|Entrenos|Liga|Amistosos y torneos|Pendientes de SportEasy|Pasados|Planes de jugadores', 'filtros: próximos, entrenos, liga, amistosos y torneos, pendientes de SportEasy, pasados y planes de jugadores (D118)');
   const filas = await p.locator('[data-testid=tabla-eventos] tbody tr').count();
   const futuros = (await sql`select count(*)::int n from public.eventos where fecha >= ${hoy}`)[0].n;
   ok(filas === Math.min(30, futuros), `Próximos: ${filas} filas (los ${Math.min(30, futuros)} primeros de ${futuros})`, String(filas));
@@ -213,7 +213,7 @@ try {
   console.log('\n== Partido de liga: solo notas (encuentro calculado)');
   const j2 = (await sql`select id, fecha, inicio, rival from public.eventos where clave = 'mda-j2'`)[0];
   await p.goto(`${APP}/gestion/eventos/${j2.id}`);
-  ok((await p.locator('input[name=tipo]:disabled').count()) === 5 && (await p.locator('#fecha').isDisabled()) && (await p.locator('#inicio').isDisabled()) && (await p.locator('#pista').isDisabled()), 'tipo, fecha, hora y pista bloqueados');
+  ok((await p.locator('input[name=tipo]:disabled').count()) === 8 && (await p.locator('#fecha').isDisabled()) && (await p.locator('#inicio').isDisabled()) && (await p.locator('#pista').isDisabled()), 'tipo, fecha, hora y pista bloqueados');
   ok(!(await p.locator('#quedada').count()) && (await p.getByTestId('encuentro').textContent()) === '09:55' && !(await p.locator('#notas').isDisabled()), 'encuentro calculado (09:55, no editable) y notas editables');
   await p.locator('#notas').fill('Calentamiento a las 9:50');
   await p.getByRole('button', { name: 'Guardar y preparar mensaje' }).click();

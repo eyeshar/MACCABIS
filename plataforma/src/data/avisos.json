@@ -1,0 +1,19 @@
+{
+  "descripcion": "Avisos de la jornada del inicio personal (D117). Cada aviso: id, texto, desde y hasta (AAAA-MM-DD, ambos incluidos) y para (todos | MdA | MdL). Se ve en «Tu próximo partido» de quien tiene ficha de ese equipo. Se copia a plataforma/src/data/ con npm run datos:sync. Sin nombres ni datos personales.",
+  "avisos": [
+    {
+      "id": "cambio-hora-2026-10-25",
+      "texto": "Esta noche cambia la hora: a las 3:00 vuelven a ser las 2:00. Duermes una hora más; el partido es a la hora de siempre.",
+      "desde": "2026-10-22",
+      "hasta": "2026-10-25",
+      "para": "todos"
+    },
+    {
+      "id": "dorsal-obligatorio-j3",
+      "texto": "Desde la J3 el dorsal es obligatorio: juega con tu camiseta numerada.",
+      "desde": "2026-10-20",
+      "hasta": "2026-11-15",
+      "para": "todos"
+    }
+  ]
+}

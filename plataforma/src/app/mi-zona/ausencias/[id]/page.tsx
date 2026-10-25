@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Editar ausencia · Maccabis", robots
 export default async function EditarAusencia({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await exigirSesion();
-  if (!(await respuestasWebEncendido())) redirect("/mi-zona");
+  if (!(await respuestasWebEncendido())) redirect("/agenda");
   const a = (await cargarMisAusencias()).find((x) => x.id === id);
   if (!a) notFound();
   const hoy = hoyMadrid();

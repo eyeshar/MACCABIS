@@ -31,6 +31,8 @@ export const COPIAS = [
   ['liga_2026-27.json', 'liga.json'],
   ['season_2026-27.json', 'temporada.json'],
   ['entrenos_2026-27.json', 'entrenos.json'],
+  // Avisos de la jornada del inicio personal (D117): texto, desde, hasta y para quien.
+  ['avisos.json', 'avisos.json'],
   ...COPIAS_ESTADISTICAS,
 ];
 const RESUMEN = 'historia_resumen.json';

@@ -1,0 +1,15 @@
+/* ===== Grupos de entreno (D122) ===== */
+.gr { display: flex; flex-direction: column; gap: 14px; padding-bottom: 96px; }
+.gr-repartos { display: flex; gap: 6px; flex-wrap: wrap; }
+.gr-cab { display: flex; flex-direction: column; gap: 10px; }
+.gr-fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.gr-fila .campo { flex: 1 1 200px; }
+.gr-grupos, .gr-pool { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; align-items: start; }
+.gr-grupo { padding: 10px; border-radius: 14px; background: var(--tarjeta); border: 1px solid var(--borde); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.gr-grupo-cab { display: flex; gap: 6px; align-items: center; }
+.gr-grupo-cab input { flex: 1 1 auto; min-width: 0; min-height: var(--toque); font-weight: 700; }
+.gr-explica { margin: 0; }
+.gr-sin { border-style: dashed; }
+.gr-dudas { border-color: #4a4656; }
+.gr-anadir { align-self: stretch; min-height: 64px; }
+.gr-mensaje { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--borde); white-space: pre-wrap; font-family: var(--f-texto); font-size: 0.9rem; overflow-x: auto; }

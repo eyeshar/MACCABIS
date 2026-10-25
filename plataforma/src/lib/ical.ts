@@ -5,31 +5,8 @@ import { GRUPO_EQUIPO } from "@/lib/web";
 // Feed iCal publico (D76): partidos de MdA y MdL y entrenos de la temporada. Solo datos del club: ni nombres de
 // jugadores, ni respuestas, ni correos. RFC 5545: CRLF, lineas plegadas a 75 octetos y texto escapado.
 
-const escapar = (t: string) => t.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
-
-/** Pliega una linea a 75 octetos (UTF-8), sin partir un caracter. */
-export function plegar(linea: string) {
-  const trozos: string[] = [];
-  let actual = "", bytes = 0;
-  for (const c of linea) {
-    const n = Buffer.byteLength(c);
-    if (bytes + n > (trozos.length ? 74 : 75)) { trozos.push(actual); actual = ""; bytes = 0; }
-    actual += c; bytes += n;
-  }
-  trozos.push(actual);
-  return trozos.join("\r\n ");
-}
-
-const fechaHora = (f: string, h: string) => `${f.replace(/-/g, "")}T${h.replace(":", "")}00`;
-const sello = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-
-// Zona horaria de Madrid con las reglas vigentes de la UE (ultimo domingo de marzo y de octubre).
-const VTIMEZONE = [
-  "BEGIN:VTIMEZONE", "TZID:Europe/Madrid", "X-LIC-LOCATION:Europe/Madrid",
-  "BEGIN:DAYLIGHT", "TZOFFSETFROM:+0100", "TZOFFSETTO:+0200", "TZNAME:CEST", "DTSTART:19700329T020000", "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU", "END:DAYLIGHT",
-  "BEGIN:STANDARD", "TZOFFSETFROM:+0200", "TZOFFSETTO:+0100", "TZNAME:CET", "DTSTART:19701025T030000", "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU", "END:STANDARD",
-  "END:VTIMEZONE",
-];
+import { escapar, fechaHora, plegar, sello, VTIMEZONE } from "@/lib/icalBase";
+export { plegar };
 
 function vevento(e: Evento, ahora: string): string[] {
   const l = [`UID:${e.id}-2026-27@maccabis`, `DTSTAMP:${ahora}`];

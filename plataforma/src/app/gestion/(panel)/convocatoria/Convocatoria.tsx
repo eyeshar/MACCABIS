@@ -98,9 +98,13 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
           <h1>{ctx.jornada ? `Jornada ${ctx.jornada}` : "Convocatoria"}</h1>
           <span className="suave" data-testid="cv-fecha">{diaTexto(ctx.fecha)[0].toUpperCase() + diaTexto(ctx.fecha).slice(1)} · {ctx.partidos.length === 1 ? `solo juega el ${ctx.partidos[0].equipo}` : mismaHora ? "los dos a la misma hora" : "MdA y MdL"}</span>
         </div>
-        {fila && (
-          <span className={`pastilla ${fila.estado === "aprobada" ? "pastilla-ok" : "pastilla-pendiente"}`} data-testid="cv-estado">{fila.estado === "aprobada" ? "Aprobada" : "Borrador"}</span>
-        )}
+        <div className="ev-botones">
+          {fila && (
+            <span className={`pastilla ${fila.estado === "aprobada" ? "pastilla-ok" : "pastilla-pendiente"}`} data-testid="cv-estado">{fila.estado === "aprobada" ? "Aprobada" : "Borrador"}</span>
+          )}
+          {/* D121: el tablero, para ver de un vistazo quién va y ajustar a mano. */}
+          <Link className="boton boton-contorno" href={`/gestion/tablero?domingo=${ctx.fecha}`}>Abrir tablero</Link>
+        </div>
       </div>
 
       {ctx.domingos.length > 1 && (

@@ -15,6 +15,11 @@ Desde que se encienda «respuestas en la web» (D99), los jugadores responden en
 - **Sin probar todavía:** el interruptor «Aplicar los ajustes a próximos entrenamientos». No usarlo hasta probarlo con un evento de prueba.
 - Mientras el interruptor esté apagado, la copia sigue como hasta ahora.
 
+## Planes no oficiales y cambios del tablero (D118, D121; 24/10/2026)
+- **Los planes no oficiales de los jugadores (quedadas, pachangas, amistosos entre amigos…) NO se copian a SportEasy:** no existen allí, no entran en la cola «Copia a SportEasy» y se responden siempre en la web (excepción a D64: no se pide lo mismo en dos sitios). Si un gestor pulsa **«Hacer oficial»**, el plan pasa a evento del club y entra en la cola como «Evento nuevo: crearlo en SportEasy» (formulario completo, sin notificar, como arriba).
+- **Tablero (D121):** un gestor puede cambiar respuestas en el tablero también en la fase puente; quedan «puestas por <gestor>». **Una importación posterior de SportEasy no pisa ese cambio:** en Importar → Respuestas sale como **conflicto** («Iván puso «Va» …; SportEasy dice «No va»»). Al guardar se mantiene lo del gestor salvo que se marque «Usar SportEasy» en esa línea; lo que decía SportEasy queda apuntado y no vuelve a salir como conflicto mientras SportEasy diga lo mismo. La tarea programada «Maccabis · respuestas de SportEasy» no marca «Usar SportEasy» y se lo cuenta a Iván en su aviso (`RUTINAS/C_CONVOCATORIA.md`, paso 1).
+- **«Responder en SportEasy»** (inicio personal, fase puente) lleva al calendario de SportEasy: aún no guardamos el id de cada evento en SportEasy (BACKLOG).
+
 ## Cómo funciona por dentro (verificado 02/10/2026)
 
 - **Convocatoria automática por campeonato:** Campeonatos → Ajustes → Convocatorias permite filtrar a los convocados por rol y por un campo personalizado del plantel. Configuración actual de los dos campeonatos: roles Jugador, Jugador-entrenador y Jugador ocasional + "Equipo inscrito contiene MdA" (o "MdL"). Se aplica a los partidos que se creen **después**, no a los que ya existen.

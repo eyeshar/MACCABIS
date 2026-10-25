@@ -9,7 +9,7 @@ import { recordatorioManual } from "@/lib/avisos/servidor";
 // ahora» y el interruptor con sus condiciones. Todo con la sesion del gestor: la base (is_gestor) decide.
 
 export type R = { ok: true; texto?: string } | { ok: false; error: string };
-const refrescar = (id?: string) => { revalidatePath("/gestion"); if (id) revalidatePath(`/gestion/eventos/${id}/respuestas`); revalidatePath("/mi-zona", "layout"); };
+const refrescar = (id?: string) => { revalidatePath("/gestion"); if (id) revalidatePath(`/gestion/eventos/${id}/respuestas`); revalidatePath("/", "layout"); };
 
 export async function responderPor(eventoId: string, personId: string, respuesta: "va" | "duda" | "no", motivo: string | null, detalle: string | null): Promise<R> {
   const { supabase } = await exigirGestor();

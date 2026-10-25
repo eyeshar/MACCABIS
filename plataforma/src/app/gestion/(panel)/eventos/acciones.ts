@@ -10,6 +10,7 @@ import {
   type CamposEditables, type EquipoEvento, type EstadoPista, type EventoFila, type Pista, type TipoEvento,
 } from "@/lib/eventos/dominio";
 import { avisarCambioEvento, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/servidor";
+import { leerEnlaceGoogle } from "@/lib/ubicacion";
 import {
   compararCalendario, crearDiccionario, leerCalendario, leerFecha, leerRespuestas, normalizar,
   type CambioCalendario, type LineaRespuesta, type Senal,
@@ -19,7 +20,8 @@ import {
 // CANCELA (D94). Cada cambio deja el evento "pendiente de copiar" a SportEasy, con la descripcion de lo que cambia.
 
 export type Estado = { error?: string } | null;
-const TIPOS: TipoEvento[] = ["entreno", "liga", "amistoso", "torneo", "interno"];
+const TIPOS: TipoEvento[] = ["entreno", "liga", "amistoso", "torneo", "interno", "quedada", "pachanga", "otro"];
+const num = (v: string) => { const n = v === "" ? NaN : Number(v.replace(",", ".")); return Number.isFinite(n) ? n : null; };
 const EQUIPOS: EquipoEvento[] = ["MdA", "MdL", "ambos"];
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const hora = (v: string) => (/^\d{1,2}:\d{2}$/.test(v) ? v.padStart(5, "0") : null);
@@ -70,15 +72,30 @@ function leerFormulario(f: FormData, base: EventoFila | null): { campos?: Campos
   const jornada = delAyuntamiento ? base!.jornada : Number.isInteger(jornadaN) && jornadaN > 0 ? jornadaN : null;
   const titulo = delAyuntamiento ? base!.titulo : texto(f, "titulo") || null;
   if (tipo === "liga" && !delAyuntamiento && !rival) return { error: "Un partido de liga necesita rival." };
-  if ((tipo === "amistoso" || tipo === "torneo" || tipo === "interno") && !titulo && !rival) return { error: "Ponle un título o un rival." };
-  return { campos: { tipo, equipo, titulo, jornada, rival, es_local, fecha, inicio, fin, quedada, pista_id, numero_pista, notas: texto(f, "notas") || null, estado: base?.estado ?? "programado" } };
+  if (tipo !== "liga" && tipo !== "entreno" && !titulo && !rival) return { error: "Ponle un título o un rival." };
+  // D119: sin pista del catalogo, un sitio libre (buscador de OpenStreetMap o enlace de Google Maps).
+  const libre = !pista_id && !delAyuntamiento;
+  const ubicacion = libre ? {
+    ubicacion_nombre: texto(f, "ubicacion_nombre").slice(0, 120) || null, ubicacion_direccion: texto(f, "ubicacion_direccion").slice(0, 240) || null,
+    ubicacion_lat: num(texto(f, "ubicacion_lat")), ubicacion_lng: num(texto(f, "ubicacion_lng")), ubicacion_enlace: texto(f, "ubicacion_enlace").slice(0, 500) || null,
+  } : delAyuntamiento ? {
+    ubicacion_nombre: base!.ubicacion_nombre ?? null, ubicacion_direccion: base!.ubicacion_direccion ?? null, ubicacion_lat: base!.ubicacion_lat ?? null,
+    ubicacion_lng: base!.ubicacion_lng ?? null, ubicacion_enlace: base!.ubicacion_enlace ?? null,
+  } : { ubicacion_nombre: null, ubicacion_direccion: null, ubicacion_lat: null, ubicacion_lng: null, ubicacion_enlace: null };
+  if (ubicacion.ubicacion_enlace && !/^https:\/\//.test(ubicacion.ubicacion_enlace)) return { error: "El enlace del sitio debe empezar por https://." };
+  return { campos: { tipo, equipo, titulo, jornada, rival, es_local, fecha, inicio, fin, quedada, pista_id, numero_pista, notas: texto(f, "notas") || null, estado: base?.estado ?? "programado", ...ubicacion } };
 }
 
 const aFila = (c: Campos) => ({
   tipo: c.tipo, equipo: c.equipo, titulo: c.titulo, jornada: c.jornada, rival: c.rival, es_local: c.es_local, fecha: c.fecha,
   inicio: c.inicio, fin: c.fin, quedada: c.quedada, pista_id: c.pista_id, numero_pista: c.numero_pista, notas: c.notas, estado: c.estado,
+  ubicacion_nombre: c.ubicacion_nombre ?? null, ubicacion_direccion: c.ubicacion_direccion ?? null, ubicacion_lat: c.ubicacion_lat ?? null,
+  ubicacion_lng: c.ubicacion_lng ?? null, ubicacion_enlace: c.ubicacion_enlace ?? null,
 });
-const editables = (e: EventoFila): Campos => ({ tipo: e.tipo, equipo: e.equipo, titulo: e.titulo, jornada: e.jornada, rival: e.rival, es_local: e.es_local, fecha: e.fecha, inicio: hhmm(e.inicio), fin: hhmm(e.fin), quedada: hhmm(e.quedada), pista_id: e.pista_id, numero_pista: e.numero_pista, notas: e.notas, estado: e.estado });
+const editables = (e: EventoFila): Campos => ({
+  tipo: e.tipo, equipo: e.equipo, titulo: e.titulo, jornada: e.jornada, rival: e.rival, es_local: e.es_local, fecha: e.fecha, inicio: hhmm(e.inicio), fin: hhmm(e.fin), quedada: hhmm(e.quedada), pista_id: e.pista_id, numero_pista: e.numero_pista, notas: e.notas, estado: e.estado,
+  ubicacion_nombre: e.ubicacion_nombre ?? null, ubicacion_direccion: e.ubicacion_direccion ?? null, ubicacion_lat: e.ubicacion_lat ?? null, ubicacion_lng: e.ubicacion_lng ?? null, ubicacion_enlace: e.ubicacion_enlace ?? null,
+});
 
 // ---------------------------------------------------------------- crear
 export async function crearEvento(_prev: Estado, f: FormData): Promise<Estado> {
@@ -188,17 +205,31 @@ export async function marcarCopiado(f: FormData) {
 }
 
 // ---------------------------------------------------------------- pistas
+/** «40.3975, -3.6316» (o un enlace de Google Maps con coordenadas) -> lat y lng. Vacio = sin coordenadas. */
+function coordenadas(f: FormData): { lat: number | null; lng: number | null } | { error: string } {
+  const t = texto(f, "coordenadas");
+  if (!t) return { lat: null, lng: null };
+  const g = leerEnlaceGoogle(t);
+  if (g?.lat != null) return { lat: g.lat, lng: g.lng };
+  const m = /^\s*(-?\d{1,2}(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:[.,]\d+)?)\s*$/.exec(t);
+  const lat = m ? Number(m[1].replace(",", ".")) : NaN, lng = m ? Number(m[2].replace(",", ".")) : NaN;
+  if (!m || Math.abs(lat) > 90 || Math.abs(lng) > 180) return { error: "Las coordenadas van como «40.3975, -3.6316» (latitud, longitud)." };
+  return { lat, lng };
+}
+
 export async function crearPista(_prev: Estado, f: FormData): Promise<Estado> {
   const { supabase } = await exigirGestor();
   const nombre = texto(f, "nombre");
   if (nombre.length < 3) return { error: "Ponle un nombre a la pista." };
+  const c = coordenadas(f);
+  if ("error" in c) return { error: c.error };
   const uso = texto(f, "uso") === "partido" ? "partido" : "entreno";
   const estado = (["habitual", "provisional", "en_obras", "cerrada"] as EstadoPista[]).find((x) => x === texto(f, "estado")) ?? "provisional";
   const n = Number(texto(f, "num_pistas"));
   const slug = normalizar(nombre).replace(/\s+/g, "-").slice(0, 40) || `pista-${Date.now()}`;
   const { error } = await supabase.from("pistas").insert({
     slug, nombre, nombre_corto: texto(f, "nombre_corto") || null, direccion: texto(f, "direccion") || null, uso, estado,
-    num_pistas: Number.isInteger(n) && n > 0 ? n : null,
+    num_pistas: Number.isInteger(n) && n > 0 ? n : null, lat: c.lat, lng: c.lng,
   });
   if (error) return { error: error.code === "23505" ? "Ya hay una pista con ese nombre." : `No se pudo crear: ${error.message}` };
   revalidatePath("/gestion/eventos/pistas"); refrescar();
@@ -219,7 +250,9 @@ export async function cambiarPista(id: string, _prev: Estado, f: FormData): Prom
   const nombre = texto(f, "nombre") || antes.nombre;
   if (nombre.length < 3) return { error: "Ponle un nombre a la pista." };
   const uso = f.get("uso") ? (texto(f, "uso") === "partido" ? "partido" : "entreno") : antes.uso;
-  const cambios = { nombre, uso, estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null };
+  const c = f.has("coordenadas") ? coordenadas(f) : { lat: antes.lat ?? null, lng: antes.lng ?? null };
+  if ("error" in c) return { error: c.error };
+  const cambios = { nombre, uso, estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null, lat: c.lat, lng: c.lng };
   const { error } = await supabase.from("pistas").update(cambios).eq("id", id);
   if (error) return { error: `No se pudo guardar: ${error.message}` };
   if (antes.es_de_serie && antes.estado !== estado) {
@@ -313,8 +346,14 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
 }
 
 // ---------------------------------------------------------------- importar: respuestas y ausencias de SportEasy
-export type LineaVista = { n: number; crudo: string; estado: "valida" | "bloqueada" | "error"; tipo: string; nombre?: string; resumen: string; error?: string };
-export type ResultadoRespuestas = { lineas: LineaVista[]; validas: number; bloqueadas: number; errores: number; nombresPendientes: string[]; guardadas?: { respuestas: number; ausencias: number } };
+/** D121: una importacion NO pisa un cambio de gestor mas reciente (el tablero, «Responder por el»): sale como conflicto
+ *  para que se decida. Si se decide mantener lo del gestor, el valor de SportEasy queda descartado y no vuelve a salir
+ *  como conflicto mientras SportEasy diga lo mismo. */
+export type Conflicto = { clave: string; gestor: string; puestoPor: string | null; en: string | null; sporteasy: string };
+export type LineaVista = { n: number; crudo: string; estado: "valida" | "bloqueada" | "error"; tipo: string; nombre?: string; resumen: string; error?: string; conflicto?: Conflicto };
+export type ResultadoRespuestas = { lineas: LineaVista[]; validas: number; bloqueadas: number; errores: number; conflictos: number; nombresPendientes: string[]; guardadas?: { respuestas: number; ausencias: number; mantenidas: number } };
+
+type Actual = { evento_id: string; person_id: string; respuesta: string; origen: string; puesto_por_nombre: string | null; cambiado_en: string | null; sporteasy_descartado: string | null };
 
 async function leerConLaBase(textoPegado: string) {
   const { supabase, nombre, user } = await exigirGestor();
@@ -323,7 +362,21 @@ async function leerConLaBase(textoPegado: string) {
   ]);
   const personas = jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
   const lineas = leerRespuestas(textoPegado, crearDiccionario((dic ?? []) as { nombre_sporteasy: string; person_id: string }[]), eventos, personas);
-  return { supabase, nombre, user, lineas, jugadores };
+  const ids = [...new Set(lineas.filter((l) => l.tipo === "respuesta" && l.estado === "valida").map((l) => (l as { evento: { id: string } }).evento.id))];
+  const { data: act } = ids.length
+    ? await supabase.from("respuestas").select("evento_id, person_id, respuesta, origen, puesto_por_nombre, cambiado_en, sporteasy_descartado").in("evento_id", ids).eq("origen", "gestor")
+    : { data: [] };
+  const actuales = new Map(((act ?? []) as Actual[]).map((a) => [`${a.evento_id}|${a.person_id}`, a]));
+  return { supabase, nombre, user, lineas, jugadores, actuales };
+}
+
+const TEXTO_R: Record<string, string> = { va: "Va", duda: "Duda", no: "No va", sin_responder: "Sin responder" };
+function conflictoDe(l: LineaRespuesta, actuales: Map<string, Actual>): Conflicto | undefined {
+  if (l.tipo !== "respuesta" || l.estado !== "valida") return undefined;
+  const clave = `${l.evento.id}|${l.person_id}`;
+  const a = actuales.get(clave);
+  if (!a || a.respuesta === l.respuesta || a.sporteasy_descartado === l.respuesta) return undefined;
+  return { clave, gestor: TEXTO_R[a.respuesta] ?? a.respuesta, puestoPor: a.puesto_por_nombre, en: a.cambiado_en, sporteasy: TEXTO_R[l.respuesta] ?? l.respuesta };
 }
 const vista = (l: LineaRespuesta): LineaVista => {
   if (l.estado === "error") return { n: l.n, crudo: l.crudo, estado: "error", tipo: "error", resumen: "", error: l.error };
@@ -331,28 +384,40 @@ const vista = (l: LineaRespuesta): LineaVista => {
   if (l.tipo === "ausencia") return { n: l.n, crudo: l.crudo, estado: "valida", tipo: "ausencia", nombre: l.nombre, resumen: `${l.nombre}: ausente del ${l.desde.slice(8, 10)}/${l.desde.slice(5, 7)} al ${l.hasta.slice(8, 10)}/${l.hasta.slice(5, 7)} (${l.motivo})` };
   return { n: l.n, crudo: l.crudo, estado: "valida", tipo: "respuesta", nombre: l.nombre, resumen: `${l.nombre}: ${l.respuesta === "sin_responder" ? "sin responder" : l.respuesta === "no" ? "no va" : l.respuesta}${l.motivo ? ` (${l.motivo})` : ""} · ${l.evento.clave}` };
 };
-const aResultadoR = (lineas: LineaRespuesta[]): ResultadoRespuestas => ({
-  lineas: lineas.map(vista), validas: lineas.filter((l) => l.estado === "valida").length, bloqueadas: lineas.filter((l) => l.estado === "bloqueada").length,
-  errores: lineas.filter((l) => l.estado === "error").length,
-  nombresPendientes: [...new Set(lineas.filter((l) => l.estado === "bloqueada").map((l) => (l as { nombre: string }).nombre))],
-});
+const aResultadoR = (lineas: LineaRespuesta[], actuales: Map<string, Actual> = new Map()): ResultadoRespuestas => {
+  const vistas = lineas.map((l) => ({ ...vista(l), conflicto: conflictoDe(l, actuales) }));
+  return {
+    lineas: vistas, validas: lineas.filter((l) => l.estado === "valida").length, bloqueadas: lineas.filter((l) => l.estado === "bloqueada").length,
+    errores: lineas.filter((l) => l.estado === "error").length, conflictos: vistas.filter((v) => v.conflicto).length,
+    nombresPendientes: [...new Set(lineas.filter((l) => l.estado === "bloqueada").map((l) => (l as { nombre: string }).nombre))],
+  };
+};
 
 export async function analizarRespuestas(textoPegado: string): Promise<ResultadoRespuestas> {
-  const { lineas } = await leerConLaBase(textoPegado);
-  return aResultadoR(lineas);
+  const { lineas, actuales } = await leerConLaBase(textoPegado);
+  return aResultadoR(lineas, actuales);
 }
 
-/** Guarda las lineas validas (una respuesta por persona y evento) y registra la importacion. Las bloqueadas esperan. */
-export async function guardarRespuestas(textoPegado: string): Promise<ResultadoRespuestas> {
-  const { supabase, nombre, user, lineas } = await leerConLaBase(textoPegado);
+/** Guarda las lineas validas (una respuesta por persona y evento) y registra la importacion. Las bloqueadas esperan.
+ *  Un conflicto con un cambio de gestor (D121) se queda como lo dejo el gestor salvo que se elija «Usar SportEasy». */
+export async function guardarRespuestas(textoPegado: string, usarSportEasy: string[] = []): Promise<ResultadoRespuestas> {
+  const { supabase, nombre, user, lineas, actuales } = await leerConLaBase(textoPegado);
   const ahora = new Date().toISOString();
   const rs = lineas.filter((l): l is Extract<LineaRespuesta, { tipo: "respuesta"; estado: "valida" }> => l.tipo === "respuesta" && l.estado === "valida");
   const as = lineas.filter((l): l is Extract<LineaRespuesta, { tipo: "ausencia"; estado: "valida" }> => l.tipo === "ausencia" && l.estado === "valida");
   // Si el mismo jugador sale dos veces en el mismo evento, vale la ultima linea.
   const ultimas = new Map(rs.map((l) => [`${l.evento.id}|${l.person_id}`, l]));
+  // Conflictos con un cambio de gestor: se mantiene lo del gestor (y se apunta lo que decia SportEasy) salvo que se elija SportEasy.
+  const mantenidas = [...ultimas.entries()].filter(([k, l]) => conflictoDe(l, actuales) && !usarSportEasy.includes(k));
+  for (const [k, l] of mantenidas) {
+    ultimas.delete(k);
+    await supabase.from("respuestas").update({ sporteasy_descartado: l.respuesta, leido_en: ahora }).eq("evento_id", l.evento.id).eq("person_id", l.person_id);
+  }
+  // Igual que lo que ya dijo el gestor: no hay nada que cambiar (y sigue «puesta por» el gestor).
+  for (const [k, l] of [...ultimas.entries()]) if (actuales.get(k)?.respuesta === l.respuesta && !usarSportEasy.includes(k)) ultimas.delete(k);
   if (ultimas.size) {
     const { error } = await supabase.from("respuestas").upsert(
-      [...ultimas.values()].map((l) => ({ evento_id: l.evento.id, person_id: l.person_id, respuesta: l.respuesta, motivo: l.motivo, detalle: l.detalle, fuente: "sporteasy", leido_en: ahora })),
+      [...ultimas.values()].map((l) => ({ evento_id: l.evento.id, person_id: l.person_id, respuesta: l.respuesta, motivo: l.motivo, detalle: l.detalle, fuente: "sporteasy", origen: "sporteasy", puesto_por: null, puesto_por_nombre: null, sporteasy_descartado: null, leido_en: ahora })),
       { onConflict: "evento_id,person_id" });
     if (error) throw new Error(`No se pudieron guardar las respuestas: ${error.message}`);
   }
@@ -370,7 +435,7 @@ export async function guardarRespuestas(textoPegado: string): Promise<ResultadoR
   });
   refrescar(); revalidatePath("/gestion/asistencia");
   const re = await leerConLaBase(textoPegado);
-  return { ...aResultadoR(re.lineas), guardadas: { respuestas: ultimas.size, ausencias: as.length } };
+  return { ...aResultadoR(re.lineas, re.actuales), guardadas: { respuestas: ultimas.size, ausencias: as.length, mantenidas: mantenidas.length } };
 }
 
 /** Asigna a mano, una vez, un nombre de SportEasy a una persona: entra en el diccionario cerrado. */

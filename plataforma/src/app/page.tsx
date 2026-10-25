@@ -13,10 +13,21 @@ import { diaLargo, diaMes, diaMesLargo, hoyMadrid } from "@/lib/dias";
 import { FUNDACION, GRUPO_EQUIPO, NOMBRE_EQUIPO } from "@/lib/web";
 import { origen } from "@/lib/sesion";
 
-// Portada publica (D76, maquetas Main y PortadaMovil): sin login, solo datos publicos (lib/publico.ts).
+// Portada publica (D76, maquetas Main y PortadaMovil): sin login, solo datos publicos (lib/publico.ts). Con sesion, «/»
+// es el inicio personal (D117): lo de cada persona y lo que tiene que hacer.
 import { cargarFuente } from "@/lib/eventos/fuente";
+import { usuarioActual } from "@/lib/usuario";
+import InicioPersonal from "@/components/inicio/InicioPersonal";
+import "@/components/inicio/inicio.css";
+import "@/components/respuestas/respuestas.css";
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Maccabis · Baloncesto en Madrid" };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const usuario = await usuarioActual().catch(() => null);
+  if (!usuario) return { title: "Maccabis · Baloncesto en Madrid" };
+  // El inicio personal exige login: fuera de los buscadores (D85). Al instalarla, el icono abre el inicio.
+  return { title: "Inicio · Maccabis", robots: { index: false, follow: false }, manifest: usuario.esJugador ? "/mi-zona/manifest.webmanifest" : undefined };
+}
 
 const TEMPORADA = "26/27";
 
@@ -60,8 +71,10 @@ function Marcador({ r }: { r: Resultado }) {
   );
 }
 
-export default async function Portada({ searchParams }: { searchParams: Promise<{ hoy?: string }> }) {
-  const { hoy: hoyPrueba } = await searchParams;
+export default async function Portada({ searchParams }: { searchParams: Promise<{ hoy?: string; guardado?: string; no_gestor?: string }> }) {
+  const { hoy: hoyPrueba, guardado, no_gestor } = await searchParams;
+  const usuario = await usuarioActual().catch(() => null);
+  if (usuario) return <InicioPersonal usuario={usuario} aviso={guardado ? "guardado" : no_gestor ? "no_gestor" : null} />;
   // ?hoy=AAAA-MM-DD fija la fecha (solo para pruebas y revisiones; los datos son publicos igualmente).
   const hoy = hoyPrueba && /^\d{4}-\d{2}-\d{2}$/.test(hoyPrueba) ? hoyPrueba : hoyMadrid();
 

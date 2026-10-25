@@ -3,7 +3,7 @@ import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pistaEfectiva, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { horaDeEnvio } from "./horario";
-import { estadoPara, inicioDe, invitados, planificar, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
+import { estadoPara, inicioDe, invitados, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
 import { TEXTO_PRUEBA, textoCambio, textoCancelacion, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
 
 // Envio de avisos al movil (D99.5): Web Push estandar con claves VAPID. Corre SOLO en el servidor con la clave de
@@ -39,11 +39,14 @@ export function sitioAviso(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pis
   return `${pe.pista.nombre_corto ?? pe.pista.nombre}${n ? `, pista ${n}` : ""}`;
 }
 
-const COLUMNAS = "id, tipo, equipo, fecha, inicio, fin, quedada, titulo, rival, es_local, jornada, pista_id, numero_pista, notas, estado, sin_recordatorios, creado_en";
-type EventoBase = Pick<EventoFila, "id" | "tipo" | "equipo" | "fecha" | "inicio" | "fin" | "quedada" | "titulo" | "rival" | "es_local" | "jornada" | "pista_id" | "numero_pista" | "notas" | "estado"> & { sin_recordatorios: boolean; creado_en: string };
+const COLUMNAS = "id, tipo, equipo, fecha, inicio, fin, quedada, titulo, rival, es_local, jornada, pista_id, numero_pista, notas, estado, sin_recordatorios, creado_en, oficial, recordar_un_dia_antes, borrado_en, ubicacion_nombre";
+type EventoBase = Pick<EventoFila, "id" | "tipo" | "equipo" | "fecha" | "inicio" | "fin" | "quedada" | "titulo" | "rival" | "es_local" | "jornada" | "pista_id" | "numero_pista" | "notas" | "estado"> & {
+  sin_recordatorios: boolean; creado_en: string; oficial?: boolean; recordar_un_dia_antes?: boolean; borrado_en?: string | null; ubicacion_nombre?: string | null;
+};
 const aPlan = (e: EventoBase, pistas: Pista[]): EventoPlan => ({
   id: e.id, tipo: e.tipo, equipo: e.equipo, fecha: e.fecha, inicio: e.inicio, fin: e.fin, quedada: e.quedada, titulo: e.titulo,
-  sitio: sitioAviso(e, pistas), estado: e.estado, sin_recordatorios: e.sin_recordatorios, creado_en: e.creado_en,
+  sitio: !e.pista_id && e.ubicacion_nombre ? e.ubicacion_nombre : sitioAviso(e, pistas), estado: e.estado, sin_recordatorios: e.sin_recordatorios, creado_en: e.creado_en,
+  oficial: e.oficial, recordar_un_dia_antes: e.recordar_un_dia_antes, borrado_en: e.borrado_en,
 });
 
 async function leer<T>(p: PromiseLike<{ data: T | null; error: { message: string } | null }>, que: string): Promise<T> {
@@ -144,15 +147,15 @@ export async function ejecutarTarea(ahora = new Date()) {
   const sb = clienteServicio();
   const { encendido, desde } = await estadoInterruptor(sb);
   let encolados = 0;
+  const base = await cargarBase(sb);
+  const eventos = base.eventos.map((e) => aPlan(e, base.pistas));
   if (encendido) {
-    const base = await cargarBase(sb);
-    const plan = planificar({
-      ahora, encendidoDesde: desde, eventos: base.eventos.map((e) => aPlan(e, base.pistas)), jugadores: base.jugadores,
-      respuestas: base.respuestas, ausencias: base.ausencias,
-    });
+    const plan = planificar({ ahora, encendidoDesde: desde, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias });
     encolados = await encolar(sb, plan.map((p) => ({ ...p, person_id: p.person_id })));
     encolados += await encolarAlertasGestores(sb, base, ahora);
   }
+  // Planes no oficiales con «recordar un dia antes» (D118): con el interruptor encendido o apagado.
+  encolados += await encolar(sb, planificarPlanes({ ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias }));
   const envio = await enviarPendientes(sb, ahora);
   return { encendido, encolados, ...envio };
 }
@@ -200,6 +203,20 @@ export async function recordatorioManual(eventoId: string) {
   await encolar(sb, filas);
   await enviarPendientes(sb, ahora);
   return { avisados: filas.length, programado: envio };
+}
+
+/** Plan no oficial (D118): si un gestor cambia, cancela, borra o hace oficial el plan de otro, al organizador le llega un
+ *  push (si tiene los avisos activados; si no, le queda en su inicio, avisos_personales). No depende del interruptor:
+ *  los planes solo existen en la web. Pasa por las horas de silencio. */
+export async function avisarOrganizador(personId: string, eventoId: string, titulo: string, cuerpo: string, url: string) {
+  if (!configuradoEnvio()) return { avisados: 0 };
+  const sb = clienteServicio();
+  const ahora = new Date();
+  const { data: e } = await sb.from("eventos").select("fecha, inicio").eq("id", eventoId).maybeSingle();
+  const envio = e ? horaDeEnvio(ahora, inicioDe(e as { fecha: string; inicio: string | null })) : ahora;
+  await encolar(sb, [{ titulo, cuerpo, clave: `plan:${eventoId}:${ahora.getTime()}:${personId}`, tipo: "cambio", person_id: personId, eventos: [eventoId], url, programado_para: envio }]);
+  await enviarPendientes(sb, ahora);
+  return { avisados: 1 };
 }
 
 /** (d) El aviso de prueba, a los moviles de quien lo pide. Funciona con el interruptor apagado (D99.12). */

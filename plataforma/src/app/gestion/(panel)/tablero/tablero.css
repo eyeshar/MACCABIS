@@ -1,0 +1,105 @@
+/* ===== Tablero de asistencias y convocatoria (D121) =====
+   Verde para Van, gris para Duda, rojo suave para No van; MdA amarillo y MdL naranja. Toque >= 44 px. En el movil la
+   tabla del domingo se desplaza en horizontal dentro de su caja, con la columna del jugador fija a la izquierda. */
+.tb { display: flex; flex-direction: column; gap: 14px; padding-bottom: 96px; }
+.tb .gs-titulo { flex-wrap: wrap; gap: 12px; }
+.tb-selector { display: flex; flex-direction: column; gap: 4px; min-width: 0; max-width: 100%; }
+.tb-selector label { font-weight: 700; font-size: 14px; }
+.tb-selector select { min-height: var(--toque); max-width: 100%; }
+.tb-h2 { font-size: 1.3rem; margin: 0 0 8px; }
+.tb-seccion { min-width: 0; }
+
+.tb-agrupar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tb-agrupar > span { font-weight: 700; font-size: 14px; margin-right: 4px; }
+.tb-chip { display: inline-flex; align-items: center; gap: 6px; min-height: var(--toque); padding: 0 14px; border-radius: 999px; border: 1px solid var(--borde-fuerte); background: var(--tarjeta); color: var(--tinta); font: inherit; font-weight: 600; cursor: pointer; }
+.tb-chip.activo { background: var(--c-amarillo); color: var(--c-sobre-acento); border-color: var(--c-amarillo); }
+.tb-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
+/* --- resumen por equipo --- */
+.tb-resumenes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.tb-resumen { padding: 12px 14px; border-radius: 14px; background: var(--tarjeta); border: 1px solid var(--borde); border-top: 4px solid var(--c-amarillo); display: flex; flex-direction: column; gap: 6px; }
+.tb-resumen[data-equipo="MdL"] { border-top-color: var(--c-naranja); }
+.tb-resumen-cab { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 600; }
+.tb-cifras { margin: 0; }
+.tb-cifras b { font-family: var(--f-titulos); font-size: 1.6rem; }
+.tb-avisos { margin: 0; padding-left: 18px; color: var(--amarillo-tinta); font-size: 0.9rem; }
+.tb-soltar { display: none; font-size: 0.8rem; color: var(--tinta-tenue); }
+.tb-encima { outline: 3px dashed var(--c-amarillo); outline-offset: 2px; }
+@media (hover: hover) and (min-width: 1024px) { .tb-soltar { display: block; } }
+
+/* --- tabla del domingo --- */
+.tb-caja { overflow-x: auto; border: 1px solid var(--borde); border-radius: 12px; background: var(--tarjeta); max-width: 100%; }
+.tb-tabla { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 560px; }
+.tb-tabla th, .tb-tabla td { padding: 6px 8px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--linea-suave); }
+.tb-tabla thead th { font-family: var(--f-cifras); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-suave); white-space: nowrap; }
+.tb-fijo { position: sticky; left: 0; z-index: 2; background: var(--tarjeta); min-width: 170px; max-width: 220px; }
+.tb-tabla tr.tb-sel > * { background: var(--resalte); }
+.tb-tabla tr.tb-sel > .tb-fijo { background: var(--resalte); }
+.tb-bloque th { background: var(--panel-3); font-weight: 700; }
+.tb-bloque .tb-fijo { background: var(--panel-3); }
+.tb-bloque th > * { vertical-align: middle; }
+.tb-bloque th { display: table-cell; }
+.tb-bloque th span { margin-right: 10px; }
+.tb-todos { min-height: var(--toque); padding: 0 10px; border: 0; background: none; color: var(--enlace); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.tb-fijo .tb-casilla { margin-right: 6px; }
+.tb-casilla { display: inline-flex; align-items: center; justify-content: center; min-width: var(--toque); min-height: var(--toque); vertical-align: middle; cursor: pointer; }
+.tb-casilla input { width: 22px; height: 22px; }
+.tb-jugador { display: inline-flex; flex-direction: column; vertical-align: middle; min-width: 0; }
+.tb-jugador small { color: var(--tinta-suave); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tb-marca { padding: 0 6px; border-radius: 999px; background: var(--borde); color: var(--tinta-suave); font-size: 0.72rem; font-weight: 700; }
+.tb-dobla { background: var(--info-fondo); color: var(--info-tinta); }
+.tb-celda { display: inline-flex; align-items: center; justify-content: center; min-height: var(--toque); min-width: 104px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--borde); background: transparent; color: var(--tinta-tenue); font: inherit; font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
+button.tb-celda:not(:disabled) { cursor: pointer; }
+.tb-c-convocar { color: var(--tinta); border-color: var(--borde-fuerte); border-style: dashed; }
+.tb-c-convocar.tb-eq-MdA:hover { border-color: var(--c-amarillo); }
+.tb-c-convocar.tb-eq-MdL:hover { border-color: var(--c-naranja); }
+.tb-c-convocado.tb-eq-MdA { background: var(--c-amarillo); border-color: var(--c-amarillo); color: var(--c-sobre-acento); }
+.tb-c-convocado.tb-eq-MdL { background: var(--c-naranja); border-color: var(--c-naranja); color: #1b0d03; }
+.tb-c-no_va { color: #f3b4ab; border-color: #5a2a24; }
+.tb-c-duda, .tb-c-sin_responder { color: #cfcbd9; }
+.tb-c-sin_ficha, .tb-c-no_juega { color: var(--tinta-tenue); border-style: dotted; }
+.tb-duda { display: inline-flex; padding: 2px 10px; border-radius: 999px; background: #2b2933; color: #d8d4e2; font-weight: 700; font-size: 0.85rem; }
+.tb-ausencia { display: block; color: var(--tinta-suave); }
+
+/* --- evento suelto: tres columnas --- */
+.tb-pestanas { display: none; }
+.tb-columnas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.tb-columna { border-radius: 14px; background: var(--tarjeta); border: 1px solid var(--borde); border-top: 4px solid var(--in-duda, #a8a3b5); padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tb-col-va { border-top-color: #3fb98a; }
+.tb-col-duda { border-top-color: #a8a3b5; }
+.tb-col-no { border-top-color: #f08a7e; }
+.tb-columna-cab { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+.tb-columna h2 { margin: 0; font-size: 1.2rem; }
+.tb-col-va h2 { color: #7fe0b8; }
+.tb-col-no h2 { color: #f3b4ab; }
+.tb-grupo h3 { margin: 6px 0 4px; font-size: 1rem; color: var(--tinta-suave); }
+.tb-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.tb-lista li { display: flex; align-items: center; gap: 4px; padding: 2px 6px 2px 0; border-radius: 10px; background: var(--panel-2); min-width: 0; }
+.tb-lista li.tb-sel { background: var(--resalte); }
+.tb-detalle { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; text-align: right; font-size: 0.8rem; color: var(--tinta-suave); }
+@media (max-width: 768px) {
+  .tb-pestanas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .tb-pestana { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 56px; border-radius: 12px; border: 1px solid var(--borde-fuerte); background: var(--tarjeta); color: var(--tinta); font: inherit; font-weight: 700; font-size: 0.85rem; text-align: center; padding: 4px; }
+  .tb-pestana b { font-family: var(--f-titulos); font-size: 1.5rem; }
+  .tb-pestana[aria-selected="true"].tb-p-va { border-color: #3fb98a; background: var(--ok-fondo); }
+  .tb-pestana[aria-selected="true"].tb-p-duda { border-color: #a8a3b5; background: #2b2933; }
+  .tb-pestana[aria-selected="true"].tb-p-no { border-color: #f08a7e; background: var(--error-fondo); }
+  .tb-columnas { grid-template-columns: 1fr; }
+  .tb-columna { display: none; }
+  .tb-columna.visible { display: flex; }
+}
+
+/* --- barra fija de acciones --- */
+.tb-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 43; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: #1d1a26f2; border-top: 1px solid var(--borde-fuerte); box-shadow: 0 -10px 30px #0008; }
+.tb-barra[hidden] { display: none; }
+.tb-n { font-weight: 600; }
+.tb-n b { font-family: var(--f-titulos); font-size: 1.4rem; }
+.tb-al-MdA, .tb-al-MdA:hover { background: var(--c-amarillo); border-color: var(--c-amarillo); color: var(--c-sobre-acento); }
+.tb-al-MdL, .tb-al-MdL:hover { background: var(--c-naranja); border-color: var(--c-naranja); color: #1b0d03; }
+.tb-va, .tb-va:hover { background: #3fb98a; border-color: #3fb98a; color: #0b1f17; }
+.tb-motivo { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; }
+.tb-nota { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--tinta-suave); }
+.tb-nota input { min-height: var(--toque); width: 150px; }
+.tb-mensaje { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 0; }
+@media (max-width: 768px) { .tb-barra { bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom)); padding-bottom: 10px; } }
+.tb-registro { max-width: 760px; }

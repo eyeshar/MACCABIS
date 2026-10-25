@@ -10,7 +10,7 @@ import { avisoDePrueba, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/ser
 
 export type Resultado = { ok: true; aviso?: string } | { ok: false; error: string };
 
-const refrescar = () => { revalidatePath("/mi-zona", "layout"); };
+const refrescar = () => { revalidatePath("/", "layout"); };
 
 /** Si el cambio llega despues del martes a las 10:00, la base deja una alerta: se avisa a los gestores en el momento
  *  (con las horas de silencio). Si falla el envio, la tarea de cada 15 minutos lo recoge. */

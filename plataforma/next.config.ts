@@ -25,13 +25,17 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
   turbopack: { root: path.join(__dirname) },
   // Una sola pagina de cuenta para jugadores y gestores (D90): la antigua de gestion lleva a la nueva.
+  // D117: /mi-zona es ahora el inicio personal («/» con sesion); sus paginas (evento, domingo, ausencias, ropa) siguen.
   async redirects() {
-    return [{ source: "/gestion/cuenta", destination: "/cuenta", permanent: true }];
+    return [
+      { source: "/gestion/cuenta", destination: "/cuenta", permanent: true },
+      { source: "/mi-zona", destination: "/", permanent: true },
+    ];
   },
   async headers() {
     const NOINDEX = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
     const vistaPrevia = Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";
-    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api"];
+    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal"];
     return [
       ...(vistaPrevia
         ? [{ source: "/:path*", headers: NOINDEX }]

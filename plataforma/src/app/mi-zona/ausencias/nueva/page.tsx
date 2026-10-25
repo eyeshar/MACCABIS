@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Nueva ausencia · Maccabis", robots:
 
 export default async function NuevaAusencia() {
   await exigirSesion();
-  if (!(await respuestasWebEncendido())) redirect("/mi-zona");
+  if (!(await respuestasWebEncendido())) redirect("/agenda");
   const hoy = hoyMadrid();
   const dias = [...new Set((await cargarMisEventos(hoy)).filter((e) => e.estado === "programado").map((e) => e.fecha))];
   return (

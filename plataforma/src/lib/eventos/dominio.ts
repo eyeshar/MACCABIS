@@ -2,8 +2,9 @@
 // web y las pruebas (`node` puede cargar este fichero tal cual; solo importa la definicion unica de quien responde). Fechas como "AAAA-MM-DD" y horas como "HH:MM".
 
 import { quienResponde } from "../respuestas/dominio.ts";
+import { enlaceGoogle } from "../ubicacion.ts";
 
-export type TipoEvento = "entreno" | "liga" | "amistoso" | "torneo" | "interno";
+export type TipoEvento = "entreno" | "liga" | "amistoso" | "torneo" | "interno" | "quedada" | "pachanga" | "otro";
 export type EquipoEvento = "MdA" | "MdL" | "ambos";
 export type EstadoPista = "habitual" | "provisional" | "en_obras" | "cerrada";
 export type EstadoCopia = "pendiente" | "copiado";
@@ -13,7 +14,11 @@ export type Motivo = "lesion" | "trabajo" | "viaje" | "familia" | "otro";
 export type Pista = {
   id: string; slug: string; nombre: string; nombre_corto: string | null; direccion: string | null;
   uso: "entreno" | "partido"; estado: EstadoPista; es_de_serie: boolean; num_pistas: number | null; nota: string | null;
+  /** D119: coordenadas («Cómo llegar»). */
+  lat?: number | null; lng?: number | null;
 };
+/** Ubicacion libre de un evento (D119): cuando no usa una pista del catalogo. */
+export type UbicacionLibre = { ubicacion_nombre?: string | null; ubicacion_direccion?: string | null; ubicacion_lat?: number | null; ubicacion_lng?: number | null; ubicacion_enlace?: string | null };
 
 export type EventoFila = {
   id: string; clave: string; temporada: string; tipo: TipoEvento; equipo: EquipoEvento; titulo: string | null;
@@ -23,7 +28,9 @@ export type EventoFila = {
   sporteasy_estado: EstadoCopia; sporteasy_cambio: string | null; sporteasy_copiado_en: string | null;
   /** Paso 3 (D99) */
   sin_recordatorios?: boolean; creado_en?: string; cambio_visible?: { campos: string[]; antes: string } | null; cambio_visible_en?: string | null;
-};
+  /** D118: plan no oficial (oficial = false) y su organizador; D119: ubicacion libre. */
+  oficial?: boolean; creado_por?: string | null; plazas?: number | null; recordar_un_dia_antes?: boolean; rival_texto?: string | null; borrado_en?: string | null;
+} & UbicacionLibre;
 
 export const TIPOS: { id: TipoEvento; texto: string; corto: string }[] = [
   { id: "entreno", texto: "Entreno", corto: "ENTRENO" },
@@ -31,7 +38,12 @@ export const TIPOS: { id: TipoEvento; texto: string; corto: string }[] = [
   { id: "amistoso", texto: "Amistoso", corto: "AMISTOSO" },
   { id: "torneo", texto: "Torneo", corto: "TORNEO" },
   { id: "interno", texto: "Entre nosotros", corto: "INTERNO" },
+  { id: "quedada", texto: "Quedada", corto: "QUEDADA" },
+  { id: "pachanga", texto: "Pachanga", corto: "PACHANGA" },
+  { id: "otro", texto: "Otro plan", corto: "OTRO" },
 ];
+/** Un plan no oficial de un jugador (D118): no cuenta para nada del club. */
+export const esPlanFila = (e: Pick<EventoFila, "oficial">) => e.oficial === false;
 export const textoTipo = (t: TipoEvento) => TIPOS.find((x) => x.id === t)?.texto ?? t;
 
 export const TEXTO_ESTADO_PISTA: Record<EstadoPista, string> = { habitual: "Habitual", provisional: "Provisional", en_obras: "En obras", cerrada: "Cerrada" };
@@ -74,13 +86,15 @@ export type PistaEfectiva = { pista: Pista | null; texto: string; porConfirmar: 
 
 /** La pista propia del evento; si no tiene y es un entreno, la de la serie SOLO si esta habitual (en obras: "por
  *  confirmar" y el motivo dice cual). Un partido sin pista tambien sale "por confirmar". */
-export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista">, pistas: Pista[]): PistaEfectiva {
+export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista"> & UbicacionLibre, pistas: Pista[]): PistaEfectiva {
   const propia = e.pista_id ? pistas.find((p) => p.id === e.pista_id) ?? null : null;
   const corto = (p: Pista) => p.nombre_corto ?? p.nombre;
   if (propia) {
     const n = e.numero_pista ? ` · Pista ${e.numero_pista}` : "";
     return { pista: propia, texto: `${corto(propia)}${n}`, porConfirmar: false, motivo: null };
   }
+  // Ubicacion libre (D119): un sitio fuera del catalogo de pistas.
+  if (e.ubicacion_nombre) return { pista: null, texto: e.ubicacion_nombre, porConfirmar: false, motivo: null };
   if (e.tipo === "entreno") {
     const serie = pistas.find((p) => p.es_de_serie && p.uso === "entreno");
     if (serie?.estado === "habitual") return { pista: serie, texto: corto(serie), porConfirmar: false, motivo: null };
@@ -120,7 +134,7 @@ export function deLaSerieDesde<T extends Pick<EventoFila, "serie" | "fecha" | "e
 }
 
 // ---------------------------------------------------------------- cambios y copia a SportEasy
-export type CamposEditables = Pick<EventoFila, "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "fecha" | "inicio" | "fin" | "quedada" | "pista_id" | "numero_pista" | "notas" | "estado" | "jornada">;
+export type CamposEditables = Pick<EventoFila, "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "fecha" | "inicio" | "fin" | "quedada" | "pista_id" | "numero_pista" | "notas" | "estado" | "jornada"> & UbicacionLibre;
 
 /** Cambios entre dos versiones de un evento, en lenguaje llano ("pista: Pista por confirmar → Caja Mágica"). */
 export function describirCambios(antes: CamposEditables, despues: CamposEditables, pistas: Pista[]): string[] {
@@ -132,6 +146,7 @@ export function describirCambios(antes: CamposEditables, despues: CamposEditable
   if (hhmm(antes.quedada) !== hhmm(despues.quedada)) c.push(`quedada: ${hhmm(antes.quedada) ?? "sin quedada"} → ${hhmm(despues.quedada) ?? "sin quedada"}`);
   const pa = pistaEfectiva(antes, pistas), pd = pistaEfectiva(despues, pistas);
   if (pa.texto !== pd.texto) c.push(`pista: ${pa.texto} → ${pd.texto}`);
+  else if ([antes.ubicacion_direccion, antes.ubicacion_lat, antes.ubicacion_lng, antes.ubicacion_enlace].join("|") !== [despues.ubicacion_direccion, despues.ubicacion_lat, despues.ubicacion_lng, despues.ubicacion_enlace].join("|")) c.push(`sitio: ${pd.texto} (dirección o mapa cambiados)`);
   if ((antes.notas ?? "") !== (despues.notas ?? "")) c.push(despues.notas ? `notas: «${despues.notas}»` : "notas quitadas");
   if (antes.tipo !== despues.tipo) c.push(`tipo: ${textoTipo(antes.tipo)} → ${textoTipo(despues.tipo)}`);
   if (antes.equipo !== despues.equipo) c.push(`equipo: ${antes.equipo} → ${despues.equipo}`);
@@ -151,6 +166,16 @@ export const juntarCambios = (previo: string | null, nuevos: string[]) => {
   return cambioParaGuardar([...new Set(lista.map((x) => cambioParaGuardar(x)!))].join("; ") || null);
 };
 
+/** Enlace «Cómo llegar» de un evento (D119): la pista efectiva si tiene coordenadas o direccion; si no, la ubicacion
+ *  libre. null si no hay con que hacerlo (pista por confirmar, o solo un nombre sin mapa). */
+export function mapaDe(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista"> & UbicacionLibre, pistas: Pista[]) {
+  const pe = pistaEfectiva(e, pistas);
+  if (pe.pista) return pe.pista.lat != null || pe.pista.direccion ? enlaceGoogle({ nombre: pe.pista.nombre, direccion: pe.pista.direccion, lat: pe.pista.lat ?? null, lng: pe.pista.lng ?? null, enlace: null }) : null;
+  if (!e.ubicacion_nombre && !e.ubicacion_enlace) return null;
+  if (e.ubicacion_lat == null && !e.ubicacion_direccion && !e.ubicacion_enlace) return null;
+  return enlaceGoogle({ nombre: e.ubicacion_nombre ?? "", direccion: e.ubicacion_direccion ?? null, lat: e.ubicacion_lat ?? null, lng: e.ubicacion_lng ?? null, enlace: e.ubicacion_enlace ?? null });
+}
+
 // ---------------------------------------------------------------- mensaje de WhatsApp al guardar
 export type AccionMensaje = "nuevo" | "cambio" | "cancelado";
 
@@ -164,7 +189,8 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
   const notaPista = !e.numero_pista ? e.notas?.match(/^\s*pista\s+(\d+)\s*\.?\s*$/i) : null;
   const numero = e.numero_pista ?? (notaPista ? Number(notaPista[1]) : null);
   const notas = notaPista ? null : e.notas;
-  const sitio = pe.porConfirmar || !pe.pista ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}`
+  const sitio = !pe.porConfirmar && !pe.pista ? `en ${pe.texto}${e.ubicacion_direccion ? ` — ${e.ubicacion_direccion.replace(/\.$/, "")}` : ""}`
+    : pe.porConfirmar || !pe.pista ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}`
     : `en ${pe.pista.nombre_corto ?? pe.pista.nombre}${numero ? `, pista ${numero}` : ""}${pe.pista.direccion ? ` — ${pe.pista.direccion.replace(/\.$/, "")}` : ""}`;
   const que = e.tipo === "entreno" ? `entreno del ${dia}`
     : e.tipo === "liga" ? `partido de liga${e.jornada ? ` (J${e.jornada})` : ""} ${tituloEvento(e)}, ${dia}`
@@ -176,6 +202,9 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
   const cab = accion === "cambio" && opciones.cambios?.length ? `Cambio en el ${que}` : `${que[0].toUpperCase()}${que.slice(1)}`;
   const lineas = [`${cab}: ${detalle.replace(/\.$/, "")}.`];
   if (accion === "cambio" && opciones.cambios?.length) lineas.push(`Qué cambia: ${opciones.cambios.join("; ")}.`);
+  // D119: el enlace de Google Maps del sitio (pista con coordenadas o direccion, o la ubicacion libre).
+  const mapa = mapaDe(e, pistas);
+  if (mapa) lineas.push(`Cómo llegar: ${mapa}`);
   if (notas) lineas.push(notas.replace(/\.$/, "") + ".");
   if (opciones.lineaEquipacion) lineas.push(opciones.lineaEquipacion);
   // Con «respuestas en la web» encendido (D99) se termina con el enlace a la web; si no, SportEasy (fase puente).
@@ -187,7 +216,7 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
 export type JugadorBasico = { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" };
 
 /** Personas a las que se les pide respuesta (D105): la definicion unica `quienResponde`. */
-export function convocadosDe(e: Pick<EventoFila, "tipo" | "equipo">, jugadores: JugadorBasico[]) {
+export function convocadosDe(e: Pick<EventoFila, "tipo" | "equipo" | "oficial">, jugadores: JugadorBasico[]) {
   return jugadores.filter((j) => quienResponde(e, j));
 }
 
@@ -237,7 +266,8 @@ export function recordatorio(e: EventoFila, filas: FilaRespuesta[], pistas: Pist
 
 // ---------------------------------------------------------------- resumen de la copia a SportEasy
 export function resumenCopia(eventos: EventoFila[], hoy: string) {
-  const pendientes = eventos.filter((e) => e.sporteasy_estado === "pendiente" && (e.fecha >= hoy || e.estado === "cancelado"));
+  // Los planes no oficiales no existen en SportEasy (D118): nunca entran en la cola de copia.
+  const pendientes = eventos.filter((e) => !esPlanFila(e) && e.sporteasy_estado === "pendiente" && (e.fecha >= hoy || e.estado === "cancelado"));
   const deSerie = pendientes.filter((e) => e.serie && e.origen === "manual" && (e.sporteasy_cambio ?? "").startsWith("Carga inicial"));
   const concretos = pendientes.filter((e) => !deSerie.includes(e));
   return { pendientes, concretos, deSerie };

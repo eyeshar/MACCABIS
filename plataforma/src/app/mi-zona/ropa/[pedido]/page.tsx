@@ -12,7 +12,7 @@ export default async function ModificarPedido({ params }: { params: Promise<{ pe
   const { pedido: pedidoId } = await params;
   const zona = await cargarMiZona();
   if (!zona) return <SinZona />;
-  const volver = "/mi-zona";
+  const volver = "/";
   // Solo se encuentra entre SUS pedidos: la base de datos no le devuelve los de otros.
   const pedido = zona.pedidos.find((x) => x.id === pedidoId);
 

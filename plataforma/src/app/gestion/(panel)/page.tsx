@@ -12,8 +12,9 @@ import {
   chipEquipacion, entrenoHabitual, estadoClasificacion, eventosEntrenos, proximosPartidos, ultimosResultados, type Evento,
 } from "@/lib/publico";
 import { diaMes, diaSemanaCorto, hoyMadrid, textoSemana } from "@/lib/dias";
-import { campanaAbiertaAhora, fechaCorta } from "@/lib/fechas";
+import { campanaAbiertaAhora } from "@/lib/fechas";
 import { NOMBRE_EQUIPO } from "@/lib/web";
+import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
 
 export const metadata = { title: "Gestión · Maccabis" };
 
@@ -93,14 +94,9 @@ export default async function InicioGestion() {
 
   const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
   const mensajeEntrar = `Hola, ${faltan.join(", ")}: aún no habéis entrado en la web de Maccabis. Entrad una vez con vuestro correo (os llega un código) para tenerlo listo: ${web}/entrar. Si podéis, instaladla en el móvil y activad los avisos: ${web}/avisos`;
-  const pendientes: string[] = [];
-  if (entreno?.pistaPorConfirmar) pendientes.push(`Fijar la pista del entreno del ${diaSemanaCorto(entreno.fecha)} ${diaMes(entreno.fecha)} (${entreno.nota ?? "pista por confirmar"}).`);
-  if (jornada) pendientes.push(`Convocatoria de la J${jornada}: reparto MdA / MdL y aviso de equipación (rutina C, lunes y martes).`);
-  if (sinActa.length) pendientes.push(`J${sinActa[0].jornada ?? "?"} publicada sin acta: completarla cuando la FBM suba las actas (rutina A).`);
-  if (/pendiente de contrastar/i.test(estadoClasificacion())) pendientes.push("Contrastar la clasificación calculada con la oficial (rutina B, jueves).");
-  if (sinCorreo > 0) pendientes.push(`${sinCorreo} ${sinCorreo === 1 ? "jugador sin correo: no puede" : "jugadores sin correo: no pueden"} entrar.`);
+  // «Pendiente esta semana»: la misma lista (con enlaces) que la banda «Gestión esta semana» del inicio (D117).
+  const pendientes = await cargarPendientesSemana(supabase);
   const ropaAbierta = campana ? campanaAbiertaAhora(campana) : false;
-  if (campana && ropaAbierta) pendientes.push(`Pedido de ropa abierto${campana.fecha_limite ? ` hasta el ${fechaCorta(campana.fecha_limite)}` : ""}: ${pedidos ?? 0} pedidos.`);
 
   return (
     <>
@@ -210,7 +206,7 @@ export default async function InicioGestion() {
 
           <section className="gs-bloque" aria-labelledby="t-pendiente">
             <h2 id="t-pendiente">Pendiente esta semana</h2>
-            {pendientes.length ? <ul className="gs-pendientes">{pendientes.map((p) => <li key={p}>{p}</li>)}</ul> : <p className="suave" style={{ margin: 0 }}>Nada pendiente.</p>}
+            {pendientes.length ? <ul className="gs-pendientes">{pendientes.map((p) => <li key={p.texto}><Link href={p.href}>{p.texto}</Link></li>)}</ul> : <p className="suave" style={{ margin: 0 }}>Nada pendiente.</p>}
           </section>
 
           <section className="gs-bloque" aria-labelledby="t-plantilla">

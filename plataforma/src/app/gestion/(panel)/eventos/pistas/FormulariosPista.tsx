@@ -45,6 +45,12 @@ export function FilaPista({ pista }: { pista: Pista }) {
           <label htmlFor={`nota-${pista.id}`}>Nota</label>
           <input id={`nota-${pista.id}`} name="nota" type="text" defaultValue={pista.nota ?? ""} />
         </div>
+        {/* D119: coordenadas para «Cómo llegar» (de OpenStreetMap o de un enlace de Google Maps). */}
+        <div className="campo" style={{ margin: 0 }}>
+          <label htmlFor={`coords-${pista.id}`}>Coordenadas (latitud, longitud)</label>
+          <input id={`coords-${pista.id}`} name="coordenadas" type="text" inputMode="decimal" defaultValue={pista.lat != null ? `${pista.lat}, ${pista.lng}` : ""} placeholder="40.3975, -3.6316" />
+          {pista.lat != null && <div className="ayuda"><a href={`https://www.google.com/maps/search/?api=1&query=${pista.lat},${pista.lng}`} target="_blank" rel="noopener noreferrer">Ver en Google Maps</a></div>}
+        </div>
         <div className="botones" style={{ margin: 0 }}>
           <button className="boton boton-amarillo" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar"}</button>
           {pista.es_de_serie && enObras && <button className="boton boton-claro" type="submit" name="reabrir" value="1" disabled={guardando}>Marcar como reabierta</button>}
@@ -74,6 +80,7 @@ export function PistaNueva({ volver }: { volver: string }) {
         <div className="campo" style={{ margin: 0 }}><label htmlFor="np-uso">Uso</label><select id="np-uso" name="uso" defaultValue="entreno"><option value="entreno">Entreno</option><option value="partido">Partido</option></select></div>
         <div className="campo" style={{ margin: 0 }}><label htmlFor="np-estado">Estado</label><select id="np-estado" name="estado" defaultValue="provisional">{ESTADOS.map((e) => <option key={e} value={e}>{TEXTO_ESTADO_PISTA[e]}</option>)}</select></div>
         <div className="campo" style={{ margin: 0 }}><label htmlFor="np-num">Número de pistas</label><input id="np-num" name="num_pistas" type="number" min={1} /></div>
+        <div className="campo" style={{ margin: 0 }}><label htmlFor="np-coords">Coordenadas (latitud, longitud)</label><input id="np-coords" name="coordenadas" type="text" inputMode="decimal" placeholder="40.3975, -3.6316" /></div>
       </div>
       <div className="botones" style={{ margin: 0 }}><button className="boton boton-amarillo" type="submit" disabled={guardando}>{guardando ? "Creando…" : "Añadir pista"}</button></div>
     </form>

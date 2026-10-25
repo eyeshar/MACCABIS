@@ -18,7 +18,7 @@ export default async function Elegir() {
             <p>Tienes zona de jugador y permisos de gestión.</p>
           </div>
           <nav className="acc-elegir" aria-label="Elegir zona">
-            <Link href="/mi-zona"><b>Mi zona de jugador</b><span>Tu agenda, tu temporada y el pedido de ropa</span></Link>
+            <Link href="/"><b>Tu inicio</b><span>Lo tuyo y lo que tienes que hacer: respuestas, agenda y temporada</span></Link>
             <Link href="/gestion"><b>Gestión del club</b><span>Panel de la semana, jugadores, liga y scouting</span></Link>
           </nav>
         </main>

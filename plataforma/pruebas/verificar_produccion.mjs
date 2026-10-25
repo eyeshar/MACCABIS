@@ -35,6 +35,7 @@ const email = `prueba-prod-${sufijo}@maccabis.invalid`;
 const clave = crypto.randomBytes(18).toString('base64url');
 let uid = null;
 let nav;
+let calPersona = null;
 try {
   const [{ n: gestoresAntes }] = await sql`select count(*)::int n from public.gestores`;
   const [{ n: usuariosAntes }] = await sql`select count(*)::int n from auth.users`;
@@ -72,7 +73,12 @@ try {
     const cuerpo = await resp.text();
     ok(resp.status === 200 && cuerpo.includes('class="nv-cab"') && cuerpo.includes('href="/entrar"') && cuerpo.includes('Acceso jugadores y gestores'), `${r}: 200 con la cabecera unica y el acceso (sin sesion)`, `HTTP ${resp.status}`);
   }
-  for (const r of ['/mi-zona', '/cuenta']) {
+  // «/» sin sesion, la portada publica de siempre (D117 no la cambia).
+  const portada = await (await fetch(BASE + '/')).text();
+  ok(portada.includes('Dos equipos.') && portada.includes('Una plantilla.') && portada.includes('Próxima jornada') && !portada.includes('Te faltan') && !portada.includes('Hola,'), '«/» sin sesion: la portada publica de siempre (sin nada del inicio personal)');
+  const mz = await fetch(BASE + '/mi-zona', { redirect: 'manual' });
+  ok(mz.status === 308 && new globalThis.URL(mz.headers.get('location') || '', BASE).pathname === '/', '/mi-zona redirige a «/» (308, D117)', `HTTP ${mz.status} ${mz.headers.get('location')}`);
+  for (const r of ['/cuenta', '/agenda', '/planes/nuevo', '/mis-numeros', '/gestion/tablero', '/gestion/grupos']) {
     const resp = await fetch(BASE + r, { redirect: 'manual' });
     ok(resp.status >= 300 && resp.status < 400 && (resp.headers.get('location') || '').includes('/entrar'), `${r} sin sesion manda a /entrar`, `HTTP ${resp.status}`);
   }
@@ -80,9 +86,36 @@ try {
   const icsTxt = await ics.text();
   ok(ics.status === 200 && (ics.headers.get('content-type') || '').startsWith('text/calendar') && icsTxt.startsWith('BEGIN:VCALENDAR') && (icsTxt.match(/BEGIN:VEVENT/g) || []).length > 0, `/calendario.ics: 200, ${(icsTxt.match(/BEGIN:VEVENT/g) || []).length} eventos`);
   const robots = await (await fetch(BASE + '/robots.txt')).text();
-  ok(['/entrar', '/mi-zona', '/gestion', '/cuenta', '/auth'].every((x) => robots.includes(`Disallow: ${x}`)) && robots.includes('Sitemap: https://maccabis.vercel.app/sitemap.xml'), 'robots.txt: Disallow de lo privado (con /cuenta) y sitemap');
+  ok(['/entrar', '/mi-zona', '/gestion', '/cuenta', '/auth', '/agenda', '/planes', '/mis-numeros', '/cal'].every((x) => robots.includes(`Disallow: ${x}`)) && robots.includes('Sitemap: https://maccabis.vercel.app/sitemap.xml'), 'robots.txt: Disallow de lo privado (con /cuenta, /agenda, /planes, /mis-numeros y /cal) y sitemap');
   const sitemap = await (await fetch(BASE + '/sitemap.xml')).text();
-  ok(['/', '/club', '/privacidad'].every((x) => sitemap.includes(`<loc>https://maccabis.vercel.app${x === '/' ? '/' : x}</loc>`)) && !/entrar|mi-zona|gestion|cuenta/.test(sitemap), 'sitemap.xml: solo la web publica');
+  ok(['/', '/club', '/privacidad'].every((x) => sitemap.includes(`<loc>https://maccabis.vercel.app${x === '/' ? '/' : x}</loc>`)) && !/entrar|mi-zona|gestion|cuenta|agenda|planes|\/cal\//.test(sitemap), 'sitemap.xml: solo la web publica');
+
+  // Calendario personal (D120): un enlace de PRUEBA, creado aqui y revocado al terminar (pase lo que pase). Se usa un
+  // jugador activo SIN enlace (nunca se toca el enlace de nadie) y no se imprime nada suyo: solo cabeceras y recuentos.
+  console.log('\n== Calendario personal (/cal/<enlace>.ics)');
+  const falso = await fetch(`${BASE}/cal/${'x'.repeat(43)}.ics`);
+  ok(falso.status === 404 && /noindex/.test(falso.headers.get('x-robots-tag') || ''), 'un enlace que no existe: 404 y noindex', `HTTP ${falso.status}`);
+  [calPersona] = await sql`select j.person_id from public.jugadores j where j.activo and j.rol <> 'entrenador'
+                            and not exists (select 1 from public.calendario_tokens t where t.person_id = j.person_id) order by j.person_id limit 1`;
+  ok(Boolean(calPersona), 'hay un jugador activo sin enlace para la prueba');
+  if (calPersona) {
+    const token = crypto.randomBytes(32).toString('base64url');
+    await sql`insert into public.calendario_tokens (person_id, hash) values (${calPersona.person_id}, encode(sha256(convert_to(${token}, 'UTF8')), 'hex'))`;
+    const cal = await fetch(`${BASE}/cal/${token}.ics`);
+    const txt = await cal.text();
+    const n = (txt.match(/BEGIN:VEVENT/g) || []).length;
+    ok(cal.status === 200 && (cal.headers.get('content-type') || '').startsWith('text/calendar') && txt.startsWith('BEGIN:VCALENDAR') && txt.includes('BEGIN:VTIMEZONE') && /END:VCALENDAR\s*$/.test(txt),
+      `/cal/<enlace de prueba>.ics: 200, text/calendar, VCALENDAR con VTIMEZONE (${n} eventos)`, `HTTP ${cal.status}`);
+    ok(/REFRESH-INTERVAL|X-PUBLISHED-TTL/.test(txt) && (n === 0 || (/UID:/.test(txt) && /SEQUENCE:/.test(txt) && /LAST-MODIFIED:/.test(txt))), 'con REFRESH-INTERVAL / X-PUBLISHED-TTL y, en cada evento, UID, SEQUENCE y LAST-MODIFIED');
+    const etag = cal.headers.get('etag');
+    ok(Boolean(etag) && /private/.test(cal.headers.get('cache-control') || '') && /noindex/.test(cal.headers.get('x-robots-tag') || ''), 'ETag, Cache-Control private y noindex');
+    ok(!/nivel|motivo|lesi[oó]n|posici[oó]n/i.test(txt), 'sin niveles, posiciones ni motivos');
+    const otra = await fetch(`${BASE}/cal/${token}.ics`, { headers: { 'if-none-match': etag } });
+    ok(otra.status === 304, 'con el mismo ETag: 304', `HTTP ${otra.status}`);
+    await sql`delete from public.calendario_tokens where person_id = ${calPersona.person_id}`;
+    const revocado = await fetch(`${BASE}/cal/${token}.ics`);
+    ok(revocado.status === 404, 'revocado el enlace de prueba: 404', `HTTP ${revocado.status}`);
+  }
 
   // Web de estadisticas (GitHub Pages): barra "Volver a Maccabis" en todas las pestañas (D89).
   if (!REDIR_ACTIVA) {
@@ -114,6 +147,17 @@ try {
     const errores = [];
     p.on('pageerror', (e) => errores.push(String(e)));
     const sinDesbordar = () => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+
+    // «/» con sesion de gestor: el inicio personal (D117). El gestor temporal no tiene ficha de jugador: la banda
+    // «Gestión esta semana», el saludo y el club; nunca la portada publica.
+    await p.goto(`${BASE}/`);
+    ok(await p.getByTestId('banda-gestion').isVisible() && (await p.locator('.in-hola h1').innerText()).includes('Hola') && !(await p.content()).includes('Dos equipos.'), '«/» con sesion de gestor: el inicio personal con la banda «Gestión esta semana»');
+    ok(await sinDesbordar(), '«/» con sesion sin desbordamiento');
+    for (const [ruta, eyebrow] of [['/gestion/tablero', 'Tablero'], ['/gestion/grupos', 'Grupos de entreno']]) {
+      const resp = await p.goto(`${BASE}${ruta}`);
+      ok(resp.status() === 200 && (await p.locator('.gs-eyebrow').first().innerText()).includes(eyebrow) && (await p.locator('h1').count()) > 0, `${ruta} carga (${(await p.locator('h1').first().innerText().catch(() => '')).slice(0, 40)})`, `HTTP ${resp.status()}`);
+      ok(await sinDesbordar(), `${ruta} sin desbordamiento`);
+    }
 
     await p.goto(`${BASE}/gestion`);
     ok(p.url().endsWith('/gestion') && (await p.textContent('.gs-eyebrow')).includes('Panel de gestión'), '/gestion carga con sesion de gestor');
@@ -150,6 +194,7 @@ try {
     await sql`delete from public.gestores where user_id = ${uid} or nombre = 'PRUEBA temporal'`;
     await sql`delete from auth.users where id = ${uid}`;
   }
+  if (calPersona) await sql`delete from public.calendario_tokens where person_id = ${calPersona.person_id}`;
   const [r] = await sql`select (select count(*)::int from public.gestores) g, (select count(*)::int from auth.users) u`;
   console.log(`  gestores: ${r.g}, usuarios de auth: ${r.u} (deben ser los mismos que antes)`);
   await sql.end();

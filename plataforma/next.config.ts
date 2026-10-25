@@ -30,6 +30,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/gestion/cuenta", destination: "/cuenta", permanent: true },
       { source: "/mi-zona", destination: "/", permanent: true },
+      // Un solo manifiesto, sin sesion: el de Mi zona (que leia mi_zona y fallaba) lleva al de toda la web.
+      { source: "/mi-zona/manifest.webmanifest", destination: "/manifest.webmanifest", permanent: true },
     ];
   },
   async headers() {

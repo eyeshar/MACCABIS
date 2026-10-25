@@ -41,6 +41,9 @@ async function esperar(url, ms = 90000) {
 
 // ---- Datos esperados (se leen de los datos, que crecen cada jornada)
 const LIGA_JSON = path.join(RAIZ, 'src', 'data', 'liga.json');
+// Si una ejecucion anterior murio a medias (sin pasar por el finally), su respaldo devuelve el fichero a como estaba.
+const RESPALDO = path.join(RAIZ, 'pruebas', '.liga.json.respaldo');
+if (fs.existsSync(RESPALDO)) { fs.copyFileSync(RESPALDO, LIGA_JSON); fs.rmSync(RESPALDO); }
 const original = fs.readFileSync(LIGA_JSON);
 const liga = JSON.parse(original.toString('utf8'));
 const season = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'season_2026-27.json'), 'utf8'));
@@ -74,11 +77,12 @@ try {
   const conPrueba = structuredClone(liga);
   conPrueba.grupos.G1.resultados.push(INCOMP);
   conPrueba.grupos.G2.resultados.push(SIN_HOJA);
+  fs.writeFileSync(RESPALDO, original);
   fs.writeFileSync(LIGA_JSON, JSON.stringify(conPrueba, null, 1) + '\n');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
   const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
   try { execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' }); }
-  finally { fs.writeFileSync(LIGA_JSON, original); }
+  finally { fs.writeFileSync(LIGA_JSON, original); fs.rmSync(RESPALDO, { force: true }); }
   ok(fs.readFileSync(LIGA_JSON).equals(original), 'next build; src/data/liga.json queda como estaba');
   app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
   await esperar(`${APP}/liga`);
@@ -267,6 +271,7 @@ try {
   }
 } finally {
   if (!fs.readFileSync(LIGA_JSON).equals(original)) fs.writeFileSync(LIGA_JSON, original);
+  fs.rmSync(RESPALDO, { force: true });
   if (nav) await nav.close();
   if (app) app.kill();
   await pila.parar();

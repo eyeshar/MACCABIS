@@ -93,7 +93,8 @@ try {
     await p.goto(`${APP}/liga?hoy=2026-11-20`);
     const nos = p.locator('.e-eqp[data-eq="MDL"]');
     await nos.waitFor({ timeout: 15000 });
-    ok((await nos.textContent()).includes('MdL en 28500'), 'el 20/11 MdL juega en 28500 (J6, visitantes)');
+    // D129: sin «en / vs» ni «casa/fuera»: el cartel tal cual sale en el calendario oficial (28500 figura primero).
+    ok((await nos.locator('.e-eqp-v').textContent()) === '28500 – MdL' && !/en casa|fuera/.test(await nos.textContent()), 'el 20/11 MdL juega contra 28500 (J6): «28500 – MdL», sin «casa/fuera»');
     ok((await nos.locator('.eq-aviso').getAttribute('data-tipo')) === 'nos_toca' && (await nos.locator('.eq-etq').textContent()).includes('Nos toca cambiar: equipación AMARILLA'), 'MdL en 28500: NOS TOCA CAMBIAR');
     ok((await nos.textContent()).includes('Vamos en segundo lugar contra 28500 (camiseta negra). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).'), 'MdL en 28500: texto con la cita de las Bases');
     await p.screenshot({ path: path.join(SALIDA, `real_e_aviso_publico_nos_toca_${etiqueta}.png`) });

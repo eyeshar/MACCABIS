@@ -3,6 +3,7 @@ import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { diferencias, EQUIPOS } from "@/lib/convocatoria/motor";
 import { destinatariosAviso, diaTexto, firmaConvocatoria, sinAvisosTexto, mensajeConvocatoria, textoCambioConvocatoria, textoEstasConvocado, textoSportEasy } from "@/lib/convocatoria/mensajes";
+import { avisosDelFichero } from "@/lib/inicio/avisos";
 import CopiarTexto from "../../eventos/CopiarTexto";
 import { BotonAvisar, BotonMarcar } from "./Botones";
 
@@ -30,7 +31,9 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
   const nombre = (id: string) => ctx.jugadores.find((j) => j.person_id === id)?.nombre ?? id;
   const cambiosWa = c.whatsapp_estado === "pendiente" ? diferencias(c.whatsapp_base, c.equipos, nombre) : [];
   const cambiosSe = c.sporteasy_estado === "pendiente" ? diferencias(c.sporteasy_base, c.equipos, nombre) : [];
-  const wa = mensajeConvocatoria(ctx.fecha, ctx.jornada, ctx.partidos, c.equipos, nombre, cambiosWa);
+  // Avisos de data/avisos.json vigentes ese domingo para los equipos que juegan (corte de calles, cambio de hora...).
+  const avisosDomingo = avisosDelFichero(ctx.fecha, ctx.partidos.map((p) => p.equipo));
+  const wa = mensajeConvocatoria(ctx.fecha, ctx.jornada, ctx.partidos, c.equipos, nombre, cambiosWa, avisosDomingo);
   const se = textoSportEasy(ctx.fecha, ctx.jornada, ctx.partidos, c.equipos, nombre, cambiosSe);
   // Aviso de la web (D127): a quien toca ahora y como fue el ultimo envio (registro de avisos con la firma de lo avisado).
   const porAvisar = destinatariosAviso(c.equipos, c.aviso_estado === "enviado" ? c.aviso_base : null);

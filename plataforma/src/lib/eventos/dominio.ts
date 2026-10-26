@@ -253,6 +253,30 @@ export const contarRespuestas = (filas: { respuesta: Respuesta }[]) => ({
   sin_responder: filas.filter((f) => f.respuesta === "sin_responder").length,
 });
 
+/** Resumen por evento tras importar respuestas, para cotejarlo con SportEasy: solo cuenta a quien se le pide respuesta
+ *  (los demas, aparte, en «fuera»). Sin nombres ni motivos: solo cuantos llevan motivo. Ordenado por fecha y hora. */
+export type FilaCotejo = { id: string; fecha: string; titulo: string; equipo: EquipoEvento; va: number; duda: number; no: number; sin_responder: number; conMotivo: number; fuera: number };
+export function resumenCotejo(
+  eventos: Pick<EventoFila, "id" | "fecha" | "inicio" | "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "jornada" | "oficial">[],
+  jugadores: JugadorBasico[], respuestas: { evento_id: string; person_id: string; respuesta: Respuesta; motivo: string | null }[],
+): FilaCotejo[] {
+  const porEvento = new Map<string, typeof respuestas>();
+  for (const r of respuestas) porEvento.set(r.evento_id, [...(porEvento.get(r.evento_id) ?? []), r]);
+  return [...eventos].sort((a, b) => (a.fecha + (a.inicio ?? "")).localeCompare(b.fecha + (b.inicio ?? ""))).map((e) => {
+    const invitados = new Set(convocadosDe(e, jugadores).map((j) => j.person_id));
+    const suyas = (porEvento.get(e.id) ?? []).filter((r) => invitados.has(r.person_id));
+    const filas = [...invitados].map((id) => suyas.find((r) => r.person_id === id) ?? { respuesta: "sin_responder" as Respuesta, motivo: null });
+    return {
+      id: e.id, fecha: e.fecha, titulo: tituloEvento(e), equipo: e.equipo, ...contarRespuestas(filas),
+      conMotivo: filas.filter((f) => f.respuesta !== "sin_responder" && f.motivo).length,
+      fuera: (porEvento.get(e.id) ?? []).filter((r) => !invitados.has(r.person_id) && r.respuesta !== "sin_responder").length,
+    };
+  });
+}
+/** «12 van · 3 no · 8 sin responder» (y «· 1 duda» si hay). */
+export const textoCotejo = (f: Pick<FilaCotejo, "va" | "duda" | "no" | "sin_responder">) =>
+  `${f.va} ${f.va === 1 ? "va" : "van"} · ${f.no} no${f.duda ? ` · ${f.duda} duda` : ""} · ${f.sin_responder} sin responder`;
+
 /** Lista y texto del recordatorio que Claude enviara desde SportEasy (con el OK de Ivan). Solo lo genera. */
 export function recordatorio(e: EventoFila, filas: FilaRespuesta[], pistas: Pista[]) {
   const faltan = filas.filter((f) => f.respuesta === "sin_responder" && !f.porPeriodo).map((f) => f.nombre);

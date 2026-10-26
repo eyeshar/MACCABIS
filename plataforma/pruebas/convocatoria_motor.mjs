@@ -4,10 +4,14 @@
 // necesario, un sancionado, desempate por entrenos, empate de dificultad, edición manual con avisos, reglas personales,
 // propuesta de dificultad, nivel antes que rotación con la deuda de 2 domingos fuera (D109), ningún jugador fijo (D110),
 // rivales parejos con los convocados igualados aunque un equipo tenga 5 interiores solo suyos (D112, el caso de la J3),
-// nadie dobla por bases (D115) y que el motor es determinista (misma entrada = misma salida, también desordenada).
+// nadie dobla por bases (D115), que el motor es determinista (misma entrada = misma salida, también desordenada) y los
+// avisos de data/avisos.json vigentes ese domingo en el mensaje de WhatsApp.
 //
 //   npm run pruebas:convocatoria-motor
 
+import fs from 'node:fs';
+import { mensajeConvocatoria } from '../src/lib/convocatoria/mensajes.ts';
+import { vigentes } from '../src/lib/inicio/avisosFichero.ts';
 import { proponer, revisar, proponerDificultad, diferencias, recuentoDe, maximoPorEquipo, domingosFueraDe, LINEA_DE } from '../src/lib/convocatoria/motor.ts';
 
 let fallos = 0;
@@ -411,6 +415,28 @@ console.log('\n== Qué ha cambiado tras aprobar');
   ok(diferencias(null, { MdA: [] }, nombre).length === 0, 'sin aprobar antes: nada que contar');
   const rc = recuentoDe([], new Map());
   ok(rc.total === 0 && rc.bases.estado === 'mal' && rc.nivelMedio === null, 'equipo vacío: recuento a cero');
+}
+
+// ---------------------------------------------------------------- avisos de data/avisos.json en el WhatsApp
+console.log('\n== Avisos del domingo en el mensaje de WhatsApp');
+{
+  const avisos = JSON.parse(fs.readFileSync(new URL('../src/data/avisos.json', import.meta.url), 'utf8')).avisos;
+  const P = (equipo, inicio) => ({ equipo, rival: 'Rival Sintético', es_local: true, inicio, encuentro: null, sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: null });
+  const conv = { MdA: [{ person_id: 'sint-01' }], MdL: [{ person_id: 'sint-02' }] };
+  const nombre = (id) => id.replace('sint-', 'Sint ');
+  const msg = (fecha, partidos) => mensajeConvocatoria(fecha, 5, partidos, conv, nombre, [], vigentes(avisos, fecha, partidos.map((p) => p.equipo)));
+  const ambos = msg('2026-11-08', [P('MdA', '10:00'), P('MdL', '12:00')]);
+  const lineas = ambos.split('\n');
+  const mm = lineas.filter((l) => l.includes('Media Maratón'));
+  ok(mm.length === 1 && mm[0].startsWith('MdL: Domingo 8: Media Maratón de Moratalaz') && mm[0].endsWith('Quedada 11:10.'), 'el 8/11 lleva el aviso de la media maratón, en una línea y con «MdL:» delante', mm.join(' / '));
+  ok(lineas.indexOf(mm[0]) > lineas.findLastIndex((l) => l.startsWith('Convocados')) && lineas.at(-1) === 'Recordad: el dorsal es obligatorio.', 'va después de los partidos y antes del recordatorio del dorsal');
+  ok(lineas.filter((l) => /dorsal/i.test(l)).length === 1, 'el aviso del dorsal no se repite (ya va en el recordatorio)');
+  ok(!msg('2026-11-08', [P('MdA', '10:00')]).includes('Media Maratón'), 'si ese domingo solo juega el MdA, no lleva el aviso del MdL');
+  ok(!msg('2026-11-15', [P('MdA', '10:00'), P('MdL', '12:00')]).includes('Media Maratón') && !msg('2026-11-01', [P('MdL', '12:00')]).includes('Media Maratón'), 'ni el domingo anterior ni el siguiente');
+  ok(/\nEsta noche cambia la hora/.test(msg('2026-10-25', [P('MdA', '10:00')])), 'un aviso «para todos» va sin equipo delante (cambio de hora del 25/10)');
+  ok(!/sint-|nivel|posici/i.test(lineas.filter((l) => !l.startsWith('Convocados')).join('\n')), 'sin datos personales fuera de la lista de convocados');
+  const sin = mensajeConvocatoria('2026-11-08', 5, [P('MdL', '12:00')], conv, nombre);
+  ok(sin.endsWith('Recordad: el dorsal es obligatorio.') && !sin.includes('Media'), 'sin avisos (como antes) el mensaje no cambia');
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import Responder from "@/components/respuestas/Responder";
+import QuienVaJugador from "@/components/numeros/QuienVa";
 import { madrid } from "@/lib/avisos/horario";
 import { cargarMiEvento, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, respuestasWebEncendido } from "@/lib/respuestas/jugador";
 import {
@@ -41,7 +43,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="pagina rw-evento">
-      <p className="rw-volver"><Link href="/agenda">← Agenda</Link></p>
+      <Volver defecto="/agenda" etiqueta="Agenda" />
       <header className="rw-ev-cab" data-tipo={e.tipo}>
         <span className="rw-ev-tipo">{TIPO[e.tipo]}{e.tipo === "liga" && e.jornada ? ` · J${e.jornada}` : ""}{e.equipo !== "ambos" ? ` · ${e.equipo}` : ""}</span>
         <h1>{tituloDe(e)}</h1>
@@ -76,12 +78,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
       {quien && (
         <section className="tarjeta rw-quien" aria-labelledby="t-quien">
           <h2 id="t-quien">Quién va</h2>
-          <dl>
-            <div><dt className="rw-q-va">Van · {quien.va.length}</dt><dd>{quien.va.join(", ") || "—"}</dd></div>
-            <div><dt className="rw-q-duda">Dudan · {quien.duda.length}</dt><dd>{quien.duda.join(", ") || "—"}</dd></div>
-            <div><dt className="rw-q-no">No van · {quien.no.length}</dt><dd>{quien.no.join(", ") || "—"}</dd></div>
-          </dl>
-          <p className="suave pequeno" style={{ margin: 0 }}>{quien.sin_responder === 1 ? "1 sin responder" : `${quien.sin_responder} sin responder`}</p>
+          <QuienVaJugador quien={quien} />
         </section>
       )}
       {encendido && <p><Link href="/mi-zona/ausencias/nueva" className="rw-enlace">¿Vas a faltar varios días? Marca una ausencia</Link></p>}

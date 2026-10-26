@@ -23,6 +23,7 @@ El mismo que `RUTINAS/C_CONVOCATORIA.md`, apartado 6. En este orden:
 4. **Iván marca la J3** (jornada limpia), **la casilla de SportEasy** y pulsa **Activar** en el Panel (D99.13).
 5. **Claude pausa la tarea programada «Maccabis · respuestas de SportEasy»** y prepara el WhatsApp para el grupo (lo envía Iván).
 
+**Después de activar (D139):** el Panel deja de pedir las jornadas limpias, la casilla de SportEasy y los pasos de activar: la tarjeta pasa a una franja compacta. «Desactivar» está en «Más opciones», con confirmación en la propia página; avisa de que **SportEasy ya no tiene participantes en los eventos y desactivar no los recupera** (habría que volver a invitar a la plantilla a mano, evento a evento).
 **SportEasy NO se cierra:** sigue abierto (chat e historial) hasta septiembre de 2027 (`NORMAS_DE_TRABAJO.md` §8). **Lo que se responda allí después de activar no cuenta.**
 **Red de seguridad:** con el interruptor encendido, una importación **nunca pisa una respuesta ni una ausencia dada en la web** (por el jugador o por un gestor): esas líneas salen como «No se toca: … en la web» y no se guardan, sin opción de «Usar SportEasy». Así, si la tarea programada se ejecutara por error tras la activación, no estropea nada.
 

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import FormularioPedido from "@/components/FormularioPedido";
 import type { Pedido, Tallas } from "@/lib/ropa";
@@ -20,6 +21,7 @@ export default async function EditarPedidoGestor({ params }: { params: Promise<{
   };
   return (
     <>
+      <Volver defecto="/gestion/ropa" etiqueta="Pedido de ropa" />
       <h1>Editar pedido</h1>
       <p className="suave">{p.campanas_ropa?.nombre}</p>
       <FormularioPedido

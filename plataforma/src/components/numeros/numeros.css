@@ -1,0 +1,33 @@
+/* Contadores de personas desplegables (D139). Zona tactil >= 44 px; el panel se abre debajo, en linea. */
+.num-boton { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left; min-height: 44px; position: relative; z-index: 1; }
+.num-boton:focus-visible { outline: 2px solid var(--c-amarillo); outline-offset: 2px; }
+.num-cajas { align-items: stretch; }
+.num-caja { display: block; padding: 8px 10px; border-radius: 10px; }
+.num-cajas .num-boton { display: block; }
+.num-caja:hover { background: color-mix(in srgb, var(--c-amarillo) 10%, transparent); }
+.num-caja[aria-expanded="true"] { background: color-mix(in srgb, var(--c-amarillo) 18%, transparent); }
+.num-fila { display: flex; flex-wrap: wrap; gap: 0 14px; }
+.num-linea .num-boton { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; padding: 0 2px; }
+.num-linea .num-boton:hover > span { text-decoration: underline; }
+.num-flecha { width: 0; height: 0; border: 4px solid transparent; border-top-color: currentColor; margin-top: 4px; opacity: .55; display: inline-block; }
+.num-cajas .num-flecha, .num-cajas .num-boton .num-flecha { position: absolute; right: 10px; top: 14px; }
+.num-boton[aria-expanded="true"] .num-flecha { transform: rotate(180deg); margin-top: -4px; }
+.num-panel { margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--tinta) 5%, transparent); font-size: 14px; text-align: left; font-weight: 400; }
+.num-panel ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.num-panel li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-height: 44px; padding: 4px 0; border-top: 1px solid color-mix(in srgb, var(--tinta) 10%, transparent); align-content: center; }
+.num-panel li:first-child { border-top: 0; }
+.num-panel p { margin: 0; }
+.num-nombre { font-weight: 600; }
+a.num-nombre { display: inline-flex; align-items: center; min-height: 44px; margin: -4px 0; }
+.num-nota { color: var(--tinta-suave); font-size: 13px; }
+.num-panel { position: relative; z-index: 1; }
+.num-solo { min-height: 44px; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; }
+div.num-solo { display: block; }
+.rw-quien .num-panel { margin-top: 10px; }
+.rw-quien .gs-cifras { gap: 8px; }
+.num .ev-ok { color: var(--ok, #2f9e6e); }
+.num .ev-duda { color: var(--amarillo-tinta, #a8820a); }
+.num .ev-no { color: var(--error, #d64541); }
+.rw-quien .num .ev-ok { color: var(--rw-va); }
+.rw-quien .num .ev-duda { color: var(--rw-duda); }
+.rw-quien .num .ev-no { color: var(--rw-no); }

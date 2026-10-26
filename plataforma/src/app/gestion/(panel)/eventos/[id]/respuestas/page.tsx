@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { notFound } from "next/navigation";
 import { exigirGestor, origenMensajes as origenWeb } from "@/lib/sesion";
 import { diaYNumero, hoyMadrid, sumarDias } from "@/lib/dias";
@@ -13,6 +14,9 @@ import { sitioAviso } from "@/lib/avisos/servidor";
 import { enMadrid } from "@/lib/avisos/horario";
 import { MOTIVOS_JUGADOR } from "@/lib/respuestas/dominio";
 import CopiarTexto from "../../CopiarTexto";
+import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
+import NombreJugador from "@/components/numeros/Nombre";
+import { hrefJugador } from "@/lib/numeros/enlaces";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
 
 export const metadata = { title: "Respuestas y motivos · Gestión Maccabis" };
@@ -93,19 +97,22 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const ORDEN = { no: 0, duda: 1, sin_responder: 2, va: 3 } as const;
   lineas.sort((a, b) => ORDEN[a.clase] - ORDEN[b.clase] || a.nombre.localeCompare(b.nombre, "es"));
 
-  const cajas = dia && distintas
+  // Las cajas de arriba son contadores desplegables con nombre y motivo (D139; solo gestores).
+  const persona = (l: Linea): PersonaNum => ({ nombre: l.nombre, href: hrefJugador(l.person_id), nota: l.motivo ?? (l.clase === "va" && l.solo ? l.texto : null) });
+  const grupo = (k: string, etiqueta: string, tono: GrupoNum["tono"], f: (l: Linea) => boolean): GrupoNum => { const p = lineas.filter(f); return { k, etiqueta, n: p.length, tono, personas: p.map(persona) }; };
+  const cajas: GrupoNum[] = dia && distintas
     ? [
-      { k: "dos", t: "a los dos", n: lineas.filter((l) => l.clase === "va" && !l.solo).length, c: "ev-ok" },
-      ...dia.map((e) => ({ k: e.id, t: `solo ${hhmm(e.inicio)}`, n: lineas.filter((l) => l.solo === e.id).length, c: "ev-ok" })),
-      { k: "duda", t: "dudan", n: lineas.filter((l) => l.clase === "duda").length, c: "ev-duda" },
-      { k: "no", t: "no van", n: lineas.filter((l) => l.clase === "no").length, c: "ev-no" },
-      { k: "sin", t: "sin responder", n: lineas.filter((l) => l.clase === "sin_responder").length, c: "" },
+      grupo("dos", "a los dos", "ok", (l) => l.clase === "va" && !l.solo),
+      ...dia.map((e) => grupo(e.id, `solo ${hhmm(e.inicio)}`, "ok", (l) => l.solo === e.id)),
+      grupo("duda", "dudan", "duda", (l) => l.clase === "duda"),
+      grupo("no", "no van", "no", (l) => l.clase === "no"),
+      grupo("sin", "sin responder", "sin", (l) => l.clase === "sin_responder"),
     ]
     : [
-      { k: "va", t: "van", n: lineas.filter((l) => l.clase === "va").length, c: "ev-ok" },
-      { k: "duda", t: "dudan", n: lineas.filter((l) => l.clase === "duda").length, c: "ev-duda" },
-      { k: "no", t: "no van", n: lineas.filter((l) => l.clase === "no").length, c: "ev-no" },
-      { k: "sin", t: "sin responder", n: lineas.filter((l) => l.clase === "sin_responder").length, c: "" },
+      grupo("va", "van", "ok", (l) => l.clase === "va"),
+      grupo("duda", "dudan", "duda", (l) => l.clase === "duda"),
+      grupo("no", "no van", "no", (l) => l.clase === "no"),
+      grupo("sin", "sin responder", "sin", (l) => l.clase === "sin_responder"),
     ];
 
   const pe = pistaEfectiva(evento, pistas);
@@ -135,7 +142,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Link href={`/gestion/eventos/${evento.id}`}>← Evento</Link> · Respuestas y motivos{dia ? " · vista del domingo" : ""}</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto={`/gestion/eventos/${evento.id}`} etiqueta="Evento" /> · Respuestas y motivos{dia ? " · vista del domingo" : ""}</div>
           <h1 style={{ fontSize: 44 }}>{dia ? `Domingo ${diaYNumero(evento.fecha).split(" ")[1]} · J${evento.jornada ?? ""}` : tituloEvento(evento)}</h1>
           <span className="suave">{dia ? dia.map((e) => `${hhmm(e.inicio)} ${tituloEvento(e)}`).join(" · ") : `${diaCorto(evento.fecha)} · ${rangoHoras(evento)} · ${pe.porConfirmar ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}` : pe.texto}`}</span>
         </div>
@@ -149,15 +156,13 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
         <div className="ev-banda-roja" role="alert" data-testid="banda-roja">
           <div>
             <b>Cambios después de la convocatoria (martes 10:00):</b>{" "}
-            {alertasL.map((a) => `${nombre.get(a.person_id) ?? a.person_id}: ${TEXTO_R[a.antes]} → ${TEXTO_R[a.despues]}${dia ? ` (${eventos.find((e) => e.id === a.evento_id)?.equipo})` : ""} · ${fechaHora(a.en)}`).join(" · ")}
+            {alertasL.map((a, i) => <span key={a.id}>{i > 0 && " · "}<NombreJugador nombre={nombre.get(a.person_id) ?? a.person_id} personId={a.person_id} />{`: ${TEXTO_R[a.antes]} → ${TEXTO_R[a.despues]}${dia ? ` (${eventos.find((e) => e.id === a.evento_id)?.equipo})` : ""} · ${fechaHora(a.en)}`}</span>)}
           </div>
           <BotonVisto eventoId={evento.id} ids={alertasL.map((a) => a.id)} />
         </div>
       )}
 
-      <div className="gs-cifras" style={{ gridTemplateColumns: `repeat(${cajas.length}, minmax(0, 1fr))`, marginBottom: 20 }} data-testid="contadores">
-        {cajas.map((c) => <div key={c.k}><b className={c.c}>{c.n}</b><span>{c.t}</span></div>)}
-      </div>
+      <div style={{ marginBottom: 20 }}><Numeros prueba="contadores" etiqueta="Respuestas del evento" columnas={cajas.length} grupos={cajas} /></div>
       <p className="pequeno suave">
         {personas.length} invitados.{" "}
         {encendido ? "Los jugadores responden en la web (D99); «no va» siempre con motivo. Solo lo ven los gestores."
@@ -173,7 +178,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
               <tbody>
                 {lineas.map((l) => (
                   <tr key={l.person_id} data-respuesta={l.clase}>
-                    <td data-label="Jugador"><span className={`ev-resp ev-resp-${l.clase === "sin_responder" ? "sin" : l.clase}`}><b>{l.nombre}</b></span></td>
+                    <td data-label="Jugador"><span className={`ev-resp ev-resp-${l.clase === "sin_responder" ? "sin" : l.clase}`}><NombreJugador nombre={l.nombre} personId={l.person_id} negrita /></span></td>
                     <td data-label="Respuesta"><span className={l.clase === "no" ? "ev-no" : l.clase === "va" ? "ev-ok" : l.clase === "duda" ? "ev-duda" : "suave"}>{l.texto}</span>{l.origenTxt && <span className="ev-sub" style={{ color: "var(--tinta-tenue)" }}>{l.origenTxt}</span>}</td>
                     <td data-label="Motivo y detalle">{l.motivo ?? <span className="suave">—</span>}</td>
                     <td data-label="Avisos">{l.avisos ? <span className="ev-ok">Sí</span> : <span className="suave">No</span>}</td>
@@ -221,12 +226,11 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
           </section>
           <section className="gs-bloque" aria-labelledby="t-sinav" data-testid="sin-avisos">
             <h2 id="t-sinav" style={{ fontSize: 22 }}>Sin avisos activados · {sinAvisos.length}</h2>
-            {sinAvisos.length ? (
-              <>
-                <p className="pequeno" style={{ margin: 0 }}>{sinAvisos.map((l) => l.nombre).join(", ")}.</p>
-                <CopiarTexto texto={msgSinAvisos} etiqueta="Copiar mensaje" />
-              </>
-            ) : <p className="pequeno suave" style={{ margin: 0 }}>Todos los invitados tienen los avisos activados.</p>}
+            <Numeros variante="linea" prueba="avisos-numeros" etiqueta="Invitados y avisos activados" grupos={[
+              { k: "sin", etiqueta: "sin avisos", n: sinAvisos.length, tono: "sin", personas: sinAvisos.map((l) => ({ nombre: l.nombre, href: hrefJugador(l.person_id) })), vacio: "Todos los invitados tienen los avisos activados." },
+              { k: "con", etiqueta: "con avisos", n: lineas.length - sinAvisos.length, tono: "ok", personas: lineas.filter((l) => l.avisos).map((l) => ({ nombre: l.nombre, href: hrefJugador(l.person_id) })) },
+            ]} />
+            {sinAvisos.length > 0 && <CopiarTexto texto={msgSinAvisos} etiqueta="Copiar mensaje" />}
           </section>
         </aside>
       </div>
@@ -240,7 +244,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
               const cubre = p.desde <= evento.fecha && (p.hasta == null || evento.fecha <= p.hasta);
               return (
                 <div key={`${p.person_id}-${p.desde}-${p.hasta}`} className="ev-gantt-fila" role="listitem">
-                  <span><b>{nombre.get(p.person_id)}</b></span>
+                  <span><NombreJugador nombre={nombre.get(p.person_id) ?? ""} personId={p.person_id} negrita /></span>
                   <div>
                     <div className="ev-gantt-pista" aria-hidden="true">
                       <i className={p.hasta ? undefined : "ev-gantt-abierta"} style={{ left: `${pos(p.desde < desde ? desde : p.desde)}%`, width: `${Math.max(1, pos(fin > hasta ? hasta : fin) - pos(p.desde < desde ? desde : p.desde))}%` }} />

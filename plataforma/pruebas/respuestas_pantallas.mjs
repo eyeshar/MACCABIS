@@ -104,7 +104,7 @@ try {
     await p.getByLabel('Tu correo').fill(email);
     await p.getByRole('button', { name: 'Enviarme el código' }).click();
     await p.getByText('Código enviado a').waitFor({ timeout: 10000 });
-    await p.getByLabel('Código de 6 dígitos').fill((await codigoDe(email)) ?? '000000');
+    await p.getByLabel('Código del correo').fill((await codigoDe(email)) ?? '000000');
     await p.getByRole('button', { name: 'Entrar', exact: true }).click();
     await p.waitForURL((u) => !u.pathname.startsWith('/entrar') || u.pathname.startsWith('/entrar/elegir'), { timeout: 15000 });
   }
@@ -229,6 +229,7 @@ try {
   // Otro jugador con motivo: Jon no lo ve
   await sql`select public._escribir_respuesta(${E.entreno}, 'gianatti-adriano', 'no', 'lesion', 'Rodilla izquierda', 'sporteasy', null, null, null)`;
   await pj.reload();
+  await pj.getByTestId('quien-va-numeros-no').click();   // D139: «No van» es un contador que se despliega
   const textoEvento = await pj.locator('main').innerText();
   ok(textoEvento.includes('Adriano') && !textoEvento.includes('Rodilla') && !/Lesi[oó]n/.test(textoEvento.split('Quién va')[1] ?? ''), '«Quién va»: Adriano en «No van», sin su motivo');
 
@@ -346,8 +347,18 @@ try {
   ok(/^Cambió la hora el \d\d\/\d\d \(antes: 20:30–22:30\)$/.test(linea), 'el jugador ve la línea amarilla «Cambió la hora el DD/MM (antes: …)»', linea);
   await pg.goto(`${APP}/gestion`);
   ok(await visto(pg.getByTestId('tarjeta-activar')) && (await pg.getByTestId('estado-interruptor').innerText()) === 'Encendido', 'Panel: tarjeta «Respuestas en la web: activar» (Encendido)');
-  ok(await visto(pg.getByRole('button', { name: 'Desactivar' })), 'con «Desactivar»');
-  ok(/\d+\/27 jugadores ya han entrado en la web/.test(await pg.getByTestId('tarjeta-activar').innerText()) && /mínimo 20/.test(await pg.getByTestId('tarjeta-activar').innerText()), 'condición 2: «N/27 jugadores ya han entrado» (mínimo 20)', (await pg.getByTestId('tarjeta-activar').innerText()).slice(0, 400));
+  // D139: con el interruptor ENCENDIDO la tarjeta es una franja compacta.
+  const franja = await pg.getByTestId('tarjeta-activar').innerText();
+  ok(/Respuestas en la web: encendido desde .+\./.test(await pg.getByTestId('franja-encendido').innerText()), 'franja: «Respuestas en la web: encendido desde <fecha, hora>» (y «(quién)» si se sabe)', franja.slice(0, 300));
+  ok(/Con avisos: \d+\/27/.test(franja), 'franja: «Con avisos: N/27»', franja.slice(0, 300));
+  ok(!/jornadas seguidas|Al activar, en este orden|mínimo 20|SportEasy deja de pedir respuesta|Copiar mensaje para la plantilla/.test(franja), 'sin condiciones 1, 2 y 4, sin los pasos de activar ni el mensaje de lanzamiento');
+  ok(!(await pg.getByTestId('desactivar').isVisible()), '«Desactivar» no está a la vista: va dentro de «Más opciones»');
+  await pg.getByTestId('mas-opciones').locator('summary').click();
+  ok(await visto(pg.getByTestId('desactivar')), 'con «Desactivar» dentro de «Más opciones»');
+  await pg.getByTestId('desactivar').click();
+  ok(await visto(pg.getByTestId('desactivar-confirmar')) && /SportEasy ya no tiene participantes/.test(await pg.getByTestId('desactivar-confirmar').innerText()) && /no los recupera/.test(await pg.getByTestId('desactivar-confirmar').innerText()), 'confirmación en la página (sin diálogo del navegador) que explica que SportEasy ya no tiene participantes y que no se recuperan');
+  await pg.getByTestId('desactivar-confirmar').getByRole('button', { name: 'No' }).click();
+  ok((await sql`select encendido from public.respuestas_web_config where id = 1`)[0].encendido === true, '«No» deja el interruptor encendido');
   ok(!/Preparar convocatoria|llega en el paso 2/.test(await pg.locator('main').innerText()), 'el panel ya no dice «Preparar convocatoria: llega en el paso 2»');
   const enlacesPanel = urlsMensajes(await mensajes(pg));
   ok(enlacesPanel.length > 0 && enlacesPanel.every((u) => u.startsWith('https://maccabis.vercel.app')), 'los mensajes de WhatsApp del panel llevan siempre https://maccabis.vercel.app', enlacesPanel.join(' '));
@@ -398,8 +409,10 @@ try {
   const pcg = await nuevaPagina(ctxCg);
   await entrar(pcg, 'carlos-gestor@pruebas.local');
   await pcg.goto(`${APP}/gestion`);
-  ok(await visto(pcg.getByTestId('solo-lectura')) && await pcg.getByRole('button', { name: 'Desactivar' }).isDisabled() && await pcg.locator('.ev-jornadas button').first().isDisabled(), 'Carlos ve la tarjeta en solo lectura (botones y casillas desactivados)');
+  await pcg.getByTestId('mas-opciones').locator('summary').click();
+  ok(await visto(pcg.getByTestId('solo-lectura')) && await pcg.getByRole('button', { name: 'Desactivar' }).isDisabled() && !(await pcg.locator('.ev-jornadas').count()), 'Carlos ve la tarjeta en solo lectura («Desactivar» desactivado)');
   await pg.goto(`${APP}/gestion`);
+  await pg.getByTestId('mas-opciones').locator('summary').click();
   ok(await visto(pg.getByTestId('tarjeta-activar')) && !(await pg.getByTestId('solo-lectura').count()) && await pg.getByRole('button', { name: 'Desactivar' }).isEnabled(), 'Iván sí la maneja');
   await pcg.goto(`${APP}/gestion/eventos`);
   ok(/Selección manual/.test(await pcg.getByTestId('copia-sin-notificar').innerText()) && /«Enviar una notificación» apagado/.test(await pcg.getByTestId('copia-sin-notificar').innerText()), 'tarjeta «Copia a SportEasy»: formulario completo, «Selección manual» y sin notificación (D104)');

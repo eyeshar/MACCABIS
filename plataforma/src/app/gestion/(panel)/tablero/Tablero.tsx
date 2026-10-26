@@ -45,7 +45,7 @@ function Agrupar({ modo, cambiar }: { modo: ModoAgrupar; cambiar: (m: ModoAgrupa
 function Jugador({ f, conv, dobla }: { f: FilaTablero; conv?: Convocatoria; dobla?: boolean }) {
   return (
     <span className="tb-jugador">
-      <b>{f.nombre}</b>
+      <b>{f.href ? <Link href={f.href} className="num-nombre" draggable={false}>{f.nombre}</Link> : f.nombre}</b>
       <small>
         {f.posicion ? TEXTO_POS[f.posicion] : "sin posición"}
         {f.base_reserva && <span className="tb-marca">base de reserva</span>}

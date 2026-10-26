@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import ElegirDomingo from "@/components/respuestas/ElegirDomingo";
+import Numeros from "@/components/numeros/Numeros";
 import { AvisoCaja } from "@/components/ProximoPartido";
 import { madrid } from "@/lib/avisos/horario";
 import { textoColores } from "@/lib/colores";
@@ -79,7 +81,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
 
   return (
     <main className="pagina rw-evento rw-domingo">
-      <p className="rw-volver"><Link href="/agenda">← Agenda</Link></p>
+      <Volver defecto="/agenda" etiqueta="Agenda" />
       <header className="rw-ev-cab" data-tipo="liga">
         <span className="rw-ev-tipo">Partidos de liga{partidos[0].jornada ? ` · J${partidos[0].jornada}` : ""}</span>
         <h1>{fechaLarga(fecha).replace(/^./, (c) => c.toUpperCase())}</h1>
@@ -112,7 +114,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
               <div className="rw-quien-va" data-testid={`quien-va-${e.equipo}`}>
                 <b>Quién va</b>
                 {lista ? (
-                  lista.length ? <p>{lista.map((n, i) => <span key={`${n}-${i}`}>{i > 0 && ", "}{mio && n === yo ? <b>{n} (tú)</b> : n}</span>)}</p> : <p className="suave">Nadie convocado.</p>
+                  <Numeros variante="linea" prueba={`convocados-${e.equipo}`} etiqueta={`Convocados del ${e.equipo}`} grupos={[{ k: "convocados", etiqueta: "convocados", n: lista.length, personas: lista.map((n) => ({ nombre: n, nota: mio && n === yo ? "tú" : null })), vacio: "Nadie convocado." }]} />
                 ) : <p className="suave">Convocatoria pendiente: la verás aquí cuando esté hecha.</p>}
               </div>
             </article>

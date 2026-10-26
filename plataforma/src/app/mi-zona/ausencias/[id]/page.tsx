@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
@@ -19,7 +20,7 @@ export default async function EditarAusencia({ params }: { params: Promise<{ id:
   const dias = [...new Set((await cargarMisEventos(hoy)).filter((e) => e.estado === "programado").map((e) => e.fecha))];
   return (
     <main className="pagina rw-ausencias">
-      <p className="rw-volver"><Link href="/mi-zona/ausencias">← Mis ausencias</Link></p>
+      <Volver defecto="/mi-zona/ausencias" etiqueta="Mis ausencias" />
       <h1>Editar ausencia</h1>
       <FormAusencia hoy={hoy} diasConEvento={dias} inicial={{ id: a.id, desde: a.desde, hasta: a.hasta, motivo: a.motivo, detalle: a.detalle }} />
     </main>

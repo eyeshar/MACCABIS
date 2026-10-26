@@ -33,7 +33,7 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
           )}
           {error_google && (
             <div className="aviso aviso-error" role="alert">
-              No hemos podido entrar con Google. Si tu correo no está dado de alta en Maccabis, habla con Iván, Carlos o Edu; si no, prueba con el código por correo.
+              No hemos podido entrar con Google. Si tu correo no está dado de alta en Maccabis, habla con Iván, Carlos o Edu. Si lo está, <b>prueba con el código por correo</b>: al entrar una vez así, Google funcionará después.
             </div>
           )}
           {!configurado() ? (

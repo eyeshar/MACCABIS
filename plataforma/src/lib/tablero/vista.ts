@@ -3,7 +3,7 @@
 import { LINEA_DE, revisar, type Convocatoria, type Entrada, type Equipo, type Linea, type Nivel, type Posicion, type RespuestaPartido } from "../convocatoria/motor.ts";
 
 export type FilaTablero = {
-  person_id: string; nombre: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null;
+  person_id: string; href?: string | null; nombre: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null;
   ficha: Record<Equipo, boolean>; solo_entreno: boolean;
   /** Respuesta a cada partido del domingo (o al evento suelto, en la clave "evento"). */
   respuesta: Partial<Record<Equipo | "evento", RespuestaPartido>>;

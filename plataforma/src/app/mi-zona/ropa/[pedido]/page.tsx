@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { cargarMiZona } from "../../datos";
 import { guardarPedidoJugador, comprobarDorsalJugador } from "../../acciones";
 import FormularioPedido from "@/components/FormularioPedido";
@@ -24,7 +25,8 @@ export default async function ModificarPedido({ params }: { params: Promise<{ pe
           <h1>Modificar pedido</h1>
         </div>
       </div>
-      <main className="pagina">
+      <Volver defecto="/" etiqueta="Inicio" />
+        <main className="pagina">
         {!pedido ? (
           <section className="tarjeta">
             <p>No encontramos ese pedido entre los tuyos.</p>

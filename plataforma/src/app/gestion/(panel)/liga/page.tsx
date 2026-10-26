@@ -1,4 +1,5 @@
 import { exigirGestor } from "@/lib/sesion";
+import Volver from "@/components/nav/Volver";
 import { cargarLiga, dec } from "@/lib/liga";
 import { filasFichas, filasTabla } from "@/lib/jugadoresLiga";
 import Link from "next/link";
@@ -13,7 +14,7 @@ export default async function LigaConsolidada() {
   const liga = await cargarLiga(supabase);
   const { clasificacion } = liga;
   if (!clasificacion.length) {
-    return (<><h1>Liga consolidada</h1><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
+    return (<><Volver defecto="/gestion" etiqueta="Panel" /><h1>Liga consolidada</h1><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
   }
   const pjEquipo = new Map(clasificacion.map((c) => [`${c.grupo}|${c.equipo}`, c.pj]));
   const sumadas = filasTabla(liga.jugadores, pjEquipo);   // quien dobla cuenta una vez, con las dos fichas sumadas
@@ -26,6 +27,7 @@ export default async function LigaConsolidada() {
 
   return (
     <>
+      <Volver defecto="/gestion" etiqueta="Panel" />
       <h1>Liga consolidada</h1>
       <div className="aviso aviso-info">
         <b>Solo gestores.</b> Datos por jugador de otros equipos: son de terceros y no se publican ni se enseñan a los jugadores (D73).

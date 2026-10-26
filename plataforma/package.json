@@ -71,7 +71,8 @@
     "pruebas:correo-revertir": "node pruebas/correo_revertir.mjs",
     "pruebas:vista-pista-libre": "node pruebas/vista_pista_libre.mjs",
     "pruebas:domingo": "node pruebas/domingo_jugador.mjs",
-    "pruebas:liga-partidos": "node pruebas/liga_partidos.mjs"
+    "pruebas:liga-partidos": "node pruebas/liga_partidos.mjs",
+    "pruebas:numeros": "node pruebas/numeros_pantallas.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

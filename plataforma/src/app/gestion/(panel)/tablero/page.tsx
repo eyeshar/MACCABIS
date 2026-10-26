@@ -1,4 +1,5 @@
 import { exigirGestor } from "@/lib/sesion";
+import Volver from "@/components/nav/Volver";
 import { cargarTableroDomingo, cargarTableroEvento, opcionesSelector } from "@/lib/tablero/datos";
 import Tablero from "./Tablero";
 import "./tablero.css";
@@ -18,5 +19,5 @@ export default async function PaginaTablero({ searchParams }: { searchParams: Pr
     return <div className="gs-titulo"><div><div className="gs-eyebrow">Tablero</div><h1>Nada que ver</h1><span className="suave">Ese evento no existe o no quedan partidos de liga en el calendario.</span></div></div>;
   }
   const actual = datos.vista === "domingo" ? `domingo:${datos.fecha}` : `evento:${datos.evento.id}`;
-  return <Tablero key={actual} datos={datos} opciones={opciones} actual={actual} />;
+  return <><Volver defecto="/gestion/convocatoria" etiqueta="Convocatoria" /><Tablero key={actual} datos={datos} opciones={opciones} actual={actual} /></>;
 }

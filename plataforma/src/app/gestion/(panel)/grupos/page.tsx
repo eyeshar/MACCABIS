@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { proximosEntrenos } from "@/lib/grupos/datos";
 import { redirect } from "next/navigation";
@@ -14,6 +15,7 @@ export default async function PaginaGrupos({ searchParams }: { searchParams: Pro
   if (!lista && entrenos[0]) redirect(`/gestion/grupos/${entrenos[0].id}`);
   return (
     <>
+      <Volver defecto="/gestion" etiqueta="Panel" />
       <div className="gs-titulo"><div><div className="gs-eyebrow">Grupos de entreno</div><h1>Próximos entrenos</h1></div></div>
       {entrenos.length ? (
         <ul className="gs-pendientes">

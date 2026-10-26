@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { exigirSesion, origen } from "@/lib/sesion";
 import { miEnlace } from "@/lib/calendario/enlace";
@@ -19,6 +20,7 @@ export default async function Cuenta() {
   const enlace = u?.personId ? await miEnlace(supabase, u.personId, await origen()).catch(() => null) : null;
   return (
     <main className="pagina cuenta">
+      <Volver defecto="/" etiqueta="Inicio" />
       <h1>Mi cuenta</h1>
       <section className="tarjeta" aria-labelledby="t-quien">
         <h2 id="t-quien" className="solo-lectores">Quién eres</h2>

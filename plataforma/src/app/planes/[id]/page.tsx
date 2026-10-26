@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
+import QuienVaJugador from "@/components/numeros/QuienVa";
 import { madrid } from "@/lib/avisos/horario";
 import { hoyMadrid } from "@/lib/dias";
 import { cargarPlan, quienVaPlan } from "@/lib/planes/datos";
@@ -39,7 +41,7 @@ export default async function FichaPlan({ params, searchParams }: { params: Prom
 
   return (
     <main className="pagina pl-pagina pl-ficha" data-testid="ficha-plan">
-      <p className="rw-volver"><Link href="/agenda">← Agenda</Link></p>
+      <Volver defecto="/agenda" etiqueta="Agenda" />
       {nuevo && <div className="aviso aviso-ok" role="status">Plan publicado. Ya lo ven los invitados en su agenda.</div>}
       {guardado && <div className="aviso aviso-ok" role="status">Cambios guardados.</div>}
       <div className="pl-etiquetas"><span className="pl-etq-plan">Plan no oficial</span><span className="pl-etq-tipo">{TEXTO_TIPO[e.tipo]}</span>{e.estado === "cancelado" && <span className="pastilla pastilla-cancelado">Cancelado</span>}</div>
@@ -73,12 +75,7 @@ export default async function FichaPlan({ params, searchParams }: { params: Prom
 
       <section className="tarjeta rw-quien" aria-labelledby="t-quien" data-testid="quien-va">
         <h2 id="t-quien">Quién va</h2>
-        <dl>
-          <div><dt className="rw-q-va">Van · {quien.va.length}{e.plazas ? ` de ${e.plazas}` : ""}</dt><dd>{quien.va.join(", ") || "—"}</dd></div>
-          <div><dt className="rw-q-duda">Dudan · {quien.duda.length}</dt><dd>{quien.duda.join(", ") || "—"}</dd></div>
-          <div><dt className="rw-q-no">No van · {quien.no.length}</dt><dd>{quien.no.join(", ") || "—"}</dd></div>
-        </dl>
-        <p className="suave pequeno" style={{ margin: 0 }}>{quien.sin_responder === 1 ? "1 sin responder" : `${quien.sin_responder} sin responder`}</p>
+        <QuienVaJugador quien={quien} plazas={e.plazas} />
       </section>
 
       {esOrganizador && (

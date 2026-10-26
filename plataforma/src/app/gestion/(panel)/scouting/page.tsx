@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { AvisoCaja, Camiseta } from "@/components/ProximoPartido";
 import { avisoContra, coloresDe } from "@/lib/equipacion";
@@ -38,7 +39,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
   const liga = await cargarLiga(supabase);
   const { clasificacion, calendario, hoy } = liga;
   if (!clasificacion.length) {
-    return (<><h1>Scouting rivales</h1><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
+    return (<><Volver defecto="/gestion" etiqueta="Panel" /><h1>Scouting rivales</h1><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
   }
 
   const proxMdA = proximoPartido(calendario, hoy, "MDA");
@@ -58,6 +59,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
 
   return (
     <>
+      <Volver defecto="/gestion" etiqueta="Panel" />
       <h1>Scouting rivales</h1>
       <div className="aviso aviso-info">
         <b>Solo gestores.</b> Datos por jugador de otros equipos: son de terceros y no se publican ni se enseñan a los jugadores (D73).

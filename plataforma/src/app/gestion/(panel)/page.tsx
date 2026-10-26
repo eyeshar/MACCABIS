@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cargarFuente } from "@/lib/eventos/fuente";
 import { cargarJugadores } from "@/lib/eventos/datos";
-import { contarRespuestas, convocadosDe, type Respuesta } from "@/lib/eventos/dominio";
+import { type Respuesta } from "@/lib/eventos/dominio";
 import "./eventos/eventos.css";
 import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import TarjetaActivar, { type EstadoActivacion } from "./TarjetaActivar";
@@ -18,6 +18,9 @@ import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
 import { proximoEntreno } from "@/lib/gestion/entreno";
 import { hhmm, tituloEvento } from "@/lib/eventos/dominio";
 import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
+import Numeros, { type GrupoNum } from "@/components/numeros/Numeros";
+import { gruposEvento, type RespuestaPersona } from "@/lib/numeros/respuestas";
+import { hrefJugador } from "@/lib/numeros/enlaces";
 
 export const metadata = { title: "Gestión · Maccabis" };
 
@@ -35,6 +38,14 @@ function scoutingDe(liga: DatosLiga | null, e: Evento) {
     texto: `${fila.equipo} · ${fila.pos}.º ${fila.grupo}`,
     detalle: top.length ? top.map((j) => `${apellido(j.nombre)} ${j.pts}`).join(" · ") : "Aún sin partidos en las hojas de esta temporada",
   };
+}
+
+/** «Rival – Maccabis» con el rival como enlace a su scouting (D139), si esta en la liga; si no, solo el texto. */
+function enlaceRival(liga: DatosLiga | null, e: Evento) {
+  const s = scoutingDe(liga, e);
+  const n = NOMBRE_EQUIPO[e.equipo!];
+  const rival = s ? <Link href={`/gestion/scouting?e=${encodeURIComponent(s.equipo)}${e.equipo === "MDL" ? "&v=mdl" : ""}`}>{e.rival}</Link> : <>{e.rival}</>;
+  return e.local ? <>{n} – {rival}</> : <>{rival} – {n}</>;
 }
 
 // Panel de la semana (maqueta Gestion, D76): rutinas, partidos del domingo y pendientes. El recuadro del entreno con las
@@ -67,6 +78,14 @@ export default async function InicioGestion() {
     if (!c?.origen) return "Pendiente";
     return `${(c.equipos[NOMBRE_EQUIPO[e.equipo!]] ?? []).length} · ${c.estado === "aprobada" ? "aprobada" : "borrador"}`;
   };
+  // Los convocados de cada partido con nombre y enlace a su ficha (D139).
+  const gruposConvocados = (e: Evento): GrupoNum[] | null => {
+    const c = convDomingo as { origen: string | null; equipos: Record<string, { person_id: string }[]> } | null;
+    if (!c?.origen) return null;
+    const lista = (c.equipos[NOMBRE_EQUIPO[e.equipo!]] ?? []).map((x) => { const j = js.find((y) => y.person_id === x.person_id); return { nombre: j?.nombre_visible ?? x.person_id, href: hrefJugador(x.person_id) }; })
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+    return [{ k: "convocados", etiqueta: "convocados", n: lista.length, personas: lista }];
+  };
   const resultados = ultimosResultados(hoy);
   const sinActa = resultados.filter((r) => r.pendienteActa);
   // El proximo entreno sale de la tabla de eventos con su pista efectiva (ubicacion libre incluida), no del fichero.
@@ -83,11 +102,13 @@ export default async function InicioGestion() {
   ]);
   const evDomingo = (filasDomingo ?? []) as { id: string; clave: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial: boolean }[];
   const ids = [...evDomingo.map((e) => e.id), ...(entreno ? [entreno.id] : [])];
-  const { data: rsTodas } = ids.length ? await supabase.from("respuestas").select("evento_id, respuesta").in("evento_id", ids) : { data: [] };
+  const { data: rsTodas } = ids.length ? await supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle").in("evento_id", ids) : { data: [] };
+  // Los cuatro contadores con sus nombres y motivos (D139, solo gestores).
   const cuentas = (ev: { id: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial?: boolean }) => {
-    const rs = ((rsTodas ?? []) as { evento_id: string; respuesta: Respuesta }[]).filter((r) => r.evento_id === ev.id);
-    const c = contarRespuestas([...rs, ...Array.from({ length: Math.max(0, convocadosDe(ev as never, js).length - rs.length) }, () => ({ respuesta: "sin_responder" as Respuesta }))]);
-    return { va: c.va, duda: c.duda, no: c.no, sin: c.sin_responder, id: ev.id, hay: rs.length > 0 };
+    const rs = ((rsTodas ?? []) as (RespuestaPersona & { evento_id: string })[]).filter((r) => r.evento_id === ev.id);
+    const grupos = gruposEvento(ev as never, js, rs);
+    const n = (k: string) => grupos.find((g) => g.k === k)!.n;
+    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0 };
   };
   const cuentasDomingo = new Map(evDomingo.map((e) => [e.clave, cuentas(e)]));
   const respEntreno = entreno ? cuentas(entreno) : null;
@@ -105,6 +126,23 @@ export default async function InicioGestion() {
   const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis, no en SportEasy: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo, nunca de noche): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
 
   const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
+  // «Han entrado» y «con avisos» con sus nombres (D139): la plantilla es la de la tarjeta (activos con ficha); quien falta, lo da la base.
+  const { data: subsAvisos } = await supabase.from("suscripciones_avisos").select("person_id").eq("activa", true);
+  const conAvisos = new Set(((subsAvisos ?? []) as { person_id: string | null }[]).map((s) => s.person_id));
+  const plantilla = js.filter((j) => j.activo && (j.ficha_mda || j.ficha_mdl));
+  const persona = (j: (typeof js)[number]) => ({ nombre: j.nombre_visible, href: hrefJugador(j.person_id) });
+  const sinAvisosNombres = plantilla.filter((j) => !conAvisos.has(j.person_id)).map((j) => j.nombre_visible);
+  const mensajeAvisos = `Hola, ${sinAvisosNombres.join(", ")}: aún no tenéis activados los avisos de Maccabis en el móvil. Así os llega cuándo hay que responder y si cambia la hora o la pista (nunca de noche). Es un minuto: ${web}/avisos`;
+  const gruposActivacion: { entrada: GrupoNum[]; avisos: GrupoNum[] } = {
+    entrada: [
+      { k: "entrados", etiqueta: "han entrado", n: plantilla.filter((j) => !faltan.includes(j.nombre_visible)).length, tono: "ok", personas: plantilla.filter((j) => !faltan.includes(j.nombre_visible)).map(persona) },
+      { k: "faltan", etiqueta: "faltan por entrar", n: plantilla.filter((j) => faltan.includes(j.nombre_visible)).length, tono: "sin", personas: plantilla.filter((j) => faltan.includes(j.nombre_visible)).map(persona) },
+    ],
+    avisos: [
+      { k: "con", etiqueta: "con avisos activados", n: plantilla.filter((j) => conAvisos.has(j.person_id)).length, tono: "ok", personas: plantilla.filter((j) => conAvisos.has(j.person_id)).map(persona) },
+      { k: "sin", etiqueta: "sin avisos", n: plantilla.filter((j) => !conAvisos.has(j.person_id)).length, tono: "sin", personas: plantilla.filter((j) => !conAvisos.has(j.person_id)).map(persona) },
+    ],
+  };
   const mensajeEntrar = `Hola, ${faltan.join(", ")}: aún no habéis entrado en la web de Maccabis. Entrad una vez con vuestro correo (os llega un código) para tenerlo listo: ${web}/entrar. Si podéis, instaladla en el móvil y activad los avisos: ${web}/avisos`;
   // «Pendiente esta semana»: la misma lista (con enlaces) que la banda «Gestión esta semana» del inicio (D117).
   const pendientes = await cargarPendientesSemana(supabase);
@@ -141,7 +179,7 @@ export default async function InicioGestion() {
         </div>
       </section>
 
-      {activacion && <div style={{ marginBottom: 20 }}><TarjetaActivar estado={activacion as EstadoActivacion} jornadas={jornadasJugadas} marcas={marcas} mensaje={mensajeActivar} mensajeEntrar={mensajeEntrar} /></div>}
+      {activacion && <div style={{ marginBottom: 20 }}><TarjetaActivar estado={activacion as EstadoActivacion} jornadas={jornadasJugadas} marcas={marcas} mensaje={mensajeActivar} mensajeEntrar={mensajeEntrar} mensajeAvisos={mensajeAvisos} grupos={gruposActivacion} /></div>}
 
       <div className="gs-dos">
         <div className="gs-izq">
@@ -161,11 +199,14 @@ export default async function InicioGestion() {
                       return (
                         <tr key={e.id} className="eq-partido" data-equipo={e.equipo}>
                           <td><span className={`chip-eq chip-${e.equipo}`}>{NOMBRE_EQUIPO[e.equipo!]}</span></td>
-                          <td style={{ fontWeight: 600 }}>{cruce(e)}</td>
+                          <td style={{ fontWeight: 600 }}>{enlaceRival(liga, e)}</td>
                           <td className="cifra" style={{ whiteSpace: "nowrap" }}>{e.inicio ?? "¿?"} · P{e.partido?.campo ?? "?"}</td>
                           <td data-label="Equipación">{chip ? <span className={`pastilla pastilla-${chip.tipo}`}>{chip.texto}</span> : <span className="pastilla">Negra</span>}</td>
-                          <td data-label="Respuestas" className={r?.hay ? "ev-celda-resp" : undefined}>{r?.hay ? <CuentasRespuestas id={r.id} va={r.va} duda={r.duda + r.sin} no={r.no} nombre={cruce(e)} barra={false} /> : r ? <Link href={`/gestion/eventos/${r.id}/respuestas`} className="tenue">Sin respuestas</Link> : <span className="suave">—</span>}</td>
-                          <td data-label="Convocados"><Link href={`/gestion/convocatoria?fecha=${e.fecha}`} className={convDomingo ? undefined : "tenue"}>{convocados(e)}</Link></td>
+                          <td data-label="Respuestas" className={r?.hay ? "ev-celda-resp" : undefined}>{r?.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={cruce(e)} barra={false} /> : r ? <Link href={`/gestion/eventos/${r.id}/respuestas`} className="tenue">Sin respuestas</Link> : <span className="suave">—</span>}</td>
+                          <td data-label="Convocados">
+                            {gruposConvocados(e) && <Numeros variante="linea" prueba={`convocados-${e.id}`} etiqueta={`Convocados del ${NOMBRE_EQUIPO[e.equipo!]}`} grupos={gruposConvocados(e)!} />}
+                            <Link href={`/gestion/convocatoria?fecha=${e.fecha}`} className={convDomingo ? undefined : "tenue"} style={{ display: "block" }}>{convocados(e)}</Link>
+                          </td>
                         </tr>
                       );
                     })}
@@ -210,8 +251,8 @@ export default async function InicioGestion() {
             ) : <span className="suave">No quedan entrenos en el calendario.</span>}
             {respEntreno && respEntreno.va + respEntreno.duda + respEntreno.no > 0 ? (
               <div data-testid="respuestas-entreno" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div className="ev-celda-resp"><Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} className="ev-resp-enlace" data-testid="enlace-respuestas"><div className="ev-cuentas"><span className="ev-ok">{respEntreno.va} van</span><span className="ev-duda">{respEntreno.duda} dudan</span><span className="suave">{respEntreno.sin} sin responder</span><span className="ev-no">{respEntreno.no} no van</span></div></Link></div>
-                <Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} style={{ fontWeight: 600 }}>Ver respuestas y motivos →</Link>
+                <Numeros variante="cajas" columnas={4} prueba="entreno-numeros" etiqueta="Respuestas al entreno" grupos={respEntreno.grupos} />
+                <Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} data-testid="enlace-respuestas" style={{ fontWeight: 600 }}>Ver respuestas y motivos →</Link>
               </div>
             ) : (
               <div className="hueco" data-testid="hueco-sporteasy">Sin respuestas de SportEasy todavía. Claude las trae (Importar → Respuestas) y el recordatorio lo propone él y lo envías tú.</div>

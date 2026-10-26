@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarEventos, cargarJugadores } from "@/lib/eventos/datos";
 import { hhmm } from "@/lib/eventos/dominio";
@@ -31,7 +32,7 @@ export default async function Importar({ searchParams }: { searchParams: Promise
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Link href="/gestion/eventos">← Eventos</Link> · Importar</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto="/gestion/eventos" etiqueta="Eventos" /> · Importar</div>
           <h1>Importar</h1>
         </div>
       </div>

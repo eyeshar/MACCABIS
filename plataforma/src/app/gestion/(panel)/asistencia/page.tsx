@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import "../eventos/eventos.css";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarEventos, cargarJugadores, TEMPORADA } from "@/lib/eventos/datos";
@@ -36,6 +37,7 @@ export default async function Asistencia({ searchParams }: { searchParams: Promi
 
   return (
     <>
+      <Volver defecto="/gestion" etiqueta="Panel" />
       <div className="gs-titulo">
         <div>
           <div className="gs-eyebrow">Solo gestores · temporada {temporada.replace("-", "/")}</div>

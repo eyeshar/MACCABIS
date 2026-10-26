@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { PRENDAS, TALLAS, type PrendaId } from "@/lib/ropa";
 import { campanaAbiertaAhora, fechaHora } from "@/lib/fechas";
@@ -32,6 +33,7 @@ export default async function RopaGestion({ searchParams }: { searchParams: Prom
   if (!campana) {
     return (
       <>
+        <Volver defecto="/gestion" etiqueta="Panel" />
         <h1>Pedido de ropa</h1>
         <section className="tarjeta">
           <p>No hay ninguna campaña.</p>
@@ -63,6 +65,7 @@ export default async function RopaGestion({ searchParams }: { searchParams: Prom
 
   return (
     <>
+      <Volver defecto="/gestion" etiqueta="Panel" />
       <h1>Pedido de ropa</h1>
       {guardado && <div className="aviso aviso-ok" role="status">Pedido guardado.</div>}
 

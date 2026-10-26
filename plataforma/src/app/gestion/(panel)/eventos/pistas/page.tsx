@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarPistas } from "@/lib/eventos/datos";
 import { FilaPista, PistaNueva } from "./FormulariosPista";
@@ -14,7 +15,7 @@ export default async function Pistas({ searchParams }: { searchParams: Promise<{
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Link href={vuelta}>← Volver</Link> · Catálogo</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto={vuelta} etiqueta="Volver" /> · Catálogo</div>
           <h1>Pistas</h1>
         </div>
       </div>

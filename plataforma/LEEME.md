@@ -14,6 +14,9 @@ plataforma/
   src/app/page.tsx          portada pública sin login (D76): próxima jornada, resultados, clasificación, líderes, calendario, historia
   src/app/calendario.ics/   feed iCal público (partidos y entrenos, sin datos personales, D77)
   src/app/manifest.ts       web instalable (D78); iconos en public/iconos/ y src/app/{icon,apple-icon}.png (npm run iconos)
+  src/components/numeros/   contadores de personas desplegables (Numeros.tsx), «Quién va» del jugador y nombre con enlace (D139)
+  src/lib/numeros/          enlaces de nombres (ficha solo si tiene estadisticas) y los cuatro contadores de un evento
+  src/lib/rastro.ts         rastro de pantallas de la sesion: de donde viene «← volver» (components/nav/Volver.tsx, D139)
   src/components/nav/       navegacion unica (D89, D90): Cabecera (lee la sesion en el servidor), Navegacion (menu, menu de
                             usuario, menu de Gestion, barra inferior y hoja "Mas" del movil), BarrasZona (Mi zona y Gestion)
   src/lib/usuario.ts        quien mira la pagina (sin sesion, jugador, gestor) para la cabecera

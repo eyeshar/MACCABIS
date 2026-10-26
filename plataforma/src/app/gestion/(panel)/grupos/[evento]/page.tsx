@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { notFound } from "next/navigation";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarGrupos } from "@/lib/grupos/datos";
@@ -21,7 +22,7 @@ export default async function GruposEntreno({ params }: { params: Promise<{ even
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Link href="/gestion/grupos?lista=1">← Entrenos</Link> · Grupos de entreno</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto="/gestion/grupos?lista=1" etiqueta="Entrenos" /> · Grupos de entreno</div>
           <h1>{new Date(`${d.evento.fecha}T12:00:00Z`).toLocaleDateString("es-ES", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" })}</h1>
           <span className="suave">{d.van.length} dicen «Voy» · {d.duda.length} dudan · <Link href={`/gestion/tablero?evento=${d.evento.id}`}>Abrir tablero</Link></span>
         </div>

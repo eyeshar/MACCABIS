@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
@@ -25,7 +26,7 @@ export default async function EditarPlan({ params }: { params: Promise<{ id: str
   };
   return (
     <main className="pagina pl-pagina">
-      <p className="rw-volver"><Link href={`/planes/${id}`}>← El plan</Link></p>
+      <Volver defecto={`/planes/${id}`} etiqueta="El plan" />
       <span className="pl-etq-plan">Plan no oficial</span>
       <h1>Editar el plan</h1>
       {!e.es_mio && <p className="aviso aviso-info">Lo organiza {e.organizador ?? "otro jugador"}: al guardar le llega un aviso.</p>}

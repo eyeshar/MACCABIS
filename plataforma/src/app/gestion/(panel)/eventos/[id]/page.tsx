@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { notFound, redirect } from "next/navigation";
 import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import { lineaEquipacion } from "@/lib/equipacion";
@@ -50,7 +51,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Link href="/gestion/eventos">← Eventos</Link> · Editar evento</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto="/gestion/eventos" etiqueta="Eventos" /> · Editar evento</div>
           <h1 style={{ fontSize: 44 }}>{titulo}</h1>
           <span className="suave">{tituloEvento(evento)} · {pe.porConfirmar ? "pista por confirmar" : pe.texto}</span>
         </div>

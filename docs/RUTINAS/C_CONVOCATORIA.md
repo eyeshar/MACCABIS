@@ -32,7 +32,7 @@ Tarea programada de Claude en el Chrome de Iván, **de lunes a miércoles a las 
 10. Los recordatorios salen solos (lunes 19:00 agrupado; martes 10:00 del partido, también a quien tiene «duda»; miércoles 10:00 del entreno). «Pedir recordatorio a Claude» desaparece; si hace falta uno extra, «Enviar un recordatorio ahora» en la pantalla del evento.
 11. Si un jugador dice algo por WhatsApp, «Responder por él» en la pantalla del evento (queda «puesto por …»).
 12. Después del martes a las 10:00, cualquier cambio de un partido sale en **banda roja** (y avisa a los gestores): revisar la convocatoria y pulsar «Visto».
-13. Cada lunes, marcar la jornada anterior en el Panel (limpia / con arreglo): es la condición 1 de D64.
+13. **Ya no se marcan jornadas limpias con el interruptor encendido** (D139): la tarjeta del Panel es una franja compacta («encendido desde …», «Con avisos: N/27», «Faltan por entrar» si falta alguien y «Desactivar» dentro de «Más opciones»). La condición 1 de D64 (jornadas limpias) solo se marca en el Panel mientras el interruptor esté **apagado**.
 
 ## 6. Procedimiento de activación de «respuestas en la web» (decidido por Iván el 26/10/2026, D136)
 En este orden:

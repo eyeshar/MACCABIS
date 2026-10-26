@@ -11,6 +11,7 @@ import { entradaDe, moverRapido, validarDestino, type Contexto, type JugadorVist
 import { proyeccionDe, textoBajoMinimo, textoCorreccion, textoFactor, textoProyeccion, textoRival, type Proyeccion } from "@/lib/convocatoria/proyeccion";
 import { cruce, diaTexto } from "@/lib/convocatoria/mensajes";
 import BloqueImportacion from "@/components/gestion/BloqueImportacion";
+import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
 import { ajusteRapido, aprobar, cambiarDificultad, deshacerRapido, empezar, guardarCambio, type Accion, type Motivo } from "./acciones";
 
 // Convocatoria del domingo (D107): cabecera con contadores, una tarjeta por equipo que juega, disponibles sin convocar y
@@ -26,7 +27,12 @@ const TEXTO_MOTIVO_NO: Record<string, string> = { lesion: "lesión", trabajo: "t
 const otro = (e: Equipo): Equipo => (e === "MdA" ? "MdL" : "MdA");
 const ids = (c: Conv, e: Equipo) => new Set((c[e] ?? []).map((x) => x.person_id));
 
-function Casillas({ r, testid }: { r: Recuento; testid?: string }) {
+function Casillas({ r, testid, personas }: { r: Recuento; testid?: string; personas?: Record<"bases" | "exteriores" | "interiores", PersonaNum[]> }) {
+  // Con nombres (D139): cada casilla es un contador desplegable; sin ellos (vista previa del cambio), solo las cifras.
+  if (personas) {
+    const g = (k: "bases" | "exteriores" | "interiores", etiqueta: string): GrupoNum => ({ k, etiqueta, n: personas[k].length, valor: r[k].texto, clase: `cv-casilla cv-${r[k].estado}`, personas: personas[k] });
+    return <Numeros prueba={testid ?? "cv-casillas"} etiqueta="Líneas del equipo" contenedor="cv-casillas" grupos={[g("bases", "bases"), g("exteriores", "exteriores"), g("interiores", "interiores")]} />;
+  }
   return (
     <div className="cv-casillas" data-testid={testid}>
       <div className={`cv-casilla cv-${r.bases.estado}`}><b>{r.bases.texto}</b><span>bases</span></div>
@@ -34,6 +40,12 @@ function Casillas({ r, testid }: { r: Recuento; testid?: string }) {
       <div className={`cv-casilla cv-${r.interiores.estado}`}><b>{r.interiores.texto}</b><span>interiores</span></div>
     </div>
   );
+}
+
+/** Nombre de la lista como enlace a su ficha (D139); sin arrastrar el enlace, para que la fila siga siendo arrastrable. */
+function NombreCv({ id, nombre, enlaces }: { id: string; nombre: string; enlaces: Record<string, string> }) {
+  const h = enlaces[id];
+  return h ? <Link href={h} className="num-nombre" draggable={false}>{nombre}</Link> : <>{nombre}</>;
 }
 
 function ListaAvisos({ avisos, nombre }: { avisos: Aviso[]; nombre?: string }) {
@@ -59,9 +71,29 @@ function estadoPara(j: JugadorVista, e: Equipo) {
   return { texto: `${TEXTO_RESP[r]}${m}`, clase: r === "va" ? "ok" : r === "no" ? "no" : r === "duda" ? "duda" : "sin" };
 }
 
+/** Los tres contadores del domingo con sus nombres: se clasifican igual que ctx.contadores (datos.ts). */
+function gruposDomingo(jugadores: JugadorVista[], enlaces: Record<string, string>, dudan: number): GrupoNum[] {
+  const g: Record<"va" | "sin" | "no", PersonaNum[]> = { va: [], sin: [], no: [] };
+  for (const j of jugadores.filter((x) => x.invitado)) {
+    const v = j.invitadoA.map((e) => j.respuesta[e] ?? "sin_responder");
+    const base = { nombre: j.nombre, href: enlaces[j.person_id] ?? null };
+    if (v.includes("va")) g.va.push({ ...base, nota: j.invitadoA.length === 2 && v.some((x) => x !== "va") ? `solo ${j.invitadoA.filter((_, i) => v[i] === "va").join(" y ")}` : null });
+    else if (v.length && v.every((x) => x === "no")) {
+      const m = j.invitadoA.map((e) => j.motivoNo[e]).find(Boolean);
+      g.no.push({ ...base, nota: m ? (TEXTO_MOTIVO_NO[m] ?? m) : null });
+    } else g.sin.push({ ...base, nota: v.includes("duda") ? "duda" : null });
+  }
+  const orden = (a: PersonaNum, b: PersonaNum) => a.nombre.localeCompare(b.nombre, "es");
+  return [
+    { k: "van", etiqueta: "van", n: g.va.length, tono: "ok", personas: g.va.sort(orden) },
+    { k: "sin", etiqueta: `sin responder${dudan ? ` (${dudan} duda${dudan === 1 ? "" : "n"})` : ""}`, n: g.sin.length, personas: g.sin.sort(orden) },
+    { k: "no", etiqueta: "no van", n: g.no.length, tono: "no", personas: g.no.sort(orden) },
+  ];
+}
+
 type Hoja = { tipo: "cambiar"; person_id: string; equipo: Equipo } | { tipo: "anadir"; equipo: Equipo; person_id?: string } | null;
 
-export default function Convocatoria({ ctx }: { ctx: Contexto }) {
+export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enlaces?: Record<string, string> }) {
   const router = useRouter();
   const [pendiente, empezarTransicion] = useTransition();
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
@@ -98,6 +130,8 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
   });
 
   const generales = rev.avisos.filter((a) => !a.equipo);
+  // Contadores de la cabecera (D139): quien va a alguno, quien no ha respondido (o duda) y quien no va a ninguno, con su motivo (solo gestores).
+  const gruposCabecera = useMemo(() => gruposDomingo(ctx.jugadores, enlaces, ctx.contadores.dudan), [ctx.jugadores, enlaces, ctx.contadores.dudan]);
   const juegan = ctx.partidos.map((p) => p.equipo);
   // Proyeccion de anotacion de cada equipo (D124, D133), con los convocados de ahora y la dificultad marcada.
   const proyecciones = useMemo(() => Object.fromEntries(ctx.partidos.map((p) => [p.equipo, proyeccionDe(ctx.proyeccion, p.equipo, (conv[p.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombre(c.person_id) })), p.dificultad.valor)])) as Partial<Record<Equipo, Proyeccion | null>>,
@@ -210,11 +244,7 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
       )}
 
       <section className="gs-bloque cv-cab" aria-label="Respuestas del domingo">
-        <div className="gs-cifras cv-contadores" data-testid="cv-contadores">
-          <div><b className="ev-ok">{ctx.contadores.van}</b><span>van</span></div>
-          <div><b>{ctx.contadores.sin}</b><span>sin responder{ctx.contadores.dudan ? ` (${ctx.contadores.dudan} duda${ctx.contadores.dudan === 1 ? "" : "n"})` : ""}</span></div>
-          <div><b className="ev-no">{ctx.contadores.no}</b><span>no van</span></div>
-        </div>
+        <Numeros prueba="cv-contadores" etiqueta="Respuestas del domingo" contenedor="gs-cifras cv-contadores num-cajas" grupos={gruposCabecera} />
         {!ctx.encendido && (
           <div className="cv-importacion" data-testid="cv-importacion">
             <p className="pequeno" style={{ margin: 0 }}>Fase puente: las respuestas llegan de SportEasy.{ctx.respuestasDelDomingo === 0 && " Para este domingo todavía no hay ninguna respuesta importada."}</p>
@@ -246,7 +276,7 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
       <div className="cv-equipos">
         {ctx.partidos.map((p) => (
           <TarjetaEquipo key={p.equipo} p={p} conv={conv} r={rev.recuento[p.equipo]!} maximo={rev.maximo} avisos={avisosDe(p.equipo)}
-            previa={!empezada} bloqueado={bloqueado} nombre={nombre} porId={porId} proy={proyecciones[p.equipo] ?? null} rapido={rapido} zona={zonaProps(p.equipo)}
+            previa={!empezada} bloqueado={bloqueado} nombre={nombre} porId={porId} enlaces={enlaces} proy={proyecciones[p.equipo] ?? null} rapido={rapido} zona={zonaProps(p.equipo)}
             onDificultad={(v) => correr(() => cambiarDificultad(ctx.fecha, p.equipo, v))}
             onCambiar={(id) => setHoja({ tipo: "cambiar", person_id: id, equipo: p.equipo })}
             onAnadir={() => setHoja({ tipo: "anadir", equipo: p.equipo })} />
@@ -265,7 +295,7 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
                   onDragStart={rapido ? (e) => { const ids = rapido.sel.has(s.person_id) && sel.desde === "sin" ? [...rapido.sel] : [s.person_id]; e.dataTransfer.setData("text/plain", ids.join(",")); e.dataTransfer.effectAllowed = "move"; rapido.setArrastre({ ids, desde: "sin" }); } : undefined}
                   onDragEnd={rapido ? () => rapido.setArrastre(null) : undefined}>
                   {rapido && <label className="cv-casilla-sel"><input type="checkbox" checked={rapido.sel.has(s.person_id)} onChange={() => rapido.alternar(s.person_id, "sin")} aria-label={`Seleccionar a ${j?.nombre ?? s.person_id}`} /></label>}
-                  <div className="cv-fila-nombre"><b>{j?.nombre ?? s.person_id}</b><small>{s.motivo} · regla {s.regla}</small></div>
+                  <div className="cv-fila-nombre"><b><NombreCv id={s.person_id} nombre={j?.nombre ?? s.person_id} enlaces={enlaces} /></b><small>{s.motivo} · regla {s.regla}</small></div>
                   {empezada && <button type="button" className="boton boton-contorno cv-boton" disabled={bloqueado} onClick={() => setHoja({ tipo: "anadir", equipo: ctx.partidos.find((x) => j?.respuesta[x.equipo] === "va" && j.ficha[x.equipo])?.equipo ?? ctx.partidos[0].equipo, person_id: s.person_id })}>Añadir</button>}
                 </li>
               );
@@ -355,8 +385,8 @@ function BloqueProyeccion({ pr, equipo }: { pr: Proyeccion; equipo: Equipo }) {
   );
 }
 
-function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, porId, proy, rapido, zona, onDificultad, onCambiar, onAnadir }: {
-  p: PartidoVista; conv: Conv; r: Recuento; maximo: number; avisos: Aviso[]; previa: boolean; bloqueado: boolean;
+function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, porId, enlaces, proy, rapido, zona, onDificultad, onCambiar, onAnadir }: {
+  p: PartidoVista; conv: Conv; r: Recuento; maximo: number; avisos: Aviso[]; previa: boolean; bloqueado: boolean; enlaces: Record<string, string>;
   nombre: (id: string) => string; porId: Map<string, JugadorVista>; proy: Proyeccion | null; rapido: Rapido; zona: ZonaProps;
   onDificultad: (v: Dificultad) => void; onCambiar: (id: string) => void; onAnadir: () => void;
 }) {
@@ -368,6 +398,15 @@ function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, 
     const lb = b.j?.privado?.posicion || b.c.posicion ? LINEA_DE[(b.c.posicion ?? b.j!.privado!.posicion)!] : "exterior";
     return orden[la] - orden[lb] || nombre(a.c.person_id).localeCompare(nombre(b.c.person_id), "es");
   });
+  // Quienes forman cada linea (D139): los mismos que cuenta el motor, con los bases de reserva y los que cuentan de exterior marcados.
+  const persona = (id: string, nota?: string | null): PersonaNum => ({ nombre: nombre(id), href: enlaces[id] ?? null, nota });
+  const lineaDe = (f: (typeof filas)[number]) => { const pos = f.c.posicion ?? f.j?.privado?.posicion; return pos ? LINEA_DE[pos] : "exterior"; };
+  const personasLinea = {
+    bases: [...filas.filter((f) => lineaDe(f) === "base" && !r.basesComoExteriores.includes(f.c.person_id)).map((f) => persona(f.c.person_id)), ...r.basesDeReserva.map((id) => persona(id, "hace de base"))],
+    exteriores: [...filas.filter((f) => lineaDe(f) === "exterior" && !r.basesDeReserva.includes(f.c.person_id)).map((f) => persona(f.c.person_id)), ...r.basesComoExteriores.map((id) => persona(id, "base que cuenta de exterior"))],
+    interiores: filas.filter((f) => lineaDe(f) === "interior").map((f) => persona(f.c.person_id)),
+  };
+  const convocados: GrupoNum[] = [{ k: "convocados", etiqueta: "convocados", n: r.total, personas: filas.map((f) => persona(f.c.person_id, `${(f.c.posicion ?? f.j?.privado?.posicion) ? TEXTO_POSICION[(f.c.posicion ?? f.j?.privado?.posicion)!] : "sin posición"}${delOtro.has(f.c.person_id) ? " · dobla" : ""}`)) }];
   return (
     <section className={`gs-bloque cv-equipo cv-equipo-${p.equipo}${zona.clase ?? ""}`} aria-labelledby={`t-${p.equipo}`} data-testid={`cv-equipo-${p.equipo}`} data-zona={p.equipo} {...(zona.eventos ?? {})}>
       <div className="cv-equipo-cab">
@@ -394,8 +433,11 @@ function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, 
         <small className="suave" data-testid={`cv-porque-${p.equipo}`}>Propuesta: {TEXTO_DIFICULTAD[p.dificultad.propuesta].toLowerCase()} · {p.dificultad.porque}{p.dificultad.manual ? " · corregida a mano" : ""}</small>
       </fieldset>
 
-      <Casillas r={r} testid={`cv-casillas-${p.equipo}`} />
-      <p className="pequeno suave" style={{ margin: 0 }} data-testid={`cv-total-${p.equipo}`}>{r.total} convocados (máximo {maximo}) · nivel medio {textoNivelMedio(r.nivelMedio)}</p>
+      <Casillas r={r} testid={`cv-casillas-${p.equipo}`} personas={personasLinea} />
+      <div className="cv-total" data-testid={`cv-total-${p.equipo}`}>
+        <Numeros variante="linea" prueba={`cv-convocados-${p.equipo}`} etiqueta={`Convocados del ${p.equipo}`} grupos={convocados} />
+        <span className="pequeno suave">(máximo {maximo}) · nivel medio {textoNivelMedio(r.nivelMedio)}</span>
+      </div>
       <ListaAvisos avisos={avisos} nombre={p.equipo} />
 
       {previa && <p className="pequeno cv-previa">Vista previa de la propuesta: elige «Usar propuesta» para editarla.</p>}
@@ -410,7 +452,7 @@ function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, 
               onDragEnd={rapido ? () => rapido.setArrastre(null) : undefined}>
               {rapido && <label className="cv-casilla-sel"><input type="checkbox" checked={rapido.sel.has(c.person_id)} onChange={() => rapido.alternar(c.person_id, p.equipo)} aria-label={`Seleccionar a ${nombre(c.person_id)} (${p.equipo})`} /></label>}
               <div className="cv-fila-nombre">
-                <b>{nombre(c.person_id)}</b>
+                <b><NombreCv id={c.person_id} nombre={nombre(c.person_id)} enlaces={enlaces} /></b>
                 <small>
                   {pos ? TEXTO_POSICION[pos] : "sin posición"}{c.posicion ? " (este partido)" : ""}{reserva ? " · hace de base" : ""}
                   {dobla && <span className="cv-etq cv-etq-dobla">dobla</span>}

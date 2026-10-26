@@ -111,3 +111,5 @@
 .cv-barra .boton:disabled { opacity: 0.45; }
 .cv-barra-nota { flex-basis: 100%; text-align: center; color: var(--tinta-suave); }
 @media (max-width: 768px) { .cv-barra { bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom)); padding-bottom: 10px; } }
+
+.cv-total { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }

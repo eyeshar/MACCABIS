@@ -78,7 +78,7 @@ try {
     await p.getByLabel('Tu correo').fill(email);
     await p.getByRole('button', { name: 'Enviarme el código' }).click();
     await p.getByText('Código enviado a').waitFor({ timeout: 10000 });
-    await p.getByLabel('Código de 6 dígitos').fill((await codigoDe(email)) ?? '000000');
+    await p.getByLabel('Código del correo').fill((await codigoDe(email)) ?? '000000');
     await p.getByRole('button', { name: 'Entrar', exact: true }).click();
     await p.waitForURL((u) => !u.pathname.startsWith('/entrar') || u.pathname.startsWith('/entrar/elegir'), { timeout: 15000 });
   }
@@ -517,7 +517,9 @@ try {
       const en = (x, y) => document.elementFromPoint(x, y)?.closest('a')?.getAttribute('href') ?? null;
       td.scrollIntoView({ block: 'center' });
       const q = td.getBoundingClientRect();
-      return { alto: Math.round(r.height), puntos: [en(q.left + 3, q.top + 3), en(q.right - 3, q.bottom - 3), en(q.left + q.width / 2, q.top + q.height / 2)] };
+      // D139: en el centro puede haber un contador desplegable (boton), que va por encima del enlace.
+      const centro = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+      return { alto: Math.round(r.height), puntos: [en(q.left + 3, q.top + 3), en(q.right - 3, q.bottom - 3), centro?.closest('.num-boton') ? '/respuestas' : en(q.left + q.width / 2, q.top + q.height / 2)] };
     });
     ok(zona.alto >= 44 && zona.puntos.every((h) => h && h.endsWith('/respuestas')), `${ruta} a 375 px: toda la celda de respuestas abre las respuestas (${zona.alto} px)`, JSON.stringify(zona));
   }

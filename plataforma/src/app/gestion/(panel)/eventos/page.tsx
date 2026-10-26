@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
 import { exigirGestor } from "@/lib/sesion";
 import { chipEquipacion } from "@/lib/publico";
 import { diaYNumero, hoyMadrid } from "@/lib/dias";
@@ -217,7 +218,6 @@ function Fila({ e, pistas, respuestas, convocados, casilla }: { casilla?: boolea
   const cancelado = e.estado === "cancelado";
   const sinPista = !cancelado && e.tipo === "entreno" && pe.porConfirmar;
   const c = contarRespuestas([...respuestas, ...Array.from({ length: Math.max(0, convocados - respuestas.length) }, () => ({ respuesta: "sin_responder" as Respuesta }))]);
-  const total = c.va + c.duda + c.no + c.sin_responder;
   const quedada = hhmm(e.quedada);
   const equipoClase = e.tipo === "liga" ? `ev-tipo-${e.equipo}` : "";
   return (
@@ -238,15 +238,9 @@ function Fila({ e, pistas, respuestas, convocados, casilla }: { casilla?: boolea
       <td data-label="Pista">
         {pe.porConfirmar ? <><b style={{ color: "var(--amarillo-tinta)" }}>Pista por confirmar</b>{pe.motivo && <span className="ev-sub" style={{ color: "var(--tinta-tenue)" }}>{pe.motivo}</span>}</> : pe.texto}
       </td>
-      <td data-label="Respuestas">
+      <td data-label="Respuestas" className={respuestas.length > 0 ? "ev-celda-resp" : undefined}>
         {respuestas.length > 0 ? (
-          <div>
-            <div className="ev-cuentas"><span className="ev-ok">{c.va} van</span><span className="ev-duda">{c.duda + c.sin_responder} ?</span><span className="ev-no">{c.no} no</span></div>
-            <div className="ev-barra" aria-hidden="true">
-              <i style={{ flex: `${c.va} 1 0`, background: "var(--c-verde)" }} /><i style={{ flex: `${c.duda + c.sin_responder} 1 0`, background: "var(--c-amarillo)" }} /><i style={{ flex: `${c.no} 1 0`, background: "var(--error)" }} />
-              {total === 0 && null}
-            </div>
-          </div>
+          <CuentasRespuestas id={e.id} va={c.va} duda={c.duda + c.sin_responder} no={c.no} nombre={`${tituloEvento(e)} ${diaYNumero(e.fecha)}`} />
         ) : e.tipo === "liga" ? <span className="suave">Convocatoria el martes</span> : <span className="suave">—</span>}
       </td>
       <td data-label="SportEasy">

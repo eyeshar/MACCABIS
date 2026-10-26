@@ -726,3 +726,5 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 
 **Hora:** la tarea pasa a lunes y jueves a las 9:30 (antes 8:34; un rato del 26/10 estuvo a las 8:00).
 
+**Ampliación (Iván, 26/10/2026, 9:48):** la misma regla vale para **todas** las automatizaciones del club (SportEasy y maccabis.vercel.app incluidas): ante una pantalla de entrada con los datos ya rellenados por Chrome, o con la cuenta ya elegida, Claude pulsa entrar; nunca escribe ni cambia la contraseña, un solo intento, para y avisa si hay campos vacíos, captcha o código por correo, y no cierra la sesión al terminar. Aplicada ya a «Maccabis · respuestas de SportEasy».
+

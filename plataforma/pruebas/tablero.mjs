@@ -93,7 +93,9 @@ try {
   ok((await bloques()).includes('A') && (await bloques()).includes('sin'), 'Nivel: de A a E (solo gestores)');
   ok(JSON.stringify((await conv()).equipos) === antes, 'agrupar no toca la convocatoria');
   await pg.reload();
-  ok(await pg.getByRole('button', { name: 'Nivel', exact: true }).getAttribute('aria-pressed') === 'true', 'se recuerda en este navegador');
+  // Lo recordado se lee del navegador al cargar: se espera a que la pagina lo aplique (antes se miraba al instante y fallaba a veces).
+  const recordado = await pg.waitForFunction(() => [...document.querySelectorAll('button')].some((x) => x.textContent.trim() === 'Nivel' && x.getAttribute('aria-pressed') === 'true'), null, { timeout: 8000 }).then(() => true, () => false);
+  ok(recordado, 'se recuerda en este navegador');
   await pg.getByRole('button', { name: 'Posición', exact: true }).click();
 
   console.log('\n== Acciones en grupo entre bloques y avisos recalculados');

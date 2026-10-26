@@ -237,7 +237,9 @@ try {
   await pg.getByTestId('cv-proyeccion-MdL').getByText('Quién aporta').click();
   const aporte = await pg.getByTestId('cv-proyeccion-MdL').locator('.cv-aporte').allTextContents();
   ok(aporte.length === (await equipoDe(pg, 'MdL')).length && aporte.every((x) => /\d+(,\d)? pts/.test(x)), `«Quién aporta»: cada convocado con sus puntos esperados (${aporte.length})`, aporte.slice(0, 2).join(' | '));
-  ok(await visto(pg.getByTestId('cv-acierto').getByText(/^Acierto de la proyección: error medio [\d,]+ puntos en \d+ partidos?\.$/)), '«Acierto de la proyección: error medio N puntos en M partidos»');
+  const factorL = await pg.getByTestId('cv-factor-MdL').innerText().catch(() => '');
+  ok(/^Factor rival \d,\d\d: dificultad marcada: (Alta|Media|Baja) · (\d+ partidos? del rival|sin partidos del rival)( · historial \d{4}\/\d{2})?( · Corrección de sesgo ×\d,\d\d)?\.$/.test(factorL), `D133: en «Quién aporta», el factor rival y de dónde sale («${factorL}»)`);
+  ok(await visto(pg.getByTestId('cv-acierto').getByText(/^Acierto de la proyección: error medio [\d,]+ puntos en \d+ partidos? · (se queda corta en [\d,]+ puntos de media|se pasa en [\d,]+ puntos de media|sin sesgo)\.$/)), '«Acierto de la proyección: error medio N puntos en M partidos · …» con el sesgo (D133)');
 
   console.log('\n== D125: arrastrar en escritorio (1280 px), zonas de destino, «no voy» y «Deshacer»');
   const ctxD = await nav.newContext({ viewport: { width: 1280, height: 900 } });
@@ -313,6 +315,7 @@ try {
   console.log('\n== D124/D126 en el tablero');
   await pd.goto(`${APP}/gestion/tablero?domingo=${F2}`);
   ok(/Proyección ≈ \d+ puntos \(entre \d+ y \d+\)/.test(await pd.getByTestId('proyeccion-MdA').innerText().catch(() => '')), 'resumen del MdA con su proyección');
+  ok(/^Factor rival \d,\d\d: dificultad marcada: /.test((await pd.getByTestId('factor-MdA').textContent().catch(() => '')) ?? ''), 'y en su «Quién aporta», el factor rival con la dificultad marcada (D133)');
   ok(await visto(pd.getByTestId('bloque-importacion')), 'y el bloque de la importación de SportEasy');
   await foto(pd, 'tablero_proyeccion_1280');
 

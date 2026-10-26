@@ -1,0 +1,190 @@
+{
+ "_meta": {
+  "generado": "2026-10-26",
+  "decision": "D133",
+  "fuente": "data/rivales_2026-27.json y data/raw/211549_clasificaciones_20260925.csv (Ayuntamiento de Madrid, CC BY 4.0)",
+  "metodo": "factor = puntos encajados por partido / media del grupo (2025/26: clasificacion completa del grupo; antes: media de la temporada con todas las fases de liga de los rivales). Solo la temporada anterior mas reciente con liga."
+ },
+ "rivales": [
+  {
+   "nombre": "TROPICALEROS",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 42.6,
+   "media_grupo": 41,
+   "factor": 1.03838,
+   "media": "grupo"
+  },
+  {
+   "nombre": "Chavalitros",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 37.2,
+   "media_grupo": 41,
+   "factor": 0.9066,
+   "media": "grupo"
+  },
+  {
+   "nombre": "CHUPITIMANGUIS",
+   "temporada": "2025-26",
+   "pj": 22,
+   "encaja": 39,
+   "media_grupo": 38,
+   "factor": 1.026347,
+   "media": "grupo"
+  },
+  {
+   "nombre": "Enfermos del Aro",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 44.5,
+   "media_grupo": 41.5,
+   "factor": 1.073347,
+   "media": "grupo"
+  },
+  {
+   "nombre": "LITROS DE MAHOU",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 64.6,
+   "media_grupo": 46.3,
+   "factor": 1.396482,
+   "media": "grupo"
+  },
+  {
+   "nombre": "LOS KHINKIS RUSOS",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 41.3,
+   "media_grupo": 43.6,
+   "factor": 0.946458,
+   "media": "grupo"
+  },
+  {
+   "nombre": "NABUCO TD",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 41.4,
+   "media_grupo": 43.6,
+   "factor": 0.947604,
+   "media": "grupo"
+  },
+  {
+   "nombre": "RIF",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 36.7,
+   "media_grupo": 42.6,
+   "factor": 0.859778,
+   "media": "grupo"
+  },
+  {
+   "nombre": "VALLEKAS BASKET",
+   "temporada": "2025-26",
+   "pj": 22,
+   "encaja": 55.2,
+   "media_grupo": 46.5,
+   "factor": 1.187393,
+   "media": "grupo"
+  },
+  {
+   "nombre": "WILD BOYS",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 58.9,
+   "media_grupo": 43.6,
+   "factor": 1.349792,
+   "media": "grupo"
+  },
+  {
+   "nombre": "28500",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 35.4,
+   "media_grupo": 41,
+   "factor": 0.862673,
+   "media": "grupo"
+  },
+  {
+   "nombre": "CASTAÑAZO",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 38.6,
+   "media_grupo": 46.3,
+   "factor": 0.834431,
+   "media": "grupo"
+  },
+  {
+   "nombre": "Craps",
+   "temporada": null,
+   "pj": 0,
+   "encaja": null,
+   "media_grupo": null,
+   "factor": null,
+   "media": null
+  },
+  {
+   "nombre": "F.T. FLOPPERS",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 43,
+   "media_grupo": 48.2,
+   "factor": 0.892004,
+   "media": "grupo"
+  },
+  {
+   "nombre": "La Cancha Roja",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 39.4,
+   "media_grupo": 46.3,
+   "factor": 0.850644,
+   "media": "grupo"
+  },
+  {
+   "nombre": "MEJORADA 2012 C.B.",
+   "temporada": "2025-26",
+   "pj": 22,
+   "encaja": 39,
+   "media_grupo": 38,
+   "factor": 1.026347,
+   "media": "grupo"
+  },
+  {
+   "nombre": "Quinto Tiempo",
+   "temporada": null,
+   "pj": 0,
+   "encaja": null,
+   "media_grupo": null,
+   "factor": null,
+   "media": null
+  },
+  {
+   "nombre": "Suanzes Motor",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 43.4,
+   "media_grupo": 43.6,
+   "factor": 0.993438,
+   "media": "grupo"
+  },
+  {
+   "nombre": "TRASCENDEDORES C.B.",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 42.9,
+   "media_grupo": 43.6,
+   "factor": 0.981979,
+   "media": "grupo"
+  },
+  {
+   "nombre": "VANNER",
+   "temporada": "2025-26",
+   "pj": 20,
+   "encaja": 54.6,
+   "media_grupo": 46.3,
+   "factor": 1.179228,
+   "media": "grupo"
+  }
+ ]
+}

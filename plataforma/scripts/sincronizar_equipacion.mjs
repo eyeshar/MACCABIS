@@ -33,6 +33,8 @@ export const COPIAS = [
   ['entrenos_2026-27.json', 'entrenos.json'],
   // Avisos de la jornada del inicio personal (D117): texto, desde, hasta y para quien.
   ['avisos.json', 'avisos.json'],
+  // Historial de los rivales para el factor rival de la proyeccion (D133; npm run proyeccion:historial).
+  ['historial_rivales_2026-27.json', 'historialRivales.json'],
   ...COPIAS_ESTADISTICAS,
 ];
 const RESUMEN = 'historia_resumen.json';

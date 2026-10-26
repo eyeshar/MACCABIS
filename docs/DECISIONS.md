@@ -766,4 +766,33 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 **Excepción:** quitar a propósito una hoja equivocada lo decide una persona y se hace con `LIGA_PERMITIR_RETROCESO=1` delante del comando; la rutina A nunca lo usa.
 
 **Procedimiento:** la liga (y cualquier dato que salga de `fuentes_fbm/`) se regenera en la carpeta del proyecto o en `Maccabis-rutina-a` (enlazada a la misma `fuentes_fbm`), nunca en un worktree con copia propia. En un merge de `main` en una rama, si hay conflicto en `liga.json`, se toma el de `main` y se regenera en la carpeta del proyecto después del merge a `main`.
+---
+## D133 — Proyección recalibrada: factor rival combinado, solo esta temporada con 60 minutos y corrección de sesgo (Iván, 26/10/2026) — AJUSTA D124
 
+**Contexto:** tras la J3, la proyección de D124 se había quedado corta en los 6 partidos (error medio 12 puntos, sesgo −12): es un sesgo, no ruido. Hipótesis de Iván: no mide bien la calidad del rival (con menos de 2 partidos del rival el factor valía 1).
+
+**Validación (Claude, 26/10/2026), dejando uno fuera** (la corrección de sesgo de cada partido se aprende con los otros 5); `npm run proyeccion:validar`:
+
+| Variante | Error medio | Sesgo |
+|---|---|---|
+| V0 · D124 (la de antes) | 12,0 | −12,0 |
+| V1 · factor rival combinado (dificultad + esta temporada + historial) | 8,3 | −8,0 |
+| V1a · solo la dificultad marcada | 10,3 | −10,3 |
+| V1b · solo esta temporada | 10,7 | −10,3 |
+| V1c · solo el historial | 8,5 | −8,5 |
+| V2 · V1 + solo esta temporada si hay 60 min | 7,3 | −7,0 |
+| V3 · V1 + minutos de esta temporada | 8,3 | −8,3 |
+| V4 · V2 + V3 | 7,5 | −7,2 |
+| V5 · V1 + corrección de sesgo | 6,0 | −4,7 |
+| **V6 · V2 + corrección de sesgo (elegida)** | **5,2** | **−3,8** |
+| V7 · V4 + corrección de sesgo | 5,3 | −4,0 |
+| V8 · V0 + corrección de sesgo | 8,3 | −7,3 |
+
+- **El factor rival explica un tercio del sesgo** (de −12 a −8 por sí solo); lo que más aporta es el historial (Litros de Mahou encajaba 1,40 veces la media de su grupo en 2025/26 y el MdA le metió 74 en la J2). La dificultad marcada solo existe desde la J3 (antes no había convocatoria en la web).
+- **El resto no es del rival ni de los minutos** (con los minutos reales de cada partido sale casi lo mismo): los convocados proyectaban ~0,20 puntos por minuto y el equipo anota ~0,25 (0,23 la temporada pasada). Contar solo esta temporada con 60 minutos (V2) ayuda algo; la corrección de sesgo recoge lo demás.
+- **Sensibilidad:** dificultad ±10 % o ±20 % en vez de ±15 %: casi igual (5,3/−4,0 y 5,2/−3,8). Historial con peso 6: 4,7/−3,3, pero con 6 partidos sería ajustar a los datos. Corrección completa desde ya (sin medio camino): 5,2/−1,2.
+- V6 partido a partido: J1 MdA 58/62 · J1 MdL 58/59 · J2 MdA 61/74 · J2 MdL 55/51 · J3 MdA 55/56 · J3 MdL 53/61.
+
+**Decisión de Iván:** **V6 tal cual**, aunque el sesgo quede en −3,8 (por encima de los 3 puntos que había puesto como umbral): la mejora de 12 a 5,2 de error es la que importa y la corrección se completa sola con más partidos (desde los 8). Revisar con `npm run proyeccion:validar` en la J8.
+
+**Cómo se ha construido (Claude):** `src/lib/convocatoria/proyeccion.ts` (puro): `factorRival` combinado con sus `fuentes`, `correccionSesgo`, `PROYECCION.soloActual`, `calibrar` dejando uno fuera y `resumenCalibracion` con el sesgo; `textoFactor` y `textoCorreccion` en «Quién aporta» (convocatoria y tablero). La dificultad de cada partido pasado sale de su convocatoria aprobada; la del domingo, de la que está marcada en la pantalla (se recalcula al cambiarla). Historial de rivales en `data/historial_rivales_2026-27.json` (datos públicos de equipo, CC BY 4.0, nada por jugador: D73), copiado a `src/data/historialRivales.json`. `calibrar_proyeccion.mjs` guarda los partidos nuevos con `metodo: "D133"` (los de D124 quedan congelados como se enseñaron) y el resumen del método vigente. La anotación mínima (D107, regla 3.3) no cambia.

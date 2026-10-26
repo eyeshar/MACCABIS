@@ -40,7 +40,8 @@ export const COPIAS = [
 const RESUMEN = 'historia_resumen.json';
 
 /** Cifras de la portada ("La historia del club"): partidos con estadisticas (sin incomparecencias), victorias en
- *  esos partidos, temporadas con datos y personas que han jugado en el club (sin el entrenador). */
+ *  esos partidos, temporadas con datos y personas que han jugado en el club (sin el entrenador ni quien aún no tiene
+ *  ninguna temporada). */
 export function resumenHistoria() {
   const indice = JSON.parse(fs.readFileSync(path.join(DATOS, 'index.json'), 'utf8'));
   let partidos = 0, victorias = 0;
@@ -52,7 +53,8 @@ export function resumenHistoria() {
   }
   const historia = JSON.parse(fs.readFileSync(path.join(DATOS, 'historia_club.json'), 'utf8'));
   const personas = Array.isArray(historia.personas) ? historia.personas : Object.values(historia.personas);
-  const jugadores = personas.filter((p) => !p.es_entrenador).length;
+  // Las mismas que «han vestido la camiseta» en /historia (D137): sin el entrenador y sin quien no tiene ninguna temporada.
+  const jugadores = personas.filter((p) => !p.es_entrenador && p.temporadas_jugadas.length).length;
   return JSON.stringify({
     fuente: 'Generado por plataforma/scripts/sincronizar_equipacion.mjs desde data/season_*.json y data/historia_club.json. No editar a mano.',
     temporadas_con_datos: indice.seasons.length,

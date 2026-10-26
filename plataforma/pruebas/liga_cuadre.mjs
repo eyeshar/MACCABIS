@@ -265,54 +265,27 @@ try {
   const rfuera = await fetch(`${APP}/jugador/esteban-jon?t=2013-14`, { redirect: 'manual' }); ok(rfuera.status >= 300 && rfuera.status < 400, 'ficha en una temporada en la que no jugo: lleva a una temporada suya');
 
   // ------------------------------------------------------------------------------------------ Historia
-  seccion('Historia del club: rejilla (filas y colores por celda), tira temporal y ficha de las 88 personas');
-  await abrirVieja('2025-26', 'historia');
-  await vieja.waitForSelector('#hBody tr');
+  // Desde D137 (26/10/2026) la 26/27 es «en curso» en /historia y GitHub Pages (que solo redirige) se queda con la 26/27
+  // «prevista»: ya no se compara fila a fila con la web antigua. El cuadre de la rejilla con season_2026-27.json y la
+  // plantilla con ficha lo hace npm run check:historia (scripts/test_historia_en_curso.js).
+  seccion('Historia del club: tramos, tira temporal y enlaces de la ficha de cada persona (D137: ya no se compara con GitHub Pages)');
   await nueva.goto(`${APP}/historia`, { waitUntil: 'networkidle' });
-  // firma de cada fila: nombre + cifra dorada + color de cada celda (s = naranja con estadisticas, j = en el club sin estadisticas, p = prevista)
-  const firma = (page, viejo) => page.evaluate((v) => [...document.querySelectorAll(v ? '#hBody tr' : '[data-testid="historia-rejilla"] tbody tr')].map((tr) => {
-    if (tr.classList.contains(v ? 'hsep' : 'e-hsep')) return 'SEP ' + tr.innerText.replace(/\s+/g, ' ').trim().toLowerCase();
-    const celdas = [...tr.querySelectorAll(v ? 'td.hcell' : 'td.e-hcell')].map((c) => {
-      const m = c.querySelector(v ? '.hmark' : '.e-hmark'); if (!m) return '-';
-      const st = m.classList.contains(v ? 'stats' : 'e-hstats'), pr = m.classList.contains(v ? 'prev' : 'e-hprevmark');
-      return (pr ? 'p' : st ? 's' : 'j') + (m.classList.contains(v ? 'ini' : 'e-hini') ? '[' : '') + (m.classList.contains(v ? 'fin' : 'e-hfin') ? ']' : '');
-    });
-    return tr.querySelector(v ? 'td.hname' : 'td.e-hname').innerText.replace(/\s+/g, ' ').trim().toLowerCase() + ' | ' + celdas.join(' ');
-  }), viejo);
   const kp = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').trim().toLowerCase()), sel);
-  igual(await kp(vieja, '#hKpis .kpi'), await kp(nueva, '[data-testid="historia-kpis"] .e-kpi'), 'historia: indicadores');
-  const fv = await firma(vieja, true);
-  ok(fv.length > 80, `historia: rejilla con ${fv.length} filas`);
-  igual(fv, await firma(nueva, false), 'historia veteranía: rejilla completa (filas, cifra dorada y color por celda)');
-  igual(await kp(vieja, '#hNotaOrden'), await kp(nueva, '[data-testid="historia-nota-orden"]'), 'historia veteranía: nota');
-  await vieja.click('#segHOrden button[data-o="debut"]'); await clic(nueva, '.e-segmento button', 'Año de incorporación');
-  const fd = await firma(nueva, false);
-  igual(await firma(vieja, true), fd, 'historia año de incorporación: rejilla completa');
-  igual(await kp(vieja, '#hNotaOrden'), await kp(nueva, '[data-testid="historia-nota-orden"]'), 'historia año de incorporación: nota');
-  ok(fd.filter((x) => x.startsWith('SEP')).length === 1 && /cuerpo técnico/.test(fd.find((x) => x.startsWith('SEP'))), 'D22: en el modo de incorporacion no hay tramos de veteranía; solo la sección de cuerpo técnico');
-  ok(fv.filter((x) => x.startsWith('SEP')).length === 6 && fv.some((x) => /^SEP cuerpo técnico/.test(x)), 'D22: en el modo de veteranía hay 5 tramos y el cuerpo técnico aparte');
-  for (const [tit, vSel, nTxt] of [['Con estadísticas', 'STATS', 'Con estadísticas'], ['Sólo presencia', 'NOSTATS', 'Sólo presencia']]) {
-    await vieja.click(`#segHQuien button[data-q="${vSel}"]`); await clic(nueva, '.e-segmento button', nTxt);
-    igual(await firma(vieja, true), await firma(nueva, false), `historia debut + ${tit}: rejilla`);
-  }
-  await vieja.click('#segHQuien button[data-q="ALL"]'); await clic(nueva, '.e-segmento button', 'Todos');
-  await vieja.fill('#hBuscar', 'lópez'); await nueva.fill('input[type=search]', 'lópez');
-  igual(await firma(vieja, true), await firma(nueva, false), 'historia: buscador (lópez)');
-  await vieja.fill('#hBuscar', ''); await nueva.fill('input[type=search]', '');
-  await vieja.click('#segHOrden button[data-o="veterania"]'); await clic(nueva, '.e-segmento button', 'Veteranía');
-  // tira temporal
-  await vieja.click('#segHVista button[data-v="tira"]'); await clic(nueva, '.e-segmento button', 'Por temporada');
-  igual(await kp(vieja, '#hTira .htcard'), await kp(nueva, '[data-testid="historia-tira"] .e-htcard'), 'historia: tira temporal (13 temporadas + la prevista)');
-  await vieja.click('#segHVista button[data-v="rejilla"]'); await clic(nueva, '.e-segmento button', 'Rejilla');
-  // ficha de persona: las 88
-  const pids = await vieja.locator('#hBody tr[data-pid]').evaluateAll((trs) => trs.map((t) => t.dataset.pid));
-  ok(pids.length === 88, `historia: ${pids.length} personas en la rejilla (88 identidades)`);
+  const seps = await kp(nueva, '[data-testid="historia-rejilla"] tr.e-hsep');
+  ok(seps.length === 5 && seps.some((x) => /^cuerpo técnico/.test(x)) && !seps.some((x) => /llegan/.test(x)), 'D22/D137: 4 tramos de veteranía y el cuerpo técnico aparte, sin «Llegan en 26/27»', seps.join(' | '));
+  ok(/26\/27\s*en curso/.test((await kp(nueva, '[data-testid="historia-rejilla"] thead th.e-hcurso'))[0] || ''), 'D137: la columna 26/27 dice «en curso»');
+  await clic(nueva, '.e-segmento button', 'Año de incorporación');
+  const sepsD = await kp(nueva, '[data-testid="historia-rejilla"] tr.e-hsep');
+  ok(sepsD.length === 1 && /cuerpo técnico/.test(sepsD[0]), 'D22: en el modo de incorporacion no hay tramos de veteranía; solo la sección de cuerpo técnico');
+  await clic(nueva, '.e-segmento button', 'Veteranía');
+  await clic(nueva, '.e-segmento button', 'Por temporada');
+  ok((await nueva.locator('[data-testid="historia-tira"] .e-htcard').count()) === 14, 'historia: tira temporal con 14 temporadas (la 26/27 en curso)');
+  await clic(nueva, '.e-segmento button', 'Rejilla');
+  const pids = await nueva.locator('[data-testid="historia-rejilla"] tr[data-pid]').evaluateAll((trs) => trs.map((t) => t.dataset.pid));
+  ok(pids.length === 87, `historia: ${pids.length} personas en la rejilla (88 identidades menos un «solo entreno» sin temporadas)`);
   let sinEnlace = 0, enlaces = 0; const rotos = [];
   for (const pid of pids) {
-    await vieja.locator(`#hBody tr[data-pid="${pid}"]`).click();
     await nueva.locator(`[data-testid="historia-rejilla"] tr[data-pid="${pid}"]`).click();
-    const a = (await kp(vieja, '#hFicha .hbox'))[0], b = (await kp(nueva, '[data-testid="historia-ficha"]'))[0];
-    igual(a, b, `historia ficha de ${pid}`);
     // cada anio con estadisticas enlaza a una pagina que existe; los de solo presencia no son enlaces
     const hrefs = await nueva.locator('[data-testid="historia-ficha"] a.e-hy').evaluateAll((as) => as.map((x) => x.getAttribute('href')));
     const conStats = await nueva.locator('[data-testid="historia-ficha"] .e-hy-stats').count();
@@ -320,7 +293,7 @@ try {
     ok(hrefs.length === conStats - await nueva.locator('[data-testid="historia-ficha"] .e-hy-sinenlace').count(), `${pid}: solo las temporadas con estadísticas son enlaces`);
     ok(await nueva.locator('[data-testid="historia-ficha"] a.e-hy:not(.e-hy-stats)').count() === 0, `${pid}: ningún año de solo presencia es un enlace`);
     for (const h of hrefs) { enlaces++; const r = await fetch(APP + h); if (r.status !== 200) rotos.push(`${pid} ${h} ${r.status}`); }
-    await vieja.keyboard.press('Escape'); await nueva.keyboard.press('Escape');
+    await nueva.keyboard.press('Escape');
   }
   ok(rotos.length === 0, `historia: ${enlaces} enlaces desde las fichas de persona, ninguno da 404`, rotos.slice(0, 3).join(' | '));
   ok(sinEnlace === 0, 'historia: toda temporada con estadisticas tiene destino (ficha o resumen MdA)', String(sinEnlace));

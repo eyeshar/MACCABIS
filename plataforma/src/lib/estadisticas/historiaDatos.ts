@@ -26,7 +26,8 @@ export function personasHistoria(): Promise<PersonaH[]> {
       fichas.set(s.id, new Set(t?.players.map((p) => p.person_id)));
       mda.set(s.id, new Set((t?.mda_resumen?.jugadores ?? []).map((j) => j.person_id).filter((x): x is string => !!x)));
     }
-    return (HIST.personas as unknown as (PersonaH & { display?: string; formal?: string })[]).map((p) => {
+    // Quien no tiene ninguna temporada (un «solo entreno» sin ficha que nunca ha jugado, D137) no sale en la Historia.
+    return (HIST.personas as unknown as (PersonaH & { display?: string; formal?: string })[]).filter((p) => p.temporadas_jugadas.length).map((p) => {
       const r = reg.get(p.person_id);
       const stats = REG.indice_stats[p.person_id] ?? [];
       return {

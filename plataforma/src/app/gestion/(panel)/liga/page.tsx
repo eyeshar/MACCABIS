@@ -1,6 +1,8 @@
 import { exigirGestor } from "@/lib/sesion";
 import { cargarLiga, dec } from "@/lib/liga";
 import { filasFichas, filasTabla } from "@/lib/jugadoresLiga";
+import Link from "next/link";
+import { fichasPorNombreSolo } from "@/lib/estadisticas/liga";
 import Lideres from "./Lideres";
 import TablaJugadores from "./TablaJugadores";
 
@@ -19,6 +21,7 @@ export default async function LigaConsolidada() {
   const jornadas = Math.max(...clasificacion.map((c) => c.pj));
   const ranking = clasificacion.filter((c) => c.pj > 0).sort((a, b) =>
     b.g / b.pj - a.g / a.pj || (b.pf - b.pc) / b.pj - (a.pf - a.pc) / a.pj || b.pf / b.pj - a.pf / a.pj);
+  const fichasEquipo = fichasPorNombreSolo(); // D129: cada equipo enlaza a su ficha
   const resumen = `${sumadas.length} personas de los ${ranking.length} equipos con partidos jugados, hasta la jornada ${jornadas}. «dobla» = sale con MdA y con MdL (sus dos fichas se suman).`;
 
   return (
@@ -39,6 +42,7 @@ export default async function LigaConsolidada() {
         <TablaJugadores
           sumadas={sumadas}
           fichas={fichas}
+          fichasEquipo={fichasEquipo}
           equipos={clasificacion.map((c) => ({ grupo: c.grupo, equipo: c.equipo }))}
         />
       </div>
@@ -58,7 +62,7 @@ export default async function LigaConsolidada() {
               {ranking.map((c, i) => (
                 <tr key={`${c.grupo}${c.equipo}`} className={c.nuestro ? "lg-nuestro" : ""}>
                   <td>{i + 1}</td>
-                  <td><b>{c.equipo}</b> <span className={`etiqueta ${c.grupo === "G1" ? "etiqueta-abierta" : "etiqueta-cerrada"}`}>{c.grupo}</span></td>
+                  <td>{fichasEquipo[c.equipo] ? <Link href={fichasEquipo[c.equipo]} className="lg-enlace"><b>{c.equipo}</b></Link> : <b>{c.equipo}</b>} <span className={`etiqueta ${c.grupo === "G1" ? "etiqueta-abierta" : "etiqueta-cerrada"}`}>{c.grupo}</span></td>
                   <td className="lg-oculto-movil">{c.pj}</td><td className="lg-oculto-movil">{c.g}</td><td className="lg-oculto-movil">{c.p}</td><td className="lg-solo-mov">{c.g}-{c.p}</td><td>{Math.round((100 * c.g) / c.pj)}%</td>
                   <td className="lg-oculto-movil">{dec(c.pf / c.pj)}</td><td className="lg-oculto-movil">{dec(c.pc / c.pj)}</td>
                   <td>{(c.pf - c.pc) / c.pj > 0 ? "+" : ""}{dec((c.pf - c.pc) / c.pj)}</td>

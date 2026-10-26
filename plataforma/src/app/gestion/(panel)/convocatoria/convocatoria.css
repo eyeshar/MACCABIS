@@ -4,7 +4,8 @@
 .cv-contadores { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cv-contadores span { overflow-wrap: anywhere; }
 .cv-enlace { display: inline-flex; align-items: center; min-height: var(--toque); font-weight: 600; }
-.cv-importacion { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--info-fondo); color: var(--info-tinta); overflow-wrap: anywhere; }
+.cv-importacion { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--info-fondo); color: var(--info-tinta); overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 8px; }
+.cv-importacion .gs-importacion { color: var(--tinta); background: var(--tarjeta); }
 .cv-importacion a { display: inline-flex; align-items: center; min-height: var(--toque); font-weight: 700; }
 .cv-empezar { display: flex; flex-direction: column; gap: 10px; }
 .cv-equipos { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
@@ -82,3 +83,31 @@
 .cv-ficha-campos label { font-size: 13px; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .cv-ficha-casilla { flex-direction: row !important; align-items: center; gap: 8px !important; min-height: var(--toque); }
 .cv-ficha-casilla input { width: 20px; height: 20px; accent-color: var(--c-amarillo); }
+
+/* D124: proyeccion de anotacion (solo gestores). */
+.cv-proyeccion { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--borde); background: color-mix(in srgb, var(--tarjeta) 70%, transparent); }
+.cv-proy-cifra { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
+.cv-proy-cifra small { color: var(--tinta-suave); font-size: 13px; }
+.cv-aportan summary { cursor: pointer; min-height: var(--toque); display: flex; align-items: center; font-weight: 700; }
+.cv-aporte { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-top: 1px solid var(--linea-suave); font-size: 14px; }
+.cv-aporte > span:first-child { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; overflow-wrap: anywhere; }
+
+/* D125: modo rapido. Seleccion multiple con barra «Mover a…» (movil y teclado) y arrastrar en escritorio. */
+.cv-casilla-sel { display: inline-flex; align-items: center; justify-content: center; min-width: var(--toque); min-height: var(--toque); flex: 0 0 auto; cursor: pointer; }
+.cv-casilla-sel input { width: 20px; height: 20px; }
+.cv-sel { background: color-mix(in srgb, var(--c-amarillo) 10%, transparent); }
+.cv-fila[draggable="true"] { cursor: grab; }
+.cv-zona { outline: 3px dashed var(--borde-fuerte); outline-offset: 2px; }
+.cv-zona-ok { outline-color: var(--c-amarillo); }
+.cv-zona-no { outline-color: var(--error); opacity: 0.75; }
+.cv-soltar { margin: 0; padding: 8px 10px; border-radius: 8px; font-weight: 700; background: var(--amarillo-claro); color: var(--amarillo-tinta); }
+.cv-soltar-no { background: var(--error-fondo); color: var(--error); }
+.cv-mensaje { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.cv-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 43; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: #1d1a26f2; border-top: 1px solid var(--borde-fuerte); box-shadow: 0 -10px 30px #0008; }
+.cv-barra .tb-n { font-weight: 600; }
+.cv-barra .tb-n b { font-family: var(--f-titulos); font-size: 1.4rem; }
+.cv-barra .tb-al-MdA, .cv-barra .tb-al-MdA:hover { background: var(--c-amarillo); border-color: var(--c-amarillo); color: var(--c-sobre-acento); }
+.cv-barra .tb-al-MdL, .cv-barra .tb-al-MdL:hover { background: var(--c-naranja); border-color: var(--c-naranja); color: #1b0d03; }
+.cv-barra .boton:disabled { opacity: 0.45; }
+.cv-barra-nota { flex-basis: 100%; text-align: center; color: var(--tinta-suave); }
+@media (max-width: 768px) { .cv-barra { bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom)); padding-bottom: 10px; } }

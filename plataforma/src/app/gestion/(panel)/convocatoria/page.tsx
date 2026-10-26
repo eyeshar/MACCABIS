@@ -15,5 +15,5 @@ export default async function PaginaConvocatoria({ searchParams }: { searchParam
       <div className="gs-titulo"><div><div className="gs-eyebrow">Convocatoria</div><h1>Sin partidos</h1><span className="suave">No quedan partidos de liga en el calendario.</span></div></div>
     );
   }
-  return <Convocatoria key={`${ctx.fecha}-${ctx.convocatoria?.cambiado_en ?? "nueva"}`} ctx={ctx} />;
+  return <Convocatoria key={ctx.fecha} ctx={ctx} />;
 }

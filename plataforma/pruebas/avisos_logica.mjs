@@ -9,6 +9,7 @@
 import * as H from '../src/lib/avisos/horario.ts';
 import * as P from '../src/lib/avisos/planificador.ts';
 import * as T from '../src/lib/avisos/textos.ts';
+import * as CM from '../src/lib/convocatoria/mensajes.ts';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -162,6 +163,37 @@ ok(!todos.some((x) => /lesi[oó]n|trabajo|viaje|familia|horario|nivel|posici|bas
   ok(P.planificar(datos(M('2026-10-12', '19:05'), { jugadores: todosJ })).every((a) => !['carlos'].includes(a.person_id)), 'ningún recordatorio sale para Carlos');
   const lunes = P.planificar(datos(M('2026-10-12', '19:05'), { jugadores: todosJ })).find((a) => a.person_id === 'fernando');
   ok(lunes && !lunes.eventos.some((id) => ['mda2', 'mdl2', 'mda3', 'mdl3'].includes(id)), 'a un «solo entreno» el recordatorio del lunes solo le habla de entrenos');
+}
+
+console.log('\n== Aviso de convocatoria (D127): sin depender del interruptor, a quien toca y sin dobles');
+{
+  const PART = [
+    { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '09:00', encuentro: '08:40', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: null },
+    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '14:00', encuentro: '13:40', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Llevad la equipación amarilla' },
+  ];
+  const t1 = CM.textoEstasConvocado('2026-10-25', PART, ['MdA']);
+  ok(t1.titulo === 'Estás convocado · domingo 25/10' && t1.cuerpo === 'MdA a las 09:00 (quedada 08:40).', '«Estás convocado · domingo 25/10» / «MdA a las 09:00 (quedada 08:40).»', JSON.stringify(t1));
+  const t2 = CM.textoEstasConvocado('2026-10-25', PART, ['MdA', 'MdL']);
+  ok(t2.cuerpo === 'MdA a las 09:00 (quedada 08:40) y MdL a las 14:00 (quedada 13:40). Llevad la equipación amarilla.', 'dobla: los dos partidos y el aviso de la jornada (equipación)', t2.cuerpo);
+  const conv = { MdA: [{ person_id: 'jon' }, { person_id: 'guille' }], MdL: [{ person_id: 'jon' }, { person_id: 'ana' }] };
+  let d = CM.destinatariosAviso(conv, null);
+  ok(!d.cambio && d.personas.map((p) => p.person_id).sort().join() === 'ana,guille,jon' && d.personas.find((p) => p.person_id === 'jon').equipos.join() === 'MdA,MdL', 'primer envío: a todos los convocados (Jon con sus dos equipos)');
+  d = CM.destinatariosAviso(conv, conv);
+  ok(d.cambio && d.personas.length === 0, 'sin cambios desde lo avisado: a nadie (no hay dobles)');
+  const despues = { MdA: [{ person_id: 'jon' }, { person_id: 'ana' }], MdL: [{ person_id: 'jon' }, { person_id: 'luis' }] };
+  d = CM.destinatariosAviso(despues, conv);
+  const de = (id) => d.personas.find((p) => p.person_id === id);
+  ok(d.cambio && d.personas.length === 3 && de('ana').equipos.join() === 'MdA' && de('luis').equipos.join() === 'MdL' && de('guille').equipos.length === 0 && !de('jon'), 'cambio tras enviar: a quien cambia (Ana pasa, Luis entra, Guille sale), no a Jon');
+  const tc = CM.textoCambioConvocatoria('2026-10-25', PART, ['MdA']);
+  ok(tc.titulo === 'Cambio en la convocatoria · domingo 25/10' && tc.cuerpo === 'Estás convocado: MdA a las 09:00 (quedada 08:40).', '«Cambio en la convocatoria · domingo 25/10»', JSON.stringify(tc));
+  ok(CM.textoCambioConvocatoria('2026-10-25', PART, []).cuerpo === 'Ya no estás convocado este domingo.', 'quien sale: «Ya no estás convocado este domingo.»');
+  ok(CM.firmaConvocatoria(conv) === CM.firmaConvocatoria({ MdL: [{ person_id: 'ana' }, { person_id: 'jon' }], MdA: [{ person_id: 'guille' }, { person_id: 'jon' }] }) && CM.firmaConvocatoria(conv) !== CM.firmaConvocatoria(despues), 'la firma de la clave única no depende del orden y cambia si cambia la convocatoria');
+  const todos = [t1, t2, tc].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
+  ok(!/nivel|posici|motivo|exterior|interior|Dobla/i.test(todos), 'sin niveles, posiciones ni motivos en la pantalla de bloqueo');
+  // Silencio (D99.7): aprobada y enviada el viernes a las 23:00, el aviso del domingo a las 09:00 espera a las 08:30 del
+  // sabado; el sabado a las 23:30, con el partido a menos de 12 h reales, sale al momento.
+  ok(iso(H.horaDeEnvio(M('2026-10-23', '23:00'), M('2026-10-25', '09:00'))) === iso(M('2026-10-24', '08:30')), 'respeta el silencio: el viernes a las 23:00 sale el sábado a las 08:30');
+  ok(iso(H.horaDeEnvio(M('2026-10-24', '23:30'), M('2026-10-25', '09:00'))) === iso(M('2026-10-24', '23:30')), 'y con el partido a menos de 12 h, sale al momento');
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

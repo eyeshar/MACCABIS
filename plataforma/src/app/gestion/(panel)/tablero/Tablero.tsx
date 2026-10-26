@@ -10,6 +10,8 @@ import {
   type Bloque, type FilaTablero, type ModoAgrupar,
 } from "@/lib/tablero/vista";
 import type { OpcionSelector, TableroDomingo, TableroEvento } from "@/lib/tablero/datos";
+import { proyeccionDe, textoBajoMinimo, textoProyeccion, textoRival } from "@/lib/convocatoria/proyeccion";
+import BloqueImportacion from "@/components/gestion/BloqueImportacion";
 import { cambiarConvocatoria, deshacerRespuestas, responderTablero, restaurarConvocatoria } from "./acciones";
 
 const CLAVE_AGRUPAR = "maccabis:tablero-agrupar";
@@ -251,15 +253,31 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
           <Selector opciones={opciones} actual={actual} />
         </div>
         {avisoEstado}
+        {!datos.encendido && <BloqueImportacion estado={datos.importacion} />}
         <div className="tb-resumenes">
-          {resumen.map((r) => (
+          {resumen.map((r) => {
+            const pr = proyeccionDe(datos.proyeccion, r.equipo, (conv[r.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombres.get(c.person_id) ?? c.person_id })));
+            const avisos = pr?.bajoMinimo ? [...r.avisos, textoBajoMinimo(pr)] : r.avisos;
+            return (
             <section key={r.equipo} className="tb-resumen" data-equipo={r.equipo} data-testid={`resumen-${r.equipo}`} aria-label={`Resumen ${r.equipo}`} {...destino(r.equipo)}>
               <div className="tb-resumen-cab"><span className={`chip-eq chip-${r.equipo === "MdA" ? "MDA" : "MDL"}`}>{r.equipo}</span><span>{r.rival} · {r.inicio ?? "hora por confirmar"}</span></div>
               <p className="tb-cifras"><b className="cifra">{r.total}</b> convocados · {r.bases} {r.bases === 1 ? "base" : "bases"}{r.basesReserva ? ` + ${r.basesReserva} de reserva` : ""} · {r.exteriores} ext. · {r.interiores} int.</p>
-              {r.avisos.length > 0 && <ul className="tb-avisos">{r.avisos.map((a) => <li key={a}>{a}</li>)}</ul>}
+              {pr && (
+                <div className="tb-proyeccion" data-testid={`proyeccion-${r.equipo}`}>
+                  <p><b>{textoProyeccion(pr)}</b>{pr.notaRival ? ` · ${pr.notaRival}` : ""}{pr.pocosDatos ? ` · ${pr.pocosDatos} con pocos datos` : ""}</p>
+                  <p className="suave">{textoRival(pr)}.</p>
+                  {pr.aportes.length > 0 && (
+                    <details><summary>Quién aporta</summary>
+                      <ul>{pr.aportes.map((a) => <li key={a.person_id}>{a.nombre}{a.pocosDatos ? " (pocos datos)" : ""}: <span className="cifra">{a.puntos.toLocaleString("es-ES")}</span></li>)}</ul>
+                    </details>
+                  )}
+                </div>
+              )}
+              {avisos.length > 0 && <ul className="tb-avisos">{avisos.map((a) => <li key={a}>{a}</li>)}</ul>}
               <span className="tb-soltar">Suelta aquí para convocar al {r.equipo}</span>
             </section>
-          ))}
+            );
+          })}
         </div>
         <Agrupar modo={modo} cambiar={cambiarModo} />
         <section aria-labelledby="t-juegan" className="tb-seccion">

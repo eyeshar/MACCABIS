@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { textoColores } from "@/lib/colores";
 import { fechaCorta } from "@/lib/estadisticas/calculo";
-import type { Color, DatosRivales, Rival } from "@/lib/estadisticas/liga";
+import type { Color, DatosRivales, Rival, TemporadaRival } from "@/lib/estadisticas/liga";
 import { CajaTabla, Control, Nota, SecH, Segmento } from "./Comunes";
 
 // Rivales 26/27 (migrado de GitHub Pages): lo esencial del grupo, tarjetas de rivales y ficha con trayectoria y cara a cara.
@@ -49,9 +50,14 @@ function Ultimo({ h }: { h: Rival["h2h"] }) {
 
 function Tarjeta({ r, onAbrir }: { r: Rival; onAbrir: (id: string) => void }) {
   const antes = r.antes.length ? <div className="e-rv-antes">antes: {r.antes.join(", ")}</div> : null;
+  // D129: todas las tarjetas abren su ficha (tambien las de los equipos sin rastro en los JDM).
+  const abrible = {
+    role: "button", tabIndex: 0, "aria-label": `Ver ficha de ${r.nombre}`, onClick: () => onAbrir(r.id),
+    onKeyDown: (ev: React.KeyboardEvent) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onAbrir(r.id); } },
+  } as const;
   if (r.sin_rastro) {
     return (
-      <div className="e-rv e-rv-sin"><div className="e-rv-tira" /><h4>{r.nombre}</h4>{antes}
+      <div className="e-rv e-rv-sin" {...abrible}><div className="e-rv-tira" /><h4>{r.nombre}</h4>{antes}
         <span className="e-rv-tag">Sin rastro en los JDM</span>
         <div className="e-rv-donde">Equipo nuevo, cambio de nombre o competición externa.</div>
         <BalanceH2H h={r.h2h} />
@@ -60,8 +66,7 @@ function Tarjeta({ r, onAbrir }: { r: Rival; onAbrir: (id: string) => void }) {
   }
   const t = r.t2526;
   return (
-    <div className={`e-rv${t && t.pos <= 3 ? " e-rv-top" : ""}`} role="button" tabIndex={0} aria-label={`Ver ficha de ${r.nombre}`}
-      onClick={() => onAbrir(r.id)} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onAbrir(r.id); } }}>
+    <div className={`e-rv${t && t.pos <= 3 ? " e-rv-top" : ""}`} {...abrible}>
       <div className="e-rv-tira" /><h4>{r.nombre}</h4>{antes}
       {t ? (
         <div className="e-rv-donde">2025/26: <b>{t.pos}º/{t.n}</b><Incomp n={t.incomparecencias} g={t.g} p={t.p} /> · {t.g}-{t.p}<Aviso txt={t.aviso} /> · {t.distrito}<br />{t.grupo}{t.extra.length > 0 && <><br />{t.extra.join(" · ")}</>}</div>
@@ -101,7 +106,31 @@ function Grafico({ r }: { r: Rival }) {
   );
 }
 
-function Ficha({ r, color, onCerrar }: { r: Rival; color: Color | null | undefined; onCerrar: () => void }) {
+/** Liga 26/27 del rival (D129): puesto, balance, racha (G en verde, P en rojo; el numero, del color del ultimo resultado)
+ *  y sus partidos, enlazados a la pagina de cada partido y a la ficha de cada equipo. Sin tablas: el cuadre con la web
+ *  anterior compara las filas de las tablas de la ficha. */
+function EstaTemporada({ t }: { t: TemporadaRival }) {
+  return (
+    <div className="e-rv-temp" data-testid="rival-temporada">
+      <div className="e-rv-temp-cab">
+        <span>{t.pos ? <><b>{t.pos}º</b> de {t.equipos}</> : "—"} · {t.g}-{t.p}{t.pts != null ? ` · ${t.pts} pts` : ""}</span>
+        <span className="e-rv-racha">Racha{" "}
+          <b className={t.racha ? (t.racha.tipo === "G" ? "e-pos" : "e-neg") : ""} data-testid="racha-num">{t.racha ? t.racha.n + t.racha.tipo : "–"}</b>{" "}
+          {t.ultimos.map((c, i) => <span key={i} className={`e-pastilla e-pastilla-${c} e-pastilla-mini`}>{c}</span>)}
+        </span>
+      </div>
+      {t.partidos.length ? t.partidos.map((p) => (
+        <div key={p.id} className="e-partido" data-partido={p.id}>
+          <span className={`e-pl${(p.pl ?? 0) > (p.pv ?? 0) ? " e-gan" : ""}`}><Link href={p.hrefLocal} className="e-enlace-eq">{p.local}</Link></span>
+          <Link href={p.href} className="e-m e-m-enlace" aria-label={`Ver el partido ${p.local} – ${p.visitante} (J${p.jornada})`}>{p.incomparecencia ? "incomp." : `${p.pl} – ${p.pv}`}</Link>
+          <span className={(p.pv ?? 0) > (p.pl ?? 0) ? "e-gan" : ""}><Link href={p.hrefVisitante} className="e-enlace-eq">{p.visitante}</Link></span>
+        </div>
+      )) : <Nota>Todavía no ha jugado esta temporada.</Nota>}
+    </div>
+  );
+}
+
+function Ficha({ r, color, temporada, onCerrar }: { r: Rival; color: Color | null | undefined; temporada?: TemporadaRival; onCerrar: () => void }) {
   const h = r.h2h;
   const cerrar = useRef(onCerrar); cerrar.current = onCerrar;
   const boton = useRef<HTMLButtonElement>(null);
@@ -120,13 +149,15 @@ function Ficha({ r, color, onCerrar }: { r: Rival; color: Color | null | undefin
           <div>
             <h3>{r.nombre}</h3>
             <div className="e-modal-sub">Grupo del {r.grupo} en 2026/27{r.antes.length ? ` · antes: ${r.antes.join(", ")}` : ""}</div>
-            <div className="e-modal-sub">{r.temporadas_jdm} de {r.temporadas_disponibles} temporadas en los JDM · mejor: {r.mejor}</div>
+            <div className="e-modal-sub">{r.sin_rastro ? "Sin rastro en los JDM: equipo nuevo, cambio de nombre o competición externa." : `${r.temporadas_jdm} de ${r.temporadas_disponibles} temporadas en los JDM · mejor: ${r.mejor}`}</div>
             {color && <div className="e-eqcol"><i className="e-eqdot" style={{ background: color.css }} />{textoColores(color)}</div>}
           </div>
           <button ref={boton} type="button" className="e-cerrar" aria-label="Cerrar" onClick={onCerrar}>✕</button>
         </div>
         <div className="e-modal-cuerpo">
           <BalanceH2H h={h} />
+          {temporada && <><SecH titulo="Liga 26/27" tag="clasificación calculada" /><EstaTemporada t={temporada} /></>}
+          {!r.sin_rastro && <>
           <SecH titulo="Trayectoria en liga" tag="puesto relativo · 1º arriba" />
           <div className="e-grafico"><Grafico r={r} /></div>
           <Nota>Primera fase de liga de cada temporada, normalizada por el tamaño del grupo. Las temporadas sin datos quedan vacías: 2019/20 no está en el portal.</Nota>
@@ -151,6 +182,7 @@ function Ficha({ r, color, onCerrar }: { r: Rival; color: Color | null | undefin
             </table>
           </CajaTabla>
           {r.homonimos.length > 0 && <Nota>⚠ {r.homonimos.map((x) => `${rvT(x.t)}: ${x.aviso}`).join(" · ")}</Nota>}
+          </>}
           <SecH titulo="Cara a cara" tag={`${h.g + h.p} partidos · más reciente primero`} />
           {h.partidos.length ? (
             <CajaTabla>
@@ -177,10 +209,11 @@ function Ficha({ r, color, onCerrar }: { r: Rival; color: Color | null | undefin
   );
 }
 
-export default function RivalesPanel({ datos, colores, grupoInicial, rivalInicial }: {
-  datos: DatosRivales; colores: Record<string, Color | null>; grupoInicial: G; rivalInicial: string | null;
+export default function RivalesPanel({ datos, colores, grupoInicial, rivalInicial, temporada }: {
+  datos: DatosRivales; colores: Record<string, Color | null>; grupoInicial: G; rivalInicial: string | null; temporada: Record<string, TemporadaRival>;
 }) {
-  const inicial = rivalInicial ? datos.rivales.find((x) => x.id === rivalInicial && !x.sin_rastro) : undefined;
+  // D129: la ficha se abre para todos los rivales (tambien los que no tienen rastro en los JDM): ningun enlace lleva a ninguna parte.
+  const inicial = rivalInicial ? datos.rivales.find((x) => x.id === rivalInicial) : undefined;
   const [grupo, setGrupo] = useState<G>(inicial ? inicial.grupo : grupoInicial);
   const [abierto, setAbierto] = useState<string | null>(inicial ? inicial.id : null);
   const url = (g: G, r?: string | null) => window.history.replaceState(null, "", `/liga/rivales?g=${g}${r ? `&r=${encodeURIComponent(r)}` : ""}`);
@@ -202,7 +235,7 @@ export default function RivalesPanel({ datos, colores, grupoInicial, rivalInicia
       <SecH titulo="Rivales" tag={`${lista.length} equipos`} />
       <div className="e-rvgrid" data-testid="rivales-lista">{lista.map((r) => <Tarjeta key={r.id} r={r} onAbrir={abrir} />)}</div>
       <Nota>Ordenados por su porcentaje de victorias en partidos jugados en la liga de 2025/26 (si empatan, por su puesto oficial; los que no tienen rastro, al final). El puesto que se muestra es el de la clasificación oficial, que resta puntos por las incomparecencias. Pincha en una tarjeta para ver su trayectoria y el cara a cara completo. El cara a cara suma las dos fichas del club (MdL + MdA).</Nota>
-      {ficha && !ficha.sin_rastro && <Ficha r={ficha} color={colores[ficha.id]} onCerrar={cerrar} />}
+      {ficha && <Ficha r={ficha} color={colores[ficha.id]} temporada={temporada[ficha.id]} onCerrar={cerrar} />}
       <div className="e-fuente">Fuente: Ayuntamiento de Madrid, datos abiertos (datos.madrid.es), CC BY 4.0</div>
     </>
   );

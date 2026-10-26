@@ -47,7 +47,9 @@ function celda(j: FilaTabla, k: Columna, pp: boolean): string {
 const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const clave = (j: FilaTabla) => `${j.grupo}|${j.equipo}|${j.nombre}`;
 
-export default function TablaJugadores({ sumadas, fichas, equipos }: { sumadas: FilaTabla[]; fichas: FilaTabla[]; equipos: { grupo: string; equipo: string }[] }) {
+export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo }: {
+  sumadas: FilaTabla[]; fichas: FilaTabla[]; equipos: { grupo: string; equipo: string }[]; fichasEquipo: Record<string, string>;
+}) {
   const [col, setCol] = useState<Columna>("pts");
   const [dir, setDir] = useState<1 | -1>(-1);
   const [porPartido, setPorPartido] = useState(false);
@@ -95,9 +97,10 @@ export default function TablaJugadores({ sumadas, fichas, equipos }: { sumadas: 
   const nombreCol = COLUMNAS.find((c) => c.k === col)!;
   const flecha = (k: Columna) => (k === col ? (dir === 1 ? " ▲" : " ▼") : "");
 
+  // D129: el nombre del equipo lleva a su ficha (la de Rivales 26/27 o la de MdA/MdL); el del jugador, a Scouting.
   const enlaceEquipos = (j: FilaTabla) =>
     j.equipos.map((e, i) => (
-      <span key={e}>{i > 0 && " + "}<Link href={urlEquipo(e)} className="lg-enlace">{e}</Link></span>
+      <span key={e}>{i > 0 && " + "}<Link href={fichasEquipo[e] ?? urlEquipo(e)} className="lg-enlace">{e}</Link></span>
     ));
 
   return (
@@ -202,7 +205,7 @@ export default function TablaJugadores({ sumadas, fichas, equipos }: { sumadas: 
                       <div key={c.k}><dt>{c.t}{porPartido && ["segundos", "p2a", "p3a", "tla", "faltas"].includes(c.k) ? "/p" : ""}</dt><dd>{celda(j, c.k, porPartido)}</dd></div>
                     ))}
                   </dl>
-                  <p className="lg-fila-enl">Ver en Scouting: {enlaceEquipos(j)}</p>
+                  <p className="lg-fila-enl">Ficha: {enlaceEquipos(j)} · <Link href={urlEquipo(j.equipos[0])} className="lg-enlace">Ver en Scouting</Link></p>
                 </div>
               )}
             </li>

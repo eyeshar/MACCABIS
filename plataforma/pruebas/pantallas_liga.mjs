@@ -103,7 +103,11 @@ try {
     await p.goto(`${APP}/gestion/scouting`);
     ok(normal(await p.textContent('h2')).includes(normal(PROX.MDA.rival)), `scouting: por defecto, el proximo rival del MdA (${PROX.MDA.rival})`, await p.textContent('h2'));
     const prox = await p.textContent('.lg-prox');
-    ok(prox.includes(`J${PROX.MDA.jornada} ·`) && prox.includes(dm(PROX.MDA.fecha)) && prox.includes(PROX.MDA.local ? 'en casa' : 'fuera'), `scouting: proximo partido contra nosotros (J${PROX.MDA.jornada} · ${dm(PROX.MDA.fecha)} · ${PROX.MDA.local ? 'en casa' : 'fuera'})`, prox);
+    // D129: sin «en casa / fuera»; el cartel tal cual sale en el calendario oficial (primero el que figura primero).
+    const cartel = await p.textContent('.lg-prox-f');
+    const [primero, segundo] = PROX.MDA.local === false ? [PROX.MDA.rival, 'MdA'] : ['MdA', PROX.MDA.rival];
+    ok(prox.includes(`J${PROX.MDA.jornada} ·`) && prox.includes(dm(PROX.MDA.fecha)) && !/en casa|fuera/i.test(prox) && normal(cartel).indexOf(normal(primero)) < normal(cartel).indexOf(normal(segundo)) && cartel.includes(' – '),
+      `scouting: proximo partido contra nosotros (J${PROX.MDA.jornada} · ${dm(PROX.MDA.fecha)}), «${primero} – ${segundo}» y sin «casa/fuera»`, prox);
     ok((await p.locator('.lg-max').count()) === 3, 'scouting: 3 maximos anotadores');
     ok(await menuEntero(), 'el menu de gestion no se corta (cabe o se desplaza en su fila)');
     ok(await sinDesbordar(), 'scouting: sin desbordamiento horizontal');
@@ -274,9 +278,12 @@ try {
     // clic en jugador / equipo -> Scouting con ese equipo
     await T.getByLabel('Buscar').fill('esteban, jon');
     if (movil) await T.locator('.lg-fila-cab').first().click();
-    await (movil ? T.locator('.lg-fila-det a').first() : T.locator('tbody tr a').first()).click();
+    // D129: el nombre del equipo lleva a su ficha; el del jugador (y «Ver en Scouting» en el movil), a Scouting.
+    const eqHref = await (movil ? T.locator('.lg-fila-det a').first() : T.locator('tbody tr td:nth-child(2) a').first()).getAttribute('href');
+    ok(/^\/liga\/2026-27\/equipo\?eq=MD[AL]$/.test(eqHref), 'tabla: el nombre del equipo enlaza a su ficha (MdA/MdL: su pestaña Equipo)', eqHref);
+    await (movil ? T.getByRole('link', { name: 'Ver en Scouting' }).first() : T.locator('tbody tr a').first()).click();
     await p.waitForURL(/\/gestion\/scouting\?e=Md[AL]/);
-    ok((await p.textContent('h2')).includes('Md'), 'tabla: clic en jugador/equipo abre Scouting con ese equipo');
+    ok((await p.textContent('h2')).includes('Md'), 'tabla: clic en el jugador (o «Ver en Scouting») abre Scouting con ese equipo');
     // Scouting: enlace a la tabla y nota
     await p.goto(`${APP}/gestion/scouting`);
     const enlaceTodos = p.getByRole('link', { name: 'Ver todos los jugadores de la liga' });

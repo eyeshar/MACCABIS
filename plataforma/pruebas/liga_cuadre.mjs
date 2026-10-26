@@ -193,8 +193,12 @@ try {
   await vieja.goto(`${PAGES}/index.html?p=liga&hoy=${HOY}`, { waitUntil: 'networkidle' });
   await vieja.waitForSelector('#lgTabla tbody tr');
   await nueva.goto(`${APP}/liga?hoy=${HOY}`, { waitUntil: 'networkidle' });
-  igual(await textos(vieja, '#lgProx .eqp .v'), await textos(nueva, '[data-testid="liga-proximos"] .e-eqp-v'), 'proximos partidos: rival');
-  igual(await textos(vieja, '#lgProx .eqp .s'), await textos(nueva, '[data-testid="liga-proximos"] .e-eqp-s'), 'proximos partidos: dia, hora y pista');
+  // D129: la web nueva ya no dice «vs/en» ni «en casa/fuera» (el cartel va en el orden del calendario oficial); se
+  // comparan el rival, el dia, la hora y la pista.
+  const rivalVieja = (t) => t.replace(/^md[al] (vs|en) /, '');
+  const rivalNueva = (t) => t.split(' – ').find((x) => !/^md[al]$/.test(x)) ?? t;
+  igual((await textos(vieja, '#lgProx .eqp .v')).map(rivalVieja), (await textos(nueva, '[data-testid="liga-proximos"] .e-eqp-v')).map(rivalNueva), 'proximos partidos: rival');
+  igual((await textos(vieja, '#lgProx .eqp .s')).map((t) => t.replace(/ · (en casa|fuera)$/, '')), await textos(nueva, '[data-testid="liga-proximos"] .e-eqp-s'), 'proximos partidos: dia, hora y pista (sin «casa/fuera», D129)');
   igual(await textos(vieja, '#lgProx .eqp .eqcol'), await textos(nueva, '[data-testid="liga-proximos"] .e-eqcol'), 'proximos partidos: colores');
   for (const g of ['G1', 'G2']) {
     if (g === 'G2') { await vieja.click('#segLgGrupo button[data-g="G2"]'); await clic(nueva, '.e-segmento button', 'G2 · MdL'); }
@@ -210,7 +214,7 @@ try {
       await vieja.selectOption('#lgSel', e); await nueva.selectOption('#lg-equipo', e);
       const kv = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].map((k) => k.innerText.replace(/\s+/g, ' ').toLowerCase()), sel);
       igual(await kv(vieja, '#lgFicha .kpi'), await kv(nueva, '[data-testid="liga-ficha"] .e-kpi'), `${g} ${e}: ficha, indicadores`);
-      igual(await kv(vieja, '#lgFicha .lgmini'), await kv(nueva, '[data-testid="liga-ficha"] .e-mini'), `${g} ${e}: ficha, casa y fuera`);
+      // D129: el bloque «En casa / Fuera» ya no está en la web nueva (todos juegan en Moratalaz): no se compara.
     }
   }
 

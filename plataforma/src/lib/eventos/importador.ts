@@ -113,7 +113,7 @@ export type ComparacionCalendario = {
 
 type EventoLiga = Pick<EventoFila, "id" | "clave" | "tipo" | "equipo" | "jornada" | "rival" | "es_local" | "fecha" | "inicio" | "numero_pista" | "estado">;
 type Descanso = { equipo: "MdA" | "MdL"; jornada: number; fecha: string | null };
-const TEXTO_CAMPO: Record<CampoCambio, string> = { fecha: "Fecha", hora: "Hora", pista: "Pista", local: "Local / visitante", rival: "Rival" };
+const TEXTO_CAMPO: Record<CampoCambio, string> = { fecha: "Fecha", hora: "Hora", pista: "Pista", local: "Orden del cartel", rival: "Rival" };
 const fdma = (f: string) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
 const h5 = (t: string | null | undefined) => (t ? String(t).slice(0, 5) : null);
 
@@ -147,7 +147,8 @@ export function compararCalendario(lineas: LineaCalendario[], eventos: EventoLig
       if (e.fecha !== l.fecha) { pon("fecha", fdma(e.fecha), fdma(l.fecha), l.fecha); hay = true; }
       if (h5(e.inicio) !== l.hora) { pon("hora", h5(e.inicio) ?? "sin hora", l.hora ?? "sin hora", l.hora); hay = true; }
       if ((e.numero_pista ?? null) !== l.pista) { pon("pista", e.numero_pista ? `Pista ${e.numero_pista}` : "por confirmar", l.pista ? `Pista ${l.pista}` : "por confirmar", l.pista); hay = true; }
-      if (e.es_local !== l.esLocal) { pon("local", e.es_local ? "local" : "visitante", l.esLocal ? "local" : "visitante", l.esLocal); hay = true; }
+      // D129: local/visitante solo se usa por dentro (equipacion); al gestor se le enseña el cartel tal cual.
+      if (e.es_local !== l.esLocal) { pon("local", e.es_local === false ? `${e.rival ?? l.rival} – ${l.equipo}` : `${l.equipo} – ${e.rival ?? l.rival}`, nombre, l.esLocal); hay = true; }
       if (normalizar(e.rival) !== normalizar(l.rival)) { pon("rival", e.rival ?? "—", l.rival, l.rival); hay = true; }
       if (!hay) iguales++;
     } else if (l.tipo === "descanso") {

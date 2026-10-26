@@ -12,6 +12,7 @@ import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
 import { avisosDeLaJornada } from "@/lib/inicio/avisos";
 import { fichaEstadisticas } from "@/lib/mensajes";
 import { clasificaciones, temporadaDe } from "@/lib/publico";
+import { fichaPorNombre, hrefPartido, partidoNuestro } from "@/lib/estadisticas/liga";
 import {
   cargarAvisosPersonales, cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas,
   cargarQuienVa, respuestasWebEncendido,
@@ -174,12 +175,16 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
                   const dorsal = dorsalDe(e.equipo);
                   return (
                     <article key={e.id} className="in-partido-uno" data-equipo={e.equipo === "MdA" ? "MDA" : "MDL"}>
-                      <strong className="in-partido-cruce">{e.equipo} {e.es_local === false ? "en" : "vs"} {a?.rival ?? e.rival}</strong>
+                      {/* D129: sin «en casa / fuera»; el cartel tal cual sale en el calendario oficial, con cada equipo enlazado a su ficha. */}
+                      <strong className="in-partido-cruce">{(() => {
+                        const n = <EnlaceEquipo nombre={e.equipo} />, r = <EnlaceEquipo nombre={a?.rival ?? e.rival ?? ""} />;
+                        return e.es_local === false ? <>{r} – {n}</> : <>{n} – {r}</>;
+                      })()}</strong>
                       <div className="in-casillas">
                         <div className="in-casilla in-casilla-quedada"><small>Quedada</small><b className="cifra">{inicio ? restar20(inicio) : "—"}</b></div>
                         <div className="in-casilla"><small>Partido</small><b className="cifra">{inicio ?? "—"}</b></div>
                       </div>
-                      <span className="suave">{lugarTexto(e)}{e.es_local != null ? ` · ${e.es_local ? "en casa" : "fuera"}` : ""}</span>
+                      <span className="suave">{lugarTexto(e)}</span>
                       {mapa && <a className="boton boton-claro in-llegar" href={mapa} target="_blank" rel="noopener noreferrer">Cómo llegar</a>}
                       <div className="in-tepones" data-testid="te-pones">
                         <span className="mono tenue">Te pones</span>
@@ -230,12 +235,18 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
                   <div className="in-cifra"><b className="cifra">{temporada.entrenos ? `${temporada.entrenos.fueron}/${temporada.entrenos.total}` : "—"}</b><span>entrenos</span></div>
                 </div>
                 <div className="in-partidos-temporada">
-                  {temporada.partidos.map((p, i) => (
+                  {temporada.partidos.map((p, i) => {
+                    // D129: el cartel tal cual el calendario oficial (sin «vs / en») y enlazado a la pagina del partido.
+                    const n = p.equipo === "MDA" ? "MdA" : "MdL";
+                    const cartel = p.local === false ? <>{p.rival} – <b>{n}</b></> : <><b>{n}</b> – {p.rival}</>;
+                    const x = partidoNuestro(p.equipo, p.fecha);
+                    return (
                     <div key={i} className="in-fila-partido pequeno">
-                      <span><b>{p.equipo === "MDA" ? "MdA" : "MdL"}</b> {p.local ? "vs" : "en"} {p.rival}</span>
+                      <span>{x ? <Link href={hrefPartido(x.id)} className="in-enlace-partido">{cartel}</Link> : cartel}</span>
                       <span className="cifra">{p.minutos != null ? `${p.minutos}′` : "—"} · {p.masMenos != null ? conSigno(p.masMenos) : "—"}</span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             ) : <p className="suave" style={{ margin: 0 }}>Aún no has jugado esta temporada.</p>}
@@ -248,4 +259,10 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
       {ropa && <RopaInicio campana={campana} pedidos={pedidos} />}
     </main>
   );
+}
+
+/** Nombre de un equipo enlazado a su ficha de la liga (D129); si no es de la liga, solo el nombre. */
+function EnlaceEquipo({ nombre }: { nombre: string }) {
+  const href = fichaPorNombre(nombre);
+  return href ? <Link href={href} className="in-enlace-equipo">{nombre}</Link> : <>{nombre}</>;
 }

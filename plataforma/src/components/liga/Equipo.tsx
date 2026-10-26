@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import {
   esPO, minutos, nombreCorto, ordenarPartidos, partidosFiltrados, resumenEquipo, sinPO,
@@ -8,10 +9,11 @@ import {
 import { ChipEquipo, CajaTabla, Control, Dash, Kpi, NInt, NSigned, Nota, OPCIONES_EQUIPO, SecH, Segmento, Tiros } from "./Comunes";
 
 // Pestaña Equipo: balance, puntos a favor y en contra, racha y tabla de partidos ordenable con boxscore desplegable.
-export default function EquipoPestana({ partidos, box, M, equipos }: {
-  partidos: PartidoEst[]; box: Record<string, FilaBox[]>; M: Metricas; equipos: Eq[];
+export default function EquipoPestana({ partidos, box, M, equipos, equipoInicial = "ALL", enlaces }: {
+  partidos: PartidoEst[]; box: Record<string, FilaBox[]>; M: Metricas; equipos: Eq[]; equipoInicial?: FiltroEq;
+  enlaces?: Record<string, { partido: string; rival: string | null }>;
 }) {
-  const [equipo, setEquipo] = useState<FiltroEq>("ALL");
+  const [equipo, setEquipo] = useState<FiltroEq>(equipoInicial);
   const [comp, setComp] = useState<"ALL" | "LIGA" | "PO">("ALL");
   const [orden, setOrden] = useState<{ k: ClavePartido; d: 1 | -1 }>({ k: "fecha", d: 1 });
   const [abierto, setAbierto] = useState<string | null>(null);
@@ -95,6 +97,7 @@ export default function EquipoPestana({ partidos, box, M, equipos }: {
                     <td className="e-mono">{cuando}{tieneBox && !p.incomp && <> <span className="e-flecha">{abierto === k ? "▾" : "▸"}</span></>}</td>
                     <td><ChipEquipo equipo={p.equipo} /></td>
                     <td>
+                      {/* La fila entera abre el boxscore: el rival no es un enlace aqui (se enlaza desde la pagina del partido, D129). */}
                       {sinPO(p.rival)}
                       {esPO(p) && <span className="e-po">PO</span>}
                       {p.sin_stats && <span className="e-po e-po-gris" title="El marcador consta, pero no se conserva la estadística individual de este partido">sin stats</span>}
@@ -105,7 +108,13 @@ export default function EquipoPestana({ partidos, box, M, equipos }: {
                     <td className={`e-c e-mono e-oculta-sm ${dif >= 0 ? "e-pos" : "e-neg"}`}>{p.incomp ? "—" : (dif >= 0 ? "+" : "") + dif}</td>
                   </tr>
                   {abierto === k && abrible && (
-                    <tr className="e-fila-box"><td colSpan={6}><Boxscore filas={box[k]} M={M} /></td></tr>
+                    <tr className="e-fila-box"><td colSpan={6}>
+                      <Boxscore filas={box[k]} M={M} />
+                      {enlaces?.[k] && <p className="e-pt-enlaces">
+                        <Link href={enlaces[k].partido} className="e-boton-enlace">Ver la página del partido →</Link>
+                        {enlaces[k].rival && <Link href={enlaces[k].rival!} className="e-enlace-eq">Ficha de {sinPO(p.rival)} →</Link>}
+                      </p>}
+                    </td></tr>
                   )}
                 </Fragment>
               );
@@ -118,8 +127,8 @@ export default function EquipoPestana({ partidos, box, M, equipos }: {
   );
 }
 
-/** Boxscore de un partido: columnas segun lo que recogia la liga esa temporada. */
-function Boxscore({ filas, M }: { filas: FilaBox[]; M: Metricas }) {
+/** Boxscore de un partido: columnas segun lo que recogia la liga esa temporada (tambien en la pagina de partido, D129). */
+export function Boxscore({ filas, M }: { filas: FilaBox[]; M: Metricas }) {
   const noCat = filas.filter((g) => g.no_jugador);
   return (
     <div className="e-box">

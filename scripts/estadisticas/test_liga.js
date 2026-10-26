@@ -3,11 +3,12 @@
  *  1. PRIVACIDAD (D73): data/liga_<temporada>.json no contiene ni un nombre de jugador de los que traen las hojas.
  *  2. Aritmética: PJ = G + P, PF/PC de la clasificación = suma de los resultados, puntos = 2G + 1P,
  *     lo que marcan unos lo reciben otros (suma PF = suma PC) y la clasificación está ordenada.
- *  3. Cada resultado del JSON coincide con los totales de su hoja.
+ *  3. Cada resultado del JSON coincide con los totales de su hoja (marcador y, D129, 2P, 3P, TL y faltas por equipo)
+ *     y tiene un id único para su página de partido.
  */
 const fs = require('fs');
 const path = require('path');
-const { construir, clasificar } = require('./liga');
+const { construir, clasificar, idPartido } = require('./liga');
 const T = process.argv[2] || '2026-27';
 const ROOT = path.resolve(__dirname, '..', '..');
 let fallos = 0;
@@ -34,7 +35,17 @@ for (const [k, g] of Object.entries(pub.grupos)) {
   for (const res of g.resultados) {
     const h = r.privado.find(p => p.grupo === k && p.jornada === res.jornada && p.local === res.local && p.visitante === res.visitante);
     ok(h && h.equipos[0].totales.pts === res.pl && h.equipos[1].totales.pts === res.pv, `${k} J${res.jornada} ${res.local} ${res.pl}-${res.pv} ${res.visitante}: coincide con los totales de su hoja`);
+    // D129: los totales por equipo de la página de partido son los de la fila TOTALES de la hoja.
+    const t = (e) => ({ pts: e.totales.pts, t2: e.totales.p2a, t3: e.totales.p3a, tl: e.totales.tla, tl_int: e.totales.tli, faltas: e.totales.fc });
+    ok(h && res.est && JSON.stringify(res.est) === JSON.stringify({ local: t(h.equipos[0]), visitante: t(h.equipos[1]) })
+      && [res.est.local, res.est.visitante].every((e) => 2 * e.t2 + 3 * e.t3 + e.tl === e.pts),
+      `${k} J${res.jornada} ${res.local} - ${res.visitante}: estadísticas por equipo (2P, 3P, TL, faltas) = TOTALES de la hoja y 2P×2 + 3P×3 + TL = puntos`);
   }
+  // D129: cada partido tiene un id único y estable (grupo, jornada y los dos equipos en el orden del calendario oficial).
+  const ids = g.resultados.map((x) => x.id);
+  ok(ids.every((id, i) => id === idPartido(k, g.resultados[i].jornada, g.resultados[i].local_id, g.resultados[i].visitante_id)) && new Set(ids).size === ids.length,
+    `${k}: cada partido tiene un id único (${ids[0]}, ...) y enlaza a equipos que existen`);
+  ok(g.resultados.every((x) => g.equipos[x.local_id]?.nombre === x.local && g.equipos[x.visitante_id]?.nombre === x.visitante), `${k}: local_id y visitante_id son equipos del grupo`);
 }
 ok(/pendiente de contrastar con la oficial/.test(pub.clasificacion_estado), 'la clasificación va marcada como calculada y pendiente de contrastar');
 // 4. Incomparecencias (D74): sin inventar la penalizacion; los puntos del que no se presenta salen de la oficial.

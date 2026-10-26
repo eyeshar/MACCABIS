@@ -12,6 +12,7 @@ import {
 import { diaLargo, diaMes, diaMesLargo, hoyMadrid } from "@/lib/dias";
 import { FUNDACION, GRUPO_EQUIPO, NOMBRE_EQUIPO } from "@/lib/web";
 import { origen } from "@/lib/sesion";
+import { fichaPorNombre, hrefPartido, partidoNuestro } from "@/lib/estadisticas/liga";
 
 // Portada publica (D76, maquetas Main y PortadaMovil): sin login, solo datos publicos (lib/publico.ts). Con sesion, «/»
 // es el inicio personal (D117): lo de cada persona y lo que tiene que hacer.
@@ -32,6 +33,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const TEMPORADA = "26/27";
 
+/** Nombre de un equipo enlazado a su ficha de la liga (D129). */
+function Eq({ nombre, className, style }: { nombre: string; className?: string; style?: React.CSSProperties }) {
+  const href = fichaPorNombre(nombre);
+  return href ? <Link href={href} className={`w-enlace-eq${className ? ` ${className}` : ""}`} style={style}>{nombre}</Link> : <span className={className} style={style}>{nombre}</span>;
+}
+
 function TarjetaPartido({ p }: { p: Proximo }) {
   const e = p.evento;
   const nuestro = NOMBRE_EQUIPO[p.equipo];
@@ -42,13 +49,14 @@ function TarjetaPartido({ p }: { p: Proximo }) {
       <div className="w-partido-cab">
         <span className={`chip-eq chip-${p.equipo}`}>{nuestro} · {GRUPO_EQUIPO[p.equipo]}</span>
         <span className="cifra">
-          {diaMes(e.fecha)} · {e.inicio ?? "hora por confirmar"} · {e.partido?.campo ? `Pista ${e.partido.campo}` : "pista por confirmar"} · {e.local ? "En casa" : "Fuera"}
+          {diaMes(e.fecha)} · {e.inicio ?? "hora por confirmar"} · {e.partido?.campo ? `Pista ${e.partido.campo}` : "pista por confirmar"}
         </span>
       </div>
+      {/* D129: todos juegan en Moratalaz. Sin «en casa / fuera»: el cartel tal cual sale en el calendario oficial. */}
       <div className="w-vs">
-        <div className={`w-local${e.local ? " w-nuestro" : ""}`}>{local}</div>
-        <div className="w-contra">vs</div>
-        <div className={`w-visit${!e.local ? " w-nuestro" : ""}`}>{visitante}</div>
+        <div className={`w-local${e.local ? " w-nuestro" : ""}`}><Eq nombre={local} /></div>
+        <div className="w-contra">–</div>
+        <div className={`w-visit${!e.local ? " w-nuestro" : ""}`}><Eq nombre={visitante} /></div>
       </div>
       <AvisoTarjeta aviso={e.aviso} />
       {p.descansaAntes.length > 0 && <p className="w-descansa">{nuestro} descansa antes en la J{p.descansaAntes.join(", J")}.</p>}
@@ -59,15 +67,18 @@ function TarjetaPartido({ p }: { p: Proximo }) {
 function Marcador({ r }: { r: Resultado }) {
   const nuestro = NOMBRE_EQUIPO[r.equipo];
   const [izq, der, pi, pd] = r.local === false ? [r.rival, nuestro, r.pc, r.pf] : [nuestro, r.rival, r.pf, r.pc];
+  const partido = partidoNuestro(r.equipo, r.fecha); // D129: el marcador lleva a la pagina del partido
   return (
     <div className="w-resultado" data-equipo={r.equipo}>
       <span className={`w-gp w-gp-${r.gano ? "G" : "P"}`} aria-label={r.gano ? "Ganado" : "Perdido"}>{r.gano ? "G" : "P"}</span>
       <span className="w-rival">
-        <span className={izq === nuestro ? "" : "suave"} style={izq === nuestro ? { fontWeight: 700 } : undefined}>{izq}</span>
+        <Eq nombre={izq} className={izq === nuestro ? "" : "suave"} style={izq === nuestro ? { fontWeight: 700 } : undefined} />
         {" – "}
-        <span className={der === nuestro ? "" : "suave"} style={der === nuestro ? { fontWeight: 700 } : undefined}>{der}</span>
+        <Eq nombre={der} className={der === nuestro ? "" : "suave"} style={der === nuestro ? { fontWeight: 700 } : undefined} />
       </span>
-      <span className="w-marcador">{pi} – {pd}</span>
+      {partido
+        ? <Link href={hrefPartido(partido.id)} className="w-marcador w-enlace-eq" aria-label={`Ver el partido ${izq} – ${der}`}>{pi} – {pd}</Link>
+        : <span className="w-marcador">{pi} – {pd}</span>}
     </div>
   );
 }
@@ -85,7 +96,8 @@ export default async function Portada({ searchParams }: { searchParams: Promise<
   const resultados = ultimosResultados(hoy);
   const grupos: GrupoClas[] = clasificaciones().map((g) => {
     const t = top(g.filas);
-    return { grupo: g.grupo, equipo: g.equipo, nombre: NOMBRE_EQUIPO[g.equipo], tras: g.tras, filas: t.arriba, nuestroAbajo: t.nuestroAbajo };
+    const conFicha = <T extends { equipo: string }>(f: T) => ({ ...f, href: fichaPorNombre(f.equipo, g.grupo) });
+    return { grupo: g.grupo, equipo: g.equipo, nombre: NOMBRE_EQUIPO[g.equipo], tras: g.tras, filas: t.arriba.map(conFicha), nuestroAbajo: t.nuestroAbajo ? conFicha(t.nuestroAbajo) : null };
   });
   const lid = lideres();
   const historia = resumenHistoria();

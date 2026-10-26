@@ -50,6 +50,7 @@ export const REGLAS = {
   "2.3": "Interiores: ideal 4, mínimo 3, evitar 5",
   "3.1": "El partido más difícil lleva más nivel medio",
   "3.2": "Con rivales parejos, se equilibra por líneas",
+  "3.3": "Proyección de anotación: aviso por debajo de la anotación mínima (45, provisional)",
   "4.1": "Prioridad: más nivel; a igual nivel, quien menos partidos lleva convocado",
   "4.2": "Rotación: 2 domingos disponible y fuera, entra por delante",
   "5.1": "Si no se llega: doblan los «Dobla»",

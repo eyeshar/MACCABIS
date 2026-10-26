@@ -5,6 +5,8 @@
 
 > **Portada de la web (D84):** `npm run jornada`, si la jornada cuadra, sincroniza también `plataforma/src/data/` (resultados, clasificación y líderes de la portada) y falla si un JSON público llevara motivos de ausencia (D82). Publicar = commit de `data/` y de `plataforma/src/data/`. Después: `npm run db:liga` y `npm run db:asistencia` en `plataforma/`.
 
+> **Proyección de anotación (D124):** al final, `npm run jornada` guarda en `privado/proyecciones_2026-27.json` (fuera de git) la proyección de cada partido nuestro nuevo y su resultado real (`npm run proyeccion:calibrar` en `plataforma/`, con las letras de Ataque leídas en solo lectura). Si falla, solo lo dice: la jornada sigue. La pantalla de convocatoria enseña el acierto («error medio N puntos en M partidos»).
+
 _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se procesa el lunes 5/10._
 
 ## Reparto desde el 24/10/2026: se publica solo si todo cuadra (D66)

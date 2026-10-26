@@ -195,6 +195,65 @@ const privEnPruebas = [...pruebasNuevas.matchAll(/insert into public\.jugadores_
 const realesPriv = privEnPruebas.filter((t) => personas.some((id) => t.includes(`'${id}'`)));
 ok(privEnPruebas.length > 0 && realesPriv.length === 0, 'las pruebas nuevas ponen posición y nivel solo a jugadores sintéticos (ningún person_id real, D39)', realesPriv.join(' | ').slice(0, 200));
 
+console.log('\n== Convocatoria: proyección, modo rápido, aviso y domingo del jugador (D124-D128)');
+// D124: la proyeccion lleva la letra de Ataque (privada): solo la cargan el servidor de la convocatoria y las pantallas
+// de Gestion; nada publico ni del jugador la importa.
+const usanProy = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && /from "@\/lib\/convocatoria\/proyeccion"|from "\.\/proyeccion"|from "\.\.\/convocatoria\/proyeccion/.test(fs.readFileSync(f, 'utf8')));
+ok(usanProy.length > 0 && usanProy.every((f) => f.includes(path.join('gestion', '(panel)')) || f.includes(path.join('lib', 'convocatoria')) || f.includes(path.join('lib', 'tablero'))), 'la proyección solo la usan Gestión y su servidor (convocatoria y tablero)', usanProy.map((f) => path.relative(ROOT, f)).join(', '));
+ok(/nota_ataque/.test(leer('src/lib/convocatoria/datos.ts')) && /import "server-only"/.test(leer('src/lib/convocatoria/datos.ts')), 'las letras de Ataque se leen solo en el servidor (datos.ts, server-only)');
+const calib = leer('scripts/calibrar_proyeccion.mjs');
+ok(/privado/.test(calib) && /read only/.test(calib) && !/console\.log\([^;]*letras\.get/.test(calib), 'la calibración se guarda en privado/ (fuera de git), lee la base en solo lectura y nunca imprime letras');
+const enGitProy = execSync('git ls-files', { cwd: ROOT, encoding: 'utf8' }).split('\n').filter((f) => /proyecciones_/.test(f));
+ok(enGitProy.length === 0, 'ningún fichero de proyecciones en git', enGitProy.join(', '));
+const jsonProy = jsonPublicos.filter((f) => /"(aportes|pocosDatos|nota_ataque|letras|sinFactor)"/.test(fs.readFileSync(f, 'utf8')));
+ok(jsonProy.length === 0, 'ningún JSON público lleva puntos esperados, tasas ni letras', jsonProy.map((f) => path.relative(ROOT, f)).join(', '));
+// D128: la pagina del domingo del jugador. Solo nombres de la convocatoria APROBADA (funcion de la base), nada de
+// niveles, posiciones, motivos ni respuestas de otros.
+const MIG9 = '20261025100000_convocados_domingo.sql';
+const sql9 = sinComentarios(leer('supabase/migrations', MIG9));
+ok(!/create table|\bdrop\b|\btruncate\b|\bdelete\b|alter table/i.test(sql9) && fs.existsSync(path.join(PLAT, 'supabase', 'migrations', MIG9.replace(/\.sql$/, '.revertir.sql'))), 'migración del domingo solo aditiva (dos funciones), con su revertir.sql');
+const fConv = sql9.slice(sql9.indexOf('create function public.convocados_del_domingo'), sql9.indexOf('create function public.ultima_importacion_respuestas'));
+ok(/c\.estado = 'aprobada'/.test(fConv) && /j\.nombre_visible/.test(fConv) && !/nivel|posicion|motivo|respuestas|jugadores_privado|dificultad|origen|cambios|detalle/.test(fConv) && /me\.activo/.test(fConv), 'convocados_del_domingo: solo nombres visibles de una convocatoria aprobada, y solo a quien está en la plantilla activa (o gestores)');
+const fImp = sql9.slice(sql9.indexOf('create function public.ultima_importacion_respuestas'), sql9.indexOf('revoke execute'));
+ok(/select max\(i\.en\)/.test(fImp) && !/por_nombre|detalle|lineas|aceptadas/.test(fImp), 'ultima_importacion_respuestas: solo la hora (ni quién, ni qué)');
+ok(!/to anon/.test(sql9) && /grant execute on function public\.convocados_del_domingo\(date\), public\.ultima_importacion_respuestas\(\) to authenticated/.test(sql9), 'nada para anónimos');
+const domingo = leer('src/app/mi-zona/domingo/[fecha]/page.tsx').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
+ok(/cargarConvocadosDomingo/.test(domingo) && !/cargarQuienVa|v_quien_va|jugadores_privado|@\/lib\/convocatoria\/|nivel|\.motivo\b(?!.*horario)/.test(domingo.replace(/rNo\?\.motivo|r\.motivo !== "horario"/g, '')), 'la página del domingo usa solo la función de convocados (ni «quién va» por respuestas, ni datos de la convocatoria de Gestión)');
+ok(/rpc\("convocados_del_domingo"/.test(leer('src/lib/respuestas/jugador.ts')) && /rpc\("ultima_importacion_respuestas"\)/.test(leer('src/lib/respuestas/jugador.ts')), 'y la lee con la sesión del jugador (decide la base)');
+// D127: el aviso «Estás convocado» sale del servidor con la clave de servicio; su texto no lleva datos privados.
+const avConv = leer('src/lib/convocatoria/avisos.ts');
+ok(/import "server-only"/.test(avConv) && !/estadoInterruptor/.test(avConv) && /firmaConvocatoria/.test(avConv), 'aviso de convocatoria: solo en el servidor, sin depender del interruptor y con clave única por convocatoria');
+
+console.log('\n== Página de partido de la liga (D129): por equipo en público; los rivales por jugador, solo gestores');
+{
+  const PAG = 'src/app/liga/[temporada]/partido/[id]/page.tsx';
+  const pag = leer(PAG);
+  const sinCom = pag.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
+  ok(!/^\s*["']use client["']/.test(pag), 'la página de partido es de servidor (los datos por jugador de los rivales no viajan a un componente de cliente)');
+  // La unica lectura de datos por jugador de terceros esta dentro de la funcion que antes comprueba que es gestor.
+  const fn = sinCom.slice(sinCom.indexOf('async function rivalesPorJugador'), sinCom.indexOf('const pct ='));
+  ok(fn.length > 100 && /if \(!\(await esGestorActual\(\)\)\) return null;/.test(fn) && fn.indexOf('esGestorActual') < fn.indexOf('liga_estadisticas_jugador'),
+    'rival por jugador: lo primero es comprobar que es gestor (is_gestor de la sesión); sin sesión de gestor no se consulta nada');
+  const fuera = sinCom.replace(fn, '');
+  ok(!/liga_estadisticas_jugador|liga_partidos|v_liga_jugadores/.test(fuera), 'ninguna otra parte de la página lee datos por jugador de la liga');
+  ok(/from\("liga_estadisticas_jugador"\)/.test(fn) && !/SERVICE_ROLE|service_role|clienteServicio/i.test(sinCom), 'se lee con la sesión del gestor (RLS de gestores, como Scouting), nunca con la clave de servicio');
+  ok(/export const dynamic = "force-dynamic"/.test(pag), 'la página se genera en cada petición (lo del gestor nunca queda en una página cacheada para otros)');
+  // El resto de la Liga pública no lee nada por jugador de la liga (solo el JSON por equipo y las temporadas públicas).
+  const ligaPub = ['src/app/liga', 'src/components/liga', 'src/lib/estadisticas', 'src/components/inicio', 'src/app/page.tsx', 'src/components/web']
+    .flatMap((d) => { const b = path.join(PLAT, d); return !fs.existsSync(b) ? [] : fs.statSync(b).isFile() ? [b] : repoTodo(b); })
+    .filter((f) => /\.(ts|tsx)$/.test(f) && !f.endsWith(path.join('partido', '[id]', 'page.tsx')))
+    .filter((f) => /liga_estadisticas_jugador|v_liga_jugadores|from\("liga_partidos"\)/.test(fs.readFileSync(f, 'utf8')));
+  ok(ligaPub.length === 0, 'el resto de páginas públicas de la liga, la portada y el inicio no leen datos por jugador de la liga', ligaPub.map((f) => path.relative(ROOT, f)).join(', '));
+  // El JSON público solo lleva, por partido, los totales de cada equipo.
+  const ligaPubJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'liga_2026-27.json'), 'utf8'));
+  const res = Object.values(ligaPubJson.grupos).flatMap((g) => g.resultados);
+  const clavesEst = new Set(res.filter((r) => r.est).flatMap((r) => [r.est.local, r.est.visitante].flatMap((e) => Object.keys(e))));
+  ok(res.length > 0 && res.every((r) => r.id) && [...clavesEst].every((k) => ['pts', 't2', 't3', 'tl', 'tl_int', 'faltas'].includes(k)),
+    `cada partido del JSON público lleva su id y solo totales por equipo (${[...clavesEst].join(', ')})`);
+  const pruebaPt = leer('pruebas', 'liga_partidos.mjs');
+  ok(/rival-por-jugador-seccion/.test(pruebaPt) && /anonimo/.test(pruebaPt) && /jugador/.test(pruebaPt), 'la prueba de pantallas de la página de partido comprueba que ni anónimos ni jugadores ven «Rival por jugador» (npm run pruebas:liga-partidos)');
+}
+
 (async () => {
   if (fs.existsSync(path.join(PLAT, '.next', 'BUILD_ID'))) {
     const { revisar } = await import(pathToFileURL(path.join(PLAT, 'pruebas', 'privacidad_paginas.mjs')).href);

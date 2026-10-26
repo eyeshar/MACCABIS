@@ -158,3 +158,19 @@ button.boton.rw-btn-no { background: var(--rw-no); color: #2a0b07; border-color:
 .av-ajustes summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
 .av-ajustes summary h2 { margin: 0; font-size: 18px; }
 .av-ajustes ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------- pagina del domingo del jugador (D128) */
+.rw-situacion { margin: 0 0 16px; padding: 14px 16px; border-radius: var(--radio); font-family: var(--f-titulos); font-size: 22px; line-height: 1.2; background: var(--tarjeta); border: 1px solid var(--borde-fuerte); overflow-wrap: anywhere; }
+.rw-sit-convocado { border-left: 6px solid var(--rw-mda); }
+.rw-sit-novas { border-left: 6px solid var(--rw-no); }
+.rw-sit-fuera, .rw-sit-pendiente { border-left: 6px solid var(--borde-fuerte); }
+.rw-partido-mio { border: 2px solid var(--rw-mda); border-top-width: 4px; }
+.rw-partido-mio[data-equipo="MdL"] { border-color: var(--rw-mdl); }
+.rw-partido-otro { opacity: 0.6; }
+.rw-tu-juegas { font-weight: 700; }
+.rw-equipaciones { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 15px; }
+.rw-equipaciones small { display: inline-block; min-width: 72px; }
+.rw-quien-va { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--borde); font-size: 15px; }
+.rw-quien-va p { margin: 4px 0 0; overflow-wrap: anywhere; }
+.rw-sporteasy-estado { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.rw-segun { margin: 0; font-size: 17px; }

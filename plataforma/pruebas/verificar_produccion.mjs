@@ -97,6 +97,18 @@ try {
   const sitemap = await (await fetch(BASE + '/sitemap.xml')).text();
   ok(['/', '/club', '/privacidad'].every((x) => sitemap.includes(`<loc>https://maccabis.vercel.app${x === '/' ? '/' : x}</loc>`)) && !/entrar|mi-zona|gestion|cuenta|agenda|planes|\/cal\//.test(sitemap), 'sitemap.xml: solo la web publica');
 
+  // Liga enlazada (D129): equipos y partidos con enlace, sin «casa/fuera»; la pagina de partido sin sesion no tiene
+  // datos por jugador de los rivales (D73).
+  const liga = await (await fetch(BASE + '/liga')).text();
+  const partidos = [...new Set([...liga.matchAll(/href="(\/liga\/2026-27\/partido\/[^"]+)"/g)].map((m) => m[1]))];
+  const equiposEnl = [...liga.matchAll(/href="(\/liga\/(?:rivales\?[^"]+|2026-27\/equipo\?eq=[^"]+))"/g)].length;
+  ok(partidos.length > 0 && equiposEnl > 0, `/liga: equipos (${equiposEnl}) y partidos (${partidos.length}) enlazados (D129)`);
+  ok(!/en casa|>\s*fuera\s*</i.test(liga.replace(/<script[\s\S]*?<\/script>/g, '')), '/liga: sin «en casa / fuera»');
+  const conHoja = partidos.find((h) => /mda|mdl/.test(h)) ?? partidos[0];
+  const pp = conHoja ? await fetch(BASE + conHoja) : null;
+  const ppTxt = pp ? await pp.text() : '';
+  ok(pp?.status === 200 && ppTxt.includes('data-testid="pagina-partido"') && !ppTxt.includes('Rival por jugador') && !ppTxt.includes('rival-por-jugador'), `${conHoja}: 200 sin sesion y sin «Rival por jugador» (D73)`, `HTTP ${pp?.status}`);
+
   // Web instalable (D78): el manifiesto unico, sin sesion, valido para instalarla en Android; y el service worker.
   console.log('\n== Web instalable (manifiesto y service worker)');
   const manResp = await fetch(BASE + '/manifest.webmanifest');
@@ -192,6 +204,17 @@ try {
     const enlaces = await p.$$eval('nav[aria-label="Gestión"] a', (a) => a.map((x) => x.textContent.trim()));
     ok(enlaces.includes('Scouting rivales') && enlaces.includes('Liga consolidada'), 'el menu de gestion trae Scouting rivales y Liga consolidada', enlaces.join(','));
     ok(await sinDesbordar(), '/gestion sin desbordamiento');
+
+    // Aviso en la web de la convocatoria (D127): no depende del interruptor. Solo se mira; nunca se pulsa «Enviar ahora».
+    if (!movil) {
+      const [{ fecha }] = await sql`select max(fecha)::text fecha from public.convocatorias where estado = 'aprobada'`;
+      const [{ on }] = await sql`select public.respuestas_web_encendido() on`;
+      await p.goto(`${BASE}/gestion/convocatoria/salida?fecha=${fecha}`);
+      const tarjeta = p.getByTestId('cv-salida-aviso');
+      const txt = await tarjeta.innerText();
+      const boton = await tarjeta.getByRole('button', { name: 'Enviar ahora' }).count();
+      ok(!txt.includes('interruptor') && (boton === 1 || /Enviado/.test(txt)), `convocatoria del ${fecha}: «Aviso en la web» sin depender del interruptor (${on ? 'encendido' : 'apagado'}): ${boton ? '«Enviar ahora» disponible' : 'enviado'}`, txt.slice(0, 200));
+    }
 
     await p.goto(`${BASE}/gestion/scouting`);
     ok((await p.textContent('h1')).includes('Scouting rivales') && (await p.textContent('h2:nth-of-type(1)')).length > 0, 'Scouting rivales carga');

@@ -68,9 +68,16 @@ try {
   ok(entrar.status === 200 && html.includes('Continuar con Google') && html.includes('Enviarme el código'), '/entrar carga (HTTP 200)', `HTTP ${entrar.status}`);
 
   // Web publica sin sesion (D85, D89): paginas, redirecciones, iCal, robots y sitemap.
+  // Manifiestos que enlaza cada pagina: siempre el unico, /manifest.webmanifest (fallo del 25/10: /mi-zona/manifest...).
+  const manifiestosMalos = [];
+  const revisarManifiesto = (ruta, cuerpo) => {
+    const hrefs = [...cuerpo.matchAll(/<link[^>]*rel="manifest"[^>]*>/g)].map((m) => (m[0].match(/href="([^"]*)"/) || [])[1]);
+    if (hrefs.length !== 1 || hrefs[0] !== '/manifest.webmanifest') manifiestosMalos.push(`${ruta}: ${JSON.stringify(hrefs)}`);
+  };
   for (const r of ['/', '/club', '/privacidad', '/liga', '/liga/rivales', '/liga/2025-26/equipo', '/historia', '/plantilla', '/plantilla?t=2017-18', '/jugador/esteban-jon?t=2025-26', '/liga/2013-14/rankings', '/liga/2023-24/mda']) {
     const resp = await fetch(BASE + r);
     const cuerpo = await resp.text();
+    revisarManifiesto(r, cuerpo);
     ok(resp.status === 200 && cuerpo.includes('class="nv-cab"') && cuerpo.includes('href="/entrar"') && cuerpo.includes('Acceso jugadores y gestores'), `${r}: 200 con la cabecera unica y el acceso (sin sesion)`, `HTTP ${resp.status}`);
   }
   // «/» sin sesion, la portada publica de siempre (D117 no la cambia).
@@ -89,6 +96,25 @@ try {
   ok(['/entrar', '/mi-zona', '/gestion', '/cuenta', '/auth', '/agenda', '/planes', '/mis-numeros', '/cal'].every((x) => robots.includes(`Disallow: ${x}`)) && robots.includes('Sitemap: https://maccabis.vercel.app/sitemap.xml'), 'robots.txt: Disallow de lo privado (con /cuenta, /agenda, /planes, /mis-numeros y /cal) y sitemap');
   const sitemap = await (await fetch(BASE + '/sitemap.xml')).text();
   ok(['/', '/club', '/privacidad'].every((x) => sitemap.includes(`<loc>https://maccabis.vercel.app${x === '/' ? '/' : x}</loc>`)) && !/entrar|mi-zona|gestion|cuenta|agenda|planes|\/cal\//.test(sitemap), 'sitemap.xml: solo la web publica');
+
+  // Web instalable (D78): el manifiesto unico, sin sesion, valido para instalarla en Android; y el service worker.
+  console.log('\n== Web instalable (manifiesto y service worker)');
+  const manResp = await fetch(BASE + '/manifest.webmanifest');
+  let man = null;
+  try { man = JSON.parse(await manResp.text()); } catch {}
+  ok(manResp.status === 200 && (manResp.headers.get('content-type') || '').startsWith('application/manifest+json') && man !== null,
+    '/manifest.webmanifest: 200, application/manifest+json y JSON valido', `HTTP ${manResp.status} ${manResp.headers.get('content-type')}`);
+  ok(Boolean(man) && man.name === 'Maccabis' && man.short_name === 'Maccabis' && man.id === '/' && man.start_url === '/' && man.display === 'standalone'
+    && man.icons.some((i) => i.sizes === '192x192') && man.icons.some((i) => i.sizes === '512x512'), 'manifiesto instalable: name, short_name, id «/», start_url «/», standalone, iconos 192 y 512');
+  for (const i of man?.icons ?? []) {
+    const x = await fetch(BASE + i.src);
+    ok(x.status === 200 && x.headers.get('content-type') === 'image/png', `icono ${i.src}: 200, image/png`, `HTTP ${x.status}`);
+  }
+  const viejo = await fetch(BASE + '/mi-zona/manifest.webmanifest', { redirect: 'manual' });
+  ok(viejo.status === 308 && new globalThis.URL(viejo.headers.get('location') || '', BASE).pathname === '/manifest.webmanifest', 'el antiguo /mi-zona/manifest.webmanifest redirige (308) al unico', `HTTP ${viejo.status} ${viejo.headers.get('location')}`);
+  const sw = await fetch(BASE + '/sw.js');
+  ok(sw.status === 200 && /javascript/.test(sw.headers.get('content-type') || '') && (await sw.text()).includes("addEventListener('push'"), '/sw.js: 200, JavaScript, con el manejador de avisos', `HTTP ${sw.status}`);
+  ok(manifiestosMalos.length === 0, 'ninguna pagina publica enlaza un manifiesto distinto de /manifest.webmanifest (ni bajo /mi-zona)', manifiestosMalos.join(' | '));
 
   // Calendario personal (D120): un enlace de PRUEBA, creado aqui y revocado al terminar (pase lo que pase). Se usa un
   // jugador activo SIN enlace (nunca se toca el enlace de nadie) y no se imprime nada suyo: solo cabeceras y recuentos.
@@ -153,6 +179,8 @@ try {
     await p.goto(`${BASE}/`);
     ok(await p.getByTestId('banda-gestion').isVisible() && (await p.locator('.in-hola h1').innerText()).includes('Hola') && !(await p.content()).includes('Dos equipos.'), '«/» con sesion de gestor: el inicio personal con la banda «Gestión esta semana»');
     ok(await sinDesbordar(), '«/» con sesion sin desbordamiento');
+    const manInicio = await p.locator('link[rel="manifest"]').evaluateAll((l) => l.map((x) => x.getAttribute('href')));
+    ok(manInicio.length === 1 && manInicio[0] === '/manifest.webmanifest', '«/» con sesion enlaza /manifest.webmanifest (nunca uno bajo /mi-zona)', JSON.stringify(manInicio));
     for (const [ruta, eyebrow] of [['/gestion/tablero', 'Tablero'], ['/gestion/grupos', 'Grupos de entreno']]) {
       const resp = await p.goto(`${BASE}${ruta}`);
       ok(resp.status() === 200 && (await p.locator('.gs-eyebrow').first().textContent()).includes(eyebrow) && (await p.locator('h1').count()) > 0, `${ruta} carga (${(await p.locator('h1').first().innerText().catch(() => '')).slice(0, 40)})`, `HTTP ${resp.status()}`);

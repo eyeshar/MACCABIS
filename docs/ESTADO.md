@@ -370,7 +370,7 @@ _Última actualización: 26/10/2026, noche: **la 26/27 pasa a «en curso» en /h
     remitente eyeshar@gmail.com, nombre «Maccabis»). Ya no se usa el servicio compartido de Supabase (solo para
     pruebas). Guía: `plataforma/LEEME.md`, apartado "7. Correo propio para los códigos".
   - **Google y cuenta sin confirmar (caso Edwin, 26/10/2026):** si un correo tiene una cuenta de Auth sin confirmar (creada por un código pedido y nunca usado), «Continuar con Google» falla con el error genérico. Mejora en `/entrar` (sin cambios de base de datos): cuando Google falla, sugiere «Prueba con el código por correo: al entrar una vez así, Google funcionará después».
-  - **Longitud del código:** Supabase «Email OTP Length» fijado en 6 por Claude el 26/10/2026 (antes 8: el código no cabía en la casilla). La casilla de `/entrar` acepta de 6 a 8 dígitos (`minLength 6`, `maxLength 8`) y la etiqueta dice «Código del correo»; `pruebas:numeros` entra con un código de 6 y con uno de 8.
+  - **Longitud del código:** Supabase «Email OTP Length» **no se ha cambiado y sigue en 8**. La solución es que la casilla de `/entrar` acepte de 6 a 8 dígitos (`minLength 6`, `maxLength 8`) y se llame «Código del correo»; `pruebas:numeros` entra con un código de 6 y con uno de 8.
   - **Plantilla del código (Magic link / OTP) HECHA** (cambiada por Claude en Supabase el 26/10/2026): ya manda `{{ .Token }}` en español. `plataforma/LEEME.md` §3 (paso 4) y §7 (paso 4) cumplidos: fuera de pendientes.
 - **Pruebas:** `npm run pruebas` (pila local): **107/107 OK**, con un bloque nuevo para
   `cambiar_correo_jugador` (renombrado de una cuenta existente, sincronía con gestores, rechazo de correo ya usado

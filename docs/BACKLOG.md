@@ -13,7 +13,7 @@
 - [x] Importar → Respuestas preparada para la última importación: sin límite de fechas ni de líneas (lee por páginas), resumen por evento tras «Guardar» y, con el interruptor encendido, nunca pisa lo respondido en la web.
 - [ ] **Activación (decisión de Iván, 26/10/2026), en este orden** (`RUTINAS/C_CONVOCATORIA.md`, apartado 6): (1) Claude importa las respuestas de TODOS los eventos abiertos de SportEasy; (2) Claude coteja evento a evento y pasa el resumen a Iván; (3) con su OK, Claude pone los eventos futuros de SportEasy a «Seleccionar 0 miembros» y comprueba que no piden respuesta (condición 4); (4) Iván marca la J3, la casilla de SportEasy y pulsa Activar; (5) Claude pausa la tarea «Maccabis · respuestas de SportEasy» y prepara el WhatsApp. SportEasy no se cierra; lo que se responda allí después no cuenta.
 - [ ] Revisar que el **entreno del 28/10** no quede «pendiente de copiar» (el 26/10 se cambió primero en SportEasy y después en la web). Norma: los eventos se cambian **solo en la web** y Claude los copia a SportEasy (D136).
-- [ ] Ramas remotas sin mergear, para que Iván decida: `feat/calendario-automatico` y `feat/inicio-y-planes` (detalle en `ESTADO.md`). Las 30 mergeadas se borraron de origin el 26/10.
+- [x] Ramas remotas: las 30 mergeadas, `feat/calendario-automatico` y `feat/inicio-y-planes` (decisión de Iván) y `fix/limpieza-octubre` (tras su merge) borradas de origin el 26/10/2026; solo queda `main`.
 
 **Norma D134 (26/10/2026):**
 - [x] `npm run check:datos` y el hook `commit-msg` (D134), activado en el repositorio principal.

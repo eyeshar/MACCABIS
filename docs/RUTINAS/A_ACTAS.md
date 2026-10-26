@@ -7,7 +7,7 @@
 |---|---|---|
 | **Claude** (tarea programada «Maccabis · actas del lunes», en el Chrome de Iván) | Baja de gesdeportiva.fbm.es las **actas** que falten a Descargas | Lunes y jueves, 9:30 |
 | **Iván** | Baja las **hojas de estadística** (las nuestras y las de liga) de la app **Afición FBM** del móvil y las deja en Descargas del PC | Domingo noche o lunes por la mañana |
-| **`scripts/rutina_a_publicar.ps1`** (Programador de tareas de Windows, sin agentes) | Procesa (`npm run jornada -- --no-interactivo`) y, **si todo cuadra, publica solo** (D66); si no, para sin publicar nada | Lunes y jueves, 13:00 |
+| **`scripts/rutina_a_publicar.ps1`** (Programador de tareas de Windows, sin agentes) | Procesa (`npm run jornada -- --no-interactivo`) y, **si todo cuadra, publica solo** (D66); si no, para sin publicar nada | Lunes y jueves, 9:45 y 13:00 |
 
 **Reparto de fuentes (D106, 23/10/2026):**
 | Qué | De dónde | Cómo |
@@ -28,7 +28,9 @@ Todo a **Descargas**, sin renombrar. Si en Descargas quedan hojas de jornadas an
 
 ## Publicación automática: `scripts/rutina_a_publicar.ps1` (D66, 24/10/2026)
 
-Tarea **«\Maccabis\Rutina A - publicar jornada»** del Programador de tareas de Windows: lunes y jueves a las 13:00, solo con la sesión de Iván iniciada; si el PC estaba apagado a esa hora, se ejecuta al encenderlo. Ejecuta `scripts\rutina_a_publicar.ps1` de la **copia dedicada `C:\Users\Iván\Proyectos\Maccabis-rutina-a`** (directorio de trabajo de la tarea: esa misma carpeta), **nunca de la carpeta de trabajo** (D114). Es un script determinista: no usa agentes.
+Tarea **«\Maccabis\Rutina A - publicar jornada»** del Programador de tareas de Windows: lunes y jueves a las **9:45 y a las 13:00** (dos disparadores, hora local; el de las 9:45 se añadió el 26/10/2026 para publicar en cuanto «actas del lunes» de las 9:30 baje las actas; el de las 13:00 queda de repesca), solo con la sesión de Iván iniciada; si el PC estaba apagado a esa hora, se ejecuta al encenderlo. Ejecuta `scripts\rutina_a_publicar.ps1` de la **copia dedicada `C:\Users\Iván\Proyectos\Maccabis-rutina-a`** (directorio de trabajo de la tarea: esa misma carpeta), **nunca de la carpeta de trabajo** (D114). Es un script determinista: no usa agentes.
+
+**Lo que la copia necesita y no está en git** lo enlaza el propio script en el paso 0 (unión de directorios a la carpeta del proyecto): `privado/`, `fuentes_fbm/` y, desde el 26/10/2026, `data/raw/` (los CSV del portal que usa `test:regresion`; sin ellos, la ejecución de las 11:59 del 26/10 paró en esa prueba sin publicar nada; enlazado, la de las 12:06 publicó la J3 con sus actas, commit `9cdfab5`).
 
 **La copia dedicada** (24/10/2026): un **clon aparte** del repositorio (no un worktree: un worktree no puede tener `main` mientras la carpeta del proyecto también lo tiene), **solo para publicar y siempre en `main`**. Nadie trabaja en ella. Lo que no está en git:
 | Qué | Cómo | Por qué |

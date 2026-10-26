@@ -7,10 +7,15 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**Vista pública con la ubicación libre (26/10/2026, `fix/vista-pista-libre`, D138):**
+- [x] Migración `20261027100000_vista_pista_libre` (solo aditiva) aplicada en el Supabase real con D111; la web la usa en la portada, `/club`, el calendario público y el `.ics`.
+- [ ] **Merge a `main` con el OK de Iván, antes del miércoles 28/10 a mediodía** (entreno en Ciudad de los Periodistas); después, comprobar en producción la portada, el calendario y el `.ics`.
+- [ ] `pruebas:respuestas-real` da por hecho el interruptor apagado (3 fallos desde que está encendido): ponerla al día con el interruptor encendido.
+
 **Eventos y Panel (26/10/2026, `fix/eventos-respuestas-y-panel`):**
 - [x] La celda «Respuestas» de `/gestion/eventos` (todas las pestañas), la tarjeta «Entreno del miércoles» y una columna nueva «Respuestas» en «Partidos del domingo» del Panel enlazan a `/gestion/eventos/<id>/respuestas`; en el móvil toda la celda es zona táctil. El nombre del evento sigue llevando a editar.
 - [x] El Panel («Entreno del miércoles» y «Pendiente esta semana», también en la banda «Gestión esta semana» del inicio) lee el próximo entreno de la **tabla de eventos** con `pistaEfectiva` (`lib/gestion/entreno.ts`), no de la fuente pública: el entreno del 28/10 (ubicación libre «Ciudad de los Periodistas», D119) salía «pista por confirmar».
-- [ ] **La vista pública `v_eventos_publicos` no conoce la ubicación libre (D119):** a un entreno sin `pista_id` le pone la pista de la serie o «por confirmar». Por eso el entreno del 28/10 sale «pista por confirmar (Valdebernardo en obras)» en las páginas públicas que leen la fuente del calendario: portada, `/club`, calendario y `calendario.ics`. Arreglo: migración que añada `ubicacion_nombre` a la vista (y `pista_por_confirmar = false` si la hay), con D111. Pendiente del OK de Iván (cambio de esquema).
+- [x] **Arreglado en `fix/vista-pista-libre` (D138, 26/10/2026; migración `20261027100000` aplicada en el real con D111). Falta el merge para que se vea en producción.** **La vista pública `v_eventos_publicos` no conoce la ubicación libre (D119):** a un entreno sin `pista_id` le pone la pista de la serie o «por confirmar». Por eso el entreno del 28/10 sale «pista por confirmar (Valdebernardo en obras)» en las páginas públicas que leen la fuente del calendario: portada, `/club`, calendario y `calendario.ics`. Arreglo: migración que añada `ubicacion_nombre` a la vista (y `pista_por_confirmar = false` si la hay), con D111. Pendiente del OK de Iván (cambio de esquema).
 - [ ] Punto 4 tras el paso 2, lo que queda en el Panel: «A · Actas» (resultados jugados, de `liga_2026-27.json`, que es lo publicado por la rutina A) y los avisos de equipación (`equipaciones_2026-27.json`, configuración) siguen leyendo ficheros. Es lo correcto mientras esos datos no vivan en la tabla; no se migran.
 
 **Limpieza de octubre y activación de «respuestas en la web» (26/10/2026, `fix/limpieza-octubre`, D136):**

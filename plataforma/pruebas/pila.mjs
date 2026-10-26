@@ -68,6 +68,9 @@ const leerCuerpo = req => new Promise(ok => { let b = ''; req.on('data', c => (b
 const hash = s => crypto.createHash('sha256').update(s).digest('hex');
 
 export async function arrancar({ log = () => {} } = {}) {
+  // La cache de datos de Next (unstable_cache: la fuente del calendario) sobrevive entre compilaciones: lo guardado por
+  // la suite anterior (otra base, con otras fechas) saldria en esta. Cada pila es una base nueva: se vacia.
+  fs.rmSync(path.join(AQUI, '..', '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'maccabis-pg-'));
   const pg = new EmbeddedPostgres({ databaseDir: dir, user: 'postgres', password: 'postgres', port: PUERTOS.pg, persistent: false, onLog: () => {}, onError: () => {} });
   await pg.initialise();

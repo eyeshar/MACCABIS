@@ -18,7 +18,7 @@ _Última actualización: 26/10/2026, noche: **limpieza de octubre y preparación
 - **Ramas remotas:** borradas de origin las **30 totalmente mergeadas** en `main` (`git branch -r --merged origin/main`). Quedan **2 sin mergear, para que Iván decida**:
   - `feat/calendario-automatico` — `4a1149b` (25/09/2026) «feat(calendario): calendario y marcadores desde datos abiertos + tabla para SportEasy»: el calendario automático desde datos abiertos (`scripts/calendario/`); nunca se mergeó (el calendario 26/27 se cargó a mano el 02/10).
   - `feat/inicio-y-planes` — `025d09b` (25/10/2026) «fix(verificar_produccion): el titulo de tablero y grupos se lee con textContent»: un commit posterior al merge cuyo cambio **ya está en `main`** con el mismo contenido; se puede borrar (la usa el worktree `Maccabis-inicio`).
-- **Pruebas:** RESULTADOS_PRUEBAS
+- **Pruebas (todas en verde):** `check:datos`, `test:datos`, `check:copias`, `typecheck`, `pruebas:convocatoria-motor`, `pruebas:respuestas-dominio`, `pruebas:respuestas-web` (180 OK), `pruebas:respuestas-pantallas` (124 OK, con la importación de todo el curso encendido), `pruebas:eventos-pantallas` (119 OK) y `pruebas:convocatoria-pantallas` (116 OK).
 
 ## Cambio de correo: la ficha sin cuenta se enlaza a la cuenta del correo nuevo (26/10/2026; D135) — `fix/correo-sin-cuenta`
 - **Arreglo:** `cambiar_correo_jugador` ya no devuelve `correo_en_uso_auth` si el correo viejo de la ficha no tiene cuenta: la ficha pasa al correo nuevo y queda enlazada a su cuenta. Sigue bloqueando con dos cuentas distintas, con el correo de otro jugador y con el de un gestor (`correo_de_gestor`, nuevo).

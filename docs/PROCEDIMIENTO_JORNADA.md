@@ -52,5 +52,6 @@ Si la FBM no ha publicado el acta, `npm run jornada` publica el partido **solo c
 
 La herramienta (`npm run jornada`) está en `main` desde el 26/09/2026 (merge `f69a39f`) y su
 prueba de regresión con toda la 2025/26 da "RESULTADO: OK". Lista para la jornada 1.
-Publicación automática (`scripts/rutina_a_publicar.ps1`, `--no-interactivo`): rama `feat/rutina-a-auto` (24/10/2026),
-pendiente de la revisión de Iván; la tarea del Programador de tareas ya está creada y no hace nada hasta que el script esté en `main`.
+Publicación automática (`scripts/rutina_a_publicar.ps1`, `--no-interactivo`): en `main` desde el 24/10/2026
+(merge `65255e6` de `feat/rutina-a-auto`, aprobado por Iván). La tarea del Programador de tareas (lunes y jueves, 13:00)
+la ejecuta desde la copia dedicada `Maccabis-rutina-a` (D114).

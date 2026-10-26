@@ -8,6 +8,7 @@ import { cargarEvento, cargarEventos, cargarJugadores, type Cliente } from "@/li
 import { convocadosDe, tituloEvento, TEXTO_MOTIVO, type Motivo } from "@/lib/eventos/dominio";
 import { hoyMadrid, sumarDias } from "@/lib/dias";
 import type { FilaTablero, PartidoTablero } from "./vista";
+import { hrefJugador } from "@/lib/numeros/enlaces";
 
 // Lo que lee el tablero (D121), con la sesion del GESTOR: la base (RLS + is_gestor) decide. Nada de esto llega nunca a
 // un jugador.
@@ -60,7 +61,7 @@ export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise
     const p = priv.get(j.person_id);
     const motivos = Object.values(j.motivoNo).filter(Boolean) as string[];
     return {
-      person_id: j.person_id, nombre: j.nombre, posicion: p?.posicion ?? null, base_reserva: Boolean(p?.base_reserva), nivel: p?.nivel ?? null,
+      person_id: j.person_id, href: hrefJugador(j.person_id), nombre: j.nombre, posicion: p?.posicion ?? null, base_reserva: Boolean(p?.base_reserva), nivel: p?.nivel ?? null,
       ficha: j.ficha, solo_entreno: j.solo_entreno, respuesta: j.respuesta, invitadoA: j.invitadoA,
       motivo: motivoTexto(motivos.find((m) => m !== "horario") ?? motivos[0] ?? null), ausencia: ausenciaTexto(ausencias.find((a) => a.person_id === j.person_id)),
       puestaPor: puesta.get(j.person_id) ?? null,
@@ -99,7 +100,7 @@ export async function cargarTableroEvento(sb: Cliente, id: string): Promise<Tabl
     // Sin respuesta y con una ausencia que cubre el dia: cuenta como «no» (como en «Quién va», D99).
     const valor: RespuestaPartido = r?.respuesta && r.respuesta !== "sin_responder" ? r.respuesta : aus ? "no" : "sin_responder";
     return {
-      person_id: j.person_id, nombre: j.nombre_visible, posicion: p?.posicion ?? null, base_reserva: Boolean(p?.base_reserva), nivel: p?.nivel ?? null,
+      person_id: j.person_id, href: hrefJugador(j.person_id), nombre: j.nombre_visible, posicion: p?.posicion ?? null, base_reserva: Boolean(p?.base_reserva), nivel: p?.nivel ?? null,
       ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, solo_entreno: j.rol === "solo_entreno", respuesta: { evento: valor }, invitadoA: ["evento"],
       motivo: valor === "no" ? motivoTexto(r?.motivo ?? null) : null, ausencia: ausenciaTexto(aus), puestaPor: r?.origen === "gestor" ? r.puesto_por_nombre : null,
     };

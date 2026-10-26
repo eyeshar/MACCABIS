@@ -517,7 +517,9 @@ try {
       const en = (x, y) => document.elementFromPoint(x, y)?.closest('a')?.getAttribute('href') ?? null;
       td.scrollIntoView({ block: 'center' });
       const q = td.getBoundingClientRect();
-      return { alto: Math.round(r.height), puntos: [en(q.left + 3, q.top + 3), en(q.right - 3, q.bottom - 3), en(q.left + q.width / 2, q.top + q.height / 2)] };
+      // D139: en el centro puede haber un contador desplegable (boton), que va por encima del enlace.
+      const centro = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+      return { alto: Math.round(r.height), puntos: [en(q.left + 3, q.top + 3), en(q.right - 3, q.bottom - 3), centro?.closest('.num-boton') ? '/respuestas' : en(q.left + q.width / 2, q.top + q.height / 2)] };
     });
     ok(zona.alto >= 44 && zona.puntos.every((h) => h && h.endsWith('/respuestas')), `${ruta} a 375 px: toda la celda de respuestas abre las respuestas (${zona.alto} px)`, JSON.stringify(zona));
   }

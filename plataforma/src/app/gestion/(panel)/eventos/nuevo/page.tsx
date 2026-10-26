@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarPistas } from "@/lib/eventos/datos";
 import { TIPOS, type TipoEvento } from "@/lib/eventos/dominio";
@@ -15,7 +16,7 @@ export default async function NuevoEvento({ searchParams }: { searchParams: Prom
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Link href="/gestion/eventos">← Eventos</Link> · Nuevo evento</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto="/gestion/eventos" etiqueta="Eventos" /> · Nuevo evento</div>
           <h1 style={{ fontSize: 44 }}>Nuevo evento</h1>
         </div>
       </div>

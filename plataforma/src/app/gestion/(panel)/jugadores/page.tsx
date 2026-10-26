@@ -1,4 +1,5 @@
 import { exigirGestor, origenMensajes } from "@/lib/sesion";
+import Volver from "@/components/nav/Volver";
 import { mensajeBienvenida } from "@/lib/mensajes";
 import FilaJugador, { type JugadorGestion } from "./FilaJugador";
 
@@ -27,6 +28,7 @@ export default async function Jugadores() {
 
   return (
     <>
+      <Volver defecto="/gestion" etiqueta="Panel" />
       <h1>Jugadores</h1>
       <div className="aviso aviso-info">
         Solo entra quien tiene aquí su correo (D68). Pon el correo exacto que usa en Google, o cualquiera al que

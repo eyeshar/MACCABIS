@@ -1,0 +1,3 @@
+/* «← volver» (D139): una linea al principio de toda pantalla interior; zona tactil >= 44 px. */
+.volver { margin: 0 0 8px; }
+.volver a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }

@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import CopiarTexto from "./eventos/CopiarTexto";
+import Numeros, { type GrupoNum } from "@/components/numeros/Numeros";
+import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
 import { cambiarInterruptor, marcarJornada, marcarSporteasy } from "./eventos/respuestas-acciones";
 
 export type EstadoActivacion = {
@@ -13,8 +15,9 @@ export type EstadoActivacion = {
 
 /** «Respuestas en la web: activar» (D99.13, D64): las cuatro condiciones, el boton y, al encender, los pasos en orden.
  *  Apagar vuelve a la fase puente sin perder nada. Cada cambio queda registrado en la base (quien y cuando). */
-export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mensajeEntrar }: {
-  estado: EstadoActivacion; jornadas: number[]; marcas: Record<number, "limpia" | "con_arreglo">; mensaje: string; mensajeEntrar: string;
+export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mensajeEntrar, mensajeAvisos, grupos }: {
+  estado: EstadoActivacion; jornadas: number[]; marcas: Record<number, "limpia" | "con_arreglo">; mensaje: string; mensajeEntrar: string; mensajeAvisos: string;
+  grupos: { entrada: GrupoNum[]; avisos: GrupoNum[] };
 }) {
   // Solo Iván maneja la tarjeta (D103); los demás gestores la ven en solo lectura. La base lo vuelve a comprobar.
   const solo = !estado.puede_manejar;
@@ -25,6 +28,47 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
   const c1 = estado.jornadas_seguidas >= 3, c2 = estado.entrados >= estado.minimo_entrados, c4 = estado.sporteasy_comprobado;
   const Marca = ({ ok }: { ok: boolean }) => <span className={ok ? "ev-cond-ok" : "ev-cond-no"} aria-label={ok ? "cumplida" : "sin cumplir"}>{ok ? "✓" : "○"}</span>;
   const siguiente = (e?: "limpia" | "con_arreglo") => (e === "limpia" ? "con_arreglo" : "limpia");
+
+  // Encendido (D139): una franja compacta. Las condiciones, los pasos de activar y el mensaje de lanzamiento ya no hacen falta.
+  if (estado.encendido) {
+    const desde = estado.encendido_desde ?? estado.cambiado_en;
+    const faltan = grupos.entrada.find((g) => g.k === "faltan");
+    return (
+      <section className="gs-bloque ev-activar ev-activar-compacta" aria-labelledby="t-activar" data-testid="tarjeta-activar">
+        <div className="gs-bloque-cab">
+          <h2 id="t-activar" style={{ fontSize: 20 }}>Respuestas en la web</h2>
+          <span className="pastilla pastilla-ok" data-testid="estado-interruptor">Encendido</span>
+        </div>
+        <p style={{ margin: 0 }} data-testid="franja-encendido">
+          Respuestas en la web: encendido{desde ? ` desde ${new Date(desde).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}` : ""}{estado.cambiado_por ? ` (${estado.cambiado_por})` : ""}.
+        </p>
+        <div data-testid="franja-avisos">
+          <b>Con avisos: {estado.con_avisos}/{estado.plantilla}</b>
+          <Numeros variante="linea" prueba="avisos-numeros" etiqueta="Jugadores con avisos activados" grupos={grupos.avisos} />
+          {grupos.avisos.find((g) => g.k === "sin")!.n > 0 && <div style={{ marginTop: 6 }}><CopiarTexto texto={mensajeAvisos} etiqueta="Copiar mensaje" /></div>}
+        </div>
+        {faltan && faltan.n > 0 && (
+          <div data-testid="faltan-entrar">
+            <b>Faltan por entrar: {faltan.n}</b>
+            <Numeros variante="linea" prueba="entrada-numeros" etiqueta="Jugadores que faltan por entrar en la web" grupos={[faltan]} />
+            <div style={{ marginTop: 6 }}><CopiarTexto texto={mensajeEntrar} etiqueta="Copiar mensaje" /></div>
+          </div>
+        )}
+        {error && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{error}</p>}
+        <details className="ev-mas-opciones" data-testid="mas-opciones">
+          <summary className="boton boton-claro" style={{ listStyle: "none", cursor: "pointer" }}>Más opciones</summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+            {solo && <p className="aviso aviso-info" style={{ margin: 0 }} data-testid="solo-lectura">Solo lectura: el interruptor lo maneja Iván.</p>}
+            <p className="pequeno suave" style={{ margin: 0 }}>SportEasy ya no tiene participantes en los eventos futuros: desactivar las respuestas en la web vuelve a la fase puente, pero <b>no los recupera</b>. Lo que se responda en SportEasy no contaría hasta que Claude los vuelva a invitar.</p>
+            {solo ? <button type="button" className="boton boton-peligro" disabled>Desactivar</button> : (
+              <ConfirmarEnPagina texto="Desactivar" testid="desactivar" pregunta="¿Desactivar las respuestas en la web? SportEasy ya no tiene participantes en los eventos y desactivar no los recupera." si="Sí, desactivar"
+                accion={async () => { const r = await cambiarInterruptor(false); router.refresh(); return r; }} />
+            )}
+          </div>
+        </details>
+      </section>
+    );
+  }
 
   return (
     <section className="gs-bloque ev-activar" aria-labelledby="t-activar" data-testid="tarjeta-activar">
@@ -37,8 +81,10 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
         <li><Marca ok={c1} /><div><b>{Math.min(estado.jornadas_seguidas, 3)}/3 jornadas seguidas sin arreglos a mano</b><div className="pequeno suave">Marca cada jornada al cerrarla: verde = limpia; rojo = con arreglo (la cuenta vuelve a 0).</div>
           <div className="ev-jornadas">{jornadas.map((j) => <button key={j} type="button" data-estado={marcas[j] ?? "sin"} disabled={pendiente || solo} aria-label={`J${j}: ${marcas[j] === "limpia" ? "limpia" : marcas[j] === "con_arreglo" ? "con arreglo" : "sin marcar"}`} onClick={() => hacer(() => marcarJornada(j, siguiente(marcas[j])))}>J{j}</button>)}</div></div></li>
         <li><Marca ok={c2} /><div><b>{estado.entrados}/{estado.plantilla} jugadores ya han entrado en la web</b> <span className="pequeno suave">(mínimo {estado.minimo_entrados})</span>
-          {estado.faltan_por_entrar.length > 0 && (<div className="pequeno" data-testid="faltan-entrar" style={{ marginTop: 4 }}>Faltan: {estado.faltan_por_entrar.join(", ")}.<div style={{ marginTop: 6 }}><CopiarTexto texto={mensajeEntrar} etiqueta="Copiar mensaje para quien falta" /></div></div>)}</div></li>
-        <li><span className="ev-cond-no" aria-hidden="true">i</span><div><b>{estado.con_avisos}/{estado.plantilla} con avisos activados</b> <span className="pequeno suave">(informativo, no bloquea)</span></div></li>
+          <Numeros variante="linea" prueba="entrada-numeros" etiqueta="Jugadores que han entrado en la web" grupos={grupos.entrada} />
+          {estado.faltan_por_entrar.length > 0 && (<div className="pequeno" data-testid="faltan-entrar" style={{ marginTop: 4 }}><CopiarTexto texto={mensajeEntrar} etiqueta="Copiar mensaje para quien falta" /></div>)}</div></li>
+        <li><span className="ev-cond-no" aria-hidden="true">i</span><div><b>{estado.con_avisos}/{estado.plantilla} con avisos activados</b> <span className="pequeno suave">(informativo, no bloquea)</span>
+          <Numeros variante="linea" prueba="avisos-numeros" etiqueta="Jugadores con avisos activados" grupos={grupos.avisos} /></div></li>
         <li><Marca ok={c4} /><div><label style={{ display: "flex", gap: 10, alignItems: "center", minHeight: 44, cursor: "pointer" }}>
           <input type="checkbox" checked={c4} disabled={pendiente || solo} onChange={(e) => hacer(() => marcarSporteasy(e.target.checked))} style={{ width: 20, height: 20 }} />
           <b>SportEasy deja de pedir respuesta, comprobado por Claude</b></label></div></li>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
@@ -22,7 +23,7 @@ export default async function MisAusencias({ searchParams }: { searchParams: Pro
   const lista = (await cargarMisAusencias()).filter((a) => a.hasta == null || a.hasta >= hoy);
   return (
     <main className="pagina rw-ausencias">
-      <p className="rw-volver"><Link href="/agenda">← Agenda</Link></p>
+      <Volver defecto="/agenda" etiqueta="Agenda" />
       <h1>Mis ausencias</h1>
       <p className="suave">Los días que marques no te preguntaremos: tus eventos quedan en «no voy» con el motivo (solo lo ven los gestores).</p>
       {guardada && <p className="aviso aviso-ok" role="status">Ausencia guardada.</p>}

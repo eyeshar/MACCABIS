@@ -125,3 +125,5 @@ input:disabled, select:disabled { opacity: 0.6; }
 .ev-jornadas button[data-estado="limpia"] { background: var(--ok-fondo); color: var(--ok); border-color: var(--ok); }
 .ev-jornadas button[data-estado="con_arreglo"] { background: var(--error-fondo); color: var(--error); border-color: var(--error); }
 .ev-pasos-activar { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.ev-resp-ver { margin-top: 4px; }
+.ev-resp-ver .pequeno { font-weight: 600; text-decoration: underline; }

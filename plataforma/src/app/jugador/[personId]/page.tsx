@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import { notFound, redirect } from "next/navigation";
 import FichaJugador from "@/components/liga/Ficha";
 import { SelectorJugador, SelectorTemporadaRuta } from "@/components/liga/Selectores";
@@ -41,6 +42,7 @@ export default async function Ficha(props: Props) {
   const lista = t.players.slice().sort((a, b) => a.nombre.localeCompare(b.nombre)).map((x) => ({ id: x.person_id, nombre: x.display || x.nombre }));
   return (
     <>
+      <Volver defecto="/liga" etiqueta="Liga" />
       <div className="e-controles">
         <SelectorTemporadaRuta ruta={`/jugador/${r.personId}`} temporada={r.temporada} temporadas={TEMPORADAS.filter((s) => r.suyas.includes(s.id)).map((s) => ({ id: s.id, label: s.label }))} />
         <SelectorJugador temporada={r.temporada} personId={r.personId} jugadores={lista} />

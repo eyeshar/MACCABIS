@@ -67,9 +67,11 @@ try {
   ok(/Nosotros\s+La (negra|amarilla), con tu dorsal \d+/i.test(eqA), 'la suya: «La negra, con tu dorsal N»', eqA);
   ok(/Nosotros\s+(Negra|Amarilla)\b/i.test(eqL) && !/dorsal/.test(eqL), 'la otra: «Negra», sin dorsal', eqL);
   ok(/Rival\s+.*camiseta/i.test(eqA) && /Rival\s+.*camiseta/i.test(eqL), 'y aparte, la del rival (equipacion.ts), sin mezclarlas', `${eqA} | ${eqL}`);
+  // D139: «N convocados» es un contador que se despliega con los nombres.
+  await pj.getByTestId('convocados-MdA-convocados').click(); await pj.getByTestId('convocados-MdL-convocados').click();
   const qa = await pj.getByTestId('quien-va-MdA').innerText(), ql = await pj.getByTestId('quien-va-MdL').innerText();
-  ok(/Quién va\s+Jon \(tú\), Zoe$/.test(qa.trim()), '«Quién va» del MdA: los convocados en orden alfabético, «(tú)» en el suyo', qa);
-  ok(/Quién va\s+Adriano$/.test(ql.trim()) && !ql.includes('(tú)'), 'y los del MdL, solo nombres', ql);
+  ok(/Quién va\s+2\s+convocados\s+Jon\s+tú\s+Zoe$/.test(qa.trim()), '«Quién va» del MdA: 2 convocados, en orden alfabético, «tú» en el suyo', qa);
+  ok(/Quién va\s+1\s+convocados\s+Adriano$/.test(ql.trim()) && !/\btú\b/.test(ql), 'y los del MdL, solo nombres', ql);
   const se = await pj.getByTestId('segun-sporteasy').innerText();
   ok(se.includes('Según SportEasy: vas al MdA · no al MdL') && /Actualizado el \w+/.test(se), '«Según SportEasy: vas al MdA · no al MdL», con «Actualizado el …»', se);
   ok((await pj.getByTestId('segun-sporteasy').getByRole('link', { name: 'Cambiar en SportEasy' }).getAttribute('href')).startsWith('https://app.sporteasy.net'), '«Cambiar en SportEasy» al calendario de SportEasy (aún no guardamos el id de cada evento)');

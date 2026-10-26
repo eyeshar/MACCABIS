@@ -1,4 +1,5 @@
 import { exigirGestor } from "@/lib/sesion";
+import Volver from "@/components/nav/Volver";
 import FormularioPedido from "@/components/FormularioPedido";
 import { guardarPedidoGestor, comprobarDorsalGestor } from "../../acciones";
 
@@ -13,6 +14,7 @@ export default async function NuevoPedidoGestor({ searchParams }: { searchParams
   if (!campana) return <p>No hay ninguna campaña.</p>;
   return (
     <>
+      <Volver defecto="/gestion/ropa" etiqueta="Pedido de ropa" />
       <h1>Añadir pedido a mano</h1>
       <p className="suave">{campana.nombre}. Como gestor puedes guardar aunque la campaña esté cerrada o el dorsal esté repetido.</p>
       <FormularioPedido

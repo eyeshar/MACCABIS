@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import type { FilaPrivada } from "@/lib/convocatoria/vista";
 import FichaPrivada from "./FichaPrivada";
@@ -24,7 +25,7 @@ export default async function DatosConvocatoria() {
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Link href="/gestion/convocatoria">← Convocatoria</Link> · Confidencial: solo gestores</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto="/gestion/convocatoria" etiqueta="Convocatoria" /> · Confidencial: solo gestores</div>
           <h1>Datos de los jugadores</h1>
           <span className="suave">Posición, base de reserva, nivel (A–E), Dobla / No dobla (recomendación), regla personal y sanción. {faltan ? `${faltan} sin posición o nivel.` : "Todos completos."}</span>
         </div>

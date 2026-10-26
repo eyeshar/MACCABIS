@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { cargarMiZona } from "../../datos";
 import { guardarPedidoJugador, comprobarDorsalJugador } from "../../acciones";
 import FormularioPedido from "@/components/FormularioPedido";
@@ -23,6 +24,7 @@ export default async function NuevoPedido() {
           <h1>Pedido de ropa</h1>
         </div>
       </div>
+      <Volver defecto="/" etiqueta="Inicio" />
       <main className="pagina">
         {!campana || !campana.abierta_ahora ? (
           <section className="tarjeta">

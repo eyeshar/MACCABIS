@@ -7,6 +7,14 @@ _Última actualización: 26/10/2026, noche: **vista pública con la ubicación l
 
 
 
+## Contadores desplegables, nombres con enlace y «← volver» (26/10/2026; D139) — `feat/numeros-desplegables`, SIN mergear (espera el OK de Iván)
+- **Norma de interfaz** en `NORMAS_DE_TRABAJO.md` §13 y D139: todo contador de personas es un botón (`aria-expanded`, ≥ 44 px) que despliega en línea los nombres; gestores con motivo y detalle, jugadores solo el nombre (el motivo ni viaja a su pantalla); nombres con enlace a su ficha (solo si tiene estadísticas); «← volver» al origen real con filtro, jornada y pestaña (rastro de la sesión + URL).
+- **Un componente** (`components/numeros/Numeros.tsx`) aplicado en: Convocatoria (cabecera, convocados y líneas de cada equipo, nombres de las listas), Eventos (celda Respuestas, con el enlace a `/respuestas` intacto), Respuestas del evento (cajas, «sin avisos», nombres de tabla, ausencias y banda roja), Panel (entreno, convocados del domingo, rival → scouting, «faltan por entrar», «con avisos»), Tablero (nombres) y, para el jugador, «Quién va» del evento, del plan y del domingo. «← volver» en toda pantalla interior (`components/nav/Volver.tsx`).
+- **Panel, tarjeta «Respuestas en la web» con el interruptor encendido:** franja compacta (ver D139); apagado, igual que antes. `RUTINAS/C_CONVOCATORIA.md` (paso 13) y `SPORTEASY.md` actualizados.
+- **/entrar:** si Google falla, sugiere el código por correo (caso Edwin; sin cambios de base de datos). **Docs:** plantilla del código de Supabase hecha (LEEME §3 y §7), Edwin Villa → loco.aqui.evg@gmail.com (solo docs; el correo de su ficha en la base no se ha tocado).
+- **Fuera, y por qué:** nombres de compañeros en la zona del jugador (la vista `v_quien_va` no da `person_id`; enlazarlos exige una migración y es decisión de privacidad de Iván); nombres en textos que se copian a WhatsApp; «N pedidos» de ropa (son pedidos, no personas).
+- **Pruebas:** nueva `pruebas:numeros` (desplegar y cerrar, gestor frente a jugador, enlaces, 375 px y ≥ 44 px, volver con filtro y jornada, botón atrás, «← volver» en 21 pantallas). Adaptadas: `respuestas-pantallas`, `eventos-pantallas`, `domingo`. En verde: `numeros`, `respuestas-pantallas`, `eventos-pantallas`, `convocatoria-pantallas`, `tablero`, `grupos`, `inicio-personal`, `avisos`, `navegacion`, `portada`, `calendario-personal`, `privacidad`, `pantallas`, `pruebas`, `domingo`, `typecheck`, `test:privacidad`, `test:liga`, `test:duplicados`, `test:datos`, `check:copias`, `check:personas`. **No son de esta rama:** `pruebas:planes` falla igual en `main` (`cannot drop columns from view` al revertir la migración de planes tras la de D138) y `test:regresion` (43 diferencias en el pipeline de datos; esta rama no toca datos ni scripts; no se ha comprobado en main).
+
 ## Vista pública con la ubicación libre (26/10/2026; D138) — `fix/vista-pista-libre`, MERGEADA en `main` (`fc51d8e`, OK de Iván)
 - **En producción:** `verificar_produccion` TODO OK; como anónimo, el 28/10 sale «Ciudad de los Periodistas» en la portada, el calendario, `/club` y el `.ics` (`LOCATION:Ciudad de los Periodistas`). `pruebas:respuestas-real` al día con el interruptor encendido (46 OK); `eventos-real` 81, `inicio-real` 35 y `convocatoria-real` 32 OK.
 - **Fallo:** `v_eventos_publicos` no conocía la ubicación libre (D119). El entreno del 28/10 (Ciudad de los Periodistas) salía «pista por confirmar (Valdebernardo en obras)» en la portada, `/club`, el calendario público y el `.ics`. La agenda del jugador ya lo leía bien (`_mi_agenda`); el `.ics` personal también (`calendario_personal`).
@@ -332,7 +340,7 @@ _Última actualización: 26/10/2026, noche: **vista pública con la ubicación l
   Gmail, para que Iván sepa a quién pedirle su Gmail. **Pendientes de dar su Gmail (si lo tienen):** Manuel
   Calahorro Sánchez (su Gmail de jugadores probablemente no es el que usa de verdad en Google), Carlos Barreiro
   (Hotmail), Víctor Pérez Núñez (Hotmail), Fernando Tejeiro (Hotmail), Edwin Villa Guerrero
-  (Hotmail) y Eduardo Martín-Ortega (correo de empresa).
+  (**ahora loco.aqui.evg@gmail.com**, 26/10/2026) y Eduardo Martín-Ortega (correo de empresa).
 - **Diagnóstico de los que no podían entrar (David, Guillermo, Manu), con evidencia, no por suposición:**
   - `auth.audit_log_entries` (donde GoTrue registraría el detalle de cada intento) tiene **0 filas** en el proyecto
     real: Supabase hospedado no vuelca ahí el log de cada intento; vive en su propio panel
@@ -350,6 +358,8 @@ _Última actualización: 26/10/2026, noche: **vista pública con la ubicación l
   - **SMTP de los códigos: SMTP propio HECHO** (comprobado por Claude en Supabase el 26/10/2026: `smtp.gmail.com`,
     remitente eyeshar@gmail.com, nombre «Maccabis»). Ya no se usa el servicio compartido de Supabase (solo para
     pruebas). Guía: `plataforma/LEEME.md`, apartado "7. Correo propio para los códigos".
+  - **Google y cuenta sin confirmar (caso Edwin, 26/10/2026):** si un correo tiene una cuenta de Auth sin confirmar (creada por un código pedido y nunca usado), «Continuar con Google» falla con el error genérico. Mejora en `/entrar` (sin cambios de base de datos): cuando Google falla, sugiere «Prueba con el código por correo: al entrar una vez así, Google funcionará después».
+  - **Plantilla del código (Magic link / OTP) HECHA** (cambiada por Claude en Supabase el 26/10/2026): ya manda `{{ .Token }}` en español. `plataforma/LEEME.md` §3 (paso 4) y §7 (paso 4) cumplidos: fuera de pendientes.
 - **Pruebas:** `npm run pruebas` (pila local): **107/107 OK**, con un bloque nuevo para
   `cambiar_correo_jugador` (renombrado de una cuenta existente, sincronía con gestores, rechazo de correo ya usado
   por otra cuenta, solo gestores desde la web, permitido sin sesión desde un script local) y el aviso de "Entrará

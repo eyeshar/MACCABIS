@@ -7,6 +7,7 @@ import { enviarCodigo, verificarCodigo } from "./acciones";
 
 export default function FormularioEntrar() {
   const [conGoogle, setConGoogle] = useState(false);
+  const [falloGoogle, setFalloGoogle] = useState(false);
   const [estadoEnvio, accionEnviar, enviando] = useActionState(enviarCodigo, null);
   const [estadoCodigo, accionVerificar, verificando] = useActionState(verificarCodigo, estadoEnvio);
   const estado = estadoCodigo ?? estadoEnvio;
@@ -18,7 +19,7 @@ export default function FormularioEntrar() {
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) setConGoogle(false);
+    if (error) { setConGoogle(false); setFalloGoogle(true); }
   }
 
   return (
@@ -27,6 +28,7 @@ export default function FormularioEntrar() {
         <Google />
         {conGoogle ? "Llevándote a Google…" : "Continuar con Google"}
       </button>
+      {falloGoogle && <div className="aviso aviso-error" role="alert" style={{ margin: 0 }}>No hemos podido entrar con Google. <b>Prueba con el código por correo</b>: al entrar una vez así, Google funcionará después.</div>}
 
       <div className="acc-o">o con un código por correo</div>
 

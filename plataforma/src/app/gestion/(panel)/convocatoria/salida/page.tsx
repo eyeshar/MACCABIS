@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { diferencias, EQUIPOS } from "@/lib/convocatoria/motor";
@@ -23,7 +24,7 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
   if (!ctx || !c || c.estado !== "aprobada") {
     return (
       <>
-        <div className="gs-titulo"><div><div className="gs-eyebrow"><Link href={`/gestion/convocatoria${fecha ? `?fecha=${fecha}` : ""}`}>← Convocatoria</Link></div><h1>Sin aprobar</h1></div></div>
+        <div className="gs-titulo"><div><div className="gs-eyebrow"><Volver enLinea defecto={`/gestion/convocatoria${fecha ? `?fecha=${fecha}` : ""}`} etiqueta="Convocatoria" /></div><h1>Sin aprobar</h1></div></div>
         <p className="suave">La convocatoria de ese domingo aún no está aprobada.</p>
       </>
     );
@@ -63,7 +64,7 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Link href={`/gestion/convocatoria?fecha=${ctx.fecha}`}>← Convocatoria</Link> · Salida</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto={`/gestion/convocatoria?fecha=${ctx.fecha}`} etiqueta="Convocatoria" /> · Salida</div>
           <h1>{ctx.jornada ? `J${ctx.jornada} aprobada` : "Aprobada"}</h1>
           <span className="suave">{diaTexto(ctx.fecha)} · {total} convocados · aprobada{c.aprobada_por_nombre ? ` por ${c.aprobada_por_nombre}` : ""} el {fechaHora(c.aprobada_en)}</span>
         </div>

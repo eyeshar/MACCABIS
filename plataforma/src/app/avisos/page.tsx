@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { exigirSesion } from "@/lib/sesion";
 import ActivarAvisos from "@/components/avisos/ActivarAvisos";
@@ -13,6 +14,7 @@ export default async function Avisos() {
   await exigirSesion();
   return (
     <main className="pagina av-pagina">
+      <Volver defecto="/" etiqueta="Inicio" />
       <h1>Avisos en el móvil</h1>
       <p className="av-intro">Solo te avisamos si te falta responder, si cambia la hora o la pista y si se cancela algo. <strong>Nunca de noche.</strong></p>
       <ActivarAvisos />

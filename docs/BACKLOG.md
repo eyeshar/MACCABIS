@@ -10,7 +10,7 @@
 **Historia: la 26/27 en curso (26/10/2026, `feat/historia-2026-27`, D137):**
 - [x] /historia: 26/27 «en curso» (plantilla con ficha + Barreiro; naranja quien ya ha jugado, amarillo el resto), sin columna «prevista» ni tramo «Llegan en 26/27»; cifras recalculadas (media y «De paso» sin la temporada en curso, con nota); ficha de persona con enlace a sus estadísticas de 26/27.
 - [x] Se recalcula sola en `npm run jornada` y en la rutina A (`historia_en_curso.js` + `build_personas.js`; la rutina A pasa `check:historia`).
-- [ ] **OK de Iván a la vista previa y merge.** Después, en la copia `Maccabis-rutina-a`, nada que hacer a mano (el siguiente `git pull` de la rutina trae los scripts).
+- [x] **OK de Iván y merge en `main` (`5d4f1e8`, 26/10/2026)**; `verificar_produccion` TODO OK y /historia comprobada en producción. La copia `Maccabis-rutina-a` ya tiene el script nuevo (`git pull` hecho el 26/10).
 - [ ] Cuando cambie el cuerpo técnico, actualizar `CUERPO_TECNICO` en `scripts/historia_en_curso.js` (hoy solo Barreiro).
 - [ ] Al empezar la 27/28: pasar `ANIO`/`TEMPORADA` de `historia_en_curso.js` y `EN_CURSO`/`ANIOS` de `plataforma/src/lib/estadisticas/historia.ts` a 2027 (la 26/27 pasa a terminada y entra en la plantilla media).
 
@@ -35,7 +35,7 @@
 
 **Norma D134 (26/10/2026):**
 - [x] `npm run check:datos` y el hook `commit-msg` (D134), activado en el repositorio principal.
-- [ ] Activar el hook también en la copia `Maccabis-rutina-a` (`npm run hooks:instalar` tras su próximo `git pull`): allí publica en `main`, que no se comprueba, pero así queda igual en todos los clones. **Pendiente para la próxima vez que se toque la rutina** (26/10/2026; riesgo bajo: solo hace commits de datos).
+- [x] (26/10/2026, al mergear D137) Activar el hook también en la copia `Maccabis-rutina-a` (`npm run hooks:instalar` tras su próximo `git pull`): allí publica en `main`, que no se comprueba, pero así queda igual en todos los clones. **Pendiente para la próxima vez que se toque la rutina** (26/10/2026; riesgo bajo: solo hace commits de datos).
 
 **`feat/convocatoria-proyeccion` (D124–D129), EN PRODUCCIÓN (merge `c2ea98c`, 26/10/2026):**
 - [x] Revisión de la vista previa por Claude y OK de Iván al merge (26/10/2026); `verificar_produccion` en TODO OK, con /liga enlazada, la página de partido sin sesión y «Aviso en la web» sin el interruptor.

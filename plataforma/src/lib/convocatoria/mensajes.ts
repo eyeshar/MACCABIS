@@ -19,8 +19,12 @@ const limpiar = (r: string | null) => (r ? r.replace(/([.,;:!?])\1+/g, "$1").rep
 export const cruce = (p: Pick<PartidoMensaje, "equipo" | "rival" | "es_local">) => (p.es_local === false ? `${limpiar(p.rival)} – ${p.equipo}` : `${p.equipo} – ${limpiar(p.rival)}`);
 const nombres = (ids: string[], nombre: (id: string) => string) => ids.map(nombre).sort((a, b) => a.localeCompare(b, "es"));
 
-/** Mensaje de WhatsApp para el grupo. Con `cambios` (tras aprobar), empieza diciendo qué ha cambiado. */
-export function mensajeConvocatoria(fecha: string, jornada: number | null, partidos: PartidoMensaje[], conv: Convocatoria, nombre: (id: string) => string, cambios: string[] = []) {
+/** Aviso de data/avisos.json vigente ese domingo (lo filtra quien llama, con avisosDelFichero). */
+export type AvisoMensaje = { texto: string; para: "todos" | Equipo };
+
+/** Mensaje de WhatsApp para el grupo. Con `cambios` (tras aprobar), empieza diciendo qué ha cambiado. Con `avisos`, una
+ *  línea por aviso al final (con el equipo delante si no es para todos), sin los del dorsal, que ya van en el recordatorio. */
+export function mensajeConvocatoria(fecha: string, jornada: number | null, partidos: PartidoMensaje[], conv: Convocatoria, nombre: (id: string) => string, cambios: string[] = [], avisos: AvisoMensaje[] = []) {
   const j = jornada ? ` (J${jornada})` : "";
   const lineas: string[] = [];
   if (cambios.length) lineas.push(`Cambio en la convocatoria del ${diaTexto(fecha)}${j}: ${cambios.join("; ")}.`, "");
@@ -34,6 +38,11 @@ export function mensajeConvocatoria(fecha: string, jornada: number | null, parti
     lineas.push(p.lineaEquipacion ?? "Equipación habitual (negra).");
     lineas.push(ids.length ? `Convocados (${ids.length}): ${nombres(ids, nombre).join(", ")}.` : "Convocados: por confirmar.");
     lineas.push("");
+  }
+  const juegan = partidos.map((p) => p.equipo);
+  for (const a of avisos) {
+    if (/dorsal/i.test(a.texto) || (a.para !== "todos" && !juegan.includes(a.para))) continue;
+    lineas.push(a.para === "todos" ? a.texto : `${a.para}: ${a.texto}`);
   }
   lineas.push("Recordad: el dorsal es obligatorio.");
   return lineas.join("\n");

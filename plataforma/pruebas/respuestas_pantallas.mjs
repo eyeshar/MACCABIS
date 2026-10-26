@@ -9,6 +9,8 @@
 //     de las 09:00», ausencia con calendario y aviso de «tenías voy», «Quién va» sin motivos.
 //   - Gestión: respuestas en la web, «Responder por él», banda roja y «Visto», vista de domingo, editar evento con
 //     encuentro calculado y aviso de cambio, tarjeta del interruptor; tarea protegida con secreto.
+//   - Importar respuestas ENCENDIDO: todo el curso de una pasada, nunca pisa lo respondido en la web (respuestas ni
+//     ausencias) y, tras «Guardar», un resumen por evento para cotejar con SportEasy.
 //   - Suscripción caducada (410): se desactiva sola. 375 px sin desbordamiento y botones de al menos 44 px.
 //
 //   npm run pruebas:respuestas-pantallas
@@ -402,6 +404,72 @@ try {
   await pcg.goto(`${APP}/gestion/eventos`);
   ok(/Selección manual/.test(await pcg.getByTestId('copia-sin-notificar').innerText()) && /«Enviar una notificación» apagado/.test(await pcg.getByTestId('copia-sin-notificar').innerText()), 'tarjeta «Copia a SportEasy»: formulario completo, «Selección manual» y sin notificación (D104)');
   await ctxCg.close();
+
+  console.log('\n== Importar respuestas ENCENDIDO: todo el curso de una pasada, manda la web y resumen para cotejar');
+  {
+    // Todos los eventos abiertos futuros (entrenos hasta mayo y partidos de MdA y MdL) × todos sus invitados, con motivos.
+    const pares = await sql`select e.id, e.clave, j.person_id from public.eventos e cross join public.jugadores j
+                            where e.estado = 'programado' and e.oficial and e.borrado_en is null and e.fecha >= ${hoy} and public._invitado(j.person_id, e.id)
+                            order by e.fecha, e.inicio, j.person_id`;
+    const eventosAbiertos = [...new Set(pares.map((x) => x.id))];
+    const RESP = ['va', 'no', 'sin responder', 'duda'];
+    const esperado = new Map();
+    const lineas = ['evento;jugador;respuesta;motivo;detalle'];
+    pares.forEach((x, i) => {
+      let r = RESP[i % 4];
+      // Jon dijo «no voy» (trabajo) en la web y Daniele tiene «duda» puesta por Iván: SportEasy dice otra cosa.
+      if (x.id === E.entreno && x.person_id === 'esteban-jon') r = 'va';
+      if (x.id === E.entreno && x.person_id === 'vallesi-daniele') r = 'no';
+      const motivo = r === 'no' ? (i % 3 ? 'viaje' : 'trabajo') : '';
+      lineas.push(`${x.clave};${x.person_id};${r};${motivo};${r === 'no' ? 'Detalle sintético' : ''}`);
+      esperado.set(`${x.id}|${x.person_id}`, { respuesta: r === 'sin responder' ? 'sin_responder' : r, motivo: motivo || null });
+    });
+    // Una ausencia puesta en la web: SportEasy trae la misma con otro motivo.
+    await sql`insert into public.ausencias_periodo (person_id, desde, hasta, motivo, fuente, origen) values ('gianatti-adriano', '2027-02-08', '2027-02-10', 'viaje', 'web', 'jugador')`;
+    lineas.push('gianatti-adriano;08/02/2027;10/02/2027;lesion');
+    const ultimoEntreno = (await sql`select max(fecha)::text f from public.eventos where tipo = 'entreno' and estado = 'programado' and oficial`)[0].f;
+    ok(pares.length > 1000 && eventosAbiertos.length > 50, `lo pegado: ${pares.length} respuestas de ${eventosAbiertos.length} eventos abiertos (hasta el último entreno, ${ultimoEntreno}) y una ausencia`);
+    const webAntes = await sql`select evento_id, person_id, respuesta, motivo, origen from public.respuestas where origen in ('jugador', 'gestor') and evento_id = any(${eventosAbiertos})`;
+    ok(webAntes.some((w) => w.evento_id === E.entreno && w.person_id === 'esteban-jon' && w.respuesta === 'no' && w.origen === 'jugador') && webAntes.some((w) => w.evento_id === E.entreno && w.person_id === 'vallesi-daniele' && w.origen === 'gestor'), `antes: ${webAntes.length} respuestas dadas en la web (Jon «no», Daniele «duda» por Iván)`);
+
+    await pg.goto(`${APP}/gestion/eventos/importar?t=respuestas`);
+    await pg.locator('#resp-texto').fill(lineas.join('\n'));
+    await pg.getByRole('button', { name: 'Revisar' }).click();
+    await pg.getByTestId('resultado-respuestas').waitFor({ timeout: 60000 });
+    const titulo = (await pg.getByTestId('resultado-respuestas').locator('h2').first().textContent()).trim(); // el CSS lo pone en mayúsculas
+    ok(titulo.startsWith(`${pares.length + 1} líneas válidas`) && !/bloqueadas|error/.test(titulo), `todas válidas, sin límite de fechas ni de líneas: «${titulo}»`);
+    ok(await visto(pg.getByTestId('aviso-protegidas')) && /ya respondidas? en la web/.test(titulo), '«Las respuestas en la web están activadas: manda la web» y el número de líneas ya respondidas en la web');
+    const filaJon = pg.locator('[data-testid=tabla-lineas] tr', { hasText: 'Jon' }).filter({ has: pg.getByTestId('protegida') }).first();
+    ok(/No se toca: el jugador en la web puso «No va»; SportEasy dice «Va»/.test(await filaJon.innerText().catch(() => '')), 'la línea de Jon: «No se toca: el jugador en la web puso «No va»; SportEasy dice «Va»»');
+    ok(!(await pg.getByTestId('conflicto').count()) && !(await pg.getByText('Usar SportEasy').count()), 'encendido no hay conflictos ni «Usar SportEasy»: nada puede pisar la web');
+    await pg.getByRole('button', { name: 'Guardar las válidas' }).click();
+    await pg.getByText(/^Guardado: /).waitFor({ timeout: 120000 });
+    const guardado = await pg.getByText(/^Guardado: /).innerText();
+    ok(/no se tocan: ya estaban respondidas en la web/.test(guardado), `«Guardado: …» dice cuántas no se tocan («${guardado.replace(/\s+/g, ' ')}»)`);
+
+    const webDespues = await sql`select evento_id, person_id, respuesta, motivo, origen from public.respuestas where origen in ('jugador', 'gestor') and evento_id = any(${eventosAbiertos})`;
+    const clave = (w) => `${w.evento_id}|${w.person_id}|${w.respuesta}|${w.motivo}|${w.origen}`;
+    ok(webDespues.length === webAntes.length && webAntes.every((w) => webDespues.some((x) => clave(x) === clave(w))), `las ${webAntes.length} respuestas dadas en la web siguen igual (origen, respuesta y motivo)`);
+    const [jon] = await sql`select respuesta, motivo, detalle, origen from public.respuestas where evento_id = ${E.entreno} and person_id = 'esteban-jon'`;
+    ok(jon.respuesta === 'no' && jon.motivo === 'trabajo' && jon.detalle === 'Turno de tarde' && jon.origen === 'jugador', 'Jon sigue en «no · trabajo · Turno de tarde» (en la web)');
+    ok((await sql`select motivo from public.ausencias_periodo where person_id = 'gianatti-adriano' and desde = '2027-02-08'`)[0].motivo === 'viaje', 'la ausencia puesta en la web no cambia de motivo');
+    const todas = await sql`select evento_id, person_id, respuesta, motivo, origen from public.respuestas where evento_id = any(${eventosAbiertos})`;
+    const enBase = new Map(todas.map((x) => [`${x.evento_id}|${x.person_id}`, x]));
+    const web = new Set(webAntes.map((w) => `${w.evento_id}|${w.person_id}`));
+    const mal = [...esperado.entries()].filter(([k, v]) => !web.has(k) && (enBase.get(k)?.respuesta !== v.respuesta || (enBase.get(k)?.motivo ?? null) !== v.motivo || enBase.get(k)?.origen !== 'sporteasy'));
+    ok(!mal.length, `el resto (${esperado.size - web.size}) se guarda tal cual, con sus motivos y como «sporteasy»`, mal.slice(0, 3).map(([k, v]) => `${k}: ${JSON.stringify(v)} ≠ ${JSON.stringify(enBase.get(k))}`).join(' | '));
+
+    const resumen = pg.getByTestId('resumen-cotejo');
+    ok(await visto(resumen) && (await resumen.locator('tbody tr').count()) === eventosAbiertos.length, `después de «Guardar», un resumen por evento para cotejar con SportEasy (${eventosAbiertos.length} filas)`);
+    const invE = pares.filter((x) => x.id === E.entreno).map((x) => x.person_id);
+    const cuenta = (r) => invE.filter((p) => (enBase.get(`${E.entreno}|${p}`)?.respuesta ?? 'sin_responder') === r).length;
+    const conMot = invE.filter((p) => { const x = enBase.get(`${E.entreno}|${p}`); return x && x.respuesta !== 'sin_responder' && x.motivo; }).length;
+    const filaE = await resumen.locator(`tr[data-evento="${E.entreno}"]`).innerText();
+    const textoE = `${cuenta('va')} ${cuenta('va') === 1 ? 'va' : 'van'} · ${cuenta('no')} no${cuenta('duda') ? ` · ${cuenta('duda')} duda` : ''} · ${cuenta('sin_responder')} sin responder`;
+    ok(filaE.includes(textoE) && filaE.trim().endsWith(String(conMot)), `la fila del entreno cuadra con la base: «${textoE}», ${conMot} con motivo`, filaE.replace(/\s+/g, ' '));
+    ok(!/Detalle sintético|Viaje|Trabajo/.test(await resumen.innerText()), 'el resumen no enseña motivos ni detalles, solo cuántos llevan motivo');
+    await foto(pg, 'gestion_importar_resumen_escritorio');
+  }
 
   console.log('\n== Apagar: fase puente sin perder nada');
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;

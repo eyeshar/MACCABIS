@@ -11,9 +11,23 @@
 Desde que se encienda «respuestas en la web» (D99), los jugadores responden en la web y SportEasy **no debe pedirles nada** (D64). Comprobado por Claude en el Chrome de Iván el 08/10/2026 con el evento de prueba **55230671**: crear el evento sin participantes, añadir a Iván, abrir las inscripciones con la notificación apagada y quitarlo antes y después de abrirlas **no le envió ninguna notificación**.
 - **Crear cada evento con el formulario completo:** `/calendar/create/` → «Ajustes avanzados» → **«Selección manual»** (el evento nace sin participantes) y **«Enviar una notificación» apagado** (el «Recordatorio automático» depende de ella: apagada la notificación, no hay recordatorio).
 - **Nunca el formulario rápido** de «Crear evento»: invita a todos y notifica.
-- **El día de la activación:** a cada evento futuro ya creado, «Modificar los participantes implicados» → **«Seleccionar 0 miembros»**.
+- **El día de la activación:** a cada evento futuro ya creado, «Modificar los participantes implicados» → **«Seleccionar 0 miembros»** (paso 3 del procedimiento de abajo).
 - **Sin probar todavía:** el interruptor «Aplicar los ajustes a próximos entrenamientos». No usarlo hasta probarlo con un evento de prueba.
 - Mientras el interruptor esté apagado, la copia sigue como hasta ahora.
+
+## Procedimiento de activación de «respuestas en la web» (Iván, 26/10/2026; D136)
+El mismo que `RUTINAS/C_CONVOCATORIA.md`, apartado 6. En este orden:
+1. **Claude importa las respuestas de TODOS los eventos abiertos de SportEasy** (entrenos hasta el 05/05/2027 y partidos de liga de MdA y MdL), con sus motivos y los periodos de ausencia, en **una sola pasada** de Importar → Respuestas (`/gestion/eventos/importar?t=respuestas`). No hay límite de fechas ni de líneas (comprobado con más de 1000 líneas en `pruebas:respuestas-pantallas`).
+2. **Claude coteja evento a evento la web y SportEasy** con el resumen que sale tras «Guardar las válidas» (por evento: fecha, evento, «N van · N no · N sin responder» y cuántos llevan motivo; solo gestores, sin motivos) y **pasa el resumen a Iván**, con cualquier diferencia.
+3. **Con el OK de Iván**, Claude pone los eventos futuros de SportEasy a «Modificar los participantes implicados» → **«Seleccionar 0 miembros»** y comprueba que no piden respuesta a nadie (condición 4, D104).
+4. **Iván marca la J3** (jornada limpia), **la casilla de SportEasy** y pulsa **Activar** en el Panel (D99.13).
+5. **Claude pausa la tarea programada «Maccabis · respuestas de SportEasy»** y prepara el WhatsApp para el grupo (lo envía Iván).
+
+**SportEasy NO se cierra:** sigue abierto (chat e historial) hasta septiembre de 2027 (`NORMAS_DE_TRABAJO.md` §8). **Lo que se responda allí después de activar no cuenta.**
+**Red de seguridad:** con el interruptor encendido, una importación **nunca pisa una respuesta ni una ausencia dada en la web** (por el jugador o por un gestor): esas líneas salen como «No se toca: … en la web» y no se guardan, sin opción de «Usar SportEasy». Así, si la tarea programada se ejecutara por error tras la activación, no estropea nada.
+
+## Los eventos se cambian SOLO en la web (D136)
+Un evento (fecha, hora, pista, quedada, cancelación) se cambia **solo en la web**; Claude lo copia después a SportEasy desde la cola «Copia a SportEasy». No al revés: lo que se cambie primero en SportEasy no llega a la web. El 26/10/2026 el entreno del 28/10 se cambió primero en SportEasy y después en la web: revisar que no quede «pendiente de copiar» (`ESTADO.md`).
 
 ## Planes no oficiales y cambios del tablero (D118, D121; 24/10/2026)
 - **Los planes no oficiales de los jugadores (quedadas, pachangas, amistosos entre amigos…) NO se copian a SportEasy:** no existen allí, no entran en la cola «Copia a SportEasy» y se responden siempre en la web (excepción a D64: no se pide lo mismo en dos sitios). Si un gestor pulsa **«Hacer oficial»**, el plan pasa a evento del club y entra en la cola como «Evento nuevo: crearlo en SportEasy» (formulario completo, sin notificar, como arriba).

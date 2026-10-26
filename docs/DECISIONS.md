@@ -717,3 +717,12 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 **Decisión de Iván:** las actas PDF de la J3 (25/10/2026) aún no están en gesdeportiva.fbm.es el lunes 26/10 por la mañana. Iván autoriza publicar ya la J3 **solo con las hojas de estadística**, con los dos partidos marcados «pend. acta» (`pendiente_acta: true`; sin parciales; hora y pista provisionales del calendario), **igual que la J1 (D71)**. Es una extensión **puntual a la J3**: D71 sigue siendo una excepción y no la norma; para cualquier otra jornada hace falta otra autorización de Iván.
 **Cómo se ha aplicado:** `npm run jornada -- --jornada 3 --desde privado/entrada_J03` (una carpeta con solo las 10 hojas `estadisticaPartido_26102026*.xlsx`), **a mano y no con la rutina A**: `--no-interactivo` sigue parando ante un partido sin acta (D66), y así se queda. Número D130 porque D123–D129 ya están usados en la rama sin merge `feat/convocatoria-proyeccion`.
 **Cómo se cierra:** como la J1 (D71): cuando las actas estén en Descargas, el siguiente `npm run jornada` (la rutina A de las 13:00 o a mano) enlaza cada hoja con su acta, completa parciales, hora y pista y valida el marcador; si no cuadra, para sin publicar. Comprobado el 26/10 en seco en `Maccabis-rutina-a` («Nada nuevo» sin actas) y con un acta en un clon desechable (completa el partido provisional y publica; los partidos que siguen «pend. acta» y no cambian no la paran).
+
+## D131 — Entrada en gesdeportiva: Claude puede pulsar «ENTRAR» con los datos que rellena Chrome (26/10/2026) — matiza D106
+
+**Contexto:** el 26/10/2026 la tarea «Maccabis · actas del lunes» no pudo bajar las actas de la J3 en tres intentos: la sesión de gesdeportiva.fbm.es no pasa de una pestaña a otra, así que cada pestaña nueva que abre la extensión muestra el formulario aunque Iván tenga otra pestaña con la sesión abierta. Iván las bajó a mano (392908 y 393039).
+
+**Decisión (Iván):** la tarea usa una pestaña de gesdeportiva que ya tenga la sesión abierta y, si no la hay, abre `https://gesdeportiva.fbm.es/clubes/` y pulsa «ENTRAR» con Usuario y Clave ya rellenados por el gestor de contraseñas de Chrome. Sigue prohibido escribir, cambiar, leer o copiar la clave y resolver un «no soy un robot»: si los campos no están rellenados, sale una comprobación o ENTRAR da error, para y avisa. Si entra ella, cierra la sesión al terminar.
+
+**Hora:** la tarea pasa a lunes y jueves a las 9:30 (antes 8:34; un rato del 26/10 estuvo a las 8:00).
+

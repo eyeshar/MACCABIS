@@ -66,6 +66,7 @@ No hay entorno de pruebas (staging) y no se va a crear: los cambios de esquema s
 ## 11. Sesiones en paralelo: una sesión, un worktree (D114)
 - Cada sesión de Claude Code que trabaje en paralelo usa **su propio `git worktree`** (`git worktree add ../Maccabis-<tema> <rama>`), con su `node_modules` y su `.env.local` (copiados, nunca en git).
 - **Nunca dos sesiones en la misma carpeta.** **Nunca `git stash`** (ni `checkout`/`reset` que descarten) **sobre cambios que no sean tuyos**: si en tu carpeta aparecen cambios ajenos, para y avisa.
+- **Lo que un worktree necesita y no está en git** (si no, algunas pruebas fallan sin que el código tenga la culpa): `plataforma/.env.local`, `node_modules` (raíz y `plataforma/`), `privado/` (sin `backups/`), `fuentes_fbm/` **al día**, `.cache-jdm/` y `data/raw/`. Sin `.cache-jdm/` ni `data/raw/`, `npm run test:regresion` da 43 diferencias «inesperadas» que no existen en `main` (26/10/2026).
 - La **carpeta principal del proyecto queda en `main`**: ahí solo se mergea y se verifica. La rutina A publica desde su propia copia (`Maccabis-rutina-a`, ver `RUTINAS/A_ACTAS.md`).
 
 ## 12. Datos publicados: solo los generan la jornada y la rutina A (D134)

@@ -66,6 +66,11 @@ try {
   const entrar = await fetch(BASE + '/entrar');
   const html = await entrar.text();
   ok(entrar.status === 200 && html.includes('Continuar con Google') && html.includes('Enviarme el código'), '/entrar carga (HTTP 200)', `HTTP ${entrar.status}`);
+  // D139: la casilla del código (solo aparece tras pedir un código) acepta de 6 a 8 dígitos: se mira en el JS de la página.
+  const scripts = [...new Set(html.split('"').filter((x) => x.startsWith('/_next/static/') && x.endsWith('.js')))];
+  let casilla = false;
+  for (const s of scripts) { const js = await (await fetch(BASE + s)).text(); if (js.includes('Código del correo') && /maxLength:8/.test(js) && /minLength:6/.test(js)) { casilla = true; break; } }
+  ok(casilla, '/entrar: la casilla «Código del correo» acepta de 6 a 8 dígitos (minLength 6, maxLength 8)');
 
   // Web publica sin sesion (D85, D89): paginas, redirecciones, iCal, robots y sitemap.
   // Manifiestos que enlaza cada pagina: siempre el unico, /manifest.webmanifest (fallo del 25/10: /mi-zona/manifest...).

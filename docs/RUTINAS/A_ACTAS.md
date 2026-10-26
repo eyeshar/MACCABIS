@@ -21,7 +21,7 @@ Todo a **Descargas**, sin renombrar. Si en Descargas quedan hojas de jornadas an
 ## Actas: web gesdeportiva.fbm.es (D106)
 
 1. **La sesión de gesdeportiva no pasa de una pestaña a otra** (comprobado el 26/10/2026): cada pestaña nueva vuelve a mostrar el formulario, aunque haya otra pestaña con la sesión abierta.
-2. Entrada (D131): Claude usa una pestaña de gesdeportiva que ya tenga la sesión abierta («26 MDA y MDL», «CERRAR SESIÓN») y, si no la hay, abre `https://gesdeportiva.fbm.es/clubes/` y pulsa **ENTRAR** con Usuario y Clave **ya rellenados por Chrome**. Nunca escribe, cambia ni lee la clave. Si los campos están vacíos, aparece un «no soy un robot» o ENTRAR da error, para y avisa a Iván. Si entró él, cierra la sesión al terminar.
+2. Entrada (D131): Claude usa una pestaña de gesdeportiva que ya tenga la sesión abierta («26 MDA y MDL», «CERRAR SESIÓN») y, si no la hay, abre `https://gesdeportiva.fbm.es/clubes/` y pulsa **ENTRAR** con Usuario y Clave **ya rellenados por Chrome**. Nunca escribe, cambia ni lee la clave. Si los campos están vacíos, aparece un «no soy un robot» o ENTRAR da error, para y avisa a Iván. No cierra la sesión ni la pestaña de gesdeportiva al terminar (Iván, 26/10/2026): la siguiente ejecución la reutiliza.
 3. Claude: Competiciones → **Resultados y actas** → «Por fechas» → **acta** de cada partido de MdA y MdL (`Acta-Partido-<nº>.pdf`, a Descargas).
 4. Primera ejecución: 23/10/2026 (4 actas de J1 y J2, las 4 cuadran).
 5. **Desde el 24/10/2026 lo hace una tarea programada de Claude**, «Maccabis · actas del lunes» (lunes y jueves a las 9:30 desde el 26/10/2026; antes 8:34): baja solo las actas que falten en Descargas. Necesita el Chrome de Iván abierto (con la extensión) y la clave guardada en Chrome para gesdeportiva.

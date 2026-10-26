@@ -722,7 +722,7 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 
 **Contexto:** el 26/10/2026 la tarea «Maccabis · actas del lunes» no pudo bajar las actas de la J3 en tres intentos: la sesión de gesdeportiva.fbm.es no pasa de una pestaña a otra, así que cada pestaña nueva que abre la extensión muestra el formulario aunque Iván tenga otra pestaña con la sesión abierta. Iván las bajó a mano (392908 y 393039).
 
-**Decisión (Iván):** la tarea usa una pestaña de gesdeportiva que ya tenga la sesión abierta y, si no la hay, abre `https://gesdeportiva.fbm.es/clubes/` y pulsa «ENTRAR» con Usuario y Clave ya rellenados por el gestor de contraseñas de Chrome. Sigue prohibido escribir, cambiar, leer o copiar la clave y resolver un «no soy un robot»: si los campos no están rellenados, sale una comprobación o ENTRAR da error, para y avisa. Si entra ella, cierra la sesión al terminar.
+**Decisión (Iván):** la tarea usa una pestaña de gesdeportiva que ya tenga la sesión abierta y, si no la hay, abre `https://gesdeportiva.fbm.es/clubes/` y pulsa «ENTRAR» con Usuario y Clave ya rellenados por el gestor de contraseñas de Chrome. Sigue prohibido escribir, cambiar, leer o copiar la clave y resolver un «no soy un robot»: si los campos no están rellenados, sale una comprobación o ENTRAR da error, para y avisa. No cierra la sesión ni la pestaña de gesdeportiva al terminar (la siguiente ejecución la reutiliza).
 
 **Hora:** la tarea pasa a lunes y jueves a las 9:30 (antes 8:34; un rato del 26/10 estuvo a las 8:00).
 

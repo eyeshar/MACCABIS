@@ -7,12 +7,18 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**Eventos y Panel (26/10/2026, `fix/eventos-respuestas-y-panel`):**
+- [x] La celda «Respuestas» de `/gestion/eventos` (todas las pestañas), la tarjeta «Entreno del miércoles» y una columna nueva «Respuestas» en «Partidos del domingo» del Panel enlazan a `/gestion/eventos/<id>/respuestas`; en el móvil toda la celda es zona táctil. El nombre del evento sigue llevando a editar.
+- [x] El Panel («Entreno del miércoles» y «Pendiente esta semana», también en la banda «Gestión esta semana» del inicio) lee el próximo entreno de la **tabla de eventos** con `pistaEfectiva` (`lib/gestion/entreno.ts`), no de la fuente pública: el entreno del 28/10 (ubicación libre «Ciudad de los Periodistas», D119) salía «pista por confirmar».
+- [ ] **La vista pública `v_eventos_publicos` no conoce la ubicación libre (D119):** a un entreno sin `pista_id` le pone la pista de la serie o «por confirmar». Por eso el entreno del 28/10 sale «pista por confirmar (Valdebernardo en obras)» en las páginas públicas que leen la fuente del calendario: portada, `/club`, calendario y `calendario.ics`. Arreglo: migración que añada `ubicacion_nombre` a la vista (y `pista_por_confirmar = false` si la hay), con D111. Pendiente del OK de Iván (cambio de esquema).
+- [ ] Punto 4 tras el paso 2, lo que queda en el Panel: «A · Actas» (resultados jugados, de `liga_2026-27.json`, que es lo publicado por la rutina A) y los avisos de equipación (`equipaciones_2026-27.json`, configuración) siguen leyendo ficheros. Es lo correcto mientras esos datos no vivan en la tabla; no se migran.
+
 **Limpieza de octubre y activación de «respuestas en la web» (26/10/2026, `fix/limpieza-octubre`, D136):**
 - [x] Aviso de la **Media Maratón de Moratalaz** (domingo 08/11, meta en nuestro polideportivo) en `data/avisos.json`, del 02/11 al 08/11, para el MdL. Sale en el inicio y, desde esta rama, también en el **mensaje de WhatsApp de la convocatoria** (los avisos vigentes ese domingo para los equipos que juegan, una línea por aviso).
 - [ ] **Rutina B del jueves 5/11: confirmar horarios y cortes oficiales de la media maratón 2026 y ajustar el texto si cambian.**
 - [x] Importar → Respuestas preparada para la última importación: sin límite de fechas ni de líneas (lee por páginas), resumen por evento tras «Guardar» y, con el interruptor encendido, nunca pisa lo respondido en la web.
 - [ ] **Activación (decisión de Iván, 26/10/2026), en este orden** (`RUTINAS/C_CONVOCATORIA.md`, apartado 6): (1) Claude importa las respuestas de TODOS los eventos abiertos de SportEasy; (2) Claude coteja evento a evento y pasa el resumen a Iván; (3) con su OK, Claude pone los eventos futuros de SportEasy a «Seleccionar 0 miembros» y comprueba que no piden respuesta (condición 4); (4) Iván marca la J3, la casilla de SportEasy y pulsa Activar; (5) Claude pausa la tarea «Maccabis · respuestas de SportEasy» y prepara el WhatsApp. SportEasy no se cierra; lo que se responda allí después no cuenta.
-- [ ] Revisar que el **entreno del 28/10** no quede «pendiente de copiar» (el 26/10 se cambió primero en SportEasy y después en la web). Norma: los eventos se cambian **solo en la web** y Claude los copia a SportEasy (D136).
+- [x] **Comprobado el 26/10/2026 en el real (solo lectura): el entreno del 28/10 está «copiado»** (sin cambio pendiente). Revisar que el **entreno del 28/10** no quede «pendiente de copiar» (el 26/10 se cambió primero en SportEasy y después en la web). Norma: los eventos se cambian **solo en la web** y Claude los copia a SportEasy (D136).
 - [x] Ramas remotas: las 30 mergeadas, `feat/calendario-automatico` y `feat/inicio-y-planes` (decisión de Iván) y `fix/limpieza-octubre` (tras su merge) borradas de origin el 26/10/2026; solo queda `main`.
 
 **Norma D134 (26/10/2026):**

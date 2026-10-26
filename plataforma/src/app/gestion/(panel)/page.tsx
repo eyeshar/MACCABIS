@@ -9,12 +9,15 @@ import { AvisoCaja } from "@/components/ProximoPartido";
 import { bonito, cargarLiga, type DatosLiga } from "@/lib/liga";
 import { clave } from "@/data/avisosEquipacion";
 import {
-  chipEquipacion, entrenoHabitual, estadoClasificacion, eventosEntrenos, proximosPartidos, ultimosResultados, type Evento,
+  chipEquipacion, entrenoHabitual, estadoClasificacion, proximosPartidos, ultimosResultados, type Evento,
 } from "@/lib/publico";
 import { diaMes, diaSemanaCorto, hoyMadrid, textoSemana } from "@/lib/dias";
 import { campanaAbiertaAhora } from "@/lib/fechas";
 import { NOMBRE_EQUIPO } from "@/lib/web";
 import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
+import { proximoEntreno } from "@/lib/gestion/entreno";
+import { hhmm, tituloEvento } from "@/lib/eventos/dominio";
+import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
 
 export const metadata = { title: "Gestión · Maccabis" };
 
@@ -66,19 +69,28 @@ export default async function InicioGestion() {
   };
   const resultados = ultimosResultados(hoy);
   const sinActa = resultados.filter((r) => r.pendienteActa);
-  const entreno = eventosEntrenos(fuente).find((e) => e.fecha >= hoy);
+  // El proximo entreno sale de la tabla de eventos con su pista efectiva (ubicacion libre incluida), no del fichero.
+  const proximo = await proximoEntreno(supabase, hoy);
+  const entreno = proximo?.evento ?? null;
   const habitual = entrenoHabitual(fuente);
+  const pistaHabitual = proximo?.serie ? { nombre: proximo.serie.nombre, enObras: proximo.serie.estado === "en_obras" } : { nombre: habitual.pista, enObras: habitual.enObras };
   const sinCorreo = (jugadores ?? 0) - (conCorreo ?? 0);
   // Respuestas de SportEasy al proximo entreno (leidas por Claude, paso 2): van / sin responder / no van.
-  let respEntreno: { va: number; duda: number; no: number; sin: number; id: string } | null = null;
-  if (entreno) {
-    const { data: ev } = await supabase.from("eventos").select("id, tipo, equipo").eq("clave", entreno.id).maybeSingle();
-    if (ev) {
-      const [{ data: rs }, js] = await Promise.all([supabase.from("respuestas").select("respuesta").eq("evento_id", ev.id), cargarJugadores(supabase)]);
-      const c = contarRespuestas([...(rs ?? []) as { respuesta: Respuesta }[], ...Array.from({ length: Math.max(0, convocadosDe(ev as never, js).length - (rs?.length ?? 0)) }, () => ({ respuesta: "sin_responder" as Respuesta }))]);
-      respEntreno = { va: c.va, duda: c.duda, no: c.no, sin: c.sin_responder, id: ev.id };
-    }
-  }
+  // Y las de los partidos del domingo (por su clave, «mda-j4»), para enlazar a sus respuestas como en Eventos.
+  const [js, { data: filasDomingo }] = await Promise.all([
+    cargarJugadores(supabase),
+    delDomingo.length ? supabase.from("eventos").select("id, clave, tipo, equipo, oficial").in("clave", delDomingo.map((e) => e.id)) : Promise.resolve({ data: [] }),
+  ]);
+  const evDomingo = (filasDomingo ?? []) as { id: string; clave: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial: boolean }[];
+  const ids = [...evDomingo.map((e) => e.id), ...(entreno ? [entreno.id] : [])];
+  const { data: rsTodas } = ids.length ? await supabase.from("respuestas").select("evento_id, respuesta").in("evento_id", ids) : { data: [] };
+  const cuentas = (ev: { id: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial?: boolean }) => {
+    const rs = ((rsTodas ?? []) as { evento_id: string; respuesta: Respuesta }[]).filter((r) => r.evento_id === ev.id);
+    const c = contarRespuestas([...rs, ...Array.from({ length: Math.max(0, convocadosDe(ev as never, js).length - rs.length) }, () => ({ respuesta: "sin_responder" as Respuesta }))]);
+    return { va: c.va, duda: c.duda, no: c.no, sin: c.sin_responder, id: ev.id, hay: rs.length > 0 };
+  };
+  const cuentasDomingo = new Map(evDomingo.map((e) => [e.clave, cuentas(e)]));
+  const respEntreno = entreno ? cuentas(entreno) : null;
 
   // «Respuestas en la web: activar» (D99.13): estado, condiciones y jornadas jugadas para marcarlas.
   const [{ data: activacion }, { data: marcasDB }, { data: jugadas }] = await Promise.all([
@@ -141,16 +153,18 @@ export default async function InicioGestion() {
             {delDomingo.length ? (
               <div className="tabla-desplazable">
                 <table className="gs-tabla">
-                  <thead><tr><th>Equipo</th><th>Partido</th><th>Hora · pista</th><th>Equipación</th><th>Convocados</th></tr></thead>
+                  <thead><tr><th>Equipo</th><th>Partido</th><th>Hora · pista</th><th>Equipación</th><th>Respuestas</th><th>Convocados</th></tr></thead>
                   <tbody>
                     {delDomingo.map((e) => {
                       const chip = chipEquipacion(e.aviso);
+                      const r = cuentasDomingo.get(e.id);
                       return (
                         <tr key={e.id} className="eq-partido" data-equipo={e.equipo}>
                           <td><span className={`chip-eq chip-${e.equipo}`}>{NOMBRE_EQUIPO[e.equipo!]}</span></td>
                           <td style={{ fontWeight: 600 }}>{cruce(e)}</td>
                           <td className="cifra" style={{ whiteSpace: "nowrap" }}>{e.inicio ?? "¿?"} · P{e.partido?.campo ?? "?"}</td>
                           <td data-label="Equipación">{chip ? <span className={`pastilla pastilla-${chip.tipo}`}>{chip.texto}</span> : <span className="pastilla">Negra</span>}</td>
+                          <td data-label="Respuestas" className={r?.hay ? "ev-celda-resp" : undefined}>{r?.hay ? <CuentasRespuestas id={r.id} va={r.va} duda={r.duda + r.sin} no={r.no} nombre={cruce(e)} barra={false} /> : r ? <Link href={`/gestion/eventos/${r.id}/respuestas`} className="tenue">Sin respuestas</Link> : <span className="suave">—</span>}</td>
                           <td data-label="Convocados"><Link href={`/gestion/convocatoria?fecha=${e.fecha}`} className={convDomingo ? undefined : "tenue"}>{convocados(e)}</Link></td>
                         </tr>
                       );
@@ -186,17 +200,17 @@ export default async function InicioGestion() {
           <section className="gs-bloque" aria-labelledby="t-entreno">
             <div className="gs-bloque-cab">
               <h2 id="t-entreno">Entreno del miércoles</h2>
-              {entreno && <span className="gs-eyebrow">{diaSemanaCorto(entreno.fecha)} {+entreno.fecha.slice(8)} · {entreno.inicio}</span>}
+              {entreno && <span className="gs-eyebrow">{diaSemanaCorto(entreno.fecha)} {+entreno.fecha.slice(8)} · {hhmm(entreno.inicio)}</span>}
             </div>
-            {entreno ? (
-              <span className="pequeno suave">
-                {entreno.inicio}–{entreno.fin} · {entreno.pistaPorConfirmar ? <b>pista por confirmar ({entreno.nota})</b> : <>{entreno.lugar}{entreno.nota ? `, ${entreno.nota.replace(/\.$/, "").toLowerCase()}` : ""}</>}
-                {" "}(lo habitual: miércoles {habitual.inicio}–{habitual.fin} en {habitual.pista}{habitual.enObras ? ", en obras" : ""})
+            {entreno && proximo ? (
+              <span className="pequeno suave" data-testid="entreno-pista">
+                {hhmm(entreno.inicio)}–{hhmm(entreno.fin)} · {proximo.pista.porConfirmar ? <b>pista por confirmar{proximo.pista.motivo ? ` (${proximo.pista.motivo})` : ""}</b> : <>{proximo.pista.texto}{entreno.notas ? `, ${entreno.notas.replace(/\.$/, "").toLowerCase()}` : ""}</>}
+                {" "}(lo habitual: miércoles {habitual.inicio}–{habitual.fin} en {pistaHabitual.nombre}{pistaHabitual.enObras ? ", en obras" : ""})
               </span>
             ) : <span className="suave">No quedan entrenos en el calendario.</span>}
             {respEntreno && respEntreno.va + respEntreno.duda + respEntreno.no > 0 ? (
               <div data-testid="respuestas-entreno" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div className="ev-cuentas"><span className="ev-ok">{respEntreno.va} van</span><span className="ev-duda">{respEntreno.duda} dudan</span><span className="suave">{respEntreno.sin} sin responder</span><span className="ev-no">{respEntreno.no} no van</span></div>
+                <div className="ev-celda-resp"><Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} className="ev-resp-enlace" data-testid="enlace-respuestas"><div className="ev-cuentas"><span className="ev-ok">{respEntreno.va} van</span><span className="ev-duda">{respEntreno.duda} dudan</span><span className="suave">{respEntreno.sin} sin responder</span><span className="ev-no">{respEntreno.no} no van</span></div></Link></div>
                 <Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} style={{ fontWeight: 600 }}>Ver respuestas y motivos →</Link>
               </div>
             ) : (

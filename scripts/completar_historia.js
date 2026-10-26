@@ -33,7 +33,7 @@ const cambios = [];
 
 /** Añade un año a una persona de la matriz; la crea si no existía. */
 function confirmar(person_id, anio, fuente) {
-  if (+anio >= 2026) return;                       // 26/27 es PREVISTA, nunca jugada
+  if (+anio >= 2026) return;                       // 26/27 (en curso) la pone historia_en_curso.js (D137)
   let p = porId.get(person_id);
   if (!p) {
     const r = regById.get(person_id);
@@ -41,7 +41,7 @@ function confirmar(person_id, anio, fuente) {
     p = {
       person_id, formal: r.formal, display: r.display,
       temporadas_jugadas: [], n_temporadas: 0,
-      previsto_2627: false, solo_mote: !!r.solo_mote, es_entrenador: !!r.es_entrenador,
+      solo_mote: !!r.solo_mote, es_entrenador: !!r.es_entrenador,
       nota: 'Añadida a la matriz el 04/08/2026 al cruzarla con ' + fuente + '.',
     };
     hist.personas.push(p); porId.set(person_id, p);
@@ -83,7 +83,7 @@ if (fichas) {
 // ---------------------------------------------------------------- recalcular y guardar
 for (const p of hist.personas) {
   p.temporadas_jugadas = [...new Set(p.temporadas_jugadas)].sort();
-  p.n_temporadas = p.temporadas_jugadas.filter(y => +y >= 2013 && +y <= 2025).length;
+  p.n_temporadas = p.temporadas_jugadas.filter(y => +y >= 2013 && +y <= 2026).length;   // hasta la en curso (D137)
 }
 hist.personas.sort((a, b) => b.n_temporadas - a.n_temporadas || a.display.localeCompare(b.display));
 hist._meta.completado = {

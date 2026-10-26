@@ -73,8 +73,13 @@ o si un PDF con ese nombre ya es otra hoja. Las hojas cuyo PDF se perdió de ver
 `node scripts/lib/copia_segura.js <origen> <carpeta>`.
 
 `check:personas` valida que todos los `person_id` de la Historia y de las estadísticas existan
-en el registro, que `n_temporadas` cuadre con los años jugados y que 2026 (temporada 26/27,
-prevista) no cuente como jugada. Devuelve código 1 si algo falla.
+en el registro y que `n_temporadas` cuadre con los años en el club (de 2013 a la temporada en
+curso, 2026/27, incluida). Devuelve código 1 si algo falla.
+
+La temporada en curso de la Historia (D137) la pone `npm run historia:en-curso`
+(`scripts/historia_en_curso.js`): la plantilla con ficha de `data/season_2026-27.json` más el
+cuerpo técnico. La ejecuta `npm run jornada`; `npm run check:historia` comprueba que esté al día y
+que la rejilla de /historia cuadre (naranja = ya ha jugado, amarillo = con ficha, sin partidos).
 
 ## Cómo añadir partidos (temporada 2026/27 en adelante)
 

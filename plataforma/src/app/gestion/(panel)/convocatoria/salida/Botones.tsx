@@ -18,7 +18,7 @@ export function BotonMarcar({ fecha, que, texto }: { fecha: string; que: "whatsa
   );
 }
 
-/** «Enviar ahora» el aviso «Estás convocado» (solo funciona con el interruptor encendido). */
+/** «Enviar ahora» el aviso «Estás convocado» (no depende del interruptor, D127). */
 export function BotonAvisar({ fecha }: { fecha: string }) {
   const router = useRouter();
   const [pend, iniciar] = useTransition();

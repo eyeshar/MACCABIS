@@ -359,6 +359,9 @@ try {
     ok((await api(`/alertas_gestores?evento_id=eq.${pt.id}`, { metodo: 'PATCH', cuerpo: { visto_en: new Date().toISOString(), visto_por_nombre: 'Iván' }, token: tG })).datos.length === 2, '«Visto» la quita (la marca el gestor)');
   } else ok(true, '(hoy es lunes o martes antes de las 10:00: no hay partido «tarde» que probar en la base; lo cubre pruebas:avisos-logica)');
   ok((await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${E.e14}`)[0].n === 0, 'los entrenos no generan alerta');
+  // Los dos partidos de prueba, lejos (tienen respuestas y alertas: no se pueden borrar): los lunes, «el domingo de la semana que viene» es el domingo de la J3 adelantada y
+  // el gestor tendria tres partidos ese dia en la vista de domingo (fallaba «solo al de las 14:00»).
+  await sql`update public.eventos set fecha = '2030-01-06' where clave in ('x-tarde', 'x-temprano')`;
 
   console.log('\n== Quién responde (D105): los activos menos el entrenador; «solo entreno» solo a los entrenos');
   const inv = async (person, ev) => (await sql`select public._invitado(${person}, ${ev}) as v`)[0].v;

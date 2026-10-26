@@ -171,8 +171,11 @@ try {
     if (pg.url().includes('/elegir')) await pg.goto(`${APP}/gestion`);
     await pg.goto(`${APP}/gestion`);
     const prox = pg.locator('[aria-labelledby="t-prox"]');
-    ok((await prox.locator('.eq-partido').count()) === 2, 'Inicio de gestion: proximos partidos de MdA y de MdL');
-    const nAvisos = [avisoReal('MDA'), avisoReal('MDL')].filter((a) => a?.hay).length;
+    // El inicio de gestion enseña solo el proximo domingo con partido: si un equipo descansa (MdA en la J4), sale uno.
+    const domingo = [proxReal('MDA'), proxReal('MDL')].filter(Boolean).map((x) => x.fecha).sort()[0];
+    const juegan = ['MDA', 'MDL'].filter((e) => proxReal(e)?.fecha === domingo);
+    ok((await prox.locator('.eq-partido').count()) === juegan.length, `Inicio de gestion: los partidos del proximo domingo (${juegan.join(' y ')})`);
+    const nAvisos = juegan.map(avisoReal).filter((a) => a?.hay).length;
     ok((await prox.locator('.eq-aviso').count()) === nAvisos, `Inicio de gestion: ${nAvisos} aviso(s), los de los rivales que chocan`, String(await prox.locator('.eq-aviso').count()));
     ok(await sinDesbordar(pg), 'Inicio de gestion: sin desbordamiento horizontal');
     await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_${etiqueta}.png`), fullPage: true });

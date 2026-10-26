@@ -757,3 +757,13 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 
 **Ampliación (Iván, 26/10/2026, 9:48):** la misma regla vale para **todas** las automatizaciones del club (SportEasy y maccabis.vercel.app incluidas): ante una pantalla de entrada con los datos ya rellenados por Chrome, o con la cuenta ya elegida, Claude pulsa entrar; nunca escribe ni cambia la contraseña, un solo intento, para y avisa si hay campos vacíos, captcha o código por correo, y no cierra la sesión al terminar. Aplicada ya a «Maccabis · respuestas de SportEasy».
 
+## D132 — La liga nunca retrocede: no se escribe ni se publica un liga.json con menos que lo publicado (26/10/2026) — NORMA; complementa D114
+
+**Contexto:** el merge `2d9c73e` (origin/main en `feat/convocatoria-proyeccion`) regeneró `liga.json` en el worktree `Maccabis-proyeccion`, cuyo `fuentes_fbm/` es una copia propia (fuera de git, del 25/10) sin las 8 hojas de liga ni las 2 nuestras de la J3. Salió con 20 hojas y `jornadas_cargadas` [1,2] en G1 y G2; `test:liga` pasó porque compara el JSON con las hojas de esa misma carpeta, y `c2ea98c` lo llevó a `main`: la J3 desapareció de la liga en producción. Restaurada en `99bcec7` (30 hojas).
+
+**Decisión:** `construir()` de `scripts/estadisticas/liga.js` compara la liga que genera con `data/liga_<temporada>.json` de `origin/main` y de `main` (`git show`) y da **error** si algún grupo tiene menos jornadas cargadas, menos hojas o le falta algún partido con hoja. Como es un error de `construir()`, **no escribe nada** `npm run liga`, `npm run jornada` (también con `--no-interactivo` en la rutina A, que para y deshace sus copias) ni `npm run db:liga` (no carga Supabase). `test:liga` (que corre en el paso 3 de la rutina A) comprueba además que el `data/liga_<temporada>.json` del disco no retrocede respecto a esas dos ramas, y lleva un caso sintético que quita una jornada. El mensaje dice cuántas hojas hay en `fuentes_fbm/<temporada>/liga/` y avisa de que un worktree tiene su propia copia.
+
+**Excepción:** quitar a propósito una hoja equivocada lo decide una persona y se hace con `LIGA_PERMITIR_RETROCESO=1` delante del comando; la rutina A nunca lo usa.
+
+**Procedimiento:** la liga (y cualquier dato que salga de `fuentes_fbm/`) se regenera en la carpeta del proyecto o en `Maccabis-rutina-a` (enlazada a la misma `fuentes_fbm`), nunca en un worktree con copia propia. En un merge de `main` en una rama, si hay conflicto en `liga.json`, se toma el de `main` y se regenera en la carpeta del proyecto después del merge a `main`.
+

@@ -7,6 +7,10 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**Norma D134 (26/10/2026):**
+- [x] `npm run check:datos` y el hook `commit-msg` (D134), activado en el repositorio principal.
+- [ ] Activar el hook también en la copia `Maccabis-rutina-a` (`npm run hooks:instalar` tras su próximo `git pull`): allí publica en `main`, que no se comprueba, pero así queda igual en todos los clones.
+
 **`feat/convocatoria-proyeccion` (D124–D129), EN PRODUCCIÓN (merge `c2ea98c`, 26/10/2026):**
 - [x] Revisión de la vista previa por Claude y OK de Iván al merge (26/10/2026); `verificar_produccion` en TODO OK, con /liga enlazada, la página de partido sin sesión y «Aviso en la web» sin el interruptor.
 - [x] Migración `20261025100000_convocados_domingo` aplicada en el Supabase real (25/10, D111: volcado, revertir ensayado en local, permisos en solo lectura antes y después, 25 cuentas de auth antes y después). `main` no la usa hasta el merge.

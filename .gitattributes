@@ -1,0 +1,2 @@
+# Hooks de git (D134): siempre LF, o sh no los ejecuta
+.githooks/* text eol=lf

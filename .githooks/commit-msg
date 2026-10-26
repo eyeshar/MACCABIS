@@ -1,0 +1,12 @@
+#!/bin/sh
+# Norma D134 (docs/NORMAS_DE_TRABAJO.md §12): ninguna rama de código cambia datos publicados sin un commit «datos(…)», y
+# un merge deja siempre la versión de main. Se activa con `npm run hooks:instalar` (git config core.hooksPath .githooks).
+raiz="$(git rev-parse --show-toplevel)"
+script="$raiz/scripts/check_datos_publicados.js"
+# Ramas anteriores a la norma no traen el script: no se bloquea nada.
+[ -f "$script" ] || exit 0
+if ! command -v node >/dev/null 2>&1; then
+  echo "check:datos: no hay node en el PATH; no se ha comprobado la norma D134." >&2
+  exit 0
+fi
+exec node "$script" --commit-msg "$1"

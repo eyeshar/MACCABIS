@@ -9,7 +9,7 @@
   para publicar y siempre en main), nunca desde la carpeta de trabajo (D114): si se lanza desde otra carpeta, para.
 
     0. La copia: para si tiene cambios locales; git checkout main y git pull --ff-only. Si le faltan privado/ o
-       fuentes_fbm/ (fuera de git), los enlaza (unión de directorios) a los de la carpeta del proyecto, para que el
+       fuentes_fbm/ o data/raw/ (fuera de git), los enlaza (unión de directorios) a los de la carpeta del proyecto, para que el
        estado sea uno solo; si le falta plataforma/.env.local, lo copia de allí. npm ci si faltan los node_modules
        o si el pull ha cambiado un package-lock.json.
     1. main al día: para si hay commits sin subir.
@@ -102,12 +102,13 @@ function Limpiar {
   foreach ($f in $script:copiados) { if ($f -and (Test-Path -LiteralPath $f)) { Remove-Item -LiteralPath $f -Force } }
 }
 
-<# Lo que la copia dedicada necesita y no está en git: privado/ y fuentes_fbm/ se enlazan (unión de directorios, sin
+<# Lo que la copia dedicada necesita y no está en git: privado/, fuentes_fbm/ y data/raw/ (los CSV del portal que usa
+   test:regresion; sin ellos la ejecución del 26/10/2026 paró) se enlazan (unión de directorios, sin
    permisos de administrador) a los de la carpeta del proyecto, para que el registro, la asistencia privada y las
    fuentes ya cargadas sean los mismos en las dos; plataforma/.env.local se copia (un enlace de fichero pediría
    permisos de administrador). Todo está en .gitignore: nada de esto sube a git. #>
 function PrepararCopia {
-  foreach ($d in 'privado', 'fuentes_fbm') {
+  foreach ($d in 'privado', 'fuentes_fbm', 'data\raw') {
     $aqui = Join-Path $Repo $d
     if (Test-Path -LiteralPath $aqui) {
       if ($Repo -ne $Principal -and -not ((Get-Item -LiteralPath $aqui -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {

@@ -208,12 +208,12 @@ try {
     // Aviso en la web de la convocatoria (D127): no depende del interruptor. Solo se mira; nunca se pulsa «Enviar ahora».
     if (!movil) {
       const [{ fecha }] = await sql`select max(fecha)::text fecha from public.convocatorias where estado = 'aprobada'`;
-      const [{ on }] = await sql`select public.respuestas_web_encendido() on`;
+      const [{ encendido }] = await sql`select public.respuestas_web_encendido() encendido`;
       await p.goto(`${BASE}/gestion/convocatoria/salida?fecha=${fecha}`);
       const tarjeta = p.getByTestId('cv-salida-aviso');
       const txt = await tarjeta.innerText();
       const boton = await tarjeta.getByRole('button', { name: 'Enviar ahora' }).count();
-      ok(!txt.includes('interruptor') && (boton === 1 || /Enviado/.test(txt)), `convocatoria del ${fecha}: «Aviso en la web» sin depender del interruptor (${on ? 'encendido' : 'apagado'}): ${boton ? '«Enviar ahora» disponible' : 'enviado'}`, txt.slice(0, 200));
+      ok(!txt.includes('interruptor') && (boton === 1 || /Enviado/.test(txt)), `convocatoria del ${fecha}: «Aviso en la web» sin depender del interruptor (${encendido ? 'encendido' : 'apagado'}): ${boton ? '«Enviar ahora» disponible' : 'enviado'}`, txt.slice(0, 200));
     }
 
     await p.goto(`${BASE}/gestion/scouting`);

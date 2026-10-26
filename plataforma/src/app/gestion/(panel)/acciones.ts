@@ -34,6 +34,7 @@ export async function guardarJugador(jugadorId: string, _prev: string | null, fo
       correo_invalido: "Ese correo no tiene forma de correo.",
       correo_duplicado_jugadores: "Ese correo ya está en uso por otro jugador.",
       correo_en_uso_auth: "Ese correo ya tiene una cuenta de acceso distinta en Supabase. Pide a un gestor con acceso a Supabase que lo revise a mano.",
+      correo_de_gestor: "Ese correo ya es el de un gestor. Pide a Iván que lo revise a mano.",
       no_encontrado: "Ese jugador ya no existe.",
     };
     return mensajes[sincronia.error as string] ?? `No se pudo guardar: ${sincronia.error}`;

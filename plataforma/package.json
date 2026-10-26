@@ -68,6 +68,7 @@
     "proyeccion:validar": "node scripts/proyeccion/validar.mjs",
     "proyeccion:historial": "node scripts/proyeccion/historial_rivales.mjs",
     "pruebas:proyeccion": "node pruebas/proyeccion.mjs",
+    "pruebas:correo-revertir": "node pruebas/correo_revertir.mjs",
     "pruebas:domingo": "node pruebas/domingo_jugador.mjs",
     "pruebas:liga-partidos": "node pruebas/liga_partidos.mjs"
   },

@@ -382,13 +382,13 @@ try {
   const filaSinCorreo = pG.locator(`li[data-person="de-maria-sanchez-jaime"]`);
   ok(await filaSinCorreo.getByText('Sin correo: no puede entrar').isVisible(), 'un jugador sin correo se marca "Sin correo: no puede entrar"');
   await filaSinCorreo.getByText('Editar datos').click();
-  // 'intruso@pruebas.local' ya tiene una cuenta de auth de OTRA persona (el intruso de las pruebas de sesion,
-  // arriba): no puede darsele sin mas a jaime, se fusionarian dos identidades distintas (cambiar_correo_jugador).
-  await filaSinCorreo.getByLabel('Correo (para entrar)').fill('intruso@pruebas.local');
+  // El correo de un gestor no se le puede dar a un jugador (cambiar_correo_jugador, D135). (Un correo con cuenta pero
+  // sin ficha SI se puede dar a quien no tenia cuenta: queda enlazado; lo prueba la seccion de D135, mas abajo.)
+  await filaSinCorreo.getByLabel('Correo (para entrar)').fill(gestorEmail);
   await filaSinCorreo.getByRole('button', { name: 'Guardar datos' }).click();
-  await filaSinCorreo.getByText('Ese correo ya tiene una cuenta de acceso distinta en Supabase.').waitFor({ timeout: 5000 }).catch(() => {});
-  ok(await filaSinCorreo.getByText('Ese correo ya tiene una cuenta de acceso distinta en Supabase.').isVisible(),
-    'no deja dar de alta un correo con una cuenta de auth de otra persona');
+  await filaSinCorreo.getByText('Ese correo ya es el de un gestor.').waitFor({ timeout: 5000 }).catch(() => {});
+  ok(await filaSinCorreo.getByText('Ese correo ya es el de un gestor.').isVisible(),
+    'no deja dar a un jugador el correo de un gestor (aviso en la pantalla)');
   ok(await filaSinCorreo.getByText('Sin correo: no puede entrar').isVisible(), 'y el jugador sigue sin correo (no se guarda a medias)');
   await filaSinCorreo.getByLabel('Correo (para entrar)').fill('jaime@pruebas.local'); // este si, nunca usado
   await filaSinCorreo.getByRole('button', { name: 'Guardar datos' }).click();
@@ -429,9 +429,33 @@ try {
   // No se puede "robar" una cuenta de auth de otra persona poniendole su correo a otro jugador.
   const F = await jugadorDe('mendez-escandon-fernando', 'fernando@pruebas.local');
   r = await rpc('cambiar_correo_jugador', { p_jugador_id: F.id, p_email: 'daniele.nuevo@pruebas.local' }, jwtGestor);
-  ok(r.status === 200 && r.datos?.ok === false && r.datos?.error === 'correo_en_uso_auth', 'no deja poner un correo que ya tiene una cuenta de auth de OTRA persona', JSON.stringify(r.datos));
+  ok(r.status === 200 && r.datos?.ok === false && r.datos?.error === 'correo_duplicado_jugadores', 'no deja poner el correo (con cuenta) de OTRO jugador', JSON.stringify(r.datos));
   const [fSinCambios] = await sql`select email from public.jugadores where id = ${F.id}`;
   ok(fSinCambios.email === 'fernando@pruebas.local', 'y no toca el correo del jugador si el cambio se rechaza', fSinCambios.email);
+
+  // D135: el correo viejo de la ficha NO tiene cuenta y el nuevo SI (la persona entro con otro correo antes de que se
+  // lo pusieramos): no hay dos identidades que fusionar; la ficha pasa a ese correo y queda enlazada a esa cuenta.
+  const idSuelta = await pila.crearUsuario('fernando.google@pruebas.local', 'no-se-usa');
+  const jwtSuelta = await pila.firmar({ sub: idSuelta, role: 'authenticated', email: 'fernando.google@pruebas.local' });
+  ok((await rpc('mi_zona', {}, jwtSuelta)).datos == null, 'D135: antes, esa cuenta no tiene zona (ninguna ficha con su correo)');
+  r = await rpc('cambiar_correo_jugador', { p_jugador_id: F.id, p_email: 'Fernando.Google@pruebas.local' }, jwtGestor);
+  ok(r.status === 200 && r.datos?.ok === true && r.datos?.vinculado_a_cuenta === true && r.datos?.auth_renombrado === false, 'D135: correo viejo sin cuenta y nuevo con cuenta: se cambia y queda enlazada (vinculado_a_cuenta)', JSON.stringify(r.datos));
+  const [fEnlazado] = await sql`select email from public.jugadores where id = ${F.id}`;
+  ok(fEnlazado.email === 'fernando.google@pruebas.local', 'D135: la ficha usa ya ese correo (en minúsculas)', fEnlazado.email);
+  ok((await rpc('mi_zona', {}, jwtSuelta)).datos?.jugador?.nombre_visible === F.nombre_visible, 'D135: con esa cuenta, el jugador ya ve su zona personal');
+  ok((await sql`select count(*)::int n from auth.users where lower(email) = 'fernando.google@pruebas.local'`)[0].n === 1, 'D135: sin cuentas duplicadas (la misma cuenta de antes)');
+
+  // Sigue bloqueando cuando el correo viejo y el nuevo tienen CADA UNO su propia cuenta.
+  const G = { ...(await jugadorDe('gianatti-adriano', 'adriano@pruebas.local')), email: 'adriano@pruebas.local' };
+  await pila.crearUsuario(G.email, 'no-se-usa');
+  await pila.crearUsuario('adriano.otra@pruebas.local', 'no-se-usa');
+  r = await rpc('cambiar_correo_jugador', { p_jugador_id: G.id, p_email: 'adriano.otra@pruebas.local' }, jwtGestor);
+  ok(r.status === 200 && r.datos?.ok === false && r.datos?.error === 'correo_en_uso_auth', 'D135: correo viejo con cuenta y nuevo con OTRA cuenta: sigue bloqueando (correo_en_uso_auth)', JSON.stringify(r.datos));
+  ok((await sql`select email from public.jugadores where id = ${G.id}`)[0].email === 'adriano@pruebas.local', 'D135: y no toca la ficha');
+  // Y cuando el correo nuevo ya es el de un gestor.
+  await sql`insert into public.gestores (email, nombre) values ('solo.gestor@pruebas.local', 'Gestor de pruebas')`;
+  r = await rpc('cambiar_correo_jugador', { p_jugador_id: G.id, p_email: 'solo.gestor@pruebas.local' }, jwtGestor);
+  ok(r.status === 200 && r.datos?.ok === false && r.datos?.error === 'correo_de_gestor', 'D135: el correo de un gestor: bloquea (correo_de_gestor)', JSON.stringify(r.datos));
 
   // Solo gestores pueden llamarla desde la web (con sesion).
   r = await rpc('cambiar_correo_jugador', { p_jugador_id: F.id, p_email: 'otro@pruebas.local' }, jwtIntruso);

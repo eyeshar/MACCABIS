@@ -1,18 +1,18 @@
-// Proyeccion de anotacion de un equipo convocado (D124, recalibrada en D132; REGLAS_CONVOCATORIA.md §9). Funciones PURAS
+// Proyeccion de anotacion de un equipo convocado (D124, recalibrada en D133; REGLAS_CONVOCATORIA.md §9). Funciones PURAS
 // y deterministas, sin imports (las usan la pantalla de convocatoria y el tablero, que recalculan al momento, el script
 // de calibracion, el de validacion y las pruebas, que cargan este fichero con `node`). SOLO GESTORES: lleva la letra de
 // ataque de cada jugador (D39).
 //
-//   a) Puntos por minuto de cada convocado: con 60 minutos o mas esta temporada, solo esta temporada (D132); si no, la
+//   a) Puntos por minuto de cada convocado: con 60 minutos o mas esta temporada, solo esta temporada (D133); si no, la
 //      actual pesa el doble que la anterior. Con menos de 60 minutos sumados (las dos temporadas), lo que falta hasta 60
 //      se completa con la tasa media de su letra de Ataque, calibrada con los que si tienen datos, y «pocos datos».
 //   b) Minutos esperados: 240 por partido, repartidos segun los minutos medios por partido de cada uno (20 sin datos),
 //      con un maximo de 40 por jugador (lo que sobra se reparte entre los demas).
-//   c) Factor rival (D132): media geometrica ponderada de las fuentes que haya, con un previo de 1 (peso 1): la
+//   c) Factor rival (D133): media geometrica ponderada de las fuentes que haya, con un previo de 1 (peso 1): la
 //      dificultad que marca el gestor (Alta 0,85 · Media 1 · Baja 1,15; peso 2), lo que encaja el rival esta temporada
 //      frente a la media de su grupo (peso = sus partidos) y su historial de temporadas anteriores frente a la media de
 //      su grupo de entonces (peso 3 la temporada pasada, la mitad por cada temporada mas atras).
-//   d) Correccion de sesgo (D132): mediana de real / proyectado de los partidos ya jugados; a medio camino de 1 con
+//   d) Correccion de sesgo (D133): mediana de real / proyectado de los partidos ya jugados; a medio camino de 1 con
 //      menos de 8 partidos, completa desde ahi. Se recalcula sola con cada jornada publicada.
 //   e) Margen: ±15 % con menos de 5 jornadas jugadas en la temporada; ±10 % despues.
 
@@ -35,7 +35,7 @@ export const PROYECCION = {
   pesoDificultad: 2,
   pesoHistorial: 3,
   partidosCorreccion: 8,
-  /** D132: con 60 minutos o mas esta temporada, solo cuenta esta temporada (la validacion lo apaga para comparar). */
+  /** D133: con 60 minutos o mas esta temporada, solo cuenta esta temporada (la validacion lo apaga para comparar). */
   soloActual: true,
 };
 export type DificultadRival = "alta" | "media" | "baja";
@@ -49,7 +49,7 @@ export type Tramo = { pts: number; min: number; partidos: number };
 export type Historial = { actual: Tramo; anterior: Tramo };
 export type RivalStats = { pj: number; pf: number; pc: number };
 export type Grupo = { pj: number; pc: number };
-/** Historial de un rival en una temporada anterior (D132): lo que encajaba frente a la media de su grupo de entonces. */
+/** Historial de un rival en una temporada anterior (D133): lo que encajaba frente a la media de su grupo de entonces. */
 export type HistorialRival = { temporada: string; factor: number; pj: number };
 
 const VACIO: Tramo = { pts: 0, min: 0, partidos: 0 };
@@ -121,7 +121,7 @@ export function repartirMinutos(pesos: number[]) {
 const NOMBRE_DIFICULTAD: Record<DificultadRival, string> = { alta: "Alta", media: "Media", baja: "Baja" };
 const temporadaCorta = (t: string) => t.replace("-", "/");
 
-/** Factor rival (regla c, D132): media geometrica ponderada de la dificultad marcada, lo que encaja esta temporada frente
+/** Factor rival (regla c, D133): media geometrica ponderada de la dificultad marcada, lo que encaja esta temporada frente
  *  a su grupo y su historial, con un previo de 1. `fuentes` dice de donde sale («dificultad marcada: Baja · 1 partido del
  *  rival · historial 2025/26»). Con menos de 2 partidos esta temporada y sin historial, la nota «rival con pocos datos». */
 export function factorRival(rival: RivalStats | null, grupo: Grupo | null, extra: { dificultad?: DificultadRival | null; historial?: HistorialRival | null; temporada?: string } = {}) {
@@ -146,7 +146,7 @@ export function factorRival(rival: RivalStats | null, grupo: Grupo | null, extra
   return { factor, nota: pocos ? "rival con pocos datos" as string | null : null, encaja, anota, fuentes };
 }
 
-/** Correccion de sesgo (regla d, D132): mediana de real / proyectado (sin corregir) de los partidos ya jugados; a medio
+/** Correccion de sesgo (regla d, D133): mediana de real / proyectado (sin corregir) de los partidos ya jugados; a medio
  *  camino de 1 con menos de 8 partidos. Sin partidos, 1. */
 export function correccionSesgo(puntos: { sinCorreccion: number; real: number }[]) {
   const r = puntos.filter((x) => x.sinCorreccion > 0).map((x) => x.real / x.sinCorreccion).sort((a, b) => a - b);
@@ -245,7 +245,7 @@ export function estadisticasGrupo(liga: LigaJson, grupo: string, clave: (n: stri
 
 export type PuntoCalibracion = { jornada: number; equipo: string; fecha: string; rival: string; proyeccion: number; desde: number; hasta: number; real: number; error: number; diferencia: number; sinCorreccion: number };
 
-/** Calibracion (D124, D132): para cada partido nuestro ya cargado, la proyeccion con lo que se sabia ANTES de esa jornada
+/** Calibracion (D124, D133): para cada partido nuestro ya cargado, la proyeccion con lo que se sabia ANTES de esa jornada
  *  (historial y liga hasta la jornada anterior, la dificultad que se marco y el historial del rival) y los que salen en
  *  la hoja de ese partido (los que de verdad fueron convocados), frente al resultado real. La correccion de sesgo de
  *  cada partido se aprende con los DEMAS (dejando uno fuera), para no usarse a si mismo. */

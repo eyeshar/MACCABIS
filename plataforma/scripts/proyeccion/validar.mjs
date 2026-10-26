@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Validacion de la proyeccion de anotacion (D132): la tabla de variantes con error medio y sesgo, dejando uno fuera
+// Validacion de la proyeccion de anotacion (D133): la tabla de variantes con error medio y sesgo, dejando uno fuera
 // (la correccion de sesgo de cada partido se aprende con los DEMAS). La variante elegida (V6) es la de la web: se
 // comprueba que sale igual que `calibrar` de src/lib/convocatoria/proyeccion.ts.
 //
@@ -91,7 +91,7 @@ const V = [
   evalua('V3 · V1 + minutos de esta temporada', { minutosActual: true }),
   evalua('V4 · V2 + V3', { soloActual: true, minutosActual: true }),
   evalua('V5 · V1 + corrección de sesgo', { sesgo: true }),
-  evalua('V6 · V2 + corrección de sesgo (D132, la de la web)', { soloActual: true, sesgo: true }),
+  evalua('V6 · V2 + corrección de sesgo (D133, la de la web)', { soloActual: true, sesgo: true }),
   evalua('V7 · V4 + corrección de sesgo', { soloActual: true, minutosActual: true, sesgo: true }),
   evalua('V8 · V0 + corrección de sesgo', { factorD124: true, sesgo: true }),
 ];

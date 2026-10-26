@@ -1,7 +1,7 @@
 {
  "_meta": {
   "generado": "2026-10-26",
-  "decision": "D132",
+  "decision": "D133",
   "fuente": "data/rivales_2026-27.json y data/raw/211549_clasificaciones_20260925.csv (Ayuntamiento de Madrid, CC BY 4.0)",
   "metodo": "factor = puntos encajados por partido / media del grupo (2025/26: clasificacion completa del grupo; antes: media de la temporada con todas las fases de liga de los rivales). Solo la temporada anterior mas reciente con liga."
  },

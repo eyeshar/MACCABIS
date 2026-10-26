@@ -52,7 +52,7 @@ export function dificultadPropuesta(equipo: Equipo, rival: string | null) {
 /** Nombres de equipo comparables entre la liga, el calendario y las hojas («Mejorada 2012 C.B..» = «Mejorada 2012»). */
 const claveEquipo = (n: string) => clave(equipoPorNombre(equipJson as unknown as Equipaciones, n)?.nombre ?? n);
 
-/** Historial de un rival en temporadas anteriores (D132), por su nombre comparable (data/historial_rivales_2026-27.json). */
+/** Historial de un rival en temporadas anteriores (D133), por su nombre comparable (data/historial_rivales_2026-27.json). */
 export function historialRival(rival: string | null): HistorialRival | null {
   if (!rival) return null;
   const k = claveEquipo(rival);
@@ -60,7 +60,7 @@ export function historialRival(rival: string | null): HistorialRival | null {
   return r?.temporada && r.factor ? { temporada: r.temporada, factor: r.factor, pj: r.pj } : null;
 }
 
-/** Datos de la proyeccion de anotacion (D124, D132): historial de cada jugador (temporada actual y anterior), su letra de
+/** Datos de la proyeccion de anotacion (D124, D133): historial de cada jugador (temporada actual y anterior), su letra de
  *  Ataque (privada), la tasa de cada letra, el rival de cada partido del domingo (con su historial), la calibracion con lo
  *  ya jugado (con la dificultad que se marco en cada convocatoria aprobada) y la correccion de sesgo que sale de ella. */
 export function datosProyeccion(jugadores: { person_id: string; nombre: string }[], letras: Map<string, Letra | null>, partidos: { equipo: Equipo; rival: string | null; jornada: number | null }[],
@@ -118,7 +118,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     sb.rpc("respuestas_web_encendido"),
     sb.from("importaciones").select("en, por_nombre").eq("tipo", "respuestas").order("en", { ascending: false }).limit(1),
     pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
-    // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D132).
+    // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D133).
     sb.from("convocatorias").select("fecha, equipos, dificultad").eq("estado", "aprobada"),
   ]);
   if (jug.error) throw new Error(`jugadores: ${jug.error.message}`);

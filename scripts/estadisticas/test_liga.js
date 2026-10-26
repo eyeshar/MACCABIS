@@ -5,10 +5,12 @@
  *     lo que marcan unos lo reciben otros (suma PF = suma PC) y la clasificación está ordenada.
  *  3. Cada resultado del JSON coincide con los totales de su hoja (marcador y, D129, 2P, 3P, TL y faltas por equipo)
  *     y tiene un id único para su página de partido.
+ *  4. No retrocede (D132): ni la liga que se construye ni data/liga_<temporada>.json tienen menos jornadas, hojas o
+ *     partidos que el de origin/main y main. Corre también en la rutina A (paso 3).
  */
 const fs = require('fs');
 const path = require('path');
-const { construir, clasificar, idPartido } = require('./liga');
+const { construir, clasificar, idPartido, publicadas, retrocesos } = require('./liga');
 const T = process.argv[2] || '2026-27';
 const ROOT = path.resolve(__dirname, '..', '..');
 let fallos = 0;
@@ -19,6 +21,18 @@ ok(r.errores.length === 0, `la construcción no da errores (${r.errores.join(' |
 const texto = fs.readFileSync(path.join(ROOT, 'data', `liga_${T}.json`), 'utf8');
 const pub = JSON.parse(texto);
 ok(JSON.stringify(pub.grupos) === JSON.stringify(r.publico.grupos), 'el JSON publicado es el que se construye ahora (no está desfasado)');
+// D132: data/liga_<T>.json no tiene menos jornadas, hojas ni partidos que el de origin/main y main (y construir() tampoco,
+// ya cubierto arriba: lo da como error). Así se perdió la J3 en el merge 2d9c73e.
+for (const p of publicadas(T)) {
+  const e = retrocesos(pub, p.json, `${p.ref}`);
+  ok(e.length === 0, `data/liga_${T}.json no retrocede respecto a ${p.ref} (${e.join(' | ') || Object.entries(p.json.grupos).map(([k, g]) => `${k} [${g.jornadas_cargadas}]`).join(', ')})`);
+}
+{
+  // Sintético: quitar la última jornada de un grupo tiene que dar error.
+  const menos = JSON.parse(texto), g = Object.values(menos.grupos)[0], ult = Math.max(...g.jornadas_cargadas);
+  g.jornadas_cargadas = g.jornadas_cargadas.filter(j => j !== ult); g.resultados = g.resultados.filter(x => x.jornada !== ult);
+  ok(retrocesos(menos, pub, 'prueba').length === 2, `D132: una liga sin la J${ult} de un grupo se detecta (jornadas y hojas)`);
+}
 
 const nombres = new Set(r.privado.flatMap(p => p.equipos.flatMap(e => e.jugadores.map(j => j.nombre))));
 const fugas = [...nombres].filter(n => texto.toUpperCase().includes(n.toUpperCase()));

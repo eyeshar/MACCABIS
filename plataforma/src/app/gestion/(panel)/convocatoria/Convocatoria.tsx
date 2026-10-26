@@ -99,7 +99,7 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
 
   const generales = rev.avisos.filter((a) => !a.equipo);
   const juegan = ctx.partidos.map((p) => p.equipo);
-  // Proyeccion de anotacion de cada equipo (D124, D132), con los convocados de ahora y la dificultad marcada.
+  // Proyeccion de anotacion de cada equipo (D124, D133), con los convocados de ahora y la dificultad marcada.
   const proyecciones = useMemo(() => Object.fromEntries(ctx.partidos.map((p) => [p.equipo, proyeccionDe(ctx.proyeccion, p.equipo, (conv[p.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombre(c.person_id) })), p.dificultad.valor)])) as Partial<Record<Equipo, Proyeccion | null>>,
     [ctx.proyeccion, ctx.partidos, conv]);
   const avisosDe = (e: Equipo): Aviso[] => {

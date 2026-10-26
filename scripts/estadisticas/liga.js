@@ -11,7 +11,8 @@
  *
  * Validaciones: la suma por jugador es igual al total de cada equipo (puntos, 2P, 3P, TL y faltas) y 2P×2 + 3P×3
  * + TL = puntos; ningún equipo juega dos veces en la misma jornada; el local/visitante de nuestros partidos
- * coincide con el calendario. Si algo no cuadra, NO se escribe nada.
+ * coincide con el calendario; y (D132) la liga nueva no tiene menos jornadas, hojas ni partidos que la publicada en git
+ * (data/liga_<temporada>.json de origin/main y de main). Si algo no cuadra, NO se escribe nada.
  *
  * Salida PÚBLICA: data/liga_<temporada>.json, SOLO datos por equipo (resultados con su id y los totales de cada equipo
  * —puntos, tiros de 2, de 3 y libres, faltas— para la página de partido de D129, clasificación, puntos a favor y en
@@ -30,6 +31,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { leerHojaLiga, validarSumas } = require('./leer_hoja_liga');
 const { normEquipo, pyRound, nombreTitulo } = require('./util');
 const CONFIG = require('./temporadas.json');
@@ -115,6 +117,55 @@ function leerFuentes(temporada, ctx) {
     } catch (e) { errores.push(e.message); }
   });
   return { partidos, errores };
+}
+
+/** Liga ya publicada (D132): data/liga_<temporada>.json de origin/main y de main en git. Sin git, sin esa rama o sin el
+ *  fichero, no hay nada con que comparar. */
+function publicadas(temporada) {
+  const out = [];
+  for (const ref of ['origin/main', 'main']) {
+    try {
+      const txt = execFileSync('git', ['show', `${ref}:data/liga_${temporada}.json`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      out.push({ ref, json: JSON.parse(txt) });
+    } catch { /* nada que comparar */ }
+  }
+  return out;
+}
+
+/** D132: lo que `nuevo` ha perdido respecto a `previo` (jornadas cargadas, hojas o partidos con hoja), grupo a grupo.
+ *  Un liga.json con menos que lo publicado sale de un fuentes_fbm desfasado (p. ej. la copia propia de un worktree):
+ *  así se perdió la J3 en el merge 2d9c73e. */
+function retrocesos(nuevo, previo, donde) {
+  const e = [];
+  const conHoja = g => g.resultados.filter(r => !r.incomparecencia);
+  const clave = r => `J${r.jornada} ${r.local} - ${r.visitante}`;
+  for (const [k, gp] of Object.entries(previo.grupos || {})) {
+    const gn = (nuevo.grupos || {})[k];
+    if (!gn) { e.push(`${k} está en ${donde} y no en la liga nueva.`); continue; }
+    const jFaltan = gp.jornadas_cargadas.filter(j => !gn.jornadas_cargadas.includes(j));
+    if (jFaltan.length) e.push(`${k}: jornadas_cargadas [${gn.jornadas_cargadas}] frente a [${gp.jornadas_cargadas}] en ${donde} (falta la J${jFaltan.join(', J')}).`);
+    const hay = new Set(conHoja(gn).map(clave));
+    const faltan = conHoja(gp).map(clave).filter(c => !hay.has(c));
+    if (conHoja(gn).length < conHoja(gp).length || faltan.length)
+      e.push(`${k}: ${conHoja(gn).length} hojas frente a ${conHoja(gp).length} en ${donde}${faltan.length ? ` (faltan ${faltan.slice(0, 3).join('; ')}${faltan.length > 3 ? '…' : ''})` : ''}.`);
+  }
+  return e;
+}
+
+/** D132: errores si la liga nueva tiene menos que la publicada en git. LIGA_PERMITIR_RETROCESO=1 lo salta (quitar a
+ *  propósito una hoja equivocada; decisión de una persona, nunca de la rutina A). */
+function comprobarNoRetrocede(nuevo, temporada) {
+  if (process.env.LIGA_PERMITIR_RETROCESO === '1') return [];
+  const base = path.join(ROOT, CONFIG[temporada].carpeta);
+  const n = d => (fs.existsSync(path.join(base, d)) ? fs.readdirSync(path.join(base, d)).filter(f => /\.xlsx$/i.test(f)).length : 0);
+  const e = [], refs = [];
+  for (const p of publicadas(temporada)) {
+    const m = retrocesos(nuevo, p.json, 'lo publicado');
+    if (m.length) refs.push(p.ref);
+    for (const x of m) if (!e.includes(x)) e.push(x);
+  }
+  if (!e.length) return [];
+  return [`La liga retrocede respecto a ${refs.join(' y ')}:data/liga_${temporada}.json (D132): ${e.join(' ')} ¿Está al día ${path.join(base, 'liga')} (${n('liga')} hojas de liga y ${n('hojas')} nuestras)? Un worktree tiene su propia copia de fuentes_fbm.`];
 }
 
 const cero = () => ({ pj: 0, g: 0, p: 0, pf: 0, pc: 0 });
@@ -271,10 +322,12 @@ function construir(temporada) {
       equipos: Object.fromEntries(tabla.map(x => [x.id, { nombre: x.nombre, nuestro: x.nuestro, ...estadisticasEquipo(x) }])),
     };
   }
+  // D132: nunca menos jornadas, hojas ni partidos que lo ya publicado (vale para liga.js, npm run jornada y db:liga).
+  errores.push(...comprobarNoRetrocede(publico, temporada));
   return { publico, privado, errores, avisos, fuentes: partidos.length };
 }
 
-module.exports = { construir, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido };
+module.exports = { construir, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
 
 if (require.main === module) {
   const args = process.argv.slice(2);

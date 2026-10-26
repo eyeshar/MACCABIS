@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Calibracion de la proyeccion de anotacion (D124, D132): tras cada jornada publicada (`npm run jornada` y la rutina A,
+// Calibracion de la proyeccion de anotacion (D124, D133): tras cada jornada publicada (`npm run jornada` y la rutina A,
 // que lo llaman al final), guarda en privado/proyecciones_<temporada>.json, FUERA DE GIT, la proyeccion de cada partido
 // nuestro ya cargado (con lo que se sabia antes de esa jornada, la dificultad marcada, el historial del rival y los que
 // salen en su hoja) y el resultado real. Lo ya guardado no se reescribe (queda congelado, con el metodo con que se
@@ -59,12 +59,12 @@ const puntos = P.calibrar({ actual, anterior, liga, clave, letra: (id) => letras
 const fichero = path.join(REPO, 'privado', `proyecciones_${TEMPORADA}.json`);
 const previo = fs.existsSync(fichero) ? JSON.parse(fs.readFileSync(fichero, 'utf8')) : { partidos: [] };
 const yaEsta = new Set(previo.partidos.map((x) => `${x.jornada}-${x.equipo}`));
-const nuevos = puntos.filter((x) => !yaEsta.has(`${x.jornada}-${x.equipo}`)).map((x) => ({ ...x, metodo: 'D132', guardado: new Date().toISOString(), con_letras: conLetras }));
+const nuevos = puntos.filter((x) => !yaEsta.has(`${x.jornada}-${x.equipo}`)).map((x) => ({ ...x, metodo: 'D133', guardado: new Date().toISOString(), con_letras: conLetras }));
 const todos = [...previo.partidos.map((x) => ({ metodo: 'D124', ...x })), ...nuevos].sort((a, b) => a.jornada - b.jornada || a.equipo.localeCompare(b.equipo));
 const resumen = P.resumenCalibracion(puntos);
 const correccion = P.correccionSesgo(puntos);
 fs.mkdirSync(path.dirname(fichero), { recursive: true });
-fs.writeFileSync(fichero, JSON.stringify({ temporada: TEMPORADA, metodo: 'D132 (REGLAS_CONVOCATORIA.md §9)', actualizado: new Date().toISOString(), resumen, correccion, partidos: todos }, null, 1) + '\n', 'utf8');
+fs.writeFileSync(fichero, JSON.stringify({ temporada: TEMPORADA, metodo: 'D133 (REGLAS_CONVOCATORIA.md §9)', actualizado: new Date().toISOString(), resumen, correccion, partidos: todos }, null, 1) + '\n', 'utf8');
 console.log(`Proyección: ${nuevos.length} partido(s) nuevo(s) en privado/proyecciones_${TEMPORADA}.json. ${resumen ? resumen.texto + '.' : 'Aún no hay partidos.'}${resumen ? ` Corrección de sesgo: ×${correccion.toFixed(3).replace('.', ',')}.` : ''}`);
 for (const x of nuevos) console.log(`  J${x.jornada} ${x.equipo} vs ${x.rival}: proyección ${x.proyeccion} (${x.desde}–${x.hasta}), real ${x.real}, error ${x.error}`);
 

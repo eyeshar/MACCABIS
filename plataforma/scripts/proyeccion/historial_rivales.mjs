@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Historial de los rivales de 2026/27 para el factor rival de la proyeccion (D132, REGLAS_CONVOCATORIA.md §9 c): para cada
+// Historial de los rivales de 2026/27 para el factor rival de la proyeccion (D133, REGLAS_CONVOCATORIA.md §9 c): para cada
 // rival, su temporada anterior mas reciente con liga y lo que encajaba por partido frente a la media de su grupo de
 // entonces. Datos de EQUIPO, publicos (Ayuntamiento de Madrid, CC BY 4.0); nada por jugador (D73).
 //
@@ -59,7 +59,7 @@ for (const r of riv.rivales) {
 
 const salida = {
   _meta: {
-    generado: new Date().toISOString().slice(0, 10), decision: 'D132',
+    generado: new Date().toISOString().slice(0, 10), decision: 'D133',
     fuente: `data/rivales_2026-27.json y data/raw/${csv} (Ayuntamiento de Madrid, CC BY 4.0)`,
     metodo: 'factor = puntos encajados por partido / media del grupo (2025/26: clasificacion completa del grupo; antes: media de la temporada con todas las fases de liga de los rivales). Solo la temporada anterior mas reciente con liga.',
   },

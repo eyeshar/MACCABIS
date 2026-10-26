@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Proyección de anotación (D124, recalibrada en D132), sin base de datos y con datos SINTÉTICOS: pesos de las dos
+// Proyección de anotación (D124, recalibrada en D133), sin base de datos y con datos SINTÉTICOS: pesos de las dos
 // temporadas (solo esta con 60 minutos), relleno por la letra de Ataque con menos de 60 minutos, reparto de 240 minutos
 // con tope de 40, factor rival combinado (dificultad marcada, esta temporada e historial), corrección de sesgo, margen y
 // calibración dejando uno fuera. Y los movimientos del modo rápido de la convocatoria (D125): mover, quitar, añadir,
@@ -17,7 +17,7 @@ const T = (pts, min, partidos) => ({ pts, min, partidos });
 const H = (a, b = T(0, 0, 0)) => ({ actual: a, anterior: b });
 const SIN = H(T(0, 0, 0));
 
-console.log('\n== a) Puntos por minuto: con 60 minutos esta temporada, solo ella (D132); si no, la actual pesa el doble');
+console.log('\n== a) Puntos por minuto: con 60 minutos esta temporada, solo ella (D133); si no, la actual pesa el doble');
 const tasasVacias = { tasas: { A: 0.4, B: 0.3, C: 0.2, D: 0.1, E: 0.05 }, media: 0.2 };
 let t = P.tasaDe(H(T(30, 100, 4), T(10, 100, 4)), 'C', tasasVacias);
 ok(cerca(t.ppm, 0.3) && !t.pocosDatos, '100 minutos esta temporada (30 pts) y 100 la anterior (10): solo esta → 0,30', String(t.ppm));
@@ -62,7 +62,7 @@ ok(P.minutosMedios(SIN) === 20, 'sin partidos: 20 minutos de media');
 ok(cerca(P.minutosMedios(H(T(0, 40, 1), T(0, 90, 3))), (80 + 90) / (2 + 3)), 'media ponderada como la tasa: (2·40+90)/(2·1+3) = 34');
 ok(cerca(P.minutosMedios(H(T(0, 60, 2), T(0, 150, 3))), 30), 'con 60 minutos esta temporada, su media de esta temporada (60/2 = 30)');
 
-console.log('\n== c) Factor rival combinado (D132): dificultad marcada, esta temporada e historial, con un previo de 1');
+console.log('\n== c) Factor rival combinado (D133): dificultad marcada, esta temporada e historial, con un previo de 1');
 const G = { pj: 20, pc: 800 }; // el grupo encaja 40 por partido
 let f = P.factorRival({ pj: 2, pf: 100, pc: 120 }, G);
 ok(cerca(f.factor, 1.5 ** (2 / 3)) && f.nota === null && f.encaja === 60 && f.anota === 50, `2 partidos encajando 60 con el grupo a 40: (1,5 con peso 2 y el previo 1 con peso 1) → 1,5^(2/3) = ${(1.5 ** (2 / 3)).toFixed(3)}`, String(f.factor));

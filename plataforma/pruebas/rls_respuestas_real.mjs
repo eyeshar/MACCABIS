@@ -4,7 +4,9 @@
 //   - anónimo por HTTPS con la clave pública;
 //   - un jugador y un gestor con cuentas que YA existen, dentro de una transacción READ ONLY que adopta su rol y claims.
 // Demuestra que un jugador: no lee motivos ajenos, no responde por otro, no responde a un evento al que no está
-// invitado, no responde con el interruptor apagado, y no ve niveles ni posiciones en nada de lo que le llega.
+// invitado, no responde con el interruptor apagado (encendido, la base solo le deja responder a lo suyo), y no ve
+// niveles ni posiciones en nada de lo que le llega. Vale con el interruptor en cualquier estado: desde la activación
+// (D136) está ENCENDIDO en el real.
 //
 //   npm run pruebas:respuestas-real
 
@@ -55,7 +57,8 @@ try {
   const fns = await sql`select proname, has_function_privilege('anon', oid, 'execute') anon from pg_proc where pronamespace = 'public'::regnamespace and proname = any(${FUNCIONES})`;
   ok(fns.length === FUNCIONES.length && fns.every((f) => !f.anon), `las ${FUNCIONES.length} funciones nuevas existen y anónimo no ejecuta ninguna`);
   const [cfg] = await sql`select encendido from public.respuestas_web_config where id = 1`;
-  ok(cfg && cfg.encendido === false, 'el interruptor está APAGADO (se entrega apagado)');
+  const encendido = cfg?.encendido === true;
+  ok(cfg && typeof cfg.encendido === 'boolean', `estado del interruptor: ${encendido ? 'ENCENDIDO (respuestas en la web, D136)' : 'APAGADO (fase puente)'}`);
 
   console.log('\n== Anónimo (HTTPS)');
   for (const t of [...NUEVAS, 'v_mis_eventos', 'v_quien_va']) ok(bloqueado(await api(`/${t}?select=*`)), `anónimo NO lee ${t}`);
@@ -83,9 +86,16 @@ try {
     for (const t of ['eventos', 'jugadores', 'alertas_gestores', 'avisos_registro', 'respuestas_web_config', 'jornadas_control', 'asistencia_resumen']) {
       ok((await tx.unsafe(`select count(*)::int n from public.${t}`).catch(() => [{ n: 0 }]))[0].n === 0, `no lee ${t}`);
     }
-    const ev = mis.find((e) => e.estado === 'programado' && e.fecha > new Date().toISOString().slice(0, 10));
+    // fecha llega como Date: se compara como AAAA-MM-DD (antes, Date > texto nunca casaba y se probaba con el uuid 0).
+    const ev = mis.find((e) => e.estado === 'programado' && new Date(e.fecha).toISOString().slice(0, 10) > new Date().toISOString().slice(0, 10));
+    ok(!!ev, `tiene un evento suyo abierto para probar (${ev ? new Date(ev.fecha).toISOString().slice(0, 10) : 'ninguno'})`);
     let r = await intenta(tx, `select public.responder($1::uuid, 'va')`, [ev?.id ?? '00000000-0000-0000-0000-000000000000']);
-    ok(!r.ok && /respuestas_apagadas/.test(r.error), 'con el interruptor apagado NO responde (lo para la base)', r.error);
+    if (!encendido) ok(!r.ok && /respuestas_apagadas/.test(r.error), 'con el interruptor apagado NO responde (lo para la base)', r.error);
+    else ok(!r.ok && !/respuestas_apagadas|no_invitado/.test(r.error), 'encendido: la base le deja responder a un evento suyo (solo lo para esta transacción de solo lectura)', r.error);
+    if (encendido && ajeno && !(jug.ficha_mda && jug.ficha_mdl)) {
+      r = await intenta(tx, `select public.responder($1::uuid, 'va')`, [ajeno.id]);
+      ok(!r.ok && /no_invitado/.test(r.error), 'encendido: NO responde a un partido del otro equipo (no_invitado, lo para la base)', r.error);
+    }
     if (ajeno && !(jug.ficha_mda && jug.ficha_mdl)) {
       ok(!(await tx`select 1 from public.v_mis_eventos where id = ${ajeno.id}`).length, 'no ve el partido del otro equipo (no está invitado)');
     }
@@ -100,11 +110,19 @@ try {
   });
 
   console.log('\n== Un gestor real (solo lectura)');
-  const [ges] = await sql`select user_id from public.gestores where user_id is not null limit 1`;
-  if (ges) await como(ges.user_id, async (tx) => {
+  // El responsable (D103): el gestor con el mismo correo que una ficha de jugador (Iván). Los demás, solo lectura.
+  const gestores = await sql`select g.user_id, exists (select 1 from public.jugadores j where lower(j.email) = lower(g.email)) as con_ficha
+                             from public.gestores g where g.user_id is not null order by con_ficha desc`;
+  const ges = gestores.find((g) => g.con_ficha), otroGes = gestores.find((g) => !g.con_ficha);
+  if (!ges) ok(false, 'hay un gestor responsable (con ficha de jugador) vinculado');
+  else await como(ges.user_id, async (tx) => {
     const est = (await tx`select public.estado_activacion() e`)[0].e;
-    ok(typeof est.plantilla === 'number' && est.encendido === false && est.minimo_entrados === 20 && est.puede_manejar === true, `Iván (gestor responsable) ve el estado y puede manejarlo: ${est.entrados}/${est.plantilla} han entrado (mínimo 20), ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`);
+    ok(typeof est.plantilla === 'number' && est.encendido === encendido && est.minimo_entrados === 20 && est.puede_manejar === true, `Iván (gestor responsable) ve el estado y puede manejarlo: ${est.entrados}/${est.plantilla} han entrado (mínimo 20), ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`);
     ok((await tx`select count(*)::int n from public.respuestas`)[0].n >= 0, 'el gestor lee las respuestas');
+  });
+  if (otroGes) await como(otroGes.user_id, async (tx) => {
+    const est = (await tx`select public.estado_activacion() e`)[0].e;
+    ok(est.encendido === encendido && est.puede_manejar === false, 'otro gestor ve el mismo estado, pero no puede manejar el interruptor (D103)');
   });
   ok((await sql`select count(*)::int n from auth.users`)[0].n === cuentas0, `cuentas de auth antes y después: ${cuentas0}`);
 } finally {

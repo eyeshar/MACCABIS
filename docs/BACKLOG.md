@@ -9,8 +9,8 @@
 
 **Vista pública con la ubicación libre (26/10/2026, `fix/vista-pista-libre`, D138):**
 - [x] Migración `20261027100000_vista_pista_libre` (solo aditiva) aplicada en el Supabase real con D111; la web la usa en la portada, `/club`, el calendario público y el `.ics`.
-- [ ] **Merge a `main` con el OK de Iván, antes del miércoles 28/10 a mediodía** (entreno en Ciudad de los Periodistas); después, comprobar en producción la portada, el calendario y el `.ics`.
-- [ ] `pruebas:respuestas-real` da por hecho el interruptor apagado (3 fallos desde que está encendido): ponerla al día con el interruptor encendido.
+- [x] **Mergeada en `main` (`fc51d8e`, OK de Iván, 26/10/2026)**; `verificar_produccion` TODO OK y comprobado en producción como anónimo: el 28/10 sale «Ciudad de los Periodistas» en la portada, el calendario, `/club` y el `.ics`.
+- [x] `pruebas:respuestas-real` al día (26/10/2026): vale con el interruptor encendido o apagado. Encendido, la base deja responder a lo suyo y para lo ajeno (`no_invitado`). Comprueba el responsable (D103) y que otro gestor no maneja el interruptor. Arreglada la comparación de fechas (`Date` frente a texto), que hacía que se probara con el uuid 0. 46 OK.
 
 **Eventos y Panel (26/10/2026, `fix/eventos-respuestas-y-panel`):**
 - [x] La celda «Respuestas» de `/gestion/eventos` (todas las pestañas), la tarjeta «Entreno del miércoles» y una columna nueva «Respuestas» en «Partidos del domingo» del Panel enlazan a `/gestion/eventos/<id>/respuestas`; en el móvil toda la celda es zona táctil. El nombre del evento sigue llevando a editar.

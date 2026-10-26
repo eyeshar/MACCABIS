@@ -6,7 +6,8 @@
 //
 // Eventos (filtros, aviso de entrenos sin pista, copia a SportEasy), crear y editar (solo este / este y los siguientes,
 // partido del Ayuntamiento con solo quedada y notas, cancelar), pistas (reabrir Valdebernardo), importar calendario
-// (bloque oficial = 0 cambios, una linea cambiada = 1 cambio, aceptar), importar respuestas (nombre desconocido bloquea
+// (bloque oficial = 0 cambios, una linea cambiada = 1 cambio, aceptar), celdas de respuestas enlazadas (Eventos y Panel) y
+// pista del proximo entreno leida de la tabla (ubicacion libre, D119), importar respuestas (nombre desconocido bloquea
 // solo su linea), respuestas por evento, asistencia, movil a 375 px (tarjetas, sin desbordamiento) y sin errores de JS.
 // Deja capturas en privado/mockups_liga/rediseno/real_eventos_*.png (fuera de git).
 
@@ -447,6 +448,45 @@ try {
   ok((await p.getByTestId('ultimas-lecturas').textContent()).includes('Respuestas de SportEasy:') && !(await p.getByTestId('ultimas-lecturas').textContent()).includes('todavía no se ha leído'), '«Últimas lecturas» ya muestra la fecha');
   ok((await p.locator(`tr[data-evento="entreno-semanal-${fEnt}"] .ev-cuentas`).textContent()).includes('1 van'), 'en la lista: «1 van» en ese entreno');
 
+  // ---------------------------------------------------------------- respuestas enlazadas y pista del entreno en el Panel
+  console.log('\n== Respuestas enlazadas (Eventos y Panel) y pista del próximo entreno desde la tabla');
+  const [otro] = await sql`select person_id from public.jugadores where activo and ficha_mda and ficha_mdl and person_id <> 'esteban-jon' order by person_id limit 1`;
+  const [liga1] = await sql`select id, clave from public.eventos where tipo = 'liga' and estado = 'programado' and fecha >= ${hoy} order by fecha, inicio limit 1`;
+  const entP = entrenosFuturos[0];
+  for (const ev of [liga1.id, entP.id]) await sql`select public._escribir_respuesta(${ev}, ${otro.person_id}, 'va', null, null, 'sporteasy', null, null, null)`;
+  let enlazadas = 0;
+  for (const f of ['proximos', 'entrenos', 'liga', 'pendientes', 'pasados']) {
+    await p.goto(`${APP}/gestion/eventos?f=${f}`);
+    const filasR = await p.locator('[data-testid=tabla-eventos] tbody tr').evaluateAll((trs) => trs.map((tr) => ({
+      celda: !!tr.querySelector('td[data-label=Respuestas] .ev-cuentas'), resp: tr.querySelector('td[data-label=Respuestas] a')?.getAttribute('href') ?? null,
+      titulo: tr.querySelector('.ev-titulo a')?.getAttribute('href') ?? null,
+    })));
+    const conCuentas = filasR.filter((x) => x.celda);
+    const mal = conCuentas.filter((x) => !x.resp || !/^\/gestion\/eventos\/[0-9a-f-]{36}\/respuestas$/.test(x.resp) || x.titulo !== x.resp.replace(/\/respuestas$/, ''));
+    enlazadas += conCuentas.length;
+    ok(!mal.length, `pestaña «${f}»: las ${conCuentas.length} celdas de respuestas enlazan a /gestion/eventos/<id>/respuestas y el nombre sigue llevando a editar`, JSON.stringify(mal.slice(0, 2)));
+  }
+  ok(enlazadas >= 3, `hay celdas de respuestas enlazadas en las pestañas (${enlazadas})`);
+  await p.goto(`${APP}/gestion/eventos`);
+  await p.locator(`tr[data-evento="entreno-semanal-${fEnt}"] td.ev-celda-resp`).click({ position: { x: 4, y: 4 } });
+  await p.waitForURL(/\/respuestas$/);
+  ok(new URL(p.url()).pathname === `/gestion/eventos/${idR}/respuestas`, 'pulsar en cualquier punto de la celda (aquí, su esquina) abre las respuestas de ese evento');
+
+  // El próximo entreno con ubicación libre (D119), como el del 28/10/2026 en Ciudad de los Periodistas.
+  await sql`update public.eventos set pista_id = null, ubicacion_nombre = 'Ciudad de los Periodistas' where id = ${entP.id}`;
+  await p.goto(`${APP}/gestion`);
+  const pistaPanel = await p.getByTestId('entreno-pista').textContent();
+  ok(pistaPanel.includes('Ciudad de los Periodistas') && !/por confirmar \(/.test(pistaPanel.split('(lo habitual')[0]), `Panel, «Entreno del miércoles»: la pista del evento de la tabla («${pistaPanel.trim().slice(0, 70)}…»), no «pista por confirmar»`);
+  ok(!(await p.locator('.gs-pendientes').textContent().catch(() => '')).includes('Fijar la pista del entreno'), '«Pendiente esta semana» ya no pide fijar la pista de ese entreno');
+  ok(await p.getByTestId('respuestas-entreno').getByTestId('enlace-respuestas').getAttribute('href') === `/gestion/eventos/${entP.id}/respuestas`, '«Entreno del miércoles»: las respuestas enlazan a las de ese evento');
+  const enlaceDomingo = await p.locator('tr.eq-partido td.ev-celda-resp a').first().getAttribute('href').catch(() => null);
+  ok(enlaceDomingo === `/gestion/eventos/${liga1.id}/respuestas`, `«Partidos del domingo»: columna Respuestas enlazada a las del partido (${liga1.clave})`, String(enlaceDomingo));
+  await sql`update public.eventos set ubicacion_nombre = null where id = ${entP.id}`;
+  await p.goto(`${APP}/gestion`);
+  ok(/pista por confirmar \(Valdebernardo en obras\)/.test(await p.getByTestId('entreno-pista').textContent()), 'sin pista ni ubicación: «pista por confirmar (Valdebernardo en obras)»');
+  const fijar = p.locator('.gs-pendientes a', { hasText: 'Fijar la pista del entreno' });
+  ok(await fijar.count() === 1 && (await fijar.getAttribute('href')) === `/gestion/eventos/${entP.id}`, '«Pendiente esta semana»: «Fijar la pista del entreno…» con enlace a ese evento');
+
   // ---------------------------------------------------------------- asistencia
   console.log('\n== Asistencia y motivos');
   await p.goto(`${APP}/gestion/asistencia`);
@@ -467,6 +507,19 @@ try {
     await m.waitForLoadState('networkidle');
     const ancho = await m.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
     ok(ancho.sw <= ancho.cw + 1, `${ruta}: sin desbordamiento horizontal a 375 px`, `${ancho.sw} > ${ancho.cw}`);
+  }
+  await m.goto(`${APP}/gestion/eventos`);
+  // En el móvil, toda la celda de respuestas es zona táctil del enlace (esquinas incluidas) y mide al menos 44 px.
+  for (const ruta of ['/gestion/eventos', '/gestion']) {
+    await m.goto(`${APP}${ruta}`);
+    const zona = await m.locator('.ev-celda-resp').first().evaluate((td) => {
+      const r = td.getBoundingClientRect();
+      const en = (x, y) => document.elementFromPoint(x, y)?.closest('a')?.getAttribute('href') ?? null;
+      td.scrollIntoView({ block: 'center' });
+      const q = td.getBoundingClientRect();
+      return { alto: Math.round(r.height), puntos: [en(q.left + 3, q.top + 3), en(q.right - 3, q.bottom - 3), en(q.left + q.width / 2, q.top + q.height / 2)] };
+    });
+    ok(zona.alto >= 44 && zona.puntos.every((h) => h && h.endsWith('/respuestas')), `${ruta} a 375 px: toda la celda de respuestas abre las respuestas (${zona.alto} px)`, JSON.stringify(zona));
   }
   await m.goto(`${APP}/gestion/eventos`);
   const disp = await m.locator('[data-testid=tabla-eventos] tbody tr').first().evaluate((tr) => getComputedStyle(tr).display);

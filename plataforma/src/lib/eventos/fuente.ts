@@ -13,6 +13,8 @@ type Fila = {
   clave: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; titulo: string | null; jornada: number | null; rival: string | null; es_local: boolean | null;
   fecha: string; inicio: string | null; fin: string | null; notas: string | null; estado: string;
   pista_nombre: string | null; numero_pista: number | null; pista_por_confirmar: boolean; pista_motivo: string | null;
+  /** Ubicacion libre (D119) de un evento sin pista propia (migracion 20261027100000; sin ella, undefined). */
+  ubicacion_nombre?: string | null;
 };
 const h = (t: string | null) => (t ? t.slice(0, 5) : null);
 
@@ -27,11 +29,15 @@ export function construirFuente(
   }
   for (const d of descansos) partidos.push({ equipo: d.equipo === "MdA" ? "MDA" : "MDL", fase: "liga", jornada: d.jornada, fecha: d.fecha, hora: null, local: null, descansa: true, rival: null, campo: null });
   partidos.sort((a, b) => a.jornada - b.jornada || (a.equipo < b.equipo ? -1 : 1));
-  const entrenos: Evento[] = filas.filter((f) => f.tipo === "entreno" && f.estado !== "cancelado").map((f) => ({
+  // Misma regla que pistaEfectiva: pista propia; si no, la ubicacion libre (D119); si no, la de la serie o «por confirmar».
+  const entrenos: Evento[] = filas.filter((f) => f.tipo === "entreno" && f.estado !== "cancelado").map((f) => f.ubicacion_nombre ? {
+    id: f.clave, tipo: "entreno", fecha: f.fecha, inicio: h(f.inicio), fin: h(f.fin), titulo: f.titulo ?? "Entrenamiento",
+    lugar: f.ubicacion_nombre, pistaPorConfirmar: false, nota: f.notas || null,
+  } satisfies Evento : {
     id: f.clave, tipo: "entreno", fecha: f.fecha, inicio: h(f.inicio), fin: h(f.fin), titulo: f.titulo ?? "Entrenamiento",
     lugar: f.pista_por_confirmar ? "Pista por confirmar" : f.pista_nombre ?? "Pista por confirmar", pistaPorConfirmar: f.pista_por_confirmar,
     nota: [f.pista_motivo, f.notas].filter(Boolean).join(" · ") || null,
-  } satisfies Evento));
+  } satisfies Evento);
   const hab = inicioFinHabitual ?? (() => {
     const cuenta = new Map<string, number>();
     for (const e of entrenos) { const k = `${e.inicio}|${e.fin}`; cuenta.set(k, (cuenta.get(k) ?? 0) + 1); }

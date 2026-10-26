@@ -1,6 +1,7 @@
 import "server-only";
 import { cargarFuente } from "@/lib/eventos/fuente";
-import { eventosEntrenos, estadoClasificacion, proximosPartidos, ultimosResultados } from "@/lib/publico";
+import { estadoClasificacion, proximosPartidos, ultimosResultados } from "@/lib/publico";
+import { proximoEntreno } from "@/lib/gestion/entreno";
 import { diaMes, diaSemanaCorto, hoyMadrid } from "@/lib/dias";
 import { campanaAbiertaAhora, fechaCorta } from "@/lib/fechas";
 import type { Cliente } from "@/lib/eventos/datos";
@@ -16,12 +17,12 @@ export async function cargarPendientesSemana(supabase: Cliente): Promise<Pendien
   const fecha = proximos.map((p) => p.evento.fecha).sort()[0];
   const jornada = proximos.find((p) => p.evento.fecha === fecha)?.evento.jornada;
   const sinActa = ultimosResultados(hoy).filter((r) => r.pendienteActa);
-  const entreno = eventosEntrenos(fuente).find((e) => e.fecha >= hoy);
-  const [{ count: jugadores }, { count: conCorreo }, { data: campanas }, entrenoFila] = await Promise.all([
+  // El proximo entreno, de la tabla de eventos con su pista efectiva (no del fichero ni de la vista publica).
+  const [{ count: jugadores }, { count: conCorreo }, { data: campanas }, entreno] = await Promise.all([
     supabase.from("jugadores").select("id", { count: "exact", head: true }).eq("activo", true),
     supabase.from("jugadores").select("id", { count: "exact", head: true }).eq("activo", true).not("email", "is", null),
     supabase.from("campanas_ropa").select("id, nombre, estado, fecha_limite").order("creado_en", { ascending: false }).limit(1),
-    entreno ? supabase.from("eventos").select("id").eq("clave", entreno.id).maybeSingle() : Promise.resolve({ data: null }),
+    proximoEntreno(supabase, hoy),
   ]);
   const campana = campanas?.[0] as { id: string; nombre: string; estado: string; fecha_limite: string | null } | undefined;
   const ropaAbierta = campana ? campanaAbiertaAhora(campana as never) : false;
@@ -29,9 +30,8 @@ export async function cargarPendientesSemana(supabase: Cliente): Promise<Pendien
     ? await supabase.from("pedidos_ropa").select("id", { count: "exact", head: true }).eq("campana_id", campana.id)
     : { count: 0 };
   const sinCorreo = (jugadores ?? 0) - (conCorreo ?? 0);
-  const idEntreno = (entrenoFila.data as { id: string } | null)?.id;
   const out: Pendiente[] = [];
-  if (entreno?.pistaPorConfirmar) out.push({ texto: `Fijar la pista del entreno del ${diaSemanaCorto(entreno.fecha)} ${diaMes(entreno.fecha)} (${entreno.nota ?? "pista por confirmar"}).`, href: idEntreno ? `/gestion/eventos/${idEntreno}` : "/gestion/eventos" });
+  if (entreno?.pista.porConfirmar) out.push({ texto: `Fijar la pista del entreno del ${diaSemanaCorto(entreno.evento.fecha)} ${diaMes(entreno.evento.fecha)} (${entreno.pista.motivo ?? "pista por confirmar"}).`, href: `/gestion/eventos/${entreno.evento.id}` });
   if (jornada) out.push({ texto: `Convocatoria de la J${jornada}: reparto MdA / MdL y aviso de equipación (rutina C, lunes y martes).`, href: `/gestion/convocatoria?fecha=${fecha}` });
   if (sinActa.length) out.push({ texto: `J${sinActa[0].jornada ?? "?"} publicada sin acta: completarla cuando la FBM suba las actas (rutina A).`, href: "/gestion/liga" });
   if (/pendiente de contrastar/i.test(estadoClasificacion())) out.push({ texto: "Contrastar la clasificación calculada con la oficial (rutina B, jueves).", href: "/liga" });

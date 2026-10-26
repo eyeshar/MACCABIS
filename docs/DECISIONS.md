@@ -839,3 +839,13 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 - **Cifras de cabecera:** Temporadas 14 (2013/14 → 26/27). «Han vestido la camiseta», «tienen ficha» y el «más veterano» cuentan la 26/27. **No** la cuentan, con nota ¹ en la página: la **plantilla media** (solo las 13 temporadas terminadas: la en curso aún puede tener altas) y **«De paso»** (quien solo lleva la 26/27 aún no se ha ido). La cifra de la portada `jugadores_en_la_historia` usa el mismo criterio que «han vestido la camiseta».
 - **Ficha de persona:** la 26/27 sale como «26/27 · en curso» y, con partidos, enlaza a `/jugador/<id>?t=2026-27`.
 - **GitHub Pages** (que solo redirige, D91–D93) se queda como estaba: `pruebas:cuadre` ya no compara la Historia fila a fila con la web antigua; el cuadre lo hace `npm run check:historia` (`scripts/test_historia_en_curso.js`) contra `season_2026-27.json` y la plantilla con ficha.
+
+---
+## D138 — La vista pública de eventos lleva la ubicación libre (Iván, 26/10/2026) — AMPLÍA D119
+
+**Contexto:** el entreno del 28/10/2026 tiene la pista como ubicación libre (Ciudad de los Periodistas, D119), pero `v_eventos_publicos` no la conocía. La portada, `/club`, el calendario público y el `.ics` decían «pista por confirmar (Valdebernardo en obras)». El Panel ya se había arreglado leyendo la tabla (`fix/eventos-respuestas-y-panel`).
+
+**Decisión de Iván:** migrar la vista para que lo público muestre esa ubicación, con la misma regla que `pistaEfectiva`, y nunca «pista por confirmar». Con las protecciones de D111 y solo si puede ser aditiva.
+
+**Cómo se ha construido (Claude):** migración `20261027100000_vista_pista_libre.sql`, solo aditiva. Las 19 columnas de siempre no cambian y se añaden al final `ubicacion_nombre` y `ubicacion_direccion`, solo para eventos sin pista propia. `lib/eventos/fuente.ts` usa esa columna con la regla pista propia → ubicación libre → serie o «por confirmar». El `.revertir.sql` borra la vista y la vuelve a crear como estaba, con sus permisos (nada depende de ella). Está ensayado en local con `pruebas:vista-pista-libre`. `pruebas:portada` comprueba el `.ics`, el calendario, `/club` y la agenda del jugador con un entreno con ubicación libre. Aplicada en el real con D111 (volcado, suites `-real` antes y después, 26 cuentas de auth antes y después).
+

@@ -48,6 +48,13 @@ try {
   ok(!/\btruncate\b|\bdelete\b/i.test(texto) && !/grant[^;]*\bdelete\b/i.test(texto), 'sin TRUNCATE, DELETE ni permiso de borrar');
   ok(fs.existsSync(path.join(MIGS, `${MIG}.revertir.sql`)), 'con su .revertir.sql al lado');
   for (const t of ['avisos_personales', 'calendario_tokens', 'tablero_registro', 'grupos_repartos']) ok(await tabla(t), `existe public.${t}`);
+  // Se revierte EN ORDEN INVERSO: antes las migraciones posteriores que tienen su .revertir.sql (p. ej. la de la vista pública
+  // con la ubicación libre, D138, que añade columnas a v_eventos_publicos: revertir la de planes con ella puesta falla con
+  // «cannot drop columns from view»). Solo en la pila de pruebas; `migrar` las vuelve a aplicar todas al final.
+  const posteriores = fs.readdirSync(MIGS).map((f) => f.match(/^(\d{14})_.*\.revertir\.sql$/)).filter((m) => m && m[1] > MIG).sort((a, b) => (a[1] < b[1] ? 1 : -1));
+  for (const m of posteriores) {
+    if ((await sql`select 1 from supabase_migrations.schema_migrations where version = ${m[1]}`).length) await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, m[0]), 'utf8')));
+  }
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${MIG}.revertir.sql`), 'utf8')));
   const cols = (await sql`select column_name from information_schema.columns where table_schema = 'public' and table_name = 'eventos'`).map((c) => c.column_name);
   ok(!(await tabla('grupos_repartos')) && !cols.includes('oficial') && !cols.includes('ubicacion_lat'), 'revertir quita tablas y columnas nuevas');

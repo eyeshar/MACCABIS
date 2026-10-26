@@ -72,6 +72,10 @@ try {
   await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
   const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
+  // El proximo entreno sin pista propia con la pista como UBICACION LIBRE (D119), como el del 28/10/2026 (D138).
+  const hoyP = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const [libre] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and pista_id is null and fecha >= ${hoyP} order by fecha limit 1`;
+  await sql`update public.eventos set ubicacion_nombre = 'Ciudad de los Periodistas' where id = ${libre.id}`;
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Iván', ${gestorEmail})`;
@@ -146,6 +150,8 @@ try {
   ok(caja && caja.includes('DTEND;TZID=Europe/Madrid:20261007T210000') && caja.includes('LOCATION:Caja Mágica'), 'entreno 07/10: 20:00-21:00 en la Caja Magica');
   const e14 = ev.find((b) => b.includes('DTSTART;TZID=Europe/Madrid:20261014T203000'));
   ok(e14 && e14.includes('DTEND;TZID=Europe/Madrid:20261014T223000') && e14.includes('Pista por confirmar (Valdebernardo en obras)'), 'entreno 14/10: 20:30-22:30, pista por confirmar (Valdebernardo en obras)');
+  const eLibre = ev.find((b) => b.includes(`DTSTART;TZID=Europe/Madrid:${libre.fecha.replaceAll('-', '')}T`));
+  ok(eLibre && eLibre.includes('LOCATION:Ciudad de los Periodistas') && !eLibre.includes('Pista por confirmar'), `.ics: el entreno del ${libre.fecha} con su ubicación libre (LOCATION:Ciudad de los Periodistas), no «pista por confirmar» (D138)`, eLibre);
   ok(!/[\w.+-]+@(?!maccabis\b)[\w-]+\.[\w.]+/.test(ics.replace(/UID:[^\r]*/g, '')), 'el feed no lleva ningun correo');
 
   console.log('\n== Indexacion (D85)');
@@ -179,6 +185,8 @@ try {
   ok(club.includes('Centro Deportivo Municipal Moratalaz') && club.includes('Calle de Valdebernardo, 2, 28030 Madrid') && club.includes('Pavones (L9)'), '/club: instalación de los partidos (CDM Moratalaz, calle de Valdebernardo 2, metro Pavones L9)');
   ok(club.includes('Valdebernardo (Faustina Valladolid)') && club.includes('son dos sitios distintos') && !club.includes('pendiente de confirmar'), '/club: entrenos en Valdebernardo (Faustina Valladolid), aclarado que no es la de los partidos, sin hueco');
   ok(club.includes('href="/historia"'), '/club: enlace a la rejilla completa de Historia (/historia)');
+  const proxClub = (club.replace(/<[^>]+>/g, '').match(/Próximo:[^.]*\./) ?? [''])[0];
+  ok(proxClub.includes('Ciudad de los Periodistas') && !proxClub.includes('por confirmar'), `/club: «${proxClub}» (ubicación libre, D138)`);
   ok(!/[\w.+-]+@[\w-]+\.[\w.]+/.test(club.replace(/<script[\s\S]*?<\/script>/g, '')), '/club: ningun correo ni dato personal');
 
   // ---------------------------------------------------------------- Navegador
@@ -228,6 +236,11 @@ try {
     ok((await filaCaja.textContent()).includes('20:00–21:00') && (await filaCaja.textContent()).includes('Caja Mágica'), 'calendario: entreno del 07/10, 20:00–21:00 en la Caja Magica');
     const fila14 = calSel.locator('[data-id="entreno-semanal-2026-10-14"]');
     ok((await fila14.textContent()).includes('20:30–22:30') && (await fila14.textContent()).includes('pista por confirmar') && (await fila14.textContent()).includes('Valdebernardo en obras'), 'calendario: entreno del 14/10, pista por confirmar (Valdebernardo en obras)', await fila14.textContent());
+    // El calendario empieza por las 3 próximas semanas: se mira desde el día del entreno con ubicación libre.
+    await p.goto(`${APP}/?hoy=${libre.fecha}`);
+    const filaLibre = await p.locator(`[data-testid="calendario"] [data-id="entreno-semanal-${libre.fecha}"]`).first().textContent();
+    ok(filaLibre.includes('Ciudad de los Periodistas') && !/por confirmar/i.test(filaLibre), `calendario: el entreno del ${libre.fecha} en Ciudad de los Periodistas (ubicación libre), no «pista por confirmar»`, filaLibre);
+    await p.goto(`${APP}/?hoy=2026-10-06`);
     ok((await calSel.locator('[data-id="mda-j2"] [data-aviso="cambian_ellos"]').count()) === 1, 'calendario: J2 MdA con la pastilla "Cambian ellos"');
     ok((await calSel.locator('[data-id="entreno-semanal-2026-12-23"], [data-id="entreno-semanal-2026-12-30"]').count()) === 0, 'calendario: sin entreno el 23 ni el 30 de diciembre');
     for (const [boton, sel, comprueba] of [
@@ -325,6 +338,8 @@ try {
     const agenda = p.locator('#agenda');
     // Con «respuestas en la web» apagado: la agenda con sus entrenos; los partidos y entrenos se responden en SportEasy.
     ok((await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').count()) >= 1 && /SportEasy/.test(await p.getByTestId('regla-recordatorios').innerText()), 'Tu agenda: entrenos; y «se responden en SportEasy» (interruptor apagado)');
+    const filasLibre = await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').allTextContents();
+    ok(filasLibre.some((t) => t.includes('Ciudad de los Periodistas')), 'Tu agenda: el entreno con ubicación libre sale en «Ciudad de los Periodistas»', filasLibre.slice(0, 2).join(' | '));
     const domingo = p.getByTestId('proximo-partido');
     ok((await domingo.locator('.in-partido-uno').count()) >= 1, 'Tu próximo partido (dobla): los partidos de su próximo domingo');
     if (aMdA?.fecha === '2026-10-18') {

@@ -6,8 +6,10 @@
   "scripts": {
     "diccionario": "node scripts/parse_diccionario.js",
     "historico": "node scripts/build_historico.js",
-    "build:datos": "npm run diccionario && npm run historico && npm run estadisticas && npm run fichas && npm run completar:historia && npm run personas && npm run datos:sync",
+    "build:datos": "npm run diccionario && npm run historico && npm run estadisticas && npm run fichas && npm run completar:historia && npm run historia:en-curso && npm run personas && npm run datos:sync",
     "personas": "node scripts/build_personas.js",
+    "historia:en-curso": "node scripts/historia_en_curso.js",
+    "check:historia": "node scripts/historia_en_curso.js --check && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/test_historia_en_curso.js",
     "datos:sync": "node plataforma/scripts/sincronizar_equipacion.mjs",
     "check:copias": "node plataforma/scripts/sincronizar_equipacion.mjs --check",
     "check:personas": "node scripts/build_personas.js --check",

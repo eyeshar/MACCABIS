@@ -15,7 +15,8 @@
     1. main al día: para si hay commits sin subir.
     2. npm run jornada -- --no-interactivo: ante cualquier duda para (código distinto de 0); sin ficheros nuevos,
        sale sin hacer nada.
-    3. test:regresion, test:liga, test:privacidad y check:copias.
+    3. test:regresion, test:liga, test:privacidad, check:historia (la temporada en curso de la Historia, D137) y
+       check:copias.
     4. Commit de data/ y plataforma/src/data/ («datos(2026-27): jornada N (automático)») y push.
     5. En plataforma/: npm run db:liga, npm run db:asistencia y verificar_produccion (tras esperar al despliegue).
 
@@ -194,7 +195,7 @@ try {
   }
 
   # 3. Pruebas
-  foreach ($t in 'test:regresion', 'test:liga', 'test:privacidad', 'check:copias') {
+  foreach ($t in 'test:regresion', 'test:liga', 'test:privacidad', 'check:historia', 'check:copias') {
     if ((Ejecutar "npm run $t" $Repo "npm run $t") -ne 0) { Parar "falla npm run $t." }
   }
 

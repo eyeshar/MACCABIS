@@ -26,6 +26,7 @@ const { slug } = require('./parse_diccionario.js');
 const ROOT = path.resolve(__dirname, '..');
 const DATA = path.join(ROOT, 'data');
 const CHECK = process.argv.includes('--check');
+const EN_CURSO = require('./historia_en_curso.js').ANIO;
 
 /**
  * Identidades reconciliadas a mano el 04/08/2026: la misma persona escrita de dos
@@ -98,6 +99,9 @@ function main() {
       (indice[id] || (indice[id] = [])).push(s.id);
     };
     for (const pl of d.players || []) {
+      // Quien solo está por la asistencia (plantilla sin ningún partido aún, conv y pj a 0) no tiene estadísticas
+      // de esa temporada: en la Historia sale en amarillo hasta su primer partido (D137).
+      if (pl.conv === 0 && pl.pj === 0) continue;
       let id = pl.person_id;
       if (!id) {
         // 25/26 viene del pipeline antiguo y no trae person_id: se deriva del nombre
@@ -122,11 +126,11 @@ function main() {
   for (const p of hist.personas) {
     if (vistos.has(p.person_id)) problemas.push(`Historia: person_id duplicado "${p.person_id}".`);
     vistos.add(p.person_id);
-    // n_temporadas = años jugados reales 2013-2025 (la columna del Excel se descartó)
-    const reales = p.temporadas_jugadas.filter(y => +y >= 2013 && +y <= 2025).length;
-    if (reales !== p.n_temporadas) problemas.push(`Historia: "${p.person_id}" declara n_temporadas=${p.n_temporadas} pero tiene ${reales} años jugados entre 2013 y 2025.`);
-    // 2026 es la temporada 26/27 PREVISTA: nunca cuenta como jugada
-    if (p.temporadas_jugadas.includes('2026')) problemas.push(`Historia: "${p.person_id}" tiene 2026 en temporadas_jugadas; 26/27 no ha empezado y va en previsto_2627.`);
+    // n_temporadas = años en el club de 2013 a la temporada en curso (la columna del Excel se descartó). El año en
+    // curso lo pone scripts/historia_en_curso.js con la plantilla con ficha (D137); uno posterior es un error.
+    const reales = p.temporadas_jugadas.filter(y => +y >= 2013 && +y <= +EN_CURSO).length;
+    if (reales !== p.n_temporadas) problemas.push(`Historia: "${p.person_id}" declara n_temporadas=${p.n_temporadas} pero tiene ${reales} años en el club entre 2013 y ${EN_CURSO}.`);
+    if (p.temporadas_jugadas.some(y => +y > +EN_CURSO)) problemas.push(`Historia: "${p.person_id}" tiene un año posterior a la temporada en curso (${EN_CURSO}).`);
     if (p.solo_mote && !/^\[SOLO MOTE/.test(p.formal)) avisos.push(`Historia: "${p.person_id}" es solo_mote pero tiene nombre formal "${p.formal}".`);
   }
 

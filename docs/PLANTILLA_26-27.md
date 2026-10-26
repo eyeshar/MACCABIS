@@ -64,6 +64,7 @@ García Gijón, Santos Artiles y Teruel Fernández son **personas nuevas** (prim
 - **Salen:** Rausse, Lukas · Mateos Aparicio, Ignacio · Rodríguez Pérez, Iván.
 - **Entran:** Galán Domingo, Guillermo · Vallesi, Daniele · Villa Guerrero, Edwin · y los 3 nuevos.
 - Resultado: **25 previstos = los 24 jugadores de las hojas + Barreiro** (entrenador, no jugador). 26/27 sigue siendo *prevista*: no cuenta como temporada jugada hasta que empiece.
+- **Desde el 26/10/2026 (D137) la 26/27 ya no es prevista, sino la temporada en curso:** `previsto_2627` desaparece y el año 2026 de `historia_club.json` lo pone `scripts/historia_en_curso.js` en cada jornada (plantilla con ficha de `season_2026-27.json` + Barreiro). Los 3 nuevos ya no van en un tramo propio: cuentan con 1 temporada.
 
 Respecto a las hojas de 25/26 salen: Hernández Faura, Jorge · Ortega Delgado, Pablo · Perchín García, Javier · Rausse, Lukas · Yamín Squicciarini, Nicolás · Rogaia, Samuele.
 

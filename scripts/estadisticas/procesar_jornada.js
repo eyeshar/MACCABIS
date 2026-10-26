@@ -29,8 +29,9 @@
  *        jornada o la hoja se descargó antes de que se jugara), PARA sin copiar nada y avisa.
  *   2. Regenera data/season_<temporada>.json con todas las validaciones (puntos de la hoja =
  *      marcador del acta, parciales = marcador). Si algo no cuadra, NO escribe nada.
- *   3. Añade la temporada a data/index.json si aún no está (sin cambiar la de por defecto) y
- *      comprueba identidades (check:personas).
+ *   3. Añade la temporada a data/index.json si aún no está (sin cambiar la de por defecto), recalcula la
+ *      temporada en curso de la Historia (historia_club.json y personas.json, D137) y comprueba identidades
+ *      (check:personas).
  *   4. Resume la jornada: resultados, anotadores y avisos.
  *
  * Publicar (commit + push de los dos JSON) es un paso aparte y explícito.
@@ -329,6 +330,13 @@ if (require.main === module) {
       fs.writeFileSync(idxPath, JSON.stringify(idx, null, 1) + '\n', 'utf8');
       console.log(`\ndata/index.json: añadida ${cfg.label} al selector (la temporada por defecto sigue siendo ${idx.default}).`);
     }
+    // Historia del club (D137): la temporada en curso = plantilla con ficha de esta temporada + cuerpo técnico; y el
+    // índice de personas.json, para que quien debuta pase de amarillo a naranja sin tocar nada.
+    try {
+      const h = execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'historia_en_curso.js')], { stdio: 'pipe' }).toString().trim();
+      execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js')], { stdio: 'pipe' });
+      console.log(h);
+    } catch (e) { para('historia: no se ha podido recalcular la temporada en curso.', 'Historia: PROBLEMAS\n' + (e.stderr || '') + (e.stdout || '')); }
     try { execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js'), '--check'], { stdio: 'pipe' }); console.log('Identidades: OK (check:personas).'); }
     catch (e) { para('identidades: problemas en check:personas.', 'Identidades: PROBLEMAS\n' + e.stdout); }
 
@@ -356,6 +364,6 @@ if (require.main === module) {
     } catch (e) { console.log('Proyección: no se ha podido calibrar (' + String(e.stderr || e.message).split('\n')[0] + '). No afecta a la jornada.'); }
 
     resumen.estado = 'lista'; escribeResumen();
-    console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/index.json y plataforma/src/data/.');
+    console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/index.json, data/historia_club.json, data/personas.json y plataforma/src/data/.');
   })().catch(e => para(e.message, 'ERROR: ' + e.message));
 }

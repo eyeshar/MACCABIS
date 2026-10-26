@@ -7,6 +7,13 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**Historia: la 26/27 en curso (26/10/2026, `feat/historia-2026-27`, D137):**
+- [x] /historia: 26/27 «en curso» (plantilla con ficha + Barreiro; naranja quien ya ha jugado, amarillo el resto), sin columna «prevista» ni tramo «Llegan en 26/27»; cifras recalculadas (media y «De paso» sin la temporada en curso, con nota); ficha de persona con enlace a sus estadísticas de 26/27.
+- [x] Se recalcula sola en `npm run jornada` y en la rutina A (`historia_en_curso.js` + `build_personas.js`; la rutina A pasa `check:historia`).
+- [x] **OK de Iván y merge en `main` (`5d4f1e8`, 26/10/2026)**; `verificar_produccion` TODO OK y /historia comprobada en producción. La copia `Maccabis-rutina-a` ya tiene el script nuevo (`git pull` hecho el 26/10).
+- [ ] Cuando cambie el cuerpo técnico, actualizar `CUERPO_TECNICO` en `scripts/historia_en_curso.js` (hoy solo Barreiro).
+- [ ] Al empezar la 27/28: pasar `ANIO`/`TEMPORADA` de `historia_en_curso.js` y `EN_CURSO`/`ANIOS` de `plataforma/src/lib/estadisticas/historia.ts` a 2027 (la 26/27 pasa a terminada y entra en la plantilla media).
+
 **Vista pública con la ubicación libre (26/10/2026, `fix/vista-pista-libre`, D138):**
 - [x] Migración `20261027100000_vista_pista_libre` (solo aditiva) aplicada en el Supabase real con D111; la web la usa en la portada, `/club`, el calendario público y el `.ics`.
 - [x] **Mergeada en `main` (`fc51d8e`, OK de Iván, 26/10/2026)**; `verificar_produccion` TODO OK y comprobado en producción como anónimo: el 28/10 sale «Ciudad de los Periodistas» en la portada, el calendario, `/club` y el `.ics`.
@@ -28,7 +35,7 @@
 
 **Norma D134 (26/10/2026):**
 - [x] `npm run check:datos` y el hook `commit-msg` (D134), activado en el repositorio principal.
-- [ ] Activar el hook también en la copia `Maccabis-rutina-a` (`npm run hooks:instalar` tras su próximo `git pull`): allí publica en `main`, que no se comprueba, pero así queda igual en todos los clones. **Pendiente para la próxima vez que se toque la rutina** (26/10/2026; riesgo bajo: solo hace commits de datos).
+- [x] (26/10/2026, al mergear D137) Activar el hook también en la copia `Maccabis-rutina-a` (`npm run hooks:instalar` tras su próximo `git pull`): allí publica en `main`, que no se comprueba, pero así queda igual en todos los clones. **Pendiente para la próxima vez que se toque la rutina** (26/10/2026; riesgo bajo: solo hace commits de datos).
 
 **`feat/convocatoria-proyeccion` (D124–D129), EN PRODUCCIÓN (merge `c2ea98c`, 26/10/2026):**
 - [x] Revisión de la vista previa por Claude y OK de Iván al merge (26/10/2026); `verificar_produccion` en TODO OK, con /liga enlazada, la página de partido sin sesión y «Aviso en la web» sin el interruptor.

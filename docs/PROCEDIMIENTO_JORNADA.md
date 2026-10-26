@@ -11,7 +11,7 @@ _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se proce
 
 ## Reparto desde el 24/10/2026: se publica solo si todo cuadra (D66)
 
-- **Actas:** las baja Claude con la tarea programada «Maccabis · actas del lunes» (lunes y jueves, 8:34) desde gesdeportiva.fbm.es, en tu Chrome con la sesión iniciada.
+- **Actas:** las baja Claude con la tarea programada «Maccabis · actas del lunes» (lunes y jueves, 9:30) desde gesdeportiva.fbm.es, en tu Chrome con la sesión iniciada.
 - **Hojas de estadística:** las bajas tú desde la app **Afición FBM** del móvil (las nuestras y las de liga) y las dejas en Descargas del PC, sin renombrar.
 - **Procesar y publicar:** `scripts/rutina_a_publicar.ps1`, desde el Programador de tareas de Windows (lunes y jueves, 13:00): `npm run jornada -- --no-interactivo`, pruebas, commit y push, `db:liga`, `db:asistencia` y `verificar_produccion`. Ante cualquier duda (nombre desconocido, hoja que no es de la jornada, acta que no cuadra, falta una hoja o un acta) **para sin publicar nada** y te avisa con una notificación de Windows («Rutina A parada: <motivo>»); si publica, «Jornada N publicada: MdA x–y Rival · Rival x–y MdL». Registro en `privado/registro_rutina_a.log`. Detalle en `docs/RUTINAS/A_ACTAS.md`.
 
@@ -54,5 +54,6 @@ Si la FBM no ha publicado el acta, `npm run jornada` publica el partido **solo c
 
 La herramienta (`npm run jornada`) está en `main` desde el 26/09/2026 (merge `f69a39f`) y su
 prueba de regresión con toda la 2025/26 da "RESULTADO: OK". Lista para la jornada 1.
-Publicación automática (`scripts/rutina_a_publicar.ps1`, `--no-interactivo`): rama `feat/rutina-a-auto` (24/10/2026),
-pendiente de la revisión de Iván; la tarea del Programador de tareas ya está creada y no hace nada hasta que el script esté en `main`.
+Publicación automática (`scripts/rutina_a_publicar.ps1`, `--no-interactivo`): en `main` desde el 24/10/2026
+(merge `65255e6` de `feat/rutina-a-auto`, aprobado por Iván). La tarea del Programador de tareas (lunes y jueves, 13:00)
+la ejecuta desde la copia dedicada `Maccabis-rutina-a` (D114).

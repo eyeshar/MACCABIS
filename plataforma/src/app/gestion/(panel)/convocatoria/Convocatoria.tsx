@@ -8,7 +8,7 @@ import {
   type Aviso, type Convocatoria as Conv, type Dificultad, type Equipo, type Posicion, type Recuento,
 } from "@/lib/convocatoria/motor";
 import { entradaDe, moverRapido, validarDestino, type Contexto, type JugadorVista, type PartidoVista, type Zona } from "@/lib/convocatoria/vista";
-import { proyeccionDe, textoBajoMinimo, textoProyeccion, textoRival, type Proyeccion } from "@/lib/convocatoria/proyeccion";
+import { proyeccionDe, textoBajoMinimo, textoCorreccion, textoFactor, textoProyeccion, textoRival, type Proyeccion } from "@/lib/convocatoria/proyeccion";
 import { cruce, diaTexto } from "@/lib/convocatoria/mensajes";
 import BloqueImportacion from "@/components/gestion/BloqueImportacion";
 import { ajusteRapido, aprobar, cambiarDificultad, deshacerRapido, empezar, guardarCambio, type Accion, type Motivo } from "./acciones";
@@ -99,8 +99,8 @@ export default function Convocatoria({ ctx }: { ctx: Contexto }) {
 
   const generales = rev.avisos.filter((a) => !a.equipo);
   const juegan = ctx.partidos.map((p) => p.equipo);
-  // Proyeccion de anotacion de cada equipo (D124), con los convocados de ahora.
-  const proyecciones = useMemo(() => Object.fromEntries(ctx.partidos.map((p) => [p.equipo, proyeccionDe(ctx.proyeccion, p.equipo, (conv[p.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombre(c.person_id) })))])) as Partial<Record<Equipo, Proyeccion | null>>,
+  // Proyeccion de anotacion de cada equipo (D124, D132), con los convocados de ahora y la dificultad marcada.
+  const proyecciones = useMemo(() => Object.fromEntries(ctx.partidos.map((p) => [p.equipo, proyeccionDe(ctx.proyeccion, p.equipo, (conv[p.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombre(c.person_id) })), p.dificultad.valor)])) as Partial<Record<Equipo, Proyeccion | null>>,
     [ctx.proyeccion, ctx.partidos, conv]);
   const avisosDe = (e: Equipo): Aviso[] => {
     const pr = proyecciones[e];
@@ -339,10 +339,11 @@ function BloqueProyeccion({ pr, equipo }: { pr: Proyeccion; equipo: Equipo }) {
   return (
     <div className="cv-proyeccion" data-testid={`cv-proyeccion-${equipo}`}>
       <p className="cv-proy-cifra"><b>{textoProyeccion(pr)}</b>{notas.length > 0 && <small> · {notas.join(" · ")}</small>}</p>
-      <p className="pequeno suave" style={{ margin: 0 }} data-testid={`cv-rival-${equipo}`}>{textoRival(pr)}{pr.notaRival ? "" : ` (factor ${pr.factor.toLocaleString("es-ES", { maximumFractionDigits: 2 })})`}.</p>
+      <p className="pequeno suave" style={{ margin: 0 }} data-testid={`cv-rival-${equipo}`}>{textoRival(pr)}.</p>
       {pr.aportes.length > 0 && (
         <details className="cv-aportan">
           <summary>Quién aporta</summary>
+          <p className="pequeno suave" style={{ margin: "4px 0" }} data-testid={`cv-factor-${equipo}`}>{textoFactor(pr)}{textoCorreccion(pr) ? ` · ${textoCorreccion(pr)}` : ""}.</p>
           <ul className="cv-lista">
             {pr.aportes.map((a) => (
               <li key={a.person_id} className="cv-aporte"><span>{a.nombre}{a.pocosDatos && <span className="cv-etq cv-etq-no">pocos datos</span>}</span><span className="cifra">{a.puntos.toLocaleString("es-ES")} pts <small className="suave">· {Math.round(a.minutos)} min</small></span></li>

@@ -12,7 +12,8 @@
 - [x] Migración `20261025100000_convocados_domingo` aplicada en el Supabase real (25/10, D111: volcado, revertir ensayado en local, permisos en solo lectura antes y después, 25 cuentas de auth antes y después). `main` no la usa hasta el merge.
 - [ ] Comprobar en la J4 (08/11; el MdA descansa) la proyección del MdL, el modo rápido y «Enviar ahora» de verdad.
 - [x] J3 publicada: MdA 47 frente a 56 (error 9), MdL 42 frente a 61 (error 19); error medio 12 puntos en 6 partidos.
-- [ ] **La proyección se queda corta en los 6 partidos** (siempre por debajo del real): al recalibrar, mirar si sobra el factor rival o faltan minutos/ritmo (¿240 min reales, tasas de la temporada pasada?).
+- [x] **La proyección se quedaba corta en los 6 partidos:** recalibrada en D132 (`fix/proyeccion-sesgo`, 26/10/2026): error medio de 12 a 5,2 y sesgo de −12 a −3,8 (dejando uno fuera).
+- [ ] **J8: revisar la proyección con `npm run proyeccion:validar`** (desde ahí la corrección de sesgo ya es completa): ¿el sesgo baja de 3? ¿Los valores de la dificultad (±15 %) y el peso del historial siguen bien?
 - [ ] **Recalibrar tras la J6** (ya estaba: umbral de anotación mínima de 45) y, con más jornadas, revisar los parámetros de la proyección (pesos, 60 minutos, 240/40, ±15/±10 %) con el error medio acumulado.
 - [ ] «Cambiar en SportEasy» al evento exacto: sigue pendiente guardar el id de cada evento de SportEasy (el botón lleva al calendario; misma tarea que la del inicio, D117).
 - [ ] D129: pista de los partidos entre rivales (el calendario que tenemos solo trae la de MdA y MdL); si se carga el calendario completo del Ayuntamiento, la página de partido la enseña.

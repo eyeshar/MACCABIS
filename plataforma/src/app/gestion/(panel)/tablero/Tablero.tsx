@@ -10,7 +10,7 @@ import {
   type Bloque, type FilaTablero, type ModoAgrupar,
 } from "@/lib/tablero/vista";
 import type { OpcionSelector, TableroDomingo, TableroEvento } from "@/lib/tablero/datos";
-import { proyeccionDe, textoBajoMinimo, textoProyeccion, textoRival } from "@/lib/convocatoria/proyeccion";
+import { proyeccionDe, textoBajoMinimo, textoCorreccion, textoFactor, textoProyeccion, textoRival } from "@/lib/convocatoria/proyeccion";
 import BloqueImportacion from "@/components/gestion/BloqueImportacion";
 import { cambiarConvocatoria, deshacerRespuestas, responderTablero, restaurarConvocatoria } from "./acciones";
 
@@ -256,7 +256,7 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
         {!datos.encendido && <BloqueImportacion estado={datos.importacion} />}
         <div className="tb-resumenes">
           {resumen.map((r) => {
-            const pr = proyeccionDe(datos.proyeccion, r.equipo, (conv[r.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombres.get(c.person_id) ?? c.person_id })));
+            const pr = proyeccionDe(datos.proyeccion, r.equipo, (conv[r.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombres.get(c.person_id) ?? c.person_id })), datos.partidos.find((p) => p.equipo === r.equipo)?.dificultad);
             const avisos = pr?.bajoMinimo ? [...r.avisos, textoBajoMinimo(pr)] : r.avisos;
             return (
             <section key={r.equipo} className="tb-resumen" data-equipo={r.equipo} data-testid={`resumen-${r.equipo}`} aria-label={`Resumen ${r.equipo}`} {...destino(r.equipo)}>
@@ -268,6 +268,7 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
                   <p className="suave">{textoRival(pr)}.</p>
                   {pr.aportes.length > 0 && (
                     <details><summary>Quién aporta</summary>
+                      <p className="suave" data-testid={`factor-${r.equipo}`}>{textoFactor(pr)}{textoCorreccion(pr) ? ` · ${textoCorreccion(pr)}` : ""}.</p>
                       <ul>{pr.aportes.map((a) => <li key={a.person_id}>{a.nombre}{a.pocosDatos ? " (pocos datos)" : ""}: <span className="cifra">{a.puntos.toLocaleString("es-ES")}</span></li>)}</ul>
                     </details>
                   )}

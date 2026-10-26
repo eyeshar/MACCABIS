@@ -1,15 +1,20 @@
-// Proyeccion de anotacion de un equipo convocado (D124, REGLAS_CONVOCATORIA.md §9). Funciones PURAS y deterministas, sin
-// imports (las usan la pantalla de convocatoria y el tablero, que recalculan al momento, el script de calibracion y las
-// pruebas, que cargan este fichero con `node`). SOLO GESTORES: lleva la letra de ataque de cada jugador (D39).
+// Proyeccion de anotacion de un equipo convocado (D124, recalibrada en D132; REGLAS_CONVOCATORIA.md §9). Funciones PURAS
+// y deterministas, sin imports (las usan la pantalla de convocatoria y el tablero, que recalculan al momento, el script
+// de calibracion, el de validacion y las pruebas, que cargan este fichero con `node`). SOLO GESTORES: lleva la letra de
+// ataque de cada jugador (D39).
 //
-//   a) Puntos por minuto de cada convocado: la temporada actual pesa el doble que la anterior. Con menos de 60 minutos
-//      sumados (las dos temporadas), lo que falta hasta 60 se completa con la tasa media de su letra de Ataque,
-//      calibrada con los que si tienen datos, y se marca «pocos datos».
+//   a) Puntos por minuto de cada convocado: con 60 minutos o mas esta temporada, solo esta temporada (D132); si no, la
+//      actual pesa el doble que la anterior. Con menos de 60 minutos sumados (las dos temporadas), lo que falta hasta 60
+//      se completa con la tasa media de su letra de Ataque, calibrada con los que si tienen datos, y «pocos datos».
 //   b) Minutos esperados: 240 por partido, repartidos segun los minutos medios por partido de cada uno (20 sin datos),
 //      con un maximo de 40 por jugador (lo que sobra se reparte entre los demas).
-//   c) Factor rival: puntos que encaja el rival por partido frente a la media de su grupo. Con menos de 2 partidos del
-//      rival, factor 1 y la nota «rival con pocos datos».
-//   d) Margen: ±15 % con menos de 5 jornadas jugadas en la temporada; ±10 % despues.
+//   c) Factor rival (D132): media geometrica ponderada de las fuentes que haya, con un previo de 1 (peso 1): la
+//      dificultad que marca el gestor (Alta 0,85 · Media 1 · Baja 1,15; peso 2), lo que encaja el rival esta temporada
+//      frente a la media de su grupo (peso = sus partidos) y su historial de temporadas anteriores frente a la media de
+//      su grupo de entonces (peso 3 la temporada pasada, la mitad por cada temporada mas atras).
+//   d) Correccion de sesgo (D132): mediana de real / proyectado de los partidos ya jugados; a medio camino de 1 con
+//      menos de 8 partidos, completa desde ahi. Se recalcula sola con cada jornada publicada.
+//   e) Margen: ±15 % con menos de 5 jornadas jugadas en la temporada; ±10 % despues.
 
 export type Letra = "A" | "B" | "C" | "D" | "E";
 export const LETRAS: Letra[] = ["A", "B", "C", "D", "E"];
@@ -25,7 +30,17 @@ export const PROYECCION = {
   jornadasMargen: 5,
   margenPronto: 0.15,
   margenDespues: 0.1,
+  dificultad: { alta: 0.85, media: 1, baja: 1.15 } as Record<DificultadRival, number>,
+  pesoPrevio: 1,
+  pesoDificultad: 2,
+  pesoHistorial: 3,
+  partidosCorreccion: 8,
+  /** D132: con 60 minutos o mas esta temporada, solo cuenta esta temporada (la validacion lo apaga para comparar). */
+  soloActual: true,
 };
+export type DificultadRival = "alta" | "media" | "baja";
+/** Temporada en curso de la proyeccion (la del historial de rivales se mide contra ella). */
+export const TEMPORADA_PROYECCION = "2026-27";
 /** Anotacion minima (puntos esperados) de la hoja de Ivan, pestaña «Parametros». Provisional: recalibrar tras la J6. */
 export const ANOTACION_MINIMA = 45;
 
@@ -34,18 +49,22 @@ export type Tramo = { pts: number; min: number; partidos: number };
 export type Historial = { actual: Tramo; anterior: Tramo };
 export type RivalStats = { pj: number; pf: number; pc: number };
 export type Grupo = { pj: number; pc: number };
+/** Historial de un rival en una temporada anterior (D132): lo que encajaba frente a la media de su grupo de entonces. */
+export type HistorialRival = { temporada: string; factor: number; pj: number };
 
 const VACIO: Tramo = { pts: 0, min: 0, partidos: 0 };
 const red1 = (x: number) => Math.round(x * 10) / 10;
 
-/** Puntos y minutos con los pesos de la regla a): la actual cuenta dos veces. */
+/** Puntos y minutos con los pesos de la regla a): con 60 minutos esta temporada, solo ella; si no, la actual cuenta dos
+ *  veces. */
 function ponderado(h: Historial) {
-  const { pesoActual: wa, pesoAnterior: wp } = PROYECCION;
+  const { pesoActual: wa } = PROYECCION;
+  const wp = PROYECCION.soloActual && h.actual.min >= PROYECCION.minutosSuficientes ? 0 : PROYECCION.pesoAnterior;
   return {
     pts: wa * h.actual.pts + wp * h.anterior.pts,
     min: wa * h.actual.min + wp * h.anterior.min,
     partidos: wa * h.actual.partidos + wp * h.anterior.partidos,
-    minSumados: h.actual.min + h.anterior.min,
+    minSumados: h.actual.min + (wp ? h.anterior.min : 0),
   };
 }
 
@@ -99,13 +118,41 @@ export function repartirMinutos(pesos: number[]) {
   return out;
 }
 
-/** Factor rival (regla c): puntos que encaja por partido frente a la media de su grupo. */
-export function factorRival(rival: RivalStats | null, grupo: Grupo | null) {
-  if (!rival || rival.pj < PROYECCION.partidosRival || !grupo || grupo.pj <= 0 || grupo.pc <= 0) {
-    return { factor: 1, nota: "rival con pocos datos" as string | null, encaja: rival && rival.pj ? rival.pc / rival.pj : null, anota: rival && rival.pj ? rival.pf / rival.pj : null };
+const NOMBRE_DIFICULTAD: Record<DificultadRival, string> = { alta: "Alta", media: "Media", baja: "Baja" };
+const temporadaCorta = (t: string) => t.replace("-", "/");
+
+/** Factor rival (regla c, D132): media geometrica ponderada de la dificultad marcada, lo que encaja esta temporada frente
+ *  a su grupo y su historial, con un previo de 1. `fuentes` dice de donde sale («dificultad marcada: Baja · 1 partido del
+ *  rival · historial 2025/26»). Con menos de 2 partidos esta temporada y sin historial, la nota «rival con pocos datos». */
+export function factorRival(rival: RivalStats | null, grupo: Grupo | null, extra: { dificultad?: DificultadRival | null; historial?: HistorialRival | null; temporada?: string } = {}) {
+  const P = PROYECCION;
+  const encaja = rival && rival.pj ? rival.pc / rival.pj : null, anota = rival && rival.pj ? rival.pf / rival.pj : null;
+  const pesos: [number, number][] = [[1, P.pesoPrevio]];
+  const fuentes: string[] = [];
+  if (extra.dificultad) { pesos.push([P.dificultad[extra.dificultad], P.pesoDificultad]); fuentes.push(`dificultad marcada: ${NOMBRE_DIFICULTAD[extra.dificultad]}`); }
+  if (rival && rival.pj > 0 && rival.pc > 0 && grupo && grupo.pj > 0 && grupo.pc > 0) {
+    pesos.push([(rival.pc / rival.pj) / (grupo.pc / grupo.pj), rival.pj]);
+    fuentes.push(`${rival.pj} ${rival.pj === 1 ? "partido" : "partidos"} del rival`);
+  } else fuentes.push("sin partidos del rival");
+  const h = extra.historial;
+  if (h && h.factor > 0) {
+    const atras = Math.max(0, +(extra.temporada ?? TEMPORADA_PROYECCION).slice(0, 4) - 1 - +h.temporada.slice(0, 4));
+    pesos.push([h.factor, P.pesoHistorial / 2 ** atras]);
+    fuentes.push(`historial ${temporadaCorta(h.temporada)}`);
   }
-  const encaja = rival.pc / rival.pj, media = grupo.pc / grupo.pj;
-  return { factor: encaja / media, nota: null, encaja, anota: rival.pf / rival.pj };
+  const w = pesos.reduce((x, [, p]) => x + p, 0);
+  const factor = Math.exp(pesos.reduce((x, [f, p]) => x + p * Math.log(f), 0) / w);
+  const pocos = (!rival || rival.pj < P.partidosRival) && !h;
+  return { factor, nota: pocos ? "rival con pocos datos" as string | null : null, encaja, anota, fuentes };
+}
+
+/** Correccion de sesgo (regla d, D132): mediana de real / proyectado (sin corregir) de los partidos ya jugados; a medio
+ *  camino de 1 con menos de 8 partidos. Sin partidos, 1. */
+export function correccionSesgo(puntos: { sinCorreccion: number; real: number }[]) {
+  const r = puntos.filter((x) => x.sinCorreccion > 0).map((x) => x.real / x.sinCorreccion).sort((a, b) => a - b);
+  if (!r.length) return 1;
+  const med = r.length % 2 ? r[(r.length - 1) / 2] : (r[r.length / 2 - 1] + r[r.length / 2]) / 2;
+  return r.length < PROYECCION.partidosCorreccion ? (1 + med) / 2 : med;
 }
 
 export const margenDe = (jornadasJugadas: number) => (jornadasJugadas < PROYECCION.jornadasMargen ? PROYECCION.margenPronto : PROYECCION.margenDespues);
@@ -113,7 +160,7 @@ export const margenDe = (jornadasJugadas: number) => (jornadasJugadas < PROYECCI
 export type Aporte = { person_id: string; nombre: string; minutos: number; ppm: number; puntos: number; pocosDatos: boolean };
 export type Proyeccion = {
   puntos: number; desde: number; hasta: number; exacta: number; margen: number;
-  sinFactor: number; factor: number; notaRival: string | null;
+  sinFactor: number; factor: number; notaRival: string | null; fuentesRival: string[]; correccion: number;
   rival: { encaja: number | null; anota: number | null };
   aportes: Aporte[]; pocosDatos: number;
   bajoMinimo: boolean;
@@ -124,6 +171,7 @@ export function proyectar(e: {
   convocados: { person_id: string; nombre: string; letra: Letra | null; hist: Historial }[];
   tasas: { tasas: Record<Letra, number>; media: number };
   rival: RivalStats | null; grupo: Grupo | null; jornadasJugadas: number;
+  dificultad?: DificultadRival | null; historial?: HistorialRival | null; temporada?: string; correccion?: number;
 }): Proyeccion {
   const minutos = repartirMinutos(e.convocados.map((c) => minutosMedios(c.hist)));
   const aportes: Aporte[] = e.convocados.map((c, i) => {
@@ -131,14 +179,15 @@ export function proyectar(e: {
     return { person_id: c.person_id, nombre: c.nombre, minutos: minutos[i], ppm: t.ppm, puntos: t.ppm * minutos[i], pocosDatos: t.pocosDatos };
   });
   const sinFactor = aportes.reduce((s, a) => s + a.puntos, 0);
-  const f = factorRival(e.rival, e.grupo);
-  const exacta = sinFactor * f.factor;
+  const f = factorRival(e.rival, e.grupo, { dificultad: e.dificultad, historial: e.historial, temporada: e.temporada });
+  const correccion = e.correccion ?? 1;
+  const exacta = sinFactor * f.factor * correccion;
   const margen = margenDe(e.jornadasJugadas);
-  for (const a of aportes) a.puntos = a.puntos * f.factor;
+  for (const a of aportes) a.puntos = a.puntos * f.factor * correccion;
   aportes.sort((a, b) => b.puntos - a.puntos || a.nombre.localeCompare(b.nombre, "es"));
   return {
     puntos: Math.round(exacta), desde: Math.round(exacta * (1 - margen)), hasta: Math.round(exacta * (1 + margen)), exacta, margen,
-    sinFactor, factor: f.factor, notaRival: f.nota, rival: { encaja: f.encaja, anota: f.anota },
+    sinFactor, factor: f.factor, notaRival: f.nota, fuentesRival: f.fuentes, correccion, rival: { encaja: f.encaja, anota: f.anota },
     aportes: aportes.map((a) => ({ ...a, minutos: red1(a.minutos), ppm: Math.round(a.ppm * 1000) / 1000, puntos: red1(a.puntos) })),
     pocosDatos: aportes.filter((a) => a.pocosDatos).length,
     bajoMinimo: e.convocados.length > 0 && Math.round(exacta) < ANOTACION_MINIMA,
@@ -148,6 +197,11 @@ export function proyectar(e: {
 /** «Proyección ≈ 52 puntos (entre 44 y 60)» */
 export const textoProyeccion = (p: Proyeccion) => `Proyección ≈ ${p.puntos} puntos (entre ${p.desde} y ${p.hasta})`;
 export const textoRival = (p: Proyeccion) => (p.rival.encaja == null ? "Sin partidos del rival todavía" : `El rival encaja de media ${red1(p.rival.encaja).toLocaleString("es-ES")} y anota ${red1(p.rival.anota ?? 0).toLocaleString("es-ES")}`);
+const dos = (x: number) => x.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** «Factor rival 1,04: dificultad marcada: Baja · 1 partido del rival · historial 2025/26» (la linea de «Quién aporta»). */
+export const textoFactor = (p: Proyeccion) => `Factor rival ${dos(p.factor)}: ${p.fuentesRival.join(" · ")}`;
+/** «Corrección de sesgo ×1,04» (o null si no hay). */
+export const textoCorreccion = (p: Proyeccion) => (Math.abs(p.correccion - 1) < 0.005 ? null : `Corrección de sesgo ×${dos(p.correccion)}`);
 
 // ---------------------------------------------------------------- de los ficheros de estadisticas y de la liga
 type JuegoSeason = { pn: number; eq: string; sec?: number; played?: boolean; pts?: number };
@@ -189,16 +243,18 @@ export function estadisticasGrupo(liga: LigaJson, grupo: string, clave: (n: stri
   return { rival: (n: string | null) => (n ? equipos.get(clave(n)) ?? null : null), grupo: grupoStats, jornadas };
 }
 
-export type PuntoCalibracion = { jornada: number; equipo: string; fecha: string; rival: string; proyeccion: number; desde: number; hasta: number; real: number; error: number };
+export type PuntoCalibracion = { jornada: number; equipo: string; fecha: string; rival: string; proyeccion: number; desde: number; hasta: number; real: number; error: number; diferencia: number; sinCorreccion: number };
 
-/** Calibracion (D124): para cada partido nuestro ya cargado, la proyeccion con lo que se sabia ANTES de esa jornada
- *  (historial y liga hasta la jornada anterior) y los que salen en la hoja de ese partido (los que de verdad fueron
- *  convocados), frente al resultado real. */
+/** Calibracion (D124, D132): para cada partido nuestro ya cargado, la proyeccion con lo que se sabia ANTES de esa jornada
+ *  (historial y liga hasta la jornada anterior, la dificultad que se marco y el historial del rival) y los que salen en
+ *  la hoja de ese partido (los que de verdad fueron convocados), frente al resultado real. La correccion de sesgo de
+ *  cada partido se aprende con los DEMAS (dejando uno fuera), para no usarse a si mismo. */
 export function calibrar(o: {
   actual: SeasonJson; anterior: SeasonJson | null; liga: LigaJson; clave: (n: string) => string;
   letra: (id: string) => Letra | null; nombre: (id: string) => string; plantilla: string[];
+  dificultad?: (fecha: string, equipo: string) => DificultadRival | null; historial?: (rival: string) => HistorialRival | null;
 }): PuntoCalibracion[] {
-  const out: PuntoCalibracion[] = [];
+  const base: { p: SeasonJson["partidos"][number]; r: Proyeccion }[] = [];
   const grupoDe = (eq: string) => Object.keys(o.liga.grupos).find((k) => o.liga.grupos[k].nuestro.toUpperCase() === eq.toUpperCase()) ?? null;
   for (const p of [...o.actual.partidos].sort((a, b) => a.pn - b.pn || a.equipo.localeCompare(b.equipo))) {
     const hist = historiales(o.actual, o.anterior, p.pn);
@@ -206,20 +262,29 @@ export function calibrar(o: {
     const ids = o.actual.players.filter((j) => j.person_id && (j.games ?? []).some((g) => g.pn === p.pn && g.eq.toUpperCase() === p.equipo.toUpperCase())).map((j) => j.person_id!);
     const g = grupoDe(p.equipo);
     const est = g ? estadisticasGrupo(o.liga, g, o.clave, p.pn) : null;
-    const r = proyectar({
+    base.push({ p, r: proyectar({
       convocados: ids.map((id) => ({ person_id: id, nombre: o.nombre(id), letra: o.letra(id), hist: hist(id) })),
       tasas, rival: est?.rival(p.rival) ?? null, grupo: est?.grupo ?? null, jornadasJugadas: est?.jornadas ?? p.pn - 1,
-    });
-    out.push({ jornada: p.pn, equipo: p.equipo, fecha: p.fecha, rival: p.rival, proyeccion: r.puntos, desde: r.desde, hasta: r.hasta, real: p.pf, error: Math.abs(r.puntos - p.pf) });
+      dificultad: o.dificultad?.(p.fecha, p.equipo) ?? null, historial: o.historial?.(p.rival) ?? null,
+    }) });
   }
-  return out;
+  return base.map(({ p, r }) => {
+    const c = correccionSesgo(base.filter((x) => x.p !== p).map((x) => ({ sinCorreccion: x.r.exacta, real: x.p.pf })));
+    const exacta = r.exacta * c, puntos = Math.round(exacta);
+    return { jornada: p.pn, equipo: p.equipo, fecha: p.fecha, rival: p.rival, proyeccion: puntos, desde: Math.round(exacta * (1 - r.margen)), hasta: Math.round(exacta * (1 + r.margen)),
+      real: p.pf, error: Math.abs(puntos - p.pf), diferencia: puntos - p.pf, sinCorreccion: r.exacta };
+  });
 }
 
-/** «Acierto de la proyección: error medio N puntos en M partidos» */
+/** «Acierto de la proyección: error medio N puntos en M partidos · se queda corta en S puntos de media» (o «se pasa en
+ *  S puntos de media» o «sin sesgo» si redondea a 0). */
 export function resumenCalibracion(puntos: PuntoCalibracion[]) {
   if (!puntos.length) return null;
   const media = puntos.reduce((s, x) => s + x.error, 0) / puntos.length;
-  return { error: Math.round(media * 10) / 10, partidos: puntos.length, texto: `Acierto de la proyección: error medio ${(Math.round(media * 10) / 10).toLocaleString("es-ES")} puntos en ${puntos.length} ${puntos.length === 1 ? "partido" : "partidos"}` };
+  const sesgo = puntos.reduce((s, x) => s + x.diferencia, 0) / puntos.length;
+  const r = (x: number) => Math.round(x * 10) / 10, es = (x: number) => r(x).toLocaleString("es-ES");
+  const textoSesgo = r(sesgo) === 0 ? "sin sesgo" : sesgo < 0 ? `se queda corta en ${es(-sesgo)} puntos de media` : `se pasa en ${es(sesgo)} puntos de media`;
+  return { error: r(media), sesgo: r(sesgo), partidos: puntos.length, texto: `Acierto de la proyección: error medio ${es(media)} puntos en ${puntos.length} ${puntos.length === 1 ? "partido" : "partidos"} · ${textoSesgo}` };
 }
 
 // ---------------------------------------------------------------- lo que llega a la pantalla (solo gestores)
@@ -228,18 +293,23 @@ export type DatosProyeccion = {
   hist: Record<string, Historial>;
   letras: Record<string, Letra | null>;
   tasas: { tasas: Record<Letra, number>; media: number };
-  partidos: Partial<Record<EquipoProy, { rival: RivalStats | null; grupo: Grupo | null; jornadas: number }>>;
-  calibracion: { texto: string; error: number; partidos: number; puntos: PuntoCalibracion[] } | null;
+  partidos: Partial<Record<EquipoProy, { rival: RivalStats | null; grupo: Grupo | null; jornadas: number; historial?: HistorialRival | null }>>;
+  calibracion: { texto: string; error: number; sesgo: number; partidos: number; puntos: PuntoCalibracion[] } | null;
+  /** Correccion de sesgo aprendida con todos los partidos jugados (regla d). */
+  correccion?: number;
+  temporada?: string;
 };
 
-/** La proyeccion de un equipo del domingo con los convocados que tenga ahora (se recalcula con cada cambio). */
-export function proyeccionDe(d: DatosProyeccion, equipo: EquipoProy, convocados: { person_id: string; nombre: string }[]): Proyeccion | null {
+/** La proyeccion de un equipo del domingo con los convocados que tenga ahora y la dificultad marcada (se recalcula con
+ *  cada cambio). */
+export function proyeccionDe(d: DatosProyeccion, equipo: EquipoProy, convocados: { person_id: string; nombre: string }[], dificultad?: DificultadRival | null): Proyeccion | null {
   const p = d.partidos[equipo];
   if (!p) return null;
   const sinHist: Historial = { actual: VACIO, anterior: VACIO };
   return proyectar({
     convocados: convocados.map((c) => ({ ...c, letra: d.letras[c.person_id] ?? null, hist: d.hist[c.person_id] ?? sinHist })),
     tasas: d.tasas, rival: p.rival, grupo: p.grupo, jornadasJugadas: p.jornadas,
+    dificultad: dificultad ?? null, historial: p.historial ?? null, temporada: d.temporada, correccion: d.correccion ?? 1,
   });
 }
 

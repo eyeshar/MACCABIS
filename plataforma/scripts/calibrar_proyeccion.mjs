@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-// Calibracion de la proyeccion de anotacion (D124): tras cada jornada publicada (`npm run jornada` y la rutina A, que lo
-// llaman al final), guarda en privado/proyecciones_<temporada>.json, FUERA DE GIT, la proyeccion de cada partido nuestro
-// ya cargado (con lo que se sabia antes de esa jornada y los que salen en su hoja) y el resultado real. Lo ya guardado
-// no se reescribe (queda congelado); solo se añaden los partidos nuevos. La pantalla de convocatoria calcula lo mismo con
-// la misma funcion (src/lib/convocatoria/proyeccion.ts).
+// Calibracion de la proyeccion de anotacion (D124, D132): tras cada jornada publicada (`npm run jornada` y la rutina A,
+// que lo llaman al final), guarda en privado/proyecciones_<temporada>.json, FUERA DE GIT, la proyeccion de cada partido
+// nuestro ya cargado (con lo que se sabia antes de esa jornada, la dificultad marcada, el historial del rival y los que
+// salen en su hoja) y el resultado real. Lo ya guardado no se reescribe (queda congelado, con el metodo con que se
+// calculo); solo se añaden los partidos nuevos. El resumen es el del metodo vigente (error medio y sesgo, dejando uno
+// fuera), el mismo que la pantalla de convocatoria (src/lib/convocatoria/proyeccion.ts); la correccion de sesgo se
+// recalcula sola con cada partido nuevo. La tabla de variantes: npm run proyeccion:validar.
 //
 // Las letras de Ataque son privadas (D39): se leen de jugadores_privado (SUPABASE_DB_URL de .env.local) en una
 // transaccion de SOLO LECTURA y nunca se imprimen. Sin conexion, se calcula sin letras (relleno con la media) y se dice.
@@ -29,9 +31,11 @@ const leer = (f) => JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', f)
 const equip = leer('equipaciones.json');
 const actual = leer(`estadisticas/season_${TEMPORADA}.json`), anterior = leer('estadisticas/season_2025-26.json'), liga = leer('liga.json');
 const clave = (n) => A.clave(A.equipoPorNombre(equip, n)?.nombre ?? n);
+const historialRivales = leer('historialRivales.json').rivales;
+const historialDe = (rival) => { const r = historialRivales.find((x) => clave(x.nombre) === clave(rival ?? '')); return r?.factor ? { temporada: r.temporada, factor: r.factor, pj: r.pj } : null; };
 const PROXIMAS = process.argv.includes('--proximas');
 
-let letras = new Map(), nombres = new Map(), plantilla = actual.players.map((p) => p.person_id).filter(Boolean), conLetras = false, proximas = [];
+let letras = new Map(), nombres = new Map(), plantilla = actual.players.map((p) => p.person_id).filter(Boolean), conLetras = false, proximas = [], aprobadas = [];
 if (process.env.SUPABASE_DB_URL) {
   const local = /localhost|127\.0\.0\.1/.test(process.env.SUPABASE_DB_URL);
   const sql = postgres(process.env.SUPABASE_DB_URL, { ssl: local ? false : 'require', onnotice: () => {}, max: 1 });
@@ -42,23 +46,26 @@ if (process.env.SUPABASE_DB_URL) {
       for (const j of jug) nombres.set(j.person_id, j.nombre_visible);
       for (const p of priv) letras.set(p.person_id, p.nota_ataque ?? null);
       plantilla = jug.filter((j) => j.activo && j.rol !== 'entrenador').map((j) => j.person_id);
+      aprobadas = await tx`select fecha::text, dificultad from public.convocatorias where estado = 'aprobada'`;
       conLetras = true;
-      if (PROXIMAS) proximas = await tx`select fecha::text, jornada, equipos from public.convocatorias where estado = 'aprobada' and fecha >= (now() at time zone 'Europe/Madrid')::date - 7 order by fecha`;
+      if (PROXIMAS) proximas = await tx`select fecha::text, jornada, equipos, dificultad from public.convocatorias where estado = 'aprobada' and fecha >= (now() at time zone 'Europe/Madrid')::date - 7 order by fecha`;
     });
   } catch (e) { console.log(`Sin letras de Ataque (no se pudo leer la base: ${e.message}); se calcula con la media.`); }
   finally { await sql.end({ timeout: 5 }); }
 } else console.log('Sin SUPABASE_DB_URL: se calcula sin letras de Ataque (relleno con la media).');
 
-const puntos = P.calibrar({ actual, anterior, liga, clave, letra: (id) => letras.get(id) ?? null, nombre: (id) => nombres.get(id) ?? id, plantilla });
+const dificultadDe = (fecha, eq) => aprobadas.find((c) => c.fecha === fecha)?.dificultad?.[eq.toUpperCase() === 'MDA' ? 'MdA' : 'MdL']?.valor ?? null;
+const puntos = P.calibrar({ actual, anterior, liga, clave, letra: (id) => letras.get(id) ?? null, nombre: (id) => nombres.get(id) ?? id, plantilla, dificultad: dificultadDe, historial: historialDe });
 const fichero = path.join(REPO, 'privado', `proyecciones_${TEMPORADA}.json`);
 const previo = fs.existsSync(fichero) ? JSON.parse(fs.readFileSync(fichero, 'utf8')) : { partidos: [] };
 const yaEsta = new Set(previo.partidos.map((x) => `${x.jornada}-${x.equipo}`));
-const nuevos = puntos.filter((x) => !yaEsta.has(`${x.jornada}-${x.equipo}`)).map((x) => ({ ...x, guardado: new Date().toISOString(), con_letras: conLetras }));
-const todos = [...previo.partidos, ...nuevos].sort((a, b) => a.jornada - b.jornada || a.equipo.localeCompare(b.equipo));
-const resumen = P.resumenCalibracion(todos);
+const nuevos = puntos.filter((x) => !yaEsta.has(`${x.jornada}-${x.equipo}`)).map((x) => ({ ...x, metodo: 'D132', guardado: new Date().toISOString(), con_letras: conLetras }));
+const todos = [...previo.partidos.map((x) => ({ metodo: 'D124', ...x })), ...nuevos].sort((a, b) => a.jornada - b.jornada || a.equipo.localeCompare(b.equipo));
+const resumen = P.resumenCalibracion(puntos);
+const correccion = P.correccionSesgo(puntos);
 fs.mkdirSync(path.dirname(fichero), { recursive: true });
-fs.writeFileSync(fichero, JSON.stringify({ temporada: TEMPORADA, metodo: 'D124 (REGLAS_CONVOCATORIA.md §9)', actualizado: new Date().toISOString(), resumen, partidos: todos }, null, 1) + '\n', 'utf8');
-console.log(`Proyección: ${nuevos.length} partido(s) nuevo(s) en privado/proyecciones_${TEMPORADA}.json. ${resumen ? resumen.texto + '.' : 'Aún no hay partidos.'}`);
+fs.writeFileSync(fichero, JSON.stringify({ temporada: TEMPORADA, metodo: 'D132 (REGLAS_CONVOCATORIA.md §9)', actualizado: new Date().toISOString(), resumen, correccion, partidos: todos }, null, 1) + '\n', 'utf8');
+console.log(`Proyección: ${nuevos.length} partido(s) nuevo(s) en privado/proyecciones_${TEMPORADA}.json. ${resumen ? resumen.texto + '.' : 'Aún no hay partidos.'}${resumen ? ` Corrección de sesgo: ×${correccion.toFixed(3).replace('.', ',')}.` : ''}`);
 for (const x of nuevos) console.log(`  J${x.jornada} ${x.equipo} vs ${x.rival}: proyección ${x.proyeccion} (${x.desde}–${x.hasta}), real ${x.real}, error ${x.error}`);
 
 if (PROXIMAS) {
@@ -72,7 +79,8 @@ if (PROXIMAS) {
       const partido = cal.find((p) => p.fecha === c.fecha && p.equipo === eq.toUpperCase() && !p.descansa);
       const grupo = eq === 'MdA' ? 'G1' : 'G2';
       const est = P.estadisticasGrupo(liga, grupo, clave, partido?.jornada ?? c.jornada ?? undefined);
-      const r = P.proyectar({ convocados: ids.map((id) => ({ person_id: id, nombre: nombres.get(id) ?? id, letra: letras.get(id) ?? null, hist: hist(id) })), tasas, rival: est.rival(partido?.rival ?? null), grupo: est.grupo, jornadasJugadas: est.jornadas });
+      const r = P.proyectar({ convocados: ids.map((id) => ({ person_id: id, nombre: nombres.get(id) ?? id, letra: letras.get(id) ?? null, hist: hist(id) })), tasas, rival: est.rival(partido?.rival ?? null), grupo: est.grupo, jornadasJugadas: est.jornadas,
+        dificultad: c.dificultad?.[eq]?.valor ?? null, historial: historialDe(partido?.rival), correccion });
       console.log(`  Próxima ${c.fecha} ${eq} vs ${partido?.rival ?? '?'}: ${P.textoProyeccion(r)}${r.notaRival ? ` · ${r.notaRival}` : ''} · ${ids.length} convocados${r.pocosDatos ? `, ${r.pocosDatos} con pocos datos` : ''}`);
     }
   }

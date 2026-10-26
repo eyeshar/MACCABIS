@@ -3,6 +3,7 @@ import ligaJson from "@/data/liga.json";
 import seasonJson from "@/data/estadisticas/season_2026-27.json";
 import seasonAnteriorJson from "@/data/estadisticas/season_2025-26.json";
 import equipJson from "@/data/equipaciones.json";
+import historialRivalesJson from "@/data/historialRivales.json";
 import { clave, equipoPorNombre, type Equipaciones } from "@/data/avisosEquipacion";
 import { hoyMadrid, sumarDias } from "@/lib/dias";
 import { madrid } from "@/lib/avisos/horario";
@@ -11,7 +12,7 @@ import { avisoDeEvento, cargarEventos, cargarPistas, type Cliente } from "@/lib/
 import { limpiarRival, pistaEfectiva, quedadaPorDefecto, hhmm, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { nombreRival } from "@/lib/equipacion";
 import { quienResponde } from "@/lib/respuestas/dominio";
-import { calibrar, estadisticasGrupo, historiales, resumenCalibracion, tasasPorLetra, type DatosProyeccion, type LigaJson, type Letra, type SeasonJson } from "./proyeccion";
+import { calibrar, correccionSesgo, estadisticasGrupo, historiales, resumenCalibracion, tasasPorLetra, TEMPORADA_PROYECCION, type DatosProyeccion, type DificultadRival, type HistorialRival, type LigaJson, type Letra, type SeasonJson } from "./proyeccion";
 import { domingosFueraDe, proponerDificultad, type DatosPrivados, type Equipo, type RespuestaPartido } from "./motor";
 import type { Cambio, Contexto, FilaConvocatoria, FilaPrivada, JugadorVista, PartidoVista } from "./vista";
 
@@ -51,15 +52,26 @@ export function dificultadPropuesta(equipo: Equipo, rival: string | null) {
 /** Nombres de equipo comparables entre la liga, el calendario y las hojas («Mejorada 2012 C.B..» = «Mejorada 2012»). */
 const claveEquipo = (n: string) => clave(equipoPorNombre(equipJson as unknown as Equipaciones, n)?.nombre ?? n);
 
-/** Datos de la proyeccion de anotacion (D124): historial de cada jugador (temporada actual y anterior), su letra de
- *  Ataque (privada), la tasa de cada letra, el rival de cada partido del domingo y la calibracion con lo ya jugado. */
-export function datosProyeccion(jugadores: { person_id: string; nombre: string }[], letras: Map<string, Letra | null>, partidos: { equipo: Equipo; rival: string | null; jornada: number | null }[]): DatosProyeccion {
+/** Historial de un rival en temporadas anteriores (D132), por su nombre comparable (data/historial_rivales_2026-27.json). */
+export function historialRival(rival: string | null): HistorialRival | null {
+  if (!rival) return null;
+  const k = claveEquipo(rival);
+  const r = (historialRivalesJson as { rivales: { nombre: string; temporada: string | null; factor: number | null; pj: number }[] }).rivales.find((x) => claveEquipo(x.nombre) === k);
+  return r?.temporada && r.factor ? { temporada: r.temporada, factor: r.factor, pj: r.pj } : null;
+}
+
+/** Datos de la proyeccion de anotacion (D124, D132): historial de cada jugador (temporada actual y anterior), su letra de
+ *  Ataque (privada), la tasa de cada letra, el rival de cada partido del domingo (con su historial), la calibracion con lo
+ *  ya jugado (con la dificultad que se marco en cada convocatoria aprobada) y la correccion de sesgo que sale de ella. */
+export function datosProyeccion(jugadores: { person_id: string; nombre: string }[], letras: Map<string, Letra | null>, partidos: { equipo: Equipo; rival: string | null; jornada: number | null }[],
+  dificultades: Map<string, Partial<Record<Equipo, DificultadRival>>> = new Map()): DatosProyeccion {
   const actual = seasonJson as unknown as SeasonJson, anterior = seasonAnteriorJson as unknown as SeasonJson, liga = ligaJson as unknown as LigaJson;
   const hist = historiales(actual, anterior);
   const ids = jugadores.map((j) => j.person_id);
   const tasas = tasasPorLetra(ids.map((id) => ({ letra: letras.get(id) ?? null, hist: hist(id) })));
   const nombre = new Map(jugadores.map((j) => [j.person_id, j.nombre]));
-  const puntos = calibrar({ actual, anterior, liga, clave: claveEquipo, letra: (id) => letras.get(id) ?? null, nombre: (id) => nombre.get(id) ?? id, plantilla: ids });
+  const puntos = calibrar({ actual, anterior, liga, clave: claveEquipo, letra: (id) => letras.get(id) ?? null, nombre: (id) => nombre.get(id) ?? id, plantilla: ids,
+    dificultad: (fecha, eq) => dificultades.get(fecha)?.[eq.toUpperCase() === "MDA" ? "MdA" : "MdL"] ?? null, historial: historialRival });
   const r = resumenCalibracion(puntos);
   return {
     hist: Object.fromEntries(ids.map((id) => [id, hist(id)])),
@@ -67,9 +79,11 @@ export function datosProyeccion(jugadores: { person_id: string; nombre: string }
     tasas: { tasas: tasas.tasas, media: tasas.media },
     partidos: Object.fromEntries(partidos.map((p) => {
       const est = estadisticasGrupo(liga, NOMBRE_GRUPO[p.equipo], claveEquipo, p.jornada ?? undefined);
-      return [p.equipo, { rival: est.rival(p.rival), grupo: est.grupo, jornadas: est.jornadas }];
+      return [p.equipo, { rival: est.rival(p.rival), grupo: est.grupo, jornadas: est.jornadas, historial: historialRival(p.rival) }];
     })),
     calibracion: r ? { ...r, puntos } : null,
+    correccion: correccionSesgo(puntos),
+    temporada: TEMPORADA_PROYECCION,
   };
 }
 
@@ -104,7 +118,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     sb.rpc("respuestas_web_encendido"),
     sb.from("importaciones").select("en, por_nombre").eq("tipo", "respuestas").order("en", { ascending: false }).limit(1),
     pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
-    sb.from("convocatorias").select("fecha, equipos").eq("estado", "aprobada").lt("fecha", fecha),
+    // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D132).
+    sb.from("convocatorias").select("fecha, equipos, dificultad").eq("estado", "aprobada"),
   ]);
   if (jug.error) throw new Error(`jugadores: ${jug.error.message}`);
   if (resp.error) throw new Error(`respuestas: ${resp.error.message}`);
@@ -131,8 +146,10 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     if (e) disponibleEl.set(e.fecha, new Set([...(disponibleEl.get(e.fecha) ?? []), `${r.person_id}|${e.equipo}`]));
   }
   const convocadoEl = new Map<string, Set<string>>(); // fecha -> person_id
-  for (const c of (sinMigracion ? [] : convPas.data ?? []) as { fecha: string; equipos: Record<string, { person_id: string }[]> }[])
+  const aprobadas = (sinMigracion ? [] : convPas.data ?? []) as { fecha: string; equipos: Record<string, { person_id: string }[]>; dificultad: Partial<Record<Equipo, { valor: DificultadRival }>> | null }[];
+  for (const c of aprobadas.filter((x) => x.fecha < fecha))
     convocadoEl.set(c.fecha, new Set(Object.values(c.equipos ?? {}).flat().map((x) => x.person_id)));
+  const dificultades = new Map(aprobadas.map((c) => [c.fecha, Object.fromEntries(Object.entries(c.dificultad ?? {}).map(([eq, d]) => [eq, d?.valor]).filter(([, v]) => !!v)) as Partial<Record<Equipo, DificultadRival>>]));
   const fechasPasadas = [...new Set(pasados.map((e) => e.fecha))].sort().reverse();
   const domingosFuera = (j: { person_id: string; ficha_mda: boolean; ficha_mdl: boolean }) => domingosFueraDe(fechasPasadas.map((f) => ({
     disponible: [...(disponibleEl.get(f) ?? [])].some((k) => k === `${j.person_id}|MdA` ? j.ficha_mda : k === `${j.person_id}|MdL` ? j.ficha_mdl : false),
@@ -199,7 +216,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     importacion: estadoImportacion(((imp.data ?? []) as { en: string }[])[0]?.en ?? null, ((imp.data ?? []) as { por_nombre: string }[])[0]?.por_nombre ?? null,
       madrid(fecha, partidos.map((p) => p.inicio).filter(Boolean).sort()[0] ?? "10:00")),
     proyeccion: datosProyeccion(jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre })), new Map(jugadores.map((j) => [j.person_id, ((privados.get(j.person_id) as FilaPrivada | undefined)?.nota_ataque ?? null) as Letra | null])),
-      delDia.map((e) => ({ equipo: e.equipo as Equipo, rival: e.rival, jornada: e.jornada }))),
+      delDia.map((e) => ({ equipo: e.equipo as Equipo, rival: e.rival, jornada: e.jornada })), dificultades),
     respuestasDelDomingo: ((resp.data ?? []) as { respuesta: string }[]).filter((r) => r.respuesta !== "sin_responder").length,
     sinDatosPrivados: jugadores.filter((j) => j.invitado && (!j.privado || !j.privado.posicion || !j.privado.nivel)).length,
     domingos: domingos.slice(0, 6),

@@ -5,7 +5,7 @@
 **Reparto desde el 24/10/2026 (quién hace qué):**
 | Quién | Qué | Cuándo |
 |---|---|---|
-| **Claude** (tarea programada «Maccabis · actas del lunes», en el Chrome de Iván) | Baja de gesdeportiva.fbm.es las **actas** que falten a Descargas | Lunes y jueves, 8:34 |
+| **Claude** (tarea programada «Maccabis · actas del lunes», en el Chrome de Iván) | Baja de gesdeportiva.fbm.es las **actas** que falten a Descargas | Lunes y jueves, 8:00 |
 | **Iván** | Baja las **hojas de estadística** (las nuestras y las de liga) de la app **Afición FBM** del móvil y las deja en Descargas del PC | Domingo noche o lunes por la mañana |
 | **`scripts/rutina_a_publicar.ps1`** (Programador de tareas de Windows, sin agentes) | Procesa (`npm run jornada -- --no-interactivo`) y, **si todo cuadra, publica solo** (D66); si no, para sin publicar nada | Lunes y jueves, 13:00 |
 
@@ -24,7 +24,7 @@ Todo a **Descargas**, sin renombrar. Si en Descargas quedan hojas de jornadas an
 2. Claude: Competiciones → **Resultados y actas** → jornada → **acta** de cada partido de MdA y MdL (`Acta-Partido-<nº>.pdf`, a Descargas).
 3. Si la web pide la clave o un «no soy un robot», Claude para y se lo dice a Iván.
 4. Primera ejecución: 23/10/2026 (4 actas de J1 y J2, las 4 cuadran).
-5. **Desde el 24/10/2026 lo hace una tarea programada de Claude**, «Maccabis · actas del lunes» (lunes y jueves a las 8:34): baja solo las actas que falten en Descargas. Necesita el Chrome de Iván abierto con la sesión iniciada.
+5. **Desde el 24/10/2026 lo hace una tarea programada de Claude**, «Maccabis · actas del lunes» (lunes y jueves a las 8:00; hasta el 26/10/2026 era a las 8:34): baja solo las actas que falten en Descargas. Necesita el Chrome de Iván abierto con la sesión iniciada.
 
 ## Publicación automática: `scripts/rutina_a_publicar.ps1` (D66, 24/10/2026)
 

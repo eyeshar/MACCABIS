@@ -195,7 +195,7 @@ try {
     await p.getByRole('button', { name: 'Enviarme el código' }).click();
     await p.getByText('Código enviado a').waitFor({ timeout: 10000 });
     const codigo = await codigoDe(email);
-    await p.getByLabel('Código de 6 dígitos').fill(codigo ?? '000000');
+    await p.getByLabel('Código del correo').fill(codigo ?? '000000');
     await p.getByRole('button', { name: 'Entrar', exact: true }).click();
   }
 
@@ -227,7 +227,7 @@ try {
   await pAnon.getByText('No hemos podido mandar el código').waitFor({ timeout: 5000 }).catch(() => {});
   ok(await pAnon.getByText('No hemos podido mandar el código').isVisible(),
     'correo fuera de la lista blanca: aviso generico, sin confirmar que no esta dado de alta');
-  ok(!(await pAnon.getByLabel('Código de 6 dígitos').isVisible().catch(() => false)), 'no pasa al paso del codigo');
+  ok(!(await pAnon.getByLabel('Código del correo').isVisible().catch(() => false)), 'no pasa al paso del codigo');
 
   seccion('Entrar con código por correo (jugador A)');
   await entrarPorCodigo(pA, A.email);
@@ -241,7 +241,7 @@ try {
   await pAnon.getByLabel('Tu correo').fill(C.email);
   await pAnon.getByRole('button', { name: 'Enviarme el código' }).click();
   await pAnon.getByText('Código enviado a').waitFor({ timeout: 10000 });
-  await pAnon.getByLabel('Código de 6 dígitos').fill('000000');
+  await pAnon.getByLabel('Código del correo').fill('000000');
   await pAnon.getByRole('button', { name: 'Entrar', exact: true }).click();
   await pAnon.getByText('Código incorrecto o caducado.').waitFor({ timeout: 5000 }).catch(() => {});
   ok(await pAnon.getByText('Código incorrecto o caducado.').isVisible(), 'codigo equivocado: rechazado, sigue sin sesion');

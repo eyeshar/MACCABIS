@@ -44,8 +44,8 @@ export default function FormularioEntrar() {
           <input type="hidden" name="email" value={estado.email} />
           <p className="suave pequeno" style={{ margin: 0 }}>Código enviado a <strong>{estado.email}</strong>.</p>
           {estado.aviso && <div className="aviso aviso-info" role="status" style={{ margin: 0 }}>{estado.aviso}</div>}
-          <label htmlFor="codigo">Código de 6 dígitos</label>
-          <input id="codigo" name="codigo" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required className="cifra" style={{ letterSpacing: "0.3em", fontSize: 22 }} />
+          <label htmlFor="codigo">Código del correo</label>
+          <input id="codigo" name="codigo" type="text" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={8} pattern="[0-9]{6,8}" title="Entre 6 y 8 dígitos" required className="cifra" style={{ letterSpacing: "0.3em", fontSize: 22 }} />
           {estado.error && <div className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{estado.error}</div>}
           <button className="acc-enviar lleno" disabled={verificando}>{verificando ? "Comprobando…" : "Entrar"}</button>
         </form>

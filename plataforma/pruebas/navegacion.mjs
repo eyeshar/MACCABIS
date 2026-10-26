@@ -99,7 +99,7 @@ try {
     await p.getByLabel('Tu correo').fill(email);
     await p.getByRole('button', { name: 'Enviarme el código' }).click();
     await p.getByText('Código enviado a').waitFor({ timeout: 10000 });
-    await p.getByLabel('Código de 6 dígitos').fill((await codigoDe(email)) ?? '000000');
+    await p.getByLabel('Código del correo').fill((await codigoDe(email)) ?? '000000');
     await p.getByRole('button', { name: 'Entrar', exact: true }).click();
     await p.waitForURL((u) => !u.pathname.startsWith('/entrar') || u.pathname.startsWith('/entrar/elegir'), { timeout: 15000 });
   }

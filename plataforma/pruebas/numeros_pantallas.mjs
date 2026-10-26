@@ -179,6 +179,27 @@ try {
   await pm.goto(`${APP}/gestion`);
   ok(await sinDesbordar(pm), 'Panel a 375 px sin desbordar');
 
+  console.log('\n== /entrar: la casilla del código acepta de 6 a 8 dígitos');
+  const ctxC = await e.contexto(375);
+  const pc = await e.nuevaPagina(ctxC);
+  for (const largo of [6, 8]) {
+    await pc.context().clearCookies();
+    await pc.goto(`${APP}/entrar`);
+    await pc.getByLabel('Tu correo').fill('jon@pruebas.local');
+    await pc.getByRole('button', { name: 'Enviarme el código' }).click();
+    await pc.getByText('Código enviado a').waitFor({ timeout: 10000 });
+    const casilla = pc.getByLabel('Código del correo');
+    const codigo = largo === 6 ? (await sql`select codigo from public._otp_pruebas where email = 'jon@pruebas.local'`)[0].codigo : '12345678';
+    if (largo === 8) await sql`update public._otp_pruebas set codigo = ${codigo} where email = 'jon@pruebas.local'`;
+    ok(await casilla.getAttribute('maxlength') === '8' && await casilla.getAttribute('minlength') === '6', 'la casilla admite de 6 a 8 dígitos (sin maxLength=6)');
+    await casilla.fill(codigo);
+    ok((await casilla.inputValue()) === codigo, `caben los ${largo} dígitos`);
+    await pc.getByRole('button', { name: 'Entrar', exact: true }).click();
+    await pc.waitForURL((u) => !u.pathname.startsWith('/entrar'), { timeout: 15000 }).catch(() => {});
+    ok(!new URL(pc.url()).pathname.startsWith('/entrar'), `entra con un código de ${largo} dígitos`, pc.url());
+  }
+  await ctxC.close();
+
   ok(!e.errores.length, 'sin errores en la consola', e.errores.slice(0, 3).join(' | '));
 } catch (err) {
   console.log(`  FALLO ${err.stack}`);

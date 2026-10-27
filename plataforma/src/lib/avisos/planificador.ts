@@ -226,7 +226,7 @@ export function conAvisosDeDudas(base: AvisoPlan[], datos: DatosPlan): AvisoPlan
     const hasta = Math.min(...g.items.map((i) => i.limite.getTime()));
     if (!(envio.getTime() <= ahora && ahora < envio.getTime() + MARGEN_MS && ahora < hasta)) continue;
     propios.forEach((a) => juntados.add(a));
-    const t = textoDudas(g.items.map((i) => ({ que: queEs(i.e), limite: i.limite })), propios.map((a) => a.titulo));
+    const t = textoDudas(g.items.map((i) => ({ que: queEs(i.e), limite: i.limite })), propios.map((a) => a.titulo), envio);
     const ids = [...new Set([...g.items.map((i) => i.e.id), ...propios.flatMap((a) => a.eventos)])];
     const unico = ids.length === 1 ? g.items.find((i) => i.e.id === ids[0])!.e : null;
     nuevos.push({

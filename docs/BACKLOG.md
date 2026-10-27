@@ -11,7 +11,8 @@
 - [x] Jugadores: nombres de quien no ha contestado; motivos solo gestores; `pruebas:dudas` lo comprueba en HTML y en la API.
 - [x] Dudas: límite martes 20:00 (entreno miércoles y partido) o 24 h antes; aviso a las 12:00 juntado con otros; paso a «no va · no confirmó» con aviso; sin botón «Duda» desde el límite; «Dudas: N · límite…» en Panel, Eventos y Respuestas; «posibles» en la convocatoria.
 - [ ] **Con el OK de Iván:** aplicar `20261028100000_dudas_limite.sql` en el Supabase real (D111: volcado, suites `-real` antes y después, cuentas de auth) y mergear. Hasta entonces la tarea de avisos funciona sin la función.
-- [ ] **Decidir:** mover el umbral de la banda roja (martes 10:00, D99.8) a las 20:00 para que cuadre con la convocatoria definitiva (D141, pregunta abierta).
+- [x] Banda roja movida del martes 10:00 al martes 20:00 (OK de Iván, 27/10); va en la migración 20261028100000.
+- [ ] **Miércoles 28/10, con el OK de Iván:** merge y migración en el real (D111). No el 27: el cierre de esa noche saldría sin el aviso de las 12:00.
 - [ ] **Vigilar** las primeras semanas: que el aviso de las 12:00 llega a la hora, que se junta bien con el de las 10:00 y que nadie se queja de que «Duda» desaparezca.
 
 **Historia: la 26/27 en curso (26/10/2026, `feat/historia-2026-27`, D137):**

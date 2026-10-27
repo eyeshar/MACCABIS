@@ -253,7 +253,7 @@ try {
   const abierta = liga.every((ev) => H.dudaAbierta({ tipo: ev.tipo, fecha: ev.f, inicio: ev.i }, new Date()));
   const hayDuda = (await pu2.getByRole('button', { name: 'Duda', exact: true }).count()) === 1;
   ok(hayDuda === abierta && (await pu2.getByTestId('limite-dudas').count()) === (abierta ? 1 : 0), `domingo ${dom.f}: el límite ${abierta ? 'no ha llegado: hay «Duda» y el aviso' : 'ya pasó: no hay «Duda» ni aviso'}`);
-  if (abierta) ok(/Si dudas, tienes hasta el martes( \d+)? a las 20:00 para confirmar/.test(await pu2.getByTestId('limite-dudas').innerText()), '«Si dudas, tienes hasta el martes a las 20:00 para confirmar»');
+  if (abierta) ok(/Si dudas, tienes hasta (hoy|mañana|el martes( \d+)?) a las 20:00 para confirmar/.test(await pu2.getByTestId('limite-dudas').innerText()), '«Si dudas, tienes hasta el martes a las 20:00 para confirmar»');
   ok(await pu2.getByTestId(`respuestas-${liga[0].equipo}`).count() === 1, 'cada partido del domingo trae su bloque «Respuestas al partido» (quién va, duda, no va, sin responder)');
   await pu2.getByTestId(`respuestas-numeros-${liga[0].equipo}-duda`).click();
   ok(/Uno/.test(await pu2.getByTestId(`respuestas-numeros-${liga[0].equipo}-lista`).innerText()), 'y «dudan» lleva a Uno por su nombre');

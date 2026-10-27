@@ -87,9 +87,13 @@ export function avisoDeDudas(limite: Date): Date | null {
 }
 
 const DIAS_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-/** El limite en palabras: "el martes a las 20:00" (con el numero del dia si falta mas de cinco dias: "el martes 3 a las 20:00"). */
+/** El limite en palabras: "hoy a las 20:00" / "mañana a las 20:00" si cae hoy / mañana; si no, "el martes a las 20:00"
+ *  (con el numero del dia si falta mas de cinco dias: "el martes 3 a las 20:00"). */
 export function textoLimite(limite: Date, ahora: Date) {
   const l = enMadrid(limite);
+  const hoy = enMadrid(ahora).fecha;
+  if (l.fecha === hoy) return `hoy a las ${l.hora}`;
+  if (l.fecha === sumarDias(hoy, 1)) return `mañana a las ${l.hora}`;
   const dia = DIAS_ES[new Date(`${l.fecha}T12:00:00Z`).getUTCDay()];
   const lejos = limite.getTime() - ahora.getTime() > 5 * UN_DIA;
   return `el ${dia}${lejos ? ` ${+l.fecha.slice(8)}` : ""} a las ${l.hora}`;

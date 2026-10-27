@@ -45,7 +45,7 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
           Respuestas en la web: encendido{desde ? ` desde ${new Date(desde).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}` : ""}{estado.cambiado_por ? ` (${estado.cambiado_por})` : ""}.
         </p>
         <div data-testid="franja-avisos">
-          <b>Con avisos: {estado.con_avisos}/{estado.plantilla}</b>
+          <b data-testid="con-avisos-cabecera">Con avisos: {grupos.avisos.reduce((t, g) => t + (g.k === "con" ? g.n : 0), 0)}/{grupos.avisos.reduce((t, g) => t + g.n, 0)}</b>
           <Numeros variante="linea" prueba="avisos-numeros" etiqueta="Jugadores con avisos activados" grupos={grupos.avisos} />
           {grupos.avisos.find((g) => g.k === "sin")!.n > 0 && <div style={{ marginTop: 6 }}><CopiarTexto texto={mensajeAvisos} etiqueta="Copiar mensaje" /></div>}
         </div>

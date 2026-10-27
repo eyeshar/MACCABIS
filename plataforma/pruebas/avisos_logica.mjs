@@ -212,7 +212,8 @@ ok(iso(lim({ ...entreno14, oficial: false })) === iso(new Date(M('2026-10-14', '
 ok(iso(lim(ev('e15', 'entreno', 'ambos', '2026-10-15', '20:00', '22:00'))) === iso(M('2026-10-14', '20:00')), 'un entreno de jueves: 24 h antes');
 ok(iso(lim(ev('t1', 'torneo', 'ambos', '2026-11-08', '09:00', '14:00'))) === iso(M('2026-11-07', '09:00')) && iso(lim(ev('i1', 'interno', 'ambos', '2026-10-21', '20:30', '22:30'))) === iso(M('2026-10-20', '20:30')), 'torneo y «entre nosotros»: 24 h antes');
 ok(H.dudaAbierta(entreno14, M('2026-10-13', '19:59')) && !H.dudaAbierta(entreno14, M('2026-10-13', '20:00')) && !H.dudaAbierta(mdaJ2, M('2026-10-14', '09:00')), 'abierta hasta las 20:00 en punto; después, cerrada');
-ok(H.textoLimite(lim(entreno14), M('2026-10-12', '12:00')) === 'el martes a las 20:00' && H.textoLimite(lim(entreno14), M('2026-10-01', '12:00')) === 'el martes 13 a las 20:00', 'texto del límite: «el martes a las 20:00» (con el número si falta más de cinco días)');
+ok(H.textoLimite(lim(entreno14), M('2026-10-10', '12:00')) === 'el martes a las 20:00' && H.textoLimite(lim(entreno14), M('2026-10-01', '12:00')) === 'el martes 13 a las 20:00', 'texto del límite: «el martes a las 20:00» (con el número si falta más de cinco días)');
+ok(H.textoLimite(lim(entreno14), M('2026-10-13', '12:05')) === 'hoy a las 20:00' && H.textoLimite(lim(entreno14), M('2026-10-12', '23:00')) === 'mañana a las 20:00' && H.textoLimite(lim(entreno14), M('2026-10-11', '12:00')) === 'el martes a las 20:00', 'texto del límite: «hoy a las 20:00» si es hoy, «mañana a las 20:00» si es mañana, «el martes a las 20:00» si no');
 
 console.log('\n== Aviso de las 12:00 a quien siga en «duda»');
 ok(iso(H.avisoDeDudas(lim(entreno14))) === iso(M('2026-10-13', '12:00')), 'límite de las 20:00: aviso a las 12:00 del mismo día');
@@ -224,8 +225,8 @@ const dd = (ahora, extra = {}) => P.conAvisosDeDudas(P.planificar(datos(ahora, e
 const claveD = (a, p) => a.find((x) => x.person_id === p && x.clave.startsWith('rec:dudas:'));
 a = dd(M('2026-10-13', '12:05'), { respuestas: rd });
 const d1 = claveD(a, 'jon');
-ok(d1 && iso(d1.programado_para) === iso(M('2026-10-13', '12:00')) && d1.titulo === 'Tienes «duda»: confirma hasta las 20:00', 'martes 13/10 a las 12:05: a Jon le sale el aviso (de las 12:00)', JSON.stringify(d1));
-ok(d1 && d1.cuerpo.startsWith('Te quedan hasta las 20:00 para confirmar; si no, contarás como «no va».') && /Entreno del miércoles 14 y partido del domingo 18\./.test(d1.cuerpo), 'texto: «Te quedan hasta las 20:00 para confirmar; si no, contarás como «no va».» y qué tiene en duda', d1?.cuerpo);
+ok(d1 && iso(d1.programado_para) === iso(M('2026-10-13', '12:00')) && d1.titulo === 'Tienes «duda»: confirma hasta hoy a las 20:00', 'martes 13/10 a las 12:05: a Jon le sale el aviso (de las 12:00)', JSON.stringify(d1));
+ok(d1 && d1.cuerpo.startsWith('Te quedan hasta hoy a las 20:00 para confirmar; si no, contarás como «no va».') && /Entreno del miércoles 14 y partido del domingo 18\./.test(d1.cuerpo), 'texto: «Te quedan hasta las 20:00 para confirmar; si no, contarás como «no va».» y qué tiene en duda', d1?.cuerpo);
 ok(a.filter((x) => x.person_id === 'jon').length === 1, 'UN solo aviso para Jon (entreno y los dos partidos juntos)');
 ok(!de(dd(M('2026-10-13', '11:55'), { respuestas: rd }), 'jon').length, 'antes de las 12:00: nada');
 ok(claveD(dd(M('2026-10-13', '14:55'), { respuestas: rd }), 'jon') && !claveD(dd(M('2026-10-13', '15:05'), { respuestas: rd }), 'jon'), 'si la tarea no pasa, sale hasta 3 horas después y ya no más');
@@ -243,7 +244,7 @@ ok(iso(claveD(a, 'jon').programado_para) === '2026-10-27T11:00:00.000Z', 'y la d
 // Otros eventos: 24 h antes; un plan sale aunque el interruptor esté apagado.
 const amis2 = ev('a3', 'amistoso', 'ambos', '2026-10-17', '10:00', '12:00', { titulo: 'Amistoso con Vallecas', creado_en: '2026-10-01T10:00:00Z' });
 a = dd(M('2026-10-16', '09:05'), { eventos: [...BASE, amis2], respuestas: [duda('a3', 'jon')] });
-ok(iso(claveD(a, 'jon').programado_para) === iso(M('2026-10-16', '09:00')) && claveD(a, 'jon').titulo === 'Tienes «duda»: confirma hasta las 10:00', 'amistoso del sábado a las 10:00: límite el viernes a las 10:00, aviso a las 09:00');
+ok(iso(claveD(a, 'jon').programado_para) === iso(M('2026-10-16', '09:00')) && claveD(a, 'jon').titulo === 'Tienes «duda»: confirma hasta hoy a las 10:00', 'amistoso del sábado a las 10:00: límite el viernes a las 10:00, aviso a las 09:00');
 const plan = ev('p1', 'quedada', 'ambos', '2026-10-17', '19:00', '21:00', { titulo: 'Cena', oficial: false, creado_en: '2026-10-01T10:00:00Z' });
 a = dd(M('2026-10-16', '12:05'), { eventos: [...BASE, plan], respuestas: [duda('p1', 'jon')], encendidoDesde: null });
 ok(claveD(a, 'jon') && a.filter((x) => x.person_id === 'jon').length === 1, 'un plan en «duda» recibe su aviso (viernes 12:00) aunque el interruptor esté apagado');

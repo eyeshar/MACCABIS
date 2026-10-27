@@ -350,7 +350,7 @@ try {
   // D139: con el interruptor ENCENDIDO la tarjeta es una franja compacta.
   const franja = await pg.getByTestId('tarjeta-activar').innerText();
   ok(/Respuestas en la web: encendido desde .+\./.test(await pg.getByTestId('franja-encendido').innerText()), 'franja: «Respuestas en la web: encendido desde <fecha, hora>» (y «(quién)» si se sabe)', franja.slice(0, 300));
-  ok(/Con avisos: \d+\/27/.test(franja), 'franja: «Con avisos: N/27»', franja.slice(0, 300));
+  { const m = /Con avisos: (\d+)\/(\d+)/.exec(franja); const l = (await pg.getByTestId('avisos-numeros').innerText()).match(/\d+/g) || []; ok(!!m && l.length >= 2 && +m[2] === +l[0] + +l[1] && +m[1] === +l[0], 'franja: «Con avisos: N/M» cuadra con «con avisos» + «sin avisos»', franja.slice(0, 300) + ' | ' + l.join(',')); }
   ok(!/jornadas seguidas|Al activar, en este orden|mínimo 20|SportEasy deja de pedir respuesta|Copiar mensaje para la plantilla/.test(franja), 'sin condiciones 1, 2 y 4, sin los pasos de activar ni el mensaje de lanzamiento');
   ok(!(await pg.getByTestId('desactivar').isVisible()), '«Desactivar» no está a la vista: va dentro de «Más opciones»');
   await pg.getByTestId('mas-opciones').locator('summary').click();

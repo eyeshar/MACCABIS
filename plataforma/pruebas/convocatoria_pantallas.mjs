@@ -394,8 +394,7 @@ try {
   const cont0 = await pg.getByTestId('cv-contadores').innerText();
   ok(/0\s*van/.test(cont0) && /0\s*no van/.test(cont0), `${F0}: 0 van y 0 no van`, cont0.replace(/\s+/g, ' '));
   ok(await visto(pg.getByTestId('cv-importacion').getByText(/Última importación:\s*ninguna/)) && await visto(pg.getByTestId('cv-importacion').getByText(/Para este domingo todavía no hay ninguna respuesta importada\./)), '«Última importación: ninguna» y que este domingo no tiene respuestas importadas');
-  const proxEsperada = IMP.textoProxima(IMP.proximaImportacion(new Date()), new Date());
-  ok((await pg.getByTestId('importacion-proxima').innerText()) === proxEsperada, `«Próxima automática: ${proxEsperada}» (de la regla, no inventada)`);
+  ok((await pg.getByTestId('importacion-proxima').innerText()) === 'Tarea de SportEasy pausada: respuestas en la web', '«Tarea de SportEasy pausada: respuestas en la web» (la tarea está pausada desde el 26/10; sin «Próxima automática»)');
   ok(await visto(pg.getByTestId('bloque-importacion').getByText(/¿Lo necesitas ya\? Pídeselo a Claude en el chat o abre la app de Claude → Tareas programadas → «Maccabis · respuestas de SportEasy» → Ejecutar ahora\./)), '«¿Lo necesitas ya? Pídeselo a Claude… → Ejecutar ahora.»');
   ok(!(await pg.getByTestId('bloque-importacion').getByRole('button').count()) && !(await pg.getByRole('link', { name: 'Importar respuestas →' }).count()), 'ningún botón que parezca lanzar a Claude, y fuera el enlace «Importar respuestas →»');
   const cajas0 = await pg.locator('.cv-aviso').allInnerTexts();

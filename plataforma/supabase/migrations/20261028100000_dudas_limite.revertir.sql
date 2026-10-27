@@ -27,6 +27,24 @@ begin
   return coalesce(v_antes, 'sin_responder');
 end $$;
 
+-- Banda roja como estaba (martes 10:00, D99.8).
+create or replace function public._tras_cambio_jugador(p_evento uuid, p_person text, p_antes text, p_despues text)
+returns boolean language plpgsql security definer set search_path = ''
+as $$
+declare
+  e public.eventos;
+begin
+  if p_antes is not distinct from p_despues then return false; end if;
+  select * into e from public.eventos where id = p_evento;
+  if e.tipo <> 'liga' then return false; end if;
+  -- martes de la semana del partido (lunes = fecha - (isodow - 1)) a las 10:00 de Madrid
+  if now() < (((e.fecha - (extract(isodow from e.fecha)::int - 1) + 1) + time '10:00') at time zone 'Europe/Madrid') then
+    return false;
+  end if;
+  insert into public.alertas_gestores (evento_id, person_id, antes, despues) values (p_evento, p_person, p_antes, p_despues);
+  return true;
+end $$;
+
 drop function if exists public._limite_dudas(uuid);
 
 alter table public.respuestas drop constraint respuestas_motivo_check;

@@ -163,7 +163,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       {alertasL.length > 0 && (
         <div className="ev-banda-roja" role="alert" data-testid="banda-roja">
           <div>
-            <b>Cambios después de la convocatoria (martes 10:00):</b>{" "}
+            <b>Cambios después de la convocatoria (martes 20:00):</b>{" "}
             {alertasL.map((a, i) => <span key={a.id}>{i > 0 && " · "}<NombreJugador nombre={nombre.get(a.person_id) ?? a.person_id} personId={a.person_id} />{`: ${TEXTO_R[a.antes]} → ${TEXTO_R[a.despues]}${dia ? ` (${eventos.find((e) => e.id === a.evento_id)?.equipo})` : ""} · ${fechaHora(a.en)}`}</span>)}
           </div>
           <BotonVisto eventoId={evento.id} ids={alertasL.map((a) => a.id)} />

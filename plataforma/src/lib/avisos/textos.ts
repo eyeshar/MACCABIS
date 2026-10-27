@@ -1,6 +1,8 @@
 // Textos de los avisos al movil (D99.8, lienzo «Paso 3»): funciones PURAS. Sin motivos, niveles ni posiciones: lo que
 // sale aqui lo ve la pantalla de bloqueo del movil (test:privacidad lo comprueba).
 
+import { textoLimite } from "./horario.ts";
+
 export type EventoTexto = {
   id: string; tipo: "entreno" | "liga" | "amistoso" | "torneo" | "interno" | "quedada" | "pachanga" | "otro"; equipo: "MdA" | "MdL" | "ambos";
   fecha: string; inicio: string | null; fin: string | null; quedada: string | null; titulo: string | null;
@@ -47,22 +49,21 @@ export function textoMartes(fecha: string, horasPartidos: string[]): Texto {
 }
 
 /** Hora de un instante en Madrid: "20:00". */
-const horaMadrid = (t: Date) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(t);
 
 /** (a) D141, las 12:00 del dia del limite: a quien siga en «duda». `items` = lo que tiene en duda y su limite. Si ya salia
  *  otro recordatorio ese dia a esa persona, `ademas` lo junta en el mismo aviso. */
-export function textoDudas(items: { que: string; limite: Date }[], ademas: string[] = []): Texto {
-  const horas = [...new Set(items.map((i) => horaMadrid(i.limite)))];
+export function textoDudas(items: { que: string; limite: Date }[], ademas: string[] = [], cuando: Date = new Date()): Texto {
+  const horas = [...new Set(items.map((i) => textoLimite(i.limite, cuando)))];
   const cola = ademas.length ? ` Además: ${listaY(ademas)}.` : "";
   if (horas.length === 1) {
     return {
-      titulo: `Tienes «duda»: confirma hasta las ${horas[0]}`,
-      cuerpo: `Te quedan hasta las ${horas[0]} para confirmar; si no, contarás como «no va». ${mayus(listaY([...new Set(items.map((i) => i.que))]))}.${cola}`,
+      titulo: `Tienes «duda»: confirma hasta ${horas[0]}`,
+      cuerpo: `Te quedan hasta ${horas[0]} para confirmar; si no, contarás como «no va». ${mayus(listaY([...new Set(items.map((i) => i.que))]))}.${cola}`,
     };
   }
   return {
     titulo: "Tienes «duda»: confirma antes del plazo",
-    cuerpo: `Si no confirmas, contarás como «no va»: ${listaY([...new Set(items.map((i) => `${i.que} (hasta las ${horaMadrid(i.limite)})`))])}.${cola}`,
+    cuerpo: `Si no confirmas, contarás como «no va»: ${listaY([...new Set(items.map((i) => `${i.que} (hasta ${textoLimite(i.limite, cuando)})`))])}.${cola}`,
   };
 }
 
@@ -122,7 +123,7 @@ export const textoCancelacion = (e: EventoTexto): Texto => ({ titulo: `Se cancel
 export const TEXTO_PRUEBA: Texto = { titulo: "Aviso de prueba", cuerpo: "Así te llegarán los avisos de Maccabis. Solo si te falta responder, si cambia algo o si se cancela; nunca de noche." };
 
 const TEXTO_ESTADO: Record<RespuestaTexto, string> = { va: "Voy", duda: "Duda", no: "No voy", sin_responder: "Sin responder" };
-/** (e) A los gestores: un jugador cambia un partido despues del martes a las 10:00. Solo nombre y respuesta. */
+/** (e) A los gestores: un jugador cambia un partido despues del martes a las 20:00. Solo nombre y respuesta. */
 export function textoGestores(nombre: string, e: EventoTexto, antes: RespuestaTexto, despues: RespuestaTexto): Texto {
   return {
     titulo: `${nombre} cambia el ${queEs(e)}${e.equipo !== "ambos" ? ` (${e.equipo})` : ""}`,

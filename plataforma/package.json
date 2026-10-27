@@ -73,7 +73,8 @@
     "pruebas:domingo": "node pruebas/domingo_jugador.mjs",
     "pruebas:liga-partidos": "node pruebas/liga_partidos.mjs",
     "pruebas:numeros": "node pruebas/numeros_pantallas.mjs",
-    "pruebas:entrados": "node pruebas/entrados_reales.mjs"
+    "pruebas:entrados": "node pruebas/entrados_reales.mjs",
+    "pruebas:safe-area": "node pruebas/safe_area.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

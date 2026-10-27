@@ -206,7 +206,7 @@ a.e-m-enlace:hover, a.e-m-enlace:focus-visible { color: var(--c-amarillo); text-
 .e-h2h-lab { font-family: var(--f-cifras); font-size: 11px; color: var(--tinta-tenue); margin-top: 4px; }
 
 /* Ventana (ficha de rival) */
-.e-modal { position: fixed; inset: 0; background: #08060fc7; z-index: 120; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.e-modal { position: fixed; inset: 0; background: #08060fc7; z-index: 120; display: flex; align-items: center; justify-content: center; padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); }
 .e-modal-caja { background: var(--tarjeta); border: 1px solid var(--borde-fuerte); border-radius: 15px; width: 100%; max-height: 86vh; overflow: auto; box-shadow: 0 24px 60px #0009; }
 .e-modal-rv { max-width: 880px; }
 .e-modal-cab { display: flex; gap: 18px; align-items: flex-start; justify-content: space-between; padding: 22px 24px; border-bottom: 1px solid var(--borde); background: radial-gradient(120% 160% at 90% -30%, #e8722c40, transparent 60%); }

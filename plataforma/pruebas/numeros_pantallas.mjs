@@ -92,6 +92,7 @@ try {
   ok(await visto(pg.getByTestId('avisos-numeros-con')) && await visto(pg.getByTestId('avisos-numeros-sin')), 'Panel: «con avisos» y «sin avisos» desplegables');
   await pg.getByTestId('avisos-numeros-sin').click();
   ok(await visto(pg.getByTestId('avisos-numeros-lista')), '…con los nombres de quien no los tiene');
+  { const t = await pg.getByTestId('avisos-numeros-lista').innerText(); ok(/solo entrenos/.test(t), 'Panel: quien solo entrena (sin ficha MdA/MdL) cuenta en «sin avisos» y sale marcado «solo entrenos»', t.slice(0, 200)); }
   ok(await visto(pg.locator('[data-testid^="convocados-"][aria-expanded]')), 'Panel: los convocados del domingo, desplegables');
   await pg.locator('[data-testid^="convocados-"][aria-expanded]').first().click();
   ok(/Jon|Zoe|Ari/.test(await pg.locator('[data-testid^="convocados-"][data-testid$="-lista"]').first().innerText()), '…con sus nombres');

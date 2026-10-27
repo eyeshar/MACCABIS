@@ -126,14 +126,16 @@ export default async function InicioGestion() {
   const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis, no en SportEasy: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo, nunca de noche): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
 
   const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
-  // «Han entrado» y «con avisos» con sus nombres (D139): la plantilla es la de la tarjeta (activos con ficha); quien falta, lo da la base.
+  // «Han entrado» y «con avisos» con sus nombres (D139): la plantilla son los activos que no son entrenador (la misma base que la tarjeta: incluye a quien solo entrena y no tiene ficha de equipo); quien falta, lo da la base.
   const { data: subsAvisos } = await supabase.from("suscripciones_avisos").select("person_id").eq("activa", true);
   const conAvisos = new Set(((subsAvisos ?? []) as { person_id: string | null }[]).map((s) => s.person_id));
-  const plantilla = js.filter((j) => j.activo && (j.ficha_mda || j.ficha_mdl));
+  const plantilla = js.filter((j) => j.activo && j.rol !== "entrenador");
   // Quien tiene cuenta pero nunca ha entrado (pidio un codigo y no lo uso) cuenta como «falta», con su nota (D140).
   const pidioCodigo = new Set((activacion as EstadoActivacion | null)?.pidio_codigo ?? []);
-  const persona = (j: (typeof js)[number]) => ({ nombre: j.nombre_visible, href: hrefJugador(j.person_id) });
-  const personaEntrada = (j: (typeof js)[number]) => ({ ...persona(j), nota: pidioCodigo.has(j.nombre_visible) ? "pidió código pero no llegó a entrar" : null });
+  // Quien no tiene ficha MdA/MdL va marcado: «solo entrenos» si es su rol, «sin ficha» si no.
+  const sinFicha = (j: (typeof js)[number]) => (j.ficha_mda || j.ficha_mdl ? null : j.rol === "solo_entreno" ? "solo entrenos" : "sin ficha");
+  const persona = (j: (typeof js)[number]) => ({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: sinFicha(j) });
+  const personaEntrada = (j: (typeof js)[number]) => ({ ...persona(j), nota: [sinFicha(j), pidioCodigo.has(j.nombre_visible) ? "pidió código pero no llegó a entrar" : null].filter(Boolean).join(" · ") || null });
   const sinAvisosNombres = plantilla.filter((j) => !conAvisos.has(j.person_id)).map((j) => j.nombre_visible);
   const mensajeAvisos = `Hola, ${sinAvisosNombres.join(", ")}: aún no tenéis activados los avisos de Maccabis en el móvil. Así os llega cuándo hay que responder y si cambia la hora o la pista (nunca de noche). Es un minuto: ${web}/avisos`;
   const gruposActivacion: { entrada: GrupoNum[]; avisos: GrupoNum[] } = {

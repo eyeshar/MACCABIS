@@ -50,6 +50,8 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   background: var(--fondo);
   color: var(--tinta);
   font-family: var(--f-texto);
@@ -685,7 +687,7 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .nv-saltar { position: absolute; left: 8px; top: -60px; z-index: 60; padding: 10px 16px; border-radius: var(--radio); background: var(--c-amarillo); color: var(--c-sobre-acento); font-weight: 700; text-decoration: none; }
 .nv-saltar:focus { top: 8px; color: var(--c-sobre-acento); }
 #contenido:focus { outline: none; }
-.nv-cab { border-bottom: 1px solid var(--borde); background: var(--fondo); position: relative; z-index: 40; }
+.nv-cab { border-bottom: 1px solid var(--borde); background: var(--fondo); position: relative; z-index: 40; padding-top: env(safe-area-inset-top); } /* iPhone a pantalla completa: la cabecera no queda bajo la hora/bateria */
 .nv-cab-fila { display: flex; align-items: center; gap: 20px; padding-top: 14px; padding-bottom: 14px; }
 .nv-marca { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--tinta); min-height: var(--toque); flex: none; }
 .nv-marca:hover { color: var(--tinta); }
@@ -729,7 +731,7 @@ a.nv-entrada[aria-current="page"] { background: var(--panel-3); box-shadow: inse
 .nv-grupo-titulo { font-family: var(--f-cifras); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amarillo-tinta); padding: 4px 12px 6px; }
 .nv-barra { display: none; }
 .nv-velo { position: fixed; inset: 0; z-index: 44; background: #000a; }
-.nv-hoja { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; max-height: 85dvh; overflow-y: auto; background: var(--tarjeta); border-top: 1px solid var(--borde-fuerte); border-radius: 18px 18px 0 0; padding: 6px 12px calc(16px + env(safe-area-inset-bottom)); }
+.nv-hoja { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; max-height: 85dvh; overflow-y: auto; background: var(--tarjeta); border-top: 1px solid var(--borde-fuerte); border-radius: 18px 18px 0 0; padding: 6px max(12px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
 .nv-hoja-asa { width: 40px; height: 4px; border-radius: 2px; background: var(--borde-fuerte); margin: 4px auto 6px; }
 .nv-hoja-cab { display: flex; align-items: center; justify-content: space-between; padding: 0 0 0 12px; }
 .nv-hoja-titulo { margin: 0; font-family: var(--f-titulos); font-weight: 700; font-size: 24px; text-transform: uppercase; }
@@ -759,18 +761,18 @@ a.nv-entrada[aria-current="page"] { background: var(--panel-3); box-shadow: inse
   .nv-avatar-nombre, .nv-avatar .nv-flecha { display: none; }
   .nv-panel-usuario { width: min(300px, calc(100vw - 32px)); }
   body { padding-bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom)); } /* + el borde de la barra */
-  .nv-barra { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 42; background: var(--panel-2); border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom); }
+  .nv-barra { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 42; background: var(--panel-2); border-top: 1px solid var(--borde); padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   .nv-barra-item { min-height: var(--alto-barra); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--tinta-tenue); text-decoration: none; font: inherit; font-size: 12px; font-weight: 600; background: none; border: 0; cursor: pointer; padding: 0; }
   .nv-barra-item[aria-current="page"], .nv-barra-item[aria-expanded="true"] { color: var(--c-amarillo); }
 }
 
 /* Barras propias de Mi zona y de Gestion: debajo de la cabecera, fijas al hacer scroll. */
-.zb { position: sticky; top: 0; z-index: 35; border-bottom: 1px solid var(--borde); background: var(--panel-2); }
+.zb { --zb-fondo: var(--panel-2); position: sticky; top: env(safe-area-inset-top); z-index: 35; border-bottom: 1px solid var(--borde); background: var(--zb-fondo); box-shadow: 0 calc(-1 * env(safe-area-inset-top)) 0 var(--zb-fondo); } /* pegada arriba queda bajo la barra de estado y el sombreado tapa esa franja */
 .zb-fila { display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: thin; }
 .zb a, .zb .zb-paso2 { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 12px; color: var(--tinta-suave); text-decoration: none; font-weight: 600; white-space: nowrap; flex: none; border-bottom: 2px solid transparent; }
 .zb a:hover { color: var(--tinta); }
 .zb a[aria-current] { color: var(--tinta); border-bottom-color: var(--c-amarillo); }
-.zb-gestion { background: var(--gestion-fondo); border-bottom-color: #4a3f1a; }
+.zb-gestion { --zb-fondo: var(--gestion-fondo); background: var(--gestion-fondo); border-bottom-color: #4a3f1a; }
 .zb-gestion a { color: #e9e2c6; }
 .zb-gestion a, .zb-gestion .zb-paso2 { padding: 0 10px; font-size: 16px; }
 .zb-gestion a:hover, .zb-gestion a[aria-current] { color: #fff6d6; }

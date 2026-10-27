@@ -90,7 +90,7 @@ button.tb-celda:not(:disabled) { cursor: pointer; }
 }
 
 /* --- barra fija de acciones --- */
-.tb-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 43; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: #1d1a26f2; border-top: 1px solid var(--borde-fuerte); box-shadow: 0 -10px 30px #0008; }
+.tb-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 43; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; padding: 10px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); background: #1d1a26f2; border-top: 1px solid var(--borde-fuerte); box-shadow: 0 -10px 30px #0008; }
 .tb-barra[hidden] { display: none; }
 .tb-n { font-weight: 600; }
 .tb-n b { font-family: var(--f-titulos); font-size: 1.4rem; }

@@ -873,3 +873,12 @@ Está en `docs/SPORTEASY.md`, en las rutinas B y C y en la tarjeta «Copia a Spo
 - **Nombres sueltos de otros jugadores en la zona del jugador no son enlaces.** La vista `v_quien_va` solo da el nombre visible (D46), sin `person_id`, y ese nombre es un mote («Manu») que no permite averiguar la ficha. Enlazarlos exigiría una migración que entregue `person_id` de los compañeros al jugador: es una decisión de privacidad y de esquema (D111) que no se ha tomado por Iván.
 - Los nombres dentro de textos que se copian (el mensaje de WhatsApp «sin avisos», «Faltan por responder (N): …» del recordatorio manual) siguen siendo texto: se pegan fuera de la web.
 - La web pública de estadísticas (`/liga`, `/historia`, `/jugador`) ya enlazaba sus nombres a fichas (D129); no se ha tocado salvo darle «← volver» a la ficha.
+
+---
+## D140 — «Han entrado» cuenta a quien ha entrado de verdad, no a quien tiene cuenta (Iván, 26/10/2026) — AJUSTA D99.13 (condición 2)
+
+**Contexto:** el Panel contaba «N/27 han entrado» por **cuentas de Auth creadas**. Una cuenta se crea al pedir un código: Fernando T. la tiene desde el 04/10, pidió el código y nunca lo usó (`last_sign_in_at` vacío), y salía como entrado.
+
+**Decisión de Iván:** cuenta solo quien tiene `last_sign_in_at`. Quien tiene cuenta sin acceso sale en «Faltan por entrar» con la nota «pidió código pero no llegó a entrar». El mismo criterio en cualquier otro sitio que use esa cifra.
+
+**Cómo se ha construido (Claude, `fix/panel-entrados`):** migración `20261027110000_entrados_reales.sql`, **solo la función** `estado_activacion` (`create or replace`, misma firma y permisos; sin tablas, columnas ni vistas). `entrados`, `faltan_por_entrar` y `se_puede_encender` (condición 2) cuentan por `auth.users.last_sign_in_at`, y se añade la clave `pidio_codigo` (cuenta sin acceso). El Panel pone la nota en la lista de «faltan» (tarjeta de activar y franja compacta); si la migración aún no está aplicada, la clave no viene y el Panel funciona como antes. Es el único sitio de la base y de la web que usa esa cifra. `.revertir.sql` al lado, ensayado en la pila local. La pila de pruebas anota `last_sign_in_at` al entrar (código o contraseña) como GoTrue, y `crearUsuario(email, pass, { sinEntrar: true })` crea la cuenta de quien pidió el código y no entró. Prueba: `pruebas:entrados`.

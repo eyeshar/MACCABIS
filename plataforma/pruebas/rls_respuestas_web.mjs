@@ -55,6 +55,12 @@ try {
   for (const f of ['20261008100000_respuestas_web', '20261008101000_avisos', '20261008102000_quien_responde']) ok(fs.existsSync(path.join(MIGS, `${f}.revertir.sql`)), `${f} tiene su revertir.sql`);
   for (const n of NUEVAS) ok(await tablaExiste(n), `existe public.${n}`);
   const colsAntes = async (t) => (await sql`select column_name from information_schema.columns where table_schema = 'public' and table_name = ${t} order by column_name`).map((c) => c.column_name).join(',');
+  // Antes, en orden inverso, las migraciones POSTERIORES a la de planes que tienen su .revertir.sql (la vista pública con la ubicación
+  // libre, D138, y la de «han entrado», D140): revertir la de planes con ellas puestas falla («cannot drop columns from view»).
+  const posteriores = fs.readdirSync(MIGS).map((f) => f.match(/^(\d{14})_.*\.revertir\.sql$/)).filter((m) => m && m[1] > '20261024200000').sort((a, b) => (a[1] < b[1] ? 1 : -1));
+  for (const m of posteriores) {
+    if ((await sql`select 1 from supabase_migrations.schema_migrations where version = ${m[1]}`).length) await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, m[0]), 'utf8')));
+  }
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261024200000_inicio_y_planes.revertir.sql'), 'utf8')));
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261008102000_quien_responde.revertir.sql'), 'utf8')));
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261008101000_avisos.revertir.sql'), 'utf8')));

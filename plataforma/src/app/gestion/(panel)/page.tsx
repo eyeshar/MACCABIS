@@ -130,13 +130,16 @@ export default async function InicioGestion() {
   const { data: subsAvisos } = await supabase.from("suscripciones_avisos").select("person_id").eq("activa", true);
   const conAvisos = new Set(((subsAvisos ?? []) as { person_id: string | null }[]).map((s) => s.person_id));
   const plantilla = js.filter((j) => j.activo && (j.ficha_mda || j.ficha_mdl));
+  // Quien tiene cuenta pero nunca ha entrado (pidio un codigo y no lo uso) cuenta como «falta», con su nota (D140).
+  const pidioCodigo = new Set((activacion as EstadoActivacion | null)?.pidio_codigo ?? []);
   const persona = (j: (typeof js)[number]) => ({ nombre: j.nombre_visible, href: hrefJugador(j.person_id) });
+  const personaEntrada = (j: (typeof js)[number]) => ({ ...persona(j), nota: pidioCodigo.has(j.nombre_visible) ? "pidió código pero no llegó a entrar" : null });
   const sinAvisosNombres = plantilla.filter((j) => !conAvisos.has(j.person_id)).map((j) => j.nombre_visible);
   const mensajeAvisos = `Hola, ${sinAvisosNombres.join(", ")}: aún no tenéis activados los avisos de Maccabis en el móvil. Así os llega cuándo hay que responder y si cambia la hora o la pista (nunca de noche). Es un minuto: ${web}/avisos`;
   const gruposActivacion: { entrada: GrupoNum[]; avisos: GrupoNum[] } = {
     entrada: [
       { k: "entrados", etiqueta: "han entrado", n: plantilla.filter((j) => !faltan.includes(j.nombre_visible)).length, tono: "ok", personas: plantilla.filter((j) => !faltan.includes(j.nombre_visible)).map(persona) },
-      { k: "faltan", etiqueta: "faltan por entrar", n: plantilla.filter((j) => faltan.includes(j.nombre_visible)).length, tono: "sin", personas: plantilla.filter((j) => faltan.includes(j.nombre_visible)).map(persona) },
+      { k: "faltan", etiqueta: "faltan por entrar", n: plantilla.filter((j) => faltan.includes(j.nombre_visible)).length, tono: "sin", personas: plantilla.filter((j) => faltan.includes(j.nombre_visible)).map(personaEntrada) },
     ],
     avisos: [
       { k: "con", etiqueta: "con avisos activados", n: plantilla.filter((j) => conAvisos.has(j.person_id)).length, tono: "ok", personas: plantilla.filter((j) => conAvisos.has(j.person_id)).map(persona) },

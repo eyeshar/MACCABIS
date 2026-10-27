@@ -16,7 +16,8 @@ create table auth.users (
   email text unique not null,
   encrypted_password text,
   email_confirmed_at timestamptz default now(),
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  last_sign_in_at timestamptz
 );
 
 create or replace function auth.jwt() returns jsonb language sql stable as $$

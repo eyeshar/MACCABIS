@@ -125,6 +125,7 @@ export async function arrancar({ log = () => {} } = {}) {
       const tipo = u.searchParams.get('grant_type');
       if (tipo === 'password') {
         const [usr] = await sql`select id, email, created_at from auth.users where lower(email) = lower(${body.email || ''}) and encrypted_password = ${hash(body.password || '')}`;
+        if (usr) await sql`update auth.users set last_sign_in_at = now() where id = ${usr.id}`;
         if (!usr) return json(400, { code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' });
         return json(200, await sesionPara(usr));
       }
@@ -164,6 +165,7 @@ export async function arrancar({ log = () => {} } = {}) {
         // gestor por correo), igual que en el proyecto real.
         [usr] = await sql`insert into auth.users (email) values (${email}) returning id, email, created_at`;
       }
+      await sql`update auth.users set last_sign_in_at = now() where id = ${usr.id}`;   // como GoTrue: entrar de verdad lo anota (D140)
       return json(200, await sesionPara(usr));
     }
     if (u.pathname === '/user') {
@@ -208,8 +210,10 @@ export async function arrancar({ log = () => {} } = {}) {
   });
   await new Promise(ok => pasarela.listen(PUERTOS.pasarela, '127.0.0.1', ok));
 
-  async function crearUsuario(email, password) {
-    const [u] = await sql`insert into auth.users (email, encrypted_password) values (${email}, ${hash(password)}) returning id`;
+  // Por defecto el usuario HA ENTRADO (last_sign_in_at puesto, como tras un acceso real); `{ sinEntrar: true }` es una cuenta creada
+  // por pedir un codigo que nunca se uso (D140).
+  async function crearUsuario(email, password, { sinEntrar = false } = {}) {
+    const [u] = await sql`insert into auth.users (email, encrypted_password, last_sign_in_at) values (${email}, ${hash(password)}, ${sinEntrar ? null : new Date()}) returning id`;
     return u.id;
   }
 

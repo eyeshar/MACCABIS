@@ -11,6 +11,8 @@ export type EstadoActivacion = {
   encendido: boolean; encendido_desde: string | null; sporteasy_comprobado: boolean; cambiado_en: string | null; cambiado_por: string | null;
   jornadas_seguidas: number; plantilla: number; entrados: number; con_avisos: number; se_puede_encender: boolean;
   minimo_entrados: number; faltan_por_entrar: string[]; puede_manejar: boolean;
+  /** Con cuenta de Auth pero sin haber entrado nunca (pidieron un codigo y no lo usaron); ausente si la migracion D140 no esta aplicada. */
+  pidio_codigo?: string[];
 };
 
 /** «Respuestas en la web: activar» (D99.13, D64): las cuatro condiciones, el boton y, al encender, los pasos en orden.

@@ -36,13 +36,41 @@ export function textoLunes(unidades: string[]): Texto {
   return { titulo: n === 1 ? "Te falta 1 respuesta" : `Te faltan ${n} respuestas`, cuerpo: `${mayus(listaY(unidades))}. Toca para responder.` };
 }
 
-/** (a) Martes 10:00 de un domingo de partido: a quien no ha respondido y a quien tiene «duda». */
-export function textoMartes(fecha: string, horasPartidos: string[], tieneDuda: boolean): Texto {
+/** (a) Martes 10:00 de un domingo de partido: a quien no ha respondido (las «duda» tienen su aviso de las 12:00, D141). */
+export function textoMartes(fecha: string, horasPartidos: string[]): Texto {
   const dia = `Domingo ${+fecha.slice(8, 10)}`;
   const a = listaY([...new Set(horasPartidos)].map((h) => `a las ${h}`));
   return {
-    titulo: tieneDuda ? `${dia}: tienes «duda»` : `${dia}: aún no has respondido`,
+    titulo: `${dia}: aún no has respondido`,
     cuerpo: `Hoy se hace la convocatoria. ¿Puedes jugar el domingo${a ? ` ${a}` : ""}?`,
+  };
+}
+
+/** Hora de un instante en Madrid: "20:00". */
+const horaMadrid = (t: Date) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(t);
+
+/** (a) D141, las 12:00 del dia del limite: a quien siga en «duda». `items` = lo que tiene en duda y su limite. Si ya salia
+ *  otro recordatorio ese dia a esa persona, `ademas` lo junta en el mismo aviso. */
+export function textoDudas(items: { que: string; limite: Date }[], ademas: string[] = []): Texto {
+  const horas = [...new Set(items.map((i) => horaMadrid(i.limite)))];
+  const cola = ademas.length ? ` Además: ${listaY(ademas)}.` : "";
+  if (horas.length === 1) {
+    return {
+      titulo: `Tienes «duda»: confirma hasta las ${horas[0]}`,
+      cuerpo: `Te quedan hasta las ${horas[0]} para confirmar; si no, contarás como «no va». ${mayus(listaY([...new Set(items.map((i) => i.que))]))}.${cola}`,
+    };
+  }
+  return {
+    titulo: "Tienes «duda»: confirma antes del plazo",
+    cuerpo: `Si no confirmas, contarás como «no va»: ${listaY([...new Set(items.map((i) => `${i.que} (hasta las ${horaMadrid(i.limite)})`))])}.${cola}`,
+  };
+}
+
+/** (a) D141, al llegar el limite: la «duda» ha pasado a «no va». Sin motivos: lo ve la pantalla de bloqueo. */
+export function textoPasoNoVa(unidades: string[]): Texto {
+  return {
+    titulo: new Set(unidades).size === 1 ? "Tu «duda» ha pasado a «no va»" : "Tus «duda» han pasado a «no va»",
+    cuerpo: `No confirmaste a tiempo: ${listaY([...new Set(unidades)])}. Si al final puedes, entra y pon «Voy».`,
   };
 }
 

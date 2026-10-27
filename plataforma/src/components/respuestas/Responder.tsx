@@ -12,10 +12,11 @@ const BOTONES: { r: "va" | "duda" | "no"; texto: string; clase: string }[] = [
   { r: "va", texto: "Voy", clase: "rw-btn-va" }, { r: "no", texto: "No voy", clase: "rw-btn-no" }, { r: "duda", texto: "Duda", clase: "rw-btn-duda" },
 ];
 
-// Voy (verde) · No voy (rojo) · Duda (azul), en la tarjeta o en grande en el evento (D99, 3.2 y 3.3). «No voy» abre la
+// Voy (verde) · No voy (rojo) · Duda (azul), en la tarjeta o en grande en el evento (D99, 3.2 y 3.3). Pasada la hora limite
+// de las dudas (`sinDuda`, D141) el boton «Duda» no se pinta. «No voy» abre la
 // hoja de motivo. Un domingo con dos partidos a horas distintas no se responde aqui: abre el domingo.
-export default function Responder({ eventoId, fecha, domingo, actual, nombre, grande, motivo, detalle, urlDomingo }: {
-  eventoId?: string; fecha?: string; domingo?: boolean; actual: Actual; nombre: string; grande?: boolean;
+export default function Responder({ eventoId, fecha, domingo, actual, nombre, grande, motivo, detalle, urlDomingo, sinDuda }: {
+  eventoId?: string; fecha?: string; domingo?: boolean; actual: Actual; nombre: string; grande?: boolean; sinDuda?: boolean;
   motivo?: MotivoJugador | null; detalle?: string | null; urlDomingo?: string;
 }) {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function Responder({ eventoId, fecha, domingo, actual, nombre, gr
   return (
     <div className={`rw-responder${grande ? " grande" : ""}`}>
       <div className="rw-botones" role="group" aria-label={`¿Vas al ${nombre}?`}>
-        {BOTONES.map((b) => (
+        {BOTONES.filter((b) => !(sinDuda && b.r === "duda")).map((b) => (
           <button key={b.r} ref={b.r === "no" ? refNo : undefined} type="button" className={`rw-btn ${b.clase}${marcada === b.r ? " marcada" : ""}`} aria-pressed={marcada === b.r} disabled={pendiente}
             onClick={() => (b.r === "no" ? (setError(null), setHoja(true)) : guardar(b.r))}>
             {b.texto}

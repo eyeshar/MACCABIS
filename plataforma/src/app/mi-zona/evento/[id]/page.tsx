@@ -5,7 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import Responder from "@/components/respuestas/Responder";
 import QuienVaJugador from "@/components/numeros/QuienVa";
-import { madrid } from "@/lib/avisos/horario";
+import { dudaAbierta, limiteDudas, madrid, textoLimite } from "@/lib/avisos/horario";
 import { cargarMiEvento, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, respuestasWebEncendido } from "@/lib/respuestas/jugador";
 import {
   ausenciaQueCubre, enlaceLugar, enlaceMapa, fechaLarga, horario, lineaCambio, nombreCorto, pistaTexto, TEXTO_MOTIVO_TODO, TEXTO_TIPO, tituloDe,
@@ -34,12 +34,14 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
   const r = respuestas.find((x) => x.evento_id === e.id) ?? null;
   const aus = ausenciaQueCubre(e.fecha, ausencias);
   const abierto = e.estado === "programado" && madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00") > new Date();
+  const ahora = new Date();
+  const conDuda = dudaAbierta(e, ahora);
   const quien = encendido ? (await cargarQuienVa([e.id])).get(e.id)! : null;
   const cambio = lineaCambio(e);
   const actual = r && r.respuesta !== "sin_responder" ? r.respuesta : null;
   const etiqueta = e.estado === "cancelado" ? "Cancelado"
     : !actual && aus ? `Ausente · ${TEXTO_MOTIVO_TODO[aus.motivo]}`
-    : actual === "va" ? "Vas" : actual === "duda" ? "Duda" : actual === "no" ? `No vas${r?.motivo ? ` · ${TEXTO_MOTIVO_TODO[r.motivo]}` : ""}` : "Aún no has respondido";
+    : actual === "va" ? "Vas" : actual === "duda" ? "Duda" : actual === "no" ? `No vas${r?.motivo === "no_confirmo" ? " · no confirmaste a tiempo" : r?.motivo ? ` · ${TEXTO_MOTIVO_TODO[r.motivo]}` : ""}` : "Aún no has respondido";
 
   return (
     <main className="pagina rw-evento">
@@ -67,8 +69,10 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
         {encendido ? (
           abierto ? (
             <>
-              <Responder eventoId={e.id} fecha={e.fecha} domingo={e.tipo === "liga"} actual={actual} nombre={nombreCorto(e)} grande motivo={(r?.motivo as MotivoJugador) ?? null} detalle={r?.detalle ?? null} />
+              <Responder eventoId={e.id} fecha={e.fecha} domingo={e.tipo === "liga"} actual={actual} nombre={nombreCorto(e)} grande sinDuda={!conDuda} motivo={r?.motivo === "no_confirmo" ? null : ((r?.motivo as MotivoJugador) ?? null)} detalle={r?.detalle ?? null} />
               <p className="suave pequeno" style={{ margin: 0 }}>Si no vas, te pedimos el motivo. Puedes cambiar tu respuesta cuando quieras.</p>
+              {conDuda && <p className="suave pequeno" style={{ margin: 0 }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(e), ahora)} para confirmar; si no, contarás como «no va».</p>}
+              {r?.motivo === "no_confirmo" && <p className="suave pequeno" style={{ margin: 0 }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Si al final puedes, pon «Voy».</p>}
               {r?.origen === "gestor" && r.puesto_por_nombre && <p className="tenue pequeno" style={{ margin: 0 }}>Respuesta puesta por {r.puesto_por_nombre}.</p>}
             </>
           ) : <p className="suave" style={{ margin: 0 }}>{e.estado === "cancelado" ? "No hace falta que hagas nada." : "El evento ya empezó: no se puede cambiar la respuesta."}</p>

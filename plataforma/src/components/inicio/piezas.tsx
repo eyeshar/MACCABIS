@@ -5,6 +5,7 @@ import {
   enlaceLugar, esPlan, estadoDe, fechaAgenda, fechaTarjeta, hhmm, lugarTexto, nombreCorto, restar20, TEXTO_TIPO, tituloDe,
   type MiAusencia, type MiRespuesta, type MotivoJugador, type Unidad,
 } from "@/lib/respuestas/dominio";
+import { dudaAbierta } from "@/lib/avisos/horario";
 import { SPORTEASY_CALENDARIO } from "@/lib/web";
 
 // Piezas del inicio personal y de la Agenda (D117): la tarjeta de «Te faltan N respuestas» y la fila de «Tu agenda».
@@ -91,10 +92,10 @@ export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u
       <span className="suave in-pendiente-lugar">{lugarTexto(e)}</span>
       {mapa && <a className="in-mas in-llegar-mini" href={mapa} target="_blank" rel="noopener noreferrer">Cómo llegar</a>}
       {plan ? (
-        <ResponderPlan id={e.id} actual={null} completo={Boolean(plazasLlenas)} nombre={e.titulo ?? "el plan"} />
+        <ResponderPlan id={e.id} actual={null} completo={Boolean(plazasLlenas)} nombre={e.titulo ?? "el plan"} sinDuda={!dudaAbierta(e, new Date())} />
       ) : encendido ? (
         <Responder eventoId={e.id} fecha={u.fecha} domingo={u.tipo === "domingo"} actual={null} nombre={u.tipo === "domingo" ? `partido del domingo ${+u.fecha.slice(8)}` : nombreCorto(e)}
-          urlDomingo={u.modo === "distintas" ? u.url : undefined} motivo={(r?.motivo as MotivoJugador) ?? null} detalle={r?.detalle ?? null} />
+          sinDuda={!u.eventos.every((x) => dudaAbierta(x, new Date()))} urlDomingo={u.modo === "distintas" ? u.url : undefined} motivo={r?.motivo === "no_confirmo" ? null : ((r?.motivo as MotivoJugador) ?? null)} detalle={r?.detalle ?? null} />
       ) : (
         <a className="boton boton-amarillo in-sporteasy" href={SPORTEASY_CALENDARIO} target="_blank" rel="noopener noreferrer" data-testid="responder-sporteasy">Responder en SportEasy</a>
       )}

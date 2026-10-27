@@ -5,8 +5,9 @@ import { notFound } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import ElegirDomingo from "@/components/respuestas/ElegirDomingo";
 import Numeros from "@/components/numeros/Numeros";
+import QuienVaJugador from "@/components/numeros/QuienVa";
 import { AvisoCaja } from "@/components/ProximoPartido";
-import { madrid } from "@/lib/avisos/horario";
+import { dudaAbierta, limiteDudas, madrid, textoLimite } from "@/lib/avisos/horario";
 import { textoColores } from "@/lib/colores";
 import { coloresDe } from "@/lib/equipacion";
 import { avisoDeEvento } from "@/lib/eventos/datos";
@@ -14,7 +15,7 @@ import { temporadaDe } from "@/lib/publico";
 import { SPORTEASY_CALENDARIO } from "@/lib/web";
 import { cargarMiZona } from "@/app/mi-zona/datos";
 import {
-  cargarConvocadosDomingo, cargarMiConvocatoria, cargarMiDomingo, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarUltimaImportacion, respuestasWebEncendido,
+  cargarConvocadosDomingo, cargarMiConvocatoria, cargarMiDomingo, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, cargarUltimaImportacion, respuestasWebEncendido,
 } from "@/lib/respuestas/jugador";
 import {
   enlaceMapa, estadoDe, fechaLarga, hhmm, lineaCambio, opcionActual, opcionesDomingo, pistaTexto, restar20, unidades,
@@ -44,9 +45,14 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
   const [encendido, respuestas, ausencias, miDomingo, zona, convocados, ultimaImp, misConv] = await Promise.all([
     respuestasWebEncendido(), cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha), cargarMiZona(), cargarConvocadosDomingo(fecha), cargarUltimaImportacion(), cargarMiConvocatoria(),
   ]);
+  const ahora = new Date();
+  const conDuda = partidos.every((e) => dudaAbierta(e, ahora));
+  // D141: quien va, quien duda, quien no va y quien no ha contestado, partido a partido (solo nombres; la base no da motivos).
+  const quienVa = encendido ? await cargarQuienVa(partidos.map((e) => e.id)) : null;
   const abierto = !!u && u.eventos.every((e) => madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00") > new Date());
   const est = u ? estadoDe(u, respuestas, ausencias) : null;
-  const rNo = respuestas.find((r) => partidos.some((e) => e.id === r.evento_id) && r.respuesta === "no" && r.motivo !== "horario");
+  const rNo = respuestas.find((r) => partidos.some((e) => e.id === r.evento_id) && r.respuesta === "no" && r.motivo !== "horario" && r.motivo !== "no_confirmo");
+  const pasoNoVa = respuestas.some((r) => partidos.some((e) => e.id === r.evento_id) && r.respuesta === "no" && r.motivo === "no_confirmo");
   const direccion = partidos.find((e) => e.pista_direccion)?.pista_direccion ?? null;
 
   // Su situacion: convocado (y con quien), no convocado, convocatoria pendiente o no va.
@@ -111,6 +117,12 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
               {a?.hay && <AvisoCaja a={a} />}
               {lineaCambio(e) && <span className="rw-cambio">{lineaCambio(e)}</span>}
               {e.estado === "cancelado" && <span className="aviso aviso-error">Cancelado</span>}
+              {quienVa?.get(e.id) && (
+                <div className="rw-quien-resp" data-testid={`respuestas-${e.equipo}`}>
+                  <b>Respuestas al partido</b>
+                  <QuienVaJugador quien={quienVa.get(e.id)!} prueba={`respuestas-numeros-${e.equipo}`} />
+                </div>
+              )}
               <div className="rw-quien-va" data-testid={`quien-va-${e.equipo}`}>
                 <b>Quién va</b>
                 {lista ? (
@@ -133,7 +145,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
         <div className="mz-sec-cab"><h2 id="t-puedes">¿Puedes jugar?</h2>{encendido && est && <span className={`rw-etiqueta${est.pendiente ? " sin" : ""}`}>{est.pendiente ? "Aún no has respondido" : est.texto}</span>}</div>
         {encendido && u ? (
           abierto ? (
-            <ElegirDomingo fecha={fecha} opciones={opcionesDomingo(u)} actual={opcionActual(u, respuestas, miDomingo)} nombre={`partido del domingo ${+fecha.slice(8)}`}
+            <ElegirDomingo fecha={fecha} opciones={opcionesDomingo(u, conDuda)} actual={opcionActual(u, respuestas, miDomingo)} nombre={`partido del domingo ${+fecha.slice(8)}`}
               motivo={(rNo?.motivo as MotivoJugador) ?? null} detalle={rNo?.detalle ?? null} />
           ) : <p className="suave" style={{ margin: 0 }}>Los partidos ya empezaron: no se puede cambiar la respuesta.</p>
         ) : (
@@ -147,6 +159,8 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
             <a className="boton boton-claro" href={SPORTEASY_CALENDARIO} target="_blank" rel="noopener noreferrer">Cambiar en SportEasy</a>
           </div>
         )}
+        {encendido && u && abierto && conDuda && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(partidos[0]), ahora)} para confirmar; si no, contarás como «no va».</p>}
+        {pasoNoVa && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Si al final puedes, pon «Voy».</p>}
         <p className="rw-nota-conv">Estar disponible no es estar convocado: en la convocatoria te decimos en qué equipo juegas.</p>
       </section>
       {encendido && <p><Link href="/mi-zona/ausencias/nueva" className="rw-enlace">¿Vas a faltar varios días? Marca una ausencia</Link></p>}

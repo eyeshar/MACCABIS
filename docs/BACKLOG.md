@@ -7,6 +7,13 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**Visibilidad y dudas con hora límite (27/10/2026, `feat/visibilidad-y-dudas`, D141): hecho en la rama, SIN merge.**
+- [x] Jugadores: nombres de quien no ha contestado; motivos solo gestores; `pruebas:dudas` lo comprueba en HTML y en la API.
+- [x] Dudas: límite martes 20:00 (entreno miércoles y partido) o 24 h antes; aviso a las 12:00 juntado con otros; paso a «no va · no confirmó» con aviso; sin botón «Duda» desde el límite; «Dudas: N · límite…» en Panel, Eventos y Respuestas; «posibles» en la convocatoria.
+- [ ] **Con el OK de Iván:** aplicar `20261028100000_dudas_limite.sql` en el Supabase real (D111: volcado, suites `-real` antes y después, cuentas de auth) y mergear. Hasta entonces la tarea de avisos funciona sin la función.
+- [ ] **Decidir:** mover el umbral de la banda roja (martes 10:00, D99.8) a las 20:00 para que cuadre con la convocatoria definitiva (D141, pregunta abierta).
+- [ ] **Vigilar** las primeras semanas: que el aviso de las 12:00 llega a la hora, que se junta bien con el de las 10:00 y que nadie se queja de que «Duda» desaparezca.
+
 **Historia: la 26/27 en curso (26/10/2026, `feat/historia-2026-27`, D137):**
 - [x] /historia: 26/27 «en curso» (plantilla con ficha + Barreiro; naranja quien ya ha jugado, amarillo el resto), sin columna «prevista» ni tramo «Llegan en 26/27»; cifras recalculadas (media y «De paso» sin la temporada en curso, con nota); ficha de persona con enlace a sus estadísticas de 26/27.
 - [x] Se recalcula sola en `npm run jornada` y en la rutina A (`historia_en_curso.js` + `build_personas.js`; la rutina A pasa `check:historia`).

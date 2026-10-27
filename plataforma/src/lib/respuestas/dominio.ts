@@ -3,13 +3,14 @@
 
 export type Resp = "va" | "duda" | "no" | "sin_responder";
 export type MotivoJugador = "lesion" | "trabajo" | "viaje" | "familia" | "otro";
-export type MotivoTodo = MotivoJugador | "horario";
+/** `horario` y `no_confirmo` (D141, lo pone el sistema al pasar una «duda» a «no va») son internos: el jugador nunca los elige. */
+export type MotivoTodo = MotivoJugador | "horario" | "no_confirmo";
 
 export const MOTIVOS_JUGADOR: { id: MotivoJugador; texto: string }[] = [
   { id: "lesion", texto: "Lesión" }, { id: "trabajo", texto: "Trabajo" }, { id: "viaje", texto: "Viaje" },
   { id: "familia", texto: "Familia" }, { id: "otro", texto: "Otro" },
 ];
-export const TEXTO_MOTIVO_TODO: Record<MotivoTodo, string> = { lesion: "Lesión", trabajo: "Trabajo", viaje: "Viaje", familia: "Familia", otro: "Otro", horario: "Horario" };
+export const TEXTO_MOTIVO_TODO: Record<MotivoTodo, string> = { lesion: "Lesión", trabajo: "Trabajo", viaje: "Viaje", familia: "Familia", otro: "Otro", horario: "Horario", no_confirmo: "No confirmó" };
 
 export type TipoMiEvento = "entreno" | "liga" | "amistoso" | "torneo" | "interno" | "quedada" | "pachanga" | "otro";
 export type MiEvento = {
@@ -121,16 +122,18 @@ export function partidosQueVa(u: Pick<Unidad, "eventos">, respuestas: MiRespuest
 // ---------------------------------------------------------------- opciones del domingo (D99.3)
 export type OpcionDomingo = { id: string; opcion: "ambos" | "solo" | "voy" | "no" | "duda"; evento?: string; texto: string };
 
-export function opcionesDomingo(u: Pick<Unidad, "modo" | "eventos">): OpcionDomingo[] {
+/** `conDuda = false`: pasada la hora limite (D141) el boton «Duda» desaparece y quedan las demas. */
+export function opcionesDomingo(u: Pick<Unidad, "modo" | "eventos">, conDuda = true): OpcionDomingo[] {
+  const duda: OpcionDomingo[] = conDuda ? [{ id: "duda", opcion: "duda", texto: "Duda" }] : [];
   if (u.modo === "distintas") {
     return [
       { id: "ambos", opcion: "ambos", texto: "A los dos" },
       ...u.eventos.map((e) => ({ id: `solo-${e.id}`, opcion: "solo" as const, evento: e.id, texto: `Solo al de las ${hhmm(e.inicio)} (${e.equipo})` })),
       { id: "no", opcion: "no", texto: "No voy" },
-      { id: "duda", opcion: "duda", texto: "Duda" },
+      ...duda,
     ];
   }
-  return [{ id: "voy", opcion: "voy", texto: "Voy" }, { id: "no", opcion: "no", texto: "No voy" }, { id: "duda", opcion: "duda", texto: "Duda" }];
+  return [{ id: "voy", opcion: "voy", texto: "Voy" }, { id: "no", opcion: "no", texto: "No voy" }, ...duda];
 }
 
 /** La respuesta unica guardada de un domingo (D103); solo cuenta si sigue vigente. */
@@ -248,6 +251,7 @@ export const ERRORES: Record<string, string> = {
   no_invitado: "Este evento no es para tu ficha.",
   evento_cerrado: "Este evento ya empezó o se canceló: no se puede cambiar la respuesta.",
   falta_motivo: "Elige un motivo para guardar «no voy».",
+  limite_dudas: "Ya pasó la hora límite de las dudas: elige «Voy» o «No voy».",
   opcion_no_valida: "Esa opción no vale para este domingo.",
   fechas_no_validas: "El último día no puede ser antes que el primero.",
   ausencia_no_encontrada: "Esa ausencia ya no existe.",

@@ -14,7 +14,7 @@ export type R = { ok: true; registros?: string[]; aviso?: string } | { ok: false
 const refrescar = () => { revalidatePath("/gestion/tablero"); revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/", "layout"); };
 const ERRORES: Record<string, string> = {
   solo_gestores: "Solo los gestores.", falta_motivo: "Elige un motivo para «No van».", no_invitado: "Alguno no está invitado a ese evento.",
-  evento_cerrado: "Ese evento está cancelado.", nada_que_deshacer: "No hay nada que deshacer.", sin_personas: "No hay nadie seleccionado.",
+  limite_dudas: "Ya pasó la hora límite de las dudas: «Voy» o «No van».", evento_cerrado: "Ese evento está cancelado.", nada_que_deshacer: "No hay nada que deshacer.", sin_personas: "No hay nadie seleccionado.",
 };
 const error = (m: string) => ERRORES[Object.keys(ERRORES).find((k) => m.includes(k)) ?? ""] ?? `No se pudo guardar: ${m}`;
 

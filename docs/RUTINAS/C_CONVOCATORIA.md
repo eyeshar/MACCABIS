@@ -1,6 +1,6 @@
 # RUTINA C — Disponibilidad y convocatoria (procedimiento, v1, 08/10/2026)
 
-Cuándo: lunes y martes (la jornada es el domingo). Fuente de las respuestas: SportEasy, en el Chrome de Iván (fase puente, D80). Reglas: `docs/REGLAS_CONVOCATORIA.md`. Datos privados de plantilla (posición, nivel A–E, dobla): solo en `privado/plantilla_2026-27.csv` y `privado/criterios_convocatoria.md` (nunca a git ni a docs).
+Cuándo: lunes y martes (la jornada es el domingo); **la convocatoria del partido se propone el martes por la noche, después de las 20:00, cuando se cierran las dudas (D141)**. Fuente de las respuestas: SportEasy, en el Chrome de Iván (fase puente, D80). Reglas: `docs/REGLAS_CONVOCATORIA.md`. Datos privados de plantilla (posición, nivel A–E, dobla): solo en `privado/plantilla_2026-27.csv` y `privado/criterios_convocatoria.md` (nunca a git ni a docs).
 
 ## 0. Tarea programada «Maccabis · respuestas de SportEasy» (desde el 24/10/2026)
 Tarea programada de Claude en el Chrome de Iván, **de lunes a miércoles a las 9:54**: hace el paso 1 (lee las respuestas de SportEasy de los eventos de la semana y las importa con **Importar → Respuestas**) y avisa a Iván de lo importado y de lo que no se pudo guardar.
@@ -17,7 +17,7 @@ Tarea programada de Claude en el Chrome de Iván, **de lunes a miércoles a las 
 4. Comprobar en `/gestion/eventos/<evento>/respuestas`: orden no van → dudan → sin responder → van, motivos y franja de ausencias por periodo.
 
 ## 2. Convocatoria
-5. Aplicar `REGLAS_CONVOCATORIA.md` con los datos de `privado/` y las respuestas guardadas; proponer a Iván el reparto MdA / MdL. Añadir al mensaje la línea de equipación del partido (`lineaEquipacion`, D75; la genera también el mensaje de WhatsApp del evento).
+5. **Esperar al cierre de dudas: martes a las 20:00 (D141).** Antes de esa hora, la pantalla de Convocatoria enseña una propuesta *provisional* con los «va» y las dudas aparte en «Posibles (dudas)» (no se convocan). Pasadas las 20:00 (la tarea de cada 15 minutos las ha pasado a «no va · no confirmó»), aplicar `REGLAS_CONVOCATORIA.md` con los datos de `privado/` y las respuestas guardadas; proponer a Iván el reparto MdA / MdL. Añadir al mensaje la línea de equipación del partido (`lineaEquipacion`, D75; la genera también el mensaje de WhatsApp del evento).
 6. Redactar el mensaje de WhatsApp. **Lo envía Iván** (o Claude con su OK explícito).
 
 ## 3. Recordatorios
@@ -29,9 +29,9 @@ Tarea programada de Claude en el Chrome de Iván, **de lunes a miércoles a las 
 
 ## 5. Con «respuestas en la web» encendido (paso 3, D99)
 9. Al encender: **una última Importar → Respuestas** de todos los eventos abiertos (paso 1), siguiendo el procedimiento de activación del apartado 6, y después ya no se importa más: los jugadores responden en la web. La etiqueta de cada evento pasa a «Respuestas en la web».
-10. Los recordatorios salen solos (lunes 19:00 agrupado; martes 10:00 del partido, también a quien tiene «duda»; miércoles 10:00 del entreno). «Pedir recordatorio a Claude» desaparece; si hace falta uno extra, «Enviar un recordatorio ahora» en la pantalla del evento.
+10. Los recordatorios salen solos (lunes 19:00 agrupado; martes 10:00 del partido, solo a quien no ha respondido; **a las 12:00 del día del límite, aviso a quien siga en «duda» (martes 20:00 para el entreno del miércoles y el partido; 24 h antes en los demás eventos), juntado con otro recordatorio de ese día si lo hay**; miércoles 10:00 del entreno). **Al llegar el límite, la «duda» pasa a «no va» (motivo interno «no confirmó», origen «sistema») y el jugador recibe un aviso; puede volver a decir «voy».** «Pedir recordatorio a Claude» desaparece; si hace falta uno extra, «Enviar un recordatorio ahora» en la pantalla del evento.
 11. Si un jugador dice algo por WhatsApp, «Responder por él» en la pantalla del evento (queda «puesto por …»).
-12. Después del martes a las 10:00, cualquier cambio de un partido sale en **banda roja** (y avisa a los gestores): revisar la convocatoria y pulsar «Visto».
+12. Después del martes a las 10:00 (umbral pendiente de revisar con la convocatoria de las 20:00, D141), cualquier cambio de un partido sale en **banda roja** (y avisa a los gestores): revisar la convocatoria y pulsar «Visto».
 13. **Ya no se marcan jornadas limpias con el interruptor encendido** (D139): la tarjeta del Panel es una franja compacta («encendido desde …», «Con avisos: N/27», «Faltan por entrar» si falta alguien y «Desactivar» dentro de «Más opciones»). La condición 1 de D64 (jornadas limpias) solo se marca en el Panel mientras el interruptor esté **apagado**.
 
 ## 6. Procedimiento de activación de «respuestas en la web» (decidido por Iván el 26/10/2026, D136)

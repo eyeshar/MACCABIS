@@ -6,7 +6,7 @@ _23/10/2026, con los ajustes del 24/10/2026 (D108: interiores, dificultad con po
 
 ## 0. Quién está disponible
 
-- **0.1** Solo están disponibles para un partido quienes responden «voy» a ese partido (la respuesta única del domingo, D103, ya se guarda por partido; en la fase puente, las respuestas importadas de SportEasy). «Duda», «no voy» y «sin responder» no cuentan; Iván puede convocarlos a mano y la pantalla lo avisa.
+- **0.1** Solo están disponibles para un partido quienes responden «voy» a ese partido (la respuesta única del domingo, D103, ya se guarda por partido; en la fase puente, las respuestas importadas de SportEasy). «Duda», «no voy» y «sin responder» no cuentan; Iván puede convocarlos a mano y la pantalla lo avisa. **Las «duda» (D141) salen aparte como «posibles»** (no se convocan, no cuentan como disponibles y no salen en «Disponibles sin convocar») **hasta su hora límite: el martes a las 20:00**; al llegar, quien siga en «duda» pasa a «no va» (motivo interno «no confirmó») y la propuesta definitiva se hace ya sin dudas.
 - **0.2** Si a un jugador le faltan datos privados (posición o nivel), cuenta como **exterior de nivel C** y sin doblar, con aviso, hasta que se carguen.
 
 ## 1. Límites duros

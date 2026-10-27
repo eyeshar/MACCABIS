@@ -152,7 +152,7 @@ try {
   const pj = await e.sesion('jon@pruebas.local', 375);
   await pj.goto(`${APP}/mi-zona/evento/${ent.id}`);
   ok(await visto(pj.getByTestId('quien-va-numeros-no')), '«Quién va»: van / dudan / no van son botones');
-  ok(!(await pj.getByTestId('quien-va-numeros-sin').evaluate((n) => n.tagName === 'BUTTON')), '«sin responder» es una cifra, sin lista de nombres');
+  ok(await pj.getByTestId('quien-va-numeros-sin').evaluate((n) => n.tagName === 'BUTTON'), '«sin responder» también es un botón: se ve quién no ha contestado (D141)');
   await pj.getByTestId('quien-va-numeros-no').click();
   const lj = await pj.getByTestId('quien-va-numeros-lista').innerText();
   ok(/Noe/.test(lj) && !/Lesi|rodilla|trabajo/i.test(lj), 'jugador: «no van» da solo el nombre (Noe), sin motivo ni detalle', lj);

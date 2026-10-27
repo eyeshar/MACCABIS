@@ -19,7 +19,7 @@ import { proximoEntreno } from "@/lib/gestion/entreno";
 import { hhmm, tituloEvento } from "@/lib/eventos/dominio";
 import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
 import Numeros, { type GrupoNum } from "@/components/numeros/Numeros";
-import { gruposEvento, type RespuestaPersona } from "@/lib/numeros/respuestas";
+import { gruposEvento, lineaDudas, type RespuestaPersona } from "@/lib/numeros/respuestas";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 
 export const metadata = { title: "Gestión · Maccabis" };
@@ -98,17 +98,17 @@ export default async function InicioGestion() {
   // Y las de los partidos del domingo (por su clave, «mda-j4»), para enlazar a sus respuestas como en Eventos.
   const [js, { data: filasDomingo }] = await Promise.all([
     cargarJugadores(supabase),
-    delDomingo.length ? supabase.from("eventos").select("id, clave, tipo, equipo, oficial").in("clave", delDomingo.map((e) => e.id)) : Promise.resolve({ data: [] }),
+    delDomingo.length ? supabase.from("eventos").select("id, clave, tipo, equipo, oficial, fecha, inicio").in("clave", delDomingo.map((e) => e.id)) : Promise.resolve({ data: [] }),
   ]);
-  const evDomingo = (filasDomingo ?? []) as { id: string; clave: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial: boolean }[];
+  const evDomingo = (filasDomingo ?? []) as { id: string; clave: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial: boolean; fecha: string; inicio: string | null }[];
   const ids = [...evDomingo.map((e) => e.id), ...(entreno ? [entreno.id] : [])];
   const { data: rsTodas } = ids.length ? await supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle").in("evento_id", ids) : { data: [] };
   // Los cuatro contadores con sus nombres y motivos (D139, solo gestores).
-  const cuentas = (ev: { id: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial?: boolean }) => {
+  const cuentas = (ev: { id: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial?: boolean; fecha: string; inicio: string | null }) => {
     const rs = ((rsTodas ?? []) as (RespuestaPersona & { evento_id: string })[]).filter((r) => r.evento_id === ev.id);
     const grupos = gruposEvento(ev as never, js, rs);
     const n = (k: string) => grupos.find((g) => g.k === k)!.n;
-    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0 };
+    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0, dudas: lineaDudas({ ...ev, oficial: ev.oficial ?? true } as never, grupos, rs) };
   };
   const cuentasDomingo = new Map(evDomingo.map((e) => [e.clave, cuentas(e)]));
   const respEntreno = entreno ? cuentas(entreno) : null;
@@ -205,7 +205,7 @@ export default async function InicioGestion() {
                           <td style={{ fontWeight: 600 }}>{enlaceRival(liga, e)}</td>
                           <td className="cifra" style={{ whiteSpace: "nowrap" }}>{e.inicio ?? "¿?"} · P{e.partido?.campo ?? "?"}</td>
                           <td data-label="Equipación">{chip ? <span className={`pastilla pastilla-${chip.tipo}`}>{chip.texto}</span> : <span className="pastilla">Negra</span>}</td>
-                          <td data-label="Respuestas" className={r?.hay ? "ev-celda-resp" : undefined}>{r?.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={cruce(e)} barra={false} /> : r ? <Link href={`/gestion/eventos/${r.id}/respuestas`} className="tenue">Sin respuestas</Link> : <span className="suave">—</span>}</td>
+                          <td data-label="Respuestas" className={r?.hay ? "ev-celda-resp" : undefined}>{r?.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={cruce(e)} barra={false} dudas={r.dudas} /> : r ? <Link href={`/gestion/eventos/${r.id}/respuestas`} className="tenue">Sin respuestas</Link> : <span className="suave">—</span>}</td>
                           <td data-label="Convocados">
                             {gruposConvocados(e) && <Numeros variante="linea" prueba={`convocados-${e.id}`} etiqueta={`Convocados del ${NOMBRE_EQUIPO[e.equipo!]}`} grupos={gruposConvocados(e)!} />}
                             <Link href={`/gestion/convocatoria?fecha=${e.fecha}`} className={convDomingo ? undefined : "tenue"} style={{ display: "block" }}>{convocados(e)}</Link>
@@ -255,6 +255,7 @@ export default async function InicioGestion() {
             {respEntreno && respEntreno.va + respEntreno.duda + respEntreno.no > 0 ? (
               <div data-testid="respuestas-entreno" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <Numeros variante="cajas" columnas={4} prueba="entreno-numeros" etiqueta="Respuestas al entreno" grupos={respEntreno.grupos} />
+                {respEntreno.dudas && <span className="pequeno suave" data-testid="linea-dudas">{respEntreno.dudas}</span>}
                 <Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} data-testid="enlace-respuestas" style={{ fontWeight: 600 }}>Ver respuestas y motivos →</Link>
               </div>
             ) : (

@@ -3,7 +3,7 @@ import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pistaEfectiva, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { horaDeEnvio } from "./horario";
-import { estadoPara, inicioDe, invitados, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
+import { avisosPasoNoVa, conAvisosDeDudas, estadoPara, inicioDe, invitados, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
 import { TEXTO_PRUEBA, textoCambio, textoCancelacion, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
 
 // Envio de avisos al movil (D99.5): Web Push estandar con claves VAPID. Corre SOLO en el servidor con la clave de
@@ -116,7 +116,7 @@ async function cargarBase(sb: SupabaseClient) {
     leer(sb.from("eventos").select(COLUMNAS).eq("temporada", "2026-27"), "eventos") as Promise<EventoBase[]>,
     leer(sb.from("pistas").select("id, slug, nombre, nombre_corto, direccion, uso, estado, es_de_serie, num_pistas, nota"), "pistas") as Promise<Pista[]>,
     leer(sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol"), "jugadores") as Promise<(JugadorPlan & { nombre_visible: string })[]>,
-    leer(sb.from("respuestas").select("evento_id, person_id, respuesta"), "respuestas") as Promise<{ evento_id: string; person_id: string; respuesta: RespuestaTexto }[]>,
+    leer(sb.from("respuestas").select("evento_id, person_id, respuesta, motivo, origen, cambiado_en"), "respuestas") as Promise<{ evento_id: string; person_id: string; respuesta: RespuestaTexto; motivo: string | null; origen: string; cambiado_en: string | null }[]>,
     leer(sb.from("ausencias_periodo").select("person_id, desde, hasta, borrada_en"), "ausencias") as Promise<{ person_id: string; desde: string; hasta: string | null; borrada_en: string | null }[]>,
   ]);
   return { eventos, pistas, jugadores, respuestas, ausencias };
@@ -142,22 +142,38 @@ async function encolarAlertasGestores(sb: SupabaseClient, base: Awaited<ReturnTy
   return filas.length;
 }
 
-/** La tarea de cada 15 minutos: recordatorios que tocan, alertas a los gestores y envio de lo pendiente. */
+/** D141: al llegar el limite, quien siga en «duda» pasa a «no va» (en la base: `cerrar_dudas`, idempotente). Sin la
+ *  migracion aplicada (funcion inexistente) no hace nada. */
+async function cerrarDudas(sb: SupabaseClient, ahora: Date) {
+  const { data, error } = await sb.rpc("cerrar_dudas", { p_ahora: ahora.toISOString() });
+  if (error) {
+    if (error.code === "PGRST202" || /cerrar_dudas/.test(error.message)) return 0;
+    throw new Error(`cerrar dudas: ${error.message}`);
+  }
+  return Array.isArray(data) ? data.length : 0;
+}
+
+/** La tarea de cada 15 minutos: cierra las dudas que llegan al limite, recordatorios que tocan (con el aviso de las dudas),
+ *  alertas a los gestores y envio de lo pendiente. */
 export async function ejecutarTarea(ahora = new Date()) {
   const sb = clienteServicio();
   const { encendido, desde } = await estadoInterruptor(sb);
   let encolados = 0;
+  const cerradas = await cerrarDudas(sb, ahora);
   const base = await cargarBase(sb);
   const eventos = base.eventos.map((e) => aPlan(e, base.pistas));
-  if (encendido) {
-    const plan = planificar({ ahora, encendidoDesde: desde, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias });
-    encolados = await encolar(sb, plan.map((p) => ({ ...p, person_id: p.person_id })));
-    encolados += await encolarAlertasGestores(sb, base, ahora);
-  }
-  // Planes no oficiales con «recordar un dia antes» (D118): con el interruptor encendido o apagado.
-  encolados += await encolar(sb, planificarPlanes({ ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias }));
+  const datos = { ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias };
+  // Recordatorios: los del club (con el interruptor encendido) y los planes con «recordar un dia antes» (D118: siempre);
+  // el aviso de las «duda» (D141) se junta con el que ya salga ese dia a esa persona.
+  const recordatorios = conAvisosDeDudas(
+    [...(encendido ? planificar({ ...datos, encendidoDesde: desde }) : []), ...planificarPlanes(datos)],
+    { ...datos, encendidoDesde: encendido ? desde : null },
+  );
+  encolados += await encolar(sb, recordatorios.map((p) => ({ ...p, person_id: p.person_id })));
+  encolados += await encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas }, ahora));
+  if (encendido) encolados += await encolarAlertasGestores(sb, base, ahora);
   const envio = await enviarPendientes(sb, ahora);
-  return { encendido, encolados, ...envio };
+  return { encendido, cerradas, encolados, ...envio };
 }
 
 /** (b) y (c): al guardar un cambio de fecha, hora, pista o encuentro, o al cancelar, con «Guardar y avisar». Solo con el
@@ -197,7 +213,7 @@ export async function recordatorioManual(eventoId: string) {
   const filas: FilaAviso[] = invitados(plan, base.jugadores)
     .filter((j) => estadoPara(j.person_id, plan, base.respuestas, base.ausencias) === "sin_responder")
     .map((j) => {
-      const t = e.tipo === "entreno" ? { ...textoEntrenoHoy(plan), titulo: "Entreno: ¿vas?" } : e.tipo === "liga" ? textoMartes(e.fecha, [String(e.inicio ?? "").slice(0, 5)].filter(Boolean), false) : textoOtro(plan, "24h");
+      const t = e.tipo === "entreno" ? { ...textoEntrenoHoy(plan), titulo: "Entreno: ¿vas?" } : e.tipo === "liga" ? textoMartes(e.fecha, [String(e.inicio ?? "").slice(0, 5)].filter(Boolean)) : textoOtro(plan, "24h");
       return { ...t, clave: `rec:manual:${e.id}:${ahora.getTime()}:${j.person_id}`, tipo: "recordatorio" as const, person_id: j.person_id, eventos: [e.id], url: e.tipo === "liga" ? urlDomingo(e.fecha) : urlEvento(e), programado_para: envio };
     });
   await encolar(sb, filas);

@@ -1,0 +1,30 @@
+# Vigila la tarea de avisos (pg_cron -> /api/avisos/tarea) desde FUERA de la web: cada hora consulta /api/avisos/salud y
+# FALLA si la ultima pasada correcta tiene mas de 40 minutos (o la web no responde). GitHub avisa por correo a quien
+# modifico por ultima vez el cron de este fichero cuando un workflow programado falla.
+name: Salud de los avisos
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      forzar_fallo:
+        description: "Prueba de la alarma: falla a proposito"
+        type: boolean
+        default: false
+  push:
+    branches: [fix/salud-avisos]   # SOLO para la prueba de la alarma; se quita antes del merge
+jobs:
+  salud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consultar /api/avisos/salud
+        env:
+          FORZAR: ${{ inputs.forzar_fallo || github.event_name == 'push' }}
+        run: |
+          if [ "$FORZAR" = "true" ]; then echo "::error::Prueba de la alarma: fallo forzado"; exit 1; fi
+          codigo=$(curl -sS --max-time 30 -o salud.json -w '%{http_code}' https://maccabis.vercel.app/api/avisos/salud || echo 000)
+          cat salud.json 2>/dev/null; echo
+          if [ "$codigo" != "200" ] || ! grep -q '"estado":"ok"' salud.json; then
+            echo "::error::La tarea de avisos está fallando (HTTP $codigo)"; exit 1
+          fi

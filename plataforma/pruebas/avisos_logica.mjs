@@ -287,6 +287,9 @@ ok(/401 y 401/.test(AL.problemaTarea(pasadasT(401, 401, 200), t0) ?? ''), 'alarm
 ok(/500 y sin respuesta/.test(AL.problemaTarea(pasadasT(500, null), t0) ?? ''), 'alarma: 500 y falta de respuesta, avisa');
 ok(AL.problemaTarea(pasadasT(200, 200), new Date(t0.getTime() + 60 * 60000)) !== null, 'alarma: una hora sin pasar, avisa');
 ok(AL.problemaTarea([], t0) === null, 'alarma: sin historial (pila local o pg_net vacio), no inventa nada');
+ok(AL.estadoSalud(new Date(t0.getTime() - 10 * 60000).toISOString(), t0) === 'ok', 'salud: última pasada correcta hace 10 minutos, ok');
+ok(AL.estadoSalud(new Date(t0.getTime() - 41 * 60000).toISOString(), t0) === 'fallando', 'salud: hace 41 minutos, fallando');
+ok(AL.estadoSalud(null, t0) === 'fallando', 'salud: ninguna pasada correcta, fallando');
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

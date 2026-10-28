@@ -3,7 +3,7 @@
 // La lista se repite en next.config.ts (cabecera X-Robots-Tag), que no puede importar de src/: pruebas:portada
 // comprueba que las dos coinciden.
 // D117-D120: la agenda, los planes, «Mis números» y el calendario personal (/cal/<enlace secreto>.ics) tambien.
-export const RUTAS_PRIVADAS = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal"];
+export const RUTAS_PRIVADAS = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal", "/asistente"];
 
 /** Despliegue de vista previa o desarrollo en Vercel (VERCEL_ENV lo pone Vercel; en local no existe). */
 export const esVistaPrevia = () => Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";

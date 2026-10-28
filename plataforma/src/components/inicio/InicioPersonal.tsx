@@ -4,6 +4,7 @@ import BandaAvisos from "@/components/avisos/BandaAvisos";
 import { AvisoCaja } from "@/components/ProximoPartido";
 import { Flecha } from "@/components/Iconos";
 import { madrid } from "@/lib/avisos/horario";
+import { puedeUsarChat } from "@/lib/chat/acceso";
 import { textoColores } from "@/lib/colores";
 import { TEXTO_POSICION, type Posicion } from "@/lib/convocatoria/motor";
 import { avisoDeEvento } from "@/lib/eventos/datos";
@@ -42,6 +43,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const zona = await cargarMiZona().catch(() => null);
   const pendientesGestion = usuario.esGestor ? await cargarPendientesSemana(await clienteSesion()).catch(() => []) : [];
   const grupos = clasificaciones();
+  // Acceso discreto al asistente (D142): solo quien lo tiene abierto (CHAT_IA_ABIERTO) lo ve.
+  const asistente = puedeUsarChat(usuario) ? <Link href="/asistente" className="in-asistente" data-testid="acceso-asistente">¿Dudas con la web? Pregunta al asistente <Flecha size={14} /></Link> : null;
 
   const club = (
     <section className="in-sec in-club" id="club" aria-labelledby="t-club">
@@ -67,7 +70,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
     return (
       <main className="in" id="inicio">
         {usuario.esGestor && <BandaGestion pendientes={pendientesGestion} />}
-        <section className="in-hola"><h1><small>Hola,</small> {usuario.corto}</h1><p className="suave">Tu cuenta no tiene ficha de jugador: aquí tienes la gestión y el club.</p></section>
+        <section className="in-hola"><h1><small>Hola,</small> {usuario.corto}</h1><p className="suave">Tu cuenta no tiene ficha de jugador: aquí tienes la gestión y el club.</p>{asistente}</section>
         <div className="in-cols">{club}</div>
       </main>
     );
@@ -135,6 +138,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
       <section className="in-hola" aria-label="Saludo">
         <h1><small>Hola,</small> {jugador.nombre_visible}</h1>
         {linea && <p className="in-hola-linea" data-testid="linea-saludo">{linea}</p>}
+        {asistente}
       </section>
       {avisosPersonales.map((a) => <AvisoPersonal key={a.id} id={a.id} texto={a.texto} url={a.url} />)}
       <BandaAvisos />

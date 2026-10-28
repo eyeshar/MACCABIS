@@ -1,0 +1,25 @@
+/* «Pregunta al asistente» (D142). Movil primero; respeta las zonas seguras del iPhone (muesca en horizontal y barra de
+   inicio): el formulario queda pegado abajo, por encima de la barra inferior de la web en el movil. */
+.as-pagina { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.as-aviso { margin: 4px 0 12px; padding: 10px 12px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio); background: var(--panel-3); color: var(--tinta-suave); font-size: 0.9rem; }
+.as-cuota { margin: 0 0 8px; color: var(--amarillo-tinta); font-family: var(--f-cifras); font-size: 0.85rem; }
+.as-hilo { display: flex; flex-direction: column; gap: 10px; min-height: 30vh; }
+.as-msg { max-width: 88%; padding: 10px 12px; border-radius: var(--radio-grande); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.as-yo { align-self: flex-end; background: var(--amarillo-claro); color: var(--amarillo-tinta); border-bottom-right-radius: 4px; }
+.as-asistente { align-self: flex-start; background: var(--tarjeta); border: 1px solid var(--borde); border-bottom-left-radius: 4px; }
+.as-asistente a { color: var(--enlace); }
+.as-pensando { color: var(--tinta-tenue); }
+.as-descansa { border-color: var(--borde-fuerte); color: var(--tinta-suave); }
+.as-form {
+  position: sticky; bottom: 0; z-index: 5; display: flex; gap: 8px; align-items: flex-end; margin-top: 14px;
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); background: var(--fondo); border-top: 1px solid var(--borde);
+}
+/* Con la barra inferior del movil (fija, D90) el formulario se pega encima de ella; la barra ya lleva la zona segura. */
+@media (max-width: 768px) { .as-form { bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom)); padding-bottom: 10px; } }
+.as-form textarea {
+  flex: 1; min-height: var(--toque); resize: vertical; padding: 10px 12px; border-radius: var(--radio); border: 1px solid var(--borde-fuerte);
+  background: var(--campo); color: var(--tinta); font: inherit; font-size: 16px; /* 16 px: el iPhone no hace zoom al escribir */
+}
+.as-form .boton { min-height: var(--toque); min-width: var(--toque); }
+.as-nota { margin-top: 8px; color: var(--tinta-tenue); font-size: 0.8rem; }
+

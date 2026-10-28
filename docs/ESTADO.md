@@ -7,6 +7,10 @@ _Última actualización: 27/10/2026: **visibilidad para jugadores y dudas con ho
 
 
 
+## Permiso de `estado_tarea_avisos` revisado (28/10/2026; D145) — `fix/permiso-estado-avisos`, SIN merge
+- La prueba de permisos de `npm run pruebas` estaba en rojo en `main`: `estado_tarea_avisos` (banda roja de Gestión) puede ejecutarla `authenticated` y no estaba en la lista. Revisada: comprueba `is_gestor()` dentro (un jugador recibe 42501) y solo devuelve códigos HTTP y horas de pg_net. Se queda abierta; se añade a la lista de la prueba con el motivo. Sin migración ni cambios en el real (definición y permisos del real comprobados, solo lectura).
+- **Pruebas (28/10):** `npm run pruebas` TODO OK (con `PILA_PUERTO_BASE=54521` y la app en 3190, porque el 3100 lo ocupaba otro proyecto, `Web TCPC`; con él delante salen dos FALLOS falsos, Referrer-Policy y Excel 404) y `pruebas:dudas` sin fallos (banda roja, jugador rechazado, `/api/avisos/salud`, reversión).
+
 ## iPhone: la cabecera ya no queda bajo la barra de estado (27/10/2026) — `fix/ios-safe-area`, MERGEADA en `main` (`729e6b2`, OK de Iván 27/10/2026)
 - **El fallo:** en la web instalada (y en Safari) del iPhone, la cabecera quedaba bajo la hora/wifi/batería y «Entrar» no se podía pulsar. La web va a pantalla completa (`statusBarStyle: black-translucent` + `viewportFit: cover`, **sin tocar**) pero el CSS solo reservaba la zona de abajo.
 - **El arreglo (solo CSS, sin datos ni esquema):** `.nv-cab` reserva `env(safe-area-inset-top)` (los 14px de la fila no cambian; el fondo cubre la barra de estado); `body` reserva los laterales para el iPhone en horizontal; la barra inferior, la hoja «Más», las barras fijas de Convocatoria y Tablero y la ventana de rival de Estadísticas reservan laterales y abajo; la hoja a pantalla completa de la convocatoria reserva arriba; la barra de zona (`.zb`, pegajosa al hacer scroll) se pega bajo la barra de estado y un sombreado tapa la franja. `.cabecera` de las pantallas sueltas **no** lleva margen superior a propósito: va siempre debajo de la cabecera global, que ya lo reserva.

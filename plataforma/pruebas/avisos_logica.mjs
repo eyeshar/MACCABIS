@@ -277,5 +277,16 @@ ok(pas3.length === 1 && iso(pas3[0].programado_para) === iso(M('2026-10-17', '08
 const textosN = [T.textoDudas([{ que: 'entreno del miércoles 14', limite: lim(entreno14) }], ['Domingo 18: aún no has respondido']), T.textoPasoNoVa(['entreno del miércoles 14'])].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
 ok(!/nivel|posici|exterior|interior|Dobla|lesi|trabajo|viaje|familia/i.test(textosN), 'los textos no llevan motivos, niveles ni posiciones');
 
+// ---------------------------------------------------------------- alarma de la tarea (dos pasadas seguidas con error)
+import * as AL from '../src/lib/avisos/alarma.ts';
+const t0 = M('2026-10-28', '12:50');
+const pasadasT = (...c) => c.map((codigo, i) => ({ codigo, creado: new Date(t0.getTime() - i * 15 * 60000).toISOString() }));
+ok(AL.problemaTarea(pasadasT(200, 200, 200), t0) === null, 'alarma: todo 200, nada');
+ok(AL.problemaTarea(pasadasT(401, 200, 200), t0) === null, 'alarma: una sola pasada con error no avisa');
+ok(/401 y 401/.test(AL.problemaTarea(pasadasT(401, 401, 200), t0) ?? ''), 'alarma: dos 401 seguidos, avisa y dice el codigo');
+ok(/500 y sin respuesta/.test(AL.problemaTarea(pasadasT(500, null), t0) ?? ''), 'alarma: 500 y falta de respuesta, avisa');
+ok(AL.problemaTarea(pasadasT(200, 200), new Date(t0.getTime() + 60 * 60000)) !== null, 'alarma: una hora sin pasar, avisa');
+ok(AL.problemaTarea([], t0) === null, 'alarma: sin historial (pila local o pg_net vacio), no inventa nada');
+
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

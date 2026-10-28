@@ -284,6 +284,26 @@ try {
 
   console.log('\n== Gestión: «Dudas: N · límite…», «pasaron a no va» y «posibles»');
   const pg = await e.sesion('gestor@pruebas.local', 1280);
+  // Alarma de la tarea: con el esquema `net` falso de la pila local (en el real es pg_net)
+  await sql`create schema if not exists net`;
+  await sql`create table if not exists net._http_response (id bigserial primary key, status_code int, created timestamptz default now())`;
+  await sql`delete from net._http_response`;
+  await pg.goto(`${APP}/gestion`);
+  ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'alarma de la tarea: sin historial no aparece');
+  await sql`insert into net._http_response (status_code, created) values (401, now() - interval '15 minutes'), (401, now())`;
+  await pg.goto(`${APP}/gestion`);
+  const al = await pg.getByTestId('alarma-tarea').innerText().catch(() => '');
+  ok(/La tarea de avisos está fallando/.test(al) && /401 y 401/.test(al), 'dos 401 seguidos: banda roja en Gestión', al);
+  await pg.goto(`${APP}/gestion/eventos`);
+  ok((await pg.getByTestId('alarma-tarea').count()) === 1, 'y se ve en todas las pantallas de Gestión');
+  await sql`insert into net._http_response (status_code, created) values (200, now() + interval '1 minute')`;
+  await pg.goto(`${APP}/gestion`);
+  ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'con la última pasada en 200, desaparece');
+  r = await rpc('estado_tarea_avisos', {}, uno);
+  ok(r.status >= 400, 'un jugador no puede leer el estado de la tarea', String(r.status));
+  await sql`drop table net._http_response`; await sql`drop schema net`;
+  await pg.goto(`${APP}/gestion`);
+  ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'sin esquema net (pila local) no falla ni avisa');
   await pg.goto(`${APP}/gestion/eventos/${E.fut}/respuestas`);
   const lg = await pg.getByTestId('limite-dudas').innerText();
   ok(/^Dudas: 1 · límite \S+ \d\d\/\d\d \d\d:\d\d/.test(lg) && !/pasa/.test(lg), 'evento abierto: «Dudas: 1 · límite <día hora>»', lg);
@@ -311,6 +331,8 @@ try {
   console.log('\n== Migración 20261028100000 reversible (D111)');
   const texto = fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028100000_dudas_limite.sql'), 'utf8').replace(/--.*$/gm, '');
   ok(!/\bdrop table\b|\btruncate\b|\bdelete\b|\bcreate table\b|\bdrop column\b/i.test(texto), 'sin tablas nuevas ni borrados: solo relaja dos CHECK, cambia una función y añade dos');
+  await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028210000_estado_tarea_avisos.revertir.sql'), 'utf8'));
+  ok(!(await sql`select 1 from pg_proc where proname = 'estado_tarea_avisos'`).length, 'revertida la alarma (20261028210000): se va estado_tarea_avisos');
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028200000_dudas_activacion.revertir.sql'), 'utf8'));
   ok(!(await sql`select 1 from information_schema.columns where table_name = 'respuestas_web_config' and column_name = 'dudas_desde'`).length, 'revertida la de la activación (20261028200000): se va la columna dudas_desde');
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028100000_dudas_limite.revertir.sql'), 'utf8'));

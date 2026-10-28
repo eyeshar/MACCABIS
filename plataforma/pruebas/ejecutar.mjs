@@ -121,7 +121,10 @@ try {
   // Pagina del domingo (D128): nombres de la convocatoria aprobada y la hora de la ultima importacion (solo plantilla
   // activa y gestores, dentro de la funcion).
   const DOMINGO = ['convocados_del_domingo', 'ultima_importacion_respuestas'];
-  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
+  // Alarma de la tarea de avisos (D141, correccion del 28/10; D145): la llama la barra de Gestion con la sesion del gestor;
+  // is_gestor dentro (un jugador recibe 42501) y solo devuelve codigos HTTP y horas de pg_net, ningun dato de personas.
+  const AVISOS = ['estado_tarea_avisos'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

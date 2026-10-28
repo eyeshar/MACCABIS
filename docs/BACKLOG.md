@@ -7,6 +7,12 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**«Pregunta al asistente» (28/10/2026, `feat/chat-ia`, D142):**
+- [x] Worker `maccabis-chat` en Cloudflare (plan Free comprobado), secretos y `CHAT_WORKER_URL` en Vercel; ruta `/api/chat`, página `/asistente`, acceso en Inicio, interruptor `CHAT_IA_ABIERTO` (por defecto «gestores»); `pruebas:chat-ia`; prueba real en la vista previa.
+- [ ] **OK de Iván y merge en `main`** (tras el merge, en producción lo verán solo los gestores).
+- [ ] **Tras una semana de prueba con los gestores: abrir a «todos»** (`CHAT_IA_ABIERTO=todos` en Vercel y redesplegar) y revisar en el panel de Cloudflare el gasto real de neuronas antes y después.
+- [ ] Cuando se mergee D141 (`feat/visibilidad-y-dudas`) o cambie la guía: `npm run datos:sync` para refrescar `src/data/guiaJugador.json` (`check:copias` avisa).
+
 **Historia: la 26/27 en curso (26/10/2026, `feat/historia-2026-27`, D137):**
 - [x] /historia: 26/27 «en curso» (plantilla con ficha + Barreiro; naranja quien ya ha jugado, amarillo el resto), sin columna «prevista» ni tramo «Llegan en 26/27»; cifras recalculadas (media y «De paso» sin la temporada en curso, con nota); ficha de persona con enlace a sus estadísticas de 26/27.
 - [x] Se recalcula sola en `npm run jornada` y en la rutina A (`historia_en_curso.js` + `build_personas.js`; la rutina A pasa `check:historia`).

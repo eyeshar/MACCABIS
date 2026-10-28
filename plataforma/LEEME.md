@@ -19,6 +19,9 @@ plataforma/
   src/lib/rastro.ts         rastro de pantallas de la sesion: de donde viene «← volver» (components/nav/Volver.tsx, D139)
   src/components/nav/       navegacion unica (D89, D90): Cabecera (lee la sesion en el servidor), Navegacion (menu, menu de
                             usuario, menu de Gestion, barra inferior y hoja "Mas" del movil), BarrasZona (Mi zona y Gestion)
+  src/app/asistente/        «Pregunta al asistente» (D142): IA gratuita de Workers AI; solo lectura; interruptor CHAT_IA_ABIERTO
+  src/lib/chat/             contexto del asistente (contexto.ts, lista blanca y pura), quien lo usa (acceso.ts) y llamada al
+                            Worker (servidor.ts). El Worker vive en ../chat-worker/ (npx wrangler deploy desde esa carpeta)
   src/lib/usuario.ts        quien mira la pagina (sin sesion, jugador, gestor) para la cabecera
   src/app/cuenta/           Mi cuenta: una pagina para jugadores y gestores (/gestion/cuenta redirige aqui)
   src/app/entrar/           acceso: Google + código por correo, y el reparto a /mi-zona o /gestion

@@ -301,6 +301,16 @@ try {
   ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'con la última pasada en 200, desaparece');
   r = await rpc('estado_tarea_avisos', {}, uno);
   ok(r.status >= 400, 'un jugador no puede leer el estado de la tarea', String(r.status));
+  // /api/avisos/salud (lo consulta un workflow de GitHub Actions)
+  await sql`delete from net._http_response`;
+  let sa = await fetch(`${APP}/api/avisos/salud`); let ja = await sa.json();
+  ok(sa.status === 503 && ja.estado === 'fallando' && ja.ultima_pasada_ok === null, 'salud: sin ninguna pasada correcta, 503 «fallando»', JSON.stringify(ja));
+  await sql`insert into net._http_response (status_code, created) values (401, now()), (200, now() - interval '5 minutes')`;
+  sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
+  ok(sa.status === 200 && ja.estado === 'ok' && !!ja.ultima_pasada_ok && Object.keys(ja).sort().join() === 'estado,ultima_pasada_ok', 'salud: con una pasada 200 reciente, 200 «ok», y solo el estado y la hora (sin datos personales)', JSON.stringify(ja));
+  await sql`delete from net._http_response`; await sql`insert into net._http_response (status_code, created) values (200, now() - interval '50 minutes')`;
+  sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
+  ok(sa.status === 503 && ja.estado === 'fallando', 'salud: la última pasada correcta de hace 50 minutos, «fallando»', JSON.stringify(ja));
   await sql`drop table net._http_response`; await sql`drop schema net`;
   await pg.goto(`${APP}/gestion`);
   ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'sin esquema net (pila local) no falla ni avisa');
@@ -331,6 +341,7 @@ try {
   console.log('\n== Migración 20261028100000 reversible (D111)');
   const texto = fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028100000_dudas_limite.sql'), 'utf8').replace(/--.*$/gm, '');
   ok(!/\bdrop table\b|\btruncate\b|\bdelete\b|\bcreate table\b|\bdrop column\b/i.test(texto), 'sin tablas nuevas ni borrados: solo relaja dos CHECK, cambia una función y añade dos');
+  await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028220000_ultima_pasada_avisos.revertir.sql'), 'utf8'));
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028210000_estado_tarea_avisos.revertir.sql'), 'utf8'));
   ok(!(await sql`select 1 from pg_proc where proname = 'estado_tarea_avisos'`).length, 'revertida la alarma (20261028210000): se va estado_tarea_avisos');
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028200000_dudas_activacion.revertir.sql'), 'utf8'));

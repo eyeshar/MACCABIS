@@ -1,111 +1,146 @@
-// Grupos de entreno (D122): la sugerencia, PURA y determinista (la usan la pantalla de Gestion y las pruebas).
-// Base: los que dicen «Voy» al entreno. Junta a los que van a jugar juntos el siguiente domingo con partido (la
-// convocatoria aprobada o, si no la hay, la propuesta del motor); dentro de cada equipo, grupos equilibrados por linea
-// (base, exteriores, interiores) y por nivel. Quien no juega el domingo completa los grupos mas cortos, priorizando la
-// linea que falte. Quien dobla va con el equipo cuyo partido es mas dificil o, si es igual, con el que tenga menos. Sin
-// partido, un reparto equilibrado. Los grupos no cuentan para nada mas.
-import { LINEA_DE, type Dificultad, type Equipo, type Linea, type Nivel, type Posicion } from "../convocatoria/motor.ts";
+// Grupos de entreno (D122, D143): la sugerencia, PURA y determinista (la usan la pantalla de Gestion y las pruebas).
+// Entrada: SOLO los que dicen «Voy» (los «Duda» van aparte). Grupos = techo(N / jugadores por grupo), con tamaños lo
+// mas iguales posible (17 de 6 en 6 → 6, 6, 5). El equipo del domingo ya no cuenta: los grupos salen nivelados.
+// Lineas: bases (puros y de reserva), exteriores (escoltas y aleros), interiores (pivots y ala-pivots); sin posicion,
+// comodin. Nivel global A=5 … E=1; sin nivel cuenta como C (3). Prioridades, en este orden:
+//   1) cada grupo con un base (o base de reserva) mientras haya, los sobrantes repartidos (diferencia maxima 1);
+//   2) interiores parejos (diferencia maxima 1);
+//   3) nivel medio por grupo lo mas parejo posible;
+//   4) jugadores A repartidos (diferencia maxima 1) y, si un grupo lleva mas A, que no sea tambien el de mas bases ni
+//      el de nivel medio mas alto, si hay alternativa igual de buena.
+// Metodo: un primer reparto voraz (bases, interiores, exteriores y comodines, cada linea de mas a menos nivel, cada
+// jugador al grupo con hueco y menos nivel acumulado) y repartos de partida pseudoaleatorios con semilla fija; cada
+// uno se mejora con intercambios entre grupos mientras mejoren las prioridades. Las combinaciones distintas que empatan
+// en todas las prioridades son las «otras sugerencias» (en orden fijo: mismos datos, mismo resultado).
+import { LINEA_DE, type Linea, type Nivel, type Posicion } from "../convocatoria/motor.ts";
 
 export type JugadorGrupo = { person_id: string; nombre: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null };
-export type DomingoGrupos = { fecha: string; equipos: Partial<Record<Equipo, string[]>>; dificultad: Partial<Record<Equipo, Dificultad>> };
-export type EntradaGrupos = { van: JugadorGrupo[]; tamano: number; domingo: DomingoGrupos | null };
-export type Grupo = { nombre: string; personas: string[]; explica: string };
+export type EntradaGrupos = { van: JugadorGrupo[]; tamano: number; variante?: number };
+export type Grupo = { nombre: string; personas: string[] };
+export type Sugerencia = { grupos: Grupo[]; variante: number; variantes: number };
+export type LineaGrupo = Linea | "comodin";
 
 const VALOR: Record<Nivel, number> = { A: 5, B: 4, C: 3, D: 2, E: 1 };
-const DIF: Record<Dificultad, number> = { alta: 3, media: 2, baja: 1 };
-const ORDEN_LINEA: Record<Linea, number> = { base: 0, exterior: 1, interior: 2 };
-const nivel = (j: JugadorGrupo) => VALOR[j.nivel ?? "C"];
-const linea = (j: JugadorGrupo): Linea => (j.posicion ? LINEA_DE[j.posicion] : "exterior");
-const haceDeBase = (j: JugadorGrupo) => linea(j) === "base" || j.base_reserva;
-const dia = (f: string) => +f.slice(8, 10);
+const PARTIDAS = 160;
+export const valorNivel = (j: Pick<JugadorGrupo, "nivel">) => (j.nivel ? VALOR[j.nivel] : 3);
+export const lineaGrupo = (j: Pick<JugadorGrupo, "posicion" | "base_reserva">): LineaGrupo =>
+  j.base_reserva || j.posicion === "base" ? "base" : j.posicion ? LINEA_DE[j.posicion] : "comodin";
 
-type Caja = { personas: JugadorGrupo[]; explica: string; completa: string[] };
+/** Tamaños de los grupos: techo(N / tamaño) grupos, lo mas iguales posible (los mayores primero). */
+export function tamanos(n: number, tamano: number): number[] {
+  if (n <= 0) return [];
+  const k = Math.max(1, Math.ceil(n / tamano));
+  return Array.from({ length: k }, (_, i) => Math.floor(n / k) + (i < n % k ? 1 : 0));
+}
 
-/** Reparte una lista en `k` grupos equilibrados por linea y nivel: de mejor a peor dentro de cada linea, cada uno al
- *  grupo con menos de su linea; a igualdad, al de menos nivel acumulado y despues al mas corto. */
-function repartir(js: JugadorGrupo[], k: number): JugadorGrupo[][] {
-  const g: JugadorGrupo[][] = Array.from({ length: Math.max(1, k) }, () => []);
-  const orden = [...js].sort((a, b) => ORDEN_LINEA[linea(a)] - ORDEN_LINEA[linea(b)] || nivel(b) - nivel(a) || a.person_id.localeCompare(b.person_id));
-  const suma = (x: JugadorGrupo[]) => x.reduce((s, j) => s + nivel(j), 0);
-  const cabe = Math.ceil(js.length / g.length);
-  for (const j of orden) {
-    const l = linea(j);
-    let mejor = -1;
-    for (let i = 0; i < g.length; i++) {
-      if (g[i].length >= cabe) continue;
-      if (mejor < 0) { mejor = i; continue; }
-      const a = g[i], b = g[mejor];
-      const la = a.filter((x) => linea(x) === l).length, lb = b.filter((x) => linea(x) === l).length;
-      if (la < lb || (la === lb && (suma(a) < suma(b) || (suma(a) === suma(b) && a.length < b.length)))) mejor = i;
+const redondo = (x: number) => Math.round(x * 1e6) / 1e6;
+const media = (g: JugadorGrupo[]) => (g.length ? redondo(g.reduce((s, j) => s + valorNivel(j), 0) / g.length) : 0);
+const exceso = (xs: number[]) => Math.max(0, Math.max(...xs) - Math.min(...xs) - 1);
+
+/** Puntuacion de un reparto (menor es mejor, se compara en orden). Las 6 primeras cifras son las prioridades; la
+ *  ultima (varianza del nivel medio) solo ordena entre combinaciones igual de buenas. */
+function puntuar(gs: JugadorGrupo[][]): number[] {
+  const cuenta = (f: (j: JugadorGrupo) => boolean) => gs.map((g) => g.filter(f).length);
+  const B = cuenta((j) => lineaGrupo(j) === "base"), I = cuenta((j) => lineaGrupo(j) === "interior");
+  const E = cuenta((j) => lineaGrupo(j) === "exterior"), A = cuenta((j) => j.nivel === "A");
+  const M = gs.map(media);
+  const rango = redondo(Math.max(...M) - Math.min(...M));
+  let choque = 0;
+  const masA = Math.max(...A), masB = Math.max(...B), masM = Math.max(...M);
+  if (masA > Math.min(...A)) {
+    for (let i = 0; i < gs.length; i++) {
+      if (A[i] !== masA) continue;
+      if (masB > Math.min(...B) && B[i] === masB) choque++;
+      if (rango > 0 && M[i] === masM) choque++;
     }
-    g[mejor].push(j);
   }
-  return g;
+  const m = M.reduce((s, x) => s + x, 0) / M.length;
+  return [exceso(B), exceso(I), rango, exceso(A), choque, exceso(E), redondo(M.reduce((s, x) => s + (x - m) ** 2, 0))];
 }
+const PRIORIDADES = 6;
+const compara = (a: number[], b: number[], n = a.length) => { for (let i = 0; i < n; i++) if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1; return 0; };
 
-/** La linea que le falta a un grupo: un base (o quien pueda hacer de base); si no, interiores (2); si no, exteriores. */
-function faltaEn(g: JugadorGrupo[]): "base" | "interior" | "exterior" | null {
-  if (!g.some(haceDeBase)) return "base";
-  if (g.filter((j) => linea(j) === "interior").length < 2) return "interior";
-  if (g.filter((j) => linea(j) === "exterior").length < 2) return "exterior";
-  return null;
-}
-
-export function sugerirGrupos(e: EntradaGrupos): Grupo[] {
-  const tamano = Math.min(6, Math.max(3, Math.round(e.tamano || 5)));
-  const van = new Map(e.van.map((j) => [j.person_id, j]));
-  const cajas: Caja[] = [];
-  const usados = new Set<string>();
-  const nombre = (i: number) => `Grupo ${i + 1}`;
-
-  if (e.domingo) {
-    const d = e.domingo;
-    const eqs = (["MdA", "MdL"] as Equipo[]).filter((x) => (d.equipos[x] ?? []).length);
-    const de = (x: Equipo) => (d.equipos[x] ?? []).filter((id) => van.has(id));
-    const enLos2 = eqs.length === 2 ? de("MdA").filter((id) => de("MdL").includes(id)) : [];
-    const solo: Record<Equipo, string[]> = { MdA: de("MdA").filter((id) => !enLos2.includes(id)), MdL: de("MdL").filter((id) => !enLos2.includes(id)) };
-    // Quien dobla: con el partido mas dificil; si es igual, con el equipo que tenga menos (y a igualdad, el MdA).
-    for (const id of enLos2) {
-      const a = DIF[d.dificultad.MdA ?? "media"], l = DIF[d.dificultad.MdL ?? "media"];
-      const x: Equipo = a > l ? "MdA" : l > a ? "MdL" : solo.MdA.length <= solo.MdL.length ? "MdA" : "MdL";
-      solo[x].push(id);
+/** Reparto voraz: bases, interiores, exteriores y comodines; cada linea de mas a menos nivel; cada jugador al grupo
+ *  con hueco y menos nivel acumulado (a igualdad, el que tenga menos de su linea y despues el primero). */
+function voraz(js: JugadorGrupo[], tam: number[]): JugadorGrupo[][] {
+  const gs: JugadorGrupo[][] = tam.map(() => []);
+  const orden: LineaGrupo[] = ["base", "interior", "exterior", "comodin"];
+  const lista = [...js].sort((a, b) => orden.indexOf(lineaGrupo(a)) - orden.indexOf(lineaGrupo(b)) || valorNivel(b) - valorNivel(a) || a.person_id.localeCompare(b.person_id));
+  const suma = (g: JugadorGrupo[]) => g.reduce((s, j) => s + valorNivel(j), 0);
+  for (const j of lista) {
+    const l = lineaGrupo(j);
+    let mejor = -1;
+    for (let i = 0; i < gs.length; i++) {
+      if (gs[i].length >= tam[i]) continue;
+      if (mejor < 0) { mejor = i; continue; }
+      const d = suma(gs[i]) - suma(gs[mejor]);
+      if (d < 0 || (d === 0 && gs[i].filter((x) => lineaGrupo(x) === l).length < gs[mejor].filter((x) => lineaGrupo(x) === l).length)) mejor = i;
     }
-    for (const x of eqs) {
-      const js = solo[x].map((id) => van.get(id)!).filter(Boolean);
-      if (!js.length) continue;
-      for (const g of repartir(js, Math.ceil(js.length / tamano))) {
-        for (const j of g) usados.add(j.person_id);
-        cajas.push({ personas: g, explica: `${x} del domingo ${dia(d.fecha)}`, completa: [] });
+    gs[mejor].push(j);
+  }
+  return gs;
+}
+
+/** Generador pseudoaleatorio con semilla (mulberry32): mismas semillas, mismos repartos de partida. */
+function azar(semilla: number) {
+  let a = semilla >>> 0;
+  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function alAzar(js: JugadorGrupo[], tam: number[], semilla: number): JugadorGrupo[][] {
+  const r = azar(semilla), x = [...js];
+  for (let i = x.length - 1; i > 0; i--) { const k = Math.floor(r() * (i + 1)); [x[i], x[k]] = [x[k], x[i]]; }
+  let p = 0;
+  return tam.map((t) => x.slice(p, (p += t)));
+}
+
+/** Mejora con intercambios entre grupos (el primero que mejore, en orden fijo) hasta que ninguno mejore. */
+function mejorar(gs: JugadorGrupo[][]): { gs: JugadorGrupo[][]; p: number[] } {
+  let p = puntuar(gs);
+  for (let vueltas = 0; vueltas < 200; vueltas++) {
+    let cambio = false;
+    for (let a = 0; a < gs.length; a++) for (let b = a + 1; b < gs.length; b++) {
+      for (let i = 0; i < gs[a].length; i++) for (let k = 0; k < gs[b].length; k++) {
+        const x = gs[a][i], y = gs[b][k];
+        if (valorNivel(x) === valorNivel(y) && lineaGrupo(x) === lineaGrupo(y) && (x.nivel === "A") === (y.nivel === "A")) continue;
+        gs[a][i] = y; gs[b][k] = x;
+        const q = puntuar(gs);
+        if (compara(q, p) < 0) { p = q; cambio = true; } else { gs[a][i] = x; gs[b][k] = y; }
       }
     }
+    if (!cambio) break;
   }
+  return { gs, p };
+}
 
-  // Quien no juega el domingo: primero completa los grupos mas cortos, con la linea que les falte.
-  let resto = e.van.filter((j) => !usados.has(j.person_id)).sort((a, b) => nivel(b) - nivel(a) || a.person_id.localeCompare(b.person_id));
-  while (resto.length) {
-    const huecos = cajas.filter((c) => c.personas.length < tamano).sort((a, b) => a.personas.length - b.personas.length);
-    if (!huecos.length) break;
-    const c = huecos[0];
-    const falta = faltaEn(c.personas);
-    const media = c.personas.length ? c.personas.reduce((s, j) => s + nivel(j), 0) / c.personas.length : 3;
-    const encaja = (j: JugadorGrupo) => (falta === "base" ? haceDeBase(j) : falta ? linea(j) === falta : true);
-    const candidatos = resto.filter(encaja);
-    const pool = candidatos.length ? candidatos : resto;
-    const elegido = [...pool].sort((a, b) => Math.abs(nivel(a) - media) - Math.abs(nivel(b) - media) || a.person_id.localeCompare(b.person_id))[0];
-    c.personas.push(elegido);
-    c.completa.push(falta === "base" && linea(elegido) !== "base" && elegido.base_reserva ? `${elegido.nombre}, que puede hacer de base` : elegido.nombre);
-    resto = resto.filter((j) => j !== elegido);
+/** Orden fijo de un reparto: cada grupo por person_id; los grupos, los mayores primero y despues por su primer id. */
+function canonico(gs: JugadorGrupo[][]): string[][] {
+  return gs.map((g) => g.map((j) => j.person_id).sort()).sort((a, b) => b.length - a.length || (a.join() < b.join() ? -1 : 1));
+}
+
+export function sugerirGrupos(e: EntradaGrupos): Sugerencia {
+  const tamano = Math.min(6, Math.max(3, Math.round(e.tamano || 5)));
+  const js = [...e.van].sort((a, b) => a.person_id.localeCompare(b.person_id));
+  const tam = tamanos(js.length, tamano);
+  if (!tam.length) return { grupos: [], variante: 0, variantes: 0 };
+  const vistos = new Map<string, { g: string[][]; p: number[] }>();
+  for (let s = 0; s <= PARTIDAS; s++) {
+    const { gs, p } = mejorar(s === 0 ? voraz(js, tam) : alAzar(js, tam, s));
+    const g = canonico(gs);
+    const clave = g.map((x) => x.join(",")).join("|");
+    if (!vistos.has(clave)) vistos.set(clave, { g, p });
   }
-  // Los que aun quedan (o todos, sin partido): grupos equilibrados.
-  if (resto.length) {
-    const sin = e.domingo ? "Sin partido el domingo" : "Reparto equilibrado (sin partido el domingo)";
-    for (const g of repartir(resto, Math.ceil(resto.length / tamano))) cajas.push({ personas: g, explica: sin, completa: [] });
-  }
-  return cajas.map((c, i) => ({
-    nombre: nombre(i),
-    personas: c.personas.map((j) => j.person_id),
-    explica: `${c.explica}${c.completa.length ? `; completa ${c.completa.join(" y ")}` : ""}`,
-  }));
+  const todos = [...vistos.entries()].sort(([ca, a], [cb, b]) => compara(a.p, b.p) || (ca < cb ? -1 : 1));
+  const mejores = todos.filter(([, x]) => compara(x.p, todos[0][1].p, PRIORIDADES) === 0);
+  const variante = ((Math.trunc(e.variante ?? 0) % mejores.length) + mejores.length) % mejores.length;
+  return { grupos: mejores[variante][1].g.map((personas, i) => ({ nombre: `Grupo ${i + 1}`, personas })), variante, variantes: mejores.length };
+}
+
+/** Resumen de un grupo para Gestion (nunca para la plantilla): «Nivel medio 3,5 · 3 interiores · 1 base». */
+export function resumenGrupo(js: Pick<JugadorGrupo, "posicion" | "base_reserva" | "nivel">[]): string {
+  if (!js.length) return "";
+  const m = js.reduce((s, j) => s + valorNivel(j), 0) / js.length;
+  const i = js.filter((j) => lineaGrupo(j) === "interior").length, b = js.filter((j) => lineaGrupo(j) === "base").length;
+  return `Nivel medio ${m.toFixed(1).replace(".", ",")} · ${i} ${i === 1 ? "interior" : "interiores"} · ${b} ${b === 1 ? "base" : "bases"}`;
 }
 
 /** Mensaje de WhatsApp con los grupos: solo nombres (nunca niveles ni el criterio). */

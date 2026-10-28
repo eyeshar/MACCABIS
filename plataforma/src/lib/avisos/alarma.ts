@@ -19,3 +19,9 @@ export function problemaTarea(pasadas: Pasada[], ahora = new Date()): string | n
   }
   return null;
 }
+
+/** Salud para el workflow de GitHub: "ok" si la ultima pasada correcta (200) tiene menos de 40 minutos. */
+export function estadoSalud(ultimaOk: string | null, ahora = new Date()): "ok" | "fallando" {
+  if (!ultimaOk) return "fallando";
+  return ahora.getTime() - new Date(ultimaOk).getTime() > MIN_SIN_PASADAS * 60_000 ? "fallando" : "ok";
+}

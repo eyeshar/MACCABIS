@@ -10,10 +10,11 @@
 **«Pregunta al asistente» (28/10/2026, `feat/chat-ia`, D142):**
 - [x] Worker `maccabis-chat` en Cloudflare (plan Free comprobado), secretos y `CHAT_WORKER_URL` en Vercel; ruta `/api/chat`, página `/asistente`, acceso en Inicio, interruptor `CHAT_IA_ABIERTO` (por defecto «gestores»); `pruebas:chat-ia`; prueba real en la vista previa.
 - [x] Revisión de Iván del 28/10 aplicada (enlaces validados, prompt, D141, «Pensando…», norma 14).
-- [ ] **Iván lo prueba con su cuenta en la vista previa**; luego, **OK de Iván y merge en `main`** (tras el merge, en producción lo verán solo los gestores).
-- [ ] **Tras una semana de prueba con los gestores: abrir a «todos»** (`CHAT_IA_ABIERTO=todos` en Vercel y redesplegar) y revisar en el panel de Cloudflare el gasto real de neuronas antes y después.
+- [x] Iván lo probó con su cuenta en la vista previa (28/10): OK, sin fugas. **Abierto a «todos» desde ya** (`CHAT_IA_ABIERTO=todos` en producción) con **5 preguntas por persona** y 60 en total.
+- [ ] Merge en `main` en cuanto la otra sesión termine `fix/cerrar-dudas` (no pisarse en main) y comprobar en producción, sin crear cuentas, que el botón sale con sesión y no sin ella ni en la parte pública.
+- [ ] 29, 30 y 31/10 por la mañana: informe a Iván de las preguntas del día anterior y si se llegó al tope (solo contadores). Luego, mirar en el panel de Cloudflare el gasto real de neuronas.
 - [x] Botón flotante en lugar del enlace de Inicio (cambio de Iván del 28/10): hoja/panel, conversación en la pestaña hasta cerrar sesión, escondido con las barras de Convocatoria/Tablero; en `pruebas:safe-area`.
-- [ ] **La guía del jugador (`docs/GUIA_JUGADOR.md`, base del asistente) se quedó antes de D141:** dice «Pronto verás también quién no ha contestado» y que la hora límite de las dudas «se activa en los próximos días». Con D141 ya en `main`, actualizar esas dos frases (es texto de Iván: con su OK) y `npm run datos:sync` para refrescar `src/data/guiaJugador.json` (`check:copias` avisa).
+- [x] Guía del jugador al día con D141 (texto de Iván, 28/10) y `guiaJugador.json` regenerado.
 **Visibilidad y dudas con hora límite (27/10/2026, `feat/visibilidad-y-dudas`, D141): hecho en la rama, SIN merge.**
 - [x] Jugadores: nombres de quien no ha contestado; motivos solo gestores; `pruebas:dudas` lo comprueba en HTML y en la API.
 - [x] Dudas: límite martes 20:00 (entreno miércoles y partido) o 24 h antes; aviso a las 12:00 juntado con otros; paso a «no va · no confirmó» con aviso; sin botón «Duda» desde el límite; «Dudas: N · límite…» en Panel, Eventos y Respuestas; «posibles» en la convocatoria.

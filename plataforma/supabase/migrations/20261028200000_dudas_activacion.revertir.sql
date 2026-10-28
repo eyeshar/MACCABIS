@@ -27,4 +27,5 @@ grant execute on function public.cerrar_dudas(timestamptz) to service_role;
 
 alter table public.respuestas_web_config drop column dudas_desde;
 
+delete from supabase_migrations.schema_migrations where version = '20261028200000';
 notify pgrst, 'reload schema';

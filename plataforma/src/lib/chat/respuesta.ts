@@ -65,6 +65,6 @@ export function limpiarRespuesta(texto: string, datos: string): string {
   });
   const limpio = lineas.join("\n").replace(/\n{3,}/g, "\n\n").trim();
   // Una negativa va sola (el modelo a veces la adorna: «Lo siento, pero no puedo hacerlo. Eso no puedo hacerlo.»).
-  for (const n of [NEGATIVA, NO_DECIR]) if (limpio.includes(n)) return n;
+  for (const n of [NEGATIVA, NO_DECIR]) if (limpio.toLowerCase().includes(n.slice(0, -1).toLowerCase())) return n;
   return limpio && /[\p{L}\p{N}]/u.test(limpio) ? limpio : NEGATIVA;
 }

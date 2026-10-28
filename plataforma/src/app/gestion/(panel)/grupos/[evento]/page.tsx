@@ -2,7 +2,7 @@ import Link from "next/link";
 import Volver from "@/components/nav/Volver";
 import { notFound } from "next/navigation";
 import { exigirGestor } from "@/lib/sesion";
-import { cargarGrupos } from "@/lib/grupos/datos";
+import { cargarGrupos, sinPrivados } from "@/lib/grupos/datos";
 import Grupos from "../Grupos";
 import "../../tablero/tablero.css";
 import "../grupos.css";
@@ -27,7 +27,7 @@ export default async function GruposEntreno({ params }: { params: Promise<{ even
           <span className="suave">{d.van.length} dicen «Voy» · {d.duda.length} dudan · <Link href={`/gestion/tablero?evento=${d.evento.id}`}>Abrir tablero</Link></span>
         </div>
       </div>
-      <Grupos key={clave} d={d} />
+      <Grupos key={clave} d={sinPrivados(d)} />
     </>
   );
 }

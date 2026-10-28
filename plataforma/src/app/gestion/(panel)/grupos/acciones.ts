@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { exigirGestor } from "@/lib/sesion";
-import { cargarGrupos } from "@/lib/grupos/datos";
-import { sugerirGrupos, type Grupo } from "@/lib/grupos/sugerir";
+import { cargarGrupos, type Privado } from "@/lib/grupos/datos";
+import { sugerirGrupos, type Sugerencia } from "@/lib/grupos/sugerir";
 
 // Grupos de entreno (D122). Solo gestores (RLS de grupos_repartos: is_gestor). La sugerencia se calcula en el servidor
 // con los datos de la base; lo que se guarda se valida contra los invitados al entreno.
@@ -11,16 +11,26 @@ import { sugerirGrupos, type Grupo } from "@/lib/grupos/sugerir";
 export type R<T = undefined> = { ok: true; dato?: T } | { ok: false; error: string };
 const refrescar = (evento: string) => { revalidatePath(`/gestion/grupos/${evento}`); revalidatePath("/gestion/grupos"); revalidatePath("/", "layout"); };
 
-export async function sugerir(eventoId: string, tamano: number): Promise<R<Grupo[]>> {
+/** Posicion, base de reserva y nivel de los invitados al entreno: la pantalla los pide aparte para que no viajen en el
+ *  HTML de la pagina (D143) y los tiene solo en memoria. */
+export async function datosPrivados(eventoId: string): Promise<R<Record<string, Privado>>> {
+  const { supabase } = await exigirGestor();
+  const d = await cargarGrupos(supabase, eventoId);
+  if (!d) return { ok: false, error: "Ese entreno no existe." };
+  return { ok: true, dato: Object.fromEntries(d.jugadores.map((j) => [j.person_id, { posicion: j.posicion, base_reserva: j.base_reserva, nivel: j.nivel }])) };
+}
+
+/** «Sugerir grupos» y «Otra sugerencia» (variante = la siguiente combinacion igual de nivelada). */
+export async function sugerir(eventoId: string, tamano: number, variante = 0): Promise<R<Sugerencia>> {
   const { supabase } = await exigirGestor();
   const d = await cargarGrupos(supabase, eventoId);
   if (!d) return { ok: false, error: "Ese entreno no existe." };
   const van = d.jugadores.filter((j) => d.van.includes(j.person_id));
   if (!van.length) return { ok: false, error: "Nadie ha dicho «Voy» a este entreno todavía." };
-  return { ok: true, dato: sugerirGrupos({ van, tamano, domingo: d.domingo }) };
+  return { ok: true, dato: sugerirGrupos({ van, tamano, variante }) };
 }
 
-type Entrada = { id: string | null; nombre: string; tamano: number; grupos: { nombre: string; personas: string[]; explica?: string }[] };
+type Entrada = { id: string | null; nombre: string; tamano: number; grupos: { nombre: string; personas: string[] }[] };
 
 export async function guardarReparto(eventoId: string, r: Entrada): Promise<R<string>> {
   const { supabase, nombre: quien } = await exigirGestor();
@@ -33,7 +43,6 @@ export async function guardarReparto(eventoId: string, r: Entrada): Promise<R<st
   const grupos = r.grupos.map((g, i) => ({
     nombre: (g.nombre || `Grupo ${i + 1}`).trim().slice(0, 40),
     personas: g.personas.filter((p) => validos.has(p) && !vistos.has(p) && vistos.add(p)),
-    ...(g.explica ? { explica: g.explica.slice(0, 200) } : {}),
   }));
   const tamano = Math.min(6, Math.max(3, Math.round(r.tamano || 5)));
   const fila = { nombre, tamano, grupos, cambiado_en: new Date().toISOString(), cambiado_por_nombre: quien };

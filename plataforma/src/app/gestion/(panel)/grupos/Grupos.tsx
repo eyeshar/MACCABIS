@@ -1,37 +1,45 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
-import { mensajeGrupos } from "@/lib/grupos/sugerir";
-import type { DatosGrupos } from "@/lib/grupos/datos";
-import { borrarReparto, duplicarReparto, guardarReparto, publicarReparto, sugerir } from "./acciones";
+import { mensajeGrupos, resumenGrupo } from "@/lib/grupos/sugerir";
+import type { DatosGrupos, JugadorVisible, Privado } from "@/lib/grupos/datos";
+import { borrarReparto, datosPrivados, duplicarReparto, guardarReparto, publicarReparto, sugerir } from "./acciones";
 
-type G = { nombre: string; personas: string[]; explica?: string };
+type G = { nombre: string; personas: string[] };
 const TEXTO_POS: Record<string, string> = { base: "Base", escolta: "Escolta", alero: "Alero", ala_pivot: "Ala-pívot", pivot: "Pívot" };
 const FUERA = -1;
 
-/** Grupos de entreno (D122, lienzo «Inicio personal»): varios repartos por entreno, «Sugerir grupos» (de 3 a 6 por
- *  grupo), mover con seleccion multiple («Mover N a…») o arrastrando en escritorio, renombrar, añadir o quitar grupos,
- *  duplicar, borrar, «Publicar a la plantilla» (desactivado por defecto) y el mensaje de WhatsApp. */
-export default function Grupos({ d }: { d: DatosGrupos }) {
+/** Grupos de entreno (D122, lienzo «Inicio personal»): varios repartos por entreno, «Sugerir grupos» nivelados y
+ *  «Otra sugerencia» (D143, de 3 a 6 por grupo), mover con seleccion multiple («Mover N a…») o arrastrando en escritorio,
+ *  renombrar, añadir o quitar grupos, duplicar, borrar, «Publicar a la plantilla» (desactivado por defecto), el mensaje
+ *  de WhatsApp y la «Vista para el equipo» (D144) para pantallazos: solo nombres, sin nada privado en la pagina.
+ *  Posicion, base de reserva y nivel llegan aparte (datosPrivados) y viven solo en memoria. */
+export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
   const router = useRouter();
   const [idActual, setIdActual] = useState<string | null>(d.repartos[0]?.id ?? null);
   const actual = d.repartos.find((r) => r.id === idActual) ?? null;
   const [nombre, setNombre] = useState(actual?.nombre ?? "Grupos");
   const [tamano, setTamano] = useState(actual?.tamano ?? 5);
-  const [grupos, setGrupos] = useState<G[]>(actual?.grupos ?? []);
+  const [grupos, setGrupos] = useState<G[]>((actual?.grupos ?? []).map((g) => ({ nombre: g.nombre, personas: g.personas })));
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [destino, setDestino] = useState<number>(0);
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [pendiente, empezar] = useTransition();
+  const [priv, setPriv] = useState<Record<string, Privado> | null>(null);
+  const [variante, setVariante] = useState<number | null>(null);
+  const [equipo, setEquipo] = useState(false);
+  useEffect(() => { let vivo = true; datosPrivados(d.evento.id).then((r) => { if (vivo && r.ok) setPriv(r.dato ?? {}); }); return () => { vivo = false; }; }, [d.evento.id]);
+  // La vista para el equipo tambien esconde la cabecera y las barras de la web (no llevan datos privados).
+  useEffect(() => { document.body.classList.toggle("gr-vista-equipo", equipo); return () => document.body.classList.remove("gr-vista-equipo"); }, [equipo]);
   const quien = useMemo(() => new Map(d.jugadores.map((j) => [j.person_id, j])), [d.jugadores]);
   const nombreDe = (id: string) => quien.get(id)?.nombre ?? id;
 
   const cargar = (id: string | null) => {
     const r = d.repartos.find((x) => x.id === id) ?? null;
-    setIdActual(id); setNombre(r?.nombre ?? "Grupos nuevos"); setTamano(r?.tamano ?? 5); setGrupos(r?.grupos ?? []); setSel(new Set()); setMensaje(null);
+    setIdActual(id); setNombre(r?.nombre ?? "Grupos nuevos"); setTamano(r?.tamano ?? 5); setGrupos((r?.grupos ?? []).map((g) => ({ nombre: g.nombre, personas: g.personas }))); setSel(new Set()); setMensaje(null); setVariante(null);
   };
   const enGrupo = new Set(grupos.flatMap((g) => g.personas));
   const sinGrupo = d.van.filter((id) => !enGrupo.has(id));
@@ -49,10 +57,13 @@ export default function Grupos({ d }: { d: DatosGrupos }) {
   });
 
   const hacer = (f: () => Promise<void>) => empezar(async () => { setMensaje(null); await f(); });
-  const pedirSugerencia = () => hacer(async () => {
-    const r = await sugerir(d.evento.id, tamano);
-    if (!r.ok) { setMensaje({ ok: false, texto: r.error }); return; }
-    setGrupos(r.dato ?? []); setMensaje({ ok: true, texto: "Sugerencia lista: revisa, mueve lo que quieras y guarda el reparto." });
+  const pedirSugerencia = (v: number) => hacer(async () => {
+    const r = await sugerir(d.evento.id, tamano, v);
+    if (!r.ok || !r.dato) { setMensaje({ ok: false, texto: r.ok ? "No se pudo sugerir." : r.error }); return; }
+    const s = r.dato;
+    if (v > 0 && s.variantes <= 1) { setMensaje({ ok: true, texto: "No hay otra combinación igual de nivelada con estos jugadores." }); return; }
+    setGrupos(s.grupos); setVariante(s.variante);
+    setMensaje({ ok: true, texto: `Sugerencia ${s.variante + 1} de ${s.variantes} igual de niveladas: revisa, mueve lo que quieras y guarda el reparto.` });
   });
   const guardar = () => hacer(async () => {
     const r = await guardarReparto(d.evento.id, { id: idActual, nombre, tamano, grupos });
@@ -60,16 +71,43 @@ export default function Grupos({ d }: { d: DatosGrupos }) {
     setIdActual(r.dato ?? null); setMensaje({ ok: true, texto: "Reparto guardado." }); router.refresh();
   });
   const persona = (id: string, tag?: string) => {
-    const j = quien.get(id);
+    const j = priv?.[id];
     return (
       <li key={id} draggable onDragStart={arrastrar(id)} className={sel.has(id) ? "tb-sel" : undefined} data-person={id}>
         <label className="tb-casilla"><input type="checkbox" checked={sel.has(id)} onChange={() => alternar(id)} aria-label={`Seleccionar a ${nombreDe(id)}`} /></label>
-        <span className="tb-jugador"><b>{nombreDe(id)}</b><small>{j?.posicion ? TEXTO_POS[j.posicion] : "sin posición"}{j?.base_reserva && <span className="tb-marca">base de reserva</span>}{j?.nivel && <span className="tb-marca">nivel {j.nivel}</span>}{tag && <span className="tb-marca">{tag}</span>}</small></span>
+        <span className="tb-jugador"><b>{nombreDe(id)}</b><small>{priv && (j?.posicion ? TEXTO_POS[j.posicion] : "sin posición")}{j?.base_reserva && <span className="tb-marca">base de reserva</span>}{priv && <span className="tb-marca">{j?.nivel ? `nivel ${j.nivel}` : "sin nivel"}</span>}{tag && <span className="tb-marca">{tag}</span>}</small></span>
       </li>
     );
   };
-  const titulo = `Grupos del entreno del ${new Date(`${d.evento.fecha}T12:00:00Z`).toLocaleDateString("es-ES", { timeZone: "UTC", weekday: "long", day: "numeric" })}`;
+  const fecha = (o: Intl.DateTimeFormatOptions) => new Date(`${d.evento.fecha}T12:00:00Z`).toLocaleDateString("es-ES", { timeZone: "UTC", ...o });
+  const titulo = `Grupos del entreno del ${fecha({ weekday: "long", day: "numeric" })}`;
   const textoWhatsApp = mensajeGrupos(titulo, grupos, nombreDe);
+  const sinNivel = priv ? d.van.filter((id) => !priv[id]?.nivel).length : 0;
+  const interruptor = (
+    <button type="button" role="switch" aria-checked={equipo} className={`tb-chip gr-interruptor${equipo ? " encendido" : ""}`} data-testid="vista-equipo-interruptor" onClick={() => { setEquipo((x) => !x); setSel(new Set()); }}>
+      <span className="gr-palanca" aria-hidden="true" />Vista para el equipo
+    </button>
+  );
+
+  // Vista para el equipo (D144): solo el titulo, los grupos con sus nombres y «Dudan»; nada privado en el HTML.
+  if (equipo) return (
+    <div className="gr" data-testid="grupos">
+      <div className="gr-vista-fila">{interruptor}</div>
+      <section className="ge" data-testid="vista-equipo" aria-labelledby="ge-titulo">
+        <h2 id="ge-titulo" className="ge-titulo">{nombre.trim() || "Grupos"}</h2>
+        <p className="ge-fecha">Entreno del {fecha({ weekday: "long" })} {fecha({ day: "numeric" })} de {fecha({ month: "long" })}</p>
+        <div className="ge-grupos">
+          {grupos.filter((g) => g.personas.length).map((g, i) => (
+            <div key={i} className="ge-grupo">
+              <h3>{g.nombre}</h3>
+              <ul>{g.personas.map((p) => <li key={p}>{nombreDe(p)}</li>)}</ul>
+            </div>
+          ))}
+        </div>
+        {dudas.length > 0 && <div className="ge-dudan"><h3>Dudan</h3><p>{dudas.map(nombreDe).join(" · ")}</p></div>}
+      </section>
+    </div>
+  );
 
   return (
     <div className="gr" data-testid="grupos">
@@ -83,15 +121,18 @@ export default function Grupos({ d }: { d: DatosGrupos }) {
           <div className="campo" style={{ margin: 0 }}><label htmlFor="gr-nombre">Nombre del reparto</label><input id="gr-nombre" type="text" value={nombre} maxLength={60} onChange={(e) => setNombre(e.target.value)} placeholder="Calentamiento, 5 contra 5…" /></div>
           <div className="campo" style={{ margin: 0 }}><label htmlFor="gr-tamano">Jugadores por grupo</label>
             <select id="gr-tamano" value={tamano} onChange={(e) => setTamano(Number(e.target.value))}>{[3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
-          <button type="button" className="boton boton-contorno" onClick={pedirSugerencia} disabled={pendiente}>Sugerir grupos</button>
+          <button type="button" className="boton boton-contorno" onClick={() => pedirSugerencia(0)} disabled={pendiente}>Sugerir grupos</button>
+          {variante !== null && <button type="button" className="boton boton-claro" onClick={() => pedirSugerencia(variante + 1)} disabled={pendiente}>Otra sugerencia</button>}
         </div>
-        <p className="pequeno suave" style={{ margin: 0 }} data-testid="gr-domingo">
-          {d.domingo ? `La sugerencia junta a los que juegan juntos el domingo ${+d.domingo.fecha.slice(8)} (${d.domingo.fuente === "aprobada" ? "convocatoria aprobada" : "propuesta del motor, aún sin aprobar"}); quien no juega completa los grupos más cortos.` : "No hay partido el domingo: la sugerencia hace un reparto equilibrado."}
+        <p className="pequeno suave" style={{ margin: 0 }} data-testid="gr-ayuda">
+          La sugerencia reparte a los que dicen «Voy» en grupos parejos: un base (o base de reserva) en cada grupo mientras haya, los interiores repartidos y el nivel medio lo más igualado posible. Los que dudan quedan aparte.
           {" "}Los grupos no cuentan para nada más (ni asistencia, ni rotación, ni estadísticas).
         </p>
+        {sinNivel > 0 && <div className="aviso" role="status" style={{ margin: 0 }} data-testid="gr-sin-nivel">{sinNivel} {sinNivel === 1 ? "jugador sin nivel: la sugerencia lo cuenta" : "jugadores sin nivel: la sugerencia los cuenta"} como C.</div>}
         {mensaje && <div className={`aviso ${mensaje.ok ? "aviso-ok" : "aviso-error"}`} role={mensaje.ok ? "status" : "alert"} style={{ margin: 0 }}>{mensaje.texto}</div>}
       </section>
 
+      <div className="gr-vista-fila">{interruptor}</div>
       <div className="gr-grupos">
         {grupos.map((g, i) => (
           <section key={i} className="gr-grupo" aria-label={g.nombre} data-testid="grupo" {...soltar(i)}>
@@ -101,7 +142,7 @@ export default function Grupos({ d }: { d: DatosGrupos }) {
               <span className="cifra suave">{g.personas.length}</span>
               <button type="button" className="tb-todos" onClick={() => setGrupos((gs) => gs.filter((_, k) => k !== i))}>Quitar grupo</button>
             </div>
-            {g.explica && <p className="pequeno suave gr-explica">{g.explica}</p>}
+            {priv && g.personas.length > 0 && <p className="pequeno suave gr-resumen" data-testid="gr-resumen">{resumenGrupo(g.personas.map((p) => priv[p] ?? { posicion: null, base_reserva: false, nivel: null }))}</p>}
             <ul className="tb-lista">{g.personas.map((p) => persona(p, !d.van.includes(p) ? (d.duda.includes(p) ? "duda" : "no ha dicho voy") : undefined))}</ul>
             {!g.personas.length && <p className="pequeno suave">Vacío: mueve aquí a quien quieras.</p>}
           </section>

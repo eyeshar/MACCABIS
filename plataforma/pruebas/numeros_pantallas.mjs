@@ -24,7 +24,7 @@ try {
     jugadores: [['esteban-jon', 'jon@pruebas.local']],
     gestores: [['Iván', 'gestor@pruebas.local', 'villaescusa-silva-ivan']],
   });
-  const [ent] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > ${hoy} order by fecha limit 1`;
+  const [ent] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha >= ${hoy} order by fecha limit 1`;
   const j3 = await sql`select id, equipo from public.eventos where tipo = 'liga' and fecha = ${J3} order by inicio`;
   const mda = j3.find((x) => x.equipo === 'MdA'), mdl = j3.find((x) => x.equipo === 'MdL');
   // Respuestas al entreno: Jon va; Noe no va (lesión, «rodilla»); Zoe duda; Ari sin responder.

@@ -50,7 +50,7 @@ try {
     gestores: [['Iván', 'gestor@pruebas.local', 'villaescusa-silva-ivan']],
   });
   const uno = P['sint-uno'].token, dos = P['sint-dos'].token, tres = P['sint-tres'].token, cuatro = P['sint-cuatro'].token, gestor = P['gestor@pruebas.local'].token;
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() - interval '1 day' where id = 1`;
+  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() - interval '1 day', dudas_desde = now() - interval '30 days' where id = 1`;
 
   // Eventos de prueba: uno lejano (límite en el futuro), uno que empieza dentro de 20 h (su límite pasó hace 4 h), un
   // partido solo del MdA y un plan que empieza dentro de 12 h.
@@ -169,6 +169,21 @@ try {
   ok(rows.some((x) => x.r_evento === E.plan && x.r_person === 'sint-dos'), 'pero los planes sí (solo existen en la web), también con el interruptor apagado');
   await sql`update public.respuestas_web_config set encendido = true where id = 1`;
   await sql`delete from public.respuestas where evento_id = ${E.plan}`;
+  // ---------------------------------------------------------------------------------------------- sin retroactividad
+  console.log('\n== Sin retroactividad: solo se cierran dudas cuyo límite es POSTERIOR a la activación (dudas_desde)');
+  await poner(E.fut, 'sint-uno', 'duda'); await poner(E.pronto, 'sint-uno', 'duda');
+  await sql`update public.respuestas_web_config set dudas_desde = now() where id = 1`;
+  rows = await cerrar(Date.now() + 60000);
+  s = await estado(E.pronto);
+  ok(rows.filter((x) => x.r_evento === E.pronto).length === 0 && s['sint-uno'].respuesta === 'duda', 'duda con el límite ANTES de la activación: no se cierra (límite ' + iso(pro.l) + ')');
+  rows = await cerrar(lim);
+  s = await estado(E.fut);
+  ok(rows.some((x) => x.r_evento === E.fut && x.r_person === 'sint-uno') && s['sint-uno'].respuesta === 'no' && s['sint-uno'].origen === 'sistema', 'duda con el límite DESPUÉS de la activación: se cierra');
+  await sql`update public.respuestas_web_config set dudas_desde = now() - interval '30 days' where id = 1`;
+  rows = await cerrar(Date.now() + 60000);
+  ok(rows.some((x) => x.r_evento === E.pronto), 'con la activación más atrás, la misma duda sí se cierra (prueba de que era la fecha lo que la frenaba)');
+  await poner(E.fut, 'sint-uno', 'va'); await poner(E.fut, 'sint-dos', 'duda');
+  await sql`delete from public.respuestas where evento_id = ${E.pronto} and person_id = 'sint-uno'`;
   // el estado de la respuesta única del domingo
   console.log('\n== Quién puede ejecutarla');
   const priv = (await sql`select has_function_privilege('authenticated', 'public.cerrar_dudas(timestamptz)', 'execute') a, has_function_privilege('anon', 'public.cerrar_dudas(timestamptz)', 'execute') n, has_function_privilege('service_role', 'public.cerrar_dudas(timestamptz)', 'execute') s, has_function_privilege('authenticated', 'public._limite_dudas(uuid)', 'execute') l`)[0];
@@ -195,6 +210,13 @@ try {
   av = await avisos();
   ok(t.json.cerradas === 0 && av.length === 2, 'repetir la tarea: nada nuevo ni duplicado', JSON.stringify(t));
   ok((await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${E.pronto}`)[0].n === 0, 'el paso automático no dispara la banda roja de Gestión');
+  // Un fallo REAL de la llamada (aquí: sin permiso, mensaje con «cerrar_dudas») no se traga: la tarea falla a la vista
+  await sql`revoke execute on function public.cerrar_dudas(timestamptz) from service_role`;
+  t = await tarea();
+  ok(t.status === 500 && /cerrar dudas/.test(t.json.error ?? ''), 'error de cerrar_dudas distinto de «no existe»: la tarea devuelve 500 con el motivo (antes se escondía)', JSON.stringify(t));
+  await sql`grant execute on function public.cerrar_dudas(timestamptz) to service_role`;
+  t = await tarea();
+  ok(t.status === 200 && t.json.cerradas === 0, 'devuelto el permiso, la tarea vuelve a 200 e informa de cuántas dudas cerró', JSON.stringify(t));
   // Uno vuelve a «voy» y la tarea no le avisa de nada más
   r = await rpc('responder', { p_evento: E.pronto, p_respuesta: 'va' }, uno);
   t = await tarea();
@@ -262,6 +284,26 @@ try {
 
   console.log('\n== Gestión: «Dudas: N · límite…», «pasaron a no va» y «posibles»');
   const pg = await e.sesion('gestor@pruebas.local', 1280);
+  // Alarma de la tarea: con el esquema `net` falso de la pila local (en el real es pg_net)
+  await sql`create schema if not exists net`;
+  await sql`create table if not exists net._http_response (id bigserial primary key, status_code int, created timestamptz default now())`;
+  await sql`delete from net._http_response`;
+  await pg.goto(`${APP}/gestion`);
+  ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'alarma de la tarea: sin historial no aparece');
+  await sql`insert into net._http_response (status_code, created) values (401, now() - interval '15 minutes'), (401, now())`;
+  await pg.goto(`${APP}/gestion`);
+  const al = await pg.getByTestId('alarma-tarea').innerText().catch(() => '');
+  ok(/La tarea de avisos está fallando/.test(al) && /401 y 401/.test(al), 'dos 401 seguidos: banda roja en Gestión', al);
+  await pg.goto(`${APP}/gestion/eventos`);
+  ok((await pg.getByTestId('alarma-tarea').count()) === 1, 'y se ve en todas las pantallas de Gestión');
+  await sql`insert into net._http_response (status_code, created) values (200, now() + interval '1 minute')`;
+  await pg.goto(`${APP}/gestion`);
+  ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'con la última pasada en 200, desaparece');
+  r = await rpc('estado_tarea_avisos', {}, uno);
+  ok(r.status >= 400, 'un jugador no puede leer el estado de la tarea', String(r.status));
+  await sql`drop table net._http_response`; await sql`drop schema net`;
+  await pg.goto(`${APP}/gestion`);
+  ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'sin esquema net (pila local) no falla ni avisa');
   await pg.goto(`${APP}/gestion/eventos/${E.fut}/respuestas`);
   const lg = await pg.getByTestId('limite-dudas').innerText();
   ok(/^Dudas: 1 · límite \S+ \d\d\/\d\d \d\d:\d\d/.test(lg) && !/pasa/.test(lg), 'evento abierto: «Dudas: 1 · límite <día hora>»', lg);
@@ -289,6 +331,10 @@ try {
   console.log('\n== Migración 20261028100000 reversible (D111)');
   const texto = fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028100000_dudas_limite.sql'), 'utf8').replace(/--.*$/gm, '');
   ok(!/\bdrop table\b|\btruncate\b|\bdelete\b|\bcreate table\b|\bdrop column\b/i.test(texto), 'sin tablas nuevas ni borrados: solo relaja dos CHECK, cambia una función y añade dos');
+  await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028210000_estado_tarea_avisos.revertir.sql'), 'utf8'));
+  ok(!(await sql`select 1 from pg_proc where proname = 'estado_tarea_avisos'`).length, 'revertida la alarma (20261028210000): se va estado_tarea_avisos');
+  await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028200000_dudas_activacion.revertir.sql'), 'utf8'));
+  ok(!(await sql`select 1 from information_schema.columns where table_name = 'respuestas_web_config' and column_name = 'dudas_desde'`).length, 'revertida la de la activación (20261028200000): se va la columna dudas_desde');
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028100000_dudas_limite.revertir.sql'), 'utf8'));
   const quedan = (await sql`select proname from pg_proc where proname in ('cerrar_dudas', '_limite_dudas')`).length;
   const sist = (await sql`select count(*)::int n from public.respuestas where origen = 'sistema' or motivo = 'no_confirmo'`)[0].n;

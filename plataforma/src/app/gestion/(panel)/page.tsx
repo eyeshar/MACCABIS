@@ -16,11 +16,14 @@ import { campanaAbiertaAhora } from "@/lib/fechas";
 import { NOMBRE_EQUIPO } from "@/lib/web";
 import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
 import { proximoEntreno } from "@/lib/gestion/entreno";
-import { hhmm, tituloEvento } from "@/lib/eventos/dominio";
+import { convocadosDe, hhmm, tituloEvento } from "@/lib/eventos/dominio";
 import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
 import Numeros, { type GrupoNum } from "@/components/numeros/Numeros";
 import { gruposEvento, lineaDudas, type RespuestaPersona } from "@/lib/numeros/respuestas";
 import { hrefJugador } from "@/lib/numeros/enlaces";
+import { cargarDefecto } from "@/lib/disponibilidad/datos";
+import { claveQuitado, noVaPorDefecto } from "@/lib/disponibilidad/porDefecto";
+import PorDefectoEntreno from "./PorDefectoEntreno";
 
 export const metadata = { title: "Gestión · Maccabis" };
 
@@ -102,16 +105,25 @@ export default async function InicioGestion() {
   ]);
   const evDomingo = (filasDomingo ?? []) as { id: string; clave: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial: boolean; fecha: string; inicio: string | null }[];
   const ids = [...evDomingo.map((e) => e.id), ...(entreno ? [entreno.id] : [])];
-  const { data: rsTodas } = ids.length ? await supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle").in("evento_id", ids) : { data: [] };
+  const [{ data: rsTodas }, defecto] = await Promise.all([
+    ids.length ? supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle").in("evento_id", ids) : Promise.resolve({ data: [] }),
+    cargarDefecto(supabase, entreno ? [entreno.id] : []),
+  ]);
   // Los cuatro contadores con sus nombres y motivos (D139, solo gestores).
   const cuentas = (ev: { id: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial?: boolean; fecha: string; inicio: string | null }) => {
     const rs = ((rsTodas ?? []) as (RespuestaPersona & { evento_id: string })[]).filter((r) => r.evento_id === ev.id);
-    const grupos = gruposEvento(ev as never, js, rs);
+    const grupos = gruposEvento(ev as never, js, rs, true, defecto);
     const n = (k: string) => grupos.find((g) => g.k === k)!.n;
     return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0, dudas: lineaDudas({ ...ev, oficial: ev.oficial ?? true } as never, grupos, rs) };
   };
   const cuentasDomingo = new Map(evDomingo.map((e) => [e.clave, cuentas(e)]));
   const respEntreno = entreno ? cuentas(entreno) : null;
+  // D146: quien «no suele entrenar» y no ha respondido a este entreno (por defecto, «no va») y a quien se le quito.
+  const sinMarca = (p: string) => ((rsTodas ?? []) as { evento_id: string; person_id: string; respuesta: Respuesta }[]).find((r) => r.evento_id === entreno?.id && r.person_id === p)?.respuesta ?? "sin_responder";
+  const conMarca = entreno ? convocadosDe(entreno, js).filter((j) => noVaPorDefecto(entreno, defecto.marcas.get(j.person_id), sinMarca(j.person_id))) : [];
+  const quitado = (p: string) => !!entreno && defecto.quitados.has(claveQuitado(entreno.id, p));
+  const porDefecto = conMarca.filter((j) => !quitado(j.person_id)).map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
+  const quitadosEntreno = conMarca.filter((j) => quitado(j.person_id)).map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
 
   // «Respuestas en la web: activar» (D99.13): estado, condiciones y jornadas jugadas para marcarlas.
   const [{ data: activacion }, { data: marcasDB }, { data: jugadas }] = await Promise.all([
@@ -254,7 +266,7 @@ export default async function InicioGestion() {
                 {" "}(lo habitual: miércoles {habitual.inicio}–{habitual.fin} en {pistaHabitual.nombre}{pistaHabitual.enObras ? ", en obras" : ""})
               </span>
             ) : <span className="suave">No quedan entrenos en el calendario.</span>}
-            {respEntreno && respEntreno.va + respEntreno.duda + respEntreno.no > 0 ? (
+            {respEntreno && respEntreno.va + respEntreno.duda + respEntreno.no - porDefecto.length > 0 ? (
               <div data-testid="respuestas-entreno" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <Numeros variante="cajas" columnas={4} prueba="entreno-numeros" etiqueta="Respuestas al entreno" grupos={respEntreno.grupos} />
                 {respEntreno.dudas && <span className="pequeno suave" data-testid="linea-dudas">{respEntreno.dudas}</span>}
@@ -263,6 +275,7 @@ export default async function InicioGestion() {
             ) : (
               <div className="hueco" data-testid="hueco-sporteasy">Sin respuestas de SportEasy todavía. Claude las trae (Importar → Respuestas) y el recordatorio lo propone él y lo envías tú.</div>
             )}
+            {entreno && <PorDefectoEntreno eventoId={entreno.id} porDefecto={porDefecto} quitados={quitadosEntreno} />}
           </section>
 
           <section className="gs-bloque" aria-labelledby="t-pendiente">

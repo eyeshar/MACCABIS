@@ -18,7 +18,8 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.resolve(AQUI, '..');
 const RES = path.join(AQUI, 'resultados');
 fs.mkdirSync(RES, { recursive: true });
-const PUERTO_APP = 3100;
+// PRUEBAS_PUERTO_APP (opcional): otro puerto para la app si el 3100 esta ocupado (p. ej. por otro proyecto en el mismo ordenador).
+const PUERTO_APP = Number(process.env.PRUEBAS_PUERTO_APP) || 3100;
 const APP = `http://127.0.0.1:${PUERTO_APP}`;
 const PLANTILLA_VIVE = path.join(RAIZ, '..', 'privado', 'LISTADO MACCABIS 2024 (revisado).xlsx');
 

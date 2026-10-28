@@ -129,6 +129,38 @@ try {
     }
   }
 
+  console.log('\n== Disponibilidad por defecto (D146, migración 20261028230000)');
+  const [m146] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261028230000'`;
+  if (!m146.n) console.log('  (aún no aplicada: nada que comprobar)');
+  else {
+    const [p] = await sql`select has_table_privilege('anon', 'public.entreno_defecto_quitado', 'select') a_sel, (select relrowsecurity from pg_class where oid = 'public.entreno_defecto_quitado'::regclass) rls,
+      has_table_privilege('service_role', 'public.jugadores_privado', 'select') s_priv, has_table_privilege('service_role', 'public.entreno_defecto_quitado', 'select') s_q`;
+    ok(!p.a_sel && p.rls && p.s_priv && p.s_q, 'entreno_defecto_quitado: RLS activa, anónimo sin permisos; la tarea de avisos (service_role) lee marcas y excepciones');
+    const pol = await sql`select policyname, cmd, qual, with_check from pg_policies where schemaname = 'public' and tablename = 'entreno_defecto_quitado'`;
+    ok(pol.length === 3 && pol.every((x) => /is_gestor\(\)/.test(`${x.qual ?? ''}${x.with_check ?? ''}`)), 'entreno_defecto_quitado: sus 3 políticas exigen ser gestor', JSON.stringify(pol.map((x) => [x.policyname, x.cmd])));
+    const [c146] = await sql`select (select count(*)::int from public.jugadores_privado where no_suele_entrenar) nse, (select count(*)::int from public.jugadores_privado where nunca_partidos) nap, (select count(*)::int from public.entreno_defecto_quitado) q`;
+    console.log(`  (en la base: ${c146.nse} con «no suele entrenar», ${c146.nap} «nunca a partidos», ${c146.q} excepciones de entreno)`);
+    ok(bloqueado(await api('/jugadores_privado?select=person_id,no_suele_entrenar,nunca_partidos')), 'anónimo (HTTPS) NO lee las marcas');
+    ok(bloqueado(await api('/entreno_defecto_quitado?select=*')), 'anónimo (HTTPS) NO lee las excepciones de entreno');
+    ok((await api('/entreno_defecto_quitado', { metodo: 'POST', cuerpo: { evento_id: '00000000-0000-0000-0000-000000000000', person_id: 'x' } })).status >= 400, 'anónimo NO escribe excepciones');
+    if (jug) {
+      await como(jug.id, async (tx) => {
+        const m = await intenta(tx, 'select count(*)::int n from public.jugadores_privado where no_suele_entrenar or nunca_partidos');
+        ok(!m.ok || m.r[0].n === 0, `el jugador NO lee las marcas (${m.ok ? '0 filas visibles' : 'permiso denegado'})`);
+        const q = await intenta(tx, 'select count(*)::int n from public.entreno_defecto_quitado');
+        ok(!q.ok || q.r[0].n === 0, `el jugador NO lee las excepciones de entreno (${q.ok ? '0 filas visibles' : 'permiso denegado'})`);
+      });
+    }
+    if (ges) {
+      // El recuento esperado, ANTES de la transacción: el cliente tiene una sola conexión y dentro de `como` está ocupada.
+      const [{ n: conMarca }] = await sql`select count(*)::int n from public.jugadores_privado where no_suele_entrenar or nunca_partidos`;
+      await como(ges.user_id, async (tx) => {
+        const m = await intenta(tx, 'select count(*)::int n from public.jugadores_privado where no_suele_entrenar or nunca_partidos');
+        ok(m.ok && m.r[0].n === conMarca, `un gestor sí lee las marcas (${m.ok ? m.r[0].n : '?'} de ${conMarca} filas)`);
+      });
+    }
+  }
+
   const cuentas1 = (await sql`select count(*)::int n from auth.users`)[0].n;
   ok(cuentas0 === cuentas1, `no se ha creado ni borrado ninguna cuenta (${cuentas0} antes y después)`);
 } finally {

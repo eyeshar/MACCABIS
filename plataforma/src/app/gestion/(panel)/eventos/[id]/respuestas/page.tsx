@@ -18,6 +18,8 @@ import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Nu
 import NombreJugador from "@/components/numeros/Nombre";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
+import { cargarDefecto } from "@/lib/disponibilidad/datos";
+import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
 export const metadata = { title: "Respuestas y motivos · Gestión Maccabis" };
 const SEMANAS = 12;
@@ -48,13 +50,14 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
 
   const hoy = hoyMadrid();
   const desde = evento.fecha < hoy ? evento.fecha : hoy, hasta = sumarDias(desde, SEMANAS * 7);
-  const [{ data: encendido }, { data: resp }, { data: periodosDB }, { data: subs }, { data: alertas }, { data: registro }] = await Promise.all([
+  const [{ data: encendido }, { data: resp }, { data: periodosDB }, { data: subs }, { data: alertas }, { data: registro }, defecto] = await Promise.all([
     supabase.rpc("respuestas_web_encendido"),
     supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle, leido_en, origen, puesto_por_nombre, cambiado_en, ausencia_id").in("evento_id", ids),
     supabase.from("ausencias_periodo").select("id, person_id, desde, hasta, motivo, origen").is("borrada_en", null).lte("desde", hasta).or(`hasta.is.null,hasta.gte.${desde}`),
     supabase.from("suscripciones_avisos").select("person_id").eq("activa", true),
     supabase.from("alertas_gestores").select("id, evento_id, person_id, antes, despues, en").in("evento_id", ids).is("visto_en", null).order("en"),
     supabase.from("avisos_registro").select("clave, tipo, enviado_en, resultado, programado_para").overlaps("eventos", ids).eq("tipo", "recordatorio"),
+    cargarDefecto(supabase, ids),
   ]);
   // La respuesta unica del domingo (D103): si sigue vigente, «Solo al de las 09:00» se lee tal cual, sin deducirlo.
   const { data: domingosDB } = dia ? await supabase.from("respuestas_domingo").select("person_id, opcion, solo_evento, origen, puesto_por_nombre, vigente").eq("fecha", evento.fecha).eq("vigente", true) : { data: [] };
@@ -66,11 +69,15 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const de = (eid: string, p: string) => filasR.find((r) => r.evento_id === eid && r.person_id === p) ?? null;
   const periodoDe = (p: string, f: string) => periodos.find((x) => x.person_id === p && x.desde <= f && (x.hasta == null || x.hasta >= f)) ?? null;
 
-  // Personas: invitadas a alguno de los eventos de la vista.
-  const personas = [...new Map(eventos.flatMap((e) => convocadosDe(e, jugadores)).map((j) => [j.person_id, j])).values()];
-  type Linea = { person_id: string; nombre: string; clase: "no" | "duda" | "sin_responder" | "va"; texto: string; motivo: string | null; origenTxt: string | null; periodo: PeriodoW | null; avisos: boolean; dos: boolean; solo: string | null };
+  // Personas: invitadas a alguno de los eventos de la vista. D146: en un partido, quien es «nunca a partidos» y no ha
+  // respondido no cuenta (ni sale); en un entreno, quien «no suele entrenar» y no ha respondido va a «no va (por defecto)».
+  const respDe = (e: EventoFila, p: string) => de(e.id, p)?.respuesta ?? "sin_responder";
+  const invitadosDe = (e: EventoFila) => convocadosDe(e, jugadores).filter((j) => !fueraDelPartido(e, defecto.marcas.get(j.person_id), respDe(e, j.person_id)));
+  const porDefecto = (e: EventoFila, p: string) => noVaPorDefecto(e, defecto.marcas.get(p), respDe(e, p), defecto.quitados.has(claveQuitado(e.id, p)));
+  const personas = [...new Map(eventos.flatMap(invitadosDe).map((j) => [j.person_id, j])).values()];
+  type Linea = { person_id: string; nombre: string; clase: "no" | "duda" | "sin_responder" | "va"; texto: string; motivo: string | null; origenTxt: string | null; periodo: PeriodoW | null; avisos: boolean; dos: boolean; solo: string | null; defecto: boolean };
   const lineas: Linea[] = personas.map((j) => {
-    const suyos = eventos.filter((e) => convocadosDe(e, jugadores).some((x) => x.person_id === j.person_id));
+    const suyos = eventos.filter((e) => invitadosDe(e).some((x) => x.person_id === j.person_id));
     const rs = suyos.map((e) => de(e.id, j.person_id));
     const vals = rs.map((r) => r?.respuesta ?? "sin_responder");
     const per = periodoDe(j.person_id, evento.fecha);
@@ -78,7 +85,9 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
     const ultimo = rs.filter(Boolean).sort((a, b) => ((a!.cambiado_en ?? a!.leido_en ?? "") < (b!.cambiado_en ?? b!.leido_en ?? "") ? 1 : -1))[0];
     const origenTxt = !ultimo || ultimo.respuesta === "sin_responder" ? null : ultimo.origen === "sistema" ? "automático: no confirmó a tiempo" : ultimo.origen === "gestor" ? `puesto por ${ultimo.puesto_por_nombre ?? "un gestor"}` : ultimo.origen === "jugador" ? (ultimo.ausencia_id ? "por su ausencia" : "en la web") : "leído de SportEasy";
     let clase: Linea["clase"], texto: string, solo: string | null = null;
-    if (vals.includes("sin_responder")) { clase = per ? "no" : "sin_responder"; texto = per ? "No va (ausencia)" : "Sin responder"; }
+    const defectoAqui = !per && suyos.length === 1 && porDefecto(suyos[0], j.person_id);
+    if (defectoAqui) { clase = "no"; texto = TEXTO_POR_DEFECTO; }
+    else if (vals.includes("sin_responder")) { clase = per ? "no" : "sin_responder"; texto = per ? "No va (ausencia)" : "Sin responder"; }
     else if (vals.every((v) => v === "va")) { clase = "va"; texto = suyos.length === 2 && distintas ? "A los dos" : "Va"; }
     else if (suyos.length === 2 && distintas && vals.includes("va")) { clase = "va"; const e = suyos[vals.indexOf("va")]; solo = e.id; texto = `Solo ${hhmm(e.inicio)} (${e.equipo})`; }
     else if (vals.includes("duda")) { clase = "duda"; texto = "Duda"; }
@@ -90,9 +99,9 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       if (e) { clase = "va"; solo = e.id; texto = `Solo ${hhmm(e.inicio)} (${e.equipo})`; }
     }
     const horario = rs.find((r) => r?.motivo === "horario");
-    const motivo = rNo ? `${textoMotivo(rNo.motivo)}${rNo.detalle ? ` · ${rNo.detalle}` : ""}` : per && clase === "no" ? `${TEXTO_MOTIVO[per.motivo]} · ${franja(per)}`
+    const motivo = defectoAqui ? NOTA_POR_DEFECTO : rNo ? `${textoMotivo(rNo.motivo)}${rNo.detalle ? ` · ${rNo.detalle}` : ""}` : per && clase === "no" ? `${TEXTO_MOTIVO[per.motivo]} · ${franja(per)}`
       : horario && solo ? `solo puede al de las ${hhmm(eventos.find((e) => e.id === solo)!.inicio)}` : null;
-    return { person_id: j.person_id, nombre: j.nombre_visible, clase, texto, motivo, origenTxt, periodo: per, avisos: conAvisos.has(j.person_id), dos: suyos.length === 2, solo };
+    return { person_id: j.person_id, nombre: j.nombre_visible, clase, texto, motivo, origenTxt, periodo: per, avisos: conAvisos.has(j.person_id), dos: suyos.length === 2, solo, defecto: defectoAqui };
   });
   const ORDEN = { no: 0, duda: 1, sin_responder: 2, va: 3 } as const;
   lineas.sort((a, b) => ORDEN[a.clase] - ORDEN[b.clase] || a.nombre.localeCompare(b.nombre, "es"));
@@ -139,7 +148,8 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const enviadosDe = (tipo: string) => reg.filter((x) => x.clave.startsWith(`rec:${tipo}:`) && x.enviado_en && x.resultado === "enviado");
   const manuales = reg.filter((x) => x.clave.startsWith("rec:manual:") && x.enviado_en);
   const sinRecordatorios = (evento as EventoFila & { sin_recordatorios?: boolean }).sin_recordatorios;
-  const rec = recordatorio(evento, ordenarRespuestas(evento, convocadosDe(evento, jugadores), filasR.filter((r) => r.evento_id === evento.id).map((r) => ({ ...r, motivo: r.motivo === "horario" ? "otro" : r.motivo })) as never, periodos.filter((p) => p.hasta) as Periodo[]), pistas);
+  // «Pedir recordatorio a Claude» (rutina C): ni los «no va (por defecto)» ni los «nunca a partidos» (D146).
+  const rec = recordatorio(evento, ordenarRespuestas(evento, invitadosDe(evento).filter((j) => !porDefecto(evento, j.person_id)), filasR.filter((r) => r.evento_id === evento.id).map((r) => ({ ...r, motivo: r.motivo === "horario" ? "otro" : r.motivo })) as never, periodos.filter((p) => p.hasta) as Periodo[]), pistas);
   const alertasL = (alertas ?? []) as { id: string; evento_id: string; person_id: string; antes: Respuesta; despues: Respuesta; en: string }[];
 
   const enFranja = periodos.filter((p) => nombre.has(p.person_id)).sort((a, b) => (nombre.get(a.person_id)! < nombre.get(b.person_id)! ? -1 : 1));
@@ -194,7 +204,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
                     <td data-label="Respuesta"><span className={l.clase === "no" ? "ev-no" : l.clase === "va" ? "ev-ok" : l.clase === "duda" ? "ev-duda" : "suave"}>{l.texto}</span>{l.origenTxt && <span className="ev-sub" style={{ color: "var(--tinta-tenue)" }}>{l.origenTxt}</span>}</td>
                     <td data-label="Motivo y detalle">{l.motivo ?? <span className="suave">—</span>}</td>
                     <td data-label="Avisos">{l.avisos ? <span className="ev-ok">Sí</span> : <span className="suave">No</span>}</td>
-                    <td data-label="">{encendido && l.clase === "sin_responder" && <ResponderPor eventoId={evento.id} personId={l.person_id} nombre={l.nombre} fecha={evento.fecha} domingo={!!dia} opciones={opcionesPor(l)} />}</td>
+                    <td data-label="">{encendido && (l.clase === "sin_responder" || l.defecto) && <ResponderPor eventoId={evento.id} personId={l.person_id} nombre={l.nombre} fecha={evento.fecha} domingo={!!dia} opciones={opcionesPor(l)} />}</td>
                   </tr>
                 ))}
               </tbody>

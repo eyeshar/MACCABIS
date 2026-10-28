@@ -12,6 +12,7 @@ import { avisoDeEvento, cargarEventos, cargarPistas, type Cliente } from "@/lib/
 import { limpiarRival, pistaEfectiva, quedadaPorDefecto, hhmm, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { nombreRival } from "@/lib/equipacion";
 import { quienResponde } from "@/lib/respuestas/dominio";
+import { fueraDelPartido } from "@/lib/disponibilidad/porDefecto";
 import { calibrar, correccionSesgo, estadisticasGrupo, historiales, resumenCalibracion, tasasPorLetra, TEMPORADA_PROYECCION, type DatosProyeccion, type DificultadRival, type HistorialRival, type LigaJson, type Letra, type SeasonJson } from "./proyeccion";
 import { domingosFueraDe, proponerDificultad, type DatosPrivados, type Equipo, type RespuestaPartido } from "./motor";
 import type { Cambio, Contexto, FilaConvocatoria, FilaPrivada, JugadorVista, PartidoVista } from "./vista";
@@ -113,7 +114,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
-    sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque"),
+    sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos"),
     sb.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle(),
     sb.rpc("respuestas_web_encendido"),
     sb.from("importaciones").select("en, por_nombre").eq("tipo", "respuestas").order("en", { ascending: false }).limit(1),
@@ -175,10 +176,13 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   for (const r of (resp.data ?? []) as { evento_id: string; person_id: string; respuesta: RespuestaPartido; motivo: string | null }[]) respDe.set(`${r.evento_id}|${r.person_id}`, r);
   const activos = ((jug.data ?? []) as { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" }[])
     .filter((j) => j.activo && j.rol !== "entrenador");
+  const invitadoA = (j: (typeof activos)[number], p: FilaPrivada | undefined) => delDia
+    .filter((e) => quienResponde(e, j) && !fueraDelPartido(e, p, respDe.get(`${e.id}|${j.person_id}`)?.respuesta ?? "sin_responder"))
+    .map((e) => e.equipo as Equipo);
   const jugadores: JugadorVista[] = activos.map((j) => {
     const p = privados.get(j.person_id) as FilaPrivada | undefined;
     const privado: DatosPrivados | null = p
-      ? { posicion: p.posicion, base_reserva: p.base_reserva, nivel: p.nivel, dobla: p.dobla, regla: p.regla === "fijo" && p.regla_equipo ? { tipo: "fijo", equipo: p.regla_equipo } : p.regla === "comodin" ? { tipo: "comodin" } : null }
+      ? { posicion: p.posicion, base_reserva: p.base_reserva, nivel: p.nivel, dobla: p.dobla, regla: p.regla === "fijo" && p.regla_equipo ? { tipo: "fijo", equipo: p.regla_equipo } : p.regla === "comodin" ? { tipo: "comodin" } : null, nunca_partidos: !!p.nunca_partidos }
       : null;
     const respuesta: Partial<Record<Equipo, RespuestaPartido>> = {};
     const motivoNo: Partial<Record<Equipo, string | null>> = {};
@@ -192,7 +196,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
       person_id: j.person_id, nombre: j.nombre_visible, ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, solo_entreno: j.rol === "solo_entreno",
       respuesta, privado, sancionado: !!(p?.sancionado_hasta_jornada && jornada != null && p.sancionado_hasta_jornada >= jornada),
       convocados: st?.convocados ?? 0, doblajes: st?.doblajes ?? 0, entrenos4: entrenosDe.get(j.person_id) ?? 0, domingosFuera: domingosFuera(j),
-      invitado: delDia.some((e) => quienResponde(e, j)), invitadoA: delDia.filter((e) => quienResponde(e, j)).map((e) => e.equipo as Equipo),
+      // D146: un «nunca a partidos» sin responder no cuenta como invitado (ni en «sin responder» ni en los contadores).
+      invitado: invitadoA(j, p).length > 0, invitadoA: invitadoA(j, p),
       motivoNo, sancionHasta: p?.sancionado_hasta_jornada ?? null,
     };
   });

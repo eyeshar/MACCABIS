@@ -6,7 +6,7 @@
 // rivales parejos con los convocados igualados aunque un equipo tenga 5 interiores solo suyos (D112, el caso de la J3),
 // nadie dobla por bases (D115), que el motor es determinista (misma entrada = misma salida, también desordenada) y los
 // avisos de data/avisos.json vigentes ese domingo en el mensaje de WhatsApp y las dudas (D141): no se convocan ni cuentan
-// como disponibles, salen aparte como «posibles».
+// como disponibles, salen aparte como «posibles»; y «solo entreno: nunca a partidos» (D146, regla 1.7): no se propone nunca.
 //
 //   npm run pruebas:convocatoria-motor
 
@@ -27,7 +27,7 @@ function J(pos, nivel, o = {}) {
     person_id: id, nombre: o.nombre ?? `Sintético ${String(n).padStart(2, '0')}`,
     ficha: o.ficha ?? { MdA: true, MdL: true }, solo_entreno: o.solo ?? false,
     respuesta: o.resp ?? { MdA: 'va', MdL: 'va' },
-    privado: o.sinDatos ? null : { posicion: pos, base_reserva: o.reserva ?? false, nivel, dobla: o.dobla ?? true, regla: o.regla ?? null },
+    privado: o.sinDatos ? null : { posicion: pos, base_reserva: o.reserva ?? false, nivel, dobla: o.dobla ?? true, regla: o.regla ?? null, ...(o.nunca ? { nunca_partidos: true } : {}) },
     sancionado: o.sancion ?? false, convocados: o.conv ?? 0, doblajes: o.dobl ?? 0, entrenos4: o.ent ?? 2, domingosFuera: o.fuera ?? 0,
   };
 }
@@ -124,6 +124,43 @@ console.log('\n== 20 o más disponibles');
   const r20 = proponer({ partidos: [P('MdA', '09:00'), P('MdL', '12:45')], jugadores: [...base, mas[0], mas[1]] });
   ok(r20.disponibles === 20 && r20.maximo === 10 && r20.sinConvocar.some((s) => s.regla === '1.2'), 'con 20 justos: máximo 10 y el «solo entreno» tampoco va');
   ok(maximoPorEquipo(30, 2) === 12 && maximoPorEquipo(21, 2) === 11 && maximoPorEquipo(19, 1) === 10, 'máximo: 30 → 12, 21 → 11, 19 → 10');
+}
+
+// ---------------------------------------------------------------- D146: «solo entreno: nunca a partidos» (regla 1.7)
+console.log('\n== «Solo entreno: nunca a partidos» (D146, regla 1.7): no se propone nunca');
+{
+  reset();
+  // 12 disponibles para dos partidos: faltan jugadores, así que un «solo entreno» (el rol) entra a cubrir el hueco…
+  const pocos = plantilla([
+    ['base', 'B'], ['base', 'C'], ['escolta', 'C'], ['alero', 'C'], ['escolta', 'D'], ['alero', 'D'],
+    ['pivot', 'C'], ['ala_pivot', 'C'], ['pivot', 'D'], ['ala_pivot', 'D'], ['alero', 'E'],
+  ]);
+  const rol = J('alero', 'B', { solo: true, id: 'sint-rol' });
+  // …pero quien tiene la marca «nunca a partidos» no, aunque diga «voy», tenga nivel A y las dos fichas.
+  const nunca = J('alero', 'A', { nunca: true, dobla: false, id: 'sint-nunca' });
+  const partidos = [P('MdA', '09:00', 'alta'), P('MdL', '12:45')];
+  const r = proponer({ partidos, jugadores: [...pocos, rol, nunca] });
+  const todos = [...ids(r.convocatoria, 'MdA'), ...ids(r.convocatoria, 'MdL')];
+  ok(todos.includes('sint-rol'), 'con menos de 20 disponibles el «solo entreno» del rol SÍ entra a cubrir el hueco (regla 1.2, sin cambios)');
+  ok(!todos.includes('sint-nunca'), 'quien es «nunca a partidos» NO se convoca, ni con huecos por cubrir');
+  ok(r.sinConvocar.some((x) => x.person_id === 'sint-nunca' && x.regla === '1.7' && x.motivo === 'Solo entreno: nunca a partidos'), 'sale en «Disponibles sin convocar» con su motivo (regla 1.7)', JSON.stringify(r.sinConvocar));
+  ok(r.disponibles === 12, 'y no cuenta como disponible (12, no 13)', String(r.disponibles));
+  const sinEl = proponer({ partidos, jugadores: [...pocos, rol] });
+  ok(JSON.stringify(sinEl.convocatoria) === JSON.stringify(r.convocatoria), 'la propuesta es la misma que si no estuviera');
+  // Con 20 o más disponibles, tampoco (y no suma para el umbral de 20).
+  reset();
+  const base = dieciocho();
+  const con20 = proponer({ partidos, jugadores: [...base, J('alero', 'C', { id: 'sint-x' }), J('pivot', 'A', { nunca: true, id: 'sint-n2' }), J('escolta', 'B', { nunca: true, id: 'sint-n3' })] });
+  ok(con20.disponibles === 19 && con20.maximo === 10, 'los «nunca a partidos» no suman para el umbral de 20 ni para el máximo', `${con20.disponibles} / ${con20.maximo}`);
+  ok(!Object.values(con20.convocatoria).flat().some((c) => c.person_id.startsWith('sint-n')), 'y ninguno se convoca');
+  // Revisar una convocatoria hecha a mano que lo lleva: aviso 1.7.
+  const rev = revisar({ partidos, jugadores: [...pocos, rol, nunca] }, { MdA: [{ person_id: 'sint-nunca' }], MdL: [] });
+  ok(avisosDe(rev, '1.7').some((a) => a.person_id === 'sint-nunca' && a.gravedad === 'aviso'), 'si un gestor lo convoca a mano, la pantalla lo avisa (regla 1.7)');
+  // Con «duda»: tampoco sale como «posible».
+  const duda = { ...nunca, respuesta: { MdA: 'duda', MdL: 'duda' } };
+  ok(!proponer({ partidos, jugadores: [...pocos, duda] }).posibles.some((x) => x.person_id === 'sint-nunca'), 'con «duda» tampoco sale entre los «posibles»');
+  // Determinista con la marca.
+  ok(JSON.stringify(proponer({ partidos, jugadores: [nunca, rol, ...pocos].reverse() })) === JSON.stringify(r), 'mismo resultado con los jugadores en otro orden');
 }
 
 // ---------------------------------------------------------------- 5. faltan interiores / 7. un «No dobla» necesario

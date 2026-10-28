@@ -142,3 +142,20 @@ export async function borrarPedidoGestor(pedidoId: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/gestion/ropa");
 }
+
+// ---------- Disponibilidad por defecto (D146) ----------
+/** «No suele entrenar»: pasar a alguien a «sin responder» SOLO en este entreno (`quitar`), o devolverlo a «no va (por
+ *  defecto)». Solo entrenos; la base (RLS) solo deja a los gestores. */
+export async function cambiarPorDefecto(eventoId: string, personId: string, quitar: boolean): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { supabase, nombre } = await exigirGestor();
+  const { data: ev } = await supabase.from("eventos").select("id, tipo").eq("id", eventoId).maybeSingle();
+  if (!ev || ev.tipo !== "entreno") return { ok: false, error: "Solo vale para entrenos." };
+  const { error } = quitar
+    ? await supabase.from("entreno_defecto_quitado").upsert({ evento_id: eventoId, person_id: personId, por_nombre: nombre }, { onConflict: "evento_id,person_id", ignoreDuplicates: true })
+    : await supabase.from("entreno_defecto_quitado").delete().eq("evento_id", eventoId).eq("person_id", personId);
+  if (error) return { ok: false, error: `No se pudo guardar: ${error.message}` };
+  revalidatePath("/gestion");
+  revalidatePath("/gestion/eventos");
+  revalidatePath(`/gestion/eventos/${eventoId}/respuestas`);
+  return { ok: true };
+}

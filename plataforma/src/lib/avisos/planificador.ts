@@ -8,10 +8,13 @@
 //   - Amistoso, torneo o «entre nosotros»: al crearlo y 24 h antes.
 //   - El lunes a las 19:00 sale UN aviso por jugador con todo lo que le falta de esa semana.
 //   - Solo a quien no ha respondido; una ausencia que cubre el dia cuenta como respondido.
+//   - D146: tampoco a quien «no suele entrenar» en un entreno (cuenta como «no va (por defecto)», salvo que un gestor se lo
+//     quitara para ese entreno) ni a quien es «nunca a partidos» en un partido.
 //   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo, ni con el interruptor apagado.
 //   - Horas de silencio (22:30–8:30): sale a las 8:30 salvo que el evento empiece en menos de 12 h.
 
 import { quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
+import { claveQuitado, pendiente, type MarcasDisponibilidad } from "../disponibilidad/porDefecto.ts";
 import { avisoDeDudas, enMadrid, horaDeEnvio, limiteDudas, lunesDe, madrid, sumarDias } from "./horario.ts";
 import { queEs, textoDudas, textoPasoNoVa, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
 
@@ -21,7 +24,11 @@ export type EventoPlan = EventoTexto & {
   estado: "programado" | "cancelado"; sin_recordatorios: boolean; creado_en: string;
   oficial?: boolean; recordar_un_dia_antes?: boolean; borrado_en?: string | null;
 };
-export type JugadorPlan = { person_id: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: PersonaResponde["rol"] };
+export type JugadorPlan = {
+  person_id: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: PersonaResponde["rol"];
+  /** D146: marcas privadas (las lee la tarea con el rol de servicio). Sin ellas, como siempre. */
+  marcas?: MarcasDisponibilidad | null;
+};
 export type RespuestaPlan = { evento_id: string; person_id: string; respuesta: "va" | "duda" | "no" | "sin_responder" };
 export type AusenciaPlan = { person_id: string; desde: string; hasta: string | null; borrada_en?: string | null };
 
@@ -33,6 +40,8 @@ export type DatosPlan = {
   jugadores: JugadorPlan[];
   respuestas: RespuestaPlan[];
   ausencias: AusenciaPlan[];
+  /** D146: entrenos en los que un gestor quito el «no va (por defecto)» a alguien (vuelve a recibir recordatorios). */
+  quitados?: { evento_id: string; person_id: string }[];
 };
 
 export type AvisoPlan = Texto & {
@@ -61,6 +70,13 @@ export function estadoPara(person: string, e: Pick<EventoPlan, "id" | "fecha">, 
   return cubre ? "no" : "sin_responder";
 }
 
+/** ¿Le toca recordatorio a este jugador en este evento? Sin responder (ni ausencia) y sin estar fuera por D146. */
+export function pendienteDe(j: Pick<JugadorPlan, "person_id" | "marcas">, e: Pick<EventoPlan, "id" | "fecha" | "tipo" | "oficial">, d: Pick<DatosPlan, "respuestas" | "ausencias" | "quitados">) {
+  const estado = estadoPara(j.person_id, e, d.respuestas, d.ausencias);
+  const quitado = !!d.quitados?.some((q) => claveQuitado(q.evento_id, q.person_id) === claveQuitado(e.id, j.person_id));
+  return pendiente(e, j.marcas, estado, quitado);
+}
+
 type Hueco = { tipo: "lunes" | "martes" | "dia" | "creado" | "24h"; toca: Date };
 
 /** Los momentos en que un evento pide respuesta. */
@@ -86,7 +102,7 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
       && envio.getTime() <= ahora && ahora < envio.getTime() + MARGEN_MS && ahora < ini.getTime() && h.toca.getTime() < ini.getTime();
     return ok ? envio : null;
   };
-  const sinResponder = (p: string, e: EventoPlan) => estadoPara(p, e, d.respuestas, d.ausencias) === "sin_responder";
+  const sinResponder = (j: JugadorPlan, e: EventoPlan) => pendienteDe(j, e, d);
 
   // ---- lunes 19:00: agrupado por jugador (un domingo con dos partidos cuenta una vez)
   const porLunes = new Map<string, { envio: Date; toca: Date; eventos: EventoPlan[] }>();
@@ -101,7 +117,7 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
   }
   for (const [lunes, g] of porLunes) {
     const porJugador = new Map<string, EventoPlan[]>();
-    for (const e of g.eventos) for (const j of invitados(e, d.jugadores)) if (sinResponder(j.person_id, e)) porJugador.set(j.person_id, [...(porJugador.get(j.person_id) ?? []), e]);
+    for (const e of g.eventos) for (const j of invitados(e, d.jugadores)) if (sinResponder(j, e)) porJugador.set(j.person_id, [...(porJugador.get(j.person_id) ?? []), e]);
     for (const [p, evs] of porJugador) {
       evs.sort((a, b) => (a.fecha + (a.inicio ?? "") < b.fecha + (b.inicio ?? "") ? -1 : 1));
       const unidades: { texto: string; url: string; ids: string[] }[] = [];
@@ -128,8 +144,8 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
     const personas = new Set(abiertos.flatMap((e) => invitados(e, d.jugadores).map((j) => j.person_id)));
     for (const p of personas) {
       const suyos = abiertos.filter((e) => invitados(e, d.jugadores).some((j) => j.person_id === p));
-      const estados = suyos.map((e) => estadoPara(p, e, d.respuestas, d.ausencias));
-      if (!estados.includes("sin_responder")) continue;
+      const j = d.jugadores.find((x) => x.person_id === p)!;
+      if (!suyos.some((e) => sinResponder(j, e))) continue;
       salida.push({
         clave: `rec:martes:${fecha}:${p}`, tipo: "recordatorio", person_id: p, eventos: suyos.map((e) => e.id),
         ...textoMartes(fecha, suyos.map((e) => String(e.inicio ?? "").slice(0, 5)).filter(Boolean)),
@@ -145,7 +161,7 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
       const envio = vale(e, h);
       if (!envio) continue;
       for (const j of invitados(e, d.jugadores)) {
-        if (!sinResponder(j.person_id, e)) continue;
+        if (!sinResponder(j, e)) continue;
         const t = h.tipo === "dia" ? textoEntrenoHoy(e) : textoOtro(e, h.tipo === "creado" ? "creado" : "24h");
         salida.push({ clave: `rec:${h.tipo}:${e.id}:${j.person_id}`, tipo: "recordatorio", person_id: j.person_id, eventos: [e.id], ...t, url: urlEvento(e), toca: h.toca, programado_para: envio });
       }

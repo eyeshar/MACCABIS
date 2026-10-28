@@ -13,6 +13,7 @@ export default function FichaPrivada({ personId, nombre, fichas, soloEntreno, in
     posicion: inicial?.posicion ?? "", base_reserva: inicial?.base_reserva ?? false, nivel: inicial?.nivel ?? "", dobla: inicial?.dobla ?? true,
     regla: (inicial?.regla === "fijo" ? `fijo-${inicial.regla_equipo}` : inicial?.regla ?? "") as string,
     sancion: inicial?.sancionado_hasta_jornada ? String(inicial.sancionado_hasta_jornada) : "", nota: inicial?.nota ?? "",
+    no_suele_entrenar: inicial?.no_suele_entrenar ?? false, nunca_partidos: inicial?.nunca_partidos ?? false,
   });
   const [estado, setEstado] = useState<{ ok: boolean; t: string } | null>(null);
   const [pend, iniciar] = useTransition();
@@ -24,13 +25,14 @@ export default function FichaPrivada({ personId, nombre, fichas, soloEntreno, in
       const r = await guardarPrivado(personId, {
         posicion: f.posicion || null, base_reserva: f.base_reserva, nivel: f.nivel || null, dobla: f.dobla, regla,
         regla_equipo: regla === "fijo" ? (f.regla.slice(5) as Equipo) : null, sancionado_hasta_jornada: f.sancion ? Number(f.sancion) : null, nota: f.nota || null,
+        no_suele_entrenar: f.no_suele_entrenar, nunca_partidos: f.nunca_partidos,
       });
       setEstado(r.ok ? { ok: true, t: "Guardado" } : { ok: false, t: r.error });
     });
   }
   return (
     <form className="cv-ficha" data-person={personId} onSubmit={(e) => { e.preventDefault(); guardar(); }}>
-      <div className="cv-ficha-cab"><b>{nombre}</b><small className="suave">{fichas}{soloEntreno ? " · solo entreno" : ""}</small></div>
+      <div className="cv-ficha-cab"><b>{nombre}</b><small className="suave">{fichas}{soloEntreno ? " · solo entreno" : ""}{f.nunca_partidos ? " · nunca a partidos" : ""}{f.no_suele_entrenar ? " · no suele entrenar" : ""}</small></div>
       {inicial?.nota_ataque && (
         <small className="suave" data-testid="cv-notas">Ataque {inicial.nota_ataque} · defensa {inicial.nota_defensa ?? "–"} · total {inicial.nota_total ?? "–"}{inicial.minutos != null ? ` · ${inicial.minutos} min` : ""}{inicial.pts_min != null ? ` · ${Number(inicial.pts_min).toFixed(2).replace(".", ",")} pts/min` : ""}</small>
       )}
@@ -57,6 +59,8 @@ export default function FichaPrivada({ personId, nombre, fichas, soloEntreno, in
             <option value="comodin">Al equipo al que le falte uno</option>
           </select>
         </label>
+        <label className="cv-ficha-casilla"><input type="checkbox" checked={f.no_suele_entrenar} onChange={(e) => cambia("no_suele_entrenar", e.target.checked)} disabled={desactivado} data-campo="no_suele_entrenar" />No suele entrenar</label>
+        <label className="cv-ficha-casilla"><input type="checkbox" checked={f.nunca_partidos} onChange={(e) => cambia("nunca_partidos", e.target.checked)} disabled={desactivado} data-campo="nunca_partidos" />Solo entreno: nunca a partidos</label>
         <label htmlFor={id("san")}>Sancionado hasta la J
           <input id={id("san")} type="number" min={1} max={30} inputMode="numeric" value={f.sancion} onChange={(e) => cambia("sancion", e.target.value)} disabled={desactivado} />
         </label>

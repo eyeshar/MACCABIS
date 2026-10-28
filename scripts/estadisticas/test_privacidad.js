@@ -218,7 +218,7 @@ const fImp = sql9.slice(sql9.indexOf('create function public.ultima_importacion_
 ok(/select max\(i\.en\)/.test(fImp) && !/por_nombre|detalle|lineas|aceptadas/.test(fImp), 'ultima_importacion_respuestas: solo la hora (ni quién, ni qué)');
 ok(!/to anon/.test(sql9) && /grant execute on function public\.convocados_del_domingo\(date\), public\.ultima_importacion_respuestas\(\) to authenticated/.test(sql9), 'nada para anónimos');
 const domingo = leer('src/app/mi-zona/domingo/[fecha]/page.tsx').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
-ok(/cargarConvocadosDomingo/.test(domingo) && !/cargarQuienVa|v_quien_va|jugadores_privado|@\/lib\/convocatoria\/|nivel|\.motivo\b(?!.*horario)/.test(domingo.replace(/rNo\?\.motivo|r\.motivo !== "horario"/g, '')), 'la página del domingo usa solo la función de convocados (ni «quién va» por respuestas, ni datos de la convocatoria de Gestión)');
+ok(/cargarConvocadosDomingo/.test(domingo) && !/v_quien_va|jugadores_privado|@\/lib\/convocatoria\/|nivel|\.motivo(?!.*horario)/.test(domingo.replace(/rNo\?\.motivo|r\.motivo (!==|===) "(horario|no_confirmo)"/g, '')), 'la página del domingo usa la función de convocados y, desde D141, «quién va» por respuestas solo vía cargarQuienVa (nombre y estado; sin la vista directa, ni datos de la convocatoria de Gestión)');
 ok(/rpc\("convocados_del_domingo"/.test(leer('src/lib/respuestas/jugador.ts')) && /rpc\("ultima_importacion_respuestas"\)/.test(leer('src/lib/respuestas/jugador.ts')), 'y la lee con la sesión del jugador (decide la base)');
 // D127: el aviso «Estás convocado» sale del servidor con la clave de servicio; su texto no lleva datos privados.
 const avConv = leer('src/lib/convocatoria/avisos.ts');

@@ -3,7 +3,8 @@
 // en el registro antes de enviarlos, asi repetir la tarea no duplica nada.
 //
 //   - Entreno (miercoles): lunes 19:00 y el mismo dia 10:00.
-//   - Partido (domingo):   lunes 19:00 y martes 10:00 (este, tambien a quien tiene «duda»).
+//   - Partido (domingo):   lunes 19:00 y martes 10:00 (solo a quien no ha respondido; las «duda» tienen su aviso, D141).
+//   - «Duda» (D141): aviso a las 12:00 del dia del limite (conAvisosDeDudas), unido a otro recordatorio de ese dia.
 //   - Amistoso, torneo o «entre nosotros»: al crearlo y 24 h antes.
 //   - El lunes a las 19:00 sale UN aviso por jugador con todo lo que le falta de esa semana.
 //   - Solo a quien no ha respondido; una ausencia que cubre el dia cuenta como respondido.
@@ -11,8 +12,8 @@
 //   - Horas de silencio (22:30–8:30): sale a las 8:30 salvo que el evento empiece en menos de 12 h.
 
 import { quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
-import { horaDeEnvio, lunesDe, madrid, sumarDias } from "./horario.ts";
-import { queEs, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
+import { avisoDeDudas, enMadrid, horaDeEnvio, limiteDudas, lunesDe, madrid, sumarDias } from "./horario.ts";
+import { queEs, textoDudas, textoPasoNoVa, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
 
 /** `oficial = false`: plan no oficial de un jugador (D118). No entra en ningun recordatorio del club: solo, si el
  *  organizador lo marco, un aviso un dia antes (planificarPlanes). */
@@ -116,7 +117,7 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
     }
   }
 
-  // ---- martes 10:00 de un domingo de partido: sin responder y «duda», uno por jugador y domingo
+  // ---- martes 10:00 de un domingo de partido: sin responder (las «duda» van en su aviso de las 12:00), uno por jugador y domingo
   const domingos = new Map<string, EventoPlan[]>();
   for (const e of d.eventos) if (e.tipo === "liga") domingos.set(e.fecha, [...(domingos.get(e.fecha) ?? []), e]);
   for (const [fecha, partidos] of domingos) {
@@ -128,11 +129,10 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
     for (const p of personas) {
       const suyos = abiertos.filter((e) => invitados(e, d.jugadores).some((j) => j.person_id === p));
       const estados = suyos.map((e) => estadoPara(p, e, d.respuestas, d.ausencias));
-      if (!estados.some((s) => s === "sin_responder" || s === "duda")) continue;
-      const tieneDuda = !estados.includes("sin_responder");
+      if (!estados.includes("sin_responder")) continue;
       salida.push({
         clave: `rec:martes:${fecha}:${p}`, tipo: "recordatorio", person_id: p, eventos: suyos.map((e) => e.id),
-        ...textoMartes(fecha, suyos.map((e) => String(e.inicio ?? "").slice(0, 5)).filter(Boolean), tieneDuda),
+        ...textoMartes(fecha, suyos.map((e) => String(e.inicio ?? "").slice(0, 5)).filter(Boolean)),
         url: suyos.length > 1 ? urlDomingo(fecha) : urlEvento(suyos[0]), toca: h.toca, programado_para: envio,
       });
     }
@@ -184,8 +184,82 @@ export function calendarioRecordatorios(e: EventoPlan) {
 
 export const TEXTO_HUECO: Record<Hueco["tipo"], string> = {
   lunes: "Lunes a las 19:00 (uno por jugador con todo lo que le falta)",
-  martes: "Martes a las 10:00 (sin responder y «duda»)",
+  martes: "Martes a las 10:00 (sin responder)",
   dia: "El mismo día a las 10:00",
   creado: "Al crear el evento",
   "24h": "24 horas antes",
 };
+
+/** «Duda» con hora limite (D141). Tres cosas, todas puras:
+ *   - a las 12:00 del dia del limite (o una hora antes si el limite es temprano; horas de silencio), UN aviso por persona
+ *     a quien siga en «duda»: «Te quedan hasta las 20:00 para confirmar; si no, contarás como "no va"»;
+ *   - si ese dia a esa persona ya sale otro recordatorio (`base`), se JUNTAN en uno: sale a la hora del primero, con la
+ *     clave del aviso de dudas (repetir la tarea no duplica nada);
+ *   - eventos oficiales solo con el interruptor encendido (`encendidoDesde`); los planes, siempre.
+ *  Devuelve los avisos de `base` (sin los que se han juntado) mas los de dudas; la tarea solo encola lo que ya toca. */
+export function conAvisosDeDudas(base: AvisoPlan[], datos: DatosPlan): AvisoPlan[] {
+  const ahora = datos.ahora.getTime();
+  const eventos = datos.eventos.filter((e) => e.estado === "programado" && !e.borrado_en && !e.sin_recordatorios
+    && (e.oficial === false || datos.encendidoDesde != null));
+  // (persona, dia del aviso) -> lo que tiene en duda
+  type Item = { e: EventoPlan; limite: Date; toca: Date };
+  const grupos = new Map<string, { p: string; dia: string; items: Item[] }>();
+  for (const e of eventos) {
+    const limite = limiteDudas(e);
+    const toca = avisoDeDudas(limite);
+    if (!toca || ahora >= limite.getTime() || ahora >= inicioDe(e).getTime()) continue;
+    for (const j of invitados(e, datos.jugadores)) {
+      if (datos.respuestas.find((r) => r.evento_id === e.id && r.person_id === j.person_id)?.respuesta !== "duda") continue;
+      const dia = enMadrid(toca).fecha;
+      const g = grupos.get(`${j.person_id}|${dia}`) ?? { p: j.person_id, dia, items: [] };
+      g.items.push({ e, limite, toca });
+      grupos.set(`${j.person_id}|${dia}`, g);
+    }
+  }
+  const juntados = new Set<AvisoPlan>();
+  const nuevos: AvisoPlan[] = [];
+  for (const g of grupos.values()) {
+    g.items.sort((a, b) => a.toca.getTime() - b.toca.getTime() || (a.e.id < b.e.id ? -1 : 1));
+    const propios = base.filter((a) => a.person_id === g.p && enMadrid(a.programado_para).fecha === g.dia);
+    const toca = g.items[0].toca;
+    const envio = new Date(Math.min(toca.getTime(), ...propios.map((a) => a.programado_para.getTime())));
+    const hasta = Math.min(...g.items.map((i) => i.limite.getTime()));
+    if (!(envio.getTime() <= ahora && ahora < envio.getTime() + MARGEN_MS && ahora < hasta)) continue;
+    propios.forEach((a) => juntados.add(a));
+    const t = textoDudas(g.items.map((i) => ({ que: queEs(i.e), limite: i.limite })), propios.map((a) => a.titulo), envio);
+    const ids = [...new Set([...g.items.map((i) => i.e.id), ...propios.flatMap((a) => a.eventos)])];
+    const unico = ids.length === 1 ? g.items.find((i) => i.e.id === ids[0])!.e : null;
+    nuevos.push({
+      clave: `rec:dudas:${toca.toISOString()}:${g.p}`, tipo: "recordatorio", person_id: g.p, eventos: ids, ...t,
+      url: unico ? urlEvento(unico) : g.items.every((i) => i.e.tipo === "liga" && i.e.fecha === g.items[0].e.fecha) && !propios.length ? urlDomingo(g.items[0].e.fecha) : "/",
+      toca, programado_para: envio,
+    });
+  }
+  return [...base.filter((a) => !juntados.has(a)), ...nuevos];
+}
+
+/** D141: el aviso «tu duda ha pasado a no va», UNO por persona y limite. Sale de las respuestas que el sistema cerro (origen
+ *  sistema, motivo no_confirmo) en las ultimas 24 h y siguen asi: si la tarea falla despues de cerrar, el siguiente
+ *  intento lo encola igual (clave estable), y quien ya volvio a decir «voy» no recibe nada. */
+export function avisosPasoNoVa(base: { eventos: EventoPlan[]; respuestas: { evento_id: string; person_id: string; respuesta: string; motivo: string | null; origen: string; cambiado_en: string | null }[] }, ahora: Date): AvisoPlan[] {
+  const desde = ahora.getTime() - 24 * 3600 * 1000;
+  const grupos = new Map<string, { p: string; limite: Date; envio: Date; evs: EventoPlan[] }>();
+  for (const r of base.respuestas) {
+    if (r.respuesta !== "no" || r.motivo !== "no_confirmo" || r.origen !== "sistema" || !r.cambiado_en || new Date(r.cambiado_en).getTime() < desde) continue;
+    const e = base.eventos.find((x) => x.id === r.evento_id);
+    if (!e || e.estado !== "programado") continue;
+    const limite = limiteDudas(e);
+    const k = `${r.person_id}|${limite.toISOString()}`;
+    const g = grupos.get(k) ?? { p: r.person_id, limite, envio: horaDeEnvio(new Date(r.cambiado_en), inicioDe(e)), evs: [] };
+    g.evs.push(e);
+    grupos.set(k, g);
+  }
+  return [...grupos.values()].map((g) => {
+    g.evs.sort((a, b) => (a.fecha + (a.inicio ?? "") < b.fecha + (b.inicio ?? "") ? -1 : 1));
+    const t = textoPasoNoVa(g.evs.map(queEs));
+    const unico = g.evs.length === 1 ? g.evs[0] : null;
+    return { ...t, clave: `rec:paso:${g.limite.toISOString()}:${g.p}`, tipo: "recordatorio" as const, person_id: g.p, eventos: g.evs.map((e) => e.id), toca: g.limite,
+      url: unico ? urlEvento(unico) : g.evs.every((e) => e.tipo === "liga" && e.fecha === g.evs[0].fecha) ? urlDomingo(g.evs[0].fecha) : "/", programado_para: g.envio };
+  });
+}
+

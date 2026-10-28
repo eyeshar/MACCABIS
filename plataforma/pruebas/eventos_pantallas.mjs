@@ -65,7 +65,10 @@ try {
   const codigoDe = async (email) => (await sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
 
   console.log('\n== Compilacion');
-  const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
+  const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1',
+    // Sin envio de avisos: la clave de servicio y la VAPID reales de .env.local no valen para la pila local (cancelar un entreno
+    // a menos de 14 dias avisa al movil y daba un error de firma JWT); los avisos se prueban en otras suites.
+    SUPABASE_SERVICE_ROLE_KEY: '', VAPID_PRIVATE_KEY: '' };
   const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
   execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
   ok(true, 'next build');

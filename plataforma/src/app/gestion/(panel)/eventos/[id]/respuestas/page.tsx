@@ -11,7 +11,7 @@ import {
 } from "@/lib/eventos/dominio";
 import { calendarioRecordatorios, TEXTO_HUECO } from "@/lib/avisos/planificador";
 import { sitioAviso } from "@/lib/avisos/servidor";
-import { enMadrid } from "@/lib/avisos/horario";
+import { dudaAbierta, enMadrid, limiteDudas } from "@/lib/avisos/horario";
 import { MOTIVOS_JUGADOR } from "@/lib/respuestas/dominio";
 import CopiarTexto from "../../CopiarTexto";
 import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
@@ -23,13 +23,13 @@ export const metadata = { title: "Respuestas y motivos · Gestión Maccabis" };
 const SEMANAS = 12;
 
 type Fila = {
-  respuesta: Respuesta; motivo: Motivo | "horario" | null; detalle: string | null; leido_en: string | null;
-  origen: "sporteasy" | "jugador" | "gestor"; puesto_por_nombre: string | null; cambiado_en: string | null; ausencia_id: string | null;
+  respuesta: Respuesta; motivo: Motivo | "horario" | "no_confirmo" | null; detalle: string | null; leido_en: string | null;
+  origen: "sporteasy" | "jugador" | "gestor" | "sistema"; puesto_por_nombre: string | null; cambiado_en: string | null; ausencia_id: string | null;
 };
 type PeriodoW = { id?: string; person_id: string; desde: string; hasta: string | null; motivo: Motivo; origen?: string };
 
 const TEXTO_R: Record<Respuesta, string> = { va: "Va", duda: "Duda", no: "No va", sin_responder: "Sin responder" };
-const textoMotivo = (m: Fila["motivo"]) => (m === "horario" ? "Horario" : m ? TEXTO_MOTIVO[m] : null);
+const textoMotivo = (m: Fila["motivo"]) => (m === "horario" ? "Horario" : m === "no_confirmo" ? "No confirmó" : m ? TEXTO_MOTIVO[m] : null);
 const ddmm = (f: string) => fechaDMA(f).slice(0, 5);
 const franja = (p: { desde: string; hasta: string | null }) => (p.hasta ? `ausencia del ${ddmm(p.desde)} al ${ddmm(p.hasta)}` : `ausencia desde el ${ddmm(p.desde)}, sin fecha de vuelta`);
 
@@ -76,7 +76,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
     const per = periodoDe(j.person_id, evento.fecha);
     const rNo = rs.find((r) => r?.respuesta === "no" && r.motivo && r.motivo !== "horario");
     const ultimo = rs.filter(Boolean).sort((a, b) => ((a!.cambiado_en ?? a!.leido_en ?? "") < (b!.cambiado_en ?? b!.leido_en ?? "") ? 1 : -1))[0];
-    const origenTxt = !ultimo || ultimo.respuesta === "sin_responder" ? null : ultimo.origen === "gestor" ? `puesto por ${ultimo.puesto_por_nombre ?? "un gestor"}` : ultimo.origen === "jugador" ? (ultimo.ausencia_id ? "por su ausencia" : "en la web") : "leído de SportEasy";
+    const origenTxt = !ultimo || ultimo.respuesta === "sin_responder" ? null : ultimo.origen === "sistema" ? "automático: no confirmó a tiempo" : ultimo.origen === "gestor" ? `puesto por ${ultimo.puesto_por_nombre ?? "un gestor"}` : ultimo.origen === "jugador" ? (ultimo.ausencia_id ? "por su ausencia" : "en la web") : "leído de SportEasy";
     let clase: Linea["clase"], texto: string, solo: string | null = null;
     if (vals.includes("sin_responder")) { clase = per ? "no" : "sin_responder"; texto = per ? "No va (ausencia)" : "Sin responder"; }
     else if (vals.every((v) => v === "va")) { clase = "va"; texto = suyos.length === 2 && distintas ? "A los dos" : "Va"; }
@@ -115,6 +115,14 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       grupo("sin", "sin responder", "sin", (l) => l.clase === "sin_responder"),
     ];
 
+  // D141: hora limite de las dudas. «Dudas: N · límite <dia hora>» y, pasado el limite, cuantas pasaron a «no va» por no confirmar.
+  const ahora = new Date();
+  const limite = limiteDudas(evento);
+  const conDuda = dudaAbierta(evento, ahora);
+  const lim = enMadrid(limite);
+  const dudasN = lineas.filter((l) => l.clase === "duda").length;
+  const noConfirmaron = filasR.filter((r) => r.evento_id === evento.id && r.respuesta === "no" && r.motivo === "no_confirmo").length;
+
   const pe = pistaEfectiva(evento, pistas);
   const ultimaLectura = filasR.filter((r) => r.origen === "sporteasy").map((r) => r.leido_en ?? "").sort().at(-1);
   const sinAvisos = lineas.filter((l) => !l.avisos);
@@ -123,7 +131,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const opcionesPor = (l: Linea) => (dia && distintas && l.dos
     ? [{ id: "ambos", texto: "A los dos", opcion: "ambos" }, ...dia.map((e) => ({ id: `solo-${e.id}`, texto: `Solo al de las ${hhmm(e.inicio)} (${e.equipo})`, opcion: "solo", evento: e.id })), { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
     : dia ? [{ id: "voy", texto: "Va", opcion: "voy" }, { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
-    : [{ id: "va", texto: "Va" }, { id: "no", texto: "No va" }, { id: "duda", texto: "Duda" }]);
+    : [{ id: "va", texto: "Va" }, { id: "no", texto: "No va" }, { id: "duda", texto: "Duda" }]).filter((o) => conDuda || o.id !== "duda");
 
   // Recordatorios automaticos de este evento (o del domingo): los que tocan segun el tipo y lo que ya salio.
   const plan = calendarioRecordatorios({ ...evento, sitio: sitioAviso(evento, pistas), sin_recordatorios: (evento as EventoFila & { sin_recordatorios?: boolean }).sin_recordatorios ?? false, creado_en: (evento as EventoFila & { creado_en?: string }).creado_en ?? new Date().toISOString() });
@@ -155,7 +163,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       {alertasL.length > 0 && (
         <div className="ev-banda-roja" role="alert" data-testid="banda-roja">
           <div>
-            <b>Cambios después de la convocatoria (martes 10:00):</b>{" "}
+            <b>Cambios después de la convocatoria (martes 20:00):</b>{" "}
             {alertasL.map((a, i) => <span key={a.id}>{i > 0 && " · "}<NombreJugador nombre={nombre.get(a.person_id) ?? a.person_id} personId={a.person_id} />{`: ${TEXTO_R[a.antes]} → ${TEXTO_R[a.despues]}${dia ? ` (${eventos.find((e) => e.id === a.evento_id)?.equipo})` : ""} · ${fechaHora(a.en)}`}</span>)}
           </div>
           <BotonVisto eventoId={evento.id} ids={alertasL.map((a) => a.id)} />
@@ -163,6 +171,10 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       )}
 
       <div style={{ marginBottom: 20 }}><Numeros prueba="contadores" etiqueta="Respuestas del evento" columnas={cajas.length} grupos={cajas} /></div>
+      <p className="pequeno" data-testid="limite-dudas">
+        <b>Dudas: {dudasN}</b> · límite {diaCorto(lim.fecha)} {lim.hora}
+        {!conDuda && <> · <span data-testid="no-confirmaron">{noConfirmaron} {noConfirmaron === 1 ? "pasó" : "pasaron"} a «no va» por no confirmar</span></>}
+      </p>
       <p className="pequeno suave">
         {personas.length} invitados.{" "}
         {encendido ? "Los jugadores responden en la web (D99); «no va» siempre con motivo. Solo lo ven los gestores."

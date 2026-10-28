@@ -12,7 +12,14 @@
 - [x] Revisión de Iván del 28/10 aplicada (enlaces validados, prompt, D141, «Pensando…», norma 14).
 - [ ] **Iván lo prueba con su cuenta en la vista previa**; luego, **OK de Iván y merge en `main`** (tras el merge, en producción lo verán solo los gestores).
 - [ ] **Tras una semana de prueba con los gestores: abrir a «todos»** (`CHAT_IA_ABIERTO=todos` en Vercel y redesplegar) y revisar en el panel de Cloudflare el gasto real de neuronas antes y después.
-- [ ] Cuando se mergee D141 (`feat/visibilidad-y-dudas`) o cambie la guía: `npm run datos:sync` para refrescar `src/data/guiaJugador.json` (`check:copias` avisa).
+- [ ] **La guía del jugador (`docs/GUIA_JUGADOR.md`, base del asistente) se quedó antes de D141:** dice «Pronto verás también quién no ha contestado» y que la hora límite de las dudas «se activa en los próximos días». Con D141 ya en `main`, actualizar esas dos frases (es texto de Iván: con su OK) y `npm run datos:sync` para refrescar `src/data/guiaJugador.json` (`check:copias` avisa).
+**Visibilidad y dudas con hora límite (27/10/2026, `feat/visibilidad-y-dudas`, D141): hecho en la rama, SIN merge.**
+- [x] Jugadores: nombres de quien no ha contestado; motivos solo gestores; `pruebas:dudas` lo comprueba en HTML y en la API.
+- [x] Dudas: límite martes 20:00 (entreno miércoles y partido) o 24 h antes; aviso a las 12:00 juntado con otros; paso a «no va · no confirmó» con aviso; sin botón «Duda» desde el límite; «Dudas: N · límite…» en Panel, Eventos y Respuestas; «posibles» en la convocatoria.
+- [ ] **Con el OK de Iván:** aplicar `20261028100000_dudas_limite.sql` en el Supabase real (D111: volcado, suites `-real` antes y después, cuentas de auth) y mergear. Hasta entonces la tarea de avisos funciona sin la función.
+- [x] Banda roja movida del martes 10:00 al martes 20:00 (OK de Iván, 27/10); va en la migración 20261028100000.
+- [ ] **Miércoles 28/10, con el OK de Iván:** merge y migración en el real (D111). No el 27: el cierre de esa noche saldría sin el aviso de las 12:00.
+- [ ] **Vigilar** las primeras semanas: que el aviso de las 12:00 llega a la hora, que se junta bien con el de las 10:00 y que nadie se queja de que «Duda» desaparezca.
 
 **Historia: la 26/27 en curso (26/10/2026, `feat/historia-2026-27`, D137):**
 - [x] /historia: 26/27 «en curso» (plantilla con ficha + Barreiro; naranja quien ya ha jugado, amarillo el resto), sin columna «prevista» ni tramo «Llegan en 26/27»; cifras recalculadas (media y «De paso» sin la temporada en curso, con nota); ficha de persona con enlace a sus estadísticas de 26/27.

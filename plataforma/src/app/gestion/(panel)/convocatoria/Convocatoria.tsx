@@ -10,6 +10,8 @@ import {
 import { entradaDe, moverRapido, validarDestino, type Contexto, type JugadorVista, type PartidoVista, type Zona } from "@/lib/convocatoria/vista";
 import { proyeccionDe, textoBajoMinimo, textoCorreccion, textoFactor, textoProyeccion, textoRival, type Proyeccion } from "@/lib/convocatoria/proyeccion";
 import { cruce, diaTexto } from "@/lib/convocatoria/mensajes";
+import { enMadrid } from "@/lib/avisos/horario";
+import { diaCorto } from "@/lib/eventos/dominio";
 import BloqueImportacion from "@/components/gestion/BloqueImportacion";
 import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
 import { ajusteRapido, aprobar, cambiarDificultad, deshacerRapido, empezar, guardarCambio, type Accion, type Motivo } from "./acciones";
@@ -25,6 +27,8 @@ const MOTIVOS: { id: Motivo; texto: string }[] = [
 const TEXTO_RESP = { va: "Va", duda: "Duda", no: "No va", sin_responder: "Sin responder" } as const;
 const TEXTO_MOTIVO_NO: Record<string, string> = { lesion: "lesión", trabajo: "trabajo", viaje: "viaje", familia: "familia", otro: "otro", horario: "solo puede al otro" };
 const otro = (e: Equipo): Equipo => (e === "MdA" ? "MdL" : "MdA");
+/** "martes 27/10 a las 20:00" */
+const textoLimiteGestor = (iso: string) => { const l = enMadrid(new Date(iso)); return `${diaCorto(l.fecha)} a las ${l.hora}`; };
 const ids = (c: Conv, e: Equipo) => new Set((c[e] ?? []).map((x) => x.person_id));
 
 function Casillas({ r, testid, personas }: { r: Recuento; testid?: string; personas?: Record<"bases" | "exteriores" | "interiores", PersonaNum[]> }) {
@@ -303,6 +307,29 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
           </ul>
         ) : <p className="suave" style={{ margin: 0 }}>Todos los disponibles están convocados.</p>}
       </section>
+
+      {(rev.posibles.length > 0 || ctx.dudasAbiertas) && (
+        <section className="gs-bloque" aria-labelledby="t-posibles" data-testid="cv-posibles" style={{ marginTop: 16 }}>
+          <h2 id="t-posibles">Posibles (dudas) · {rev.posibles.length}</h2>
+          {ctx.dudasAbiertas && ctx.limiteDudas && (
+            <p className="pequeno suave" style={{ margin: 0 }} data-testid="cv-posibles-nota">
+              Propuesta provisional: las dudas no se convocan. Tienen hasta el {textoLimiteGestor(ctx.limiteDudas)} para confirmar; quien siga en «duda» pasa a «no va». La propuesta definitiva se hace después.
+            </p>
+          )}
+          {rev.posibles.length ? (
+            <ul className="cv-lista">
+              {rev.posibles.map((p) => {
+                const j = porId.get(p.person_id);
+                return (
+                  <li key={p.person_id} className="cv-fila" data-person={p.person_id}>
+                    <div className="cv-fila-nombre"><b><NombreCv id={p.person_id} nombre={j?.nombre ?? p.person_id} enlaces={enlaces} /></b><small>Duda al {p.equipos.join(" y al ")}</small></div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : <p className="suave" style={{ margin: 0 }}>Nadie en duda.</p>}
+        </section>
+      )}
 
       {empezada && (
         <section className="gs-bloque cv-aprobar" aria-label="Aprobar">

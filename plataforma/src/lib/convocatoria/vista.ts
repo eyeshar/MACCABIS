@@ -39,6 +39,9 @@ export type Contexto = {
   fecha: string; jornada: number | null; partidos: PartidoVista[]; jugadores: JugadorVista[];
   convocatoria: FilaConvocatoria | null; cambios: Cambio[];
   contadores: { van: number; sin: number; no: number; dudan: number; invitados: number };
+  /** D141: hora limite de las dudas de este domingo (ISO) y si aun no ha llegado. Antes, el motor propone con los «va» y las
+   *  dudas salen aparte como «posibles»; la propuesta definitiva se hace despues del limite. null = no hay partidos. */
+  limiteDudas: string | null; dudasAbiertas: boolean;
   eventoRespuestas: string | null; encendido: boolean;
   /** Fase puente (D95, D103): cuando se importaron por ultima vez respuestas de SportEasy, y cuantas hay de este domingo. */
   ultimaImportacion: string | null; ultimaImportacionPor: string | null; respuestasDelDomingo: number;

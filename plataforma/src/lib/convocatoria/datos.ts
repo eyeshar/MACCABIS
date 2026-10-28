@@ -6,7 +6,7 @@ import equipJson from "@/data/equipaciones.json";
 import historialRivalesJson from "@/data/historialRivales.json";
 import { clave, equipoPorNombre, type Equipaciones } from "@/data/avisosEquipacion";
 import { hoyMadrid, sumarDias } from "@/lib/dias";
-import { madrid } from "@/lib/avisos/horario";
+import { limiteDudas, madrid } from "@/lib/avisos/horario";
 import { estadoImportacion } from "@/lib/eventos/importacionAuto";
 import { avisoDeEvento, cargarEventos, cargarPistas, type Cliente } from "@/lib/eventos/datos";
 import { limpiarRival, pistaEfectiva, quedadaPorDefecto, hhmm, type EventoFila, type Pista } from "@/lib/eventos/dominio";
@@ -197,6 +197,9 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     };
   });
 
+  // D141: el limite de las dudas es el del primer partido del domingo (los dos comparten martes).
+  const limiteDe = delDia.length ? new Date(Math.min(...delDia.map((e) => limiteDudas({ tipo: e.tipo, fecha: e.fecha, inicio: e.inicio, oficial: true }).getTime()))) : null;
+
   // Contadores del domingo (los invitados a algun partido): van a alguno / sin responder (o duda) / no van a ninguno.
   const inv = jugadores.filter((j) => j.invitado);
   const valores = (j: JugadorVista) => j.invitadoA.map((e) => j.respuesta[e] ?? "sin_responder");
@@ -210,6 +213,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
 
   return {
     fecha, jornada, partidos, jugadores, convocatoria: fila, cambios, contadores,
+    limiteDudas: limiteDe?.toISOString() ?? null, dudasAbiertas: limiteDe ? Date.now() < limiteDe.getTime() : false,
     eventoRespuestas: delDia[0]?.id ?? null, encendido: enc.data === true, sinMigracion,
     ultimaImportacion: ((imp.data ?? []) as { en: string }[])[0]?.en ?? null,
     ultimaImportacionPor: ((imp.data ?? []) as { por_nombre: string }[])[0]?.por_nombre ?? null,

@@ -20,6 +20,7 @@ dotenv.config({ path: path.join(RAIZ, '.env.local') });
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const sql = conectar();
+const [{ n: N0 }] = await sql`select count(*)::int n from public.eventos`;
 let fallos = 0;
 const ok = (c, que, det = '') => { if (c) console.log(`  OK    ${que}`); else { fallos++; console.log(`  FALLO ${que}${det ? ` -> ${det}` : ''}`); } };
 const PRIVADAS = ['eventos', 'pistas', 'descansos', 'respuestas', 'ausencias_periodo', 'diccionario_sporteasy', 'importaciones', 'asistencia_resumen', 'asistencia_motivos'];
@@ -90,7 +91,7 @@ try {
       const [{ n }] = await tx.unsafe(`select count(*)::int n from public.${t}`);
       ok(n >= 0, `el gestor lee ${t} (${n} filas)`);
     }
-    ok((await tx`select count(*)::int n from public.eventos`)[0].n === 67, 'el gestor ve los 67 eventos');
+    ok((await tx`select count(*)::int n from public.eventos`)[0].n === N0, `el gestor ve los ${N0} eventos (todos, también los planes)`);
     // Gestión → Asistencia lee asistencia_motivos, lo mismo que carga db:asistencia (D116); asistencia_resumen ya no se usa.
     const [{ n: nMot }] = await tx`select count(*)::int n from public.asistencia_motivos`;
     ok(nMot > 0 && nMot === totalMotivos, `el gestor lee toda asistencia_motivos, la fuente de Gestión → Asistencia (${nMot} filas; D116)`);
@@ -128,7 +129,7 @@ try {
   console.log('\n== Sin efectos');
   const [{ n }] = await sql`select count(*)::int n from public.eventos`;
   const [{ u }] = await sql`select count(*)::int u from auth.users`;
-  ok(n === 67, 'siguen 67 eventos (nada escrito ni borrado)');
+  ok(n === N0, `siguen ${N0} eventos (nada escrito ni borrado)`);
   console.log(`  (${u} cuentas de auth; esta prueba no crea ni borra ninguna)`);
 } finally {
   await sql.end();

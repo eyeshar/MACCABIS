@@ -1,0 +1,71 @@
+/* «Pregunta al asistente» (D142). Movil primero; respeta las zonas seguras del iPhone (muesca en horizontal y barra de
+   inicio). En la pagina /asistente el formulario queda pegado abajo, por encima de la barra inferior de la web en el movil;
+   en el panel del boton flotante el hilo se desplaza dentro del panel y el formulario va al pie. */
+.as-pagina { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.as-aviso { margin: 4px 0 12px; padding: 10px 12px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio); background: var(--panel-3); color: var(--tinta-suave); font-size: 0.9rem; }
+.as-cuota { margin: 0 0 8px; color: var(--amarillo-tinta); font-family: var(--f-cifras); font-size: 0.85rem; }
+.as-hilo { display: flex; flex-direction: column; gap: 10px; min-height: 30vh; }
+.as-msg { max-width: 88%; padding: 10px 12px; border-radius: var(--radio-grande); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.as-yo { align-self: flex-end; background: var(--amarillo-claro); color: var(--amarillo-tinta); border-bottom-right-radius: 4px; }
+.as-asistente { align-self: flex-start; background: var(--tarjeta); border: 1px solid var(--borde); border-bottom-left-radius: 4px; }
+.as-asistente a { color: var(--enlace); }
+.as-pensando { color: var(--tinta-tenue); }
+.as-descansa { border-color: var(--borde-fuerte); color: var(--tinta-suave); }
+.as-form {
+  position: sticky; bottom: 0; z-index: 5; display: flex; gap: 8px; align-items: flex-end; margin-top: 14px;
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); background: var(--fondo); border-top: 1px solid var(--borde);
+}
+/* Con la barra inferior del movil (fija, D90) el formulario se pega encima de ella; la barra ya lleva la zona segura. */
+@media (max-width: 768px) { .as-pagina .as-form { bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom)); padding-bottom: 10px; } }
+.as-form textarea {
+  flex: 1; min-height: var(--toque); resize: vertical; padding: 10px 12px; border-radius: var(--radio); border: 1px solid var(--borde-fuerte);
+  background: var(--campo); color: var(--tinta); font: inherit; font-size: 16px; /* 16 px: el iPhone no hace zoom al escribir */
+}
+.as-form .boton { min-height: var(--toque); min-width: var(--toque); }
+.as-nota { margin-top: 8px; color: var(--tinta-tenue); font-size: 0.8rem; }
+
+
+/* --- Boton flotante y panel (AsistenteFlotante) --- */
+.af-boton {
+  position: fixed; z-index: 41; right: calc(16px + env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom));
+  width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--c-sobre-acento); background: var(--c-amarillo); color: var(--c-sobre-acento);
+  display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; box-shadow: 0 8px 24px #000b;
+}
+.af-boton:hover { background: var(--c-amarillo-vivo); }
+.af-boton:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
+.af-boton[aria-expanded="true"] { visibility: hidden; }
+/* Lo ultimo de cada pantalla no queda nunca debajo del boton: hueco al final para desplazarlo por encima. */
+body:has(.af-boton) { padding-bottom: 96px; }
+/* Convocatoria, Tablero y Grupos: su barra fija de acciones ocupa el ancho entero y cambia de alto (se parte en dos lineas
+   en el movil); encima de ella el boton taparia las casillas y botones de la lista. Mientras esta en pantalla, se esconde. */
+body:has(.tb-barra:not([hidden])) .af-boton { display: none; }
+@media (max-width: 768px) {
+  .af-boton { bottom: calc(var(--alto-barra) + 12px + env(safe-area-inset-bottom)); }
+  body:has(.af-boton) { padding-bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom) + 80px); }
+}
+
+.af-velo { position: fixed; inset: 0; z-index: 46; background: #000a; }
+.af-panel {
+  position: fixed; z-index: 47; top: 0; right: 0; bottom: 0; width: min(400px, 100vw); display: flex; flex-direction: column; gap: 8px;
+  background: var(--tarjeta); border-left: 1px solid var(--borde-fuerte); box-shadow: -16px 0 40px #000a;
+  padding: calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) 16px;
+}
+.af-panel[hidden] { display: none; }
+.af-asa { display: none; }
+.af-cab { display: flex; align-items: center; justify-content: space-between; }
+.af-titulo { margin: 0; font-family: var(--f-titulos); font-weight: 700; font-size: 24px; text-transform: uppercase; }
+.af-panel .as-aviso { margin: 0; }
+.af-panel .as-chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.af-panel .as-hilo { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.af-panel .as-form { position: static; margin-top: 10px; padding: 10px 0 0; background: none; }
+.af-panel .as-form textarea { resize: none; }
+.af-panel .as-nota { margin: 6px 0 0; }
+@media (max-width: 768px) {
+  .af-panel {
+    top: auto; left: 0; width: auto; height: min(85dvh, calc(100dvh - env(safe-area-inset-top) - 8px));
+    border-left: 0; border-top: 1px solid var(--borde-fuerte); border-radius: 18px 18px 0 0; box-shadow: 0 -16px 40px #000a;
+    padding: 6px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+  .af-asa { display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--borde-fuerte); margin: 2px auto 0; }
+  .af-cab { padding-left: 4px; }
+}

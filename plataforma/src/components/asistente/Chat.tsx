@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { guardarConversacion, leerConversacion, type Mensaje } from "./conversacion";
+import "./asistente.css";
 
-type Mensaje = { role: "user" | "assistant"; content: string };
 const WEB = "https://maccabis.vercel.app";
 
 /** Texto del asistente con los enlaces pulsables. Los de la web van como ruta propia (valen tambien en la vista previa). */
@@ -14,7 +15,9 @@ function ConEnlaces({ texto }: { texto: string }) {
   })}</>;
 }
 
-export default function Chat({ nombre }: { nombre: string }) {
+/** El chat (D142), en la pagina /asistente y en el panel del boton flotante. `activo`: el panel esta abierto (al abrirlo
+ *  se relee la conversacion guardada y lo que queda de hoy). */
+export default function Chat({ nombre, dueno, activo = true }: { nombre: string; dueno: string; activo?: boolean }) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [texto, setTexto] = useState("");
   const [quedan, setQuedan] = useState<number | null>(null);
@@ -22,13 +25,18 @@ export default function Chat({ nombre }: { nombre: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pensando, setPensando] = useState(false);
   const fin = useRef<HTMLDivElement>(null);
+  const cargada = useRef(false);
 
   useEffect(() => {
+    if (!activo) return;
+    setMensajes(leerConversacion(dueno));
+    cargada.current = true;
     fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ accion: "cuota" }) })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d && typeof d.quedan === "number") { setQuedan(d.quedan); if (d.quedan === 0) setAgotado(true); } })
       .catch(() => {});
-  }, []);
+  }, [activo, dueno]);
+  useEffect(() => { if (cargada.current) guardarConversacion(dueno, mensajes); }, [dueno, mensajes]);
   useEffect(() => { fin.current?.scrollIntoView({ block: "nearest" }); }, [mensajes, pensando]);
 
   async function enviar(e: React.FormEvent) {

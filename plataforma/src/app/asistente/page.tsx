@@ -4,14 +4,15 @@ import Volver from "@/components/nav/Volver";
 import { puedeUsarChat } from "@/lib/chat/acceso";
 import { exigirSesion } from "@/lib/sesion";
 import { usuarioActual } from "@/lib/usuario";
-import Chat from "./Chat";
-import "./asistente.css";
+import { duenoConversacion } from "@/lib/chat/dueno";
+import Chat from "@/components/asistente/Chat";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Asistente · Maccabis", robots: { index: false, follow: false } };
 
 // «Pregunta al asistente» (D142): IA gratuita (Workers AI, plan Free) que responde sobre el uso de la web y lo tuyo.
-// Solo lectura. Con CHAT_IA_ABIERTO = "gestores" (por defecto), solo los gestores; los demas, 403.
+// Solo lectura. Es tambien el panel del boton flotante (AsistenteFlotante); esta pagina queda para quien llegue por enlace.
+// Con CHAT_IA_ABIERTO = "gestores" (por defecto), solo los gestores; los demas, 403.
 export default async function Asistente() {
   await exigirSesion();
   const usuario = await usuarioActual();
@@ -21,7 +22,7 @@ export default async function Asistente() {
       <Volver defecto="/" etiqueta="Inicio" />
       <h1>Pregunta al asistente</h1>
       <p className="as-aviso" data-testid="aviso-fijo">Respuestas automáticas, pueden equivocarse. Lo oficial es lo que pone la web.</p>
-      <Chat nombre={usuario!.corto} />
+      <Chat nombre={usuario!.corto} dueno={duenoConversacion(usuario!.email)} />
     </main>
   );
 }

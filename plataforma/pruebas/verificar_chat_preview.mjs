@@ -66,7 +66,7 @@ try {
   const pagina = vcurl('/asistente', ['-H', `@${cab}`]);
   ok(pagina.includes('Respuestas automáticas, pueden equivocarse. Lo oficial es lo que pone la web'), '/asistente con sesión de gestor: carga con el aviso fijo');
   const inicio = vcurl('/', ['-H', `@${cab}`]);
-  ok(inicio.includes('data-testid="acceso-asistente"'), 'Inicio del gestor: acceso «Pregunta al asistente»');
+  ok(inicio.includes('data-testid="boton-asistente"') && !inicio.includes('acceso-asistente'), 'Inicio del gestor: botón flotante «Pregunta al asistente» (y sin el enlace pequeño)');
 
   const cuerpo = path.join(tmp, 'b');
   fs.writeFileSync(cuerpo, JSON.stringify({ accion: 'cuota' }));

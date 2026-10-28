@@ -108,6 +108,8 @@ ok(A.modoChat('TODOS') === 'todos' && A.modoChat(' off ') === 'off', '«todos» 
 ok(A.puedeUsarChat({ esGestor: true }, 'gestores', true) && !A.puedeUsarChat({ esGestor: false }, 'gestores', true), '«gestores»: el gestor sí, el jugador no');
 ok(A.puedeUsarChat({ esGestor: false }, 'todos', true) && !A.puedeUsarChat({ esGestor: true }, 'off', true), '«todos»: todos; «off»: nadie');
 ok(!A.puedeUsarChat({ esGestor: true }, 'todos', false) && !A.puedeUsarChat(null, 'todos', true), 'sin Worker configurado o sin sesión: nadie');
+ok(['/', '/agenda', '/mi-zona/evento/x', '/gestion/convocatoria', '/cuenta', '/avisos', '/mis-numeros', '/planes/nuevo'].every(A.asistenteEnRuta), 'botón flotante en Inicio y en las pantallas con login');
+ok(!['/entrar', '/asistente', '/liga', '/liga/estadisticas', '/plantilla', '/historia', '/club', '/jugador/x', '/privacidad', '/agendas'].some(A.asistenteEnRuta), 'y no en /entrar, /asistente ni la parte pública');
 
 console.log('\n== 4. De extremo a extremo');
 // Worker de verdad en local con KV y Workers AI simulados: guarda el ultimo contexto para inspeccionarlo.
@@ -169,29 +171,43 @@ try {
   // «gestores» (por defecto): el jugador no
   const jon = await e.sesion('jon@pruebas.local', 375);
   await jon.goto(`${APP}/`);
-  ok(!(await visto(jon.getByTestId('acceso-asistente'), 1500)), 'jugador con «gestores»: no ve el acceso en Inicio');
+  const FAB = (p) => p.getByRole('button', { name: 'Pregunta al asistente' });
+  ok(!(await visto(FAB(jon), 1500)), 'jugador con «gestores»: no ve el botón flotante');
   ok((await api(APP, jon.context(), { accion: 'cuota' })).status() === 403, 'jugador con «gestores»: /api/chat da 403');
   ok((await api(APP, jon.context(), { mensajes: [{ role: 'user', content: 'hola' }] })).status() === 403 && llamadas === 0, 'y preguntar también 403 (sin llegar al Worker)');
   const pj = await jon.goto(`${APP}/asistente`);
   ok(pj.status() === 403 && (await visto(jon.getByText('No disponible'), 3000)), 'jugador con «gestores»: /asistente da 403', String(pj.status()));
+  // Sin sesion: ni en Inicio, ni en /entrar, ni en la parte publica
+  const anonP = await e.nuevaPagina(anon);
+  for (const r of ['/', '/entrar', '/liga']) { await anonP.goto(`${APP}${r}`); ok(!(await visto(FAB(anonP), 800)), `sin sesión: sin botón flotante en ${r}`); }
 
-  // El gestor si
+  // El gestor si: boton flotante (movil, 375 px)
   const ivan = await e.sesion('gestor@pruebas.local', 375);
   await ivan.goto(`${APP}/`);
-  ok(await visto(ivan.getByTestId('acceso-asistente')), 'gestor: ve «Pregunta al asistente» en Inicio');
-  await ivan.getByTestId('acceso-asistente').click();
-  await ivan.waitForURL(/\/asistente$/);
-  ok(await visto(ivan.getByTestId('aviso-fijo').getByText('Respuestas automáticas, pueden equivocarse. Lo oficial es lo que pone la web')), 'aviso fijo');
-  ok(await visto(ivan.getByTestId('cuota').getByText('Te quedan 10 preguntas hoy')), '«Te quedan 10 preguntas hoy»');
-  ok(await visto(ivan.getByTestId('volver')), '«← volver»');
-  await ivan.getByLabel('Tu pregunta').fill('¿cómo activo los avisos en iPhone?');
-  await ivan.getByRole('button', { name: 'Preguntar' }).click();
-  ok(await visto(ivan.getByTestId('msg-asistente').getByText(/Actívalos en/)), 'sale la respuesta');
-  ok(await visto(ivan.getByTestId('cuota').getByText('Te quedan 9 preguntas hoy')), 'y baja a 9');
-  ok((await ivan.getByTestId('msg-asistente').locator('a').first().getAttribute('href')) === '/avisos', 'el enlace a la web es una ruta propia (/avisos)');
+  ok(!(await visto(ivan.getByTestId('acceso-asistente'), 500)), 'Inicio ya no tiene el enlace pequeño bajo el saludo');
+  ok(await visto(FAB(ivan)), 'gestor: botón flotante «Pregunta al asistente» en Inicio');
+  const fab = await ivan.evaluate(() => { const r = document.querySelector('.af-boton').getBoundingClientRect(); const b = document.querySelector('.nv-barra').getBoundingClientRect(); return { r: [r.left, r.top, r.right, r.bottom], barra: b.top, W: innerWidth }; });
+  ok(fab.r[3] <= fab.barra - 11 && fab.r[2] <= fab.W - 15, 'en el móvil, abajo a la derecha y 12 px por encima de la barra inferior', JSON.stringify(fab));
+  for (const [r, sale] of [['/agenda', true], ['/gestion', true], ['/cuenta', true], ['/liga', false], ['/historia', false], ['/plantilla', false], ['/asistente', false]]) {
+    await ivan.goto(`${APP}${r}`);
+    ok((await visto(FAB(ivan), sale ? 8000 : 800)) === sale, `${r}: ${sale ? 'con' : 'sin'} botón flotante`);
+  }
+  await ivan.goto(`${APP}/`);
+  await FAB(ivan).click();
+  const panel = ivan.getByTestId('panel-asistente');
+  ok(await visto(panel), 'al pulsarlo se abre el panel');
+  { const c = await panel.boundingBox(); const v = ivan.viewportSize(); ok(Math.abs(c.y + c.height - v.height) <= 1 && Math.abs(c.height - 0.85 * v.height) <= 2 && c.width === v.width, 'en el móvil: hoja desde abajo del 85 % del alto', JSON.stringify(c)); }
+  ok(await visto(panel.getByTestId('aviso-fijo').getByText('Respuestas automáticas, pueden equivocarse. Lo oficial es lo que pone la web')), 'aviso fijo');
+  ok(await visto(panel.getByTestId('cuota').getByText('Te quedan 10 preguntas hoy')), '«Te quedan 10 preguntas hoy»');
+  ok(await ivan.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Tu pregunta'), 'el foco va a la pregunta');
+  await panel.getByLabel('Tu pregunta').fill('¿cómo activo los avisos en iPhone?');
+  await panel.getByRole('button', { name: 'Preguntar' }).click();
+  ok(await visto(panel.getByTestId('msg-asistente').getByText(/Actívalos en/)), 'sale la respuesta');
+  ok(await visto(panel.getByTestId('cuota').getByText('Te quedan 9 preguntas hoy')), 'y baja a 9');
+  ok((await panel.getByTestId('msg-asistente').locator('a').first().getAttribute('href')) === '/avisos', 'el enlace a la web es una ruta propia (/avisos)');
   ok(await sinDesbordar(ivan), '375 px sin desbordar');
-  const tapa = await ivan.evaluate(() => { const b = document.querySelector('.as-form button'); const r = b.getBoundingClientRect(); const x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return x === b || b.contains(x); });
-  ok(tapa, 'el botón «Preguntar» se puede pulsar (no queda bajo la barra inferior)');
+  const pulsable = (sel) => ivan.evaluate((s) => { const b = document.querySelector(s); const r = b.getBoundingClientRect(); const x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return x === b || b.contains(x); }, sel);
+  ok(await pulsable('.af-panel .as-form button'), 'el botón «Preguntar» del panel se puede pulsar');
   const soloContexto = (m) => m.split("=== DATOS DE LA WEB")[1] ?? ""; // sin el prompt de sistema (que nombra «niveles» para prohibirlos)
   const ctxIvan = soloContexto(ultimo.messages[0].content);
   ok(ultimo.messages[0].content.includes('=== DATOS DE LA WEB') && !ultimo.messages[0].content.includes('=== CONTEXTO'), 'el bloque de datos se llama «DATOS DE LA WEB»');
@@ -201,13 +217,13 @@ try {
   // Respuesta lenta con enlaces inventados y relleno: «Pensando…» mientras tanto, y llega limpia.
   respuestaIA = 'Lo tienes en https://maccabis.vercel.app/ayuda y en https://maccabis.vercel.app/liga#como-llegar. ¿Hay algo más en lo que pueda ayudarte?';
   retraso = 2500;
-  await ivan.getByLabel('Tu pregunta').fill('¿dónde está la ayuda?');
-  await ivan.getByRole('button', { name: 'Preguntar' }).click();
-  ok(await visto(ivan.getByText('Pensando…'), 1500), '«Pensando…» mientras responde');
-  ok(await ivan.getByRole('button', { name: 'Preguntar' }).isDisabled(), 'y no deja mandar otra a la vez');
-  const segunda = ivan.getByTestId('msg-asistente').nth(1);
+  await panel.getByLabel('Tu pregunta').fill('¿dónde está la ayuda?');
+  await panel.getByRole('button', { name: 'Preguntar' }).click();
+  ok(await visto(panel.getByText('Pensando…'), 1500), '«Pensando…» mientras responde');
+  ok(await panel.getByRole('button', { name: 'Preguntar' }).isDisabled(), 'y no deja mandar otra a la vez');
+  const segunda = panel.getByTestId('msg-asistente').nth(1);
   ok(await visto(segunda, 8000), 'llega la respuesta');
-  ok(!(await visto(ivan.getByText('Pensando…'), 300)), '«Pensando…» desaparece');
+  ok(!(await visto(panel.getByText('Pensando…'), 300)), '«Pensando…» desaparece');
   const txt2 = (await segunda.textContent()) ?? '';
   ok((await segunda.locator('a').count()) === 0 && !/ayuda|#como-llegar|algo más/.test(txt2), 'sin los enlaces inventados (/ayuda, /liga#como-llegar) ni la oferta de ayuda', txt2);
   respuestaIA = 'Actívalos en https://maccabis.vercel.app/avisos desde el icono de la pantalla de inicio.';
@@ -215,18 +231,56 @@ try {
   const guardado = [...kv.keys()];
   ok(guardado.every((k) => /^\d{4}-\d{2}-\d{2}:(total|u:[a-f0-9]{32})$/.test(k)) && ![...kv.values()].some((v) => /iPhone|avisos/.test(v)), 'en KV solo contadores con un identificador opaco', JSON.stringify(guardado));
 
+  // Cerrar: Escape, ✕ y tocando fuera
+  await ivan.keyboard.press('Escape');
+  ok(await panel.isHidden(), 'Escape cierra el panel');
+  ok(await ivan.evaluate(() => document.activeElement?.classList.contains('af-boton')), 'y el foco vuelve al botón');
+  await FAB(ivan).click();
+  await panel.getByRole('button', { name: 'Cerrar' }).click();
+  ok(await panel.isHidden(), '✕ cierra el panel');
+  await FAB(ivan).click();
+  await ivan.mouse.click(20, 40); // por encima de la hoja: el velo
+  ok(await panel.isHidden(), 'tocar fuera cierra el panel');
+
+  // La conversacion sigue al navegar (sin recargar), al recargar y en /asistente; nunca sale de la pestaña
+  await ivan.locator('.nv-barra').getByRole('link', { name: 'Agenda' }).click();
+  await ivan.waitForURL(/\/agenda$/);
+  await FAB(ivan).click();
+  ok((await panel.getByTestId('msg-yo').count()) === 2 && (await panel.getByTestId('msg-asistente').count()) === 2, 'al navegar a Agenda la conversación sigue');
+  await ivan.reload();
+  await FAB(ivan).click();
+  ok(await visto(panel.getByTestId('msg-yo').getByText('¿dónde está la ayuda?')), 'y también al recargar (sessionStorage)');
+  ok(await ivan.evaluate(() => Object.keys(localStorage).every((k) => !/asistente/.test(k)) && /dueno/.test(sessionStorage.getItem('maccabis-asistente') ?? '') && !/@/.test(sessionStorage.getItem('maccabis-asistente') ?? '')), 'solo en sessionStorage, sin el correo');
+  await ivan.goto(`${APP}/asistente`);
+  ok((await visto(ivan.getByTestId('volver'))) && (await visto(ivan.getByTestId('aviso-fijo'))), '/asistente sigue como página («← volver» y aviso fijo)');
+  ok(await visto(ivan.getByTestId('msg-yo').getByText('¿dónde está la ayuda?')), 'con la misma conversación');
+  ok(await pulsable('.as-pagina .as-form button'), 'su botón «Preguntar» se puede pulsar (no queda bajo la barra inferior)');
+
+  // Escritorio: panel lateral derecho de 400 px
+  await ivan.setViewportSize({ width: 1280, height: 800 });
+  await ivan.goto(`${APP}/`);
+  { const b = await ivan.locator('.af-boton').boundingBox(); ok(b && Math.round(1280 - (b.x + b.width)) === 16 && Math.round(800 - (b.y + b.height)) === 24, 'escritorio: botón abajo a la derecha', JSON.stringify(b)); }
+  await FAB(ivan).click();
+  { const c = await panel.boundingBox(); ok(c.width === 400 && c.x + c.width === 1280 && c.y === 0 && c.height === 800, 'escritorio: panel lateral derecho de 400 px', JSON.stringify(c)); }
+  ok(await pulsable('.af-panel .as-form button'), 'escritorio: «Preguntar» se puede pulsar');
+  await ivan.mouse.click(300, 300);
+  ok(await panel.isHidden(), 'escritorio: tocar fuera cierra');
+  await ivan.setViewportSize({ width: 375, height: 812 });
+
   // Cuota del dia agotada
   const dia = W.diaMadrid();
   kv.set(`${dia}:total`, '60');
   await ivan.reload();
-  ok(await visto(ivan.getByTestId('cuota').getByText('El asistente descansa hasta mañana.')), 'con la cuota del día agotada: «El asistente descansa hasta mañana»');
-  ok(await ivan.getByRole('button', { name: 'Preguntar' }).isDisabled(), 'y no deja preguntar');
+  await FAB(ivan).click();
+  ok(await visto(panel.getByTestId('cuota').getByText('El asistente descansa hasta mañana.')), 'con la cuota del día agotada: «El asistente descansa hasta mañana»');
+  ok(await panel.getByRole('button', { name: 'Preguntar' }).isDisabled(), 'y no deja preguntar');
   kv.delete(`${dia}:total`);
+  await ivan.keyboard.press('Escape');
 
   // «todos»: el jugador si; contexto de un jugador real de la base de pruebas
   const TODOS = await otraWeb(3161, 'todos');
   await jon.goto(`${TODOS}/`);
-  ok(await visto(jon.getByTestId('acceso-asistente')), '«todos»: el jugador ve el acceso');
+  ok(await visto(FAB(jon)), '«todos»: el jugador ve el botón flotante');
   const rj = await api(TODOS, jon.context(), { mensajes: [{ role: 'user', content: '¿por qué no ha venido Noe?' }] });
   ok(rj.status() === 200 && (await rj.json()).respuesta, '«todos»: el jugador pregunta');
   const ctxJon = soloContexto(ultimo.messages[0].content);
@@ -244,9 +298,18 @@ try {
   // «off»: nadie
   const OFF = await otraWeb(3162, 'off');
   await ivan.goto(`${OFF}/`);
-  ok(!(await visto(ivan.getByTestId('acceso-asistente'), 1500)), '«off»: ni el gestor ve el acceso');
+  ok(!(await visto(FAB(ivan), 1500)), '«off»: ni el gestor ve el botón flotante');
   ok((await api(OFF, ivan.context(), { accion: 'cuota' })).status() === 403, '«off»: /api/chat da 403 también al gestor');
   ok((await ivan.goto(`${OFF}/asistente`)).status() === 403, '«off»: /asistente da 403');
+
+  // Al cerrar sesion se borra la conversacion de la pestaña
+  await ivan.goto(`${APP}/`);
+  ok(Boolean(await ivan.evaluate(() => sessionStorage.getItem('maccabis-asistente'))), 'antes de salir la conversación está en la pestaña');
+  await ivan.locator('.nv-barra .nv-barra-item').last().click();
+  await ivan.locator('.nv-hoja').getByRole('button', { name: 'Salir' }).click();
+  await ivan.waitForURL(/\/entrar/);
+  ok((await ivan.evaluate(() => sessionStorage.getItem('maccabis-asistente'))) === null, 'al cerrar sesión se borra');
+  ok(!(await visto(FAB(ivan), 800)), 'y en /entrar no hay botón');
 
   // Secreto equivocado entre la web y el Worker: 401 en el Worker y la web no se cae
   const r401 = await fetch(URL_W, { method: 'POST', headers: { authorization: 'Bearer otro', 'content-type': 'application/json' }, body: '{}' });

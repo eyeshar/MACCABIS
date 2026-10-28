@@ -169,6 +169,3 @@
 /* D129: equipos y partidos enlazados (a su ficha y a la página del partido) */
 .in-enlace-equipo, .in-enlace-partido { color: inherit; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; } /* objetivo tactil de 44 px */
 .in-enlace-equipo:hover, .in-enlace-equipo:focus-visible, .in-enlace-partido:hover, .in-enlace-partido:focus-visible { color: var(--c-amarillo); text-decoration: underline; text-underline-offset: 3px; }
-/* Acceso discreto al asistente (D142), solo si lo tiene abierto */
-.in-asistente { display: inline-flex; align-items: center; gap: 6px; min-height: var(--toque); color: var(--tinta-suave); font-size: 0.9rem; text-decoration: none; }
-.in-asistente:hover { color: var(--enlace); }

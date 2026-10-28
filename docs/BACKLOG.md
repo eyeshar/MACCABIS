@@ -12,6 +12,7 @@
 - [x] Revisión de Iván del 28/10 aplicada (enlaces validados, prompt, D141, «Pensando…», norma 14).
 - [ ] **Iván lo prueba con su cuenta en la vista previa**; luego, **OK de Iván y merge en `main`** (tras el merge, en producción lo verán solo los gestores).
 - [ ] **Tras una semana de prueba con los gestores: abrir a «todos»** (`CHAT_IA_ABIERTO=todos` en Vercel y redesplegar) y revisar en el panel de Cloudflare el gasto real de neuronas antes y después.
+- [x] Botón flotante en lugar del enlace de Inicio (cambio de Iván del 28/10): hoja/panel, conversación en la pestaña hasta cerrar sesión, escondido con las barras de Convocatoria/Tablero; en `pruebas:safe-area`.
 - [ ] **La guía del jugador (`docs/GUIA_JUGADOR.md`, base del asistente) se quedó antes de D141:** dice «Pronto verás también quién no ha contestado» y que la hora límite de las dudas «se activa en los próximos días». Con D141 ya en `main`, actualizar esas dos frases (es texto de Iván: con su OK) y `npm run datos:sync` para refrescar `src/data/guiaJugador.json` (`check:copias` avisa).
 **Visibilidad y dudas con hora límite (27/10/2026, `feat/visibilidad-y-dudas`, D141): hecho en la rama, SIN merge.**
 - [x] Jugadores: nombres de quien no ha contestado; motivos solo gestores; `pruebas:dudas` lo comprueba en HTML y en la API.

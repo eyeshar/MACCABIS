@@ -20,6 +20,7 @@ plataforma/
   src/components/nav/       navegacion unica (D89, D90): Cabecera (lee la sesion en el servidor), Navegacion (menu, menu de
                             usuario, menu de Gestion, barra inferior y hoja "Mas" del movil), BarrasZona (Mi zona y Gestion)
   src/app/asistente/        «Pregunta al asistente» (D142): IA gratuita de Workers AI; solo lectura; interruptor CHAT_IA_ABIERTO
+  src/components/asistente/ el chat, el botón flotante con su hoja/panel y la conversación en sessionStorage (D142)
   src/lib/chat/             contexto del asistente (contexto.ts, lista blanca y pura), quien lo usa (acceso.ts) y llamada al
                             Worker (servidor.ts). El Worker vive en ../chat-worker/ (npx wrangler deploy desde esa carpeta)
   src/lib/usuario.ts        quien mira la pagina (sin sesion, jugador, gestor) para la cabecera

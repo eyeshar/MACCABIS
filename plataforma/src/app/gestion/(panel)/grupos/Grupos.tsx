@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
-import { mensajeGrupos, resumenGrupo } from "@/lib/grupos/sugerir";
+import { avisosEstructura, estructuraGrupo, etiquetaPapel, mensajeGrupos, resumenGrupo, type DatosJugador, type Papel } from "@/lib/grupos/sugerir";
 import type { DatosGrupos, JugadorVisible, Privado } from "@/lib/grupos/datos";
-import { borrarReparto, datosPrivados, duplicarReparto, guardarReparto, publicarReparto, sugerir } from "./acciones";
+import type { Siguiente } from "@/lib/grupos/siguiente";
+import { borrarReparto, datosPrivados, datosSiguiente, duplicarReparto, guardarReparto, publicarReparto, sugerir } from "./acciones";
 
 type G = { nombre: string; personas: string[] };
 const TEXTO_POS: Record<string, string> = { base: "Base", escolta: "Escolta", alero: "Alero", ala_pivot: "Ala-pívot", pivot: "Pívot" };
@@ -15,7 +16,10 @@ const FUERA = -1;
  *  «Otra sugerencia» (D143, de 3 a 6 por grupo), mover con seleccion multiple («Mover N a…») o arrastrando en escritorio,
  *  renombrar, añadir o quitar grupos, duplicar, borrar, «Publicar a la plantilla» (desactivado por defecto), el mensaje
  *  de WhatsApp y la «Vista para el equipo» (D144) para pantallazos: solo nombres, sin nada privado en la pagina.
- *  Posicion, base de reserva y nivel llegan aparte (datosPrivados) y viven solo en memoria. */
+ *  Posicion, base de reserva y nivel llegan aparte (datosPrivados) y viven solo en memoria. D147: el resumen de cada
+ *  grupo lleva su estructura («1 base · 2 ext · 3 int · nivel medio 3,5»), los avisos de estructura van arriba y la
+ *  tarjeta dice «hace de base» si su papel no es su posicion; todo se recalcula al mover y nada sale en la vista para
+ *  el equipo. Quien juega con quien el siguiente partido (datosSiguiente) solo se cuenta en el resumen. */
 export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
   const router = useRouter();
   const [idActual, setIdActual] = useState<string | null>(d.repartos[0]?.id ?? null);
@@ -31,7 +35,9 @@ export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
   const [priv, setPriv] = useState<Record<string, Privado> | null>(null);
   const [variante, setVariante] = useState<number | null>(null);
   const [equipo, setEquipo] = useState(false);
+  const [sig, setSig] = useState<Siguiente | null>(null);
   useEffect(() => { let vivo = true; datosPrivados(d.evento.id).then((r) => { if (vivo && r.ok) setPriv(r.dato ?? {}); }); return () => { vivo = false; }; }, [d.evento.id]);
+  useEffect(() => { let vivo = true; datosSiguiente(d.evento.id).then((r) => { if (vivo && r.ok) setSig(r.dato ?? null); }); return () => { vivo = false; }; }, [d.evento.id]);
   // La vista para el equipo tambien esconde la cabecera y las barras de la web (no llevan datos privados).
   useEffect(() => { document.body.classList.toggle("gr-vista-equipo", equipo); return () => document.body.classList.remove("gr-vista-equipo"); }, [equipo]);
   const quien = useMemo(() => new Map(d.jugadores.map((j) => [j.person_id, j])), [d.jugadores]);
@@ -61,21 +67,30 @@ export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
     const r = await sugerir(d.evento.id, tamano, v);
     if (!r.ok || !r.dato) { setMensaje({ ok: false, texto: r.ok ? "No se pudo sugerir." : r.error }); return; }
     const s = r.dato;
-    if (v > 0 && s.variantes <= 1) { setMensaje({ ok: true, texto: "No hay otra combinación igual de nivelada con estos jugadores." }); return; }
+    if (v > 0 && s.variantes <= 1) { setMensaje({ ok: true, texto: "No hay otra combinación igual de buena con estos jugadores." }); return; }
     setGrupos(s.grupos); setVariante(s.variante);
-    setMensaje({ ok: true, texto: `Sugerencia ${s.variante + 1} de ${s.variantes} igual de niveladas: revisa, mueve lo que quieras y guarda el reparto.` });
+    setMensaje({ ok: true, texto: `Sugerencia ${s.variante + 1} de ${s.variantes} igual de buenas: revisa, mueve lo que quieras y guarda el reparto.` });
   });
   const guardar = () => hacer(async () => {
     const r = await guardarReparto(d.evento.id, { id: idActual, nombre, tamano, grupos });
     if (!r.ok) { setMensaje({ ok: false, texto: r.error }); return; }
     setIdActual(r.dato ?? null); setMensaje({ ok: true, texto: "Reparto guardado." }); router.refresh();
   });
+  // Estructura de cada grupo con los datos privados (solo en memoria): papel de cada uno, resumen y avisos.
+  const datoDe = (p: string): DatosJugador => ({ person_id: p, ...(priv?.[p] ?? { posicion: null, base_reserva: false, nivel: null }) });
+  const papeles = useMemo(() => {
+    const m = new Map<string, Papel>();
+    if (priv) for (const g of grupos) for (const [p, x] of estructuraGrupo(g.personas.map(datoDe)).papel) m.set(p, x);
+    return m;
+  }, [grupos, priv]); // eslint-disable-line react-hooks/exhaustive-deps
+  const avisos = priv ? avisosEstructura(grupos.map((g) => ({ nombre: g.nombre.trim() || "Un grupo", js: g.personas.map(datoDe) }))) : [];
   const persona = (id: string, tag?: string) => {
     const j = priv?.[id];
+    const hace = j ? etiquetaPapel(j, papeles.get(id)) : null;
     return (
       <li key={id} draggable onDragStart={arrastrar(id)} className={sel.has(id) ? "tb-sel" : undefined} data-person={id}>
         <label className="tb-casilla"><input type="checkbox" checked={sel.has(id)} onChange={() => alternar(id)} aria-label={`Seleccionar a ${nombreDe(id)}`} /></label>
-        <span className="tb-jugador"><b>{nombreDe(id)}</b><small>{priv && (j?.posicion ? TEXTO_POS[j.posicion] : "sin posición")}{j?.base_reserva && <span className="tb-marca">base de reserva</span>}{priv && <span className="tb-marca">{j?.nivel ? `nivel ${j.nivel}` : "sin nivel"}</span>}{tag && <span className="tb-marca">{tag}</span>}</small></span>
+        <span className="tb-jugador"><b>{nombreDe(id)}</b><small>{priv && (j?.posicion ? TEXTO_POS[j.posicion] : "sin posición")}{j?.base_reserva && <span className="tb-marca">base de reserva</span>}{priv && <span className="tb-marca">{j?.nivel ? `nivel ${j.nivel}` : "sin nivel"}</span>}{hace && <span className="tb-marca gr-hace" data-testid="gr-hace">{hace}</span>}{tag && <span className="tb-marca">{tag}</span>}</small></span>
       </li>
     );
   };
@@ -125,10 +140,11 @@ export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
           {variante !== null && <button type="button" className="boton boton-claro" onClick={() => pedirSugerencia(variante + 1)} disabled={pendiente}>Otra sugerencia</button>}
         </div>
         <p className="pequeno suave" style={{ margin: 0 }} data-testid="gr-ayuda">
-          La sugerencia reparte a los que dicen «Voy» en grupos parejos: un base (o base de reserva) en cada grupo mientras haya, los interiores repartidos y el nivel medio lo más igualado posible. Los que dudan quedan aparte.
+          La sugerencia reparte a los que dicen «Voy»: primero, cada grupo con su quinteto (1 base, 2 exteriores y 2 interiores); después, los que sobran repartidos por líneas; y, dentro de eso, el nivel medio lo más igualado posible. Los que dudan quedan aparte.
           {" "}Los grupos no cuentan para nada más (ni asistencia, ni rotación, ni estadísticas).
         </p>
         {sinNivel > 0 && <div className="aviso" role="status" style={{ margin: 0 }} data-testid="gr-sin-nivel">{sinNivel} {sinNivel === 1 ? "jugador sin nivel: la sugerencia lo cuenta" : "jugadores sin nivel: la sugerencia los cuenta"} como C.</div>}
+        {avisos.length > 0 && <div className="aviso" role="status" style={{ margin: 0 }} data-testid="gr-avisos">{avisos.map((a) => <div key={a}>{a}</div>)}</div>}
         {mensaje && <div className={`aviso ${mensaje.ok ? "aviso-ok" : "aviso-error"}`} role={mensaje.ok ? "status" : "alert"} style={{ margin: 0 }}>{mensaje.texto}</div>}
       </section>
 
@@ -142,7 +158,7 @@ export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
               <span className="cifra suave">{g.personas.length}</span>
               <button type="button" className="tb-todos" onClick={() => setGrupos((gs) => gs.filter((_, k) => k !== i))}>Quitar grupo</button>
             </div>
-            {priv && g.personas.length > 0 && <p className="pequeno suave gr-resumen" data-testid="gr-resumen">{resumenGrupo(g.personas.map((p) => priv[p] ?? { posicion: null, base_reserva: false, nivel: null }))}</p>}
+            {priv && g.personas.length > 0 && (() => { const r = resumenGrupo(g.personas.map(datoDe), sig); return <p className={`pequeno gr-resumen${r.cumple ? " suave" : " gr-resumen-mal"}`} data-testid="gr-resumen">{r.texto}</p>; })()}
             <ul className="tb-lista">{g.personas.map((p) => persona(p, !d.van.includes(p) ? (d.duda.includes(p) ? "duda" : "no ha dicho voy") : undefined))}</ul>
             {!g.personas.length && <p className="pequeno suave">Vacío: mueve aquí a quien quieras.</p>}
           </section>

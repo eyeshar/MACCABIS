@@ -11,7 +11,7 @@
 
 export const MODELO = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 export const MODELO_RESERVA = "@cf/meta/llama-3.1-8b-instruct-fp8";
-export const POR_USUARIO = 10;
+export const POR_USUARIO = 5;
 export const TOTAL_DIA = 60;
 export const MAX_TOKENS = 400;
 export const HISTORIAL = 6;

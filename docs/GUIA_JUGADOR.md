@@ -48,6 +48,8 @@ Sin avisos no te enteras de los recordatorios ni de los cambios de hora o pista.
 2. Compartir → Añadir a pantalla de inicio.
 3. Abre la web desde ese icono, entra en Avisos y actívalos.
 
+Si la web instalada se ve mal o no se actualiza, ciérrala del todo; si sigue igual, borra el icono y vuelve a añadirlo desde Safari.
+
 Pulsa Mandarme un aviso de prueba para comprobar que te llega. Los avisos nunca salen de noche. Si cambias de móvil, actívalos otra vez en el nuevo.
 
 ## La pantalla de inicio
@@ -66,11 +68,11 @@ En cada evento pulsa una de las tres opciones. Puedes cambiarla cuando quieras.
 
 - Voy.
 - No voy: elige el motivo (lesión, trabajo, viaje, familia u otro). El motivo solo lo ven los gestores.
-- Duda: úsala solo si de verdad no lo sabes. Las dudas tendrán hora límite, el martes a las 20:00 para el entreno de esa semana y el partido del domingo. Si a esa hora sigues en duda, contarás como «no va». Esta regla se activa en los próximos días; te avisaremos.
+- Duda: úsala solo si de verdad no lo sabes. Las dudas tienen hora límite: el martes a las 20:00 para el entreno de esa semana y el partido del domingo. Si a esa hora sigues en duda, cuentas como «no va».
 
 Domingos con dos partidos. Si tienes ficha en MdA y MdL, respondes una vez por domingo: a los dos, solo a uno o a ninguno.
 
-Quién va. En cada evento ves cuántos van, dudan, no van y no han contestado. Pulsa un número para ver los nombres. Pronto verás también quién no ha contestado.
+Quién va. En cada evento ves cuántos van, dudan, no van y no han contestado. Pulsa un número para ver los nombres. Pulsando el número de «no han contestado» ves quiénes faltan por responder.
 
 Recordatorios. Si no respondes, te avisamos el lunes a las 19:00 (todo lo de la semana en un aviso), el martes a las 10:00 para el partido y el mismo día a las 10:00 para el entreno. Nunca entre las 22:30 y las 8:30.
 

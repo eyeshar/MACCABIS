@@ -198,12 +198,12 @@ try {
   ok(await visto(panel), 'al pulsarlo se abre el panel');
   { const c = await panel.boundingBox(); const v = ivan.viewportSize(); ok(Math.abs(c.y + c.height - v.height) <= 1 && Math.abs(c.height - 0.85 * v.height) <= 2 && c.width === v.width, 'en el móvil: hoja desde abajo del 85 % del alto', JSON.stringify(c)); }
   ok(await visto(panel.getByTestId('aviso-fijo').getByText('Respuestas automáticas, pueden equivocarse. Lo oficial es lo que pone la web')), 'aviso fijo');
-  ok(await visto(panel.getByTestId('cuota').getByText('Te quedan 10 preguntas hoy')), '«Te quedan 10 preguntas hoy»');
+  ok(await visto(panel.getByTestId('cuota').getByText('Te quedan 5 preguntas hoy')), '«Te quedan 5 preguntas hoy»');
   ok(await ivan.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Tu pregunta'), 'el foco va a la pregunta');
   await panel.getByLabel('Tu pregunta').fill('¿cómo activo los avisos en iPhone?');
   await panel.getByRole('button', { name: 'Preguntar' }).click();
   ok(await visto(panel.getByTestId('msg-asistente').getByText(/Actívalos en/)), 'sale la respuesta');
-  ok(await visto(panel.getByTestId('cuota').getByText('Te quedan 9 preguntas hoy')), 'y baja a 9');
+  ok(await visto(panel.getByTestId('cuota').getByText('Te quedan 4 preguntas hoy')), 'y baja a 4');
   ok((await panel.getByTestId('msg-asistente').locator('a').first().getAttribute('href')) === '/avisos', 'el enlace a la web es una ruta propia (/avisos)');
   ok(await sinDesbordar(ivan), '375 px sin desbordar');
   const pulsable = (sel) => ivan.evaluate((s) => { const b = document.querySelector(s); const r = b.getBoundingClientRect(); const x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return x === b || b.contains(x); }, sel);

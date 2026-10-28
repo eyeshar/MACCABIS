@@ -11,7 +11,7 @@
 - [x] Worker `maccabis-chat` en Cloudflare (plan Free comprobado), secretos y `CHAT_WORKER_URL` en Vercel; ruta `/api/chat`, página `/asistente`, acceso en Inicio, interruptor `CHAT_IA_ABIERTO` (por defecto «gestores»); `pruebas:chat-ia`; prueba real en la vista previa.
 - [x] Revisión de Iván del 28/10 aplicada (enlaces validados, prompt, D141, «Pensando…», norma 14).
 - [x] Iván lo probó con su cuenta en la vista previa (28/10): OK, sin fugas. **Abierto a «todos» desde ya** (`CHAT_IA_ABIERTO=todos` en producción) con **5 preguntas por persona** y 60 en total.
-- [ ] Merge en `main` en cuanto la otra sesión termine `fix/cerrar-dudas` (no pisarse en main) y comprobar en producción, sin crear cuentas, que el botón sale con sesión y no sin ella ni en la parte pública.
+- [ ] **Batería completa de pruebas** (pendiente; `main` con `fix/cerrar-dudas` ya traído a la rama) y, con el OK de Iván, merge en `main` y comprobar en producción, sin crear cuentas, que el botón sale con sesión y no sin ella ni en la parte pública.
 - [ ] 29, 30 y 31/10 por la mañana: informe a Iván de las preguntas del día anterior y si se llegó al tope (solo contadores). Luego, mirar en el panel de Cloudflare el gasto real de neuronas.
 - [x] Botón flotante en lugar del enlace de Inicio (cambio de Iván del 28/10): hoja/panel, conversación en la pestaña hasta cerrar sesión, escondido con las barras de Convocatoria/Tablero; en `pruebas:safe-area`.
 - [x] Guía del jugador al día con D141 (texto de Iván, 28/10) y `guiaJugador.json` regenerado.

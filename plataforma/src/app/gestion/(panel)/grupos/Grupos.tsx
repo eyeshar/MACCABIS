@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
-import { avisosEstructura, estructuraGrupo, etiquetaPapel, mensajeGrupos, resumenGrupo, type DatosJugador, type Papel } from "@/lib/grupos/sugerir";
+import { avisosEstructura, estructuraGrupo, etiquetaPapel, mensajeGrupos, resumenGrupo, tamanos, type DatosJugador, type Papel } from "@/lib/grupos/sugerir";
 import type { DatosGrupos, JugadorVisible, Privado } from "@/lib/grupos/datos";
 import type { Siguiente } from "@/lib/grupos/siguiente";
 import { borrarReparto, datosPrivados, datosSiguiente, duplicarReparto, guardarReparto, publicarReparto, sugerir } from "./acciones";
@@ -97,6 +97,9 @@ export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
   const fecha = (o: Intl.DateTimeFormatOptions) => new Date(`${d.evento.fecha}T12:00:00Z`).toLocaleDateString("es-ES", { timeZone: "UTC", ...o });
   const titulo = `Grupos del entreno del ${fecha({ weekday: "long", day: "numeric" })}`;
   const textoWhatsApp = mensajeGrupos(titulo, grupos, nombreDe);
+  // D147: el tamaño es aproximado; antes de sugerir se ve en cuantos grupos salen («17 jugadores → 3 grupos (6, 6, 5)»).
+  const tam = tamanos(d.van.length, tamano);
+  const previsto = d.van.length ? `${d.van.length} ${d.van.length === 1 ? "jugador" : "jugadores"} → ${tam.length} ${tam.length === 1 ? "grupo" : "grupos"} (${tam.join(", ")})` : "Nadie ha dicho «Voy» todavía.";
   const sinNivel = priv ? d.van.filter((id) => !priv[id]?.nivel).length : 0;
   const interruptor = (
     <button type="button" role="switch" aria-checked={equipo} className={`tb-chip gr-interruptor${equipo ? " encendido" : ""}`} data-testid="vista-equipo-interruptor" onClick={() => { setEquipo((x) => !x); setSel(new Set()); }}>
@@ -134,11 +137,12 @@ export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
       <section className="gs-bloque gr-cab" aria-label="Reparto">
         <div className="gr-fila">
           <div className="campo" style={{ margin: 0 }}><label htmlFor="gr-nombre">Nombre del reparto</label><input id="gr-nombre" type="text" value={nombre} maxLength={60} onChange={(e) => setNombre(e.target.value)} placeholder="Calentamiento, 5 contra 5…" /></div>
-          <div className="campo" style={{ margin: 0 }}><label htmlFor="gr-tamano">Jugadores por grupo</label>
+          <div className="campo" style={{ margin: 0 }}><label htmlFor="gr-tamano">Jugadores por grupo (aprox.)</label>
             <select id="gr-tamano" value={tamano} onChange={(e) => { setTamano(Number(e.target.value)); setVariante(null); }}>{[3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
           <button type="button" className="boton boton-contorno" onClick={() => pedirSugerencia(0)} disabled={pendiente}>Sugerir grupos</button>
           {variante !== null && <button type="button" className="boton boton-claro" onClick={() => pedirSugerencia(variante + 1)} disabled={pendiente}>Otra sugerencia</button>}
         </div>
+        <p className="pequeno" style={{ margin: 0 }} data-testid="gr-previsto">{previsto}</p>
         <p className="pequeno suave" style={{ margin: 0 }} data-testid="gr-ayuda">
           La sugerencia reparte a los que dicen «Voy»: primero, cada grupo con su quinteto (1 base, 2 exteriores y 2 interiores); después, los que sobran repartidos por líneas; y, dentro de eso, el nivel medio lo más igualado posible. Los que dudan quedan aparte.
           {" "}Los grupos no cuentan para nada más (ni asistencia, ni rotación, ni estadísticas).

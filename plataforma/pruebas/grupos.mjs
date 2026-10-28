@@ -3,7 +3,8 @@
 //   - la sugerencia (pura, D147: la estructura manda sobre el nivel). Caso ANONIMO (J1…J17) con la forma del entreno
 //     del 28/10: 17 de 6 en 6 → 6, 6, 5, cada grupo con 1 base, 2 exteriores y 2 interiores, el cuarto base de reserva de
 //     exterior, los interiores sobrantes de sexto, nivel medio parejo y A 2/1/1; «Otra sugerencia» igual de buena;
-//     determinista; cuando no se puede (sin bases, 1 interior, 3 exteriores, sin posicion, grupos de 4 y de 7) con sus
+//     determinista; numero de grupos (17 de 5 o de 6 → 6, 6, 5; 12 de 5 → 6, 6; nunca por debajo del quinteto si se
+//     puede); cuando no se puede (sin bases, 1 interior, 3 exteriores, sin posicion, grupos de 4 y de 7) con sus
 //     avisos; el criterio opcional de juntar a los del siguiente partido (margen de 0,2) y sin convocatoria, lo mismo;
 //   - de extremo a extremo: sugerir, resumen con la estructura, «hace de …» y avisos que se recalculan al mover, el dato
 //     «N de M juegan juntos» con una convocatoria aprobada, aviso de «sin nivel», mover con la
@@ -77,7 +78,10 @@ ok(JSON.stringify(sugerirGrupos({ van: caso, tamano: 6, variante: s0.variantes }
 ok(s0.grupos.every((g, i) => g.nombre === `Grupo ${i + 1}` && Object.keys(g).join() === 'nombre,personas'), 'cada grupo lleva solo nombre y personas (sin criterio)');
 
 console.log('\n== Cuando no se puede cumplir la estructura');
-ok(JSON.stringify(tamanos(17, 6)) === '[6,6,5]' && JSON.stringify(tamanos(12, 4)) === '[4,4,4]' && JSON.stringify(tamanos(13, 5)) === '[5,4,4]' && JSON.stringify(tamanos(5, 6)) === '[5]' && JSON.stringify(tamanos(14, 7)) === '[7,7]' && JSON.stringify(tamanos(0, 5)) === '[]', 'tamaños lo más iguales posible (17/6 → 6,6,5; 13/5 → 5,4,4; 14/7 → 7,7)');
+// Numero de grupos (D147): redondo(N / tamaño), sin pasar de suelo(N / 5), minimo 1; los que sobran, de sextos o septimos.
+for (const [nn, tt, esperado] of [[17, 5, '6,6,5'], [17, 6, '6,6,5'], [20, 5, '5,5,5,5'], [22, 6, '6,6,5,5'], [10, 6, '5,5'], [12, 5, '6,6'], [12, 4, '6,6'], [13, 5, '7,6'], [14, 7, '7,7'], [5, 6, '5'], [4, 5, '4'], [3, 3, '3']])
+  ok(tamanos(nn, tt).join() === esperado, `${nn} con ${tt} → ${esperado.split(',').length} ${esperado.includes(',') ? 'grupos' : 'grupo'} (${esperado.replaceAll(',', ', ')})`, tamanos(nn, tt).join());
+ok(tamanos(0, 5).length === 0, 'nadie: ningún grupo');
 // Sin bases ni de reserva: 10 de 5 en 5.
 const sinBases = [J('x1', 'escolta', 'A'), J('x2', 'alero', 'B'), J('x3', 'escolta', 'C'), J('x4', 'alero', 'C'), J('x5', 'alero', 'D'), J('i1', 'pivot', 'A'), J('i2', 'pivot', 'B'), J('i3', 'ala_pivot', 'C'), J('i4', 'ala_pivot', 'C'), J('i5', 'pivot', 'E')];
 t = reloj(); c = cifras(sugerirGrupos({ van: sinBases, tamano: 5 }).grupos, sinBases);
@@ -108,13 +112,17 @@ ok(c.todos && quinteto(c) && !c.avisos.length && ['c1', 'c2', 'c3', 'c4'].every(
 const soloComodin = [J('c1', null, 'B'), J('x1', 'escolta'), J('x2', 'alero'), J('i1', 'pivot'), J('i2', 'pivot')];
 c = cifras(sugerirGrupos({ van: soloComodin, tamano: 5 }).grupos, soloComodin);
 ok(c.bases.join() === '1' && c.avisos.join() === 'Grupo 1 sin base (hace de base uno sin posición): no hay bases suficientes.' && resumenGrupo(soloComodin).texto.startsWith('0 bases · 2 ext · 2 int') && etiquetaPapel(soloComodin[0], 'base') === 'hace de base', 'sin bases y con un comodín: hace de base («hace de base»), pero el grupo va sin base (aviso y «0 bases» en el resumen)', c.avisos.join(' | '));
-// Grupos de 4: 1 base, 1 exterior y 1 interior como minimo; lo demas, por nivel.
+// Tamaño 4 con 12: 2 grupos de 6 (ningun grupo por debajo del quinteto si se puede), cada uno con su quinteto.
 const de4 = [J('r1', 'escolta', 'A', true), J('r2', 'alero', 'C', true), J('b1', 'base', 'D'), J('x1', 'escolta', 'A'), J('x2', 'alero', 'B'), J('x3', 'escolta', 'C'), J('x4', 'alero', 'C'), J('i1', 'pivot', 'A'), J('i2', 'pivot', 'B'), J('i3', 'ala_pivot', 'C'), J('i4', 'ala_pivot', 'C'), J('i5', 'pivot', 'E')];
 t = reloj(); c = cifras(sugerirGrupos({ van: de4, tamano: 4 }).grupos, de4);
-ok(ordenadas(c.tam) === '4/4/4' && c.bases.every((x) => x === 1) && c.ext.every((x) => x >= 1) && c.int.every((x) => x >= 1) && c.sinFaltas && ordenadas(c.A) === '1/1/1' && c.rango <= 0.5, `grupos de 4: 1 base, 1 exterior y 1 interior como mínimo en cada uno; A 1/1/1; diferencia ${c.rango.toFixed(2)} (${t()})`, JSON.stringify(c));
-const de4mal = de4.filter((j) => j.person_id !== 'b1' && j.person_id !== 'r2').concat([J('x9', 'alero', 'C'), J('i9', 'pivot', 'C')]);
+ok(c.tam.join() === '6,6' && quinteto(c) && c.rango <= 0.5, `tamaño 4 con 12 jugadores: 2 grupos de 6 con su quinteto, no 3 de 4; diferencia ${c.rango.toFixed(2)} (${t()})`, JSON.stringify(c));
+// Grupos de menos de 5 (solo con menos de 5 jugadores): 1 base, 1 exterior y 1 interior como minimo.
+const de4b = [J('r1', 'escolta', 'A', true), J('x1', 'alero', 'C'), J('i1', 'pivot', 'B'), J('i2', 'ala_pivot', 'C')];
+c = cifras(sugerirGrupos({ van: de4b, tamano: 4 }).grupos, de4b);
+ok(c.tam.join() === '4' && c.bases.join() === '1' && c.ext[0] >= 1 && c.int[0] >= 1 && c.sinFaltas && resumenGrupo(de4b).texto === '1 base · 1 ext · 2 int · nivel medio 3,8', 'grupo de 4: 1 base, 1 exterior y 1 interior como mínimo, sin avisos («1 base · 1 ext · 2 int»)', JSON.stringify(c));
+const de4mal = [J('x1', 'escolta', 'A'), J('x2', 'alero', 'C'), J('i1', 'pivot', 'B'), J('i2', 'ala_pivot', 'C')];
 c = cifras(sugerirGrupos({ van: de4mal, tamano: 4 }).grupos, de4mal);
-ok(ordenadas(c.bases) === '1/0/0' && c.avisos.length === 2 && c.avisos.every((a) => /sin base: no hay bases suficientes\.$/.test(a)), 'grupos de 4 con un solo base: dos grupos sin base, con aviso', c.avisos.join(' | '));
+ok(c.bases.join() === '0' && c.avisos.join() === 'Grupo 1 sin base: no hay bases suficientes.', 'grupo de 4 sin bases: aviso «Grupo 1 sin base: no hay bases suficientes.»', c.avisos.join(' | '));
 // Grupos de 7: quinteto y dos «uno más» por grupo, de lineas distintas.
 const de7 = [J('b1', 'base', 'A'), J('b2', 'base', 'C'), J('x1', 'escolta', 'A'), J('x2', 'alero', 'B'), J('x3', 'escolta', 'C'), J('x4', 'alero', 'C'), J('x5', 'escolta', 'D'), J('x6', 'alero', 'B'), J('i1', 'pivot', 'A'), J('i2', 'pivot', 'B'), J('i3', 'ala_pivot', 'C'), J('i4', 'ala_pivot', 'C'), J('i5', 'pivot', 'E'), J('i6', 'pivot', 'C')];
 t = reloj(); c = cifras(sugerirGrupos({ van: de7, tamano: 7 }).grupos, de7);
@@ -202,16 +210,22 @@ try {
   ok(!/MdL|MdA/.test(await pg.locator('.gr').innerText()) && !/MdL|MdA|juntos/.test(await pg.locator('.gr').evaluate((x) => x.outerHTML)), 'ningún equipo del domingo en el reparto (solo «N de M juegan juntos» en el resumen)');
   ok(await visto(pg.getByTestId('gr-sin-nivel')) && (await pg.getByTestId('gr-sin-nivel').innerText()) === '2 jugadores sin nivel: la sugerencia los cuenta como C.', 'aviso arriba: «2 jugadores sin nivel: la sugerencia los cuenta como C.»');
   ok(/sin nivel/.test(await pg.locator('li[data-person="esteban-jon"]').innerText()), 'la tarjeta del que no tiene nivel dice «sin nivel»');
-  await pg.getByLabel('Jugadores por grupo').selectOption('5');
+  await pg.getByLabel('Jugadores por grupo (aprox.)').selectOption('5');
+  ok((await pg.getByTestId('gr-previsto').innerText()) === '12 jugadores → 2 grupos (6, 6)', 'antes de sugerir: «12 jugadores → 2 grupos (6, 6)»', await pg.getByTestId('gr-previsto').innerText());
+  await pg.getByLabel('Jugadores por grupo (aprox.)').selectOption('3');
+  ok((await pg.getByTestId('gr-previsto').innerText()) === '12 jugadores → 2 grupos (6, 6)', 'con 3 por grupo tampoco baja del quinteto: «12 jugadores → 2 grupos (6, 6)»', await pg.getByTestId('gr-previsto').innerText());
+  await pg.getByLabel('Jugadores por grupo (aprox.)').selectOption('6');
+  ok(await visto(pg.getByText('Jugadores por grupo (aprox.)')) && (await pg.getByTestId('gr-previsto').innerText()) === '12 jugadores → 2 grupos (6, 6)', 'selector «Jugadores por grupo (aprox.)»; la línea se actualiza al cambiar el número');
+  await pg.getByLabel('Jugadores por grupo (aprox.)').selectOption('5');
   await pg.getByRole('button', { name: 'Sugerir grupos' }).click();
   await pg.getByTestId('grupo').first().waitFor({ timeout: 15000 });
   const n = await pg.getByTestId('grupo').count();
-  ok(n === 3 && (await pg.locator('.gr-sin li').count()) === 0, `la sugerencia coloca a los 12 que van en 3 grupos (${n}) de 4`);
+  ok(n === 2 && (await pg.locator('.gr-sin li').count()) === 0, `la sugerencia coloca a los 12 que van en 2 grupos (${n}) de 6`);
   await pg.waitForTimeout(500);
   const r1 = await resumenesBien(pg);
   const res1 = await pg.getByTestId('gr-resumen').allInnerTexts();
-  ok(r1 === true && res1.every((x) => /^1 base · \d ext · \d int · nivel medio \d,\d( · \d de 4 juegan juntos el [a-zé]+)?$/.test(x)), `cada grupo con su estructura y nivel («${res1[0]}»), sin avisos`, r1);
-  ok(!siguiente || res1.some((x) => x.includes(`juegan juntos el ${siguiente.dia}`)), `con la convocatoria aprobada, el dato en el resumen («N de 4 juegan juntos el ${siguiente?.dia}»)`, res1.join(' | '));
+  ok(r1 === true && res1.every((x) => /^1 base · \d ext · \d int · nivel medio \d,\d( · \d de 6 juegan juntos el [a-zé]+)?$/.test(x)), `cada grupo con su estructura y nivel («${res1[0]}»), sin avisos`, r1);
+  ok(!siguiente || res1.some((x) => x.includes(`juegan juntos el ${siguiente.dia}`)), `con la convocatoria aprobada, el dato en el resumen («N de 6 juegan juntos el ${siguiente?.dia}»)`, res1.join(' | '));
   const hace = await pg.getByTestId('gr-hace').allInnerTexts();
   ok(hace.length >= 2 && hace.every((x) => /^hace de (base|exterior|interior)$/.test(x)), `etiqueta «hace de …» en las tarjetas que no juegan en su posición (${hace.join(', ')})`);
   const antes = await pg.getByTestId('grupo').evaluateAll((xs) => xs.map((x) => [...x.querySelectorAll('li[data-person]')].map((li) => li.dataset.person).join()).join('|'));
@@ -219,13 +233,13 @@ try {
   await pg.getByText(/^Sugerencia 2 de \d+/).waitFor({ timeout: 15000 });
   const despues = await pg.getByTestId('grupo').evaluateAll((xs) => xs.map((x) => [...x.querySelectorAll('li[data-person]')].map((li) => li.dataset.person).join()).join('|'));
   ok(antes !== despues && (await resumenesBien(pg)) === true, '«Otra sugerencia»: otra combinación, con su resumen');
-  // Mover a mano el base del grupo 1 al grupo 2: el grupo 1 se queda sin base y el aviso dice dónde sobra.
+  // Mover a mano los bases (puros o de reserva) del grupo 1 al grupo 2: el grupo 1 se queda sin base y el aviso dice dónde sobra.
   const g1 = (await enPantalla(pg))[0];
-  const suBase = g1.ids.find((p) => privado[p] && (privado[p].posicion === 'base' || privado[p].base_reserva));
-  await pg.locator(`[data-testid=grupo] li[data-person="${suBase}"] input[type=checkbox]`).check();
+  const susBases = g1.ids.filter((p) => privado[p] && (privado[p].posicion === 'base' || privado[p].base_reserva));
+  for (const b of susBases) await pg.locator(`[data-testid=grupo] li[data-person="${b}"] input[type=checkbox]`).check();
   await pg.locator('.tb-barra').getByRole('combobox').selectOption({ index: 1 });
   await pg.locator('.tb-barra').getByRole('button', { name: 'Mover' }).click();
-  ok((await pg.getByTestId('grupo').nth(1).locator('li').count()) === 5, '«Mover 1 a…» lo pasa de grupo');
+  ok(susBases.length >= 1 && (await pg.getByTestId('grupo').nth(1).locator('li').count()) === 6 + susBases.length, `«Mover ${susBases.length} a…» los pasa de grupo`);
   const r2 = await resumenesBien(pg);
   ok(r2 === true, 'el resumen, las etiquetas y los avisos se recalculan al mover a mano', r2);
   ok(/^Grupo 1 sin base( \(hace de base uno sin posición\))?: en Grupo 2 sobra uno\.$/m.test(await pg.getByTestId('gr-avisos').innerText()) && /no cumple: sin base/.test(await pg.getByTestId('gr-resumen').first().innerText()) && (await pg.locator('.gr-resumen-mal').count()) === 1,

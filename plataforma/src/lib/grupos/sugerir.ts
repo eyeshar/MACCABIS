@@ -1,6 +1,7 @@
 // Grupos de entreno (D122, D143, D147): la sugerencia, PURA y determinista (la usan la pantalla de Gestion y las pruebas).
-// Entrada: SOLO los que dicen «Voy» (los «Duda» van aparte). Grupos = techo(N / jugadores por grupo), con tamaños lo
-// mas iguales posible (17 de 6 en 6 → 6, 6, 5). Nivel global A=5 … E=1; sin nivel cuenta como C (3).
+// Entrada: SOLO los que dicen «Voy» (los «Duda» van aparte). El tamaño es aproximado: grupos = N / tamaño redondeado,
+// sin pasar de suelo(N / 5) (ningun grupo por debajo del quinteto si se puede) y como minimo 1; los que sobran, de uno
+// en uno como sextos o septimos (17 de 5 o de 6 → 6, 6, 5). Nivel global A=5 … E=1; sin nivel cuenta como C (3).
 // D147 (corrige D143): la ESTRUCTURA manda sobre el nivel. Prioridades, en este orden:
 //   1) cada grupo con su quinteto: 1 base (puro o de reserva), 2 exteriores (escoltas y aleros) y 2 interiores (pivots
 //      y ala-pivots); en grupos de menos de 5, 1 base, 1 exterior y 1 interior. Si falta, en este orden: base de reserva;
@@ -42,10 +43,11 @@ const clase = (j: Pick<JugadorGrupo, "posicion" | "base_reserva">): Clase =>
 /** La linea en la que juega si no hace de otra cosa; un base de reserva que no hace de base es exterior. */
 const natural: Record<Clase, Papel | null> = { P: "base", R: "exterior", X: "exterior", I: "interior", C: null };
 
-/** Tamaños de los grupos: techo(N / tamaño) grupos, lo mas iguales posible (los mayores primero). */
+/** Tamaños de los grupos (D147): redondo(N / tamaño) grupos, sin pasar de suelo(N / 5) y como minimo 1; lo mas
+ *  iguales posible, los mayores primero (17 de 5 → 6, 6, 5; 22 de 6 → 6, 6, 5, 5; 12 de 5 → 6, 6). */
 export function tamanos(n: number, tamano: number): number[] {
   if (n <= 0) return [];
-  const k = Math.max(1, Math.ceil(n / tamano));
+  const k = Math.max(1, Math.min(Math.round(n / tamano), Math.floor(n / 5)));
   return Array.from({ length: k }, (_, i) => Math.floor(n / k) + (i < n % k ? 1 : 0));
 }
 

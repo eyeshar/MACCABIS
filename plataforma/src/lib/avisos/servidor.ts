@@ -142,12 +142,16 @@ async function encolarAlertasGestores(sb: SupabaseClient, base: Awaited<ReturnTy
   return filas.length;
 }
 
-/** D141: al llegar el limite, quien siga en «duda» pasa a «no va» (en la base: `cerrar_dudas`, idempotente). Sin la
- *  migracion aplicada (funcion inexistente) no hace nada. */
+/** D141: al llegar el limite, quien siga en «duda» pasa a «no va» (en la base: `cerrar_dudas`, idempotente). Solo si la
+ *  funcion no existe (PGRST202: migracion sin aplicar) se ignora, y con un aviso en el log; cualquier otro error hace
+ *  fallar la tarea (500 visible en /api/avisos/tarea), para que no se esconda un cierre que no se esta haciendo. */
 async function cerrarDudas(sb: SupabaseClient, ahora: Date) {
   const { data, error } = await sb.rpc("cerrar_dudas", { p_ahora: ahora.toISOString() });
   if (error) {
-    if (error.code === "PGRST202" || /cerrar_dudas/.test(error.message)) return 0;
+    if (error.code === "PGRST202") {
+      console.warn("cerrar_dudas: la funcion no existe en la base (migracion 20261028100000 sin aplicar); no se cierran dudas");
+      return 0;
+    }
     throw new Error(`cerrar dudas: ${error.message}`);
   }
   return Array.isArray(data) ? data.length : 0;

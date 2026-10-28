@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarGrupos, type Privado } from "@/lib/grupos/datos";
 import { sugerirGrupos, type Sugerencia } from "@/lib/grupos/sugerir";
+import { siguientePartido, type Siguiente } from "@/lib/grupos/siguiente";
 
 // Grupos de entreno (D122). Solo gestores (RLS de grupos_repartos: is_gestor). La sugerencia se calcula en el servidor
 // con los datos de la base; lo que se guarda se valida contra los invitados al entreno.
@@ -20,14 +21,24 @@ export async function datosPrivados(eventoId: string): Promise<R<Record<string, 
   return { ok: true, dato: Object.fromEntries(d.jugadores.map((j) => [j.person_id, { posicion: j.posicion, base_reserva: j.base_reserva, nivel: j.nivel }])) };
 }
 
-/** «Sugerir grupos» y «Otra sugerencia» (variante = la siguiente combinacion igual de nivelada). */
+/** Quien juega con quien el siguiente partido (D147, criterio 4 y dato del resumen): solo para esta pantalla. */
+export async function datosSiguiente(eventoId: string): Promise<R<Siguiente | null>> {
+  const { supabase } = await exigirGestor();
+  const d = await cargarGrupos(supabase, eventoId);
+  if (!d) return { ok: false, error: "Ese entreno no existe." };
+  return { ok: true, dato: await siguientePartido(supabase, d.evento.fecha) };
+}
+
+/** «Sugerir grupos» y «Otra sugerencia» (variante = la siguiente combinacion igual de buena). D147: primero la
+ *  estructura del quinteto, despues el nivel y, el ultimo, juntar a los del siguiente partido si hay convocatoria. */
 export async function sugerir(eventoId: string, tamano: number, variante = 0): Promise<R<Sugerencia>> {
   const { supabase } = await exigirGestor();
   const d = await cargarGrupos(supabase, eventoId);
   if (!d) return { ok: false, error: "Ese entreno no existe." };
   const van = d.jugadores.filter((j) => d.van.includes(j.person_id));
   if (!van.length) return { ok: false, error: "Nadie ha dicho «Voy» a este entreno todavía." };
-  return { ok: true, dato: sugerirGrupos({ van, tamano, variante }) };
+  const siguiente = await siguientePartido(supabase, d.evento.fecha);
+  return { ok: true, dato: sugerirGrupos({ van, tamano, variante, juntos: siguiente?.juntos }) };
 }
 
 type Entrada = { id: string | null; nombre: string; tamano: number; grupos: { nombre: string; personas: string[] }[] };

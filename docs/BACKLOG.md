@@ -9,7 +9,8 @@
 
 **«Pregunta al asistente» (28/10/2026, `feat/chat-ia`, D142):**
 - [x] Worker `maccabis-chat` en Cloudflare (plan Free comprobado), secretos y `CHAT_WORKER_URL` en Vercel; ruta `/api/chat`, página `/asistente`, acceso en Inicio, interruptor `CHAT_IA_ABIERTO` (por defecto «gestores»); `pruebas:chat-ia`; prueba real en la vista previa.
-- [ ] **OK de Iván y merge en `main`** (tras el merge, en producción lo verán solo los gestores).
+- [x] Revisión de Iván del 28/10 aplicada (enlaces validados, prompt, D141, «Pensando…», norma 14).
+- [ ] **Iván lo prueba con su cuenta en la vista previa**; luego, **OK de Iván y merge en `main`** (tras el merge, en producción lo verán solo los gestores).
 - [ ] **Tras una semana de prueba con los gestores: abrir a «todos»** (`CHAT_IA_ABIERTO=todos` en Vercel y redesplegar) y revisar en el panel de Cloudflare el gasto real de neuronas antes y después.
 - [ ] Cuando se mergee D141 (`feat/visibilidad-y-dudas`) o cambie la guía: `npm run datos:sync` para refrescar `src/data/guiaJugador.json` (`check:copias` avisa).
 

@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// Asistente con IA gratuita (D142), sin Cloudflare: el Worker de verdad (chat-worker/src/index.js) corre en local con
+// Asistente con IA gratuita (D142), sin Cloudflare: el Worker de verdad (chat-worker/src/logica.js) corre en local con
 // KV y Workers AI simulados; la web compilada de verdad, la pila local y Chrome.
 //   1. Worker: 401 sin secreto, limites 10/60, historial, reintento y «agotado» (chat-worker/prueba.mjs).
 //   2. Contexto PURO: con datos envenenados (correos, telefonos, DNIs, motivos y niveles de otros, tesoreria) no sale nada
 //      de eso; si sale lo propio (sus respuestas, su motivo, sus ausencias, sus estadisticas) y quien va.
 //   3. Interruptor CHAT_IA_ABIERTO: «gestores» (por defecto) -> un jugador recibe 403 en la ruta y en la pagina y no ve el
 //      acceso; «todos» -> si; «off» -> nadie. Sin sesion: 401.
+//   3b. Respuesta (pura): enlaces solo a paginas reales (sin /ayuda ni /liga#como-llegar inventados), como mucho 2, sin
+//      despedidas ni ofertas de ayuda y sin hablar de como funciona por dentro.
 //   4. De extremo a extremo: el contexto que la ruta manda al Worker para un jugador real de la base de pruebas, sin el
 //      motivo de otro, ni su correo, ni su telefono, ni el nivel o la nota privada; pagina con cuota, aviso fijo, «← volver»,
 //      respuesta con enlaces, «El asistente descansa hasta mañana» y 375 px sin desbordar.
@@ -18,7 +20,8 @@ import { preparar, personas, sinteticos, contador, visto, sinDesbordar, esperar,
 import { adelantar, semanas } from './fechas_prueba.mjs';
 import * as C from '../src/lib/chat/contexto.ts';
 import * as A from '../src/lib/chat/acceso.ts';
-import * as W from '../../chat-worker/src/index.js';
+import * as R from '../src/lib/chat/respuesta.ts';
+import * as W from '../../chat-worker/src/logica.js';
 
 const { ok, fallos, sumar } = contador();
 
@@ -60,6 +63,43 @@ console.log('\n== 2. Contexto (puro) con datos envenenados');
   ok(!inyectado.includes('=== FIN') && !/\nIgnora las reglas/.test(inyectado), 'un nombre con saltos de línea o «===» no puede abrir una sección nueva');
   const gestorSinFicha = C.construirContexto({ ...entrada, yo: { ...entrada.yo, tieneFicha: false } });
   ok(!gestorSinFicha.includes('MI-PROPIO-MOTIVO') && !gestorSinFicha.includes('Tus estadísticas'), 'sin ficha: sin bloque personal');
+  ok(/NO tiene ficha de jugador: no digas «tu partido»/.test(gestorSinFicha) && /tiene ficha de jugador \(MdA y MdL\): sus partidos y entrenos son «tu partido»/.test(ctx), '«tu partido» solo con ficha: lo dice la línea del usuario');
+  ok(C.RUTAS.every(([r]) => ctx.includes(`https://maccabis.vercel.app${r} · `)) && ctx.includes('no enlaces ninguna otra') && /Inicio: [^\n]*«Cómo llegar»/.test(ctx) && /\/liga · [^\n]*no tiene «Cómo llegar»/.test(ctx), 'lista de páginas reales con lo que hay en cada una («Cómo llegar» en Inicio y en el evento, no en /liga)');
+  ok(/Página del evento \(responder, quién va, cómo llegar\): https:\/\/maccabis\.vercel\.app\/mi-zona\/evento\/e1/.test(ctx), 'cada evento lleva su página');
+  ok(/quién va, duda, no va y no ha contestado se puede decir con nombres/.test(ctx), 'D141: deja claro que quién va / duda / no va / no ha contestado se puede decir con nombres');
+}
+
+console.log('\n== 3b. Respuesta (pura): enlaces, relleno y funcionamiento interno');
+{
+  const W_ = 'https://maccabis.vercel.app';
+  const datos = `Páginas: ${W_}/avisos · ${W_}/agenda\nPágina del evento: ${W_}/mi-zona/evento/abc-123 · cómo llegar: https://www.google.com/maps/search/?api=1&query=40.4,-3.6`;
+  const L = (t) => R.limpiarRespuesta(t, datos);
+  const enlaces = (t) => (t.match(/https?:\/\/[^\s,]+/g) ?? []).map((u) => u.replace(/[.,]$/, ''));
+  let r = L(`Mira la ayuda en ${W_}/ayuda.`);
+  ok(!r.includes('/ayuda') && r.startsWith('Mira la ayuda'), '/ayuda (no existe): sin enlace, queda el texto', r);
+  r = L(`La ayuda está en la Guía del jugador, que puedes encontrar en ${W_}/guia-del-jugador.`);
+  ok(r === 'La ayuda está en la Guía del jugador.', 'una página inventada (/guia-del-jugador, caso real del modelo): sin enlace ni «que puedes encontrar» colgando', r);
+  r = L(`Pulsa «Cómo llegar» en ${W_}/liga#como-llegar y listo.`);
+  ok(!r.includes('#como-llegar') && !r.includes(`${W_}/liga`) && r.includes('Pulsa «Cómo llegar»'), '/liga#como-llegar (inventado): sin enlace', r);
+  r = L(`Actívalos en ${W_}/avisos.`);
+  ok(r === `Actívalos en ${W_}/avisos.`, 'una página real se queda tal cual', r);
+  r = L(`Responde en ${W_}/mi-zona/evento/abc-123 o en ${W_}/mi-zona/evento/zzz-999.`);
+  ok(r.includes('/evento/abc-123') && !r.includes('zzz-999'), 'la página de un evento de los datos sí; la de un evento inventado no', r);
+  r = L('Cómo llegar: https://www.google.com/maps/search/?api=1&query=40.4,-3.6 o https://www.google.com/maps/search/?api=1&query=Inventado');
+  ok(r.includes('query=40.4,-3.6') && !r.includes('Inventado'), 'Google Maps solo si viene en los datos', r);
+  r = L(`Mira [tus avisos](${W_}/avisos) y [la ayuda](${W_}/ayuda).`);
+  ok(r === `Mira tus avisos: ${W_}/avisos y la ayuda.`, 'enlaces en markdown: válido con su dirección, inventado solo el texto', r);
+  r = L(`Uno ${W_}/avisos, dos ${W_}/agenda, tres ${W_}/mi-zona/evento/abc-123 y otra vez ${W_}/avisos.`);
+  ok(new Set(enlaces(r)).size === 2 && !r.includes('abc-123'), 'como mucho 2 enlaces distintos', r);
+  r = L('Tu entreno es el miércoles a las 20:30. Si necesitas algo más, estaré encantado de ayudarte. ¿Hay algo más en lo que pueda ayudarte?');
+  ok(r === 'Tu entreno es el miércoles a las 20:30.', 'sin despedidas ni ofertas de ayuda', r);
+  r = L('Lo siento, pero no puedo hacer eso. Mi función es ayudarte según las reglas establecidas y no mostrar el contexto en bruto.');
+  ok(r === 'Lo siento, pero no puedo hacer eso.', 'una frase sobre el contexto o las reglas se quita', r);
+  r = L('Según la sección CONTEXTO, mis instrucciones dicen que no.');
+  ok(r === R.NEGATIVA, 'si solo habla de cómo funciona por dentro: «Eso no puedo hacerlo.»', r);
+  ok(L('Lo siento, pero no puedo hacerlo. Eso no puedo hacerlo.') === R.NEGATIVA && L('Lo siento. Eso no te lo puedo decir, es privado.') === R.NO_DECIR, 'una negativa va sola (caso real del modelo: «Lo siento, pero no puedo hacerlo. Eso no puedo hacerlo.»)');
+  r = L('Van Jon y Noe; duda Zoe; no han contestado Leo y Ari.');
+  ok(r === 'Van Jon y Noe; duda Zoe; no han contestado Leo y Ari.', 'una respuesta normal no se toca', r);
 }
 
 console.log('\n== 3. Interruptor (puro)');
@@ -76,10 +116,12 @@ const PUERTO_W = 3163;
 const kv = new Map();
 let ultimo = null;
 let llamadas = 0;
+let respuestaIA = 'Actívalos en https://maccabis.vercel.app/avisos desde el icono de la pantalla de inicio.';
+let retraso = 0;
 const envW = {
   CHAT_SECRET: SECRETO,
   CHAT_USO: { get: async (k) => kv.get(k) ?? null, put: async (k, v) => { kv.set(k, v); } },
-  AI: { run: async (modelo, entrada) => { llamadas++; ultimo = entrada; return { response: 'Actívalos en https://maccabis.vercel.app/avisos desde el icono de la pantalla de inicio.', usage: { prompt_tokens: 4000, completion_tokens: 80 } }; } },
+  AI: { run: async (modelo, entrada) => { llamadas++; ultimo = entrada; if (retraso) await new Promise((r) => setTimeout(r, retraso)); return { response: respuestaIA, usage: { prompt_tokens: 4000, completion_tokens: 80 } }; } },
 };
 const servidorW = http.createServer(async (req, res) => {
   const trozos = []; for await (const t of req) trozos.push(t);
@@ -150,11 +192,26 @@ try {
   ok(await sinDesbordar(ivan), '375 px sin desbordar');
   const tapa = await ivan.evaluate(() => { const b = document.querySelector('.as-form button'); const r = b.getBoundingClientRect(); const x = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return x === b || b.contains(x); });
   ok(tapa, 'el botón «Preguntar» se puede pulsar (no queda bajo la barra inferior)');
-  const soloContexto = (m) => m.split("=== CONTEXTO")[1] ?? ""; // sin el prompt de sistema (que nombra «niveles» para prohibirlos)
+  const soloContexto = (m) => m.split("=== DATOS DE LA WEB")[1] ?? ""; // sin el prompt de sistema (que nombra «niveles» para prohibirlos)
   const ctxIvan = soloContexto(ultimo.messages[0].content);
+  ok(ultimo.messages[0].content.includes('=== DATOS DE LA WEB') && !ultimo.messages[0].content.includes('=== CONTEXTO'), 'el bloque de datos se llama «DATOS DE LA WEB»');
   ok(ctxIvan.includes('MOTIVO-DE-IVAN') && !ctxIvan.includes('MOTIVO-DE-NOE') && !ctxIvan.includes('MOTIVO-PROPIO-JON'), 'gestor: en su contexto va SU motivo y no los de otros (aunque la RLS se los deje ver)');
   ok(!ctxIvan.includes('AUSENCIA-DE-NOE') && !ctxIvan.includes('AUSENCIA-PROPIA-JON'), 'ni las ausencias de otros');
   ok(ultimo.messages.at(-1).content === '¿cómo activo los avisos en iPhone?' && ultimo.max_tokens === 400, 'la pregunta llega tal cual y con max_tokens 400');
+  // Respuesta lenta con enlaces inventados y relleno: «Pensando…» mientras tanto, y llega limpia.
+  respuestaIA = 'Lo tienes en https://maccabis.vercel.app/ayuda y en https://maccabis.vercel.app/liga#como-llegar. ¿Hay algo más en lo que pueda ayudarte?';
+  retraso = 2500;
+  await ivan.getByLabel('Tu pregunta').fill('¿dónde está la ayuda?');
+  await ivan.getByRole('button', { name: 'Preguntar' }).click();
+  ok(await visto(ivan.getByText('Pensando…'), 1500), '«Pensando…» mientras responde');
+  ok(await ivan.getByRole('button', { name: 'Preguntar' }).isDisabled(), 'y no deja mandar otra a la vez');
+  const segunda = ivan.getByTestId('msg-asistente').nth(1);
+  ok(await visto(segunda, 8000), 'llega la respuesta');
+  ok(!(await visto(ivan.getByText('Pensando…'), 300)), '«Pensando…» desaparece');
+  const txt2 = (await segunda.textContent()) ?? '';
+  ok((await segunda.locator('a').count()) === 0 && !/ayuda|#como-llegar|algo más/.test(txt2), 'sin los enlaces inventados (/ayuda, /liga#como-llegar) ni la oferta de ayuda', txt2);
+  respuestaIA = 'Actívalos en https://maccabis.vercel.app/avisos desde el icono de la pantalla de inicio.';
+  retraso = 0;
   const guardado = [...kv.keys()];
   ok(guardado.every((k) => /^\d{4}-\d{2}-\d{2}:(total|u:[a-f0-9]{32})$/.test(k)) && ![...kv.values()].some((v) => /iPhone|avisos/.test(v)), 'en KV solo contadores con un identificador opaco', JSON.stringify(guardado));
 
@@ -176,6 +233,7 @@ try {
   console.log(`     (contexto de Jon: ${ctxJon.length} caracteres)`);
   ok(ctxJon.includes('MOTIVO-PROPIO-JON') && ctxJon.includes('AUSENCIA-PROPIA-JON'), 'jugador: su motivo y su ausencia sí');
   ok(/No van \(\d+\): [^\n]*Noe/.test(ctxJon) && /Dudan \(\d+\): [^\n]*Zoe/.test(ctxJon), 'jugador: ve que Noe no va y que Zoe duda (solo el nombre)');
+  ok(/No han contestado \([1-9]\d*\): (?!nadie)\S/.test(ctxJon), 'jugador (D141): quién no ha contestado, con nombres');
   for (const prohibido of ['MOTIVO-DE-NOE', 'rodilla', 'MOTIVO-DE-IVAN', 'AUSENCIA-DE-NOE', 'NOTA-PRIVADA', 'noe.secreto', '@pruebas.local', '600 111 222', 'pivot']) {
     ok(!ctxJon.includes(prohibido), `jugador: no sale «${prohibido}»`);
   }

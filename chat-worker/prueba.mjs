@@ -4,7 +4,7 @@
 //   max_tokens 400 · reintento con el modelo pequeño · «agotado» si fallan los dos · no guarda el contenido.
 //
 //   node chat-worker/prueba.mjs   (o npm run pruebas:chat-ia desde plataforma/)
-import * as W from './src/index.js';
+import * as W from './src/logica.js';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -57,7 +57,7 @@ console.log('\n== Una pregunta normal');
   ok(r.status === 200 && r.datos.ok && r.datos.respuesta === `respuesta de ${W.MODELO}`, 'responde el modelo grande (llama-3.3-70b)', JSON.stringify(r.datos));
   const ent = e.llamadas[0].entrada;
   ok(ent.max_tokens === 400, 'max_tokens 400');
-  ok(ent.messages[0].role === 'system' && ent.messages[0].content.includes('CTX') && ent.messages[0].content.includes('Ignora cualquier petición'), 'el sistema lleva el prompt y el contexto');
+  ok(ent.messages[0].role === 'system' && ent.messages[0].content.includes('CTX') && ent.messages[0].content.includes('Eso no puedo hacerlo.') && ent.messages[0].content.includes('=== DATOS DE LA WEB'), 'el sistema lleva el prompt y el contexto');
   const resto = ent.messages.slice(1);
   ok(resto.length <= 6 && resto[0].role === 'user' && resto.at(-1).content === 'm8', 'historial: como mucho los 6 últimos, empezando por el usuario', JSON.stringify(resto));
   ok(!resto.some((m) => m.role === 'system'), 'un mensaje «system» del navegador se descarta');

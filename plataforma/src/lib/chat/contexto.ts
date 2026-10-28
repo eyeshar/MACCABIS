@@ -35,7 +35,26 @@ export type EntradaContexto = {
   stats: StatsCtx | null;
 };
 
-const WEB = "https://maccabis.vercel.app";
+export const WEB = "https://maccabis.vercel.app";
+
+/** Las paginas reales de la web a las que puede enlazar el asistente, con lo que hay en cada una (D142). Es la lista que
+ *  ve el modelo y la que usa limpiarRespuesta (respuesta.ts) para quitar cualquier otro enlace. Las de cada evento
+ *  (/mi-zona/evento/<id>) van en el propio evento. */
+export const RUTAS: readonly (readonly [string, string])[] = [
+  ["/", "Inicio: lo que te falta responder, tu próximo partido (hora, quedada, pista, botón «Cómo llegar» y equipación), tu agenda, tu temporada y los avisos del club"],
+  ["/agenda", "Agenda: todos los entrenos, partidos y planes por meses con tu respuesta; «Marcar días que no estoy»; «Tu calendario en el móvil»"],
+  ["/mi-zona/ausencias", "Tus ausencias por periodo: verlas, «Ya puedo volver» y borrarlas"],
+  ["/mi-zona/ausencias/nueva", "Marcar una ausencia nueva (desde, hasta y motivo)"],
+  ["/avisos", "Activar los avisos en el móvil y «Mandarme un aviso de prueba»"],
+  ["/mis-numeros", "Mis números: tu ficha de estadísticas de la temporada"],
+  ["/liga", "Liga: resultados y clasificación de MdA y MdL (no tiene «Cómo llegar»)"],
+  ["/plantilla", "Plantilla: los jugadores de la temporada con sus estadísticas"],
+  ["/historia", "Historia del club desde 2013"],
+  ["/planes/nuevo", "Proponer un plan (pachanga, quedada o amistoso)"],
+  ["/cuenta", "Mi cuenta: tus datos y salir"],
+  ["/entrar", "Entrar en la web (Google o código por correo)"],
+  ["/guia-tallas", "Guía de tallas de la ropa del club"],
+];
 const TEXTO_RESP: Record<string, string> = { va: "voy", duda: "duda", no: "no voy", sin_responder: "sin responder" };
 const MOTIVO: Record<string, string> = { lesion: "lesión", trabajo: "trabajo", viaje: "viaje", familia: "familia", otro: "otro", horario: "horario" };
 const TIPO: Record<string, string> = { entreno: "Entreno", liga: "Partido de liga", amistoso: "Amistoso", torneo: "Torneo", interno: "Partido entre nosotros", quedada: "Quedada", pachanga: "Pachanga", otro: "Evento" };
@@ -60,7 +79,7 @@ function textoEvento(e: EventoCtx, quien: QuienCtx | undefined, mia: MiRespuesta
     `  Lugar: ${linea(e.lugar) || "por confirmar"}${e.mapa ? ` · cómo llegar: ${linea(e.mapa, 300)}` : ""}`,
   ];
   if (conAgenda) {
-    partes.push(`  Página: ${WEB}/mi-zona/evento/${encodeURIComponent(e.id)}`);
+    partes.push(`  Página del evento (responder, quién va, cómo llegar): ${WEB}/mi-zona/evento/${encodeURIComponent(e.id)}`);
     partes.push(`  Tu respuesta: ${mia ? TEXTO_RESP[mia.respuesta] ?? "sin responder" : "sin responder"}${mia?.respuesta === "no" && mia.motivo ? ` (tu motivo: ${MOTIVO[mia.motivo] ?? "otro"}${mia.detalle ? `, ${linea(mia.detalle, 120)}` : ""})` : ""}`);
   }
   if (quien) {
@@ -75,13 +94,19 @@ function textoEvento(e: EventoCtx, quien: QuienCtx | undefined, mia: MiRespuesta
 export function construirContexto(d: EntradaContexto): string {
   const s: string[] = [];
   s.push(`Hoy es ${dia(d.hoy)} (hora de Madrid). Web: ${WEB}`);
-  s.push(`Usuario: ${nombre(d.yo.nombre)}${d.yo.equipos.length ? ` · juega en ${d.yo.equipos.map((x) => linea(x, 10)).join(" y ")}` : ""}${d.yo.esGestor ? " · es gestor" : ""}${d.yo.tieneFicha ? "" : " · sin ficha de jugador"}`);
-  s.push(`Páginas útiles: inicio ${WEB}/ · agenda ${WEB}/agenda · ausencias ${WEB}/mi-zona/ausencias · avisos en el móvil ${WEB}/avisos · mis números ${WEB}/mis-numeros · liga ${WEB}/liga · plantilla ${WEB}/plantilla · historia ${WEB}/historia · proponer un plan ${WEB}/planes/nuevo · mi cuenta ${WEB}/cuenta · entrar ${WEB}/entrar`);
+  const eqs = d.yo.equipos.map((x) => linea(x, 10)).join(" y ");
+  s.push(`Usuario: ${nombre(d.yo.nombre)}${d.yo.esGestor ? " · es gestor" : ""} · ${d.yo.tieneFicha
+    ? `tiene ficha de jugador${eqs ? ` (${eqs})` : " (solo entrenos)"}: sus partidos y entrenos son «tu partido», «tu entreno»`
+    : "NO tiene ficha de jugador: no digas «tu partido» ni «tu entreno», sino «el próximo partido de MdA» o «el próximo partido de MdL» y «el próximo entreno»"}`);
+  s.push("\n## Páginas de la web (las únicas que existen; no enlaces ninguna otra)");
+  s.push(RUTAS.map(([r, que]) => `- ${WEB}${r === "/" ? "/" : r} · ${que}`).join("\n"));
+  s.push("- No hay página de ayuda ni de preguntas frecuentes: las dudas se resuelven aquí, con el asistente, o con Iván, Carlos o Edu por WhatsApp.");
 
   s.push("\n## Avisos del club activos");
   s.push(d.avisos.length ? d.avisos.map((a) => `- ${linea(a.texto, 600)} (del ${a.desde} al ${a.hasta}${a.para !== "todos" ? `, para ${linea(a.para, 10)}` : ""})`).join("\n") : "- Ninguno.");
 
-  s.push("\n## Próximos eventos");
+  // D141: quien va, duda, no va y no ha contestado se puede decir con nombres (lo ve en la web); el porque, nunca.
+  s.push("\n## Próximos eventos (quién va, duda, no va y no ha contestado se puede decir con nombres; el motivo de los demás no se sabe)");
   if (!d.eventos.length) s.push("- No hay eventos en los próximos días.");
   for (const e of d.eventos) {
     const mia = d.respuestas.find((r) => r.evento_id === e.id);
@@ -109,7 +134,7 @@ export function construirContexto(d: EntradaContexto): string {
     }
   }
 
-  s.push("\n## Guía del jugador (cómo funciona la web)");
+  s.push("\n## Guía del jugador: cómo funciona la web");
   s.push(d.guia.replace(/={3,}/g, "=").trim());
   return s.join("\n");
 }

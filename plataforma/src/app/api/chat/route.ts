@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { modoChat, puedeUsarChat } from "@/lib/chat/acceso";
+import { limpiarRespuesta } from "@/lib/chat/respuesta";
 import { cargarContexto, llamarWorker, usuarioHash } from "@/lib/chat/servidor";
 import { sesionActual } from "@/lib/sesion";
 import { usuarioActual } from "@/lib/usuario";
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
     const contexto = await cargarContexto(usuario!);
     const r = await llamarWorker({ usuario_hash: hash, mensajes, contexto });
     if ("agotado" in r) return NextResponse.json({ agotado: true, motivo: r.motivo, quedan: r.quedan }, { headers: { "cache-control": "no-store" } });
-    return NextResponse.json({ respuesta: r.respuesta, quedan: r.quedan, uso: "uso" in r ? r.uso : undefined }, { headers: { "cache-control": "no-store" } });
+    // Enlaces solo a paginas reales, sin relleno ni nada de como funciona por dentro (lib/chat/respuesta.ts).
+    return NextResponse.json({ respuesta: limpiarRespuesta(r.respuesta ?? "", contexto), quedan: r.quedan, uso: "uso" in r ? r.uso : undefined }, { headers: { "cache-control": "no-store" } });
   } catch {
     // Worker caido o lento: sin detalles.
     return no(502, "El asistente no responde ahora. Inténtalo en un rato.");

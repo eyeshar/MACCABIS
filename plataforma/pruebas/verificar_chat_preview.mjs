@@ -37,9 +37,13 @@ const sufijo = crypto.randomBytes(4).toString('hex');
 const email = `prueba-chat-${sufijo}@maccabis.invalid`;
 const clave = crypto.randomBytes(18).toString('base64url');
 let uid = null;
+let cuentasAntes = null;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
 try {
+  // Norma (Ivan, 28/10/2026): antes de crear una cuenta temporal en el real, se apunta el recuento de auth; al final, otra vez.
+  [{ n: cuentasAntes }] = await sql`select count(*)::int n from auth.users`;
+  console.log(`  cuentas de auth ANTES: ${cuentasAntes}`);
   const [u] = await sql`
     insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
                             created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token)
@@ -90,8 +94,10 @@ try {
     await sql`delete from public.gestores where user_id = ${uid} or nombre = 'PRUEBA temporal'`;
     await sql`delete from auth.users where id = ${uid}`;
   }
-  const [r] = await sql`select (select count(*)::int from public.gestores where nombre = 'PRUEBA temporal') g, (select count(*)::int from auth.users where email like 'prueba-chat-%') u`;
+  const [r] = await sql`select (select count(*)::int from public.gestores where nombre = 'PRUEBA temporal') g, (select count(*)::int from auth.users where email like 'prueba-chat-%') u, (select count(*)::int from auth.users) n`;
   console.log(`  restos del gestor temporal: gestores ${r.g}, usuarios ${r.u} (deben ser 0)`);
+  console.log(`  cuentas de auth DESPUÉS: ${r.n} (antes: ${cuentasAntes ?? 'sin medir'})`);
+  if (r.g || r.u || (cuentasAntes != null && r.n !== cuentasAntes)) { console.log('  FALLO la limpieza no ha dejado la base como estaba'); fallos++; }
   fs.rmSync(tmp, { recursive: true, force: true });
   await sql.end();
   console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTODO OK');

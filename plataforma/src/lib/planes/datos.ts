@@ -49,12 +49,12 @@ export async function quienVaPlan(v: PlanVista): Promise<QuienVa> {
   ]);
   const { quienResponde } = await import("@/lib/respuestas/dominio");
   const resp = new Map(((rs ?? []) as { person_id: string; respuesta: string }[]).map((r) => [r.person_id, r.respuesta]));
-  const q: QuienVa = { va: [], duda: [], no: [], sin_responder: 0 };
+  const q: QuienVa = { va: [], duda: [], no: [], sin_responder: [] };
   for (const j of (js ?? []) as { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" }[]) {
     if (!quienResponde(v.evento, j)) continue;
     const r = resp.get(j.person_id) ?? "sin_responder";
-    if (r === "va") q.va.push(j.nombre_visible); else if (r === "duda") q.duda.push(j.nombre_visible); else if (r === "no") q.no.push(j.nombre_visible); else q.sin_responder++;
+    if (r === "va") q.va.push(j.nombre_visible); else if (r === "duda") q.duda.push(j.nombre_visible); else if (r === "no") q.no.push(j.nombre_visible); else q.sin_responder.push(j.nombre_visible);
   }
-  for (const l of [q.va, q.duda, q.no]) l.sort((a, b) => a.localeCompare(b, "es"));
+  for (const l of [q.va, q.duda, q.no, q.sin_responder]) l.sort((a, b) => a.localeCompare(b, "es"));
   return q;
 }

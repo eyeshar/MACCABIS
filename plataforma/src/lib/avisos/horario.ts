@@ -54,3 +54,47 @@ export function horaDeEnvio(t: Date, inicioEvento: Date | null) {
   if (inicioEvento && inicioEvento.getTime() - t.getTime() < DOCE_HORAS) return t;
   return finDelSilencio(t);
 }
+
+// ---------------------------------------------------------------- dudas con hora limite (D141)
+const UN_DIA = 24 * 3600 * 1000;
+
+/** Hora limite de las «dudas» de un evento (misma definicion que `_limite_dudas` en la base; una prueba las compara).
+ *  Entreno oficial del miercoles y partido de liga oficial de miercoles a domingo: el MARTES de esa semana a las 20:00 (los
+ *  dos, el mismo martes). Todo lo demas (amistosos, torneos, «entre nosotros», planes, entrenos de otro dia): 24 h antes
+ *  del inicio. Desde ese instante ya no hay «duda»: quien siga en ella pasa a «no va». */
+export function limiteDudas(e: { tipo: string; fecha: string; inicio: string | null; oficial?: boolean }): Date {
+  const dia = diaSemana(e.fecha);
+  if (e.oficial !== false) {
+    if (e.tipo === "entreno" && dia === 2) return madrid(sumarDias(e.fecha, -1), "20:00");
+    if (e.tipo === "liga" && dia >= 2) return madrid(sumarDias(lunesDe(e.fecha), 1), "20:00");
+  }
+  return new Date(madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00").getTime() - UN_DIA);
+}
+
+/** ¿Siguen valiendo las «dudas» en este instante? */
+export const dudaAbierta = (e: Parameters<typeof limiteDudas>[0], ahora: Date) => ahora.getTime() < limiteDudas(e).getTime();
+
+/** Cuando sale el aviso de «te quedan hasta las HH:MM» a quien siga en «duda»: las 12:00 del dia del limite; si el limite es
+ *  antes de las 13:00, una hora antes del limite pero nunca antes de las 08:30 (fin del silencio); null si ni asi cabe
+ *  (limite antes de las 09:30 pasado el silencio: no hay aviso previo, solo el paso a «no va»). */
+export function avisoDeDudas(limite: Date): Date | null {
+  const l = enMadrid(limite);
+  if (l.minutos >= 13 * 60) return madrid(l.fecha, "12:00");
+  const t = new Date(limite.getTime() - 3600 * 1000);
+  const tm = enMadrid(t);
+  if (tm.fecha !== l.fecha || tm.minutos < SILENCIO_HASTA) return null;
+  return t;
+}
+
+const DIAS_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+/** El limite en palabras: "hoy a las 20:00" / "mañana a las 20:00" si cae hoy / mañana; si no, "el martes a las 20:00"
+ *  (con el numero del dia si falta mas de cinco dias: "el martes 3 a las 20:00"). */
+export function textoLimite(limite: Date, ahora: Date) {
+  const l = enMadrid(limite);
+  const hoy = enMadrid(ahora).fecha;
+  if (l.fecha === hoy) return `hoy a las ${l.hora}`;
+  if (l.fecha === sumarDias(hoy, 1)) return `mañana a las ${l.hora}`;
+  const dia = DIAS_ES[new Date(`${l.fecha}T12:00:00Z`).getUTCDay()];
+  const lejos = limite.getTime() - ahora.getTime() > 5 * UN_DIA;
+  return `el ${dia}${lejos ? ` ${+l.fecha.slice(8)}` : ""} a las ${l.hora}`;
+}

@@ -5,7 +5,8 @@
 // propuesta de dificultad, nivel antes que rotación con la deuda de 2 domingos fuera (D109), ningún jugador fijo (D110),
 // rivales parejos con los convocados igualados aunque un equipo tenga 5 interiores solo suyos (D112, el caso de la J3),
 // nadie dobla por bases (D115), que el motor es determinista (misma entrada = misma salida, también desordenada) y los
-// avisos de data/avisos.json vigentes ese domingo en el mensaje de WhatsApp.
+// avisos de data/avisos.json vigentes ese domingo en el mensaje de WhatsApp y las dudas (D141): no se convocan ni cuentan
+// como disponibles, salen aparte como «posibles».
 //
 //   npm run pruebas:convocatoria-motor
 
@@ -437,6 +438,35 @@ console.log('\n== Avisos del domingo en el mensaje de WhatsApp');
   ok(!/sint-|nivel|posici/i.test(lineas.filter((l) => !l.startsWith('Convocados')).join('\n')), 'sin datos personales fuera de la lista de convocados');
   const sin = mensajeConvocatoria('2026-11-08', 5, [P('MdL', '12:00')], conv, nombre);
   ok(sin.endsWith('Recordad: el dorsal es obligatorio.') && !sin.includes('Media'), 'sin avisos (como antes) el mensaje no cambia');
+}
+
+// ---------------------------------------------------------------- D141: las dudas salen aparte, como «posibles»
+console.log('\n== Dudas (D141): no se convocan ni cuentan como disponibles; salen aparte como «posibles»');
+{
+  const base = dieciocho();
+  const partidos = [P('MdA', '09:00', 'alta'), P('MdL', '14:00')];
+  const sinDudas = proponer({ partidos, jugadores: base });
+  ok(sinDudas.posibles.length === 0, 'sin dudas: la lista de posibles está vacía');
+  // El primero y el segundo base pasan a «duda» (uno a los dos partidos, otro solo al MdL); otro «no ha respondido».
+  const conDudas = base.map((j, i) => (i === 0 ? { ...j, respuesta: { MdA: 'duda', MdL: 'duda' } } : i === 1 ? { ...j, respuesta: { MdA: 'va', MdL: 'duda' } } : i === 2 ? { ...j, respuesta: { MdA: 'sin_responder', MdL: 'sin_responder' } } : j));
+  const r = proponer({ partidos, jugadores: conDudas });
+  const todos = [...ids(r.convocatoria, 'MdA'), ...ids(r.convocatoria, 'MdL')];
+  ok(!todos.includes(base[0].person_id) && !ids(r.convocatoria, 'MdL').includes(base[1].person_id), 'quien duda NO se convoca a ese partido');
+  ok(r.disponibles === sinDudas.disponibles - 2, 'y no cuenta como disponible (ni quien no ha respondido)', `${r.disponibles} frente a ${sinDudas.disponibles}`);
+  ok(JSON.stringify(r.posibles) === JSON.stringify([{ person_id: base[0].person_id, equipos: ['MdA', 'MdL'] }, { person_id: base[1].person_id, equipos: ['MdL'] }]), 'los posibles son quien duda, con el partido al que duda (ni «sin responder» ni «no»)', JSON.stringify(r.posibles));
+  ok(!r.sinConvocar.some((s) => s.person_id === base[0].person_id), 'y no salen en «Disponibles sin convocar»: están aparte');
+  // Revisar a mano: convocar a uno que duda no lo deja en los posibles de ese partido.
+  const rev = revisar({ partidos, jugadores: conDudas }, { MdA: [{ person_id: base[0].person_id }], MdL: [] });
+  ok(rev.posibles.length === 2 && rev.posibles[0].equipos.join() === 'MdL' && rev.posibles[1].person_id === base[1].person_id, 'si se convoca a mano a quien duda al MdA, solo sigue de posible para el MdL', JSON.stringify(rev.posibles));
+  ok(avisosDe(rev, '0.1').some((a) => a.person_id === base[0].person_id && /tiene «duda»/.test(a.texto)), 'y el aviso 0.1 sigue diciendo que tiene «duda» a ese partido');
+  // Un sancionado o sin ficha de ese equipo no es posible.
+  const raros = conDudas.map((j, i) => (i === 0 ? { ...j, sancionado: true } : i === 1 ? { ...j, ficha: { MdA: true, MdL: false } } : j));
+  ok(proponer({ partidos, jugadores: raros }).posibles.length === 0, 'un sancionado o sin ficha de ese equipo no es «posible»');
+  // Pasada la hora límite no queda nadie en duda (pasa a «no va»): el motor propone sin posibles.
+  const pasado = conDudas.map((j) => ({ ...j, respuesta: Object.fromEntries(Object.entries(j.respuesta).map(([e, v]) => [e, v === 'duda' ? 'no' : v])) }));
+  ok(proponer({ partidos, jugadores: pasado }).posibles.length === 0, 'tras el límite (todas las dudas pasaron a «no va»): sin posibles y la propuesta ya es la definitiva');
+  // Determinista, también con las dudas desordenadas.
+  ok(JSON.stringify(proponer({ partidos, jugadores: [...conDudas].reverse() }).posibles) === JSON.stringify(r.posibles), 'mismo resultado con los jugadores en otro orden');
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

@@ -88,21 +88,22 @@ export async function cargarMiDomingo(fecha: string): Promise<MiDomingo | null> 
   return (data as MiDomingo | null) ?? null;
 }
 
-export type QuienVa ={ va: string[]; duda: string[]; no: string[]; sin_responder: number };
+/** D141: tambien los NOMBRES de quien no ha contestado. Nunca motivos ni detalles: la vista no los da. */
+export type QuienVa = { va: string[]; duda: string[]; no: string[]; sin_responder: string[] };
 
 export async function cargarQuienVa(eventoIds: string[]): Promise<Map<string, QuienVa>> {
   const sb = await clienteSesion();
   const { data } = await sb.from("v_quien_va").select("evento_id, nombre, estado").in("evento_id", eventoIds);
   const m = new Map<string, QuienVa>();
-  for (const id of eventoIds) m.set(id, { va: [], duda: [], no: [], sin_responder: 0 });
+  for (const id of eventoIds) m.set(id, { va: [], duda: [], no: [], sin_responder: [] });
   for (const f of (data ?? []) as { evento_id: string; nombre: string; estado: string }[]) {
     const q = m.get(f.evento_id)!;
     if (f.estado === "va") q.va.push(f.nombre);
     else if (f.estado === "duda") q.duda.push(f.nombre);
     else if (f.estado === "no") q.no.push(f.nombre);
-    else q.sin_responder++;
+    else q.sin_responder.push(f.nombre);
   }
-  for (const q of m.values()) for (const l of [q.va, q.duda, q.no]) l.sort((a, b) => a.localeCompare(b, "es"));
+  for (const q of m.values()) for (const l of [q.va, q.duda, q.no, q.sin_responder]) l.sort((a, b) => a.localeCompare(b, "es"));
   return m;
 }
 

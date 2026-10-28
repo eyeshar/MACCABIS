@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import QuienVaJugador from "@/components/numeros/QuienVa";
-import { madrid } from "@/lib/avisos/horario";
+import { dudaAbierta, limiteDudas, madrid, textoLimite } from "@/lib/avisos/horario";
 import { hoyMadrid } from "@/lib/dias";
 import { cargarPlan, quienVaPlan } from "@/lib/planes/datos";
 import { cargarMisRespuestas } from "@/lib/respuestas/jugador";
@@ -67,9 +67,10 @@ export default async function FichaPlan({ params, searchParams }: { params: Prom
       {v.invitado && (
         <section className="tarjeta rw-vas" aria-labelledby="t-apuntas">
           <div className="mz-sec-cab"><h2 id="t-apuntas">¿Te apuntas?</h2>{completo && <span className="pastilla">Completo</span>}</div>
-          {abierto ? <ResponderPlan id={e.id} actual={actual} completo={completo} nombre={e.titulo ?? "el plan"} />
+          {abierto ? <ResponderPlan id={e.id} actual={actual} completo={completo} nombre={e.titulo ?? "el plan"} sinDuda={!dudaAbierta(e, new Date())} />
             : <p className="suave" style={{ margin: 0 }}>{e.estado === "cancelado" ? "No hace falta que hagas nada." : "El plan ya empezó: no se puede cambiar la respuesta."}</p>}
           <p className="suave pequeno" style={{ margin: 0 }}>Se responde aquí, en la web. «No voy» no pide motivo.</p>
+          {abierto && dudaAbierta(e, new Date()) && <p className="suave pequeno" style={{ margin: 0 }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(e), new Date())} para confirmar; si no, contarás como «no va».</p>}
         </section>
       )}
 

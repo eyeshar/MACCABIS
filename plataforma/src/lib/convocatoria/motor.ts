@@ -37,7 +37,7 @@ export const LIMITES = {
 
 // ---------------------------------------------------------------- reglas (cada aviso dice cual lo causa)
 export const REGLAS = {
-  "0.1": "Disponibilidad: solo van quienes dicen «voy» a ese partido",
+  "0.1": "Disponibilidad: solo van quienes dicen «voy» a ese partido (las «duda» salen aparte como posibles hasta su hora límite, D141)",
   "0.2": "Datos privados del jugador",
   "1.1": "Máximo 10 por equipo (12 con más de 20 disponibles)",
   "1.2": "Con 20 o más disponibles, los de «solo entreno» no van",
@@ -109,6 +109,9 @@ export type Recuento = {
   basesComoExteriores: string[];
 };
 export type SinConvocar = { person_id: string; motivo: string; regla: CodigoRegla };
+/** D141: quien tiene «duda» a un partido que juega. NO se convoca ni cuenta como disponible: sale aparte como «posible»
+ *  hasta la hora limite de las dudas (martes 20:00), cuando pasa a «no va» si no ha confirmado. */
+export type Posible = { person_id: string; equipos: Equipo[] };
 export type Revision = {
   maximo: number;
   disponibles: number;
@@ -116,6 +119,8 @@ export type Revision = {
   recuento: Partial<Record<Equipo, Recuento>>;
   avisos: Aviso[];
   sinConvocar: SinConvocar[];
+  /** Con «duda» a algun partido de este domingo (y ficha de ese equipo, sin sancion, sin estar ya convocado a el). */
+  posibles: Posible[];
 };
 export type Propuesta = Revision & { convocatoria: Convocatoria };
 
@@ -219,6 +224,7 @@ export function recuentoDe(convocados: Convocado[], jugadores: Map<string, Jugad
 export function revisar(entrada: Entrada, convocatoria: Convocatoria, sinConvocarPropuesta?: SinConvocar[]): Revision {
   const jugadores = new Map(entrada.jugadores.map((j) => [j.person_id, j]));
   const partidos = ordenPartidos(entrada.partidos);
+  const posibles = posiblesDe(entrada.jugadores, partidos, convocatoria);
   const disponibles = contarDisponibles(entrada);
   const maximo = maximoPorEquipo(disponibles, partidos.length);
   const mismaHora = esMismaHora(partidos);
@@ -232,7 +238,7 @@ export function revisar(entrada: Entrada, convocatoria: Convocatoria, sinConvoca
   if (disponibles === 0 && partidos.every((p) => !(convocatoria[p.equipo]?.length))) {
     for (const p of partidos) recuento[p.equipo] = recuentoDe([], jugadores);
     return {
-      maximo, disponibles, mismaHora, recuento, sinConvocar: [],
+      maximo, disponibles, mismaHora, recuento, sinConvocar: [], posibles,
       avisos: partidos.map((p) => ({ regla: "0.1" as const, gravedad: "info" as const, equipo: p.equipo, texto: "Todavía no hay disponibles para este domingo." })),
     };
   }
@@ -312,7 +318,17 @@ export function revisar(entrada: Entrada, convocatoria: Convocatoria, sinConvoca
 
   const orden: Record<Gravedad, number> = { error: 0, aviso: 1, info: 2 };
   avisos.sort((x, y) => orden[x.gravedad] - orden[y.gravedad]);
-  return { maximo, disponibles, mismaHora, recuento, avisos, sinConvocar };
+  return { maximo, disponibles, mismaHora, recuento, avisos, sinConvocar, posibles };
+}
+
+/** Los «posibles» (D141): un jugador con «duda» a un partido que juega, con ficha de ese equipo, sin sancion y sin estar ya
+ *  convocado a el. Por orden de prioridad, como los demas listados. */
+function posiblesDe(jugadores: JugadorEntrada[], partidos: PartidoEntrada[], convocatoria: Convocatoria): Posible[] {
+  return [...jugadores].sort(compararPrioridad).flatMap((j) => {
+    if (j.sancionado) return [];
+    const equipos = partidos.map((p) => p.equipo).filter((e) => j.respuesta[e] === "duda" && j.ficha[e] && !(convocatoria[e] ?? []).some((c) => c.person_id === j.person_id));
+    return equipos.length ? [{ person_id: j.person_id, equipos }] : [];
+  });
 }
 
 /** Por que un disponible no va (cuando no lo dice la propuesta). */

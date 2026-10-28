@@ -24,7 +24,7 @@ try {
     jugadores: [['esteban-jon', 'jon@pruebas.local']],
     gestores: [['Iván', 'gestor@pruebas.local', 'villaescusa-silva-ivan']],
   });
-  const [ent] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > ${hoy} order by fecha limit 1`;
+  const [ent] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha >= ${hoy} order by fecha limit 1`;
   const j3 = await sql`select id, equipo from public.eventos where tipo = 'liga' and fecha = ${J3} order by inicio`;
   const mda = j3.find((x) => x.equipo === 'MdA'), mdl = j3.find((x) => x.equipo === 'MdL');
   // Respuestas al entreno: Jon va; Noe no va (lesión, «rodilla»); Zoe duda; Ari sin responder.
@@ -92,6 +92,7 @@ try {
   ok(await visto(pg.getByTestId('avisos-numeros-con')) && await visto(pg.getByTestId('avisos-numeros-sin')), 'Panel: «con avisos» y «sin avisos» desplegables');
   await pg.getByTestId('avisos-numeros-sin').click();
   ok(await visto(pg.getByTestId('avisos-numeros-lista')), '…con los nombres de quien no los tiene');
+  { const t = await pg.getByTestId('avisos-numeros-lista').innerText(); ok(/solo entrenos/.test(t), 'Panel: quien solo entrena (sin ficha MdA/MdL) cuenta en «sin avisos» y sale marcado «solo entrenos»', t.slice(0, 200)); }
   ok(await visto(pg.locator('[data-testid^="convocados-"][aria-expanded]')), 'Panel: los convocados del domingo, desplegables');
   await pg.locator('[data-testid^="convocados-"][aria-expanded]').first().click();
   ok(/Jon|Zoe|Ari/.test(await pg.locator('[data-testid^="convocados-"][data-testid$="-lista"]').first().innerText()), '…con sus nombres');
@@ -152,7 +153,7 @@ try {
   const pj = await e.sesion('jon@pruebas.local', 375);
   await pj.goto(`${APP}/mi-zona/evento/${ent.id}`);
   ok(await visto(pj.getByTestId('quien-va-numeros-no')), '«Quién va»: van / dudan / no van son botones');
-  ok(!(await pj.getByTestId('quien-va-numeros-sin').evaluate((n) => n.tagName === 'BUTTON')), '«sin responder» es una cifra, sin lista de nombres');
+  ok(await pj.getByTestId('quien-va-numeros-sin').evaluate((n) => n.tagName === 'BUTTON'), '«sin responder» también es un botón: se ve quién no ha contestado (D141)');
   await pj.getByTestId('quien-va-numeros-no').click();
   const lj = await pj.getByTestId('quien-va-numeros-lista').innerText();
   ok(/Noe/.test(lj) && !/Lesi|rodilla|trabajo/i.test(lj), 'jugador: «no van» da solo el nombre (Noe), sin motivo ni detalle', lj);

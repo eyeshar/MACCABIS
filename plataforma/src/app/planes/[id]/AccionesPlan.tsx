@@ -7,8 +7,9 @@ import { borrarPlan, cancelarPlan, hacerOficial, responderPlan } from "../accion
 
 type R = "va" | "duda" | "no";
 
-/** «¿Te apuntas?» de un plan (D118): Voy / No voy / Duda, sin motivo. Con plazas llenas, «Voy» pasa a «Completo». */
-export function ResponderPlan({ id, actual, completo, nombre }: { id: string; actual: R | null; completo: boolean; nombre: string }) {
+/** «¿Te apuntas?» de un plan (D118): Voy / No voy / Duda, sin motivo. Con plazas llenas, «Voy» pasa a «Completo». Pasada la hora limite de las dudas
+ *  (`sinDuda`, D141) no hay «Duda». */
+export function ResponderPlan({ id, actual, completo, nombre, sinDuda }: { id: string; actual: R | null; completo: boolean; nombre: string; sinDuda?: boolean }) {
   const router = useRouter();
   const [marcada, setMarcada] = useState<R | null>(actual);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export function ResponderPlan({ id, actual, completo, nombre }: { id: string; ac
           ? <button type="button" className="rw-btn rw-btn-completo" disabled aria-disabled="true">Completo</button>
           : <button type="button" className={`rw-btn rw-btn-va${marcada === "va" ? " marcada" : ""}`} aria-pressed={marcada === "va"} disabled={pendiente} onClick={() => guardar("va")}>Voy</button>}
         <button type="button" className={`rw-btn rw-btn-no${marcada === "no" ? " marcada" : ""}`} aria-pressed={marcada === "no"} disabled={pendiente} onClick={() => guardar("no")}>No voy</button>
-        <button type="button" className={`rw-btn rw-btn-duda${marcada === "duda" ? " marcada" : ""}`} aria-pressed={marcada === "duda"} disabled={pendiente} onClick={() => guardar("duda")}>Duda</button>
+        {!sinDuda && <button type="button" className={`rw-btn rw-btn-duda${marcada === "duda" ? " marcada" : ""}`} aria-pressed={marcada === "duda"} disabled={pendiente} onClick={() => guardar("duda")}>Duda</button>}
       </div>
       {error && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{error}</p>}
     </div>

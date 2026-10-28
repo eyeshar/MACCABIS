@@ -9,7 +9,7 @@
 //   - ausencias: aplicadas a eventos existentes y a los creados despues, sin fecha de vuelta y "Ya puedo volver",
 //     borrado que deja "sin responder", aviso de "tenias voy";
 //   - cambio de dia que reinicia las respuestas; cambio de hora que las mantiene;
-//   - alerta a los gestores despues del martes a las 10:00; "Responder por el" con quien la puso;
+//   - alerta a los gestores despues del martes a las 20:00; "Responder por el" con quien la puso;
 //   - interruptor: condiciones, registro; suscripciones: alta, baja y solo las propias.
 //
 //   npm run pruebas:respuestas-web
@@ -338,8 +338,8 @@ try {
   ok(tr['gianatti-adriano'] === 'no·viaje', 'y se vuelven a aplicar las ausencias del nuevo día');
   await sql`update public.eventos set fecha = ${F('2026-10-21')} where id = ${E.e21}`;
 
-  console.log('\n== Alerta a los gestores: cambios de un partido después del martes a las 10:00');
-  // Un partido de liga en los próximos días cuyo martes 10:00 ya pasó, y otro de la semana que viene (aún no).
+  console.log('\n== Alerta a los gestores: cambios de un partido después del martes a las 20:00');
+  // Un partido de liga en los próximos días cuyo martes 20:00 ya pasó, y otro de la semana que viene (aún no).
   const hoy = hoyMadrid();
   const dow = (f) => (new Date(`${f}T12:00:00Z`).getUTCDay() + 6) % 7; // 0 = lunes
   const madridAhora = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' });
@@ -347,23 +347,23 @@ try {
   for (let i = 1; i <= 6 && !tarde; i++) {
     const f = sumar(hoy, i);
     const martes = sumar(f, -dow(f) + 1);
-    if (`${martes} 10:00` < madridAhora) tarde = f;
+    if (`${martes} 20:00` < madridAhora) tarde = f;
   }
   const temprano = sumar(hoy, 7 - dow(hoy) + 6); // domingo de la semana que viene
   const [pt] = tarde ? await sql`insert into public.eventos (clave, tipo, equipo, rival, fecha, inicio) values ('x-tarde', 'liga', 'MdA', 'Rival', ${tarde}, '23:30') returning id` : [null];
   const [pe] = await sql`insert into public.eventos (clave, tipo, equipo, rival, fecha, inicio) values ('x-temprano', 'liga', 'MdA', 'Rival', ${temprano}, '10:00') returning id`;
   await rpc('responder', { p_evento: pe.id, p_respuesta: 'va' }, jon.token);
-  ok((await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${pe.id}`)[0].n === 0, 'antes del martes a las 10:00 de su semana, no hay alerta');
+  ok((await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${pe.id}`)[0].n === 0, 'antes del martes a las 20:00 de su semana, no hay alerta');
   if (pt) {
     r = await rpc('responder', { p_evento: pt.id, p_respuesta: 'va' }, jon.token);
     await rpc('responder', { p_evento: pt.id, p_respuesta: 'no', p_motivo: 'trabajo' }, jon.token);
     const al = await sql`select antes, despues, aviso_encolado from public.alertas_gestores where evento_id = ${pt.id} order by en`;
-    ok(r.datos.alerta === true && al.length === 2 && al[1].antes === 'va' && al[1].despues === 'no' && !al[0].aviso_encolado, `después del martes a las 10:00 (${tarde}), cada cambio deja alerta para los gestores`);
+    ok(r.datos.alerta === true && al.length === 2 && al[1].antes === 'va' && al[1].despues === 'no' && !al[0].aviso_encolado, `después del martes a las 20:00 (${tarde}), cada cambio deja alerta para los gestores`);
     await rpc('responder', { p_evento: pt.id, p_respuesta: 'no', p_motivo: 'familia' }, jon.token);
     ok((await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${pt.id}`)[0].n === 2, 'cambiar solo el motivo no es un cambio de respuesta: sin alerta nueva');
     ok((await api('/alertas_gestores?select=*', { token: jon.token })).datos?.length === 0 && (await api('/alertas_gestores?select=*', { token: tG })).datos.length >= 2, 'las alertas solo las ven los gestores');
     ok((await api(`/alertas_gestores?evento_id=eq.${pt.id}`, { metodo: 'PATCH', cuerpo: { visto_en: new Date().toISOString(), visto_por_nombre: 'Iván' }, token: tG })).datos.length === 2, '«Visto» la quita (la marca el gestor)');
-  } else ok(true, '(hoy es lunes o martes antes de las 10:00: no hay partido «tarde» que probar en la base; lo cubre pruebas:avisos-logica)');
+  } else ok(true, '(hoy es lunes o martes antes de las 20:00: no hay partido «tarde» que probar en la base; lo cubre pruebas:avisos-logica)');
   ok((await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${E.e14}`)[0].n === 0, 'los entrenos no generan alerta');
   // Los dos partidos de prueba, lejos (tienen respuestas y alertas: no se pueden borrar): los lunes, «el domingo de la semana que viene» es el domingo de la J3 adelantada y
   // el gestor tendria tres partidos ese dia en la vista de domingo (fallaba «solo al de las 14:00»).

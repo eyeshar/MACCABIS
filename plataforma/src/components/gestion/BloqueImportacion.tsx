@@ -10,7 +10,7 @@ export default function BloqueImportacion({ estado, enlaceImportar = true }: { e
     <div className="gs-importacion" data-testid="bloque-importacion" role="note">
       {estado.desactualizadas && <p className="gs-importacion-aviso" role="alert" data-testid="importacion-desactualizada"><b>Las respuestas pueden estar desactualizadas.</b> La última importación tiene más de 48 horas y hay partido en los próximos 5 días.</p>}
       <p style={{ margin: 0 }}>
-        <b>Última importación:</b> {estado.ultima ? `${fechaHora(estado.ultima)}${estado.por ? ` (${estado.por})` : ""}` : "ninguna"} · <b>Próxima automática:</b> <span data-testid="importacion-proxima">{estado.proxima}</span>
+        <b>Última importación:</b> {estado.ultima ? `${fechaHora(estado.ultima)}${estado.por ? ` (${estado.por})` : ""}` : "ninguna"} · <span data-testid="importacion-proxima"><b>Tarea de SportEasy pausada:</b> respuestas en la web</span>
       </p>
       <p className="pequeno suave" style={{ margin: 0 }}>
         ¿Lo necesitas ya? Pídeselo a Claude en el chat o abre la app de Claude → Tareas programadas → «{TAREA_RESPUESTAS.nombre}» → Ejecutar ahora.

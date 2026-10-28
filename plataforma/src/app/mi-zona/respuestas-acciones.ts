@@ -12,7 +12,7 @@ export type Resultado = { ok: true; aviso?: string } | { ok: false; error: strin
 
 const refrescar = () => { revalidatePath("/", "layout"); };
 
-/** Si el cambio llega despues del martes a las 10:00, la base deja una alerta: se avisa a los gestores en el momento
+/** Si el cambio llega despues del martes a las 20:00, la base deja una alerta: se avisa a los gestores en el momento
  *  (con las horas de silencio). Si falla el envio, la tarea de cada 15 minutos lo recoge. */
 async function alertarSiHace(alerta: boolean) {
   if (!alerta || !configuradoEnvio()) return;

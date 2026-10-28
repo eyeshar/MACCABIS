@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Volver from "@/components/nav/Volver";
 import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
-import { gruposEvento, type RespuestaPersona } from "@/lib/numeros/respuestas";
+import { gruposEvento, lineaDudas, type RespuestaPersona } from "@/lib/numeros/respuestas";
 import { exigirGestor } from "@/lib/sesion";
 import { chipEquipacion } from "@/lib/publico";
 import { diaYNumero, hoyMadrid } from "@/lib/dias";
@@ -242,7 +242,8 @@ function Fila({ e, pistas, respuestas, jugadores, casilla }: { casilla?: boolean
       </td>
       <td data-label="Respuestas" className={respuestas.length > 0 ? "ev-celda-resp" : undefined}>
         {respuestas.length > 0 ? (
-          <CuentasRespuestas id={e.id} grupos={gruposEvento(e, jugadores, respuestas)} nombre={`${tituloEvento(e)} ${diaYNumero(e.fecha)}`} />
+          <CuentasRespuestas id={e.id} grupos={gruposEvento(e, jugadores, respuestas)} nombre={`${tituloEvento(e)} ${diaYNumero(e.fecha)}`}
+            dudas={e.estado === "programado" ? lineaDudas(e, gruposEvento(e, jugadores, respuestas), respuestas) : null} />
         ) : e.tipo === "liga" ? <span className="suave">Convocatoria el martes</span> : <span className="suave">—</span>}
       </td>
       <td data-label="SportEasy">

@@ -11,8 +11,6 @@ on:
         description: "Prueba de la alarma: falla a proposito"
         type: boolean
         default: false
-  push:
-    branches: [fix/salud-avisos]   # SOLO para la prueba de la alarma; se quita antes del merge
 jobs:
   salud:
     runs-on: ubuntu-latest
@@ -20,7 +18,7 @@ jobs:
     steps:
       - name: Consultar /api/avisos/salud
         env:
-          FORZAR: ${{ inputs.forzar_fallo || github.event_name == 'push' }}
+          FORZAR: ${{ inputs.forzar_fallo }}
         run: |
           if [ "$FORZAR" = "true" ]; then echo "::error::Prueba de la alarma: fallo forzado"; exit 1; fi
           codigo=$(curl -sS --max-time 30 -o salud.json -w '%{http_code}' https://maccabis.vercel.app/api/avisos/salud || echo 000)

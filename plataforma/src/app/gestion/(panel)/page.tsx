@@ -21,7 +21,7 @@ import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
 import Numeros, { type GrupoNum } from "@/components/numeros/Numeros";
 import { gruposEvento, lineaDudas, type RespuestaPersona } from "@/lib/numeros/respuestas";
 import { hrefJugador } from "@/lib/numeros/enlaces";
-import { cargarDefecto } from "@/lib/disponibilidad/datos";
+import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { claveQuitado, noVaPorDefecto } from "@/lib/disponibilidad/porDefecto";
 import PorDefectoEntreno from "./PorDefectoEntreno";
 

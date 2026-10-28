@@ -5,6 +5,7 @@
 //     y «Pasar a «sin responder»» solo para ese entreno (y deshacerlo).
 //   - Respuestas del entreno: «No va (por defecto)», fuera de «Pedir recordatorio a Claude»; si responde «voy», va.
 //   - Partido: la marca «no suele entrenar» no cuenta; «nunca a partidos» sin responder no sale como pendiente.
+//   - Tablero de un entreno: las mismas cifras que el Panel (también tras «pasar a sin responder»); de un partido, sin los «nunca a partidos».
 //   - Grupos: no salen en «van» salvo que hayan dicho «voy».
 //   - Convocatoria: un «nunca a partidos» que dice «voy» sale en «Disponibles sin convocar» con su motivo (regla 1.7).
 //   - El jugador marcado, en su zona (375 px): nada de las marcas.
@@ -83,6 +84,31 @@ try {
   ok(await sinDesbordar(pm), 'Panel a 375 px: sin desbordar');
   const chicos = await pequenos(pm, '[data-testid="por-defecto"] button, [data-testid="por-defecto"] summary');
   ok(!chicos.length, 'y los botones del aviso tienen al menos 44 px', JSON.stringify(chicos));
+
+  console.log('\n== Tablero del entreno: las mismas cifras que el Panel');
+  const cifrasPanel = async () => {
+    await pg.goto(`${APP}/gestion`);
+    const n = async (k) => Number((await pg.getByTestId(`entreno-numeros-${k}`).innerText()).match(/\d+/)[0]);
+    return { va: await n('va'), dudaYSin: (await n('duda')) + (await n('sin')), no: await n('no') };
+  };
+  const cifrasTablero = async () => {
+    await pg.goto(`${APP}/gestion/tablero?evento=${ent.id}`);
+    await visto(pg.getByTestId('columna-no'));
+    const c = async (k) => pg.getByTestId(`columna-${k}`).locator('[data-person]').count();
+    return { va: await c('va'), dudaYSin: await c('duda'), no: await c('no') };
+  };
+  let cp = await cifrasPanel(), ct = await cifrasTablero();
+  ok(JSON.stringify(cp) === JSON.stringify(ct), `mismas cifras en el Panel y en el tablero (van ${ct.va} · dudan o sin responder ${ct.dudaYSin} · no van ${ct.no})`, `${JSON.stringify(cp)} / ${JSON.stringify(ct)}`);
+  const luzNo = pg.getByTestId('columna-no').locator('[data-person="sint-luz"]');
+  ok(await visto(luzNo) && /Por defecto: no suele entrenar/.test(await luzNo.innerText()), 'Luz, en «No van» del tablero, con «Por defecto: no suele entrenar»');
+  ok(await visto(pg.getByTestId('columna-va').locator('[data-person="sint-teo"]')), 'Teo (dijo «voy») en «Van»');
+  await sql`insert into public.entreno_defecto_quitado (evento_id, person_id, por_nombre) values (${ent.id}, 'sint-luz', 'Iván')`;
+  cp = await cifrasPanel(); ct = await cifrasTablero();
+  ok(JSON.stringify(cp) === JSON.stringify(ct) && await visto(pg.getByTestId('columna-duda').locator('[data-person="sint-luz"]')), 'pasada a «sin responder» para este entreno: Luz en «Duda o sin responder», y siguen cuadrando', `${JSON.stringify(cp)} / ${JSON.stringify(ct)}`);
+  await sql`delete from public.entreno_defecto_quitado`;
+  await pg.goto(`${APP}/gestion/tablero?evento=${mda.id}`);
+  await visto(pg.getByTestId('columna-no'));
+  ok(!(await pg.locator('[data-person="sint-ugo"]').count()) && (await pg.getByTestId('columna-duda').locator('[data-person="sint-luz"]').count()) === 1, 'tablero de un partido: Ugo («nunca a partidos», sin responder) no sale; Luz sí, como «sin responder»');
 
   console.log('\n== Respuestas del entreno y «Pedir recordatorio a Claude» (interruptor apagado)');
   await pg.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);

@@ -1,6 +1,6 @@
 import "server-only";
 import type { Cliente } from "@/lib/eventos/datos";
-import { defectoDe, SIN_DEFECTO, type Defecto } from "./porDefecto";
+import { defectoDe, SIN_DEFECTO, type Defecto } from "@/lib/disponibilidad/porDefecto";
 
 /** Marcas de disponibilidad por defecto (D146) y excepciones de esos entrenos, con la sesion del GESTOR (RLS: solo
  *  gestores; a cualquier otro la base le devuelve 0 filas y todo sigue como sin marcas). Si la migracion aun no esta

@@ -134,8 +134,23 @@ try {
   if (!m146.n) console.log('  (aún no aplicada: nada que comprobar)');
   else {
     const [p] = await sql`select has_table_privilege('anon', 'public.entreno_defecto_quitado', 'select') a_sel, (select relrowsecurity from pg_class where oid = 'public.entreno_defecto_quitado'::regclass) rls,
-      has_table_privilege('service_role', 'public.jugadores_privado', 'select') s_priv, has_table_privilege('service_role', 'public.entreno_defecto_quitado', 'select') s_q`;
-    ok(!p.a_sel && p.rls && p.s_priv && p.s_q, 'entreno_defecto_quitado: RLS activa, anónimo sin permisos; la tarea de avisos (service_role) lee marcas y excepciones');
+      has_table_privilege('service_role', 'public.entreno_defecto_quitado', 'select') s_q`;
+    ok(!p.a_sel && p.rls && p.s_q, 'entreno_defecto_quitado: RLS activa, anónimo sin permisos; la tarea de avisos (service_role) lee las excepciones');
+    const [m2] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261028233000'`;
+    if (!m2.n) console.log('  (20261028233000 aún no aplicada: la tarea de avisos todavía lee jugadores_privado)');
+    else {
+      const [s2] = await sql`select (select coalesce(array_agg(privilege_type::text order by privilege_type), '{}') from information_schema.role_table_grants where table_schema = 'public' and table_name = 'jugadores_privado' and grantee = 'service_role') tabla,
+        has_function_privilege('service_role', 'public.marcas_disponibilidad()', 'execute') s_fn, has_function_privilege('authenticated', 'public.marcas_disponibilidad()', 'execute') a_fn,
+        has_function_privilege('anon', 'public.marcas_disponibilidad()', 'execute') n_fn`;
+      ok(s2.tabla.length === 0, 'la tarea de avisos (service_role) NO tiene ningún permiso sobre jugadores_privado', s2.tabla.join(','));
+      ok(s2.s_fn && !s2.a_fn && !s2.n_fn, 'y sí ejecuta marcas_disponibilidad(); ni jugadores ni anónimos');
+      const den = await (async () => { try { await sql.begin('read only', async (tx) => { await tx.unsafe('set local role service_role'); await tx.unsafe('select nivel from public.jugadores_privado limit 1'); }); return 'leyó'; } catch (e) { return e.message; } })();
+      ok(/permission denied/.test(den), 'como service_role, leer jugadores_privado da «permiso denegado»', den);
+      const cols = await (async () => { let out = null; try { await sql.begin('read only', async (tx) => { await tx.unsafe('set local role service_role'); out = await tx.unsafe('select * from public.marcas_disponibilidad()'); }); } catch (e) { return e.message; } return out; })();
+      ok(Array.isArray(cols) && cols.every((x) => Object.keys(x).sort().join() === 'no_suele_entrenar,nunca_partidos,person_id'), `como service_role, marcas_disponibilidad() da ${Array.isArray(cols) ? cols.length : '?'} filas con solo el jugador y sus dos marcas`, Array.isArray(cols) ? '' : String(cols));
+      const rA = await api('/rpc/marcas_disponibilidad', { metodo: 'POST', cuerpo: {} });
+      ok(rA.status >= 400, 'anónimo (HTTPS) NO ejecuta marcas_disponibilidad()', String(rA.status));
+    }
     const pol = await sql`select policyname, cmd, qual, with_check from pg_policies where schemaname = 'public' and tablename = 'entreno_defecto_quitado'`;
     ok(pol.length === 3 && pol.every((x) => /is_gestor\(\)/.test(`${x.qual ?? ''}${x.with_check ?? ''}`)), 'entreno_defecto_quitado: sus 3 políticas exigen ser gestor', JSON.stringify(pol.map((x) => [x.policyname, x.cmd])));
     const [c146] = await sql`select (select count(*)::int from public.jugadores_privado where no_suele_entrenar) nse, (select count(*)::int from public.jugadores_privado where nunca_partidos) nap, (select count(*)::int from public.entreno_defecto_quitado) q`;

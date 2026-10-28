@@ -18,7 +18,7 @@ import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Nu
 import NombreJugador from "@/components/numeros/Nombre";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
-import { cargarDefecto } from "@/lib/disponibilidad/datos";
+import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
 export const metadata = { title: "Respuestas y motivos · Gestión Maccabis" };

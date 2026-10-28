@@ -8,7 +8,8 @@
 //   - la migración 20261028230000 es solo aditiva y reversible (su .revertir.sql la deshace limpia y se vuelve a aplicar);
 //   - NINGÚN jugador (ni anónimo, ni jugador, ni una cuenta sin ficha) lee las marcas ni las excepciones, ni escribe;
 //   - los gestores sí: marcan en jugadores_privado y quitan / devuelven el defecto de un entreno;
-//   - el rol de servicio (la tarea de avisos) las lee.
+//   - el rol de servicio (la tarea de avisos) NO puede leer jugadores_privado (niveles): solo marcas_disponibilidad()
+//     (migración 20261028233000, también reversible), que da el jugador y sus dos marcas; y lee las excepciones.
 //
 //   npm run pruebas:disponibilidad
 import fs from 'node:fs';
@@ -20,6 +21,7 @@ import { migrar } from '../scripts/db.mjs';
 
 const MIGS = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations');
 const MIG = '20261028230000_disponibilidad_por_defecto';
+const MIG2 = '20261028233000_marcas_disponibilidad_servicio';
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
 
@@ -71,12 +73,28 @@ try {
   ok((await sql`select has_table_privilege('anon', 'public.entreno_defecto_quitado', 'select') a`)[0].a === false, 'anon no tiene ni permiso de lectura sobre la tabla nueva');
   const colsAntes = cols.slice(0, -2);
   const sinMarcas = await sql`select person_id, dobla from public.jugadores_privado order by 1`;
+  // La tarea de avisos (service_role): sin permisos sobre jugadores_privado; solo la función con las dos marcas.
+  const permisos = async () => (await sql`select has_table_privilege('service_role', 'public.jugadores_privado', 'select') tabla,
+    to_regprocedure('public.marcas_disponibilidad()') is not null fn,
+    coalesce(has_function_privilege('service_role', to_regprocedure('public.marcas_disponibilidad()'), 'execute'), false) s_fn,
+    coalesce(has_function_privilege('authenticated', to_regprocedure('public.marcas_disponibilidad()'), 'execute'), false) a_fn,
+    coalesce(has_function_privilege('anon', to_regprocedure('public.marcas_disponibilidad()'), 'execute'), false) n_fn`)[0];
+  let pm = await permisos();
+  ok(!pm.tabla && pm.fn && pm.s_fn && !pm.a_fn && !pm.n_fn, 'service_role sin permiso sobre jugadores_privado; marcas_disponibilidad() solo la ejecuta service_role', JSON.stringify(pm));
+  const texto2 = fs.readFileSync(path.join(MIGS, `${MIG2}.sql`), 'utf8').replace(/--.*$/gm, '');
+  ok(fs.existsSync(path.join(MIGS, `${MIG2}.revertir.sql`)) && !/\bdrop\b|\btruncate\b|\bdelete\b|alter\s+table/i.test(texto2), 'la segunda migración tiene su .revertir.sql y solo crea la función y quita permisos a service_role');
+  // Se revierte en orden inverso: primero la función (vuelven los permisos de service_role), luego las marcas.
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${MIG2}.revertir.sql`), 'utf8')));
+  pm = await permisos();
+  ok(pm.tabla && !pm.fn && (await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261028233000'`)[0].n === 0, 'revertir la segunda: quita la función y su registro y service_role vuelve a leer jugadores_privado (como antes)', JSON.stringify(pm));
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${MIG}.revertir.sql`), 'utf8')));
-  ok(!(await registrada()) && !(await existeTabla()), 'revertir: quita el registro y la tabla nueva');
+  ok(!(await registrada()) && !(await existeTabla()), 'revertir la primera: quita el registro y la tabla nueva');
   ok((await columnas()).join() === colsAntes.join(), 'y jugadores_privado vuelve a sus columnas de antes');
   ok(JSON.stringify(await sql`select person_id, dobla from public.jugadores_privado order by 1`) === JSON.stringify(sinMarcas), 'sin tocar sus filas');
   await migrar(sql, { log: () => {} });
-  ok(await registrada() && await existeTabla() && (await columnas()).at(-1) === 'nunca_partidos', 'se vuelve a aplicar limpia');
+  ok(await registrada() && await existeTabla() && (await columnas()).at(-1) === 'nunca_partidos', 'se vuelven a aplicar las dos, limpias');
+  pm = await permisos();
+  ok(!pm.tabla && pm.fn && pm.s_fn && !pm.a_fn, 'y service_role vuelve a quedarse sin jugadores_privado, solo con la función', JSON.stringify(pm));
   await sql`notify pgrst, 'reload schema'`;
   await new Promise((r) => setTimeout(r, 1500));
   for (let i = 0; i < 40 && (await api('/entreno_defecto_quitado')).status === 404; i++) await new Promise((r) => setTimeout(r, 250));
@@ -128,11 +146,17 @@ try {
   ok(!JSON.stringify(vista.datos ?? '').includes('suele') && !JSON.stringify(vista.datos ?? '').includes('nunca_partidos'), 'mi_zona() del jugador marcado no lleva nada de las marcas');
 
   console.log('\n== La tarea de avisos (rol de servicio) las lee');
-  const leeServicio = await sql.begin(async (tx) => {
-    await tx`set local role service_role`;
-    return { m: await tx`select count(*)::int n from public.jugadores_privado where no_suele_entrenar or nunca_partidos`, q: await tx`select count(*)::int n from public.entreno_defecto_quitado` };
-  });
-  ok(leeServicio.m[0].n === 2 && leeServicio.q[0].n === 1, 'service_role lee las 2 marcas y la excepción', JSON.stringify(leeServicio));
+  const servicio = async (q) => { try { return { ok: true, r: await sql.begin(async (tx) => { await tx`set local role service_role`; return tx.unsafe(q); }) }; } catch (err) { return { ok: false, error: err.message }; } };
+  const tabla = await servicio('select person_id, nivel from public.jugadores_privado');
+  ok(!tabla.ok && /permission denied/.test(tabla.error), 'service_role NO puede leer jugadores_privado (permiso denegado)', tabla.ok ? `${tabla.r.length} filas` : tabla.error);
+  const fn = await servicio('select * from public.marcas_disponibilidad() order by person_id');
+  ok(fn.ok && fn.r.length === 2 && fn.r.every((x) => Object.keys(x).sort().join() === 'no_suele_entrenar,nunca_partidos,person_id'), 'y sí marcas_disponibilidad(): las 2 marcas, solo jugador y marcas (sin nivel ni nada más)', fn.ok ? JSON.stringify(fn.r) : fn.error);
+  const exc = await servicio('select count(*)::int n from public.entreno_defecto_quitado');
+  ok(exc.ok && exc.r[0].n === 1, 'y lee las excepciones de entreno', exc.ok ? '' : exc.error);
+  for (const [quien, token] of [['anónimo', undefined], ['un jugador', jugador.token], ['un gestor', g.token]]) {
+    const r2 = await api('/rpc/marcas_disponibilidad', { metodo: 'POST', cuerpo: {}, token });
+    ok(r2.status >= 400, `${quien} NO puede ejecutar marcas_disponibilidad()`, String(r2.status));
+  }
 
   console.log('\n== Devolver el defecto');
   r = await api(`/entreno_defecto_quitado?evento_id=eq.${entreno}&person_id=eq.sint-nse`, { metodo: 'DELETE', token: g.token });

@@ -7,7 +7,7 @@ import { chipEquipacion } from "@/lib/publico";
 import { diaYNumero, hoyMadrid } from "@/lib/dias";
 import { fechaHora } from "@/lib/fechas";
 import { avisoDeEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
-import { cargarDefecto } from "@/lib/disponibilidad/datos";
+import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import type { Defecto } from "@/lib/disponibilidad/porDefecto";
 import {
   esPlanFila, hhmm, pistaEfectiva, rangoHoras, resumenCopia, cambioParaVer, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,

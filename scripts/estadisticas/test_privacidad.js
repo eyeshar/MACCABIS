@@ -133,19 +133,14 @@ const miConv = sql7.slice(sql7.indexOf('create function public.mi_convocatoria')
 ok(miConv.length > 100 && !/nivel|posicion|dificultad|motivo|origen|propuesta|jugadores_privado/.test(miConv) && /_mi_person_id\(\)/.test(miConv) && /estado = 'aprobada'/.test(miConv), 'mi_convocatoria (lo único del jugador): solo sus equipos de convocatorias aprobadas, sin niveles, posiciones, dificultad ni propuestas');
 const TABLAS_PRIV = ['jugadores_privado', 'convocatorias', 'convocatoria_cambios'];
 // El tablero (D121) y los grupos (D122) leen datos privados en su codigo de servidor (lib/tablero, lib/grupos), que solo
-// usan las pantallas de Gestion. La disponibilidad por defecto (D146): lib/disponibilidad (solo servidor, solo la cargan
-// pantallas de Gestion) y la tarea de avisos (lib/avisos/servidor.ts), que de jugadores_privado lee SOLO las dos marcas
-// para no mandar recordatorios; las dos cosas se comprueban abajo.
-const AVISOS_SERVIDOR = path.join('lib', 'avisos', 'servidor.ts');
-const fuera = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(path.join('gestion', '(panel)')) && !f.includes(path.join('lib', 'convocatoria')) && !f.includes(path.join('lib', 'tablero')) && !f.includes(path.join('lib', 'grupos')) && !f.includes(path.join('lib', 'disponibilidad')) && !f.endsWith(AVISOS_SERVIDOR))
+// usan las pantallas de Gestion.
+const fuera = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && !f.includes(path.join('gestion', '(panel)')) && !f.includes(path.join('lib', 'convocatoria')) && !f.includes(path.join('lib', 'tablero')) && !f.includes(path.join('lib', 'grupos')))
   .filter((f) => TABLAS_PRIV.some((t) => new RegExp('(from|rpc)\\(["\']' + t + '["\']').test(fs.readFileSync(f, 'utf8'))));
 ok(fuera.length === 0, 'fuera de Gestión nadie lee datos privados, convocatorias ni cambios (Mi zona usa solo mi_convocatoria)', fuera.map((f) => path.relative(ROOT, f)).join(', '));
 ok(/rpc\("mi_convocatoria"\)/.test(leer('src/lib/respuestas/jugador.ts')) && !/jugadores_privado|nivel/.test(leer('src/components/inicio/InicioPersonal.tsx')), 'inicio personal (antes Mi zona): «Convocado» con mi_convocatoria, sin niveles');
-const privAvisos = [...sinComentarios(leer('src/lib/avisos/servidor.ts')).matchAll(/from\("(jugadores_privado|convocatorias|convocatoria_cambios)"\)\.select\("([^"]*)"\)/g)];
-ok(privAvisos.length === 1 && privAvisos[0][1] === 'jugadores_privado' && privAvisos[0][2] === 'person_id, no_suele_entrenar, nunca_partidos', 'la tarea de avisos solo lee de jugadores_privado las dos marcas de D146 (ni niveles, ni posiciones, ni notas)', privAvisos.map((m) => `${m[1]}: ${m[2]}`).join(' | '));
-for (const f of ['src/lib/tablero/datos.ts', 'src/lib/grupos/datos.ts', 'src/lib/disponibilidad/datos.ts']) ok(/import "server-only"/.test(leer(f)), `${f}: solo en el servidor`);
-const usanTablero = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && /from "@\/lib\/(tablero|grupos|disponibilidad)\/datos"/.test(fs.readFileSync(f, 'utf8')) && !/import type/.test(fs.readFileSync(f, 'utf8').match(/.*@\/lib\/(tablero|grupos|disponibilidad)\/datos.*/)[0]));
-ok(usanTablero.every((f) => f.includes(path.join('gestion', '(panel)'))), 'lo del tablero, los grupos y la disponibilidad por defecto solo lo cargan pantallas de Gestión', usanTablero.map((f) => path.relative(ROOT, f)).join(', '));
+for (const f of ['src/lib/tablero/datos.ts', 'src/lib/grupos/datos.ts']) ok(/import "server-only"/.test(leer(f)), `${f}: solo en el servidor`);
+const usanTablero = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && /from "@\/lib\/(tablero|grupos)\/datos"/.test(fs.readFileSync(f, 'utf8')) && !/import type/.test(fs.readFileSync(f, 'utf8').match(/.*@\/lib\/(tablero|grupos)\/datos.*/)[0]));
+ok(usanTablero.every((f) => f.includes(path.join('gestion', '(panel)'))), 'lo del tablero y los grupos solo lo cargan pantallas de Gestión', usanTablero.map((f) => path.relative(ROOT, f)).join(', '));
 const salidas = leer('src/lib/convocatoria/mensajes.ts').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
 ok(!/nivel|posicion|privado|dobla\b|regla|motivo/i.test(salidas), 'WhatsApp, SportEasy y el aviso «Estás convocado» no usan niveles, posiciones, reglas ni motivos');
 ok(fs.existsSync(path.join(PLAT, 'src/app/gestion/(panel)/convocatoria/page.tsx')) && /exigirGestor/.test(leer('src/app/gestion/(panel)/convocatoria/page.tsx')), 'la pantalla vive dentro del panel de gestión (solo gestores)');
@@ -228,6 +223,16 @@ ok(/rpc\("convocados_del_domingo"/.test(leer('src/lib/respuestas/jugador.ts')) &
 // D127: el aviso «Estás convocado» sale del servidor con la clave de servicio; su texto no lleva datos privados.
 const avConv = leer('src/lib/convocatoria/avisos.ts');
 ok(/import "server-only"/.test(avConv) && !/estadoInterruptor/.test(avConv) && /firmaConvocatoria/.test(avConv), 'aviso de convocatoria: solo en el servidor, sin depender del interruptor y con clave única por convocatoria');
+// D146 (ajuste del 28/10/2026): la tarea de avisos (service_role) no lee jugadores_privado (niveles): solo
+// marcas_disponibilidad(), que devuelve person_id y las dos marcas y solo ejecuta service_role.
+const MIG146 = sinComentarios(leer('supabase/migrations', '20261028233000_marcas_disponibilidad_servicio.sql'));
+const cuerpo146 = MIG146.slice(MIG146.indexOf('create function public.marcas_disponibilidad'), MIG146.indexOf('comment on function'));
+const servidorAvisos = leer('src/lib/avisos/servidor.ts').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
+ok(/revoke all on public\.jugadores_privado from service_role/.test(MIG146)
+  && /returns table \(person_id text, no_suele_entrenar boolean, nunca_partidos boolean\)/.test(cuerpo146) && !/nivel|posicion|nota|dobla|regla|sancion/.test(cuerpo146)
+  && /revoke execute on function public\.marcas_disponibilidad\(\) from public, anon, authenticated/.test(MIG146) && /grant execute on function public\.marcas_disponibilidad\(\) to service_role/.test(MIG146)
+  && /rpc\("marcas_disponibilidad"\)/.test(servidorAvisos) && !/jugadores_privado/.test(servidorAvisos),
+  'la tarea de avisos NO puede leer jugadores_privado (permisos quitados a service_role) y sí marcas_disponibilidad(), que solo da el jugador y sus dos marcas');
 
 console.log('\n== Página de partido de la liga (D129): por equipo en público; los rivales por jugador, solo gestores');
 {

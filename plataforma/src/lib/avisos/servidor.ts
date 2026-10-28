@@ -111,17 +111,18 @@ export async function enviarPendientes(sb: SupabaseClient, ahora = new Date()) {
   return { pendientes: pendientes.length, enviados };
 }
 
-/** D146: marcas privadas de disponibilidad por defecto y excepciones de entreno. Si la migracion 20261028230000 aun no
- *  esta en la base (columna o tabla que no existe), sin marcas y un aviso en el log: los recordatorios siguen saliendo
- *  como antes. Cualquier otro error hace fallar la tarea, como el resto de lecturas. */
+/** D146: marcas de disponibilidad por defecto y excepciones de entreno. La tarea NO lee jugadores_privado (niveles, D39):
+ *  las marcas llegan con marcas_disponibilidad() (solo person_id y las dos marcas; solo la ejecuta service_role). Si la
+ *  migracion aun no esta en la base (funcion o tabla que no existe), sin marcas y un aviso en el log: los recordatorios
+ *  siguen saliendo como antes. Cualquier otro error hace fallar la tarea, como el resto de lecturas. */
 async function leerDefecto(sb: SupabaseClient) {
-  const falta = (e: { code?: string } | null) => !!e && ["42703", "42P01", "PGRST204", "PGRST205"].includes(e.code ?? "");
+  const falta = (e: { code?: string } | null) => !!e && ["42883", "42P01", "PGRST202", "PGRST205"].includes(e.code ?? "");
   const [m, q] = await Promise.all([
-    sb.from("jugadores_privado").select("person_id, no_suele_entrenar, nunca_partidos").or("no_suele_entrenar.eq.true,nunca_partidos.eq.true"),
+    sb.rpc("marcas_disponibilidad"),
     sb.from("entreno_defecto_quitado").select("evento_id, person_id"),
   ]);
   if (falta(m.error) || falta(q.error)) {
-    console.warn("disponibilidad por defecto: migracion 20261028230000 sin aplicar; recordatorios sin marcas");
+    console.warn("disponibilidad por defecto: migraciones 20261028230000/20261028233000 sin aplicar; recordatorios sin marcas");
     return { marcas: new Map<string, { no_suele_entrenar: boolean; nunca_partidos: boolean }>(), quitados: [] };
   }
   if (m.error) throw new Error(`marcas: ${m.error.message}`);

@@ -120,7 +120,7 @@ export default function Grupos({ d }: { d: DatosGrupos<JugadorVisible> }) {
         <div className="gr-fila">
           <div className="campo" style={{ margin: 0 }}><label htmlFor="gr-nombre">Nombre del reparto</label><input id="gr-nombre" type="text" value={nombre} maxLength={60} onChange={(e) => setNombre(e.target.value)} placeholder="Calentamiento, 5 contra 5…" /></div>
           <div className="campo" style={{ margin: 0 }}><label htmlFor="gr-tamano">Jugadores por grupo</label>
-            <select id="gr-tamano" value={tamano} onChange={(e) => setTamano(Number(e.target.value))}>{[3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
+            <select id="gr-tamano" value={tamano} onChange={(e) => { setTamano(Number(e.target.value)); setVariante(null); }}>{[3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}</option>)}</select></div>
           <button type="button" className="boton boton-contorno" onClick={() => pedirSugerencia(0)} disabled={pendiente}>Sugerir grupos</button>
           {variante !== null && <button type="button" className="boton boton-claro" onClick={() => pedirSugerencia(variante + 1)} disabled={pendiente}>Otra sugerencia</button>}
         </div>

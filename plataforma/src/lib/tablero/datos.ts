@@ -11,6 +11,8 @@ import type { FilaTablero, PartidoTablero } from "./vista";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto } from "@/lib/disponibilidad/porDefecto";
+import { sinFichaQueVan } from "@/lib/numeros/respuestas";
+import type { PersonaNum } from "@/components/numeros/Numeros";
 
 // Lo que lee el tablero (D121), con la sesion del GESTOR: la base (RLS + is_gestor) decide. Nada de esto llega nunca a
 // un jugador.
@@ -84,6 +86,8 @@ export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise
 export type TableroEvento = {
   vista: "evento"; evento: { id: string; titulo: string; fecha: string; inicio: string | null; tipo: string; equipo: string };
   filas: FilaTablero[]; registro: Registro[]; encendido: boolean;
+  /** D148: quien dijo «voy» sin ficha a un entreno en una pista «solo con ficha» (no está en el tablero). */
+  sinFicha?: { pista: string; personas: PersonaNum[] } | null;
 };
 
 export async function cargarTableroEvento(sb: Cliente, id: string): Promise<TableroEvento | null> {
@@ -112,7 +116,8 @@ export async function cargarTableroEvento(sb: Cliente, id: string): Promise<Tabl
     };
   });
   const registro = await registroDe(sb, null, [id], new Map(jugadores.map((j) => [j.person_id, j.nombre_visible])));
-  return { vista: "evento", evento: { id: e.id, titulo: tituloEvento(e), fecha: e.fecha, inicio: e.inicio, tipo: e.tipo, equipo: e.equipo }, filas, registro, encendido: enc.data === true };
+  const sinFicha = e.solo_con_ficha_en ? { pista: e.solo_con_ficha_en, personas: sinFichaQueVan(e, jugadores, [...rs.values()]) } : null;
+  return { vista: "evento", evento: { id: e.id, titulo: tituloEvento(e), fecha: e.fecha, inicio: e.inicio, tipo: e.tipo, equipo: e.equipo }, filas, registro, encendido: enc.data === true, sinFicha };
 }
 
 const TEXTO_RESP: Record<string, string> = { va: "Van", duda: "Duda", no: "No van" };

@@ -14,6 +14,12 @@ export type Motivo = "lesion" | "trabajo" | "viaje" | "familia" | "otro";
 export type Pista = {
   id: string; slug: string; nombre: string; nombre_corto: string | null; direccion: string | null;
   uso: "entreno" | "partido"; estado: EstadoPista; es_de_serie: boolean; num_pistas: number | null; nota: string | null;
+  /** D148: en los entrenos en esta pista solo están invitados los jugadores con ficha (MdA o MdL). */
+  solo_con_ficha?: boolean;
+  /** D148: la regla «solo con ficha» vale desde esta fecha (null: siempre). */
+  solo_con_ficha_desde?: string | null;
+  /** D148: los entrenos sin pista propia heredan esta pista de la serie solo desde esta fecha (null: siempre). */
+  habitual_desde?: string | null;
   /** D119: coordenadas («Cómo llegar»). */
   lat?: number | null; lng?: number | null;
 };
@@ -30,6 +36,8 @@ export type EventoFila = {
   sin_recordatorios?: boolean; creado_en?: string; cambio_visible?: { campos: string[]; antes: string } | null; cambio_visible_en?: string | null;
   /** D118: plan no oficial (oficial = false) y su organizador; D119: ubicacion libre. */
   oficial?: boolean; creado_por?: string | null; plazas?: number | null; recordar_un_dia_antes?: boolean; rival_texto?: string | null; borrado_en?: string | null;
+  /** D148: columna calculada de la base (solo_con_ficha_en): la pista «solo con ficha» a la que va este entreno, o null. */
+  solo_con_ficha_en?: string | null;
 } & UbicacionLibre;
 
 export const TIPOS: { id: TipoEvento; texto: string; corto: string }[] = [
@@ -84,9 +92,10 @@ export const rangoHoras = (e: Pick<EventoFila, "inicio" | "fin">) => {
 // ---------------------------------------------------------------- pista efectiva (igual que v_eventos_publicos)
 export type PistaEfectiva = { pista: Pista | null; texto: string; porConfirmar: boolean; motivo: string | null };
 
-/** La pista propia del evento; si no tiene y es un entreno, la de la serie SOLO si esta habitual (en obras: "por
- *  confirmar" y el motivo dice cual). Un partido sin pista tambien sale "por confirmar". */
-export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista"> & UbicacionLibre, pistas: Pista[]): PistaEfectiva {
+/** La pista propia del evento; si no tiene y es un entreno, la de la serie SOLO si esta habitual y el entreno es de su
+ *  fecha «habitual desde» o posterior (D148: nada retroactivo; en obras: "por confirmar" y el motivo dice cual). Un
+ *  partido sin pista tambien sale "por confirmar". */
+export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista"> & { fecha?: string } & UbicacionLibre, pistas: Pista[]): PistaEfectiva {
   const propia = e.pista_id ? pistas.find((p) => p.id === e.pista_id) ?? null : null;
   const corto = (p: Pista) => p.nombre_corto ?? p.nombre;
   if (propia) {
@@ -96,7 +105,8 @@ export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_
   // Ubicacion libre (D119): un sitio fuera del catalogo de pistas.
   if (e.ubicacion_nombre) return { pista: null, texto: e.ubicacion_nombre, porConfirmar: false, motivo: null };
   if (e.tipo === "entreno") {
-    const serie = pistas.find((p) => p.es_de_serie && p.uso === "entreno");
+    const deSerie = pistas.find((p) => p.es_de_serie && p.uso === "entreno");
+    const serie = deSerie?.habitual_desde && !(e.fecha && e.fecha >= deSerie.habitual_desde) ? undefined : deSerie;
     if (serie?.estado === "habitual") return { pista: serie, texto: corto(serie), porConfirmar: false, motivo: null };
     return { pista: null, texto: "Pista por confirmar", porConfirmar: true, motivo: serie?.estado === "en_obras" ? `${serie.nombre.split(" (")[0]} en obras` : null };
   }
@@ -217,7 +227,7 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
 export type JugadorBasico = { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" };
 
 /** Personas a las que se les pide respuesta (D105): la definicion unica `quienResponde`. */
-export function convocadosDe(e: Pick<EventoFila, "tipo" | "equipo" | "oficial">, jugadores: JugadorBasico[]) {
+export function convocadosDe(e: Pick<EventoFila, "tipo" | "equipo" | "oficial" | "solo_con_ficha_en">, jugadores: JugadorBasico[]) {
   return jugadores.filter((j) => quienResponde(e, j));
 }
 
@@ -257,7 +267,7 @@ export const contarRespuestas = (filas: { respuesta: Respuesta }[]) => ({
  *  (los demas, aparte, en «fuera»). Sin nombres ni motivos: solo cuantos llevan motivo. Ordenado por fecha y hora. */
 export type FilaCotejo = { id: string; fecha: string; titulo: string; equipo: EquipoEvento; va: number; duda: number; no: number; sin_responder: number; conMotivo: number; fuera: number };
 export function resumenCotejo(
-  eventos: Pick<EventoFila, "id" | "fecha" | "inicio" | "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "jornada" | "oficial">[],
+  eventos: Pick<EventoFila, "id" | "fecha" | "inicio" | "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "jornada" | "oficial" | "solo_con_ficha_en">[],
   jugadores: JugadorBasico[], respuestas: { evento_id: string; person_id: string; respuesta: Respuesta; motivo: string | null }[],
 ): FilaCotejo[] {
   const porEvento = new Map<string, typeof respuestas>();
@@ -290,6 +300,10 @@ export function recordatorio(e: EventoFila, filas: FilaRespuesta[], pistas: Pist
 }
 
 // ---------------------------------------------------------------- resumen de la copia a SportEasy
+/** Cerrado SIN copiar a SportEasy por decisión de Iván (D148: «Iván: no se copia a SportEasy (29/10/2026)»): estado
+ *  «copiado» con esa nota en sporteasy_cambio. No está pendiente ni sale en la tarjeta «Copia a SportEasy». */
+export const noSeCopia = (e: Pick<EventoFila, "sporteasy_estado" | "sporteasy_cambio">) => e.sporteasy_estado === "copiado" && /no se copia/i.test(e.sporteasy_cambio ?? "");
+
 export function resumenCopia(eventos: EventoFila[], hoy: string) {
   // Los planes no oficiales no existen en SportEasy (D118): nunca entran en la cola de copia.
   const pendientes = eventos.filter((e) => !esPlanFila(e) && e.sporteasy_estado === "pendiente" && (e.fecha >= hoy || e.estado === "cancelado"));

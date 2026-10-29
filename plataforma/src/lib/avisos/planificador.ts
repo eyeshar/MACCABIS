@@ -13,7 +13,7 @@
 //   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo, ni con el interruptor apagado.
 //   - Horas de silencio (22:30–8:30): sale a las 8:30 salvo que el evento empiece en menos de 12 h.
 
-import { quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
+import { fueraPorFicha, quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
 import { claveQuitado, pendiente, type MarcasDisponibilidad } from "../disponibilidad/porDefecto.ts";
 import { avisoDeDudas, enMadrid, horaDeEnvio, limiteDudas, lunesDe, madrid, sumarDias } from "./horario.ts";
 import { queEs, textoDudas, textoPasoNoVa, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
@@ -23,6 +23,8 @@ import { queEs, textoDudas, textoPasoNoVa, textoEntrenoHoy, textoLunes, textoMar
 export type EventoPlan = EventoTexto & {
   estado: "programado" | "cancelado"; sin_recordatorios: boolean; creado_en: string;
   oficial?: boolean; recordar_un_dia_antes?: boolean; borrado_en?: string | null;
+  /** D148: pista «solo con ficha» a la que va el entreno (columna calculada de la base), o null. */
+  solo_con_ficha_en?: string | null;
 };
 export type JugadorPlan = {
   person_id: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: PersonaResponde["rol"];
@@ -54,7 +56,7 @@ export type AvisoPlan = Texto & {
 export const MARGEN_MS = 3 * 3600 * 1000;
 
 /** Invitados a un evento (D105): la definicion unica `quienResponde`, igual que en la base. */
-export function invitados(e: Pick<EventoPlan, "tipo" | "equipo" | "oficial">, jugadores: JugadorPlan[]) {
+export function invitados(e: Pick<EventoPlan, "tipo" | "equipo" | "oficial" | "solo_con_ficha_en">, jugadores: JugadorPlan[]) {
   return jugadores.filter((j) => quienResponde(e, j));
 }
 
@@ -257,13 +259,16 @@ export function conAvisosDeDudas(base: AvisoPlan[], datos: DatosPlan): AvisoPlan
 /** D141: el aviso «tu duda ha pasado a no va», UNO por persona y limite. Sale de las respuestas que el sistema cerro (origen
  *  sistema, motivo no_confirmo) en las ultimas 24 h y siguen asi: si la tarea falla despues de cerrar, el siguiente
  *  intento lo encola igual (clave estable), y quien ya volvio a decir «voy» no recibe nada. */
-export function avisosPasoNoVa(base: { eventos: EventoPlan[]; respuestas: { evento_id: string; person_id: string; respuesta: string; motivo: string | null; origen: string; cambiado_en: string | null }[] }, ahora: Date): AvisoPlan[] {
+export function avisosPasoNoVa(base: { eventos: EventoPlan[]; respuestas: { evento_id: string; person_id: string; respuesta: string; motivo: string | null; origen: string; cambiado_en: string | null }[]; jugadores?: JugadorPlan[] }, ahora: Date): AvisoPlan[] {
   const desde = ahora.getTime() - 24 * 3600 * 1000;
   const grupos = new Map<string, { p: string; limite: Date; envio: Date; evs: EventoPlan[] }>();
   for (const r of base.respuestas) {
     if (r.respuesta !== "no" || r.motivo !== "no_confirmo" || r.origen !== "sistema" || !r.cambiado_en || new Date(r.cambiado_en).getTime() < desde) continue;
     const e = base.eventos.find((x) => x.id === r.evento_id);
     if (!e || e.estado !== "programado") continue;
+    // D148: quien está fuera del entreno por no tener ficha no recibe avisos de ese entreno.
+    const j = base.jugadores?.find((x) => x.person_id === r.person_id);
+    if (j && fueraPorFicha(e, j)) continue;
     const limite = limiteDudas(e);
     const k = `${r.person_id}|${limite.toISOString()}`;
     const g = grupos.get(k) ?? { p: r.person_id, limite, envio: horaDeEnvio(new Date(r.cambiado_en), inicioDe(e)), evs: [] };

@@ -61,7 +61,8 @@ console.log('== Datos');
 ok(desfasadas().length === 0, 'plataforma/src/data/ coincide con data/ (npm run datos:sync)', desfasadas().join(', '));
 const entrenos = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'entrenos_2026-27.json'), 'utf8'));
 ok(entrenos.series[0].dia_semana === 3 && entrenos.series[0].inicio === '20:30' && entrenos.series[0].fin === '22:30', 'entreno semanal: miercoles 20:30-22:30');
-ok(entrenos.pistas[entrenos.series[0].pista].estado === 'en_obras', 'pista habitual (Valdebernardo) en obras');
+// D148 (29/10/2026): Valdebernardo reabierta y solo con ficha. La pila local sigue con la pista en obras (la de la migración): lo de abajo no cambia.
+ok(entrenos.pistas[entrenos.series[0].pista].estado === 'habitual' && entrenos.pistas[entrenos.series[0].pista].solo_con_ficha === true, 'pista habitual (Valdebernardo) reabierta y solo con ficha (D148)');
 ok(!/@|\btel|dni|nivel/i.test(JSON.stringify(entrenos)), 'entrenos: sin datos personales');
 
 const pila = await arrancar();

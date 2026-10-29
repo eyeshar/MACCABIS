@@ -34,7 +34,7 @@ export type Evento = {
 };
 
 type Entrenos = {
-  pistas: Record<string, { nombre: string; habitual: boolean; estado: string; nota?: string }>;
+  pistas: Record<string, { nombre: string; habitual: boolean; estado: string; nota?: string; habitual_desde?: string }>;
   series: { id: string; titulo: string; dia_semana: number; inicio: string; fin: string; pista: string; desde: string; hasta: string | null }[];
   excepciones: { serie: string; fecha: string; inicio?: string; fin?: string; pista?: string; nota?: string; cancelado?: boolean }[];
 };
@@ -96,7 +96,9 @@ export function eventosEntrenos(f: FuenteCalendario = FUENTE_FICHEROS, hasta = f
     for (; f <= fin; f = sumarDias(f, 7)) {
       const ex = ENTRENOS.excepciones.find((x) => x.serie === s.id && x.fecha === f);
       if (ex?.cancelado) continue;
-      const p = ENTRENOS.pistas[ex?.pista ?? s.pista];
+      // D148: nada retroactivo; antes de su fecha «habitual desde», la pista de la serie no se hereda.
+      const deSerie = ENTRENOS.pistas[ex?.pista ?? s.pista];
+      const p = !ex?.pista && deSerie?.habitual_desde && f < deSerie.habitual_desde ? undefined : deSerie;
       const enObras = p?.estado === "en_obras";
       fuera.push({
         id: `${s.id}-${f}`,

@@ -5,7 +5,7 @@ import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import { lineaEquipacion } from "@/lib/equipacion";
 import { convocadosDe, diaCorto } from "@/lib/eventos/dominio";
 import { avisoDeEvento, cargarEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
-import { cambioParaVer, deLaSerieDesde, mensajeWhatsApp, pistaEfectiva, textoTipo, tituloEvento } from "@/lib/eventos/dominio";
+import { cambioParaVer, deLaSerieDesde, mensajeWhatsApp, noSeCopia, pistaEfectiva, textoTipo, tituloEvento } from "@/lib/eventos/dominio";
 import { fechaHora } from "@/lib/fechas";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import FormularioEvento from "../FormularioEvento";
@@ -81,7 +81,9 @@ export default async function EditarEvento({ params, searchParams }: { params: P
           <CopiarTexto texto={mensaje} />
         </section>
       )}
-      {evento.sporteasy_estado === "copiado" && evento.sporteasy_copiado_en && (
+      {noSeCopia(evento) ? (
+        <p className="pequeno suave" data-testid="no-se-copia">SportEasy: no se copia. {evento.sporteasy_cambio}</p>
+      ) : evento.sporteasy_estado === "copiado" && evento.sporteasy_copiado_en && (
         <p className="pequeno suave">Copiado a SportEasy el {fechaHora(evento.sporteasy_copiado_en)}.</p>
       )}
 

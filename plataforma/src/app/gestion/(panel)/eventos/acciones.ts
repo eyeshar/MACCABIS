@@ -252,7 +252,15 @@ export async function cambiarPista(id: string, _prev: Estado, f: FormData): Prom
   const uso = f.get("uso") ? (texto(f, "uso") === "partido" ? "partido" : "entreno") : antes.uso;
   const c = f.has("coordenadas") ? coordenadas(f) : { lat: antes.lat ?? null, lng: antes.lng ?? null };
   if ("error" in c) return { error: c.error };
-  const cambios = { nombre, uso, estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null, lat: c.lat, lng: c.lng };
+  // D148: «solo jugadores con ficha»; un formulario sin ese campo no lo cambia.
+  const solo = f.has("solo_con_ficha_campo") ? { solo_con_ficha: uso === "entreno" && f.get("solo_con_ficha") === "on" } : {};
+  // D148: nada retroactivo. Las fechas «desde» (vacías: siempre); un formulario sin el campo no la cambia. La de la serie,
+  // al pasar a habitual sin fecha, toma la de hoy: los entrenos pasados sin pista propia no heredan la pista.
+  const fecha = (k: string) => (/^d{4}-d{2}-d{2}$/.test(texto(f, k)) ? texto(f, k) : null);
+  const fichaDesde = f.has("solo_con_ficha_desde") ? { solo_con_ficha_desde: fecha("solo_con_ficha_desde") } : {};
+  const reabre = antes.es_de_serie && estado === "habitual" && antes.estado !== "habitual";
+  const habitualDesde = f.has("habitual_desde") || reabre ? { habitual_desde: fecha("habitual_desde") ?? (reabre ? hoyMadrid() : null) } : {};
+  const cambios = { nombre, uso, estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null, lat: c.lat, lng: c.lng, ...solo, ...fichaDesde, ...habitualDesde };
   const { error } = await supabase.from("pistas").update(cambios).eq("id", id);
   if (error) return { error: `No se pudo guardar: ${error.message}` };
   if (antes.es_de_serie && antes.estado !== estado) {

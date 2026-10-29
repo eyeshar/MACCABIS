@@ -125,7 +125,10 @@ try {
   // Alarma de la tarea de avisos (D141, correccion del 28/10; D145): la llama la barra de Gestion con la sesion del gestor;
   // is_gestor dentro (un jugador recibe 42501) y solo devuelve codigos HTTP y horas de pg_net, ningun dato de personas.
   const AVISOS = ['estado_tarea_avisos'];
-  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
+  // Pista «solo con ficha» (D148): columna calculada de eventos para PostgREST (security invoker). Solo la aprovechan los
+  // gestores: un jugador no lee eventos ni pistas (RLS), asi que no le devuelve nada.
+  const PISTAS = ['solo_con_ficha_en'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

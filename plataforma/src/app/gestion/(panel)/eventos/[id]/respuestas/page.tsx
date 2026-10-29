@@ -17,6 +17,8 @@ import CopiarTexto from "../../CopiarTexto";
 import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
 import NombreJugador from "@/components/numeros/Nombre";
 import { hrefJugador } from "@/lib/numeros/enlaces";
+import { sinFichaQueVan } from "@/lib/numeros/respuestas";
+import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
@@ -181,6 +183,8 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       )}
 
       <div style={{ marginBottom: 20 }}><Numeros prueba="contadores" etiqueta="Respuestas del evento" columnas={cajas.length} grupos={cajas} /></div>
+      {/* D148: quien dijo «voy» sin ficha a un entreno en una pista «solo con ficha»: no cuenta, va aparte con su aviso. */}
+      <AvisoSinFicha personas={sinFichaQueVan(evento, jugadores, filasR.filter((r) => r.evento_id === evento.id))} pista={evento.solo_con_ficha_en} />
       <p className="pequeno" data-testid="limite-dudas">
         <b>Dudas: {dudasN}</b> · límite {diaCorto(lim.fecha)} {lim.hora}
         {!conDuda && <> · <span data-testid="no-confirmaron">{noConfirmaron} {noConfirmaron === 1 ? "pasó" : "pasaron"} a «no va» por no confirmar</span></>}

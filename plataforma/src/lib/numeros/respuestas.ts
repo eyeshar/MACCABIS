@@ -1,5 +1,6 @@
 import type { GrupoNum, PersonaNum } from "@/components/numeros/Numeros";
 import { convocadosDe, TEXTO_MOTIVO, type EventoFila, type JugadorBasico, type Motivo, type Respuesta } from "@/lib/eventos/dominio";
+import { fueraPorFicha } from "@/lib/respuestas/dominio";
 import { dudaAbierta, enMadrid, limiteDudas, madrid } from "@/lib/avisos/horario";
 import { hrefJugador } from "./enlaces";
 import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, type Defecto } from "@/lib/disponibilidad/porDefecto";
@@ -17,7 +18,7 @@ export function notaMotivo(motivo: Motivo | "horario" | "no_confirmo" | null | u
 }
 
 export function gruposEvento(
-  e: Pick<EventoFila, "tipo" | "equipo" | "oficial"> & { id?: string }, jugadores: JugadorBasico[], filas: RespuestaPersona[], conMotivos = true, defecto?: Defecto,
+  e: Pick<EventoFila, "tipo" | "equipo" | "oficial" | "solo_con_ficha_en"> & { id?: string }, jugadores: JugadorBasico[], filas: RespuestaPersona[], conMotivos = true, defecto?: Defecto,
 ): GrupoNum[] {
   const porPersona = new Map(filas.map((r) => [r.person_id, r]));
   const g: Record<Respuesta, PersonaNum[]> = { va: [], duda: [], no: [], sin_responder: [] };
@@ -39,6 +40,15 @@ export function gruposEvento(
     { k: "sin", etiqueta: "sin responder", n: g.sin_responder.length, tono: "sin", personas: g.sin_responder },
     { k: "no", etiqueta: "no van", n: g.no.length, tono: "no", personas: g.no },
   ];
+}
+
+/** D148, solo gestores: quien no está invitado a un entreno en una pista «solo con ficha» por no tener ficha y aun así
+ *  dijo «voy» (en SportEasy): va aparte, fuera de los cuatro contadores, con el aviso `avisoSinFicha`. */
+export function sinFichaQueVan(e: Pick<EventoFila, "tipo" | "equipo" | "oficial" | "solo_con_ficha_en">, jugadores: JugadorBasico[], filas: Pick<RespuestaPersona, "person_id" | "respuesta">[]): PersonaNum[] {
+  const van = new Set(filas.filter((r) => r.respuesta === "va").map((r) => r.person_id));
+  return jugadores.filter((j) => van.has(j.person_id) && fueraPorFicha(e, j))
+    .map((j) => ({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: null }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 }
 
 /** D141, solo gestores: «Dudas: N · límite martes 27/10 20:00» y, pasado el límite, «M pasaron a "no va" por no confirmar». */

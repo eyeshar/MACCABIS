@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarGrupos, sinPrivados } from "@/lib/grupos/datos";
 import Grupos from "../Grupos";
+import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import "../../tablero/tablero.css";
 import "../grupos.css";
 
@@ -27,6 +28,7 @@ export default async function GruposEntreno({ params }: { params: Promise<{ even
           <span className="suave">{d.van.length} dicen «Voy» · {d.duda.length} dudan · <Link href={`/gestion/tablero?evento=${d.evento.id}`}>Abrir tablero</Link></span>
         </div>
       </div>
+      <AvisoSinFicha personas={d.sinFicha?.personas ?? []} pista={d.sinFicha?.pista} />
       <Grupos key={clave} d={sinPrivados(d)} />
     </>
   );

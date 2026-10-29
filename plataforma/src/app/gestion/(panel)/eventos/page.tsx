@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Volver from "@/components/nav/Volver";
 import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
-import { gruposEvento, lineaDudas, type RespuestaPersona } from "@/lib/numeros/respuestas";
+import { gruposEvento, lineaDudas, sinFichaQueVan, type RespuestaPersona } from "@/lib/numeros/respuestas";
+import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { exigirGestor } from "@/lib/sesion";
 import { chipEquipacion } from "@/lib/publico";
 import { diaYNumero, hoyMadrid } from "@/lib/dias";
@@ -10,7 +11,7 @@ import { avisoDeEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/l
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import type { Defecto } from "@/lib/disponibilidad/porDefecto";
 import {
-  esPlanFila, hhmm, pistaEfectiva, rangoHoras, resumenCopia, cambioParaVer, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,
+  esPlanFila, hhmm, noSeCopia, pistaEfectiva, rangoHoras, resumenCopia, cambioParaVer, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,
   type EventoFila, type JugadorBasico, type Pista,
 } from "@/lib/eventos/dominio";
 import FormularioCopia, { MarcarTodos } from "./FormularioCopia";
@@ -242,15 +243,19 @@ function Fila({ e, pistas, respuestas, jugadores, casilla, defecto }: { casilla?
       </td>
       <td data-label="Pista">
         {pe.porConfirmar ? <><b style={{ color: "var(--amarillo-tinta)" }}>Pista por confirmar</b>{pe.motivo && <span className="ev-sub" style={{ color: "var(--tinta-tenue)" }}>{pe.motivo}</span>}</> : pe.texto}
+        {e.solo_con_ficha_en && <span className="ev-sub" data-testid="pista-solo-ficha">Solo jugadores con ficha</span>}
       </td>
       <td data-label="Respuestas" className={respuestas.length > 0 ? "ev-celda-resp" : undefined}>
         {respuestas.length > 0 ? (
           <CuentasRespuestas id={e.id} grupos={gruposEvento(e, jugadores, respuestas, true, defecto)} nombre={`${tituloEvento(e)} ${diaYNumero(e.fecha)}`}
             dudas={e.estado === "programado" ? lineaDudas(e, gruposEvento(e, jugadores, respuestas, true, defecto), respuestas) : null} />
         ) : e.tipo === "liga" ? <span className="suave">Convocatoria el martes</span> : <span className="suave">—</span>}
+        <AvisoSinFicha personas={sinFichaQueVan(e, jugadores, respuestas)} pista={e.solo_con_ficha_en} />
       </td>
       <td data-label="SportEasy">
-        {esPlanFila(e) ? <span className="suave">No se copia</span> : e.sporteasy_estado === "copiado"
+        {esPlanFila(e) ? <span className="suave">No se copia</span> : noSeCopia(e)
+          ? <span className="suave" title={e.sporteasy_cambio ?? undefined} data-testid="no-se-copia">No se copia</span>
+          : e.sporteasy_estado === "copiado"
           ? <span className="ev-copia ev-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10" /></svg>Al día</span>
           : <span className="pastilla etiqueta-aviso" title={cambioParaVer(e.sporteasy_cambio) ?? undefined}>{cancelado ? "Cancelación pendiente" : "Pendiente de copiar"}</span>}
       </td>

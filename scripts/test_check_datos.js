@@ -25,6 +25,7 @@ try {
   git('init', '-q', '-b', 'main');
   git('config', 'user.email', 'pruebas@example.invalid'); git('config', 'user.name', 'Pruebas'); git('config', 'commit.gpgsign', 'false');
   for (const f of ['scripts/check_datos_publicados.js', '.githooks/commit-msg']) escribe(f, fs.readFileSync(path.join(RAIZ, f), 'utf8'));
+  fs.chmodSync(path.join(DIR, '.githooks', 'commit-msg'), 0o755); // en Linux (GitHub Actions), un hook sin permiso de ejecucion se ignora
   escribe(LIGA, '{"jornadas":[1,2,3]}\n'); escribe('plataforma/src/data/liga.json', '{"jornadas":[1,2,3]}\n'); escribe('README.md', 'x\n');
   git('add', '-A'); git('commit', '-q', '-m', 'inicio');
   git('config', 'core.hooksPath', '.githooks');

@@ -1,2 +1,5 @@
 # Hooks de git (D134): siempre LF, o sh no los ejecuta
 .githooks/* text eol=lf
+
+# Calendarios .ics de referencia (pruebas:fuente-eventos): siempre CRLF, como los sirve la web (RFC 5545), también en Linux (D149)
+*.ics text eol=crlf

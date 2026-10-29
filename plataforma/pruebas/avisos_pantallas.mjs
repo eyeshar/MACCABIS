@@ -59,8 +59,9 @@ try {
 
   // =================== PLATAFORMA
   const { sql, url, anonKey } = pila;
-  const { leerLiga, cargarLiga } = await import('../scripts/cargar_liga.mjs');
-  await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
+  const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
+  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
   const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';

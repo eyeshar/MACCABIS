@@ -37,17 +37,21 @@ export async function firmar(claims, segundos = 3600) {
     .setIssuedAt().setExpirationTime(Math.floor(Date.now() / 1000) + segundos).sign(clave);
 }
 
-function descargarPostgrest() {
+/** PostgREST en pruebas/.bin/ (se descarga la primera vez). Atomico: varias suites a la vez no se pisan. */
+export function descargarPostgrest() {
   const win = process.platform === 'win32';
   const exe = path.join(BIN, win ? 'postgrest.exe' : 'postgrest');
   if (fs.existsSync(exe)) return exe;
   fs.mkdirSync(BIN, { recursive: true });
   // Windows en local; Linux en GitHub Actions (binario estatico, no necesita libpq).
   const fichero = win ? `postgrest-${POSTGREST_VERSION}-windows-x86-64.zip` : `postgrest-${POSTGREST_VERSION}-linux-static-x86-64.tar.xz`;
-  const comprimido = path.join(BIN, fichero);
-  execFileSync('curl', ['-sSfL', '-o', comprimido, `https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/${fichero}`]);
-  execFileSync(win ? path.join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : 'tar', [win ? '-xf' : '-xJf', comprimido, '-C', BIN]);
-  fs.rmSync(comprimido);
+  const tmp = fs.mkdtempSync(path.join(BIN, 'descarga-'));
+  try {
+    const comprimido = path.join(tmp, fichero);
+    execFileSync('curl', ['-sSfL', '-o', comprimido, `https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/${fichero}`]);
+    execFileSync(win ? path.join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : 'tar', [win ? '-xf' : '-xJf', comprimido, '-C', tmp]);
+    try { fs.renameSync(path.join(tmp, path.basename(exe)), exe); } catch (e) { if (!fs.existsSync(exe)) throw e; }
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
   return exe;
 }
 

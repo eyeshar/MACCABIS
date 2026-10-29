@@ -173,6 +173,8 @@ const t0 = Date.now();
 if (motivos.has('typecheck') && !fs.existsSync(path.join(PLAT, 'next-env.d.ts'))) {
   execFileSync(process.execPath, [path.join(PLAT, 'node_modules', 'next', 'dist', 'bin', 'next'), 'typegen'], { cwd: PLAT, stdio: 'ignore' });
 }
+// PostgREST, una vez y antes de nada (si no, varias suites lo descargan a la vez y se pisan)
+if (plan.some((s) => s.tipo !== 'logica')) (await import('../pila.mjs')).descargarPostgrest();
 // Un solo Chrome para toda la tanda: cada suite se conecta (PRUEBAS_NAVEGADOR_WS) en vez de abrir el suyo.
 const servidor = plan.some((s) => s.tipo === 'web') ? await chromium.launchServer({ channel: 'chrome', headless: true }) : null;
 if (servidor) apuntarProceso(servidor.process());
@@ -196,7 +198,12 @@ const ejecutar = (s, carril) => new Promise((listo) => {
     const r = { id: s.id, seg, codigo, oks };
     resultados.push(r);
     console.log(`${codigo === 0 ? '  bien ' : '  MAL  '} ${s.id.padEnd(34)} ${seg.toFixed(1).padStart(6)} s${oks ? `  (${oks} OK)` : ''}`);
-    if (codigo !== 0) console.log(texto.split(/\r?\n/).filter((l) => /FALLO|Error|PUERTO OCUPADO/.test(l)).slice(0, 15).map((l) => `         ${l.slice(0, 300)}`).join('\n'));
+    if (codigo !== 0) {
+      // los FALLO y, por si fue un error al arrancar, las ultimas lineas del registro
+      const lineas = texto.split(/\r?\n/).filter((l) => l.trim());
+      const fallos = lineas.filter((l) => /FALLO|PUERTO OCUPADO/.test(l)).slice(0, 15);
+      console.log([...fallos, '...', ...lineas.slice(-12)].map((l) => `         ${l.slice(0, 300)}`).join('\n'));
+    }
     listo(r);
   });
 });

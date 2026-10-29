@@ -70,8 +70,9 @@ const pila = await arrancar();
 let app, nav;
 try {
   const { sql, url, anonKey } = pila;
-  const { leerLiga, cargarLiga } = await import('../scripts/cargar_liga.mjs');
-  await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
+  const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
+  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
   const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
   // El proximo entreno sin pista propia con la pista como UBICACION LIBRE (D119), como el del 28/10/2026 (D138).

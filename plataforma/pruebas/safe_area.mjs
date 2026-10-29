@@ -31,8 +31,9 @@ const FORMAS = {
 // La barra de Safari (vertical) no es zona segura de la pagina: el viewport de la prueba es el util (844-~180).
 
 try {
-  const { cargarLiga, leerLiga } = await import('../scripts/cargar_liga.mjs');
-  await cargarLiga(pila.sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
+  const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
+  await cargarLiga(pila.sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
   await personas(pila, { jugadores: [['esteban-jon', JUGADOR]], gestores: [['Edu', GESTOR, 'martin-ortega-rico-eduardo']] });
 
   const nav = await webkit.launch();

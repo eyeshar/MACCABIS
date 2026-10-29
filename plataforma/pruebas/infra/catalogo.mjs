@@ -11,6 +11,11 @@ const PLAT = path.join(REPO, 'plataforma');
 export const SOLO_LOCAL = {
   'test:liga': 'lee las hojas de fuentes_fbm/ (fuera de git)',
   'test:regresion': 'lee .cache-jdm/ y data/raw/ (fuera de git)',
+  // Las hojas de la FBM llevan jugadores de otros equipos (D73): no van a un repositorio publico. Las suites que solo
+  // cargan la liga de paso usan en Actions la publicada (infra/liga.mjs); estas comprueban las estadisticas por jugador.
+  'pruebas:pantallas': 'comprueba el scouting y la liga por jugador: hojas de fuentes_fbm/ (fuera de git)',
+  'pruebas:liga-partidos': 'páginas de partido con su hoja: fuentes_fbm/ (fuera de git)',
+  'pruebas:liga': 'RLS de las estadísticas por jugador de la liga: hojas de fuentes_fbm/ (fuera de git)',
   'pruebas:eventos-real': 'Supabase real: claves de plataforma/.env.local',
   'pruebas:respuestas-real': 'Supabase real: claves de plataforma/.env.local',
   'pruebas:convocatoria-real': 'Supabase real: claves de plataforma/.env.local',

@@ -196,6 +196,10 @@ apagado la tarea solo envía avisos de prueba pendientes: no manda ningún recor
 
 ## Pruebas
 
+Por niveles (D149): `npm run pruebas:rapidas` en cada cambio (elige solo lo tocado) y la batería completa en GitHub
+Actions al subir la rama (`npm run pruebas:completas` en local, si hace falta). Reglas, puertos y tabla «si tocas X,
+pasa Y»: `CLAUDE.md` en la raíz del repositorio. Cada suite sigue pudiéndose pasar suelta:
+
 ```
 npm run pruebas
 ```

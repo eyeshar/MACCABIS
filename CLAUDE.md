@@ -69,6 +69,7 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
 |---|---|
 | `test:regresion` | lee `.cache-jdm/` y `data/raw/` (fuera de git) |
 | `test:liga` | lee las hojas de `fuentes_fbm/` (fuera de git) |
+| `pruebas:pantallas`, `pruebas:liga-partidos`, `pruebas:liga` | comprueban las estadísticas por jugador de la liga, que salen de las hojas de `fuentes_fbm/` (jugadores de otros equipos: fuera de git). Las suites que solo cargan la liga de paso (`navegacion`, `portada`, `avisos`, `safe-area`) usan en Actions la publicada en `data/` (`pruebas/infra/liga.mjs`) |
 | `pruebas:eventos-real`, `pruebas:respuestas-real`, `pruebas:convocatoria-real`, `pruebas:inicio-real` | solo lectura contra el Supabase real: claves de `plataforma/.env.local` |
 | `pruebas:solo-ficha-real` | ídem, y la foto previa de `privado/backups/` (prueba de la migración de D148) |
 

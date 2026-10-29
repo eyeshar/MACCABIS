@@ -223,6 +223,16 @@ ok(/rpc\("convocados_del_domingo"/.test(leer('src/lib/respuestas/jugador.ts')) &
 // D127: el aviso «Estás convocado» sale del servidor con la clave de servicio; su texto no lleva datos privados.
 const avConv = leer('src/lib/convocatoria/avisos.ts');
 ok(/import "server-only"/.test(avConv) && !/estadoInterruptor/.test(avConv) && /firmaConvocatoria/.test(avConv), 'aviso de convocatoria: solo en el servidor, sin depender del interruptor y con clave única por convocatoria');
+// D146 (ajuste del 28/10/2026): la tarea de avisos (service_role) no lee jugadores_privado (niveles): solo
+// marcas_disponibilidad(), que devuelve person_id y las dos marcas y solo ejecuta service_role.
+const MIG146 = sinComentarios(leer('supabase/migrations', '20261028233000_marcas_disponibilidad_servicio.sql'));
+const cuerpo146 = MIG146.slice(MIG146.indexOf('create function public.marcas_disponibilidad'), MIG146.indexOf('comment on function'));
+const servidorAvisos = leer('src/lib/avisos/servidor.ts').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
+ok(/revoke all on public\.jugadores_privado from service_role/.test(MIG146)
+  && /returns table \(person_id text, no_suele_entrenar boolean, nunca_partidos boolean\)/.test(cuerpo146) && !/nivel|posicion|nota|dobla|regla|sancion/.test(cuerpo146)
+  && /revoke execute on function public\.marcas_disponibilidad\(\) from public, anon, authenticated/.test(MIG146) && /grant execute on function public\.marcas_disponibilidad\(\) to service_role/.test(MIG146)
+  && /rpc\("marcas_disponibilidad"\)/.test(servidorAvisos) && !/jugadores_privado/.test(servidorAvisos),
+  'la tarea de avisos NO puede leer jugadores_privado (permisos quitados a service_role) y sí marcas_disponibilidad(), que solo da el jugador y sus dos marcas');
 
 console.log('\n== Página de partido de la liga (D129): por equipo en público; los rivales por jugador, solo gestores');
 {

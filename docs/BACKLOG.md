@@ -7,6 +7,10 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**Disponibilidad por defecto (28/10/2026, `feat/disponibilidad-por-defecto`, D146): MERGEADA en `main` (29/10/2026).**
+- [x] **OK de Iván a la vista previa y merge en `main` (29/10/2026)**; las dos migraciones ya estaban en el real con D111.
+- [ ] **Tablero y Panel con las ausencias por periodo (diferencia anterior a D146):** un jugador con una ausencia por periodo que cubre el evento y sin respuesta sale en «No van» en `/gestion/tablero` y en «Duda o sin responder» en el Panel. Decidir una sola regla y aplicarla en los dos (probablemente la del tablero: la ausencia ya es un «no»), con prueba de que cuadran.
+
 **«Pregunta al asistente» (28/10/2026, `feat/chat-ia`, D142):**
 - [x] Worker `maccabis-chat` en Cloudflare (plan Free comprobado), secretos y `CHAT_WORKER_URL` en Vercel; ruta `/api/chat`, página `/asistente`, acceso en Inicio, interruptor `CHAT_IA_ABIERTO` (por defecto «gestores»); `pruebas:chat-ia`; prueba real en la vista previa.
 - [x] Revisión de Iván del 28/10 aplicada (enlaces validados, prompt, D141, «Pensando…», norma 14).
@@ -137,6 +141,7 @@
      - **«No voy» con motivo y periodos de no disponibilidad (D87):** al responder «no voy», el jugador **elige un motivo** de una lista (como en SportEasy). Además puede marcar **periodos de no disponibilidad** (viaje, vacaciones…) **de forma visual**: en un calendario elige el **desde** y el **hasta** y el motivo; eso pone «no voy» con ese motivo en **todos los eventos del periodo** y en **los que se creen después dentro de él** (al crear un evento se miran los periodos vigentes). Puede ver, editar y borrar sus periodos. **Gestores:** ven motivos y periodos de todos (en Eventos y en el detalle de cada evento). **Resto de jugadores:** solo «no va» (D46, D82). Esquema nuevo (respuestas con motivo, periodos de no disponibilidad), con RLS como `asistencia_motivos`, backup y staging antes de real.
      - **Fase puente (D80):** la rutina C lee de SportEasy tanto los motivos como los periodos de no disponibilidad, y Gestión los muestra; los jugadores siguen respondiendo en SportEasy hasta el cambio.
      - Resto de migraciones de `docs/MIGRACION_WEB.md`.
+     - [ ] **Aviso al propio jugador de «no va (por defecto)» (D146, fuera del bloque de disponibilidad por defecto):** a quien tiene la marca «No suele entrenar», un aviso del tipo «Te hemos puesto que no vas al entreno del miércoles; cámbialo si vienes» y su estado visible en su zona. Va aquí (D78), cuando los jugadores respondan en la plataforma. Ojo: hoy las marcas no se ven nunca en la zona del jugador (salen como «sin responder»); el aviso debe hablar de *su* respuesta, sin nombrar la marca.
 
 0. **[CERRADO] Avisos de choque de equipación (D75)** — con la regla oficial (Bases 47 JDM, 5.11), mergeado a `main` el 06/10/2026.
    - [x] Equipaciones, regla, módulo único, web, Mi zona, gestión, Scouting, migración en producción y pruebas.

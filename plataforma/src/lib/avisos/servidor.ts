@@ -3,7 +3,7 @@ import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pistaEfectiva, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { horaDeEnvio } from "./horario";
-import { avisosPasoNoVa, conAvisosDeDudas, estadoPara, inicioDe, invitados, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
+import { avisosPasoNoVa, conAvisosDeDudas, inicioDe, invitados, pendienteDe, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
 import { TEXTO_PRUEBA, textoCambio, textoCancelacion, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
 
 // Envio de avisos al movil (D99.5): Web Push estandar con claves VAPID. Corre SOLO en el servidor con la clave de
@@ -111,15 +111,37 @@ export async function enviarPendientes(sb: SupabaseClient, ahora = new Date()) {
   return { pendientes: pendientes.length, enviados };
 }
 
+/** D146: marcas de disponibilidad por defecto y excepciones de entreno. La tarea NO lee jugadores_privado (niveles, D39):
+ *  las marcas llegan con marcas_disponibilidad() (solo person_id y las dos marcas; solo la ejecuta service_role). Si la
+ *  migracion aun no esta en la base (funcion o tabla que no existe), sin marcas y un aviso en el log: los recordatorios
+ *  siguen saliendo como antes. Cualquier otro error hace fallar la tarea, como el resto de lecturas. */
+async function leerDefecto(sb: SupabaseClient) {
+  const falta = (e: { code?: string } | null) => !!e && ["42883", "42P01", "PGRST202", "PGRST205"].includes(e.code ?? "");
+  const [m, q] = await Promise.all([
+    sb.rpc("marcas_disponibilidad"),
+    sb.from("entreno_defecto_quitado").select("evento_id, person_id"),
+  ]);
+  if (falta(m.error) || falta(q.error)) {
+    console.warn("disponibilidad por defecto: migraciones 20261028230000/20261028233000 sin aplicar; recordatorios sin marcas");
+    return { marcas: new Map<string, { no_suele_entrenar: boolean; nunca_partidos: boolean }>(), quitados: [] };
+  }
+  if (m.error) throw new Error(`marcas: ${m.error.message}`);
+  if (q.error) throw new Error(`excepciones de entreno: ${q.error.message}`);
+  const filas = (m.data ?? []) as { person_id: string; no_suele_entrenar: boolean; nunca_partidos: boolean }[];
+  return { marcas: new Map(filas.map((f) => [f.person_id, { no_suele_entrenar: f.no_suele_entrenar, nunca_partidos: f.nunca_partidos }])), quitados: (q.data ?? []) as { evento_id: string; person_id: string }[] };
+}
+
 async function cargarBase(sb: SupabaseClient) {
-  const [eventos, pistas, jugadores, respuestas, ausencias] = await Promise.all([
+  const [eventos, pistas, jugadoresSinMarcas, respuestas, ausencias, defecto] = await Promise.all([
     leer(sb.from("eventos").select(COLUMNAS).eq("temporada", "2026-27"), "eventos") as Promise<EventoBase[]>,
     leer(sb.from("pistas").select("id, slug, nombre, nombre_corto, direccion, uso, estado, es_de_serie, num_pistas, nota"), "pistas") as Promise<Pista[]>,
     leer(sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol"), "jugadores") as Promise<(JugadorPlan & { nombre_visible: string })[]>,
     leer(sb.from("respuestas").select("evento_id, person_id, respuesta, motivo, origen, cambiado_en"), "respuestas") as Promise<{ evento_id: string; person_id: string; respuesta: RespuestaTexto; motivo: string | null; origen: string; cambiado_en: string | null }[]>,
     leer(sb.from("ausencias_periodo").select("person_id, desde, hasta, borrada_en"), "ausencias") as Promise<{ person_id: string; desde: string; hasta: string | null; borrada_en: string | null }[]>,
+    leerDefecto(sb),
   ]);
-  return { eventos, pistas, jugadores, respuestas, ausencias };
+  const jugadores = jugadoresSinMarcas.map((j) => ({ ...j, marcas: defecto.marcas.get(j.person_id) ?? null }));
+  return { eventos, pistas, jugadores, respuestas, ausencias, quitados: defecto.quitados };
 }
 
 /** Alertas de cambios despues del martes (D99.8) -> un aviso a cada gestor, con las horas de silencio. */
@@ -166,7 +188,7 @@ export async function ejecutarTarea(ahora = new Date()) {
   const cerradas = await cerrarDudas(sb, ahora);
   const base = await cargarBase(sb);
   const eventos = base.eventos.map((e) => aPlan(e, base.pistas));
-  const datos = { ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias };
+  const datos = { ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias, quitados: base.quitados };
   // Recordatorios: los del club (con el interruptor encendido) y los planes con «recordar un dia antes» (D118: siempre);
   // el aviso de las «duda» (D141) se junta con el que ya salga ese dia a esa persona.
   const recordatorios = conAvisosDeDudas(
@@ -215,7 +237,7 @@ export async function recordatorioManual(eventoId: string) {
   const ahora = new Date();
   const envio = horaDeEnvio(ahora, inicioDe(plan));
   const filas: FilaAviso[] = invitados(plan, base.jugadores)
-    .filter((j) => estadoPara(j.person_id, plan, base.respuestas, base.ausencias) === "sin_responder")
+    .filter((j) => pendienteDe(j, plan, base))
     .map((j) => {
       const t = e.tipo === "entreno" ? { ...textoEntrenoHoy(plan), titulo: "Entreno: ¿vas?" } : e.tipo === "liga" ? textoMartes(e.fecha, [String(e.inicio ?? "").slice(0, 5)].filter(Boolean)) : textoOtro(plan, "24h");
       return { ...t, clave: `rec:manual:${e.id}:${ahora.getTime()}:${j.person_id}`, tipo: "recordatorio" as const, person_id: j.person_id, eventos: [e.id], url: e.tipo === "liga" ? urlDomingo(e.fecha) : urlEvento(e), programado_para: envio };

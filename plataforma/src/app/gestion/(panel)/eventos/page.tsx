@@ -7,6 +7,8 @@ import { chipEquipacion } from "@/lib/publico";
 import { diaYNumero, hoyMadrid } from "@/lib/dias";
 import { fechaHora } from "@/lib/fechas";
 import { avisoDeEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
+import { cargarDefecto } from "@/lib/convocatoria/defecto";
+import type { Defecto } from "@/lib/disponibilidad/porDefecto";
 import {
   esPlanFila, hhmm, pistaEfectiva, rangoHoras, resumenCopia, cambioParaVer, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,
   type EventoFila, type JugadorBasico, type Pista,
@@ -34,11 +36,12 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   const filtro: Filtro = FILTROS.some((x) => x.id === f) ? (f as Filtro) : "proximos";
   const { supabase } = await exigirGestor();
   const hoy = hoyMadrid();
-  const [todos, pistas, jugadores, { data: filasResp }, { data: importaciones }, { data: encendidoWeb }] = await Promise.all([
+  const [todos, pistas, jugadores, { data: filasResp }, { data: importaciones }, { data: encendidoWeb }, defecto] = await Promise.all([
     cargarEventos(supabase, { conPlanes: true }), cargarPistas(supabase), cargarJugadores(supabase),
     supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle, leido_en"),
     supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, aceptadas, bloqueadas").order("en", { ascending: false }).limit(4),
     supabase.rpc("respuestas_web_encendido"),
+    cargarDefecto(supabase),
   ]);
   // Los planes no oficiales (D118) solo salen en su filtro: el resto de la pantalla es lo del club.
   const eventos = todos.filter((e) => !esPlanFila(e));
@@ -119,7 +122,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
               <table className="gs-tabla ev-tabla" data-testid="tabla-eventos">
                 <thead><tr><th>Fecha</th><th>Evento</th><th>Pista</th><th>Respuestas</th><th>SportEasy</th></tr></thead>
                 <tbody>
-                  {lista.map((e) => <Fila key={e.id} casilla={filtro === "pendientes"} e={e} pistas={pistas} respuestas={resp.get(e.id) ?? []} jugadores={jugadores} />)}
+                  {lista.map((e) => <Fila key={e.id} casilla={filtro === "pendientes"} e={e} pistas={pistas} respuestas={resp.get(e.id) ?? []} jugadores={jugadores} defecto={defecto} />)}
                 </tbody>
               </table>
             </div>
@@ -215,7 +218,7 @@ function Envoltorio({ activo, children }: { activo: boolean; children: React.Rea
   return activo ? <FormularioCopia>{children}</FormularioCopia> : <>{children}</>;
 }
 
-function Fila({ e, pistas, respuestas, jugadores, casilla }: { casilla?: boolean; e: EventoFila; pistas: Pista[]; respuestas: RespuestaPersona[]; jugadores: JugadorBasico[] }) {
+function Fila({ e, pistas, respuestas, jugadores, casilla, defecto }: { casilla?: boolean; e: EventoFila; pistas: Pista[]; respuestas: RespuestaPersona[]; jugadores: JugadorBasico[]; defecto: Defecto }) {
   const pe = pistaEfectiva(e, pistas);
   const aviso = chipEquipacion(avisoDeEvento(e));
   const cancelado = e.estado === "cancelado";
@@ -242,8 +245,8 @@ function Fila({ e, pistas, respuestas, jugadores, casilla }: { casilla?: boolean
       </td>
       <td data-label="Respuestas" className={respuestas.length > 0 ? "ev-celda-resp" : undefined}>
         {respuestas.length > 0 ? (
-          <CuentasRespuestas id={e.id} grupos={gruposEvento(e, jugadores, respuestas)} nombre={`${tituloEvento(e)} ${diaYNumero(e.fecha)}`}
-            dudas={e.estado === "programado" ? lineaDudas(e, gruposEvento(e, jugadores, respuestas), respuestas) : null} />
+          <CuentasRespuestas id={e.id} grupos={gruposEvento(e, jugadores, respuestas, true, defecto)} nombre={`${tituloEvento(e)} ${diaYNumero(e.fecha)}`}
+            dudas={e.estado === "programado" ? lineaDudas(e, gruposEvento(e, jugadores, respuestas, true, defecto), respuestas) : null} />
         ) : e.tipo === "liga" ? <span className="suave">Convocatoria el martes</span> : <span className="suave">—</span>}
       </td>
       <td data-label="SportEasy">

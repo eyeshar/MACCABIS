@@ -45,6 +45,7 @@ export const REGLAS = {
   "1.4": "Doblar solo si los partidos no empiezan a la misma hora",
   "1.5": "Solo con el equipo en el que tiene ficha",
   "1.6": "Los sancionados no se convocan",
+  "1.7": "«Solo entreno: nunca a partidos» (marca privada): no se convoca nunca, ni para cubrir huecos",
   "2.1": "Bases: ideal 2 puros; los de reserva cuentan como base",
   "2.2": "Exteriores: ideal 4; si faltan, los bases cuentan como exteriores",
   "2.3": "Interiores: ideal 4, mínimo 3, evitar 5",
@@ -68,7 +69,12 @@ export type Aviso = { regla: CodigoRegla; gravedad: Gravedad; texto: string; equ
 
 // ---------------------------------------------------------------- entrada
 export type PartidoEntrada = { evento_id: string; equipo: Equipo; inicio: string | null; dificultad: Dificultad };
-export type DatosPrivados = { posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null; dobla: boolean; regla: ReglaPersonal };
+export type DatosPrivados = {
+  posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null; dobla: boolean; regla: ReglaPersonal;
+  /** «Solo entreno: nunca a partidos» (D146, regla 1.7): no se propone nunca. Distinto de `solo_entreno` (el rol), que sí
+   *  entra para cubrir huecos con menos de 20 disponibles. */
+  nunca_partidos?: boolean;
+};
 export type JugadorEntrada = {
   person_id: string;
   nombre: string;
@@ -141,6 +147,7 @@ const posicionDe = (j: JugadorEntrada, c?: Convocado): Posicion | null => c?.pos
 const lineaDe = (j: JugadorEntrada, c?: Convocado): Linea => { const p = posicionDe(j, c); return p ? LINEA_DE[p] : "exterior"; };
 const nivelDe = (j: JugadorEntrada) => VALOR_NIVEL[datos(j).nivel ?? "C"];
 const disponibleEn = (j: JugadorEntrada, e: Equipo) => j.respuesta[e] === "va";
+const nuncaPartidos = (j: JugadorEntrada) => !!j.privado?.nunca_partidos;
 const porId = (a: { person_id: string }, b: { person_id: string }) => (a.person_id < b.person_id ? -1 : a.person_id > b.person_id ? 1 : 0);
 
 export const tieneDeuda = (j: JugadorEntrada) => j.domingosFuera >= LIMITES.deudaDomingos;
@@ -177,10 +184,10 @@ export function ordenPartidos(partidos: PartidoEntrada[]) {
   return [...partidos].sort((a, b) => VALOR_DIFICULTAD[b.dificultad] - VALOR_DIFICULTAD[a.dificultad] || (a.equipo === "MdA" ? -1 : 1));
 }
 
-/** Disponibles del domingo: dicen «voy» a algun partido que se juega y no estan sancionados. */
+/** Disponibles del domingo: dicen «voy» a algun partido que se juega y no estan sancionados ni son «nunca a partidos». */
 function contarDisponibles(entrada: Entrada) {
   const eqs = entrada.partidos.map((p) => p.equipo);
-  return entrada.jugadores.filter((j) => !j.sancionado && eqs.some((e) => disponibleEn(j, e) && j.ficha[e])).length;
+  return entrada.jugadores.filter((j) => !j.sancionado && !nuncaPartidos(j) && eqs.some((e) => disponibleEn(j, e) && j.ficha[e])).length;
 }
 export function maximoPorEquipo(disponibles: number, nPartidos: number) {
   if (disponibles <= LIMITES.umbralAmpliar || nPartidos === 0) return LIMITES.maximo;
@@ -270,6 +277,7 @@ export function revisar(entrada: Entrada, convocatoria: Convocatoria, sinConvoca
       const d = datos(j);
       if (!j.ficha[e]) avisos.push({ regla: "1.5", gravedad: "error", equipo: e, person_id: j.person_id, texto: `${j.nombre} no tiene ficha del ${e}.` });
       if (j.sancionado) avisos.push({ regla: "1.6", gravedad: "error", equipo: e, person_id: j.person_id, texto: `${j.nombre} está sancionado.` });
+      if (nuncaPartidos(j)) avisos.push({ regla: "1.7", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} es «solo entreno: nunca a partidos».` });
       const resp = j.respuesta[e] ?? "sin_responder";
       if (resp !== "va") avisos.push({ regla: "0.1", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} ${resp === "no" ? "dijo «no voy»" : resp === "duda" ? "tiene «duda»" : "no ha respondido"} a este partido.` });
       if (j.solo_entreno && disponibles >= LIMITES.umbralAmpliar) avisos.push({ regla: "1.2", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} es «solo entreno» y hay ${disponibles} disponibles.` });
@@ -325,7 +333,7 @@ export function revisar(entrada: Entrada, convocatoria: Convocatoria, sinConvoca
  *  convocado a el. Por orden de prioridad, como los demas listados. */
 function posiblesDe(jugadores: JugadorEntrada[], partidos: PartidoEntrada[], convocatoria: Convocatoria): Posible[] {
   return [...jugadores].sort(compararPrioridad).flatMap((j) => {
-    if (j.sancionado) return [];
+    if (j.sancionado || nuncaPartidos(j)) return [];
     const equipos = partidos.map((p) => p.equipo).filter((e) => j.respuesta[e] === "duda" && j.ficha[e] && !(convocatoria[e] ?? []).some((c) => c.person_id === j.person_id));
     return equipos.length ? [{ person_id: j.person_id, equipos }] : [];
   });
@@ -335,6 +343,7 @@ function posiblesDe(jugadores: JugadorEntrada[], partidos: PartidoEntrada[], con
 function motivoFuera(j: JugadorEntrada, partidos: PartidoEntrada[], disponibles: number): SinConvocar {
   const eqs = partidos.filter((p) => disponibleEn(j, p.equipo)).map((p) => p.equipo);
   if (j.sancionado) return { person_id: j.person_id, motivo: "Sancionado", regla: "1.6" };
+  if (nuncaPartidos(j)) return { person_id: j.person_id, motivo: "Solo entreno: nunca a partidos", regla: "1.7" };
   if (!eqs.some((e) => j.ficha[e])) return { person_id: j.person_id, motivo: `Sin ficha del ${eqs.join(" ni del ")}`, regla: "1.5" };
   if (j.solo_entreno && disponibles >= LIMITES.umbralAmpliar) return { person_id: j.person_id, motivo: "Solo entreno (20 o más disponibles)", regla: "1.2" };
   return { person_id: j.person_id, motivo: "No convocado a mano", regla: "4.1" };
@@ -360,6 +369,7 @@ export function proponer(entrada: Entrada): Propuesta {
     const dice = eqs.filter((e) => disponibleEn(j, e));
     if (!dice.length) continue; // no esta disponible: no sale ni en «sin convocar»
     if (j.sancionado) { fuera(j, "Sancionado", "1.6"); continue; }
+    if (nuncaPartidos(j)) { fuera(j, "Solo entreno: nunca a partidos", "1.7"); continue; }
     const puede = dice.filter((e) => j.ficha[e]);
     if (!puede.length) { fuera(j, `Sin ficha del ${dice.join(" ni del ")}`, "1.5"); continue; }
     if (j.solo_entreno && disponibles >= LIMITES.umbralAmpliar) { fuera(j, "Solo entreno (20 o más disponibles)", "1.2"); continue; }

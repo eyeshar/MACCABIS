@@ -9,6 +9,8 @@ import { convocadosDe, tituloEvento, TEXTO_MOTIVO, type Motivo } from "@/lib/eve
 import { hoyMadrid, sumarDias } from "@/lib/dias";
 import type { FilaTablero, PartidoTablero } from "./vista";
 import { hrefJugador } from "@/lib/numeros/enlaces";
+import { cargarDefecto } from "@/lib/convocatoria/defecto";
+import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto } from "@/lib/disponibilidad/porDefecto";
 
 // Lo que lee el tablero (D121), con la sesion del GESTOR: la base (RLS + is_gestor) decide. Nada de esto llega nunca a
 // un jugador.
@@ -87,22 +89,26 @@ export type TableroEvento = {
 export async function cargarTableroEvento(sb: Cliente, id: string): Promise<TableroEvento | null> {
   const e = await cargarEvento(sb, id);
   if (!e || e.oficial === false) return null;
-  const [jugadores, privados, resp, ausencias, enc] = await Promise.all([
+  const [jugadores, privados, resp, ausencias, enc, defecto] = await Promise.all([
     cargarJugadores(sb), sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel"),
     sb.from("respuestas").select("person_id, respuesta, motivo, origen, puesto_por_nombre").eq("evento_id", id),
-    ausenciasDel(sb, e.fecha), sb.rpc("respuestas_web_encendido"),
+    ausenciasDel(sb, e.fecha), sb.rpc("respuestas_web_encendido"), cargarDefecto(sb, [id]),
   ]);
   const priv = new Map(((privados.data ?? []) as Privado[]).map((p) => [p.person_id, p]));
   const rs = new Map(((resp.data ?? []) as { person_id: string; respuesta: RespuestaPartido; motivo: string | null; origen: string; puesto_por_nombre: string | null }[]).map((r) => [r.person_id, r]));
-  const filas: FilaTablero[] = convocadosDe(e, jugadores).map((j) => {
+  // D146, igual que el Panel: en un partido, un «nunca a partidos» sin responder no cuenta; en un entreno, quien «no suele
+  // entrenar» y no ha respondido es «no va (por defecto)», salvo que se le pasara a «sin responder» para este entreno.
+  const respuestaDe = (p: string) => rs.get(p)?.respuesta ?? "sin_responder";
+  const filas: FilaTablero[] = convocadosDe(e, jugadores).filter((j) => !fueraDelPartido(e, defecto.marcas.get(j.person_id), respuestaDe(j.person_id))).map((j) => {
     const p = priv.get(j.person_id), r = rs.get(j.person_id);
     const aus = ausencias.find((a) => a.person_id === j.person_id);
+    const porDefecto = !aus && noVaPorDefecto(e, defecto.marcas.get(j.person_id), respuestaDe(j.person_id), defecto.quitados.has(claveQuitado(id, j.person_id)));
     // Sin respuesta y con una ausencia que cubre el dia: cuenta como «no» (como en «Quién va», D99).
-    const valor: RespuestaPartido = r?.respuesta && r.respuesta !== "sin_responder" ? r.respuesta : aus ? "no" : "sin_responder";
+    const valor: RespuestaPartido = r?.respuesta && r.respuesta !== "sin_responder" ? r.respuesta : aus || porDefecto ? "no" : "sin_responder";
     return {
       person_id: j.person_id, href: hrefJugador(j.person_id), nombre: j.nombre_visible, posicion: p?.posicion ?? null, base_reserva: Boolean(p?.base_reserva), nivel: p?.nivel ?? null,
       ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, solo_entreno: j.rol === "solo_entreno", respuesta: { evento: valor }, invitadoA: ["evento"],
-      motivo: valor === "no" ? motivoTexto(r?.motivo ?? null) : null, ausencia: ausenciaTexto(aus), puestaPor: r?.origen === "gestor" ? r.puesto_por_nombre : null,
+      motivo: porDefecto ? NOTA_POR_DEFECTO : valor === "no" ? motivoTexto(r?.motivo ?? null) : null, ausencia: ausenciaTexto(aus), puestaPor: r?.origen === "gestor" ? r.puesto_por_nombre : null,
     };
   });
   const registro = await registroDe(sb, null, [id], new Map(jugadores.map((j) => [j.person_id, j.nombre_visible])));

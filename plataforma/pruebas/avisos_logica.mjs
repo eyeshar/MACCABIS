@@ -291,5 +291,32 @@ ok(AL.estadoSalud(new Date(t0.getTime() - 10 * 60000).toISOString(), t0) === 'ok
 ok(AL.estadoSalud(new Date(t0.getTime() - 41 * 60000).toISOString(), t0) === 'fallando', 'salud: hace 41 minutos, fallando');
 ok(AL.estadoSalud(null, t0) === 'fallando', 'salud: ninguna pasada correcta, fallando');
 
+console.log('\n== Disponibilidad por defecto (D146): «no suele entrenar» y «solo entreno: nunca a partidos»');
+{
+  // Sintéticos (D39): «nse» no suele entrenar (ficha del MdA), «nap» nunca a partidos (las dos fichas, rol jugador).
+  const NSE = { ...jug('nse', true, false), marcas: { no_suele_entrenar: true, nunca_partidos: false } };
+  const NAP = { ...jug('nap', true, true), marcas: { no_suele_entrenar: false, nunca_partidos: true } };
+  const conMarcas = (ahora, extra = {}) => datos(ahora, { jugadores: [...JUG, NSE, NAP], ...extra });
+  let r = P.planificar(conMarcas(M('2026-10-12', '19:05')));
+  ok(de(r, 'nse').length === 1 && de(r, 'nse')[0].titulo === 'Te falta 1 respuesta' && de(r, 'nse')[0].url === '/mi-zona/domingo/2026-10-18', 'lunes: a quien no suele entrenar solo le falta el partido (el entreno no cuenta)', JSON.stringify(de(r, 'nse')));
+  ok(de(r, 'nap').length === 1 && de(r, 'nap')[0].url === '/mi-zona/evento/e14' && de(r, 'nap')[0].eventos.join() === 'e14', 'lunes: a «nunca a partidos» solo le falta el entreno', JSON.stringify(de(r, 'nap')));
+  ok(de(r, 'jon').length === 1 && de(r, 'jon')[0].titulo === 'Te faltan 2 respuestas', 'sin marca, todo igual que antes');
+  r = P.planificar(conMarcas(M('2026-10-14', '10:05')));
+  ok(de(r, 'nse').length === 0, 'entreno, el mismo día a las 10:00: a quien no suele entrenar y no ha respondido no le llega nada (por defecto, no va)');
+  ok(de(r, 'nap').length === 1 && de(r, 'jon').length === 1, 'y a «nunca a partidos» y a quien no tiene marca, sí');
+  r = P.planificar(conMarcas(M('2026-10-14', '10:05'), { quitados: [{ evento_id: 'e14', person_id: 'nse' }] }));
+  ok(de(r, 'nse').length === 1 && de(r, 'nse')[0].clave === 'rec:dia:e14:nse', 'si un gestor se lo quita para ese entreno (vuelve a «sin responder»), le llega el recordatorio');
+  r = P.planificar(conMarcas(M('2026-10-21', '10:05'), { quitados: [{ evento_id: 'e14', person_id: 'nse' }] }));
+  ok(de(r, 'nse').length === 0, 'quitárselo en un entreno no vale para el siguiente');
+  r = P.planificar(conMarcas(M('2026-10-13', '10:05')));
+  ok(de(r, 'nse').length === 1 && de(r, 'nse')[0].clave === 'rec:martes:2026-10-18:nse', 'en un partido la marca «no suele entrenar» no cuenta: le llega el del martes');
+  ok(de(r, 'nap').length === 0, 'martes del partido: a «nunca a partidos» no le llega (no cuenta como pendiente)');
+  const sinNada = { respuestas: [], ausencias: [] };
+  ok(P.pendienteDe(NSE, entreno14, sinNada) === false && P.pendienteDe(NSE, mdaJ2, sinNada) === true, 'pendienteDe: «no suele entrenar», entreno no, partido sí');
+  ok(P.pendienteDe(NSE, entreno14, { respuestas: [{ evento_id: 'e14', person_id: 'nse', respuesta: 'va' }], ausencias: [] }) === false, 'si respondió, ya no está pendiente (manda su respuesta)');
+  ok(P.pendienteDe(NAP, mdaJ2, sinNada) === false && P.pendienteDe(NAP, entreno14, sinNada) === true, 'pendienteDe: «nunca a partidos», partido no, entreno sí');
+  ok(P.pendienteDe({ person_id: 'jon' }, entreno14, sinNada) === true && P.pendienteDe({ person_id: 'jon' }, mdaJ2, sinNada) === true, 'pendienteDe sin marcas: como siempre');
+}
+
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

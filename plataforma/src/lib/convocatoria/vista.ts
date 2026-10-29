@@ -9,6 +9,8 @@ export type FilaPrivada = {
   person_id: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null; dobla: boolean;
   regla: "fijo" | "comodin" | null; regla_equipo: Equipo | null; sancionado_hasta_jornada: number | null; nota: string | null;
   cambiado_en?: string; cambiado_por_nombre?: string | null;
+  /** D146: disponibilidad por defecto (solo gestores). */
+  no_suele_entrenar?: boolean; nunca_partidos?: boolean;
   /** Notas de referencia de la hoja de Ivan (D108): solo se muestran en «Datos de los jugadores». */
   nota_ataque?: Nivel | null; nota_defensa?: Nivel | null; nota_total?: Nivel | null; minutos?: number | null; pts_min?: number | null;
 };

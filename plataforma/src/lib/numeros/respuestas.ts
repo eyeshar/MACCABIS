@@ -2,10 +2,13 @@ import type { GrupoNum, PersonaNum } from "@/components/numeros/Numeros";
 import { convocadosDe, TEXTO_MOTIVO, type EventoFila, type JugadorBasico, type Motivo, type Respuesta } from "@/lib/eventos/dominio";
 import { dudaAbierta, enMadrid, limiteDudas, madrid } from "@/lib/avisos/horario";
 import { hrefJugador } from "./enlaces";
+import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, type Defecto } from "@/lib/disponibilidad/porDefecto";
 
 // Los cuatro contadores de un evento (van / dudan / sin responder / no van) con sus nombres (D139). Lo usan el Panel, Eventos y
 // las Respuestas del evento. `conMotivos` solo lo pasan las pantallas de gestion: el motivo y el detalle del «no» no salen nunca
-// de aqui hacia una pantalla de jugador (D46, D82).
+// de aqui hacia una pantalla de jugador (D46, D82). `defecto` (D146, marcas privadas) solo lo pasan las pantallas de
+// gestion: en un entreno, quien «no suele entrenar» y no ha respondido va a «no van» con la nota «Por defecto»; en un
+// partido, quien es «nunca a partidos» y no ha respondido no cuenta.
 export type RespuestaPersona = { person_id: string; respuesta: Respuesta; motivo?: Motivo | "horario" | "no_confirmo" | null; detalle?: string | null };
 
 export function notaMotivo(motivo: Motivo | "horario" | "no_confirmo" | null | undefined, detalle?: string | null) {
@@ -14,13 +17,19 @@ export function notaMotivo(motivo: Motivo | "horario" | "no_confirmo" | null | u
 }
 
 export function gruposEvento(
-  e: Pick<EventoFila, "tipo" | "equipo" | "oficial">, jugadores: JugadorBasico[], filas: RespuestaPersona[], conMotivos = true,
+  e: Pick<EventoFila, "tipo" | "equipo" | "oficial"> & { id?: string }, jugadores: JugadorBasico[], filas: RespuestaPersona[], conMotivos = true, defecto?: Defecto,
 ): GrupoNum[] {
   const porPersona = new Map(filas.map((r) => [r.person_id, r]));
   const g: Record<Respuesta, PersonaNum[]> = { va: [], duda: [], no: [], sin_responder: [] };
   for (const j of convocadosDe(e, jugadores)) {
     const r = porPersona.get(j.person_id);
     const respuesta = r?.respuesta ?? "sin_responder";
+    const m = defecto?.marcas.get(j.person_id);
+    if (fueraDelPartido(e, m, respuesta)) continue;
+    if (noVaPorDefecto(e, m, respuesta, !!e.id && !!defecto?.quitados.has(claveQuitado(e.id, j.person_id)))) {
+      g.no.push({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: NOTA_POR_DEFECTO });
+      continue;
+    }
     g[respuesta].push({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: conMotivos && respuesta === "no" ? notaMotivo(r?.motivo, r?.detalle) : null });
   }
   for (const l of Object.values(g)) l.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));

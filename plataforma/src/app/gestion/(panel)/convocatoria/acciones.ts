@@ -190,6 +190,8 @@ export async function deshacerRapido(fecha: string, equipos: Convocatoria): Prom
 export type CamposPrivados = {
   posicion: string | null; base_reserva: boolean; nivel: string | null; dobla: boolean;
   regla: "fijo" | "comodin" | null; regla_equipo: Equipo | null; sancionado_hasta_jornada: number | null; nota: string | null;
+  /** D146: disponibilidad por defecto (marcas privadas). */
+  no_suele_entrenar: boolean; nunca_partidos: boolean;
 };
 
 export async function guardarPrivado(personId: string, c: CamposPrivados): Promise<R> {
@@ -201,7 +203,8 @@ export async function guardarPrivado(personId: string, c: CamposPrivados): Promi
     person_id: personId, posicion: c.posicion || null, base_reserva: !!c.base_reserva, nivel: c.nivel || null, dobla: !!c.dobla,
     regla: c.regla || null, regla_equipo: c.regla === "fijo" ? c.regla_equipo : null,
     sancionado_hasta_jornada: c.sancionado_hasta_jornada && c.sancionado_hasta_jornada > 0 ? Math.floor(c.sancionado_hasta_jornada) : null,
-    nota: c.nota?.trim() || null, cambiado_en: new Date().toISOString(), cambiado_por_nombre: nombre,
+    nota: c.nota?.trim() || null, no_suele_entrenar: !!c.no_suele_entrenar, nunca_partidos: !!c.nunca_partidos,
+    cambiado_en: new Date().toISOString(), cambiado_por_nombre: nombre,
   };
   const { error: e } = await supabase.from("jugadores_privado").upsert(fila, { onConflict: "person_id" });
   if (e) return { ok: false, error: `No se pudo guardar: ${e.message}` };

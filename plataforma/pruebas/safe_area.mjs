@@ -20,7 +20,8 @@ fs.mkdirSync(SALIDA, { recursive: true });
 
 const { ok, fallos } = contador();
 const PUERTO = 3150;
-const e2e = await preparar({ puerto: PUERTO });
+// Con el asistente configurado (D142; el Worker no hace falta: solo se mira el boton flotante de los gestores).
+const e2e = await preparar({ puerto: PUERTO, envExtra: { CHAT_WORKER_URL: 'http://127.0.0.1:9/', CHAT_SECRET: 'solo-pruebas' } });
 const { APP, pila } = e2e;
 const JUGADOR = 'jugador@pruebas.local', GESTOR = 'gestor@pruebas.local';
 const iphone = devices['iPhone 14']; // 390x844
@@ -64,9 +65,12 @@ try {
   const PANTALLAS = [
     ['inicio', '/', null], ['entrar', '/entrar', null], ['agenda', '/agenda', 'jugador'],
     ['gestion', '/gestion', 'gestor'], ['liga', '/liga', null], ['estadisticas', '/liga/estadisticas', null],
+    ['inicio-gestor', '/', 'gestor'], ['convocatoria', '/gestion/convocatoria', 'gestor'], ['tablero', '/gestion/tablero', 'gestor'],
   ];
   // Cada boton/enlace de la cabecera y de la barra inferior, mas el boton «Entrar» del formulario.
-  const SEL = 'header.nv-cab a, header.nv-cab button, .nv-barra a, .nv-barra button, .zb a, main form button[type=submit]';
+  const SEL = 'header.nv-cab a, header.nv-cab button, .nv-barra a, .nv-barra button, .zb a, main form button[type=submit], .af-boton';
+  // Todo lo pulsable de la pantalla, para ver que el boton flotante del asistente no tapa nada.
+  const PULSABLES = 'a[href], button, input:not([type=hidden]), select, textarea, summary, [role=button], [role=tab]';
 
   for (const [forma, { viewport, insets }] of Object.entries(FORMAS)) {
     console.log(`\n== iPhone 14 ${forma}`);
@@ -96,6 +100,32 @@ try {
       // Cabecera: el fondo llega hasta arriba del todo (sin franja) y la fila empieza por debajo de la barra de estado.
       const cab = await p.evaluate(() => { const c = document.querySelector('header.nv-cab'); const r = c.getBoundingClientRect(); return { top: r.top, h: r.height }; });
       ok(cab.top === 0 && cab.h >= insets.top + 14 + 44, `${nombre} (${forma}): la cabecera empieza en 0 y mide ${Math.round(cab.h)}px`);
+      if (rol === 'gestor') {
+        // Boton flotante del asistente (D142): nunca tapa un boton. Cada elemento pulsable se lleva al centro de la pantalla
+        // (o lo mas cerca que deje el scroll: lo ultimo de la pagina queda abajo, junto al boton) y en su centro tiene que
+        // estar el mismo, no el boton flotante. Los de las barras fijas no se mueven: ahi tampoco puede solaparse.
+        const t = await p.evaluate(({ sel }) => {
+          const fab = document.querySelector('.af-boton');
+          if (!fab || !fab.getBoundingClientRect().width) return { fab: false };
+          const out = []; let n = 0;
+          for (const e of document.querySelectorAll(sel)) {
+            if (e.closest('.af-boton, .af-panel, [hidden], .nv-hoja, .nv-panel, .nv-saltar')) continue;
+            if (!e.getBoundingClientRect().width || getComputedStyle(e).visibility === 'hidden') continue;
+            e.scrollIntoView({ block: 'center', inline: 'nearest' });
+            const r = e.getBoundingClientRect(); const f = fab.getBoundingClientRect();
+            n++;
+            const nom = (e.textContent || e.getAttribute('aria-label') || e.tagName).trim().slice(0, 24);
+            const arriba = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            if (arriba?.closest('.af-boton')) out.push(`${nom}: tapado por el botón del asistente`);
+            const fijo = e.closest('.nv-barra, header.nv-cab, .zb, .tb-barra');
+            if (fijo && r.left < f.right && r.right > f.left && r.top < f.bottom && r.bottom > f.top) out.push(`${nom}: se solapa con el botón del asistente`);
+          }
+          window.scrollTo(0, 0);
+          return { fab: true, n, out };
+        }, { sel: PULSABLES });
+        ok(t.fab && t.n > 0 && t.out.length === 0, `${nombre} (${forma}): el botón del asistente está y no tapa ninguno de ${t.n ?? 0} elementos pulsables`, (t.out ?? []).join(' | ') || 'sin botón');
+        if (nombre === 'inicio-gestor') await p.screenshot({ path: path.join(SALIDA, `asistente-${forma}.png`) });
+      }
       await ctx.close();
     }
   }
@@ -114,6 +144,25 @@ try {
     await p.screenshot({ path: path.join(SALIDA, 'hoja-mas-vertical.png') });
     const h = await p.evaluate(() => { const r = document.querySelector('.nv-hoja:not([hidden])')?.getBoundingClientRect(); return r && { bottom: r.bottom, top: r.top, pb: getComputedStyle(document.querySelector('.nv-hoja:not([hidden])')).paddingBottom }; });
     ok(Boolean(h) && h.top >= insets.top && parseFloat(h.pb) >= 16 + insets.bottom, 'la hoja deja el margen de la barra de inicio y no sube bajo la barra de estado', JSON.stringify(h));
+    await ctx.close();
+  }
+
+  // Tablero con algo seleccionado: su barra fija de acciones ocupa el ancho entero; el boton del asistente se esconde mientras
+  // tanto (decision D142: encima de esa barra taparia las casillas de la lista).
+  console.log('\n== Asistente y barras fijas de Convocatoria y Tablero');
+  for (const [forma, { viewport, insets }] of Object.entries(FORMAS)) {
+    const ctx = await nav.newContext({ ...iphone, viewport, locale: 'es-ES', storageState: estados.gestor });
+    await ctx.route('**/*.css', reescribir(insets));
+    const p = await ctx.newPage();
+    await p.goto(`${APP}/gestion/tablero`, { waitUntil: 'networkidle' });
+    const casilla = p.getByRole('checkbox', { name: /^Seleccionar a / }).first();
+    if (!(await visto(casilla, 5000))) { ok(false, `tablero (${forma}): no hay a quién seleccionar`); await ctx.close(); continue; }
+    ok(await visto(p.locator('.af-boton')), `tablero (${forma}): sin selección, botón del asistente`);
+    await casilla.check();
+    await visto(p.getByTestId('barra-acciones'));
+    const b = await p.evaluate(() => ({ barra: !!document.querySelector('.tb-barra:not([hidden])'), fab: getComputedStyle(document.querySelector('.af-boton')).display }));
+    ok(b.barra && b.fab === 'none', `tablero (${forma}): con la barra de acciones en pantalla, el botón se esconde`, JSON.stringify(b));
+    await p.screenshot({ path: path.join(SALIDA, `tablero-barra-${forma}.png`) });
     await ctx.close();
   }
 

@@ -38,6 +38,12 @@ export const COPIAS = [
   ...COPIAS_ESTADISTICAS,
 ];
 const RESUMEN = 'historia_resumen.json';
+/** Guia del jugador (docs/GUIA_JUGADOR.md) como JSON importable: la base de conocimiento del asistente (D142). */
+const GUIA = 'guiaJugador.json';
+export const guiaJugador = () => JSON.stringify({
+  fuente: 'Generado por plataforma/scripts/sincronizar_equipacion.mjs desde docs/GUIA_JUGADOR.md. No editar a mano.',
+  texto: fs.readFileSync(path.join(RAIZ, '..', 'docs', 'GUIA_JUGADOR.md'), 'utf8').replace(/\r\n/g, '\n'),
+}, null, 2) + '\n';
 
 /** Cifras de la portada ("La historia del club"): partidos con estadisticas (sin incomparecencias), victorias en
  *  esos partidos, temporadas con datos y personas que han jugado en el club (sin el entrenador ni quien aún no tiene
@@ -74,6 +80,8 @@ export function desfasadas() {
   const f = path.join(DESTINO, RESUMEN);
   // Sin distinguir CRLF/LF: en Windows git puede sacar el fichero con CRLF.
   if (!fs.existsSync(f) || fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n') !== resumenHistoria()) copias.push(RESUMEN);
+  const g = path.join(DESTINO, GUIA);
+  if (!fs.existsSync(g) || fs.readFileSync(g, 'utf8').replace(/\r\n/g, '\n') !== guiaJugador()) copias.push(GUIA);
   return copias;
 }
 
@@ -86,6 +94,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     fs.mkdirSync(path.join(DESTINO, 'estadisticas'), { recursive: true });
     for (const [o, d] of COPIAS) fs.copyFileSync(path.join(DATOS, o), path.join(DESTINO, d));
     fs.writeFileSync(path.join(DESTINO, RESUMEN), resumenHistoria());
-    console.log(`Copiados ${COPIAS.length} ficheros y generado ${RESUMEN} en src/data/.`);
+    fs.writeFileSync(path.join(DESTINO, GUIA), guiaJugador());
+    console.log(`Copiados ${COPIAS.length} ficheros y generados ${RESUMEN} y ${GUIA} en src/data/.`);
   }
 }

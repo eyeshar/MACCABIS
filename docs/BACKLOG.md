@@ -7,6 +7,15 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
+**«Pregunta al asistente» (28/10/2026, `feat/chat-ia`, D142):**
+- [x] Worker `maccabis-chat` en Cloudflare (plan Free comprobado), secretos y `CHAT_WORKER_URL` en Vercel; ruta `/api/chat`, página `/asistente`, acceso en Inicio, interruptor `CHAT_IA_ABIERTO` (por defecto «gestores»); `pruebas:chat-ia`; prueba real en la vista previa.
+- [x] Revisión de Iván del 28/10 aplicada (enlaces validados, prompt, D141, «Pensando…», norma 14).
+- [x] Iván lo probó con su cuenta en la vista previa (28/10): OK, sin fugas. **Abierto a «todos» desde ya** (`CHAT_IA_ABIERTO=todos` en producción) con **5 preguntas por persona** y 60 en total.
+- [x] Merge en `main` con el OK de Iván a la vista previa (28/10), con las pruebas de lo tocado y `pruebas:grupos`. **Pendiente: la batería completa de pruebas** sobre `main`.
+- [ ] Comprobar en producción, sin crear cuentas, que el botón sale con sesión y no sin ella ni en la parte pública.
+- [ ] 29, 30 y 31/10 por la mañana: informe a Iván de las preguntas del día anterior y si se llegó al tope (solo contadores). Luego, mirar en el panel de Cloudflare el gasto real de neuronas.
+- [x] Botón flotante en lugar del enlace de Inicio (cambio de Iván del 28/10): hoja/panel, conversación en la pestaña hasta cerrar sesión, escondido con las barras de Convocatoria/Tablero; en `pruebas:safe-area`.
+- [x] Guía del jugador al día con D141 (texto de Iván, 28/10) y `guiaJugador.json` regenerado.
 **Visibilidad y dudas con hora límite (27/10/2026, `feat/visibilidad-y-dudas`, D141): hecho en la rama, SIN merge.**
 - [x] Jugadores: nombres de quien no ha contestado; motivos solo gestores; `pruebas:dudas` lo comprueba en HTML y en la API.
 - [x] Dudas: límite martes 20:00 (entreno miércoles y partido) o 24 h antes; aviso a las 12:00 juntado con otros; paso a «no va · no confirmó» con aviso; sin botón «Duda» desde el límite; «Dudas: N · límite…» en Panel, Eventos y Respuestas; «posibles» en la convocatoria.

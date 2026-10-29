@@ -93,9 +93,10 @@ siguen siendo manuales.
 
 ## Puertos y procesos de las pruebas
 
-- Cada worktree tiene **su bloque de 100 puertos en 41000-48999** (derivado de su carpeta; `npm run pruebas:completas --
-  --lista` lo dice). Lejos de Web TCPC (3000-3500, 4173, 5432) y de Supabase local (54321…). Dos worktrees pasan pruebas a
-  la vez sin chocar. `PRUEBAS_PUERTO_BASE=45000` fija otro bloque; `PRUEBAS_PUERTO_APP` cambia solo el de la app.
+- Cada worktree tiene **su bloque de 100 puertos en 22000-29999** (derivado de su carpeta; `npm run pruebas:completas --
+  --lista` lo dice). Lejos de Web TCPC (3000-3500, 4173, 5432) y de Supabase local (54321…), y por debajo de los puertos que
+  el sistema da a las conexiones salientes (Linux 32768-60999, Windows 49152-65535). Dos worktrees pasan pruebas a la vez
+  sin chocar. `PRUEBAS_PUERTO_BASE=25000` fija otro bloque; `PRUEBAS_PUERTO_APP` cambia solo el de la app.
   (`PILA_PUERTO_BASE` ya no existe.)
 - **Si un puerto está ocupado, la prueba se para al momento:** «PUERTO OCUPADO: puerto X ocupado por otro proceso (PID,
   programa)». Nunca prueba contra lo que esté escuchando ahí. Si es de otro proyecto o de otra sesión, **no lo cierres**:

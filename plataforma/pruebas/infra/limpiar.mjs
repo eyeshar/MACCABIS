@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // npm run pruebas:limpiar — quita lo que haya dejado una prueba de ESTE worktree (no deberia pasar: ver procesos.mjs).
 // Solo toca procesos cuya linea de ordenes lleva la carpeta de bases de este worktree (Postgres, PostgREST) o que son
-// la app de pruebas en un puerto de su bloque (next start -H 127.0.0.1 -p 41xxx-48xxx de este worktree). Nunca otros
+// la app de pruebas en un puerto de su bloque (next start -H 127.0.0.1 -p 22xxx-29xxx de este worktree). Nunca otros
 // proyectos (Web TCPC), otros worktrees ni un `next dev`.
 import fs from 'node:fs';
 import path from 'node:path';

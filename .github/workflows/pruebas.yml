@@ -55,5 +55,10 @@ jobs:
           key: pruebas-${{ runner.os }}-${{ matrix.grupo }}-${{ hashFiles('plataforma/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
             pruebas-${{ runner.os }}-${{ matrix.grupo }}-${{ hashFiles('plataforma/package-lock.json') }}-
+      - name: WebKit (solo si el grupo lleva pruebas:safe-area, que mira el iPhone con Safari)
+        run: |
+          if npm run -s pruebas:completas -- --lista --grupo ${{ matrix.grupo }}/4 | grep -q 'pruebas:safe-area '; then
+            cd plataforma && npx playwright install --with-deps webkit
+          fi
       - name: Batería (grupo ${{ matrix.grupo }})
         run: npm run pruebas:completas -- --grupo ${{ matrix.grupo }}/4

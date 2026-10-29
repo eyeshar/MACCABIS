@@ -258,7 +258,7 @@ try {
     await destino.dispatchEvent('drop', { dataTransfer: dt });
     await origen.dispatchEvent('dragend', { dataTransfer: dt }).catch(() => {});
   };
-  await arrastrar(pd.locator('[data-testid="cv-equipo-MdL"] li[data-person="sint-18"]'), pd.getByTestId('cv-equipo-MdA'));
+  await trasAccion(pd, () => arrastrar(pd.locator('[data-testid="cv-equipo-MdL"] li[data-person="sint-18"]'), pd.getByTestId('cv-equipo-MdA')));
   ok(await visto(pd.getByTestId('cv-mensaje').getByText(/Guardado \(ajuste manual\): Sint 18 al MdA\. Ojo: Sint 18 dijo «no voy» a este partido\./)), 'soltar a Sint 18 en el MdA: se guarda al momento y avisa (sin bloquear) de que dijo «no voy»', (await pd.getByTestId('cv-mensaje').innerText().catch(() => '')) + errores.join(' | '));
   await hasta(async () => (await equipoDe(pd, 'MdA')).includes('sint-18') && !(await equipoDe(pd, 'MdL')).includes('sint-18'), 5000);
   ok((await equipoDe(pd, 'MdA')).includes('sint-18') && !(await equipoDe(pd, 'MdL')).includes('sint-18'), 'Sint 18 pasa al MdA');
@@ -267,7 +267,7 @@ try {
   ok(await visto(pd.getByTestId('cv-proyeccion-MdA').getByText('Quién aporta')) && (await pd.getByTestId('cv-proyeccion-MdA').locator('.cv-aporte').allTextContents()).some((x) => x.startsWith('Sint 18')), 'la proyección del MdA se recalcula con él dentro', antesA);
   ok((await pd.getByTestId('cv-equipo-MdA').locator('.cv-aviso').allInnerTexts()).some((t) => t.includes('Sint 18 dijo «no voy» a este partido.')), 'y los avisos del equipo también');
   await foto(pd, 'convocatoria_arrastrar_1280');
-  await pd.getByTestId('cv-mensaje').getByRole('button', { name: 'Deshacer' }).click();
+  await trasAccion(pd, () => pd.getByTestId('cv-mensaje').getByRole('button', { name: 'Deshacer' }).click());
   ok(await visto(pd.getByTestId('cv-mensaje').getByText('Deshecho: Sint 18 al MdA.')), '«Deshacer» el último movimiento');
   await hasta(async () => (await equipoDe(pd, 'MdL')).includes('sint-18') && !(await equipoDe(pd, 'MdA')).includes('sint-18'), 5000);
   ok((await equipoDe(pd, 'MdL')).includes('sint-18') && !(await equipoDe(pd, 'MdA')).includes('sint-18'), 'Sint 18 vuelve al MdL (y queda en el historial)');

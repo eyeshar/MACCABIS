@@ -1,8 +1,10 @@
-// Puertos de las pruebas (D150). Cada worktree de Maccabis tiene su bloque de 100 puertos en 41000-48999, lejos de los de
-// Web TCPC (3000-3500, 4173, 5432) y de Supabase local (54321...): dos worktrees pasan pruebas a la vez sin chocar.
+// Puertos de las pruebas (D149). Cada worktree de Maccabis tiene su bloque de 100 puertos en 22000-29999: lejos de los de
+// Web TCPC (3000-3500, 4173, 5432) y de Supabase local (54321...), y por debajo de los que el sistema da a las conexiones
+// salientes (Linux: 32768-60999; Windows: 49152-65535), que podrian caer en un puerto de la prueba. Dos worktrees pasan
+// pruebas a la vez sin chocar.
 // El bloque se reparte en 5 carriles de 20; `pruebas:completas` usa varios carriles a la vez (una suite por carril).
 //
-//   PRUEBAS_PUERTO_BASE   fija el bloque (p. ej. 45000) en vez de derivarlo de la carpeta del worktree
+//   PRUEBAS_PUERTO_BASE   fija el bloque (p. ej. 25000) en vez de derivarlo de la carpeta del worktree
 //   PRUEBAS_CARRIL        0-4 (lo pone el corredor; por defecto 0)
 //   PRUEBAS_PUERTO_APP    otro puerto solo para la app (compatibilidad con lo de antes)
 //
@@ -16,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const ranura = parseInt(crypto.createHash('sha1').update(REPO.toLowerCase()).digest('hex').slice(0, 8), 16) % 80;
-export const BASE = Number(process.env.PRUEBAS_PUERTO_BASE) || 41000 + ranura * 100;
+export const BASE = Number(process.env.PRUEBAS_PUERTO_BASE) || 22000 + ranura * 100;
 export const CARRIL = Math.min(4, Math.max(0, Number(process.env.PRUEBAS_CARRIL) || 0));
 const b = BASE + CARRIL * 20;
 
@@ -62,7 +64,7 @@ export async function exigirLibres(puertos) {
   for (const [nombre, p] of Object.entries(puertos)) {
     if ((await escucha(p)) || !(await sePuedeAbrir(p))) {
       console.error(`\nPUERTO OCUPADO: puerto ${p} (${nombre}) ocupado por otro proceso${quien(p)}. La prueba se para sin usarlo.\n` +
-        `  Si es de otro proyecto o de otra sesión, no lo cierres: usa otro bloque con PRUEBAS_PUERTO_BASE (p. ej. ${BASE + 2000}).\n` +
+        `  Si es de otro proyecto o de otra sesión, no lo cierres: usa otro bloque con PRUEBAS_PUERTO_BASE (p. ej. ${BASE >= 26000 ? BASE - 4000 : BASE + 4000}).\n` +
         `  Si es un resto de una prueba de este worktree: npm run pruebas:limpiar`);
       process.exit(3);
     }

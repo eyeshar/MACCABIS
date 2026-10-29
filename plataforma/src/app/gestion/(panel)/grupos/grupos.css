@@ -45,3 +45,6 @@ body.gr-vista-equipo .nv-cab, body.gr-vista-equipo .nv-barra, body.gr-vista-equi
 body.gr-vista-equipo .gs-titulo, body.gr-vista-equipo [data-testid="alarma-tarea"], body.gr-vista-equipo [data-asistente] { display: none !important; }
 body.gr-vista-equipo { padding-bottom: 0 !important; }
 body.gr-vista-equipo .gr { padding-bottom: 16px; }
+/* D147: grupo que no cumple la estructura (solo Gestion) y etiqueta «hace de base». */
+.gr-resumen-mal { color: var(--error); font-weight: 600; }
+.gr-hace { background: var(--amarillo-claro); color: var(--amarillo-tinta); }

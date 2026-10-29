@@ -8,7 +8,9 @@ update public.pistas
        nota = 'Cerrada por obras: cada miércoles sale «Pista por confirmar» hasta que reabra o se fije otra pista.'
  where slug = 'valdebernardo';
 
+-- Uno que se haya cambiado después queda «pendiente» con la nota como descripción (el disparador la conserva): pasa a
+-- «Cambio sin describir», lo mismo que pone el disparador sin descripción.
 update public.eventos
-   set sporteasy_cambio = null
+   set sporteasy_cambio = case when sporteasy_estado = 'pendiente' then 'Cambio sin describir' end
  where tipo = 'entreno' and fecha between '2026-11-04' and '2027-05-05'
-   and sporteasy_estado = 'copiado' and sporteasy_cambio = 'Iván: no se copia a SportEasy (29/10/2026)';
+   and sporteasy_cambio = 'Iván: no se copia a SportEasy (29/10/2026)';

@@ -16,7 +16,7 @@ Mucha gente tiene **doble ficha** (juega en los dos equipos); algunos solo en un
 - **Liga:** Liga Municipal de Moratalaz (Juegos Deportivos Municipales, JDM), categoría Sénior Masculino. Distrito Moratalaz, Madrid.
 - **Dos instalaciones distintas (D88), que no hay que mezclar:**
   - **Partidos** (Liga Municipal de Moratalaz, JDM; domingos por la mañana): **Centro Deportivo Municipal Moratalaz**, calle de Valdebernardo, 2, 28030 Madrid. Metro: Pavones (L9).
-  - **Entrenos** (miércoles 20:30–22:30): **Valdebernardo (Faustina Valladolid)**, ahora **en obras**; la pista de cada semana se confirma en el calendario.
+  - **Entrenos** (miércoles 20:30–22:30): **Valdebernardo (Faustina Valladolid)**, reabierta desde el 04/11/2026 (estuvo en obras en octubre). **Solo pueden entrenar allí los jugadores con ficha en MdA o MdL** (D148).
   - «Calle de Valdebernardo» (donde se juega) y «Valdebernardo (Faustina Valladolid)» (donde se entrena) son sitios diferentes; los textos de la web lo aclaran.
 - **SportEasy:** sale de la operativa desde la J2 (11/10/2026, D44); respaldo dormido hasta noviembre. Disponibilidad y convocatoria, por la plataforma propia.
 - **Plataforma propia** (`plataforma/`, D55): cada jugador entra con su **enlace personal secreto** (`/j/<enlace>`); los 3 gestores con login real (D45). Los jugadores nunca ven niveles, posiciones ni motivos (D46).

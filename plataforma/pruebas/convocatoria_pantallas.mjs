@@ -134,8 +134,8 @@ try {
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapid.publicKey, VAPID_PRIVATE_KEY: vapid.privateKey, VAPID_SUBJECT: 'mailto:pruebas@maccabis.invalid',
     NODE_TLS_REJECT_UNAUTHORIZED: '0',
   };
-  ok(true, 'next build');
   app = await arrancarApp({ puerto: PUERTO, env });
+  ok(true, 'next build');
   nav = await abrirNavegador();
   const errores = [];
   const nuevaPagina = async (ctx) => {

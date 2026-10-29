@@ -176,8 +176,8 @@ try {
   // ------------------------------------------------------------------ App
   seccion('Compilacion de la app contra la pila local');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  log('  OK    next build');
   app = await arrancarApp({ puerto: PUERTO_APP, env });
+  log('  OK    next build');
 
   navegador = await abrirNavegador();
   const movil = { viewport: { width: 375, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'es-ES' };

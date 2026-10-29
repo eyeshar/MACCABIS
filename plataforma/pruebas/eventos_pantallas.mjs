@@ -70,8 +70,8 @@ try {
     // Sin envio de avisos: la clave de servicio y la VAPID reales de .env.local no valen para la pila local (cancelar un entreno
     // a menos de 14 dias avisa al movil y daba un error de firma JWT); los avisos se prueban en otras suites.
     SUPABASE_SERVICE_ROLE_KEY: '', VAPID_PRIVATE_KEY: '' };
-  ok(true, 'next build');
   app = await arrancarApp({ puerto: PUERTO, env });
+  ok(true, 'next build');
   nav = await abrirNavegador();
 
   async function entrar(p, email) {

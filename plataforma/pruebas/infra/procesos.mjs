@@ -47,6 +47,10 @@ function limpiarTodo() {
   try { fs.rmSync(FICHERO, { force: true }); } catch {}
 }
 process.on('exit', limpiarTodo);
+// embedded-postgres usa async-exit-hook, que al vaciarse el bucle (beforeExit) sale con process.exit(0) y pisa
+// process.exitCode: una suite que marca el fallo asi (npm run pruebas, pruebas:dudas) salia con 0 aunque fallara. Este
+// va antes y sale con el codigo que haya puesto la suite.
+process.prependListener('beforeExit', () => process.exit(process.exitCode ?? 0));
 for (const s of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) {
   try { process.on(s, () => { console.error(`\nInterrumpida (${s}): parando la pila y la app...`); process.exit(130); }); } catch {}
 }

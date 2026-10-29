@@ -76,8 +76,8 @@ try {
 
   console.log('== Compilacion');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  ok(true, 'next build');
   app = await arrancarApp({ puerto: PUERTO, env });
+  ok(true, 'next build');
 
   console.log('\n== HTTP');
   let r = await fetch(`${APP}/gestion/cuenta`, { redirect: 'manual' });

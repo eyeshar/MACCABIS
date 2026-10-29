@@ -94,8 +94,8 @@ try {
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapid.publicKey, VAPID_PRIVATE_KEY: vapid.privateKey, VAPID_SUBJECT: 'mailto:pruebas@maccabis.invalid',
     SUPABASE_SERVICE_ROLE_KEY: servicio, AVISOS_SECRETO: secreto, NODE_TLS_REJECT_UNAUTHORIZED: '0',
   };
-  ok(true, 'next build');
   app = await arrancarApp({ puerto: PUERTO, env });
+  ok(true, 'next build');
   nav = await abrirNavegador();
   const errores = [];
   const nuevaPagina = async (ctx) => { const p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(`${p.url()} ${e.message}`)); p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|favicon/.test(m.text())) errores.push(`${p.url()} ${m.text()}`); }); return p; };

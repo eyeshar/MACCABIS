@@ -72,8 +72,8 @@ try {
 
   console.log('\n== Compilacion');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  ok(true, 'next build');
   app = await arrancarApp({ puerto: PUERTO, env });
+  ok(true, 'next build');
 
   // =================== WEB PUBLICA (/liga, que sustituye a la pestana de GitHub Pages)
   for (const [etiqueta, ancho, alto, movil] of [['375', 375, 800, true], ['escritorio', 1280, 900, false]]) {

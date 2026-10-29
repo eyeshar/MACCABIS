@@ -7,8 +7,8 @@
 
 > Manda sobre todo lo de abajo. SportEasy sale de la operativa desde la J2 (D44): las tareas antiguas de "cargar el calendario en SportEasy" (plantilla del soporte, agente) quedan **canceladas**.
 
-**Disponibilidad por defecto (28/10/2026, `feat/disponibilidad-por-defecto`, D146): hecho en la rama, SIN merge.**
-- [ ] **Con el OK de Iván:** merge tras revisar la vista previa (las dos migraciones ya están en el real con D111).
+**Disponibilidad por defecto (28/10/2026, `feat/disponibilidad-por-defecto`, D146): MERGEADA en `main` (29/10/2026).**
+- [x] **OK de Iván a la vista previa y merge en `main` (29/10/2026)**; las dos migraciones ya estaban en el real con D111.
 - [ ] **Tablero y Panel con las ausencias por periodo (diferencia anterior a D146):** un jugador con una ausencia por periodo que cubre el evento y sin respuesta sale en «No van» en `/gestion/tablero` y en «Duda o sin responder» en el Panel. Decidir una sola regla y aplicarla en los dos (probablemente la del tablero: la ausencia ya es un «no»), con prueba de que cuadran.
 
 **«Pregunta al asistente» (28/10/2026, `feat/chat-ia`, D142):**

@@ -16,6 +16,7 @@
 //   npm run pruebas:grupos
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto } from './comun_e2e.mjs';
 import { sugerirGrupos, mensajeGrupos, resumenGrupo, tamanos, estructuraGrupo, avisosEstructura, etiquetaPapel, parejasJuntas } from '../src/lib/grupos/sugerir.ts';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const { ok, fallos, sumar } = contador();
 const J = (id, posicion, nivel = 'C', base_reserva = false) => ({ person_id: id, nombre: id.toUpperCase(), posicion, nivel, base_reserva });
@@ -158,7 +159,7 @@ const msg = mensajeGrupos('Grupos del entreno del miércoles 28', [{ nombre: 'Az
 ok(msg === 'Grupos del entreno del miércoles 28:\nAzules: A1, A2' && !/nivel|domingo|base|ext|int/i.test(msg), 'mensaje de WhatsApp: solo grupos y nombres');
 if (process.env.SOLO_PURAS) { console.log(fallos() ? `\n${fallos()} FALLO(S)` : '\nTodo OK (solo puras)'); process.exit(fallos() ? 1 : 0); }
 
-const e = await preparar({ puerto: 3125 });
+const e = await preparar();
 const { sql, APP } = e;
 try {
   const P = await personas(e.pila, { jugadores: [['esteban-jon', 'jon@pruebas.local'], ['gianatti-adriano', 'adri@pruebas.local']], gestores: [['Iván', 'ivan@pruebas.local', null]] });
@@ -221,7 +222,7 @@ try {
   await pg.getByTestId('grupo').first().waitFor({ timeout: 15000 });
   const n = await pg.getByTestId('grupo').count();
   ok(n === 2 && (await pg.locator('.gr-sin li').count()) === 0, `la sugerencia coloca a los 12 que van en 2 grupos (${n}) de 6`);
-  await pg.waitForTimeout(500);
+  await hasta(async () => (await resumenesBien(pg)) === true, 5000);
   const r1 = await resumenesBien(pg);
   const res1 = await pg.getByTestId('gr-resumen').allInnerTexts();
   ok(r1 === true && res1.every((x) => /^1 base · \d ext · \d int · nivel medio \d,\d( · \d de 6 juegan juntos el [a-zé]+)?$/.test(x)), `cada grupo con su estructura y nivel («${res1[0]}»), sin avisos`, r1);
@@ -281,20 +282,17 @@ try {
 
   console.log('\n== Varios repartos: duplicar y borrar');
   await pg.reload();
-  await pg.getByRole('button', { name: 'Duplicar' }).click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => pg.getByRole('button', { name: 'Duplicar' }).click());
   await pg.reload();
   ok((await sql`select count(*)::int n from public.grupos_repartos where evento_id = ${ent.id} and borrado_en is null`)[0].n === 2 && await visto(pg.getByRole('tab', { name: /5 contra 5 \(copia\)/ })), 'duplicar: dos repartos con nombre');
   await pg.getByRole('tab', { name: /5 contra 5 \(copia\)/ }).click();
   await pg.getByRole('button', { name: 'Borrar reparto' }).click();
-  await pg.getByRole('button', { name: 'Sí, borrar' }).click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => pg.getByRole('button', { name: 'Sí, borrar' }).click());
   ok((await sql`select count(*)::int n from public.grupos_repartos where evento_id = ${ent.id} and borrado_en is null`)[0].n === 1, 'borrar (confirmación en la página): queda uno');
 
   console.log('\n== Publicar a la plantilla: cada jugador ve SOLO su grupo y nunca niveles');
   await pg.reload();
-  await pg.getByTestId('publicar').locator('input').click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => pg.getByTestId('publicar').locator('input').click());
   ok((await sql`select publicado from public.grupos_repartos where evento_id = ${ent.id} and borrado_en is null`)[0].publicado === true, 'publicado');
   const wa = await pg.getByTestId('mensaje-grupos').innerText();
   ok(/^Grupos del entreno del/.test(wa) && /Azules: /.test(wa) && !/nivel|del domingo|interior|base/i.test(wa), '«Copiar mensaje de WhatsApp»: grupos y nombres, nada más');

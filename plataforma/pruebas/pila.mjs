@@ -5,30 +5,30 @@
 //   - PostgREST real (el mismo motor de la API de Supabase) delante.
 //   - Un doble de pruebas de Supabase Auth (GoTrue) con lo justo para el login
 //     por correo y contrasena de los gestores.
-//   - Una pasarela en :54321 que enruta /rest/v1 y /auth/v1 como Supabase.
-// La base se crea de cero en cada arranque, en una carpeta temporal.
+//   - Una pasarela que enruta /rest/v1 y /auth/v1 como Supabase.
+// La base se crea de cero en cada arranque, en pruebas/resultados/pg/ (fuera de git). Puertos: los del carril de este
+// worktree (infra/puertos.mjs, D149); si alguno esta ocupado, para sin arrancar. Al terminar (bien, mal, Ctrl+C o
+// matada de golpe) no queda nada encendido ni la carpeta de la base (infra/procesos.mjs).
 //
 //   node pruebas/pila.mjs     arranca la pila y la deja encendida (Ctrl+C para parar)
 
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import crypto from 'node:crypto';
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import EmbeddedPostgres from 'embedded-postgres';
 import postgres from 'postgres';
 import { SignJWT, jwtVerify } from 'jose';
 import { migrar, semilla } from '../scripts/db.mjs';
+import { PUERTOS as P, exigirLibres } from './infra/puertos.mjs';
+import { lanzar, apuntarProceso, apuntarCarpeta, olvidarCarpeta, matarArbol } from './infra/procesos.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const BIN = path.join(AQUI, '.bin');
 const POSTGREST_VERSION = 'v12.2.12';
-// PILA_PUERTO_BASE (opcional) desplaza los tres puertos: dos sesiones en worktrees distintos (D114) pueden levantar su pila
-// a la vez sin pelearse (p. ej. PILA_PUERTO_BASE=55321 -> 55329, 55330 y 55321).
-const BASE = Number(process.env.PILA_PUERTO_BASE) || 54321;
-export const PUERTOS = { pg: BASE + 8, rest: BASE + 9, pasarela: BASE };
+export const PUERTOS = { pg: P.pg, rest: P.rest, pasarela: P.pasarela };
 export const JWT_SECRET = 'secreto-solo-para-pruebas-locales-de-maccabis-000000';
 const clave = new TextEncoder().encode(JWT_SECRET);
 
@@ -38,14 +38,16 @@ export async function firmar(claims, segundos = 3600) {
 }
 
 function descargarPostgrest() {
-  const exe = path.join(BIN, 'postgrest.exe');
+  const win = process.platform === 'win32';
+  const exe = path.join(BIN, win ? 'postgrest.exe' : 'postgrest');
   if (fs.existsSync(exe)) return exe;
   fs.mkdirSync(BIN, { recursive: true });
-  const zip = path.join(BIN, 'postgrest.zip');
-  const url = `https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/postgrest-${POSTGREST_VERSION}-windows-x86-64.zip`;
-  execFileSync('curl', ['-sSL', '-o', zip, url]);
-  execFileSync(path.join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', BIN]);
-  fs.rmSync(zip);
+  // Windows en local; Linux en GitHub Actions (binario estatico, no necesita libpq).
+  const fichero = win ? `postgrest-${POSTGREST_VERSION}-windows-x86-64.zip` : `postgrest-${POSTGREST_VERSION}-linux-static-x86-64.tar.xz`;
+  const comprimido = path.join(BIN, fichero);
+  execFileSync('curl', ['-sSfL', '-o', comprimido, `https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/${fichero}`]);
+  execFileSync(win ? path.join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : 'tar', [win ? '-xf' : '-xJf', comprimido, '-C', BIN]);
+  fs.rmSync(comprimido);
   return exe;
 }
 
@@ -67,14 +69,28 @@ function esperarPuerto(puerto, ms = 30000) {
 const leerCuerpo = req => new Promise(ok => { let b = ''; req.on('data', c => (b += c)); req.on('end', () => ok(b)); });
 const hash = s => crypto.createHash('sha256').update(s).digest('hex');
 
+// Clave anonima fija (mismas fechas siempre): la web compilada contra la pila sale identica entre suites y entre tandas,
+// y se reutiliza la compilacion (infra/app.mjs). Solo vale contra esta pila local, con el secreto de pruebas.
+const ANON_KEY_FIJA = new SignJWT({ role: 'anon', iss: 'supabase-local' }).setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+  .setIssuedAt(1767225600).setExpirationTime(4102444800).sign(clave);
+
+/** El entorno con el que se compila la web contra la pila de este carril. Sirve tambien a las suites que no necesitan
+ *  base (cuadre, privacidad): misma compilacion que las demas, sin volver a compilar. */
+export const entornoPila = async () => ({ NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${PUERTOS.pasarela}`, NEXT_PUBLIC_SUPABASE_ANON_KEY: await ANON_KEY_FIJA });
+
 export async function arrancar({ log = () => {} } = {}) {
+  // y el de la app del carril, para que una suite web se pare al momento y no tras levantar la pila
+  await exigirLibres({ 'pila: pasarela': PUERTOS.pasarela, 'pila: postgres': PUERTOS.pg, 'pila: postgrest': PUERTOS.rest, app: P.app });
   // La cache de datos de Next (unstable_cache: la fuente del calendario) sobrevive entre compilaciones: lo guardado por
   // la suite anterior (otra base, con otras fechas) saldria en esta. Cada pila es una base nueva: se vacia.
   fs.rmSync(path.join(AQUI, '..', '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'maccabis-pg-'));
+  const RES = path.join(AQUI, 'resultados', 'pg');
+  fs.mkdirSync(RES, { recursive: true });
+  const dir = apuntarCarpeta(fs.mkdtempSync(path.join(RES, `c${process.env.PRUEBAS_CARRIL || 0}-`)));
   const pg = new EmbeddedPostgres({ databaseDir: dir, user: 'postgres', password: 'postgres', port: PUERTOS.pg, persistent: false, onLog: () => {}, onError: () => {} });
   await pg.initialise();
   await pg.start();
+  apuntarProceso(pg.process);
   const url = `postgres://postgres:postgres@127.0.0.1:${PUERTOS.pg}/postgres`;
   const sql = postgres(url, { onnotice: () => {}, max: 2 });
   await sql.unsafe(fs.readFileSync(path.join(AQUI, 'supabase_local.sql'), 'utf8'));
@@ -97,10 +113,10 @@ export async function arrancar({ log = () => {} } = {}) {
   ].join('\n'));
   // PostgREST para Windows necesita libpq.dll: la trae el propio Postgres embebido.
   const binPg = path.join(AQUI, '..', 'node_modules', '@embedded-postgres', 'windows-x64', 'native', 'bin');
-  const rest = spawn(exe, [conf], { stdio: 'ignore', env: { ...process.env, PATH: `${binPg}${path.delimiter}${process.env.PATH}` } });
+  const rest = lanzar(exe, [conf], { stdio: 'ignore', env: { ...process.env, PATH: `${binPg}${path.delimiter}${process.env.PATH}` } });
   await esperarPuerto(PUERTOS.rest);
 
-  const anonKey = await firmar({ role: 'anon', iss: 'supabase-local' }, 3600 * 24 * 365);
+  const anonKey = await ANON_KEY_FIJA;
 
   // --- Doble de Supabase Auth (solo lo que usa la app) ---
   async function sesionPara(u) {
@@ -219,13 +235,14 @@ export async function arrancar({ log = () => {} } = {}) {
 
   async function parar() {
     pasarela.close();
-    rest.kill();
+    matarArbol(rest.pid);
     await sql.end();
     await pg.stop();
-    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5 });
+    olvidarCarpeta(dir);
   }
 
-  return { sql, url: `http://127.0.0.1:${PUERTOS.pasarela}`, anonKey, crearUsuario, parar, firmar };
+  return { sql, url: (await entornoPila()).NEXT_PUBLIC_SUPABASE_URL, anonKey, crearUsuario, parar, firmar };
 }
 
 // Modo manual: arranca y deja la pila encendida para `npm run dev`.

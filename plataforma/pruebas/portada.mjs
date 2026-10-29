@@ -11,12 +11,12 @@
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { arrancar } from './pila.mjs';
 import { desfasadas } from '../scripts/sincronizar_equipacion.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -37,7 +37,8 @@ const jonUltimos = jonJugados.filter((g) => g.pn === jonUltimaJ);
 const jonEquipos = [...new Set(jonUltimos.map((g) => ({ MDA: 'MdA', MDL: 'MdL' })[g.eq]))].join(' y ');
 const jonPtsUltima = jonUltimos.reduce((s, g) => s + g.pts, 0);
 
-const PUERTO = 3104, PUERTO_WEB = 3105;
+const PUERTO = PUERTOS.app, PUERTO_WEB = PUERTOS.app2;
+await exigirLibres({ 'web anterior': PUERTO_WEB });
 const WEB = `http://127.0.0.1:${PUERTO_WEB}`;
 // Servidor estatico de la raiz del repo (la web de GitHub Pages tal cual) para la pestaña publica de Asistencia.
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png' };
@@ -85,11 +86,8 @@ try {
 
   console.log('\n== Compilacion');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
   ok(true, 'next build');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(APP);
+  app = await arrancarApp({ puerto: PUERTO, env });
 
   // ---------------------------------------------------------------- HTTP
   console.log('\n== HTTP sin sesion');
@@ -191,7 +189,7 @@ try {
   ok(!/[\w.+-]+@[\w-]+\.[\w.]+/.test(club.replace(/<script[\s\S]*?<\/script>/g, '')), '/club: ningun correo ni dato personal');
 
   // ---------------------------------------------------------------- Navegador
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  nav = await abrirNavegador();
   const captura = (p, n) => p.addStyleTag({ content: '.nv-barra{position:static!important}body{padding-bottom:0!important}' })
     .then(() => p.screenshot({ path: path.join(SALIDA, `${n}.png`), fullPage: true }));
   async function entrar(p, email) {
@@ -377,7 +375,7 @@ try {
 } finally {
   servidorWeb.close();
   if (nav) await nav.close();
-  if (app) app.kill();
+  app?.parar();
   await pila.parar();
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

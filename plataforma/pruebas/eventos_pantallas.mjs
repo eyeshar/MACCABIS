@@ -13,17 +13,18 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { arrancar } from './pila.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
 const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'rediseno');
 fs.mkdirSync(SALIDA, { recursive: true });
-const PUERTO = 3106;
+const PUERTO = PUERTOS.app;
 const APP = `http://127.0.0.1:${PUERTO}`;
 const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
 let fallos = 0;
@@ -69,12 +70,9 @@ try {
     // Sin envio de avisos: la clave de servicio y la VAPID reales de .env.local no valen para la pila local (cancelar un entreno
     // a menos de 14 dias avisa al movil y daba un error de firma JWT); los avisos se prueban en otras suites.
     SUPABASE_SERVICE_ROLE_KEY: '', VAPID_PRIVATE_KEY: '' };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
   ok(true, 'next build');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(APP);
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  app = await arrancarApp({ puerto: PUERTO, env });
+  nav = await abrirNavegador();
 
   async function entrar(p, email) {
     await p.goto(`${APP}/entrar`);
@@ -268,9 +266,7 @@ try {
   console.log('\n== Pistas: Valdebernardo reabierta');
   await p.goto(`${APP}/gestion/eventos/pistas`);
   ok((await p.locator('[data-pista=valdebernardo]').textContent()).includes('En obras') && (await p.locator('[data-pista=caja-magica]').textContent()).includes('Provisional') && (await p.locator('[data-pista=cdm-moratalaz]').textContent()).includes('Habitual'), 'catálogo con sus estados');
-  await p.locator('[data-pista=valdebernardo]').getByRole('button', { name: 'Marcar como reabierta' }).click();
-  await p.waitForLoadState('networkidle');
-  await p.waitForTimeout(500);
+  await trasAccion(p, () => p.locator('[data-pista=valdebernardo]').getByRole('button', { name: 'Marcar como reabierta' }).click());
   ok((await sql`select estado from public.pistas where slug = 'valdebernardo'`)[0].estado === 'habitual', 'Valdebernardo pasa a habitual');
   const sinProp = await sql`select clave, sporteasy_estado, sporteasy_cambio from public.eventos where tipo = 'entreno' and pista_id is null and estado = 'programado' and fecha >= ${hoy}`;
   ok(sinProp.length > 0 && sinProp.every((e) => e.sporteasy_estado === 'pendiente' && /pista: Pista por confirmar -> Valdebernardo/.test(e.sporteasy_cambio)), `los ${sinProp.length} entrenos futuros sin pista propia vuelven a Valdebernardo y quedan pendientes de copiar`);
@@ -278,9 +274,7 @@ try {
   ok((await p.getByTestId('aviso-sin-pista').count()) === 0, 'desaparece el aviso de entrenos sin pista');
   ok((await p.locator('tr[data-evento="entreno-semanal-' + entrenosFuturos[3].fecha.toISOString().slice(0, 10) + '"]').textContent()).includes('Valdebernardo'), 'la lista muestra Valdebernardo en los entrenos sin pista propia');
   await p.goto(`${APP}/gestion/eventos/pistas`);
-  await p.locator('[data-pista=valdebernardo]').getByRole('button', { name: 'Marcar en obras' }).click();
-  await p.waitForLoadState('networkidle');
-  await p.waitForTimeout(500);
+  await trasAccion(p, () => p.locator('[data-pista=valdebernardo]').getByRole('button', { name: 'Marcar en obras' }).click());
   ok((await sql`select estado from public.pistas where slug = 'valdebernardo'`)[0].estado === 'en_obras', 'y se puede volver a marcar en obras');
   await p.goto(`${APP}/gestion/eventos/pistas`);
   await p.locator('#np-nombre').fill('Pabellón de pruebas');
@@ -298,13 +292,11 @@ try {
   await caja.getByLabel('Dirección').fill('Camino de Perales 23, 28041 Madrid (Metro San Fermín-Orcasur, L3)');
   await caja.getByLabel('Nombre', { exact: true }).fill('Caja Mágica (pabellón)');
   await caja.getByLabel('Número de pistas').fill('2');
-  await caja.getByRole('button', { name: 'Guardar' }).click();
-  await p.waitForLoadState('networkidle'); await p.waitForTimeout(600);
+  await trasAccion(p, () => caja.getByRole('button', { name: 'Guardar' }).click());
   const cm = (await sql`select nombre, direccion, num_pistas, uso from public.pistas where slug = 'caja-magica'`)[0];
   ok(cm.direccion.startsWith('Camino de Perales 23') && cm.nombre === 'Caja Mágica (pabellón)' && cm.num_pistas === 2 && cm.uso === 'entreno', 'se editan nombre, dirección y número de pistas', JSON.stringify(cm));
   await caja.getByLabel('Uso').selectOption('partido');
-  await caja.getByRole('button', { name: 'Guardar' }).click();
-  await p.waitForLoadState('networkidle'); await p.waitForTimeout(600);
+  await trasAccion(p, () => caja.getByRole('button', { name: 'Guardar' }).click());
   ok((await sql`select uso from public.pistas where slug = 'caja-magica'`)[0].uso === 'partido', 'se cambia el uso');
   await sql`update public.pistas set uso = 'entreno', nombre = 'Caja Mágica' where slug = 'caja-magica'`;
 
@@ -320,8 +312,7 @@ try {
   let texto = '';
   p.once('dialog', (d) => { texto = d.message(); d.dismiss(); });
   await cajaSerie.check();
-  await cs.getByRole('button', { name: 'Marcar como copiado' }).click();
-  await p.waitForTimeout(500);
+  await trasAccion(p, () => cs.getByRole('button', { name: 'Marcar como copiado' }).click());
   ok(texto.includes(`${nSerie} eventos`) && (await sql`select count(*)::int n from public.eventos where serie is not null and sporteasy_estado = 'pendiente' and fecha >= ${hoy}`)[0].n === nSerie, `pide confirmación («${texto}») y, si se cancela, no marca nada`);
   p.once('dialog', (d) => d.accept());
   await cs.getByRole('button', { name: 'Marcar como copiado' }).click();
@@ -547,7 +538,7 @@ try {
   ok(errores.length === 0, 'sin errores de JS ni de consola en todo el recorrido', errores.slice(0, 3).join(' | '));
 } finally {
   await nav?.close().catch(() => {});
-  app?.kill();
+  app?.parar();
   await pila.parar();
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

@@ -14,21 +14,21 @@
 // aun no se ha jugado) durante la compilacion, y se deja el fichero como estaba al terminar.
 // Capturas (375 y 1280 px) en <privado>/mockups_liga/convocatoria-proyeccion/liga/ (MACCABIS_PRIVADO o privado/ del
 // repositorio; fuera de git: la de gestor lleva nombres de jugadores de otros equipos).
-// Puertos: app 3113; la pila, PILA_PUERTO_BASE (por defecto 54321).
+// Puertos: los del carril de este worktree (infra/puertos.mjs, D149).
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { arrancar } from './pila.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
+import { arrancarApp, abrirNavegador, compilar } from './infra/app.mjs';
+import { PUERTOS } from './infra/puertos.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
 const SALIDA = path.join(process.env.MACCABIS_PRIVADO || path.join(REPO, 'privado'), 'mockups_liga', 'convocatoria-proyeccion', 'liga');
 fs.mkdirSync(SALIDA, { recursive: true });
-const PUERTO = 3113;
+const PUERTO = PUERTOS.app;
 const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -80,13 +80,11 @@ try {
   fs.writeFileSync(RESPALDO, original);
   fs.writeFileSync(LIGA_JSON, JSON.stringify(conPrueba, null, 1) + '\n');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  try { execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' }); }
+  try { compilar(env, ['NEXT_PUBLIC_SUPABASE_URL']); }
   finally { fs.writeFileSync(LIGA_JSON, original); fs.rmSync(RESPALDO, { force: true }); }
   ok(fs.readFileSync(LIGA_JSON).equals(original), 'next build; src/data/liga.json queda como estaba');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(`${APP}/liga`);
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  app = await arrancarApp({ puerto: PUERTO, env, compilarAntes: false });
+  nav = await abrirNavegador();
   // Con otra sesion compilando a la vez (D114) el equipo va cargado: margen amplio para cada navegacion.
   const nuevoContexto = async (op) => { const c = await nav.newContext(op); c.setDefaultNavigationTimeout(90000); c.setDefaultTimeout(30000); return c; };
 
@@ -273,7 +271,7 @@ try {
   if (!fs.readFileSync(LIGA_JSON).equals(original)) fs.writeFileSync(LIGA_JSON, original);
   fs.rmSync(RESPALDO, { force: true });
   if (nav) await nav.close();
-  if (app) app.kill();
+  app?.parar();
   await pila.parar();
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

@@ -19,9 +19,8 @@ const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'safe-area', ANTES ? '
 fs.mkdirSync(SALIDA, { recursive: true });
 
 const { ok, fallos } = contador();
-const PUERTO = 3150;
 // Con el asistente configurado (D142; el Worker no hace falta: solo se mira el boton flotante de los gestores).
-const e2e = await preparar({ puerto: PUERTO, envExtra: { CHAT_WORKER_URL: 'http://127.0.0.1:9/', CHAT_SECRET: 'solo-pruebas' } });
+const e2e = await preparar({ envExtra: { CHAT_WORKER_URL: 'http://127.0.0.1:9/', CHAT_SECRET: 'solo-pruebas' } });
 const { APP, pila } = e2e;
 const JUGADOR = 'jugador@pruebas.local', GESTOR = 'gestor@pruebas.local';
 const iphone = devices['iPhone 14']; // 390x844

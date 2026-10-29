@@ -25,7 +25,11 @@
     "test:duplicados": "node scripts/estadisticas/test_duplicados.js",
     "check:datos": "node scripts/check_datos_publicados.js",
     "test:datos": "node scripts/test_check_datos.js",
-    "hooks:instalar": "git config core.hooksPath .githooks"
+    "hooks:instalar": "git config core.hooksPath .githooks",
+    "pruebas:rapidas": "node plataforma/pruebas/infra/corredor.mjs rapidas",
+    "pruebas:completas": "node plataforma/pruebas/infra/corredor.mjs completas",
+    "pruebas:limpiar": "node plataforma/pruebas/infra/limpiar.mjs",
+    "ci:estado": "node scripts/ci_estado.mjs"
   },
   "devDependencies": {
     "pdf-parse": "^2.4.5",

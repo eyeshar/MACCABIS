@@ -11,7 +11,7 @@ import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos
 import { adelantar, semanas } from './fechas_prueba.mjs';
 
 const { ok, fallos, sumar } = contador();
-const e = await preparar({ puerto: 3141 });
+const e = await preparar();
 const { sql, APP } = e;
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));

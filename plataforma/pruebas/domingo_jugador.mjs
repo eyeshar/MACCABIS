@@ -22,7 +22,7 @@ const { ok, fallos, sumar } = contador();
 const CAPT = path.join(REPO, 'privado', 'mockups_liga', 'convocatoria-proyeccion');
 fs.mkdirSync(CAPT, { recursive: true });
 const foto = (p, n) => p.screenshot({ path: path.join(CAPT, `${n}.png`), fullPage: true }).catch(() => {});
-const e = await preparar({ puerto: 3125 });
+const e = await preparar();
 const { sql, APP } = e;
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));

@@ -15,8 +15,9 @@
 //   npm run pruebas:chat-ia
 import http from 'node:http';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
-import { preparar, personas, sinteticos, contador, visto, sinDesbordar, esperar, RAIZ, REPO } from './comun_e2e.mjs';
+import { execFileSync } from 'node:child_process';
+import { preparar, personas, sinteticos, contador, visto, sinDesbordar, esperar, RAIZ, REPO, PUERTOS } from './comun_e2e.mjs';
+import { arrancarApp } from './infra/app.mjs';
 import { adelantar, semanas } from './fechas_prueba.mjs';
 import * as C from '../src/lib/chat/contexto.ts';
 import * as A from '../src/lib/chat/acceso.ts';
@@ -114,7 +115,7 @@ ok(!['/entrar', '/asistente', '/liga', '/liga/estadisticas', '/plantilla', '/his
 console.log('\n== 4. De extremo a extremo');
 // Worker de verdad en local con KV y Workers AI simulados: guarda el ultimo contexto para inspeccionarlo.
 const SECRETO = 'f'.repeat(64);
-const PUERTO_W = 3163;
+const PUERTO_W = PUERTOS.aux(0);
 const kv = new Map();
 let ultimo = null;
 let llamadas = 0;
@@ -133,16 +134,15 @@ const servidorW = http.createServer(async (req, res) => {
 const URL_W = `http://127.0.0.1:${PUERTO_W}/`;
 const CHAT_ENV = { CHAT_WORKER_URL: URL_W, CHAT_SECRET: SECRETO };
 
-const PUERTO = 3160;
-const e = await preparar({ puerto: PUERTO, envExtra: CHAT_ENV }); // sin CHAT_IA_ABIERTO: «gestores» por defecto
+const e = await preparar({ envExtra: CHAT_ENV }); // sin CHAT_IA_ABIERTO: «gestores» por defecto
 const { sql, APP, pila } = e;
 const extras = [];
 async function otraWeb(puerto, modo) {
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: pila.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: pila.anonKey, NEXT_TELEMETRY_DISABLED: '1', ...CHAT_ENV, CHAT_IA_ABIERTO: modo };
-  const p = spawn(process.execPath, [path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next'), 'start', '-p', String(puerto), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
+  // la misma compilacion, arrancada con otro valor del interruptor (se lee al ejecutar)
+  const p = await arrancarApp({ puerto, env, compilarAntes: false });
   extras.push(p);
-  await esperar(`http://127.0.0.1:${puerto}`);
-  return `http://127.0.0.1:${puerto}`;
+  return p.APP;
 }
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));
@@ -278,7 +278,7 @@ try {
   await ivan.keyboard.press('Escape');
 
   // «todos»: el jugador si; contexto de un jugador real de la base de pruebas
-  const TODOS = await otraWeb(3161, 'todos');
+  const TODOS = await otraWeb(PUERTOS.app2, 'todos');
   await jon.goto(`${TODOS}/`);
   ok(await visto(FAB(jon)), '«todos»: el jugador ve el botón flotante');
   const rj = await api(TODOS, jon.context(), { mensajes: [{ role: 'user', content: '¿por qué no ha venido Noe?' }] });
@@ -296,7 +296,7 @@ try {
   ok(!/tesorer|cuota del club|deuda/i.test(ctxJon), 'jugador: nada de tesorería');
 
   // «off»: nadie
-  const OFF = await otraWeb(3162, 'off');
+  const OFF = await otraWeb(PUERTOS.aux(1), 'off');
   await ivan.goto(`${OFF}/`);
   ok(!(await visto(FAB(ivan), 1500)), '«off»: ni el gestor ve el botón flotante');
   ok((await api(OFF, ivan.context(), { accion: 'cuota' })).status() === 403, '«off»: /api/chat da 403 también al gestor');
@@ -319,7 +319,7 @@ try {
 } catch (err) {
   console.error(err); sumar();
 } finally {
-  for (const p of extras) p.kill();
+  for (const p of extras) p.parar();
   servidorW.close();
   await e.parar();
 }

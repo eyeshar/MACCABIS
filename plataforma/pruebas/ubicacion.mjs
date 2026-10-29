@@ -9,7 +9,7 @@
 //
 //   npm run pruebas:ubicacion
 import http from 'node:http';
-import { preparar, personas, contador, visto, sinDesbordar, foto } from './comun_e2e.mjs';
+import { preparar, personas, contador, visto, sinDesbordar, foto, PUERTOS } from './comun_e2e.mjs';
 import { enlaceGoogle, leerEnlaceGoogle, deNominatim } from '../src/lib/ubicacion.ts';
 import { mensajeWhatsApp, pistaEfectiva } from '../src/lib/eventos/dominio.ts';
 import { calendarioPersonal } from '../src/lib/calendario/icsPersonal.ts';
@@ -56,9 +56,9 @@ const osm = http.createServer((req, res) => {
   res.writeHead(200, { 'content-type': 'application/json' });
   res.end(JSON.stringify(/esquina/i.test(decodeURIComponent(req.url)) ? RESPUESTA : []));
 });
-await new Promise((r) => osm.listen(3488, '127.0.0.1', r));
+await new Promise((r) => osm.listen(PUERTOS.aux(0), '127.0.0.1', r));
 
-const e = await preparar({ puerto: 3122, envExtra: { LUGARES_URL: 'http://127.0.0.1:3488' } });
+const e = await preparar({ envExtra: { LUGARES_URL: `http://127.0.0.1:${PUERTOS.aux(0)}` } });
 const { sql, APP } = e;
 try {
   await personas(e.pila, { jugadores: [['esteban-jon', 'jon@pruebas.local']], gestores: [['Iván', 'ivan@pruebas.local', null]] });

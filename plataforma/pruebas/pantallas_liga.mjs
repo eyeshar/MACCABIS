@@ -10,16 +10,16 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { arrancar } from './pila.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = path.join(RAIZ, '..', 'privado', 'mockups_liga');
 fs.mkdirSync(SALIDA, { recursive: true });
-const PUERTO = 3101;
+const PUERTO = PUERTOS.app;
 const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -56,12 +56,9 @@ try {
 
   console.log('\n== Compilacion');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
   ok(true, 'next build');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(APP);
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  app = await arrancarApp({ puerto: PUERTO, env });
+  nav = await abrirNavegador();
 
   async function entrar(p, email) {
     await p.goto(`${APP}/entrar`);
@@ -297,7 +294,7 @@ try {
   }
 } finally {
   if (nav) await nav.close();
-  if (app) app.kill();
+  app?.parar();
   await pila.parar();
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

@@ -12,7 +12,7 @@ import { preparar, personas, contador, RAIZ } from './comun_e2e.mjs';
 import { migrar } from '../scripts/db.mjs';
 
 const { ok, fallos, sumar } = contador();
-const e = await preparar({ puerto: 3142 });
+const e = await preparar();
 const { sql, APP } = e;
 try {
   const P = await personas(e.pila, { jugadores: [['esteban-jon', 'jon@pruebas.local']], gestores: [['Iván', 'gestor@pruebas.local', 'villaescusa-silva-ivan']] });

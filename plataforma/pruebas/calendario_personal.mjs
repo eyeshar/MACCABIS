@@ -12,6 +12,7 @@
 import crypto from 'node:crypto';
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto } from './comun_e2e.mjs';
 import { adelantar, semanas } from './fechas_prueba.mjs';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const { ok, fallos, sumar } = contador();
 
@@ -42,7 +43,7 @@ function validar(ics) {
 }
 const eventosDe = (ics) => ics.replace(/\r\n /g, '').split('BEGIN:VEVENT').slice(1).map((b) => Object.fromEntries(b.split('\r\n').filter((l) => /^[A-Z-]+[;:]/.test(l)).map((l) => [l.split(/[;:]/)[0], l.slice(l.indexOf(':') + 1)])));
 
-const e = await preparar({ puerto: 3123, envExtra: { CALENDARIO_SECRETO: crypto.randomBytes(32).toString('hex') } });
+const e = await preparar({ envExtra: { CALENDARIO_SECRETO: 'secreto-de-pruebas-del-calendario-personal-0000000000000000000000' } }) // fijo: misma compilacion (D149);
 const { sql, APP } = e;
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));
@@ -125,8 +126,7 @@ try {
   console.log('\n== «Cambiar mi enlace», jugador inactivo y límite de peticiones');
   await pj.goto(`${APP}/agenda`);
   await pj.getByTestId('cambiar-enlace').click();
-  await pj.getByTestId('cambiar-enlace-confirmar').getByRole('button', { name: 'Sí, cambiarlo' }).click();
-  await pj.waitForTimeout(1500);
+  await trasAccion(pj, () => pj.getByTestId('cambiar-enlace-confirmar').getByRole('button', { name: 'Sí, cambiarlo' }).click());
   await pj.reload();
   const nuevo = (await pj.getByTestId('tu-calendario').getByRole('link', { name: 'Añadir al iPhone' }).getAttribute('href')).replace(/^webcal:/, 'http:');
   ok(nuevo !== urlJon && (await fetch(urlJon)).status === 404 && (await fetch(nuevo)).status === 200, 'el enlace regenerado funciona y el anterior da 404 (sin diálogos del navegador: confirmación en la página)');

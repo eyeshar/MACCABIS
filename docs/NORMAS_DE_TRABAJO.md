@@ -83,3 +83,7 @@ Vale para **toda** pantalla nueva o que se toque. Un único componente (`compone
 3. **Todo nombre** de jugador, rival o partido es un **enlace** (ficha, scouting, página del partido o del evento), salvo que ya estés en esa página. Si a esa persona no le corresponde una página, va como texto, nunca como enlace roto.
 4. **Toda pantalla interior tiene «← volver»** a su pantalla de origen. **Pestaña, filtro y jornada viven en la URL** (`?f=`, `?fecha=`, `?t=`, la ruta…), para que al volver se conserven y el botón atrás del navegador y del móvil haga lo mismo. Un estado que solo vive en el navegador (`useState`) no vale para esto.
 5. **Prueba:** cada pantalla con contadores se prueba en `pruebas:numeros` (desplegar y cerrar, gestor frente a jugador, 375 px).
+
+## 14. Cuentas temporales en el Supabase real (Iván, 28/10/2026)
+1. **Si se puede evitar, no se crean.** Antes de crear una cuenta para probar en el real, buscar otra vía: la pila local, el Worker o la función con datos sintéticos, o que Iván pruebe con su propia cuenta.
+2. **Si hace falta crearla:** apuntar el **recuento de cuentas de `auth.users` antes** de crearla y **después** de borrarla, y ponerlo en el informe. Si no coinciden, es un fallo. Se borra siempre al final (`finally`), pase lo que pase, y se comprueba que no queda nada suyo (sesiones, identidades, suscripciones, fichas de gestor, respuestas) ni fuera de Supabase (p. ej. el KV del asistente). Así lo hacen `verificar_produccion.mjs` y `verificar_chat_preview.mjs`.

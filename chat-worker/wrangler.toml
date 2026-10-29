@@ -1,0 +1,17 @@
+# Worker del asistente de la web (D142). Plan Free de Workers: si se agota la cuota diaria de Workers AI, corta (no factura).
+# Desplegar: npx wrangler deploy (desde esta carpeta). Secreto: CHAT_SECRET (wrangler secret put, nunca aqui).
+name = "maccabis-chat"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+preview_urls = false
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "CHAT_USO"
+id = "8d6e65818ad14af488f06e4d9b4db004"
+
+[observability]
+enabled = false

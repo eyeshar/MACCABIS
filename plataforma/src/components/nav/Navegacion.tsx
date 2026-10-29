@@ -6,6 +6,7 @@ import { salir } from "@/app/entrar/acciones";
 import { MENU, MENU_GESTION, MENU_SESION, RUTA_CUENTA, type GrupoGestion, type Seccion } from "@/lib/web";
 import type { Usuario } from "@/lib/usuario";
 import { Barras, Calendario, Candado, Casa, Mas, Panel, Tendencia } from "@/components/Iconos";
+import { borrarConversacion } from "@/components/asistente/conversacion";
 import { useDesplegable } from "./useDesplegable";
 
 // Navegacion unica de toda la web (D89, maquetas NavCabecera y NavMovil; D117 con sesion). Sin sesion: la de siempre
@@ -85,7 +86,7 @@ function MenuUsuario({ usuario, actual }: { usuario: Usuario; actual: boolean })
           <Link href={RUTA_CUENTA} className="nv-entrada" aria-current={actual ? "page" : undefined}><b>Mi cuenta</b></Link>
           <Link href="/avisos" className="nv-entrada"><b>Instalar en el móvil</b></Link>
         </nav>
-        <form action={salir}><button type="submit" className="nv-entrada nv-salir"><b>Salir</b></button></form>
+        <form action={salir} onSubmit={borrarConversacion}><button type="submit" className="nv-entrada nv-salir"><b>Salir</b></button></form>
       </div>
     </div>
   );
@@ -143,7 +144,7 @@ function HojaMas({ usuario, ruta, zona }: { usuario: Usuario | null; ruta: strin
             </div>
           )}
         </nav>
-        {usuario && <form action={salir}><button type="submit" className="nv-entrada nv-salir"><b>Salir</b></button></form>}
+        {usuario && <form action={salir} onSubmit={borrarConversacion}><button type="submit" className="nv-entrada nv-salir"><b>Salir</b></button></form>}
       </div>
     </>
   );

@@ -16,6 +16,10 @@ export type Pista = {
   uso: "entreno" | "partido"; estado: EstadoPista; es_de_serie: boolean; num_pistas: number | null; nota: string | null;
   /** D148: en los entrenos en esta pista solo están invitados los jugadores con ficha (MdA o MdL). */
   solo_con_ficha?: boolean;
+  /** D148: la regla «solo con ficha» vale desde esta fecha (null: siempre). */
+  solo_con_ficha_desde?: string | null;
+  /** D148: los entrenos sin pista propia heredan esta pista de la serie solo desde esta fecha (null: siempre). */
+  habitual_desde?: string | null;
   /** D119: coordenadas («Cómo llegar»). */
   lat?: number | null; lng?: number | null;
 };
@@ -88,9 +92,10 @@ export const rangoHoras = (e: Pick<EventoFila, "inicio" | "fin">) => {
 // ---------------------------------------------------------------- pista efectiva (igual que v_eventos_publicos)
 export type PistaEfectiva = { pista: Pista | null; texto: string; porConfirmar: boolean; motivo: string | null };
 
-/** La pista propia del evento; si no tiene y es un entreno, la de la serie SOLO si esta habitual (en obras: "por
- *  confirmar" y el motivo dice cual). Un partido sin pista tambien sale "por confirmar". */
-export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista"> & UbicacionLibre, pistas: Pista[]): PistaEfectiva {
+/** La pista propia del evento; si no tiene y es un entreno, la de la serie SOLO si esta habitual y el entreno es de su
+ *  fecha «habitual desde» o posterior (D148: nada retroactivo; en obras: "por confirmar" y el motivo dice cual). Un
+ *  partido sin pista tambien sale "por confirmar". */
+export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista"> & { fecha?: string } & UbicacionLibre, pistas: Pista[]): PistaEfectiva {
   const propia = e.pista_id ? pistas.find((p) => p.id === e.pista_id) ?? null : null;
   const corto = (p: Pista) => p.nombre_corto ?? p.nombre;
   if (propia) {
@@ -100,7 +105,8 @@ export function pistaEfectiva(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_
   // Ubicacion libre (D119): un sitio fuera del catalogo de pistas.
   if (e.ubicacion_nombre) return { pista: null, texto: e.ubicacion_nombre, porConfirmar: false, motivo: null };
   if (e.tipo === "entreno") {
-    const serie = pistas.find((p) => p.es_de_serie && p.uso === "entreno");
+    const deSerie = pistas.find((p) => p.es_de_serie && p.uso === "entreno");
+    const serie = deSerie?.habitual_desde && !(e.fecha && e.fecha >= deSerie.habitual_desde) ? undefined : deSerie;
     if (serie?.estado === "habitual") return { pista: serie, texto: corto(serie), porConfirmar: false, motivo: null };
     return { pista: null, texto: "Pista por confirmar", porConfirmar: true, motivo: serie?.estado === "en_obras" ? `${serie.nombre.split(" (")[0]} en obras` : null };
   }

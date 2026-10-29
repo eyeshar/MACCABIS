@@ -63,6 +63,21 @@ export function FilaPista({ pista }: { pista: Pista }) {
             <div className="ayuda">Quien no tiene ficha en MdA ni en MdL no está invitado a los entrenos en esta pista.</div>
           </div>
         )}
+        {/* D148: nada retroactivo. La marca vale para los entrenos desde esta fecha; vacía, para todos. */}
+        {pista.uso === "entreno" && (
+          <div className="campo" style={{ margin: 0 }}>
+            <label htmlFor={`ficha-desde-${pista.id}`}>Solo con ficha desde</label>
+            <input id={`ficha-desde-${pista.id}`} name="solo_con_ficha_desde" type="date" defaultValue={pista.solo_con_ficha_desde ?? ""} />
+          </div>
+        )}
+        {/* D148: los entrenos sin pista propia anteriores a esta fecha no heredan esta pista («Pista por confirmar»). */}
+        {pista.es_de_serie && (
+          <div className="campo" style={{ margin: 0 }}>
+            <label htmlFor={`habitual-desde-${pista.id}`}>Habitual desde</label>
+            <input id={`habitual-desde-${pista.id}`} name="habitual_desde" type="date" defaultValue={pista.habitual_desde ?? ""} />
+            <div className="ayuda">Al marcarla como reabierta sin fecha, se pone la de hoy: los entrenos pasados no cambian.</div>
+          </div>
+        )}
         <div className="botones" style={{ margin: 0 }}>
           <button className="boton boton-amarillo" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar"}</button>
           {pista.es_de_serie && enObras && <button className="boton boton-claro" type="submit" name="reabrir" value="1" disabled={guardando}>Marcar como reabierta</button>}

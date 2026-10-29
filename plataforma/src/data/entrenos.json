@@ -12,7 +12,7 @@
     "https://www.bocm.es/boletin/CM_Orden_BOCM/2026/10/01/BOCM-20261001-19.PDF"
   ],
   "pistas": {
-    "valdebernardo": { "nombre": "Valdebernardo (Faustina Valladolid)", "habitual": true, "estado": "habitual", "solo_con_ficha": true, "nota": "Reabierta (Iván, 29/10/2026): todos los entrenos desde el 04/11/2026, de 20:30 a 22:30. Solo pueden entrenar los jugadores con ficha en MdA o MdL (D148)." },
+    "valdebernardo": { "nombre": "Valdebernardo (Faustina Valladolid)", "habitual": true, "estado": "habitual", "habitual_desde": "2026-11-04", "solo_con_ficha": true, "nota": "Reabierta (Iván, 29/10/2026): todos los entrenos desde el 04/11/2026, de 20:30 a 22:30. Solo pueden entrenar los jugadores con ficha en MdA o MdL (D148)." },
     "caja-magica": { "nombre": "Caja Mágica", "habitual": false, "estado": "disponible", "nota": "Provisional." }
   },
   "series": [

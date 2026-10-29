@@ -1,8 +1,10 @@
 import "server-only";
 import type { Nivel, Posicion } from "@/lib/convocatoria/motor";
 import { cargarEvento, cargarEventos, cargarJugadores, type Cliente } from "@/lib/eventos/datos";
-import { convocadosDe } from "@/lib/eventos/dominio";
+import { convocadosDe, type Respuesta } from "@/lib/eventos/dominio";
 import { hoyMadrid } from "@/lib/dias";
+import { sinFichaQueVan } from "@/lib/numeros/respuestas";
+import type { PersonaNum } from "@/components/numeros/Numeros";
 import type { JugadorGrupo } from "./sugerir";
 
 // Lo que leen los grupos de entreno (D122), con la sesion del GESTOR (RLS: solo gestores). Niveles y el criterio de la
@@ -16,6 +18,8 @@ export type Privado = Pick<JugadorGrupo, "posicion" | "base_reserva" | "nivel">;
 export type DatosGrupos<J extends JugadorVisible = JugadorGrupo> = {
   evento: { id: string; fecha: string; inicio: string | null; titulo: string };
   jugadores: J[]; van: string[]; duda: string[]; repartos: Reparto[];
+  /** D148: quien dijo «voy» sin ficha a un entreno en una pista «solo con ficha» (no entra en los grupos). */
+  sinFicha?: { pista: string; personas: PersonaNum[] } | null;
 };
 /** Lo que viaja a la pagina: sin datos privados. */
 export const sinPrivados = (d: DatosGrupos): DatosGrupos<JugadorVisible> => ({ ...d, jugadores: d.jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre })) });
@@ -37,6 +41,7 @@ export async function cargarGrupos(sb: Cliente, eventoId: string): Promise<Datos
     evento: { id: e.id, fecha: e.fecha, inicio: e.inicio, titulo: e.titulo ?? "Entreno" },
     jugadores: lista, van: lista.filter((j) => r.get(j.person_id) === "va").map((j) => j.person_id), duda: lista.filter((j) => r.get(j.person_id) === "duda").map((j) => j.person_id),
     repartos: (rep.data ?? []) as Reparto[],
+    sinFicha: e.solo_con_ficha_en ? { pista: e.solo_con_ficha_en, personas: sinFichaQueVan(e, jugadores, (resp.data ?? []) as { person_id: string; respuesta: Respuesta }[]) } : null,
   };
 }
 

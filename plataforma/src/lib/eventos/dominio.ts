@@ -14,6 +14,8 @@ export type Motivo = "lesion" | "trabajo" | "viaje" | "familia" | "otro";
 export type Pista = {
   id: string; slug: string; nombre: string; nombre_corto: string | null; direccion: string | null;
   uso: "entreno" | "partido"; estado: EstadoPista; es_de_serie: boolean; num_pistas: number | null; nota: string | null;
+  /** D148: en los entrenos en esta pista solo están invitados los jugadores con ficha (MdA o MdL). */
+  solo_con_ficha?: boolean;
   /** D119: coordenadas («Cómo llegar»). */
   lat?: number | null; lng?: number | null;
 };
@@ -30,6 +32,8 @@ export type EventoFila = {
   sin_recordatorios?: boolean; creado_en?: string; cambio_visible?: { campos: string[]; antes: string } | null; cambio_visible_en?: string | null;
   /** D118: plan no oficial (oficial = false) y su organizador; D119: ubicacion libre. */
   oficial?: boolean; creado_por?: string | null; plazas?: number | null; recordar_un_dia_antes?: boolean; rival_texto?: string | null; borrado_en?: string | null;
+  /** D148: columna calculada de la base (solo_con_ficha_en): la pista «solo con ficha» a la que va este entreno, o null. */
+  solo_con_ficha_en?: string | null;
 } & UbicacionLibre;
 
 export const TIPOS: { id: TipoEvento; texto: string; corto: string }[] = [
@@ -217,7 +221,7 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
 export type JugadorBasico = { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" };
 
 /** Personas a las que se les pide respuesta (D105): la definicion unica `quienResponde`. */
-export function convocadosDe(e: Pick<EventoFila, "tipo" | "equipo" | "oficial">, jugadores: JugadorBasico[]) {
+export function convocadosDe(e: Pick<EventoFila, "tipo" | "equipo" | "oficial" | "solo_con_ficha_en">, jugadores: JugadorBasico[]) {
   return jugadores.filter((j) => quienResponde(e, j));
 }
 
@@ -257,7 +261,7 @@ export const contarRespuestas = (filas: { respuesta: Respuesta }[]) => ({
  *  (los demas, aparte, en «fuera»). Sin nombres ni motivos: solo cuantos llevan motivo. Ordenado por fecha y hora. */
 export type FilaCotejo = { id: string; fecha: string; titulo: string; equipo: EquipoEvento; va: number; duda: number; no: number; sin_responder: number; conMotivo: number; fuera: number };
 export function resumenCotejo(
-  eventos: Pick<EventoFila, "id" | "fecha" | "inicio" | "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "jornada" | "oficial">[],
+  eventos: Pick<EventoFila, "id" | "fecha" | "inicio" | "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "jornada" | "oficial" | "solo_con_ficha_en">[],
   jugadores: JugadorBasico[], respuestas: { evento_id: string; person_id: string; respuesta: Respuesta; motivo: string | null }[],
 ): FilaCotejo[] {
   const porEvento = new Map<string, typeof respuestas>();
@@ -290,6 +294,10 @@ export function recordatorio(e: EventoFila, filas: FilaRespuesta[], pistas: Pist
 }
 
 // ---------------------------------------------------------------- resumen de la copia a SportEasy
+/** Cerrado SIN copiar a SportEasy por decisión de Iván (D148: «Iván: no se copia a SportEasy (29/10/2026)»): estado
+ *  «copiado» con esa nota en sporteasy_cambio. No está pendiente ni sale en la tarjeta «Copia a SportEasy». */
+export const noSeCopia = (e: Pick<EventoFila, "sporteasy_estado" | "sporteasy_cambio">) => e.sporteasy_estado === "copiado" && /no se copia/i.test(e.sporteasy_cambio ?? "");
+
 export function resumenCopia(eventos: EventoFila[], hoy: string) {
   // Los planes no oficiales no existen en SportEasy (D118): nunca entran en la cola de copia.
   const pendientes = eventos.filter((e) => !esPlanFila(e) && e.sporteasy_estado === "pendiente" && (e.fecha >= hoy || e.estado === "cancelado"));

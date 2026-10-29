@@ -46,17 +46,28 @@ export type PersonaResponde = { ficha_mda: boolean; ficha_mdl: boolean; entrena:
 /** ¿Es de los que responden (a algo)? Los activos menos el entrenador: hoy 27 de 28. */
 export const respondeEnGeneral = (j: Pick<PersonaResponde, "activo" | "rol">) => j.activo && j.rol !== "entrenador";
 
-/** ¿Está invitado a este evento? Entreno o «entre nosotros»: quien entrena o tiene ficha; partido: su ficha, y nunca «solo entreno».
+/** El evento como lo necesita la regla. `solo_con_ficha_en` (D148) es la columna calculada de la base: la pista «solo
+ *  jugadores con ficha» a la que va un entreno (su nombre corto), o null. Sin ella (no se leyó), cuenta como null. */
+export type EventoResponde = { tipo: string; equipo: string; oficial?: boolean; solo_con_ficha_en?: string | null };
+
+/** ¿Está invitado a este evento? Entreno o «entre nosotros»: quien entrena o tiene ficha (en un entreno en una pista «solo
+ *  con ficha», D148: solo quien tiene ficha); partido: su ficha, y nunca «solo entreno».
  *  Planes no oficiales y tipos nuevos (quedada, pachanga, otro; D118): «para quién» = toda la plantilla, solo MdA o solo MdL. */
-export function quienResponde(e: { tipo: string; equipo: string; oficial?: boolean }, j: PersonaResponde) {
+export function quienResponde(e: EventoResponde, j: PersonaResponde) {
   if (!respondeEnGeneral(j)) return false;
   if (e.oficial === false || e.tipo === "quedada" || e.tipo === "pachanga" || e.tipo === "otro") {
     return e.equipo === "MdA" ? j.ficha_mda : e.equipo === "MdL" ? j.ficha_mdl : j.entrena || j.ficha_mda || j.ficha_mdl;
   }
-  if (e.tipo === "entreno" || e.tipo === "interno") return j.entrena || j.ficha_mda || j.ficha_mdl;
+  if (e.tipo === "entreno" || e.tipo === "interno") return (j.entrena || j.ficha_mda || j.ficha_mdl) && (j.ficha_mda || j.ficha_mdl || !e.solo_con_ficha_en);
   if (j.rol === "solo_entreno") return false;
   return e.equipo === "MdA" ? j.ficha_mda : e.equipo === "MdL" ? j.ficha_mdl : j.ficha_mda || j.ficha_mdl;
 }
+
+/** D148: ¿se queda fuera de este entreno SOLO por no tener ficha? (entrenaría, pero la pista es «solo con ficha»). */
+export const fueraPorFicha = (e: EventoResponde, j: PersonaResponde) =>
+  Boolean(e.solo_con_ficha_en) && e.tipo === "entreno" && e.oficial !== false && respondeEnGeneral(j) && j.entrena && !j.ficha_mda && !j.ficha_mdl;
+/** El aviso para el gestor de quien está fuera por la ficha y aun así dijo «voy». */
+export const avisoSinFicha = (pista: string) => `Sin ficha: no puede entrenar en ${pista}`;
 
 // ---------------------------------------------------------------- unidades: un evento, o un domingo con sus partidos
 export type Unidad = {

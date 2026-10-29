@@ -252,7 +252,9 @@ export async function cambiarPista(id: string, _prev: Estado, f: FormData): Prom
   const uso = f.get("uso") ? (texto(f, "uso") === "partido" ? "partido" : "entreno") : antes.uso;
   const c = f.has("coordenadas") ? coordenadas(f) : { lat: antes.lat ?? null, lng: antes.lng ?? null };
   if ("error" in c) return { error: c.error };
-  const cambios = { nombre, uso, estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null, lat: c.lat, lng: c.lng };
+  // D148: «solo jugadores con ficha»; un formulario sin ese campo no lo cambia.
+  const solo = f.has("solo_con_ficha_campo") ? { solo_con_ficha: uso === "entreno" && f.get("solo_con_ficha") === "on" } : {};
+  const cambios = { nombre, uso, estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null, lat: c.lat, lng: c.lng, ...solo };
   const { error } = await supabase.from("pistas").update(cambios).eq("id", id);
   if (error) return { error: `No se pudo guardar: ${error.message}` };
   if (antes.es_de_serie && antes.estado !== estado) {

@@ -2,6 +2,7 @@ import { exigirGestor } from "@/lib/sesion";
 import Volver from "@/components/nav/Volver";
 import { cargarTableroDomingo, cargarTableroEvento, opcionesSelector } from "@/lib/tablero/datos";
 import Tablero from "./Tablero";
+import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import "./tablero.css";
 
 export const metadata = { title: "Tablero · Gestión Maccabis" };
@@ -19,5 +20,6 @@ export default async function PaginaTablero({ searchParams }: { searchParams: Pr
     return <div className="gs-titulo"><div><div className="gs-eyebrow">Tablero</div><h1>Nada que ver</h1><span className="suave">Ese evento no existe o no quedan partidos de liga en el calendario.</span></div></div>;
   }
   const actual = datos.vista === "domingo" ? `domingo:${datos.fecha}` : `evento:${datos.evento.id}`;
-  return <><Volver defecto="/gestion/convocatoria" etiqueta="Convocatoria" /><Tablero key={actual} datos={datos} opciones={opciones} actual={actual} /></>;
+  const sinFicha = datos.vista === "evento" ? datos.sinFicha : null;
+  return <><Volver defecto="/gestion/convocatoria" etiqueta="Convocatoria" /><AvisoSinFicha personas={sinFicha?.personas ?? []} pista={sinFicha?.pista} /><Tablero key={actual} datos={datos} opciones={opciones} actual={actual} /></>;
 }

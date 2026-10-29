@@ -19,7 +19,8 @@ import { proximoEntreno } from "@/lib/gestion/entreno";
 import { convocadosDe, hhmm, tituloEvento } from "@/lib/eventos/dominio";
 import CuentasRespuestas from "@/components/gestion/CuentasRespuestas";
 import Numeros, { type GrupoNum } from "@/components/numeros/Numeros";
-import { gruposEvento, lineaDudas, type RespuestaPersona } from "@/lib/numeros/respuestas";
+import { gruposEvento, lineaDudas, sinFichaQueVan, type RespuestaPersona } from "@/lib/numeros/respuestas";
+import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { claveQuitado, noVaPorDefecto } from "@/lib/disponibilidad/porDefecto";
@@ -110,11 +111,12 @@ export default async function InicioGestion() {
     cargarDefecto(supabase, entreno ? [entreno.id] : []),
   ]);
   // Los cuatro contadores con sus nombres y motivos (D139, solo gestores).
-  const cuentas = (ev: { id: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial?: boolean; fecha: string; inicio: string | null }) => {
+  const cuentas = (ev: { id: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; oficial?: boolean; fecha: string; inicio: string | null; solo_con_ficha_en?: string | null }) => {
     const rs = ((rsTodas ?? []) as (RespuestaPersona & { evento_id: string })[]).filter((r) => r.evento_id === ev.id);
     const grupos = gruposEvento(ev as never, js, rs, true, defecto);
     const n = (k: string) => grupos.find((g) => g.k === k)!.n;
-    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0, dudas: lineaDudas({ ...ev, oficial: ev.oficial ?? true } as never, grupos, rs) };
+    // D148: quien dijo «voy» sin ficha a un entreno en una pista «solo con ficha»: aparte, con su aviso.
+    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0, dudas: lineaDudas({ ...ev, oficial: ev.oficial ?? true } as never, grupos, rs), sinFicha: sinFichaQueVan(ev as never, js, rs) };
   };
   const cuentasDomingo = new Map(evDomingo.map((e) => [e.clave, cuentas(e)]));
   const respEntreno = entreno ? cuentas(entreno) : null;
@@ -276,6 +278,7 @@ export default async function InicioGestion() {
               <div className="hueco" data-testid="hueco-sporteasy">Sin respuestas de SportEasy todavía. Claude las trae (Importar → Respuestas) y el recordatorio lo propone él y lo envías tú.</div>
             )}
             {entreno && <PorDefectoEntreno eventoId={entreno.id} porDefecto={porDefecto} quitados={quitadosEntreno} />}
+            {respEntreno && <AvisoSinFicha personas={respEntreno.sinFicha} pista={entreno?.solo_con_ficha_en} />}
           </section>
 
           <section className="gs-bloque" aria-labelledby="t-pendiente">

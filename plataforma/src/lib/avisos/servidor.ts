@@ -39,14 +39,16 @@ export function sitioAviso(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pis
   return `${pe.pista.nombre_corto ?? pe.pista.nombre}${n ? `, pista ${n}` : ""}`;
 }
 
-const COLUMNAS = "id, tipo, equipo, fecha, inicio, fin, quedada, titulo, rival, es_local, jornada, pista_id, numero_pista, notas, estado, sin_recordatorios, creado_en, oficial, recordar_un_dia_antes, borrado_en, ubicacion_nombre";
+const COLUMNAS = "id, tipo, equipo, fecha, inicio, fin, quedada, titulo, rival, es_local, jornada, pista_id, numero_pista, notas, estado, sin_recordatorios, creado_en, oficial, recordar_un_dia_antes, borrado_en, ubicacion_nombre, solo_con_ficha_en";
 type EventoBase = Pick<EventoFila, "id" | "tipo" | "equipo" | "fecha" | "inicio" | "fin" | "quedada" | "titulo" | "rival" | "es_local" | "jornada" | "pista_id" | "numero_pista" | "notas" | "estado"> & {
   sin_recordatorios: boolean; creado_en: string; oficial?: boolean; recordar_un_dia_antes?: boolean; borrado_en?: string | null; ubicacion_nombre?: string | null;
+  /** D148: columna calculada de la base (pista «solo con ficha» del entreno, o null). */
+  solo_con_ficha_en?: string | null;
 };
 const aPlan = (e: EventoBase, pistas: Pista[]): EventoPlan => ({
   id: e.id, tipo: e.tipo, equipo: e.equipo, fecha: e.fecha, inicio: e.inicio, fin: e.fin, quedada: e.quedada, titulo: e.titulo,
   sitio: !e.pista_id && e.ubicacion_nombre ? e.ubicacion_nombre : sitioAviso(e, pistas), estado: e.estado, sin_recordatorios: e.sin_recordatorios, creado_en: e.creado_en,
-  oficial: e.oficial, recordar_un_dia_antes: e.recordar_un_dia_antes, borrado_en: e.borrado_en,
+  oficial: e.oficial, recordar_un_dia_antes: e.recordar_un_dia_antes, borrado_en: e.borrado_en, solo_con_ficha_en: e.solo_con_ficha_en ?? null,
 });
 
 async function leer<T>(p: PromiseLike<{ data: T | null; error: { message: string } | null }>, que: string): Promise<T> {
@@ -196,7 +198,7 @@ export async function ejecutarTarea(ahora = new Date()) {
     { ...datos, encendidoDesde: encendido ? desde : null },
   );
   encolados += await encolar(sb, recordatorios.map((p) => ({ ...p, person_id: p.person_id })));
-  encolados += await encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas }, ahora));
+  encolados += await encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas, jugadores: base.jugadores }, ahora));
   if (encendido) encolados += await encolarAlertasGestores(sb, base, ahora);
   const envio = await enviarPendientes(sb, ahora);
   return { encendido, cerradas, encolados, ...envio };

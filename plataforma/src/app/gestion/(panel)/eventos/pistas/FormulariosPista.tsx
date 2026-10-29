@@ -14,6 +14,7 @@ export function FilaPista({ pista }: { pista: Pista }) {
       <div className="gs-bloque-cab">
         <h3 style={{ margin: 0 }}>{pista.nombre}</h3>
         <span className={`pastilla ${enObras ? "etiqueta-aviso" : pista.estado === "habitual" ? "pastilla-ok" : ""}`}>{TEXTO_ESTADO_PISTA[pista.estado]}</span>
+        {pista.solo_con_ficha && <span className="pastilla" data-testid="pastilla-solo-ficha">Solo con ficha</span>}
       </div>
       <p className="pequeno suave" style={{ margin: 0 }}>
         {pista.uso === "partido" ? "Partidos de liga" : pista.es_de_serie ? "Pista habitual de la serie de entrenos" : "Entrenos"}
@@ -51,6 +52,17 @@ export function FilaPista({ pista }: { pista: Pista }) {
           <input id={`coords-${pista.id}`} name="coordenadas" type="text" inputMode="decimal" defaultValue={pista.lat != null ? `${pista.lat}, ${pista.lng}` : ""} placeholder="40.3975, -3.6316" />
           {pista.lat != null && <div className="ayuda"><a href={`https://www.google.com/maps/search/?api=1&query=${pista.lat},${pista.lng}`} target="_blank" rel="noopener noreferrer">Ver en Google Maps</a></div>}
         </div>
+        {/* D148: en los entrenos en esta pista solo están invitados los jugadores con ficha (MdA o MdL). */}
+        {pista.uso === "entreno" && (
+          <div className="campo" style={{ margin: 0 }}>
+            <input type="hidden" name="solo_con_ficha_campo" value="1" />
+            <label style={{ display: "flex", gap: 8, alignItems: "center", minHeight: 44 }}>
+              <input type="checkbox" name="solo_con_ficha" defaultChecked={Boolean(pista.solo_con_ficha)} />
+              Solo jugadores con ficha
+            </label>
+            <div className="ayuda">Quien no tiene ficha en MdA ni en MdL no está invitado a los entrenos en esta pista.</div>
+          </div>
+        )}
         <div className="botones" style={{ margin: 0 }}>
           <button className="boton boton-amarillo" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar"}</button>
           {pista.es_de_serie && enObras && <button className="boton boton-claro" type="submit" name="reabrir" value="1" disabled={guardando}>Marcar como reabierta</button>}

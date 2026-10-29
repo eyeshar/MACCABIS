@@ -36,7 +36,12 @@ export function compilar(env, clavesExtra = []) {
     if (JSON.parse(fs.readFileSync(HUELLA, 'utf8')).clave === clave && fs.existsSync(path.join(RAIZ, '.next', 'BUILD_ID'))) return false;
   } catch { /* sin huella: se compila */ }
   fs.rmSync(HUELLA, { force: true });
-  execFileSync(process.execPath, [NEXT, 'build'], { cwd: RAIZ, env, stdio: process.env.PRUEBAS_VER_BUILD ? 'inherit' : 'ignore' });
+  try {
+    execFileSync(process.execPath, [NEXT, 'build'], { cwd: RAIZ, env, stdio: process.env.PRUEBAS_VER_BUILD ? 'inherit' : 'pipe', maxBuffer: 1e8 });
+  } catch (e) {
+    console.log(`FALLO next build:\n${String(e.stdout ?? '').slice(-3000)}\n${String(e.stderr ?? '').slice(-3000)}`);
+    throw e;
+  }
   fs.writeFileSync(HUELLA, JSON.stringify({ clave, cuando: new Date().toISOString() }));
   return true;
 }

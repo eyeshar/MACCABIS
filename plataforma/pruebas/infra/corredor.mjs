@@ -202,7 +202,7 @@ const ejecutar = (s, carril) => new Promise((listo) => {
       // los FALLO y, por si fue un error al arrancar, las ultimas lineas del registro
       const lineas = texto.split(/\r?\n/).filter((l) => l.trim());
       const fallos = lineas.filter((l) => /FALLO|PUERTO OCUPADO/.test(l)).slice(0, 15);
-      console.log([...fallos, '...', ...lineas.slice(-12)].map((l) => `         ${l.slice(0, 300)}`).join('\n'));
+      console.log([...fallos, '...', ...lineas.slice(process.env.CI ? -60 : -12)].map((l) => `         ${l.slice(0, 300)}`).join('\n'));
     }
     listo(r);
   });

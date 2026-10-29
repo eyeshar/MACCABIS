@@ -151,7 +151,8 @@ function elegirRapidas() {
   }
 }
 
-if (motivos.has('test:privacidad')) elegir('pruebas:privacidad', 'va con test:privacidad (el HTML renderizado)');
+// en una tanda, test:privacidad deja el HTML renderizado a pruebas:privacidad (en completas ya va en la bateria, en su grupo)
+if (modo === 'rapidas' && motivos.has('test:privacidad')) elegir('pruebas:privacidad', 'va con test:privacidad (el HTML renderizado)');
 const plan = [...motivos.keys()].map((id) => porId.get(id));
 console.log(`\n${modo === 'rapidas' ? 'NIVEL 1 (pruebas:rapidas)' : 'NIVEL 2 (pruebas:completas)'}: ${plan.length} suites · puertos ${BASE}-${BASE + 99}`);
 for (const s of plan) console.log(`  ${s.id.padEnd(34)} ${s.tipo.padEnd(7)} ${motivos.get(s.id)}`);

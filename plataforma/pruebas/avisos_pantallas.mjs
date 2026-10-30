@@ -179,7 +179,7 @@ try {
     await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_${etiqueta}.png`), fullPage: true });
     // Tarjetas por debajo de 640 px, tabla en escritorio (deuda-octubre).
     const fila = prox.locator('.gs-tabla tr.eq-partido').first();
-    ok((await fila.evaluate((el) => getComputedStyle(el).display)) === (movil ? 'flex' : 'table-row'), `Partidos del domingo: ${movil ? 'tarjetas' : 'tabla'} a ${etiqueta}`);
+    ok((await fila.evaluate((el) => getComputedStyle(el).display)) === (movil ? 'grid' : 'table-row'), `Partidos del domingo: ${movil ? 'tarjetas' : 'tabla'} a ${etiqueta}`);
     if (movil) ok((await prox.locator('.gs-tabla tr.eq-partido').first().evaluate((el) => el.getBoundingClientRect().width <= 375 - 24)), 'Partidos del domingo: la tarjeta cabe en 375 px');
     fs.mkdirSync(DEUDA, { recursive: true });
     await prox.screenshot({ path: path.join(DEUDA, `panel_partidos_domingo_${etiqueta}.png`) });

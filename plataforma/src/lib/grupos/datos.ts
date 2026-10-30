@@ -4,6 +4,8 @@ import { cargarEvento, cargarEventos, cargarJugadores, type Cliente } from "@/li
 import { convocadosDe, type Respuesta } from "@/lib/eventos/dominio";
 import { hoyMadrid } from "@/lib/dias";
 import { sinFichaQueVan } from "@/lib/numeros/respuestas";
+import { cargarDefecto } from "@/lib/convocatoria/defecto";
+import { efectivaEn } from "@/lib/disponibilidad/porDefecto";
 import type { PersonaNum } from "@/components/numeros/Numeros";
 import type { JugadorGrupo } from "./sugerir";
 
@@ -27,14 +29,17 @@ export const sinPrivados = (d: DatosGrupos): DatosGrupos<JugadorVisible> => ({ .
 export async function cargarGrupos(sb: Cliente, eventoId: string): Promise<DatosGrupos | null> {
   const e = await cargarEvento(sb, eventoId);
   if (!e || e.tipo !== "entreno" || e.oficial === false) return null;
-  const [jugadores, resp, priv, rep] = await Promise.all([
+  const [jugadores, resp, priv, rep, defecto] = await Promise.all([
     cargarJugadores(sb),
     sb.from("respuestas").select("person_id, respuesta").eq("evento_id", eventoId),
     sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel"),
     sb.from("grupos_repartos").select("id, nombre, tamano, grupos, publicado, cambiado_en, cambiado_por_nombre").eq("evento_id", eventoId).is("borrado_en", null).order("orden").order("creado_en"),
+    cargarDefecto(sb, [eventoId]),
   ]);
   const invitados = convocadosDe(e, jugadores);
-  const r = new Map(((resp.data ?? []) as { person_id: string; respuesta: string }[]).map((x) => [x.person_id, x.respuesta]));
+  // «Van» y «dudan» con la regla de todas las pantallas (`respuestaEfectiva`, D146 y D150): solo quien lo ha dicho.
+  const dicho = new Map(((resp.data ?? []) as { person_id: string; respuesta: Respuesta }[]).map((x) => [x.person_id, x.respuesta]));
+  const r = new Map(invitados.map((j) => [j.person_id, efectivaEn(e, j.person_id, dicho.get(j.person_id) ?? "sin_responder", defecto).respuesta]));
   const p = new Map(((priv.data ?? []) as { person_id: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null }[]).map((x) => [x.person_id, x]));
   const lista: JugadorGrupo[] = invitados.map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible, posicion: p.get(j.person_id)?.posicion ?? null, base_reserva: Boolean(p.get(j.person_id)?.base_reserva), nivel: p.get(j.person_id)?.nivel ?? null }));
   return {

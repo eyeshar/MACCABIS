@@ -12,7 +12,8 @@ import { avisoDeEvento, cargarEventos, cargarPistas, type Cliente } from "@/lib/
 import { limpiarRival, pistaEfectiva, quedadaPorDefecto, hhmm, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { nombreRival } from "@/lib/equipacion";
 import { quienResponde } from "@/lib/respuestas/dominio";
-import { fueraDelPartido } from "@/lib/disponibilidad/porDefecto";
+import { ausenciaQueCubre, respuestaEfectiva } from "@/lib/disponibilidad/porDefecto";
+import { cargarAusencias } from "./defecto";
 import { calibrar, correccionSesgo, estadisticasGrupo, historiales, resumenCalibracion, tasasPorLetra, TEMPORADA_PROYECCION, type DatosProyeccion, type DificultadRival, type HistorialRival, type LigaJson, type Letra, type SeasonJson } from "./proyeccion";
 import { domingosFueraDe, proponerDificultad, type DatosPrivados, type Equipo, type RespuestaPartido } from "./motor";
 import type { Cambio, Contexto, FilaConvocatoria, FilaPrivada, JugadorVista, PartidoVista } from "./vista";
@@ -110,7 +111,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   // Domingos ya jugados (regla 4.2, D109): para saber quien estuvo disponible y se quedo fuera.
   const pasados = liga.filter((e) => e.fecha < fecha && e.fecha < hoy);
 
-  const [jug, resp, respEnt, priv, conv, enc, imp, respPas, convPas] = await Promise.all([
+  const [jug, resp, respEnt, priv, conv, enc, imp, respPas, convPas, ausencias] = await Promise.all([
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
@@ -121,6 +122,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D133).
     sb.from("convocatorias").select("fecha, equipos, dificultad").eq("estado", "aprobada"),
+    cargarAusencias(sb),
   ]);
   if (jug.error) throw new Error(`jugadores: ${jug.error.message}`);
   if (resp.error) throw new Error(`respuestas: ${resp.error.message}`);
@@ -176,8 +178,12 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   for (const r of (resp.data ?? []) as { evento_id: string; person_id: string; respuesta: RespuestaPartido; motivo: string | null }[]) respDe.set(`${r.evento_id}|${r.person_id}`, r);
   const activos = ((jug.data ?? []) as { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" }[])
     .filter((j) => j.activo && j.rol !== "entrenador");
+  // La regla unica (`respuestaEfectiva`, D146 y D150): un «nunca a partidos» sin responder no es invitado; sin responder y
+  // con una ausencia que cubre el domingo, «no» (con el motivo de la ausencia, solo para gestores).
+  const efectiva = (e: EventoFila, j: (typeof activos)[number], p: FilaPrivada | undefined) =>
+    respuestaEfectiva(e, p, respDe.get(`${e.id}|${j.person_id}`)?.respuesta ?? "sin_responder", { ausencia: ausenciaQueCubre(j.person_id, fecha, ausencias) });
   const invitadoA = (j: (typeof activos)[number], p: FilaPrivada | undefined) => delDia
-    .filter((e) => quienResponde(e, j) && !fueraDelPartido(e, p, respDe.get(`${e.id}|${j.person_id}`)?.respuesta ?? "sin_responder"))
+    .filter((e) => quienResponde(e, j) && !efectiva(e, j, p).fuera)
     .map((e) => e.equipo as Equipo);
   const jugadores: JugadorVista[] = activos.map((j) => {
     const p = privados.get(j.person_id) as FilaPrivada | undefined;
@@ -188,8 +194,9 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     const motivoNo: Partial<Record<Equipo, string | null>> = {};
     for (const e of delDia) {
       const r = respDe.get(`${e.id}|${j.person_id}`);
-      respuesta[e.equipo as Equipo] = r?.respuesta ?? "sin_responder";
-      if (r?.respuesta === "no") motivoNo[e.equipo as Equipo] = r.motivo;
+      const ef = efectiva(e, j, p);
+      respuesta[e.equipo as Equipo] = ef.respuesta;
+      if (ef.respuesta === "no") motivoNo[e.equipo as Equipo] = r?.motivo ?? ef.ausencia?.motivo ?? null;
     }
     const st = stats.get(j.person_id);
     return {

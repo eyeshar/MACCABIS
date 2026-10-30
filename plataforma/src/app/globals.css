@@ -653,6 +653,18 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
   .gs-tabla td:nth-child(3) { font-size: 14px; color: var(--tinta-suave); }
   .gs-tabla td:nth-child(n+4) { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
   .gs-tabla td:nth-child(n+4)::before { content: attr(data-label); flex: none; min-width: 92px; font-family: var(--f-cifras); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-tenue); }
+  /* Panel (30/10/2026): la tarjeta de cada partido, como las de Scouting. Arriba equipo y hora · pista; el partido; la
+     equipación en una línea; y «Respuestas» y «Convocados» a todo el ancho, con su etiqueta encima (al lado, los
+     contadores se apretaban en columna y el enlace se cortaba). En escritorio, la tabla de siempre. */
+  .gs-tabla.gs-partidos tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px; }
+  .gs-tabla.gs-partidos td { min-width: 0; overflow-wrap: anywhere; }
+  .gs-tabla.gs-partidos td:nth-child(1) { margin: 0; }
+  .gs-tabla.gs-partidos td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .gs-tabla.gs-partidos td:nth-child(3) { grid-column: 2; grid-row: 1; text-align: right; }
+  .gs-tabla.gs-partidos td:nth-child(4) { grid-column: 1 / -1; align-items: center; }
+  .gs-tabla.gs-partidos td:nth-child(n+5) { grid-column: 1 / -1; display: block; padding-top: 10px; border-top: 1px solid var(--linea-suave); }
+  .gs-tabla.gs-partidos td:nth-child(n+5)::before { display: block; min-width: 0; margin-bottom: 2px; }
+  .gs-tabla.gs-partidos td.ev-celda-resp { min-height: 0; }
 }
 .gs-scouting { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px; }
 .gs-scouting a { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 12px; background: var(--panel-3); border: 1px solid var(--borde-fuerte); color: var(--tinta); text-decoration: none; }

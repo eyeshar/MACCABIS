@@ -22,6 +22,7 @@ import { chromium } from 'playwright';
 import { catalogo, claveRuta, ESTADISTICAS } from './catalogo.mjs';
 import { REPO, BASE } from './puertos.mjs';
 import { apuntarProceso, matarArbol, olvidarProceso } from './procesos.mjs';
+import { barrerPostgres } from './matar.mjs';
 
 const args = process.argv.slice(2);
 const modo = args[0];
@@ -181,8 +182,13 @@ const servidor = plan.some((s) => s.tipo === 'web') ? await chromium.launchServe
 if (servidor) apuntarProceso(servidor.process());
 const resultados = [];
 const ficheroLog = (s) => path.join(SALIDA, `${s.id.replace(/:/g, '_')}.log`);
+// Si la tanda sale con suites en marcha (Ctrl+C), procesos.mjs mata sus arboles con su Postgres dentro: despues
+// (este va detras) se barren los restos de Postgres sin padre (infra/matar.mjs).
+let enMarcha = 0;
+process.on('exit', () => { if (enMarcha) { try { barrerPostgres(); } catch {} } });
 const ejecutar = (s, carril) => new Promise((listo) => {
   const ini = Date.now();
+  enMarcha++;
   const log = fs.openSync(ficheroLog(s), 'w');
   const env = { ...process.env, PRUEBAS_EN_TANDA: '1', PRUEBAS_CARRIL: String(carril), PRUEBAS_CAPTURAS: tiene('--capturas') ? '1' : '0', ...(servidor ? { PRUEBAS_NAVEGADOR_WS: servidor.wsEndpoint() } : {}) };
   delete env.PRUEBAS_PUERTO_APP; // cada carril tiene su app
@@ -190,9 +196,10 @@ const ejecutar = (s, carril) => new Promise((listo) => {
   // npm por su npm-cli.js (sin shell); si el corredor no se lanzo con npm, el npm del sistema
   const [cmd, pre, shell] = process.env.npm_execpath ? [process.execPath, [process.env.npm_execpath], false] : [win ? 'npm.cmd' : 'npm', [], win];
   const hijo = apuntarProceso(spawn(cmd, [...pre, 'run', '-s', s.id], { cwd: s.dir, env, stdio: ['ignore', log, log], shell, detached: !win, windowsHide: true }));
-  const limite = setTimeout(() => { fs.appendFileSync(ficheroLog(s), '\nFALLO: mas de 10 minutos, se corta\n'); matarArbol(hijo.pid); }, 10 * 60 * 1000);
+  // al cortarla, los restos de Postgres sin padre se barren ya: la siguiente suite de este carril usa los mismos puertos
+  const limite = setTimeout(() => { fs.appendFileSync(ficheroLog(s), '\nFALLO: mas de 10 minutos, se corta\n'); matarArbol(hijo.pid); barrerPostgres(); }, 10 * 60 * 1000);
   hijo.on('exit', (codigo) => {
-    clearTimeout(limite); olvidarProceso(hijo.pid); fs.closeSync(log);
+    clearTimeout(limite); olvidarProceso(hijo.pid); fs.closeSync(log); enMarcha--;
     const seg = (Date.now() - ini) / 1000;
     const texto = fs.readFileSync(ficheroLog(s), 'utf8');
     const oks = (texto.match(/^\s*OK\b/gm) || []).length;

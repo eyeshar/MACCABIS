@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 30/10/2026: **auditoría del BACKLOG** (`docs/auditoria-backlog`, solo docs): 108 casillas abiertas revisadas contra ESTADO, DECISIONS y git — 33 hechas y 19 obsoletas (al «Histórico», con su prueba o decisión), 17 pendientes de Code, 29 de Iván y 10 con fecha; 11 contradicciones con decisiones vigentes listadas sin resolver; recomendación: archivar `feat/calendario-automatico` (motivos en el BACKLOG, «Pendiente de Iván»)._
 _Última actualización: 30/10/2026: **pruebas por niveles mergeadas** (`592e4f2`, D149, OK de Iván): batería de Actions en verde antes del merge; Vercel ya no construye los commits que no tocan `plataforma/` (`plataforma/vercel.json`, `ignoreCommand`); worktree `Maccabis-pruebas` cerrado y rama borrada (local y origin). Este mismo commit, de solo docs, es la prueba de que Vercel no lo construye._
 _Última actualización: 29/10/2026, tarde: **pruebas por niveles** (`feat/pruebas-por-niveles`, D149, sin merge: lo verifica Iván): `npm run pruebas:rapidas` en local en cada cambio y la batería completa en GitHub Actions al subir la rama (≈4 min, en verde); puertos propios por worktree; `CLAUDE.md` nuevo en la raíz._
 _Última actualización: 29/10/2026, tarde: **limpieza de ramas y worktrees** (49 ramas locales y 8 de origin borradas; en origin solo queda `main` y en local, además, `feat/calendario-automatico`; todos los worktrees cerrados; ver la primera sección)._

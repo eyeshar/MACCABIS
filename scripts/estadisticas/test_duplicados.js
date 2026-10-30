@@ -12,10 +12,13 @@
  *     y descarta las de la J1 diciendo dónde están ya. Lo mismo sin `--jornada` (jornada inferida por fecha).
  *  2. Dos copias idénticas del mismo fichero en Descargas se copian una sola vez.
  *  3. Si una hoja no puede ser de la jornada pedida, PARA sin copiar nada:
- *     - hoja de liga descargada antes de que se jugara esa jornada;
+ *     - hoja de liga descargada antes de que se jugara esa jornada y con otra señal de ser vieja (su partido ya está
+ *       cargado en otra jornada, o no tiene puntos);
  *     - hoja de liga de un equipo que juega contra nosotros esa jornada según el calendario;
  *     - hoja de liga de un equipo que ya tiene hoja de esa jornada;
  *     - hoja nuestra cuyo partido, según el calendario, es de otra jornada.
+ *  4. Si solo la fecha del fichero es anterior a la jornada (una copia con su fecha antigua), avisa y la carga, también
+ *     con --no-interactivo (rutina A).
  */
 const fs = require('fs');
 const os = require('os');
@@ -54,6 +57,7 @@ const HOJAS = {
   j1_liga_bis: hoja('CHAVALITROS', 'VALLEKAS BASKET', 50, 40, 'reexportada'),   // misma J1, contenido distinto
   j1_nuestra_bis: hoja('ENFERMOS DEL ARO', 'MDA', 14, 62, 'reexportada'),
   j1_liga_mahou: hoja('LITROS DE MAHOU', 'LOS KHINKIS RUSOS', 60, 30),           // J1, G1 (Mahou juega contra MdA en la J2)
+  j2_liga_vacia: hoja('WILD BOYS', 'CHAVALITROS', 0, 0),                          // J2 bajada antes de jugarse: sin puntos
 };
 
 /** Carpeta temporal nueva. */
@@ -124,10 +128,30 @@ function descargasJ1yJ2() {
     ok(err && re.test(err.message), `${titulo}: para con un aviso claro (${err ? err.message.slice(0, 110) : 'NO PARA'}...)`);
     ok(JSON.stringify(lista(base)) === JSON.stringify(antes), `${titulo}: no se ha copiado nada`);
   };
-  {   // hoja de liga de la J1 reexportada (contenido distinto), bajada el 06/10, con --jornada 2 (18/10)
+  {   // hoja de liga de la J1 reexportada (contenido distinto), bajada el 06/10, con --jornada 2 (18/10): fecha vieja
+      // y además ese partido ya está cargado en la J1
     const base = baseConJ1(), desde = tmp('descargas');
     escribe(desde, 'estadisticaPartido_06102026.xlsx', HOJAS.j1_liga_bis, '2026-10-06');
-    await paraSinCopiar('hoja de liga descargada antes de que se jugara la J2', base, desde, { jornadaForzada: 2 }, /no puede ser de la J02: se descargó el 2026-10-06 y esa jornada se jugó el 2026-10-18/);
+    await paraSinCopiar('hoja de liga bajada antes de la J2 y con su partido ya cargado en la J1', base, desde, { jornadaForzada: 2 },
+      /no puede ser de la J02: se descargó el 2026-10-06 y esa jornada se jugó el 2026-10-18 y ese partido ya está cargado en la J01 \(liga\/liga_J01_G1_chavalitros_vs_vallekas-basket_/);
+  }
+  {   // fecha vieja y la hoja sin puntos (bajada antes de que se jugara el partido)
+    const base = baseConJ1(), desde = tmp('descargas');
+    escribe(desde, 'estadisticaPartido_06102026.xlsx', HOJAS.j2_liga_vacia, '2026-10-06');
+    await paraSinCopiar('hoja de liga bajada antes de la J2 y sin puntos', base, desde, { jornadaForzada: 2, estricto: true },
+      /se descargó el 2026-10-06 y esa jornada se jugó el 2026-10-18 y la hoja no tiene puntos/);
+  }
+  // 4. Solo la fecha del fichero es vieja (una hoja copiada con su fecha antigua): avisa y se carga, también con
+  //    --no-interactivo (estricto), que es como la llama la rutina A.
+  for (const [modo, opts] of [['interactivo', {}], ['--no-interactivo', { estricto: true }]]) {
+    const base = baseConJ1(), desde = tmp('descargas');
+    escribe(desde, 'estadisticaPartido_23102026.xlsx', HOJAS.j2_liga, '2026-10-06');
+    let r = null, err = null;
+    try { r = await recoger({ temporada: T, desde, base, jornadaForzada: 2, sinAsistencia: true, log: callado, ...opts }); } catch (e) { err = e; }
+    ok(!err, `solo fecha vieja (${modo}): no para (${err ? err.message.slice(0, 110) : 'sigue'})`);
+    ok(r && r.plan.length === 1 && r.plan[0].nombre.startsWith('liga_J02_G1_wild-boys_vs_chavalitros_'), `solo fecha vieja (${modo}): la hoja va al plan como J02`);
+    ok(r && r.avisos.length === 1 && /se descargó el 2026-10-06 y esa jornada se jugó el 2026-10-18, pero no hay otra señal/.test(r.avisos[0]),
+      `solo fecha vieja (${modo}): deja un aviso (${r && r.avisos[0] ? r.avisos[0].slice(0, 110) : 'SIN AVISO'}...)`);
   }
   {   // hoja de liga en la que juega nuestro rival de la J2 (Litros de Mahou contra MdA), bajada hoy
     const base = baseConJ1(), desde = tmp('descargas');

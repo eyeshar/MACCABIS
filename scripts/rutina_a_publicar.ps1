@@ -227,11 +227,14 @@ try {
     Start-Sleep -Seconds $EsperaDespliegue
     if ((Ejecutar 'verificar_produccion (2º intento)' $Plataforma 'node pruebas/verificar_produccion.mjs') -ne 0) { $fallos += 'verificar_produccion' }
   }
+  # Avisos que no paran la jornada (p. ej. una hoja con fecha de descarga antigua): van en el aviso a Iván.
+  $avisos = @($res.avisos | Where-Object { $_ })
+  $notas = if ($avisos.Count) { " · Aviso: $($avisos -join ' / ')" } else { '' }
   if ($fallos.Count) {
-    $texto = "$($res.texto) — pero falla: $($fallos -join ', ')"
+    $texto = "$($res.texto) — pero falla: $($fallos -join ', ')$notas"
     Registrar 'PUBLICADA CON FALLOS' $texto -ConDetalle
   } else {
-    $texto = $res.texto
+    $texto = "$($res.texto)$notas"
     Registrar 'PUBLICADA' "$texto (commit $(@(GitOk @('rev-parse', '--short', 'HEAD'))[0]))"
   }
   Avisar $texto

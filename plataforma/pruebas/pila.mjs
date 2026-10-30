@@ -23,7 +23,8 @@ import postgres from 'postgres';
 import { SignJWT, jwtVerify } from 'jose';
 import { migrar, semilla } from '../scripts/db.mjs';
 import { PUERTOS as P, exigirLibres } from './infra/puertos.mjs';
-import { lanzar, apuntarProceso, apuntarCarpeta, olvidarCarpeta, matarArbol } from './infra/procesos.mjs';
+import { lanzar, apuntarProceso, apuntarCarpeta, olvidarCarpeta, apuntarPostgres, olvidarPostgres, matarArbol } from './infra/procesos.mjs';
+import { pararPostgres, barrerPostgres } from './infra/matar.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const BIN = path.join(AQUI, '.bin');
@@ -90,8 +91,11 @@ export async function arrancar({ log = () => {} } = {}) {
   fs.rmSync(path.join(AQUI, '..', '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
   const RES = path.join(AQUI, 'resultados', 'pg');
   fs.mkdirSync(RES, { recursive: true });
-  const dir = apuntarCarpeta(fs.mkdtempSync(path.join(RES, `c${process.env.PRUEBAS_CARRIL || 0}-`)));
+  const dir = apuntarPostgres(apuntarCarpeta(fs.mkdtempSync(path.join(RES, `c${process.env.PRUEBAS_CARRIL || 0}-`))));
   const pg = new EmbeddedPostgres({ databaseDir: dir, user: 'postgres', password: 'postgres', port: PUERTOS.pg, persistent: false, onLog: () => {}, onError: () => {} });
+  // Su stop (tambien el de su async-exit-hook al salir) mata el postmaster con taskkill /F: en Windows puede dejar un
+  // hijo suspendido con el puerto y la carpeta (infra/matar.mjs). Lo para siempre infra/procesos.mjs con pg_ctl.
+  pg.stop = async () => {};
   await pg.initialise();
   await pg.start();
   apuntarProceso(pg.process);
@@ -241,7 +245,8 @@ export async function arrancar({ log = () => {} } = {}) {
     pasarela.close();
     matarArbol(rest.pid);
     await sql.end();
-    await pg.stop();
+    if (!pararPostgres(dir)) { matarArbol(pg.process?.pid); barrerPostgres(); }
+    olvidarPostgres(dir);
     fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5 });
     olvidarCarpeta(dir);
   }

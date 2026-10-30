@@ -160,6 +160,13 @@ try {
   ok(robotsTxt.includes('Sitemap: https://maccabis.vercel.app/sitemap.xml'), 'robots.txt enlaza el sitemap');
   const sm = await (await fetch(`${APP}/sitemap.xml`)).text();
   ok(sm.includes('<loc>https://maccabis.vercel.app/club</loc>') && sm.includes('<loc>https://maccabis.vercel.app/</loc>') && !/entrar|mi-zona|gestion/.test(sm), 'sitemap: portada y /club, nada privado');
+  // Paginas de partido de la liga (D129): publicas, una por resultado de los dos grupos, y se abren sin sesion.
+  const paginasPartido = [...sm.matchAll(/<loc>https:\/\/maccabis\.vercel\.app(\/liga\/[^/<]+\/partido\/[^<]+)<\/loc>/g)].map((m) => m[1]);
+  const ligaWeb = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'liga.json'), 'utf8')); // la que compila la web
+  const resultados = Object.values(ligaWeb.grupos).reduce((n, g) => n + g.resultados.length, 0);
+  ok(paginasPartido.length > 0 && paginasPartido.length === resultados && new Set(paginasPartido).size === paginasPartido.length, `sitemap: las ${resultados} paginas de partido de la liga, sin repetir (${paginasPartido.length})`);
+  const unPartido = paginasPartido.length ? await fetch(`${APP}${paginasPartido[0].replaceAll('&amp;', '&')}`, { redirect: 'manual' }) : null;
+  ok(unPartido && unPartido.status === 200, `sitemap: la pagina de partido ${paginasPartido[0] || '(ninguna)'} se abre sin sesion (${unPartido ? unPartido.status : '-'})`);
   for (const ruta of ['/', '/club', '/privacidad']) {
     const x = await fetch(`${APP}${ruta}`);
     const cuerpo = await x.text();

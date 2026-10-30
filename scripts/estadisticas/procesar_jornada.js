@@ -25,8 +25,10 @@
  *        hojas de jornadas anteriores que siguen en Descargas no se vuelven a cargar como si fueran
  *        de la jornada pedida (23/10/2026).
  *      - Si una hoja no puede ser de la jornada a la que iría (la nuestra, por el calendario; las de
- *        liga, porque uno de sus equipos juega contra nosotros esa jornada, ya tiene hoja de esa
- *        jornada o la hoja se descargó antes de que se jugara), PARA sin copiar nada y avisa.
+ *        liga, porque uno de sus equipos juega contra nosotros esa jornada o ya tiene hoja de esa
+ *        jornada), PARA sin copiar nada y avisa. Si la hoja de liga se descargó (fecha del fichero) antes
+ *        de que se jugara la jornada, solo AVISA (una copia puede traer la fecha antigua), salvo que haya
+ *        otra señal de hoja vieja (ese partido ya cargado en otra jornada, o sin puntos): entonces PARA.
  *   2. Regenera data/season_<temporada>.json con todas las validaciones (puntos de la hoja =
  *      marcador del acta, parciales = marcador). Si algo no cuadra, NO escribe nada.
  *   3. Añade la temporada a data/index.json si aún no está (sin cambiar la de por defecto), recalcula la
@@ -99,12 +101,13 @@ async function recoger(o) {
   const esNuestro = n => Object.values(cfg.nombres_club).flat().some(x => normEquipo(x) === normEquipo(n));
   if (!fs.existsSync(DESDE)) throw new Error(`No existe la carpeta ${DESDE}`);
   const todos = fs.readdirSync(DESDE);
-  const plan = [], descartes = [];
+  const plan = [], descartes = [], avisos = [];
   const cargados = hashesCargados(BASE);
   const yaEnJornada = hojasPorJornada(BASE, cfg);
   const enPlan = new Map();                                // md5 -> origen (duplicados dentro de la propia carpeta)
   const descarta = (origen, motivo) => { descartes.push({ origen, motivo }); log(`  = ${origen}: ${motivo}`); };
   const duda = msg => { if (o.estricto) throw new Error(msg); log(`  ! ${msg}`); };
+  const aviso = msg => { avisos.push(msg); log(`  ! ${msg}`); };    // ni con --no-interactivo para
   /** true si el fichero ya está cargado (o ya va en el plan) y se ha descartado. */
   const repetido = (f, que) => {
     const h = md5(path.join(DESDE, f));
@@ -132,6 +135,9 @@ async function recoger(o) {
   const fechaDescarga = f => fs.statSync(path.join(DESDE, f)).mtime.toISOString().slice(0, 10);
   const yaTiene = (jor, equipo) => (yaEnJornada[jor] || new Map()).get(slug(equipo));
   const reserva = (jor, equipo, f) => { (yaEnJornada[jor] || (yaEnJornada[jor] = new Map())).set(slug(equipo), f + ' (en esta misma carpeta)'); };
+  const partidosLiga = (fs.existsSync(path.join(BASE, 'liga')) ? fs.readdirSync(path.join(BASE, 'liga')) : [])
+    .map(f => f.match(/^liga_(J\d+)_G\d+_(.+)_vs_(.+)_[0-9a-f]{8}\.xlsx$/i))
+    .filter(Boolean).map(m => ({ jornada: m[1].toUpperCase(), local: m[2].toLowerCase(), visitante: m[3].toLowerCase(), fichero: 'liga/' + m[0] }));
 
   for (const f of todos.filter(f => /^estadisticaPartido.*\.xlsx$/i.test(f) && !f.startsWith('~$'))) {
     // Partidos de liga donde NO jugamos (D73): copia segura a liga/, con la jornada y el grupo en el nombre.
@@ -153,9 +159,18 @@ async function recoger(o) {
         const ya = yaTiene(J(jor), eq);
         if (ya) throw new Error(`${f} (${id.hoja.local} - ${id.hoja.visitante}) no puede ser de la ${J(jor)}: ${eq} ya tiene hoja de esa jornada (${ya}) (${como}). ¿Es de otra jornada? Indícala con --jornada N o quítala de la carpeta.`);
       }
+      // La fecha de descarga es la de modificación del fichero: una hoja copiada de otra carpeta puede traer una fecha
+      // antigua. Sola solo avisa; para si además hay otra señal de hoja vieja: el mismo partido ya está cargado en otra
+      // jornada (una reexportación) o la hoja no tiene puntos (se bajó antes de jugarse).
       const fechaJ = id.grupo.fechas[jor];
-      if (fechaJ && fechaDescarga(f) < fechaJ)
-        throw new Error(`${f} (${id.hoja.local} - ${id.hoja.visitante}) no puede ser de la ${J(jor)}: se descargó el ${fechaDescarga(f)} y esa jornada se jugó el ${fechaJ} (${como}). ¿Es de otra jornada? Indícala con --jornada N o quítala de la carpeta.`);
+      if (fechaJ && fechaDescarga(f) < fechaJ) {
+        const fecha = `se descargó el ${fechaDescarga(f)} y esa jornada se jugó el ${fechaJ}`;
+        const mismo = partidosLiga.find(p => p.local === slug(id.hoja.local) && p.visitante === slug(id.hoja.visitante));
+        const senal = mismo ? `ese partido ya está cargado en la ${mismo.jornada} (${mismo.fichero})`
+          : id.hoja.equipos.every(e => !e.totales.pts) ? 'la hoja no tiene puntos (el partido no se había jugado)' : null;
+        if (senal) throw new Error(`${f} (${id.hoja.local} - ${id.hoja.visitante}) no puede ser de la ${J(jor)}: ${fecha} y ${senal} (${como}). ¿Es de otra jornada? Indícala con --jornada N o quítala de la carpeta.`);
+        aviso(`${f} (${id.hoja.local} - ${id.hoja.visitante}): según la fecha del fichero ${fecha}, pero no hay otra señal de que sea vieja (¿copiada con su fecha antigua?): se carga como ${J(jor)}.`);
+      }
       reserva(J(jor), id.hoja.local, f); reserva(J(jor), id.hoja.visitante, f);
       const nombre = `liga_${J(jor)}_${id.grupo.clave}_${slug(id.hoja.local)}_vs_${slug(id.hoja.visitante)}_${md5(path.join(DESDE, f)).slice(0, 8)}.xlsx`;
       plan.push({ origen: f, destino: 'liga', nombre, que: `liga ${id.grupo.clave} ${J(jor)}${o.jornadaForzada ? '' : ' (inferida por fecha)'}: ${id.hoja.local} - ${id.hoja.visitante}` });
@@ -187,7 +202,7 @@ async function recoger(o) {
     .sort((a, b) => b.t - a.t)[0];
   if (bilan && !repetido(bilan.f, 'asistencia de SportEasy'))
     plan.push({ origen: bilan.f, destino: 'asistencia', nombre: `bilan_presence_${bilan.t.toISOString().slice(0, 10)}_${md5(path.join(DESDE, bilan.f)).slice(0, 8)}.xlsx`, que: 'asistencia de SportEasy' });
-  return { plan, descartes, cfg, base: BASE };
+  return { plan, descartes, avisos, cfg, base: BASE };
 }
 
 /**
@@ -218,7 +233,8 @@ if (require.main === module) {
   const JORNADA_FORZADA = +argVal('--jornada', 0) || null;   // jornada de las hojas de liga donde no jugamos (si no, la última con fecha <= hoy)
   const copiados = [];                                       // copias nuevas de esta ejecución (se deshacen si para)
   // estado: 'nada' (sin ficheros nuevos), 'dry', 'lista' (escrita y lista para publicar) o 'parada' (con motivo).
-  const resumen = { temporada: TEMPORADA, dry: DRY, estado: null, nuevos: 0, jornada: null, texto: null, motivo: null, copiados };
+  // avisos: lo que no para la jornada pero conviene que Iván vea (p. ej. una hoja con fecha de descarga antigua).
+  const resumen = { temporada: TEMPORADA, dry: DRY, estado: null, nuevos: 0, jornada: null, texto: null, motivo: null, avisos: [], copiados };
   const escribeResumen = () => { if (RESUMEN) fs.writeFileSync(RESUMEN, JSON.stringify(resumen, null, 1) + '\n', 'utf8'); };
   /**
    * Para con código 1. Con --no-interactivo deshace las copias de esta ejecución en fuentes_fbm/, para que la siguiente
@@ -242,7 +258,7 @@ if (require.main === module) {
     console.log(`Procesar jornada ${TEMPORADA}: buscando ficheros en ${DESDE}${NOINT ? ' (no interactivo)' : ''}`);
     let plan, descartes;
     try {
-      ({ plan, descartes } = await recoger({ temporada: TEMPORADA, desde: DESDE, base: BASE, jornadaForzada: JORNADA_FORZADA, sinAsistencia: args.includes('--sin-asistencia'), estricto: NOINT }));
+      ({ plan, descartes, avisos: resumen.avisos } = await recoger({ temporada: TEMPORADA, desde: DESDE, base: BASE, jornadaForzada: JORNADA_FORZADA, sinAsistencia: args.includes('--sin-asistencia'), estricto: NOINT }));
     } catch (e) { para(e.message, `\nERROR: ${e.message}\nNo se ha copiado nada.`); }
     if (descartes.length) console.log(`${descartes.length} fichero(s) descartado(s) por estar ya cargados.`);
     resumen.nuevos = plan.length;

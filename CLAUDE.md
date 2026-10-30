@@ -101,8 +101,15 @@ siguen siendo manuales.
 - **Si un puerto está ocupado, la prueba se para al momento:** «PUERTO OCUPADO: puerto X ocupado por otro proceso (PID,
   programa)». Nunca prueba contra lo que esté escuchando ahí. Si es de otro proyecto o de otra sesión, **no lo cierres**:
   usa otro bloque.
-- **Al terminar no queda nada encendido**, tampoco si falla, con Ctrl+C o si la matan de golpe (un vigía aparte lo
-  limpia). Si aun así queda algo de ESTE worktree: `npm run pruebas:limpiar` (solo toca lo suyo).
+- **Al terminar no queda nada encendido**, tampoco si falla, con Ctrl+C o si la matan de golpe (un vigía aparte, fuera
+  del árbol de la prueba, lo limpia). Si aun así queda algo de ESTE worktree: `npm run pruebas:limpiar` (solo toca lo
+  suyo: por la carpeta de bases, por los puertos de su bloque y los Postgres de su `node_modules` sin padre; lo ajeno lo
+  nombra y no lo toca). No lo lances con una prueba de este worktree en marcha: también la pararía.
+- **Postgres nunca se para matando el postmaster** (`taskkill /F`, `process.kill`, `pg.stop()` de embedded-postgres): en
+  Windows, si está creando un hijo, ese `postgres.exe --forkchild` se queda suspendido para siempre con el puerto y la
+  carpeta de la base. Se para con `pararPostgres(dir)` (`pg_ctl stop`) y, si no se pudo, `barrerPostgres()`
+  (`plataforma/pruebas/infra/matar.mjs`). La pila (`pila.mjs`) ya lo hace; una suite nueva que arranque su propio Postgres,
+  igual (`apuntarPostgres(dir)` antes de arrancarlo).
 
 ## Vercel: qué se construye (D149)
 
@@ -123,6 +130,9 @@ cd plataforma && npm ci     # instalación PROPIA, plataforma (no enlazar node_m
 Y copiar lo que no está en git (si falta, algunas pruebas fallan sin que el código tenga la culpa):
 `plataforma/.env.local`, `privado/` **sin `backups/` ni `tmp/`** (`robocopy <origen> <destino> /E /XD backups tmp`),
 `fuentes_fbm/` al día, `.cache-jdm/`, `data/raw/` y `plataforma/pruebas/.bin/` (PostgREST; si no está, se descarga).
+`pruebas:solo-ficha-real` necesita además `privado/backups/2026-10-29_valdebernardo_foto_antes.json` (solo ese fichero).
+Las suites de avisos push (`respuestas-pantallas`, `convocatoria-pantallas`…) necesitan `openssl` en el PATH: pásalas
+desde Git Bash (en PowerShell no está).
 `next-env.d.ts` lo crea `pruebas:rapidas` si falta.
 
 **Cerrarlo:** primero quitar los enlaces que haya (junction o symlink a la carpeta principal: `privado/`, `node_modules`…)

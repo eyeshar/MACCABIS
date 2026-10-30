@@ -3,3 +3,6 @@
 
 # Calendarios .ics de referencia (pruebas:fuente-eventos): siempre CRLF, como los sirve la web (RFC 5545), también en Linux (D149)
 *.ics text eol=crlf
+
+# Scripts de shell que ejecuta Linux (Vercel, Actions): siempre LF (D149)
+*.sh text eol=lf

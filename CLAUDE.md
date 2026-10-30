@@ -104,6 +104,10 @@ siguen siendo manuales.
 - **Al terminar no queda nada encendido**, tampoco si falla, con Ctrl+C o si la matan de golpe (un vigía aparte lo
   limpia). Si aun así queda algo de ESTE worktree: `npm run pruebas:limpiar` (solo toca lo suyo).
 
+## Vercel: qué se construye (D149)
+
+`plataforma/vercel.json` (la Root Directory de Vercel es `plataforma/`) tiene un `ignoreCommand` (`plataforma/scripts/vercel_construir.sh`): **un commit que no toca `plataforma/` no se construye** (ni producción ni vista previa); uno que toca cualquier cosa de `plataforma/`, también `src/data/`, sí. Compara contra el último commit desplegado de la rama o, si no lo hay, contra el primer padre (en un `merge --no-ff`, el `main` anterior). Si dudas, construye. Consecuencia: un commit de solo `docs` no genera vista previa ni despliegue. Nada de esto se cambia desde el panel de Vercel: el equipo «Web TCPC» es compartido con TCPC y su configuración la decide Iván.
+
 ## Worktrees (una sesión, un worktree; norma 11)
 
 **Preparar uno nuevo** (desde la carpeta principal, que se queda en `main`):

@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 30/10/2026: **pruebas por niveles mergeadas** (`592e4f2`, D149, OK de Iván): batería de Actions en verde antes del merge; Vercel ya no construye los commits que no tocan `plataforma/` (`plataforma/vercel.json`, `ignoreCommand`); worktree `Maccabis-pruebas` cerrado y rama borrada (local y origin). Este mismo commit, de solo docs, es la prueba de que Vercel no lo construye._
 _Última actualización: 29/10/2026, tarde: **pruebas por niveles** (`feat/pruebas-por-niveles`, D149, sin merge: lo verifica Iván): `npm run pruebas:rapidas` en local en cada cambio y la batería completa en GitHub Actions al subir la rama (≈4 min, en verde); puertos propios por worktree; `CLAUDE.md` nuevo en la raíz._
 _Última actualización: 29/10/2026, tarde: **limpieza de ramas y worktrees** (49 ramas locales y 8 de origin borradas; en origin solo queda `main` y en local, además, `feat/calendario-automatico`; todos los worktrees cerrados; ver la primera sección)._
 _Última actualización: 29/10/2026: **vuelta a Valdebernardo: todos los entrenos allí desde el 04/11 y pista «solo jugadores con ficha», sin nada retroactivo** (`feat/valdebernardo-ficha`, D148, sin merge: espera el OK de Iván a la vista previa; migraciones `20261029100000` y `20261029120000` y datos ya aplicados en el real con D111; no se copia a SportEasy)._
@@ -11,7 +12,7 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
-## Pruebas por niveles (29/10/2026; D149) — `feat/pruebas-por-niveles`, SIN MERGE (lo verifica Iván)
+## Pruebas por niveles (29/10/2026; D149) — `feat/pruebas-por-niveles`, MERGEADA el 30/10 (`592e4f2`, OK de Iván)
 - **Qué cambia:** en cada cambio, **`npm run pruebas:rapidas`** (nivel 1, en local: `typecheck` + la lógica y las pantallas tocadas, elegidas solas frente a `origin/main`; `-- --lista` dice qué y por qué). La **batería completa va en GitHub Actions** al subir la rama (`.github/workflows/pruebas.yml`, 4 grupos en paralelo); Code no la espera, pero antes de mergear comprueba que está en verde con **`npm run ci:estado`**. `npm run pruebas:completas` es lo mismo en local. Reglas, tabla «si tocas X, pasa Y», puertos y worktrees: **`CLAUDE.md`** (raíz, nuevo). Norma 15 en NORMAS; norma 11 actualizada (`npm ci` propio en cada worktree).
 - **Medido antes de cambiar (cada script por separado, en serie, Windows):** 1.421 s (≈24 min) en total; casi todo en segundos salvo `pruebas:cuadre` (485 s: cientos de páginas en serie con `networkidle`) y las web (20-60 s: pila, `next build` ≈6 s con caché, Chrome ≈1 s, ≈50 s de `waitForTimeout` repartidos). Las dos horas por bloque eran de la sesión (suites una a una, esperas y repeticiones por puertos ocupados por otra sesión o por Web TCPC en el 3100), no de los scripts.
 - **Después:** `pruebas:completas` en local **766 s (12,8 min)**, todo en verde y **con los mismos OK que antes, suite a suite**; `pruebas:cuadre` **485 → 72 s** (las mismas 697 comprobaciones); nivel 1 típico (página del tablero: 4 suites web + typecheck) **2 min 40 s**; cambio en `/asistente`: 43 s. **En Actions: ≈4 min** de principio a fin (48 suites en 4 grupos; 6 ejecuciones seguidas en verde, ver abajo).

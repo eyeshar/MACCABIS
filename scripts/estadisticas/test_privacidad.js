@@ -265,7 +265,9 @@ console.log('\n== Página de partido de la liga (D129): por equipo en público; 
 }
 
 (async () => {
-  if (fs.existsSync(path.join(PLAT, '.next', 'BUILD_ID'))) {
+  // En una tanda (pruebas:rapidas/completas) el HTML lo revisa pruebas:privacidad, que va siempre con esta (D149).
+  if (process.env.PRUEBAS_EN_TANDA) console.log('  (el HTML renderizado lo revisa pruebas:privacidad en esta misma tanda)');
+  else if (fs.existsSync(path.join(PLAT, '.next', 'BUILD_ID'))) {
     const { revisar } = await import(pathToFileURL(path.join(PLAT, 'pruebas', 'privacidad_paginas.mjs')).href);
     fallos += await revisar({ log: console.log });
   } else console.log('  (no hay compilación en plataforma/.next: se omite el HTML renderizado; hazlo tras npm run build)');

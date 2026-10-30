@@ -80,7 +80,11 @@
     "pruebas:safe-area": "node pruebas/safe_area.mjs",
     "pruebas:chat-ia": "node pruebas/chat_ia.mjs",
     "pruebas:solo-ficha": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/solo_con_ficha.mjs",
-    "pruebas:solo-ficha-real": "node pruebas/solo_con_ficha_real.mjs"
+    "pruebas:solo-ficha-real": "node pruebas/solo_con_ficha_real.mjs",
+    "pruebas:rapidas": "node pruebas/infra/corredor.mjs rapidas",
+    "pruebas:completas": "node pruebas/infra/corredor.mjs completas",
+    "pruebas:limpiar": "node pruebas/infra/limpiar.mjs",
+    "ci:estado": "node ../scripts/ci_estado.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

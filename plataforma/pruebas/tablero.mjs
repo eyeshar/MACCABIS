@@ -11,9 +11,10 @@
 //   npm run pruebas:tablero
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto } from './comun_e2e.mjs';
 import { adelantar, semanas } from './fechas_prueba.mjs';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const { ok, fallos, sumar } = contador();
-const e = await preparar({ puerto: 3124 });
+const e = await preparar();
 const { sql, APP } = e;
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));
@@ -66,18 +67,15 @@ try {
   ok((await pg.locator('tbody[data-bloque="exterior"] tr[data-person="sint-carla"]').count()) === 1, 'Carla (escolta, base de reserva) en Exteriores');
 
   console.log('\n== Convocar y quitar desde la casilla; doblaje marcado');
-  await celdaDe('sint-ana', 'MdA').click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => celdaDe('sint-ana', 'MdA').click());
   let c = await conv();
   ok(enEq(c, 'MdA', 'sint-ana') && (await celdaDe('sint-ana', 'MdA').innerText()) === 'Convocado', 'tocar «Convocar»: convocado al MdA (guardado)');
   ok(Number(await pg.getByTestId('n-sin-convocar').innerText()) === nS0 - 1, 'el contador de sin convocar baja');
   const cambios = await sql`select accion, motivo, nota, detalle from public.convocatoria_cambios order by en`;
   ok(cambios.some((x) => x.accion === 'anadir' && x.motivo === 'otro' && x.nota === 'ajuste manual'), 'el cambio queda con su motivo («ajuste manual», D107)', JSON.stringify(cambios));
-  await celdaDe('sint-ana', 'MdL').click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => celdaDe('sint-ana', 'MdL').click());
   ok(enEq(await conv(), 'MdL', 'sint-ana') && await visto(fila('sint-ana').getByText('dobla')), 'convocado en los dos: «dobla»');
-  await celdaDe('sint-ana', 'MdL').click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => celdaDe('sint-ana', 'MdL').click());
   ok(!enEq(await conv(), 'MdL', 'sint-ana') && (await celdaDe('sint-ana', 'MdL').innerText()) === 'Convocar', 'tocar «Convocado» lo quita');
 
   console.log('\n== Agrupar por: cambia solo cómo se ve (y se recuerda)');
@@ -104,31 +102,26 @@ try {
   await fila('sint-flor').locator('input[type=checkbox]').check();
   ok(await visto(pg.getByTestId('barra-acciones')) && /3/.test(await pg.getByTestId('barra-acciones').locator('.tb-n').innerText()), 'barra fija con la selección (3, de Interiores y Exteriores)');
   await foto(pg, 'tablero_domingo_posicion_seleccion_1280', false);
-  await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Al MdA' }).click();
-  await pg.waitForTimeout(1800);
+  await trasAccion(pg, () => pg.getByTestId('barra-acciones').getByRole('button', { name: 'Al MdA' }).click());
   c = await conv();
   ok(['sint-bea', 'sint-carla', 'sint-flor'].every((p) => enEq(c, 'MdA', p)), '«Al MdA»: los tres convocados');
   const resMdA = await pg.getByTestId('resumen-MdA').innerText();
   ok(/4 convocados/.test(resMdA) && /mínimo es 7/.test(resMdA), 'resumen del MdA recalculado: 4 convocados y el aviso del mínimo', resMdA);
   ok(/1 base/.test(resMdA) && /reserva|ext\./.test(resMdA), 'con sus líneas (bases, exteriores, interiores)');
   await fila('sint-eva').locator('input[type=checkbox]').check();
-  await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Al MdA' }).click();
-  await pg.waitForTimeout(1000);
+  await trasAccion(pg, () => pg.getByTestId('barra-acciones').getByRole('button', { name: 'Al MdA' }).click());
   ok(!enEq(await conv(), 'MdA', 'sint-eva') && /disponible/.test(await pg.getByTestId('tb-mensaje').innerText()), '«Al MdA» solo afecta a quien está disponible (Eva tiene «duda»)');
   await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Quitar selección' }).click();
   ok(await visto(pg.getByTestId('registro-cambios').getByText(/Convocar \(MdA\): /)), 'registro de cambios: quién, a quién, cuándo');
 
   console.log('\n== Deshacer (un nivel) y una aprobada que se toca pasa a «cambiada»');
-  await celdaDe('sint-ana', 'MdL').click();
-  await pg.waitForTimeout(1500);
-  await pg.getByTestId('tb-mensaje').getByRole('button', { name: 'Deshacer' }).click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => celdaDe('sint-ana', 'MdL').click());
+  await trasAccion(pg, () => pg.getByTestId('tb-mensaje').getByRole('button', { name: 'Deshacer' }).click());
   ok(!enEq(await conv(), 'MdL', 'sint-ana'), '«Deshacer» devuelve la convocatoria como estaba');
   await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = now() - interval '1 minute', aprobada_por_nombre = 'Iván', whatsapp_estado = 'al_dia', whatsapp_base = equipos, sporteasy_estado = 'al_dia', sporteasy_base = equipos where fecha = ${J3}`;
   await pg.reload();
   ok((await pg.getByTestId('estado-convocatoria').innerText()) === 'Aprobada', 'convocatoria «Aprobada»');
-  await celdaDe('sint-ana', 'MdL').click();
-  await pg.waitForTimeout(1800);
+  await trasAccion(pg, () => celdaDe('sint-ana', 'MdL').click());
   c = await conv();
   await pg.reload();
   ok(c.whatsapp_estado === 'pendiente' && c.sporteasy_estado === 'pendiente' && /cambiada/.test(await pg.getByTestId('estado-convocatoria').innerText()), 'tocarla: «Aprobada · cambiada» y sus salidas pendientes (como hoy)');
@@ -138,8 +131,7 @@ try {
   await pg.getByTestId('barra-acciones').getByRole('button', { name: 'No van' }).click();
   ok(await pg.getByRole('button', { name: 'Guardar «No van»' }).isDisabled(), 'pide un motivo de la lista (sin diálogos del navegador)');
   await pg.getByTestId('barra-acciones').locator('label', { hasText: 'Familia' }).click();
-  await pg.getByRole('button', { name: 'Guardar «No van»' }).click();
-  await pg.waitForTimeout(1800);
+  await trasAccion(pg, () => pg.getByRole('button', { name: 'Guardar «No van»' }).click());
   const edu = await sql`select e.equipo, r.respuesta, r.motivo, r.origen, r.puesto_por_nombre from public.respuestas r join public.eventos e on e.id = r.evento_id where r.person_id = 'sint-eva' and e.fecha = ${J3}`;
   ok(edu.length === 2 && edu.every((x) => x.respuesta === 'no' && x.motivo === 'familia' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván'), 'Eva: «no · familia» en los dos partidos, puesta por Iván (con el interruptor apagado)', JSON.stringify(edu));
   await pg.reload();
@@ -165,8 +157,7 @@ try {
   ok(await visto(colVa.locator('[data-person="sint-ana"]')) && (await colDuda.locator('[data-person]').count()) > 5, 'tres columnas con su número; Ana en «Van», los sin responder en «Duda o sin responder»');
   await colDuda.locator('[data-person="sint-bea"] input').check();
   await colDuda.locator('[data-person="sint-flor"] input').check();
-  await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Van', exact: true }).click();
-  await pg.waitForTimeout(1800);
+  await trasAccion(pg, () => pg.getByTestId('barra-acciones').getByRole('button', { name: 'Van', exact: true }).click());
   const rv = await sql`select person_id, respuesta, origen, puesto_por_nombre, cambiado_en from public.respuestas where evento_id = ${ent.id} and person_id in ('sint-bea', 'sint-flor')`;
   ok(rv.length === 2 && rv.every((x) => x.respuesta === 'va' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván' && x.cambiado_en), '«Van»: guardado como «puesta por Iván», con fecha y hora (interruptor apagado)');
   await pg.reload();
@@ -174,11 +165,9 @@ try {
   await colVa.locator('[data-person="sint-bea"] input').check();
   await pg.getByTestId('barra-acciones').getByRole('button', { name: 'No van' }).click();
   await pg.getByTestId('barra-acciones').locator('label', { hasText: 'Viaje' }).click();
-  await pg.getByRole('button', { name: 'Guardar «No van»' }).click();
-  await pg.waitForTimeout(1800);
+  await trasAccion(pg, () => pg.getByRole('button', { name: 'Guardar «No van»' }).click());
   ok((await sql`select respuesta, motivo from public.respuestas where evento_id = ${ent.id} and person_id = 'sint-bea'`)[0].motivo === 'viaje', '«No van» con su motivo (viaje)');
-  await pg.getByTestId('tb-mensaje').getByRole('button', { name: 'Deshacer' }).click();
-  await pg.waitForTimeout(1800);
+  await trasAccion(pg, () => pg.getByTestId('tb-mensaje').getByRole('button', { name: 'Deshacer' }).click());
   ok((await sql`select respuesta from public.respuestas where evento_id = ${ent.id} and person_id = 'sint-bea'`)[0].respuesta === 'va', '«Deshacer» la deja como estaba («va»)');
   await pg.reload();
   await foto(pg, 'tablero_entreno_1280');
@@ -201,16 +190,14 @@ try {
   await pg.getByText(/se queda como las dejó el gestor|se quedan como las dejó el gestor/).waitFor({ timeout: 15000 });
   const [al] = await sql`select respuesta, origen, sporteasy_descartado from public.respuestas where evento_id = ${ent.id} and person_id = 'sint-flor'`;
   ok(al.respuesta === 'va' && al.origen === 'gestor' && al.sporteasy_descartado === 'no', 'guardar sin elegir: se mantiene lo del gestor y se apunta lo que decía SportEasy', JSON.stringify(al));
-  await pg.getByRole('button', { name: 'Revisar' }).click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => pg.getByRole('button', { name: 'Revisar' }).click());
   ok(!(await pg.getByTestId('conflicto').count()), 'la misma importación otra vez ya no sale como conflicto');
 
   console.log('\n== Arrastrar y soltar (escritorio; nunca la única forma)');
   await pg.goto(`${APP}/gestion/tablero?domingo=${J3}`);
   const antesA = enEq(await conv(), 'MdL', 'sint-flor');
   // Arrastre HTML5 con un DataTransfer de verdad (los mismos eventos que el raton: dragstart, dragover y drop).
-  await pg.evaluate(() => { const dt = new DataTransfer(); const de = document.querySelector('tr[data-person="sint-flor"]'); const a = document.querySelector('[data-testid="resumen-MdL"]'); de.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt })); a.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt })); a.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt })); });
-  await pg.waitForTimeout(1800);
+  await trasAccion(pg, () => pg.evaluate(() => { const dt = new DataTransfer(); const de = document.querySelector('tr[data-person="sint-flor"]'); const a = document.querySelector('[data-testid="resumen-MdL"]'); de.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt })); a.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt })); a.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt })); }));
   ok(!antesA && enEq(await conv(), 'MdL', 'sint-flor'), 'arrastrar a Flor al resumen del MdL lo convoca al MdL');
   ok(!e.errores.length, 'sin errores de consola', e.errores.slice(0, 5).join(' | '));
 } catch (err) { console.error(err); sumar(); } finally {

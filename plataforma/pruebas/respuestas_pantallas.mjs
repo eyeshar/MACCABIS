@@ -20,19 +20,22 @@ import os from 'node:os';
 import path from 'node:path';
 import https from 'node:https';
 import crypto from 'node:crypto';
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import webpush from 'web-push';
 import { arrancar } from './pila.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { adelantar, semanas, ddmm, diaLargo, diaMesCorto, diaNumero, mesAno } from './fechas_prueba.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
 const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'rediseno', 'paso3');
 fs.mkdirSync(SALIDA, { recursive: true });
-const PUERTO = 3107, PUERTO_PUSH = 3443;
+const PUERTO = PUERTOS.app, PUERTO_PUSH = PUERTOS.aux(0);
+await exigirLibres({ 'doble de push': PUERTO_PUSH });
 const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -91,12 +94,9 @@ try {
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapid.publicKey, VAPID_PRIVATE_KEY: vapid.privateKey, VAPID_SUBJECT: 'mailto:pruebas@maccabis.invalid',
     SUPABASE_SERVICE_ROLE_KEY: servicio, AVISOS_SECRETO: secreto, NODE_TLS_REJECT_UNAUTHORIZED: '0',
   };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
+  app = await arrancarApp({ puerto: PUERTO, env });
   ok(true, 'next build');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(APP);
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  nav = await abrirNavegador();
   const errores = [];
   const nuevaPagina = async (ctx) => { const p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(`${p.url()} ${e.message}`)); p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|favicon/.test(m.text())) errores.push(`${p.url()} ${m.text()}`); }); return p; };
   async function entrar(p, email) {
@@ -200,8 +200,7 @@ try {
   ok(await visto(pj.getByRole('link', { name: 'Marcar días que no estoy' })), 'encendido: «Marcar días que no estoy» en la Agenda');
   await pj.goto(`${APP}/`);
   await foto(pj, 'mizona_encendido_375');
-  await tarjeta.getByRole('button', { name: 'Voy', exact: true }).click();
-  await pj.waitForTimeout(1500);
+  await trasAccion(pj, () => tarjeta.getByRole('button', { name: 'Voy', exact: true }).click());
   ok((await sql`select respuesta from public.respuestas where evento_id = ${E.entreno} and person_id = 'esteban-jon'`)[0]?.respuesta === 'va', '«Voy» en la tarjeta: guardado');
 
   console.log('\n== Hoja «No voy»: motivo obligatorio, Esc, diálogo accesible');
@@ -214,14 +213,13 @@ try {
   ok(await visto(dlg.getByText('Solo lo ven los gestores.')) && (await dlg.getByRole('radio').count()) === 5 && await visto(dlg.getByPlaceholder('Ej.: turno de tarde')), 'cinco motivos, «Solo lo ven los gestores» y detalle «Ej.: turno de tarde»');
   ok(await dlg.getByRole('button', { name: 'Guardar «no voy»' }).isDisabled(), '«Guardar «no voy»» desactivado hasta elegir motivo');
   await pj.keyboard.press('Escape');
-  await pj.waitForTimeout(300);
+  await dlg.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   ok(await oculto(dlg) && (await pj.evaluate(() => document.activeElement?.textContent)) === 'No voy', 'Esc la cierra y devuelve el foco al botón', String(await pj.evaluate(() => document.activeElement?.outerHTML.slice(0, 120))));
   await pj.getByRole('button', { name: 'No voy', exact: true }).click();
   await dlg.getByText('Trabajo').click();
   await dlg.getByPlaceholder('Ej.: turno de tarde').fill('Turno de tarde');
   await foto(pj, 'hoja_novoy_375');
-  await dlg.getByRole('button', { name: 'Guardar «no voy»' }).click();
-  await pj.waitForTimeout(1500);
+  await trasAccion(pj, () => dlg.getByRole('button', { name: 'Guardar «no voy»' }).click());
   const [rn] = await sql`select respuesta, motivo, detalle from public.respuestas where evento_id = ${E.entreno} and person_id = 'esteban-jon'`;
   ok(rn.respuesta === 'no' && rn.motivo === 'trabajo' && rn.detalle === 'Turno de tarde', '«no voy» guardado con motivo y detalle');
   ok(await sinDesbordar(pj), 'evento a 375 px sin desbordamiento');
@@ -237,8 +235,7 @@ try {
   await pj.goto(`${APP}/mi-zona/domingo/${F('2026-10-25')}`);
   ok((await pj.locator('.rw-partido').count()) === 2 && await visto(pj.getByText('Estar disponible no es estar convocado: en la convocatoria te decimos en qué equipo juegas.')), 'las dos tarjetas de partido y la nota de convocatoria');
   for (const o of ['A los dos', 'Solo al de las 09:00 (MdA)', 'Solo al de las 14:00 (MdL)', 'No voy', 'Duda']) ok(await visto(pj.getByRole('button', { name: o })), `opción «${o}»`);
-  await pj.getByRole('button', { name: 'Solo al de las 09:00 (MdA)' }).click();
-  await pj.waitForTimeout(1500);
+  await trasAccion(pj, () => pj.getByRole('button', { name: 'Solo al de las 09:00 (MdA)' }).click());
   const d3 = Object.fromEntries((await sql`select e.equipo, r.respuesta, r.motivo from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and e.tipo = 'liga' and r.person_id = 'esteban-jon'`).map((x) => [x.equipo, `${x.respuesta}${x.motivo ? '·' + x.motivo : ''}`]));
   ok(d3.MdA === 'va' && d3.MdL === 'no·horario', '«Solo al de las 09:00» → va en MdA y «no · horario» en MdL', JSON.stringify(d3));
   ok(await sinDesbordar(pj) && !(await tactiles(pj, '.rw-opcion')).length, 'domingo a 375 px sin desbordamiento y opciones de 44 px o más');
@@ -273,8 +270,7 @@ try {
   ok(await sinDesbordar(pj), 'Mis ausencias a 375 px sin desbordamiento');
   await foto(pj, 'ausencias_375');
   pj.once('dialog', (d) => d.accept());
-  await pj.getByRole('button', { name: 'Borrar' }).click();
-  await pj.waitForTimeout(1500);
+  await trasAccion(pj, () => pj.getByRole('button', { name: 'Borrar' }).click());
   ok((await sql`select count(*)::int n from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and r.person_id = 'esteban-jon' and r.respuesta = 'sin_responder'`)[0].n === 2, 'al borrarla, el domingo vuelve a «sin responder»');
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.locator('#agenda .in-pastilla').first()), '«Tu agenda» con estado por evento');
@@ -300,8 +296,7 @@ try {
   ok(await visto(pg.locator('tr', { hasText: 'Daniele' }).getByRole('button', { name: /^Responder por / })) && !(await pg.locator('tr', { hasText: 'Carlos (entrenador)' }).count()), 'encendido: «Responder por él» aparece; Carlos (entrenador) no está en la lista de quien responde');
   await fila.getByRole('button', { name: /^Responder por / }).click();
   await fila.getByLabel('Respuesta').selectOption('duda');
-  await fila.getByRole('button', { name: 'Guardar' }).click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => fila.getByRole('button', { name: 'Guardar' }).click());
   const [pp] = await sql`select respuesta, origen, puesto_por_nombre from public.respuestas where evento_id = ${E.entreno} and person_id = 'vallesi-daniele'`;
   ok(pp?.respuesta === 'duda' && pp.origen === 'gestor' && pp.puesto_por_nombre === 'Iván', '«Responder por él» guarda la respuesta con «puesto por Iván»');
   await pg.reload();
@@ -309,8 +304,7 @@ try {
   await foto(pg, 'gestion_respuestas_escritorio');
   await pg.goto(`${APP}/gestion/eventos/${E.mdaJ2}/respuestas`);
   ok(await visto(pg.getByTestId('banda-roja')), 'banda roja con el cambio después del martes');
-  await pg.getByTestId('banda-roja').getByRole('button', { name: 'Visto' }).click();
-  await pg.waitForTimeout(1500);
+  await trasAccion(pg, () => pg.getByTestId('banda-roja').getByRole('button', { name: 'Visto' }).click());
   await pg.reload();
   ok(!(await pg.getByTestId('banda-roja').count()), '«Visto» la quita');
   await pg.goto(`${APP}/gestion/eventos/${E.mdaJ3}/respuestas`);
@@ -497,7 +491,7 @@ try {
   ok(!errores.length, 'sin errores de JS en ninguna página', errores.slice(0, 5).join(' | '));
 } finally {
   await nav?.close().catch(() => {});
-  app?.kill();
+  app?.parar();
   push.close();
   await pila.parar();
   fs.rmSync(dirCert, { recursive: true, force: true });

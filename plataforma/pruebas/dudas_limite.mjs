@@ -20,13 +20,13 @@ import { preparar, sinteticos, personas, contador, visto, RAIZ } from './comun_e
 import { firmar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
 import * as H from '../src/lib/avisos/horario.ts';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const { ok, fallos } = contador();
 const vapid = webpush.generateVAPIDKeys();
 const secreto = crypto.randomBytes(32).toString('hex');
 const servicio = await firmar({ role: 'service_role', iss: 'supabase-local' }, 3600 * 24);
 const e = await preparar({
-  puerto: 3143,
   envExtra: {
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapid.publicKey, VAPID_PRIVATE_KEY: vapid.privateKey, VAPID_SUBJECT: 'mailto:pruebas@maccabis.invalid',
     SUPABASE_SERVICE_ROLE_KEY: servicio, AVISOS_SECRETO: secreto, NODE_TLS_REJECT_UNAUTHORIZED: '0',
@@ -261,8 +261,7 @@ try {
   const paso = await pd.getByTestId('paso-no-va').innerText();
   ok(/pasó a «no va» porque no confirmaste a tiempo/.test(paso), 'Dos ve que su «duda» pasó a «no va» por no confirmar', paso);
   ok(/No vas · no confirmaste a tiempo/.test(await pd.locator('.rw-etiqueta').first().innerText()), 'y la etiqueta lo dice');
-  await pd.getByRole('button', { name: 'Voy', exact: true }).click();
-  await pd.waitForTimeout(800);
+  await trasAccion(pd, () => pd.getByRole('button', { name: 'Voy', exact: true }).click());
   ok((await estado(E.pronto))['sint-dos'].respuesta === 'va', 'desde la pantalla puede volver a decir «Voy»');
   await pd.close();
 

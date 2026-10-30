@@ -11,17 +11,19 @@
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { arrancar } from './pila.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
 const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'rediseno', 'nav1b');
 fs.mkdirSync(SALIDA, { recursive: true });
 
-const PUERTO = 3106, PUERTO_WEB = 3107;
+const PUERTO = PUERTOS.app, PUERTO_WEB = PUERTOS.app2;
+await exigirLibres({ 'web anterior': PUERTO_WEB });
 const APP = `http://127.0.0.1:${PUERTO}`;
 const WEB = `http://127.0.0.1:${PUERTO_WEB}`;
 /** Con la redireccion activada (scripts/activar_redirecciones.js) GitHub Pages ya no tiene barra: se omiten sus pruebas. */
@@ -57,8 +59,9 @@ const pila = await arrancar();
 let app, nav;
 try {
   const { sql, url, anonKey } = pila;
-  const { leerLiga, cargarLiga } = await import('../scripts/cargar_liga.mjs');
-  await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
+  const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
+  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
   const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
   // Jugador: Jon (dobla). Gestor que ademas es jugador (como Ivan o Edu): Edu. Gestor sin ficha de jugador: aparte.
@@ -73,11 +76,8 @@ try {
 
   console.log('== Compilacion');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
+  app = await arrancarApp({ puerto: PUERTO, env });
   ok(true, 'next build');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(APP);
 
   console.log('\n== HTTP');
   let r = await fetch(`${APP}/gestion/cuenta`, { redirect: 'manual' });
@@ -87,7 +87,7 @@ try {
   ok((r.headers.get('x-robots-tag') || '').includes('noindex'), '/cuenta: X-Robots-Tag noindex (exige login, D85)');
   ok((await (await fetch(`${APP}/robots.txt`)).text()).includes('Disallow: /cuenta'), 'robots.txt: Disallow /cuenta');
 
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  nav = await abrirNavegador();
   const foto = (p, n, completa = true) => p.screenshot({ path: path.join(SALIDA, `${n}.png`), fullPage: completa });
   const fotoEstatica = async (p, n) => {
     const s = await p.addStyleTag({ content: 'body{position:relative}.nv-barra{position:absolute!important;bottom:0}' });
@@ -333,7 +333,7 @@ try {
         }
         await p.goto(`${APP}/gestion`);
         await p.evaluate(() => window.scrollTo(0, 600));
-        await p.waitForTimeout(100);
+        await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
         ok(Math.abs(await p.locator('nav[aria-label="Gestión"]').evaluate((b) => b.getBoundingClientRect().top)) < 1, 'Gestion: la barra queda fija arriba al hacer scroll');
         await p.evaluate(() => window.scrollTo(0, 0));
         await fotoEstatica(p, `gestion_${etiqueta}`);
@@ -438,7 +438,7 @@ try {
 } finally {
   servidorWeb.close();
   if (nav) await nav.close();
-  if (app) app.kill();
+  app?.parar();
   await pila.parar();
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

@@ -3,16 +3,20 @@
 // que lleva los datos a la pantalla) y falla si aparece un motivo de ausencia, un nivel de jugador, un DNI, un telefono, un
 // correo o una fecha de nacimiento. Lo ejecuta `npm run test:privacidad` (desde la raiz) cuando hay una compilacion.
 //
-//   node pruebas/privacidad_paginas.mjs        (necesita `npm run build` hecho)
+//   npm run pruebas:privacidad        (compila la web si hace falta)
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { arrancarApp } from './infra/app.mjs';
+import { PUERTOS } from './infra/puertos.mjs';
+import { entornoPila } from './pila.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
-const PUERTO = 3212, APP = `http://127.0.0.1:${PUERTO}`;
+const PUERTO = PUERTOS.app, APP = `http://127.0.0.1:${PUERTO}`;
+// En GitHub Actions los registros son publicos: un FALLO dice que encontro y donde, pero no el dato en si (D149).
+const dato = (v) => (process.env.CI ? '' : ` (${v})`);
 const indice = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'index.json'), 'utf8'));
 const temporadas = indice.seasons.map((s) => s.id);
 const rivales = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'rivales_2026-27_web.json'), 'utf8')).rivales;
@@ -58,12 +62,9 @@ const PATRONES = [
 ];
 
 export async function revisar({ log = console.log } = {}) {
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  const app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' }, stdio: 'ignore' });
+  const app = await arrancarApp({ puerto: PUERTO, env: await entornoPila() });
   let fallos = 0;
   try {
-    const fin = Date.now() + 60000;
-    for (;;) { try { await fetch(`${APP}/liga`); break; } catch { if (Date.now() > fin) throw new Error('la web no arranca'); await new Promise((r) => setTimeout(r, 300)); } }
     const terceros = nombresRivales();
     for (const ruta of RUTAS) {
       const r = await fetch(APP + ruta, { redirect: 'follow' });
@@ -73,18 +74,18 @@ export async function revisar({ log = console.log } = {}) {
         const norm = (t) => t.toUpperCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ');
         const sube = norm(html);
         const fuga = (terceros ?? []).find((n) => n.length > 6 && sube.includes(norm(n)));
-        if (fuga || /rival-por-jugador|Rival por jugador/.test(html)) { fallos++; log(`  FALLO ${ruta} -> ${fuga ? `sale un jugador de otro equipo (${fuga})` : 'sale la sección «Rival por jugador» sin sesión de gestor'}`); }
+        if (fuga || /rival-por-jugador|Rival por jugador/.test(html)) { fallos++; log(`  FALLO ${ruta} -> ${fuga ? `sale un jugador de otro equipo${dato(fuga)}` : 'sale la sección «Rival por jugador» sin sesión de gestor'}`); }
       }
       // El .ics lleva fechas como 19700329T020000 (no son DNI): se quitan las lineas de fecha y UID antes de buscar.
       if (ruta.endsWith('.ics')) html = html.replace(/^(DTSTART|DTEND|DTSTAMP|UID)[^\r\n]*/gm, '');
       const malos = [];
       const c = html.match(CLAVES); if (c) malos.push(`clave ${c[1]}`);
-      for (const [re, que] of PATRONES) { const m = html.match(re); if (m) malos.push(`${que} (${m[0]})`); }
+      for (const [re, que] of PATRONES) { const m = html.match(re); if (m) malos.push(`${que}${dato(m[0])}`); }
       if (r.status !== 200 || malos.length) { fallos++; log(`  FALLO ${ruta} -> ${r.status !== 200 ? 'estado ' + r.status : ''} ${malos.join(', ')}`); }
     }
     log(`  ${fallos ? 'FALLO' : 'OK   '} ${RUTAS.length} paginas publicas migradas: sin motivos de ausencia, niveles, DNI, telefonos, correos ni fechas de nacimiento`);
     log(`  ${fallos ? 'FALLO' : 'OK   '} ${PARTIDOS.length} paginas de partido (D129) y el resto de la Liga, sin sesion: ni un jugador de otro equipo ${terceros ? `(${terceros.length} nombres de las hojas)` : '(sin fuentes_fbm/: solo se comprueba la seccion de gestores)'} ni la seccion «Rival por jugador»`);
-  } finally { app.kill(); }
+  } finally { app.parar(); }
   return fallos;
 }
 

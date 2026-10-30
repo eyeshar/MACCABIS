@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { abrirNavegador } from './infra/app.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 let fallos = 0;
@@ -30,7 +30,7 @@ const srv = http.createServer((req, res) => {
 }).listen(0, '127.0.0.1');
 await new Promise((r) => srv.once('listening', r));
 const base = `http://127.0.0.1:${srv.address().port}`;
-const nav = await chromium.launch({ channel: 'chrome', headless: true });
+const nav = await abrirNavegador();
 const p = await nav.newPage();
 await p.route('**/maccabis.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: `<title>${r.request().url()}</title>` }));
 for (const [antigua, nueva] of [['?p=liga&g=G2', '/liga?g=G2'], ['?p=rivales&g=MdL', '/liga/rivales?g=MdL'], ['?t=2023-24&p=equipo', '/liga/2023-24/equipo'], ['?t=2023-24&p=jugadores', '/plantilla?t=2023-24'], ['?t=2025-26&p=jugador&j=esteban-jon', '/jugador/esteban-jon?t=2025-26'], ['?p=historia', '/historia'], ['#2013-14', '/liga/2013-14/equipo']]) {

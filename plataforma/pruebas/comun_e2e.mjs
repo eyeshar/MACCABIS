@@ -3,16 +3,18 @@
 // desbordamiento, capturas). Cada suite sigue siendo independiente (npm run pruebas:<suite>).
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { arrancar } from './pila.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { arrancarApp, abrirNavegador, conCapturas, esperar as esperarUrl } from './infra/app.mjs';
+import { PUERTOS } from './infra/puertos.mjs';
+export { trasAccion, hasta } from './infra/esperas.mjs';
+export { PUERTOS };
 
 export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const REPO = path.join(RAIZ, '..');
 export const CAPTURAS = path.join(REPO, 'privado', 'mockups_liga', 'inicio-y-planes');
-fs.mkdirSync(CAPTURAS, { recursive: true });
+if (conCapturas()) fs.mkdirSync(CAPTURAS, { recursive: true });
 
 export function contador() {
   let fallos = 0;
@@ -20,26 +22,17 @@ export function contador() {
   return { ok, fallos: () => fallos, sumar: () => { fallos++; } };
 }
 
-export async function esperar(url, ms = 90000) {
-  const fin = Date.now() + ms;
-  while (Date.now() < fin) { try { const r = await fetch(url); if (r.status < 500) return; } catch {} await new Promise((r) => setTimeout(r, 300)); }
-  throw new Error(`${url} no arranca`);
-}
+export const esperar = esperarUrl;
 
-/** Pila + eventos de la temporada + (opcional) web compilada en `puerto` con `envExtra`. */
-export async function preparar({ puerto, envExtra = {}, compilar = true } = {}) {
+/** Pila + eventos de la temporada + (opcional) web compilada (solo si cambio algo, D149) con `envExtra`, en el puerto de
+ *  la app de este carril (infra/puertos.mjs). */
+export async function preparar({ envExtra = {}, compilar = true } = {}) {
   const pila = await arrancar();
   await cargarEventos(pila.sql, { log: () => {} });
-  const APP = `http://127.0.0.1:${puerto}`;
   let app = null;
-  if (compilar) {
-    const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: pila.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: pila.anonKey, NEXT_TELEMETRY_DISABLED: '1', ...envExtra };
-    const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-    execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
-    app = spawn(process.execPath, [next, 'start', '-p', String(puerto), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-    await esperar(APP);
-  }
-  const nav = compilar ? await chromium.launch({ channel: 'chrome', headless: true }) : null;
+  if (compilar) app = await arrancarApp({ puerto: PUERTOS.app, env: { NEXT_PUBLIC_SUPABASE_URL: pila.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: pila.anonKey }, envExtra });
+  const APP = app?.APP ?? `http://127.0.0.1:${PUERTOS.app}`;
+  const nav = compilar ? await abrirNavegador() : null;
   const codigoDe = async (email) => (await pila.sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
   const errores = [];
   const nuevaPagina = async (ctx) => {
@@ -65,7 +58,7 @@ export async function preparar({ puerto, envExtra = {}, compilar = true } = {}) 
     await entrar(p, email);
     return p;
   }
-  const parar = async () => { await nav?.close().catch(() => {}); app?.kill(); await pila.parar(); };
+  const parar = async () => { await nav?.close().catch(() => {}); app?.parar(); await pila.parar(); };
   return { pila, sql: pila.sql, APP, nav, errores, nuevaPagina, contexto, entrar, sesion, parar };
 }
 
@@ -98,6 +91,6 @@ export async function personas(pila, { jugadores = [], gestores = [] }) {
 
 export const visto = async (loc, ms = 8000) => { try { await loc.first().waitFor({ state: 'visible', timeout: ms }); return true; } catch { return false; } };
 export const sinDesbordar = (p) => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
-export const foto = (p, n, completa = true) => p.screenshot({ path: path.join(CAPTURAS, `${n}.png`), fullPage: completa }).catch(() => {});
+export const foto = (p, n, completa = true) => (conCapturas() ? p.screenshot({ path: path.join(CAPTURAS, `${n}.png`), fullPage: completa }).catch(() => {}) : Promise.resolve());
 /** Elementos interactivos visibles de menos de 44 px. */
 export const pequenos = (p, sel) => p.evaluate((s) => [...document.querySelectorAll(s)].filter((x) => x.offsetParent && getComputedStyle(x).visibility !== 'hidden').map((x) => { const r = x.getBoundingClientRect(); return { t: (x.textContent || x.getAttribute('aria-label') || '').trim().slice(0, 30), h: Math.round(r.height), w: Math.round(r.width) }; }).filter((x) => x.h < 44 || x.w < 44), sel);

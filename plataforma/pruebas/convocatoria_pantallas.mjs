@@ -21,9 +21,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import https from 'node:https';
 import os from 'node:os';
 import crypto from 'node:crypto';
@@ -32,11 +31,15 @@ import { arrancar } from './pila.mjs';
 import * as IMP from '../src/lib/eventos/importacionAuto.ts';
 import * as HOR from '../src/lib/avisos/horario.ts';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = path.join(RAIZ, '..', 'privado', 'mockups_liga', 'rediseno', 'convocatoria');
 fs.mkdirSync(SALIDA, { recursive: true });
-const PUERTO = 3109, PUERTO_PUSH = 3445;
+const PUERTO = PUERTOS.app, PUERTO_PUSH = PUERTOS.aux(0);
+await exigirLibres({ 'doble de push': PUERTO_PUSH });
 const CAPTURAS = path.join(RAIZ, '..', 'privado', 'mockups_liga', 'convocatoria-proyeccion');
 fs.mkdirSync(CAPTURAS, { recursive: true });
 const APP = `http://127.0.0.1:${PUERTO}`;
@@ -131,12 +134,9 @@ try {
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapid.publicKey, VAPID_PRIVATE_KEY: vapid.privateKey, VAPID_SUBJECT: 'mailto:pruebas@maccabis.invalid',
     NODE_TLS_REJECT_UNAUTHORIZED: '0',
   };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
+  app = await arrancarApp({ puerto: PUERTO, env });
   ok(true, 'next build');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(APP);
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  nav = await abrirNavegador();
   const errores = [];
   const nuevaPagina = async (ctx) => {
     const p = await ctx.newPage();
@@ -204,7 +204,7 @@ try {
   await foto(pg, 'convocatoria_cambiar_375');
   await hoja.getByRole('button', { name: 'Guardar cambio' }).click();
   await hoja.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-  await pg.waitForTimeout(500);
+  await hasta(async () => (await equipoDe(pg, 'MdL')).includes(mover) && !(await equipoDe(pg, 'MdA')).includes(mover), 5000);
   ok((await equipoDe(pg, 'MdL')).includes(mover) && !(await equipoDe(pg, 'MdA')).includes(mover), 'el jugador pasa al MdL');
   const [cambio] = await sql`select accion, motivo, nota, equipo from public.convocatoria_cambios where person_id = ${mover} order by en desc limit 1`;
   ok(cambio?.accion === 'mover' && cambio.motivo === 'equilibrar' && cambio.nota === 'prueba sintética' && cambio.equipo === 'MdL', 'guardado con su motivo y su nota', JSON.stringify(cambio));
@@ -221,7 +221,7 @@ try {
   await hoja.getByText('Lo ha pedido', { exact: true }).click();
   await hoja.getByRole('button', { name: 'Guardar cambio' }).click();
   await hoja.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-  await pg.waitForTimeout(500);
+  await hasta(async () => (await equipoDe(pg, 'MdL')).includes('sint-18'), 5000);
   ok((await equipoDe(pg, 'MdL')).includes('sint-18'), 'entra en el MdL');
   ok(await visto(pg.getByTestId('cv-equipo-MdL').locator('.cv-aviso').getByText('Sint 18 dijo «no voy» a este partido.')), 'y su aviso (regla 0.1) en la tarjeta');
   ok(await sinDesbordar(pg), 'a 375 px sin desbordar tras los cambios');
@@ -258,18 +258,18 @@ try {
     await destino.dispatchEvent('drop', { dataTransfer: dt });
     await origen.dispatchEvent('dragend', { dataTransfer: dt }).catch(() => {});
   };
-  await arrastrar(pd.locator('[data-testid="cv-equipo-MdL"] li[data-person="sint-18"]'), pd.getByTestId('cv-equipo-MdA'));
+  await trasAccion(pd, () => arrastrar(pd.locator('[data-testid="cv-equipo-MdL"] li[data-person="sint-18"]'), pd.getByTestId('cv-equipo-MdA')));
   ok(await visto(pd.getByTestId('cv-mensaje').getByText(/Guardado \(ajuste manual\): Sint 18 al MdA\. Ojo: Sint 18 dijo «no voy» a este partido\./)), 'soltar a Sint 18 en el MdA: se guarda al momento y avisa (sin bloquear) de que dijo «no voy»', (await pd.getByTestId('cv-mensaje').innerText().catch(() => '')) + errores.join(' | '));
-  await pd.waitForTimeout(600);
+  await hasta(async () => (await equipoDe(pd, 'MdA')).includes('sint-18') && !(await equipoDe(pd, 'MdL')).includes('sint-18'), 5000);
   ok((await equipoDe(pd, 'MdA')).includes('sint-18') && !(await equipoDe(pd, 'MdL')).includes('sint-18'), 'Sint 18 pasa al MdA');
   const [c1] = await sql`select accion, motivo, nota, equipo from public.convocatoria_cambios order by en desc limit 1`;
   ok(c1.accion === 'mover' && c1.motivo === 'otro' && c1.nota === 'ajuste manual' && c1.equipo === 'MdA' && (await sql`select count(*)::int n from public.convocatoria_cambios`)[0].n === nCambios0 + 1, 'en el historial: «ajuste manual», sin preguntar', JSON.stringify(c1));
   ok(await visto(pd.getByTestId('cv-proyeccion-MdA').getByText('Quién aporta')) && (await pd.getByTestId('cv-proyeccion-MdA').locator('.cv-aporte').allTextContents()).some((x) => x.startsWith('Sint 18')), 'la proyección del MdA se recalcula con él dentro', antesA);
   ok((await pd.getByTestId('cv-equipo-MdA').locator('.cv-aviso').allInnerTexts()).some((t) => t.includes('Sint 18 dijo «no voy» a este partido.')), 'y los avisos del equipo también');
   await foto(pd, 'convocatoria_arrastrar_1280');
-  await pd.getByTestId('cv-mensaje').getByRole('button', { name: 'Deshacer' }).click();
+  await trasAccion(pd, () => pd.getByTestId('cv-mensaje').getByRole('button', { name: 'Deshacer' }).click());
   ok(await visto(pd.getByTestId('cv-mensaje').getByText('Deshecho: Sint 18 al MdA.')), '«Deshacer» el último movimiento');
-  await pd.waitForTimeout(600);
+  await hasta(async () => (await equipoDe(pd, 'MdL')).includes('sint-18') && !(await equipoDe(pd, 'MdA')).includes('sint-18'), 5000);
   ok((await equipoDe(pd, 'MdL')).includes('sint-18') && !(await equipoDe(pd, 'MdA')).includes('sint-18'), 'Sint 18 vuelve al MdL (y queda en el historial)');
   // Zona no valida: Sint 12 no tiene ficha del MdL. Se simula el arrastre con eventos (para ver la zona a medias).
   const zona12 = (await equipoDe(pd, 'MdA')).includes('sint-12') ? '[data-testid="cv-equipo-MdA"]' : '[data-testid="cv-sin-convocar"]';
@@ -278,9 +278,11 @@ try {
   ok(await visto(pd.getByTestId('cv-equipo-MdL').getByText('Sin ficha del MdL: Sint 12: no se puede soltar aquí')), 'arrastrando a Sint 12, el MdL se marca como zona no válida (sin ficha)');
   ok((await pd.getByTestId('cv-equipo-MdL').getAttribute('class')).includes('cv-zona-no') && (await pd.getByTestId(zona12.includes('MdA') ? 'cv-sin-convocar' : 'cv-equipo-MdA').getAttribute('class')).includes('cv-zona-ok'), 'las demás zonas de destino se ven válidas');
   await foto(pd, 'convocatoria_zona_no_valida_1280', false);
-  await pd.getByTestId('cv-equipo-MdL').dispatchEvent('drop', { dataTransfer: dt });
-  await pd.locator(`${zona12} li[data-person="sint-12"]`).dispatchEvent('dragend', { dataTransfer: dt });
-  await pd.waitForTimeout(400);
+  // soltar donde no vale: se espera a lo que dispare (nada, si va bien) y se comprueba que no cambio
+  await trasAccion(pd, async () => {
+    await pd.getByTestId('cv-equipo-MdL').dispatchEvent('drop', { dataTransfer: dt });
+    await pd.locator(`${zona12} li[data-person="sint-12"]`).dispatchEvent('dragend', { dataTransfer: dt });
+  });
   ok(!(await equipoDe(pd, 'MdL')).includes('sint-12') && (await sql`select equipos from public.convocatorias where fecha = ${F2}`)[0].equipos.MdL.every((c) => c.person_id !== 'sint-12'), 'soltarlo ahí no lo convoca (ni en la pantalla ni en la base)');
   ok(await sinDesbordar(pd), 'a 1280 px sin desbordar');
   await foto(pd, 'convocatoria_1280');
@@ -298,11 +300,11 @@ try {
   await pg.getByTestId('cv-barra').getByRole('button', { name: 'Al MdL' }).focus();
   await pg.keyboard.press('Enter');
   ok(await visto(pg.getByTestId('cv-mensaje').getByText(/Guardado \(ajuste manual\): .* al MdL\./)), '«Al MdL» (Enter) los mueve y lo guarda');
-  await pg.waitForTimeout(600);
+  await hasta(async () => (await equipoDe(pg, 'MdL')).filter((x) => dos.includes(x)).length === 2, 5000);
   ok((await equipoDe(pg, 'MdL')).filter((x) => dos.includes(x)).length === 2, 'los dos están ahora en el MdL');
   await foto(pg, 'convocatoria_mover_a_375');
-  await pg.getByTestId('cv-mensaje').getByRole('button', { name: 'Deshacer' }).click();
-  await pg.waitForTimeout(800);
+  await trasAccion(pg, () => pg.getByTestId('cv-mensaje').getByRole('button', { name: 'Deshacer' }).click());
+  await hasta(async () => (await equipoDe(pg, 'MdA')).filter((x) => dos.includes(x)).length === 2, 5000);
   ok((await equipoDe(pg, 'MdA')).filter((x) => dos.includes(x)).length === 2, '«Deshacer» los devuelve al MdA');
   const fila12 = pg.locator(`li[data-person="sint-12"] input[type=checkbox]`).first();
   await fila12.check();
@@ -454,7 +456,7 @@ try {
   ok(!errores.length, 'sin errores en la consola', errores.slice(0, 3).join(' | '));
 } finally {
   await nav?.close().catch(() => {});
-  app?.kill();
+  app?.parar();
   push.close();
   await pila.parar();
 }

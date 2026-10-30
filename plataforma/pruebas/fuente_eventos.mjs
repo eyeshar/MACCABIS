@@ -7,13 +7,14 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PUERTO = 3107, APP = `http://127.0.0.1:${PUERTO}`;
+const PUERTO = PUERTOS.app, APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
 const sinSello = (t) => t.split('\r\n').filter((l) => !l.startsWith('DTSTAMP:')).join('\r\n');
@@ -25,10 +26,7 @@ try {
   const { sql, url, anonKey } = pila;
   await cargarEventos(sql, { log: () => {} });
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  try { execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'pipe' }); } catch (e) { console.log(String(e.stdout).slice(-1500), String(e.stderr).slice(-1500)); throw e; }
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(APP);
+  app = await arrancarApp({ puerto: PUERTO, env });
   const antes = fs.readFileSync(path.join(RAIZ, 'pruebas', 'fixtures', 'calendario_antes_paso2.ics'), 'utf8');
   const ahora = await (await fetch(`${APP}/calendario.ics`)).text();
   ok((ahora.match(/BEGIN:VEVENT/g) ?? []).length === 67, '/calendario.ics: 67 eventos (40 partidos + 27 entrenos)');
@@ -39,7 +37,7 @@ try {
   const club = await (await fetch(`${APP}/club`)).text();
   ok(club.includes('Valdebernardo') && club.includes('en obras'), '/club: Valdebernardo (Faustina Valladolid) en obras, desde la tabla de pistas');
 } finally {
-  app?.kill();
+  app?.parar();
   await pila.parar();
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

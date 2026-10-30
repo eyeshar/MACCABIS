@@ -64,7 +64,7 @@ No hay entorno de pruebas (staging) y no se va a crear: los cambios de esquema s
 - **Si un cambio no puede ser aditivo, se para y se consulta a Iván.** Nunca se borra ni se cambia nada existente sin su OK expreso.
 
 ## 11. Sesiones en paralelo: una sesión, un worktree (D114)
-- Cada sesión de Claude Code que trabaje en paralelo usa **su propio `git worktree`** (`git worktree add ../Maccabis-<tema> <rama>`), con su `node_modules` y su `.env.local` (copiados, nunca en git).
+- Cada sesión de Claude Code que trabaje en paralelo usa **su propio `git worktree`** (`git worktree add ../Maccabis-<tema> <rama>`), con su **propia instalación (`npm ci` en la raíz y en `plataforma/`; nunca enlazar `node_modules`: rompe `next build`)** y su `.env.local` (copiado, nunca en git). Cómo prepararlo y cerrarlo (quitar enlaces sin seguirlos): `CLAUDE.md` en la raíz.
 - **Nunca dos sesiones en la misma carpeta.** **Nunca `git stash`** (ni `checkout`/`reset` que descarten) **sobre cambios que no sean tuyos**: si en tu carpeta aparecen cambios ajenos, para y avisa.
 - **Lo que un worktree necesita y no está en git** (si no, algunas pruebas fallan sin que el código tenga la culpa): `plataforma/.env.local`, `node_modules` (raíz y `plataforma/`), `privado/` (sin `backups/`), `fuentes_fbm/` **al día**, `.cache-jdm/` y `data/raw/`. Sin `.cache-jdm/` ni `data/raw/`, `npm run test:regresion` da 43 diferencias «inesperadas» que no existen en `main` (26/10/2026).
 - La **carpeta principal del proyecto queda en `main`**: ahí solo se mergea y se verifica. La rutina A publica desde su propia copia (`Maccabis-rutina-a`, ver `RUTINAS/A_ACTAS.md`).
@@ -87,3 +87,6 @@ Vale para **toda** pantalla nueva o que se toque. Un único componente (`compone
 ## 14. Cuentas temporales en el Supabase real (Iván, 28/10/2026)
 1. **Si se puede evitar, no se crean.** Antes de crear una cuenta para probar en el real, buscar otra vía: la pila local, el Worker o la función con datos sintéticos, o que Iván pruebe con su propia cuenta.
 2. **Si hace falta crearla:** apuntar el **recuento de cuentas de `auth.users` antes** de crearla y **después** de borrarla, y ponerlo en el informe. Si no coinciden, es un fallo. Se borra siempre al final (`finally`), pase lo que pase, y se comprueba que no queda nada suyo (sesiones, identidades, suscripciones, fichas de gestor, respuestas) ni fuera de Supabase (p. ej. el KV del asistente). Así lo hacen `verificar_produccion.mjs` y `verificar_chat_preview.mjs`.
+
+## 15. Pruebas por niveles (D149)
+Nivel 1 en local en cada cambio (`npm run pruebas:rapidas`, menos de 3 minutos); la batería completa en GitHub Actions al subir la rama, que Code no espera pero comprueba en verde antes de mergear (`npm run ci:estado`). Estadísticas y liga solo si se tocan datos, pipeline, migraciones o sus pantallas; las `-real`, solo con migración o permisos. Detalle, tabla «si tocas X, pasa Y», puertos y lo que solo va en local: `CLAUDE.md` en la raíz.

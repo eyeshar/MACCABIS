@@ -19,9 +19,8 @@ const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'safe-area', ANTES ? '
 fs.mkdirSync(SALIDA, { recursive: true });
 
 const { ok, fallos } = contador();
-const PUERTO = 3150;
 // Con el asistente configurado (D142; el Worker no hace falta: solo se mira el boton flotante de los gestores).
-const e2e = await preparar({ puerto: PUERTO, envExtra: { CHAT_WORKER_URL: 'http://127.0.0.1:9/', CHAT_SECRET: 'solo-pruebas' } });
+const e2e = await preparar({ envExtra: { CHAT_WORKER_URL: 'http://127.0.0.1:9/', CHAT_SECRET: 'solo-pruebas' } });
 const { APP, pila } = e2e;
 const JUGADOR = 'jugador@pruebas.local', GESTOR = 'gestor@pruebas.local';
 const iphone = devices['iPhone 14']; // 390x844
@@ -32,8 +31,9 @@ const FORMAS = {
 // La barra de Safari (vertical) no es zona segura de la pagina: el viewport de la prueba es el util (844-~180).
 
 try {
-  const { cargarLiga, leerLiga } = await import('../scripts/cargar_liga.mjs');
-  await cargarLiga(pila.sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
+  const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
+  await cargarLiga(pila.sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
   await personas(pila, { jugadores: [['esteban-jon', JUGADOR]], gestores: [['Edu', GESTOR, 'martin-ortega-rico-eduardo']] });
 
   const nav = await webkit.launch();

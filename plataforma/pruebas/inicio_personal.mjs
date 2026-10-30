@@ -11,10 +11,10 @@
 //   npm run pruebas:inicio-personal
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto, pequenos } from './comun_e2e.mjs';
 import { adelantar, semanas, diaLargo } from './fechas_prueba.mjs';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const { ok, fallos, sumar } = contador();
-const PUERTO = 3121;
-const e = await preparar({ puerto: PUERTO });
+const e = await preparar();
 const { sql, APP } = e;
 try {
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
@@ -79,7 +79,7 @@ try {
   ok(await visto(pj.getByTestId('tarjeta-pendiente').first().locator('.in-casilla-quedada')) && /\w+ \d+ \w{3}/.test(await pj.locator('.in-pendiente-fecha').first().innerText()), 'cada tarjeta: fecha en grande («Miércoles 28 oct») y la casilla Quedada');
   ok((await pj.getByTestId('contador').innerText()) === `1 de ${n}`, `contador «1 de ${n}»`, await pj.getByTestId('contador').innerText().catch(() => ''));
   await pj.locator('.in-tarjetas').evaluate((c) => c.scrollTo({ left: c.scrollWidth, behavior: 'instant' }));
-  await pj.waitForTimeout(400);
+  await hasta(async () => (await pj.getByTestId('contador').innerText()) === `${n} de ${n}`, 5000);
   ok((await pj.getByTestId('contador').innerText()) === `${n} de ${n}`, 'al desplazar, el contador cambia', await pj.getByTestId('contador').innerText().catch(() => ''));
   const anchos = await pj.locator('.in-tarjeta-caja').first().evaluate((x) => ({ t: x.getBoundingClientRect().width, c: x.parentElement.getBoundingClientRect().width }));
   ok(anchos.t < anchos.c && anchos.t > anchos.c * 0.7, 'carrusel: una tarjeta visible y asomando la siguiente', JSON.stringify(anchos));
@@ -121,8 +121,7 @@ try {
   ok(manifiestos.length === 1 && manifiestos[0] === '/manifest.webmanifest', 'el inicio del jugador enlaza el manifiesto de toda la web (/manifest.webmanifest), no uno bajo /mi-zona', JSON.stringify(manifiestos));
 
   console.log('\n== Responder un plan desde la tarjeta: sale y el contador baja');
-  await tarjetaPlan.getByRole('button', { name: 'Voy', exact: true }).click();
-  await pj.waitForTimeout(2000);
+  await trasAccion(pj, () => tarjetaPlan.getByRole('button', { name: 'Voy', exact: true }).click());
   await pj.reload();
   const titulo2 = (await pj.locator('#t-faltan').textContent()).trim();
   ok(!(await pj.getByTestId('tarjeta-pendiente').filter({ hasText: 'Cañas del jueves' }).count()) && titulo2 !== titulo, `respondido: la tarjeta sale (${titulo} → ${titulo2})`);

@@ -73,8 +73,12 @@ try {
   for (const n of NUEVAS) ok(await tablaExiste(n), `tras volver a aplicar existe public.${n}`);
   // PostgREST guarda el esquema en caché: que lo vuelva a leer antes de seguir.
   await sql`notify pgrst, 'reload schema'`;
-  for (let i = 0; i < 40 && (await rpc('respuestas_web_encendido', {})).status === 404; i++) await new Promise((ok) => setTimeout(ok, 250));
-  await new Promise((ok) => setTimeout(ok, 500));
+  // Hasta que las funciones de despues esten en la cache, tres veces seguidas: con la maquina cargada, PostgREST podia
+  // tener aun una cache intermedia (de cuando se revirtio) y dar 404 en `responder` (29/10/2026, D149). Como anonimo y
+  // con un evento que no existe, `responder` no escribe nada: solo se mira que no de 404.
+  const presente = async (f, args) => (await rpc(f, args)).status !== 404;
+  const enCache = async () => (await presente('respuestas_web_encendido', {})) && (await presente('responder', { p_evento: '00000000-0000-0000-0000-000000000000', p_respuesta: 'va' }));
+  for (let i = 0, seguidas = 0; i < 80 && seguidas < 3; i++) { seguidas = (await enCache()) ? seguidas + 1 : 0; await new Promise((ok) => setTimeout(ok, 250)); }
 
   console.log('\n== Carga de eventos y cuentas de prueba');
   const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));

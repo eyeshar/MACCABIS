@@ -9,17 +9,19 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { arrancar } from './pila.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.resolve(AQUI, '..');
 const RES = path.join(AQUI, 'resultados');
 fs.mkdirSync(RES, { recursive: true });
-// PRUEBAS_PUERTO_APP (opcional): otro puerto para la app si el 3100 esta ocupado (p. ej. por otro proyecto en el mismo ordenador).
-const PUERTO_APP = Number(process.env.PRUEBAS_PUERTO_APP) || 3100;
+// Puerto de la app: el del carril de este worktree (D149); PRUEBAS_PUERTO_APP lo cambia.
+const PUERTO_APP = PUERTOS.app;
 const APP = `http://127.0.0.1:${PUERTO_APP}`;
 const PLANTILLA_VIVE = path.join(RAIZ, '..', 'privado', 'LISTADO MACCABIS 2024 (revisado).xlsx');
 
@@ -174,13 +176,10 @@ try {
   // ------------------------------------------------------------------ App
   seccion('Compilacion de la app contra la pila local');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
+  app = await arrancarApp({ puerto: PUERTO_APP, env });
   log('  OK    next build');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO_APP), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperarHttp(APP);
 
-  navegador = await chromium.launch({ channel: 'chrome', headless: true });
+  navegador = await abrirNavegador();
   const movil = { viewport: { width: 375, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'es-ES' };
   const ctxA = await navegador.newContext(movil);
   const ctxB = await navegador.newContext(movil);
@@ -360,8 +359,8 @@ try {
   await pA.getByLabel('Nombre en la ropa').fill('LUCIA');
   await pA.getByLabel('Dorsal').fill('7'); // el mismo que el suyo: en un familiar el dorsal es libre (D60)
   await pA.locator('.prenda', { has: pA.getByRole('heading', { name: 'Camiseta de juego', exact: true }) }).getByLabel('La quiero').check();
-  await pA.locator('.prenda', { has: pA.getByRole('heading', { name: 'Camiseta de juego', exact: true }) }).getByLabel('Talla').selectOption('10');
-  await pA.waitForTimeout(800);
+  // gracia de 600 ms: la comprobacion del dorsal en vivo sale a los 350 ms (FormularioPedido)
+  await trasAccion(pA, () => pA.locator('.prenda', { has: pA.getByRole('heading', { name: 'Camiseta de juego', exact: true }) }).getByLabel('Talla').selectOption('10'), { gracia: 600 });
   ok(!(await pA.getByText('Ese dorsal ya está cogido.').isVisible()), 'familiar con el mismo dorsal (7) que un jugador: sin aviso');
   await pA.getByRole('button', { name: 'Enviar pedido' }).click();
   await pA.waitForURL(/guardado=1/);
@@ -561,7 +560,7 @@ try {
   log(`  FALLO la prueba se interrumpio: ${String(e.message).split(/\r?\n/)[0]}`);
 } finally {
   if (navegador) await navegador.close();
-  if (app) app.kill();
+  app?.parar();
   await pila.parar();
   log(`\nRESULTADO: ${fallos === 0 ? 'TODO OK' : `${fallos} FALLOS`}`);
   fs.writeFileSync(path.join(RES, 'informe.txt'), lineas.join('\n') + '\n');

@@ -1,0 +1,64 @@
+# Nivel 2 de las pruebas (D149): la batería completa en GitHub Actions al subir cualquier rama que no sea main.
+# Code no la espera; antes de mergear comprueba que la última ejecución de la rama está en verde (npm run ci:estado).
+#
+# Coste cero (D149): solo el servidor estándar ubuntu-latest y el repositorio PÚBLICO (Actions es gratis en repos
+# públicos y no gasta la bolsa de minutos de la cuenta, que comparte Web TCPC). Si el repositorio pasa a privado, esto
+# hay que revisarlo antes: cada ejecución gastaría minutos de esa bolsa.
+#
+# Privacidad: los registros de Actions son públicos. Aquí no hay privado/, ni .env.local, ni claves de Supabase: la pila
+# local se llena con data/ (público) y jugadores sintéticos. Sin capturas (CI=true) y sin artefactos.
+name: Pruebas completas
+on:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+concurrency:
+  group: pruebas-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  pruebas:
+    name: Pruebas (grupo ${{ matrix.grupo }} de 4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        grupo: [1, 2, 3, 4]
+    env:
+      TZ: Europe/Madrid
+      CI: "true"
+      PRUEBAS_CAPTURAS: "0"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # check:datos compara con origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            plataforma/package-lock.json
+      - name: Dependencias
+        run: |
+          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund --prefix plataforma
+      - name: PostgREST y caché de Next
+        uses: actions/cache@v4
+        with:
+          path: |
+            plataforma/pruebas/.bin
+            plataforma/.next/cache
+          key: pruebas-${{ runner.os }}-${{ matrix.grupo }}-${{ hashFiles('plataforma/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            pruebas-${{ runner.os }}-${{ matrix.grupo }}-${{ hashFiles('plataforma/package-lock.json') }}-
+      - name: WebKit (solo si el grupo lleva pruebas:safe-area, que mira el iPhone con Safari)
+        run: |
+          if npm run -s pruebas:completas -- --lista --grupo ${{ matrix.grupo }}/4 | grep -q 'pruebas:safe-area '; then
+            cd plataforma && npx playwright install --with-deps webkit
+          fi
+      - name: Batería (grupo ${{ matrix.grupo }})
+        run: npm run pruebas:completas -- --grupo ${{ matrix.grupo }}/4

@@ -10,11 +10,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { arrancar } from './pila.mjs';
+import { arrancarApp, abrirNavegador } from './infra/app.mjs';
+import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -41,7 +41,7 @@ const proxInicio = (e) => {
 };
 const avisoInicio = (e) => { const p = proxInicio(e); return p ? A.avisoPartido(equip, p) : null; };
 
-const PUERTO = 3102;
+const PUERTO = PUERTOS.app;
 const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -55,12 +55,13 @@ async function esperar(url, ms = 60000) {
 const pila = await arrancar();
 let app, nav;
 try {
-  nav = await chromium.launch({ channel: 'chrome', headless: true });
+  nav = await abrirNavegador();
 
   // =================== PLATAFORMA
   const { sql, url, anonKey } = pila;
-  const { leerLiga, cargarLiga } = await import('../scripts/cargar_liga.mjs');
-  await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
+  const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
+  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
   const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
@@ -71,11 +72,8 @@ try {
 
   console.log('\n== Compilacion');
   const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey, NEXT_TELEMETRY_DISABLED: '1' };
-  const next = path.join(RAIZ, 'node_modules', 'next', 'dist', 'bin', 'next');
-  execFileSync(process.execPath, [next, 'build'], { cwd: RAIZ, env, stdio: 'ignore' });
+  app = await arrancarApp({ puerto: PUERTO, env });
   ok(true, 'next build');
-  app = spawn(process.execPath, [next, 'start', '-p', String(PUERTO), '-H', '127.0.0.1'], { cwd: RAIZ, env, stdio: 'ignore' });
-  await esperar(APP);
 
   // =================== WEB PUBLICA (/liga, que sustituye a la pestana de GitHub Pages)
   for (const [etiqueta, ancho, alto, movil] of [['375', 375, 800, true], ['escritorio', 1280, 900, false]]) {
@@ -217,7 +215,7 @@ try {
   }
 } finally {
   if (nav) await nav.close();
-  if (app) app.kill();
+  app?.parar();
   await pila.parar();
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

@@ -15,7 +15,7 @@ import { clasificaciones, temporadaDe } from "@/lib/publico";
 import { fichaPorNombre, hrefPartido, partidoNuestro } from "@/lib/estadisticas/liga";
 import {
   cargarAvisosPersonales, cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas,
-  cargarQuienVa, respuestasWebEncendido,
+  cargarQuienVa, misEntrenosPorDefecto, respuestasWebEncendido,
 } from "@/lib/respuestas/jugador";
 import {
   enlaceLugar, esPlan, estadoDe, fechaTitular, hhmm, lugarTexto, partidosQueVa, restar20, unidades, type MiEvento, type Unidad,
@@ -27,7 +27,7 @@ import AvisoPersonal from "./AvisoPersonal";
 import RopaInicio from "./RopaInicio";
 import BandaGestion from "./BandaGestion";
 import Carrusel from "./Carrusel";
-import { FilaAgenda, TarjetaPendiente } from "./piezas";
+import { FilaAgenda, TarjetaPendiente, TarjetaPorDefecto } from "./piezas";
 
 const NOMBRE_GRUPO = { MDA: "grupo 1", MDL: "grupo 2" } as const;
 const dec1 = (x: number) => x.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -80,6 +80,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
     respuestasWebEncendido(), cargarMisEventos(hoy).catch(() => [] as MiEvento[]), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
     cargarMiConvocatoria().catch(() => []), cargarMisGrupos(), cargarAvisosPersonales(), sb.rpc("mi_posicion"),
   ]);
+  // D151: entrenos que le salen como «No vas (puesto por defecto)» (solo lo suyo; nunca se nombra la marca).
+  const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias, encendido).catch(() => new Set<string>());
   const abierta = (u: Unidad) => u.eventos.some((e) => e.estado === "programado" && madrid(e.fecha, hhmm(e.inicio) ?? "00:00") > ahora);
   const todas = unidades(eventos);
   const limite = sumarDias(hoy, 14);
@@ -88,13 +90,14 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   // como «sin responder» en la ultima importacion. Los planes no oficiales, siempre (D118).
   const pendientes = todas.filter((u) => {
     if (!abierta(u)) return false;
-    const est = estadoDe(u, respuestas, ausencias);
+    const est = estadoDe(u, respuestas, ausencias, porDefecto);
     if (!est.pendiente) return false;
     if (esPlan(u.eventos[0])) return true;
     if (u.fecha > limite) return false;
     if (encendido) return true;
     return u.eventos.some((e) => respuestas.find((r) => r.evento_id === e.id)?.respuesta === "sin_responder");
   });
+  const puestosPorDefecto = todas.filter((u) => abierta(u) && u.fecha <= limite && estadoDe(u, respuestas, ausencias, porDefecto).clase === "defecto");
   const conPlazas = pendientes.filter((u) => esPlan(u.eventos[0]) && u.eventos[0].plazas).map((u) => u.eventos[0].id);
   const ocupacion = conPlazas.length ? await cargarQuienVa(conPlazas) : new Map();
   const lleno = (e: MiEvento) => Boolean(e.plazas && (ocupacion.get(e.id)?.va.length ?? 0) >= e.plazas);
@@ -148,6 +151,11 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
           <Carrusel etiqueta="Respuestas que te faltan">
             {pendientes.map((u) => <TarjetaPendiente key={u.clave} u={u} encendido={encendido} respuestas={respuestas} plazasLlenas={lleno(u.eventos[0])} />)}
           </Carrusel>
+        )}
+        {puestosPorDefecto.length > 0 && (
+          <div className="in-pordefecto-lista" data-testid="por-defecto">
+            {puestosPorDefecto.map((u) => <TarjetaPorDefecto key={u.clave} u={u} />)}
+          </div>
         )}
         <p className="in-nota" data-testid="regla-recordatorios">
           {encendido
@@ -213,7 +221,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
           <section className="in-sec in-agenda" id="agenda" aria-labelledby="t-agenda">
             <div className="in-sec-cab"><h2 id="t-agenda">Tu agenda</h2></div>
             <div className="in-lista">
-              {agenda.map((u) => <FilaAgenda key={u.clave} u={u} respuestas={respuestas} ausencias={ausencias} convocatorias={convocatorias} grupo={grupoDe(u)} encendido={encendido} />)}
+              {agenda.map((u) => <FilaAgenda key={u.clave} u={u} respuestas={respuestas} ausencias={ausencias} convocatorias={convocatorias} grupo={grupoDe(u)} encendido={encendido} porDefecto={porDefecto} />)}
               {!agenda.length && <p className="suave" style={{ margin: 0 }}>No tienes nada en la agenda.</p>}
             </div>
             <div className="botones">

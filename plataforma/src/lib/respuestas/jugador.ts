@@ -3,6 +3,7 @@ import { cache } from "react";
 import { clienteSesion, configurado } from "@/lib/supabase";
 import { cargarMiZona } from "@/app/mi-zona/datos";
 import type { MiAusencia, MiDomingo, MiEvento, MiRespuesta } from "./dominio";
+import { porDefectoMio, type MiDefecto } from "@/lib/disponibilidad/porDefecto";
 
 // Lo que lee el jugador con SU sesion (D99): sus eventos (v_mis_eventos), sus respuestas y ausencias (RLS: solo las
 // suyas) y los nombres de "quien va" de sus eventos (v_quien_va: nombre y estado, nada mas). La base decide.
@@ -78,6 +79,27 @@ export const cargarMisAusencias = cache(async (): Promise<MiAusencia[]> => {
   if (error) throw new Error(`ausencias: ${error.message}`);
   return (data ?? []) as MiAusencia[];
 });
+
+/** D151: su «no suele entrenar» y los entrenos en que un gestor se lo quito (`mi_disponibilidad_defecto`: solo lo suyo).
+ *  Si la funcion aun no esta en la base, null (todo sigue como antes: «sin responder»). */
+export const cargarMiDefecto = cache(async (): Promise<MiDefecto | null> => {
+  if (!configurado()) return null;
+  const sb = await clienteSesion();
+  const { data, error } = await sb.rpc("mi_disponibilidad_defecto");
+  if (error || !data) return null;
+  const d = data as { no_suele_entrenar?: boolean; quitados?: string[] };
+  return { no_suele_entrenar: !!d.no_suele_entrenar, quitados: d.quitados ?? [] };
+});
+
+/** D151: los entrenos (de `eventos`) que a el le salen como «No vas (puesto por defecto)». Vacio con las respuestas en
+ *  la web apagadas: entonces se responde en SportEasy y no hay «Sí voy». */
+export async function misEntrenosPorDefecto(eventos: MiEvento[], respuestas: MiRespuesta[], ausencias: MiAusencia[], encendido: boolean): Promise<Set<string>> {
+  if (!encendido) return new Set();
+  const mio = await cargarMiDefecto();
+  if (!mio?.no_suele_entrenar) return new Set();
+  return new Set(eventos.filter((e) => e.estado === "programado"
+    && porDefectoMio(e, respuestas.find((r) => r.evento_id === e.id)?.respuesta ?? "sin_responder", mio, ausencias)).map((e) => e.id));
+}
 
 /** Su respuesta unica a un domingo (D103), si la hay y sigue vigente. */
 export async function cargarMiDomingo(fecha: string): Promise<MiDomingo | null> {

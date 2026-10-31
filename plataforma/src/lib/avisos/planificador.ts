@@ -12,11 +12,13 @@
 //     quitara para ese entreno) ni a quien es «nunca a partidos» en un partido.
 //   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo, ni con el interruptor apagado.
 //   - Horas de silencio (22:30–8:30): sale a las 8:30 salvo que el evento empiece en menos de 12 h.
+//   - D151: el lunes a las 19:00, a quien le sale un entreno como «no va (por defecto)», UN aviso por entreno
+//     («Te hemos puesto que no vas…»; avisosPorDefecto). Nunca se repite (clave por entreno y persona).
 
 import { fueraPorFicha, quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
-import { ausenciaQueCubre, claveQuitado, pendiente, type MarcasDisponibilidad } from "../disponibilidad/porDefecto.ts";
+import { ausenciaQueCubre, claveQuitado, esEntreno, respuestaEfectiva, type MarcasDisponibilidad } from "../disponibilidad/porDefecto.ts";
 import { avisoDeDudas, enMadrid, horaDeEnvio, limiteDudas, lunesDe, madrid, sumarDias } from "./horario.ts";
-import { queEs, textoDudas, textoPasoNoVa, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
+import { queEs, textoDudas, textoNoVaPorDefecto, textoPasoNoVa, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
 
 /** `oficial = false`: plan no oficial de un jugador (D118). No entra en ningun recordatorio del club: solo, si el
  *  organizador lo marco, un aviso un dia antes (planificarPlanes). */
@@ -71,12 +73,18 @@ export function estadoPara(person: string, e: Pick<EventoPlan, "id" | "fecha">, 
   return ausenciaQueCubre(person, e.fecha, ausencias) ? "no" : "sin_responder";
 }
 
-/** ¿Le toca recordatorio a este jugador en este evento? Sin responder (ni ausencia) y sin estar fuera por D146. */
-export function pendienteDe(j: Pick<JugadorPlan, "person_id" | "marcas">, e: Pick<EventoPlan, "id" | "fecha" | "tipo" | "oficial">, d: Pick<DatosPlan, "respuestas" | "ausencias" | "quitados">) {
-  // La regla de todas las pantallas (`respuestaEfectiva`, D146 y D150): con una ausencia que cubre el dia, no es pendiente.
+/** Lo que cuenta para este jugador en este evento: la regla de todas las pantallas (`respuestaEfectiva`, D146 y D150). */
+export function efectivaDe(j: Pick<JugadorPlan, "person_id" | "marcas">, e: Pick<EventoPlan, "id" | "fecha" | "tipo" | "oficial">, d: Pick<DatosPlan, "respuestas" | "ausencias" | "quitados">) {
   const r = d.respuestas.find((x) => x.evento_id === e.id && x.person_id === j.person_id)?.respuesta ?? "sin_responder";
   const quitado = !!d.quitados?.some((q) => claveQuitado(q.evento_id, q.person_id) === claveQuitado(e.id, j.person_id));
-  return pendiente(e, j.marcas, r, quitado, ausenciaQueCubre(j.person_id, e.fecha, d.ausencias));
+  return respuestaEfectiva(e, j.marcas, r, { quitado, ausencia: ausenciaQueCubre(j.person_id, e.fecha, d.ausencias) });
+}
+
+/** ¿Le toca recordatorio a este jugador en este evento? Sin responder (ni ausencia) y sin estar fuera por D146. */
+export function pendienteDe(j: Pick<JugadorPlan, "person_id" | "marcas">, e: Pick<EventoPlan, "id" | "fecha" | "tipo" | "oficial">, d: Pick<DatosPlan, "respuestas" | "ausencias" | "quitados">) {
+  // Con una ausencia que cubre el dia, «no va (por defecto)» o fuera del partido, no es pendiente.
+  const r = efectivaDe(j, e, d);
+  return !r.fuera && r.respuesta === "sin_responder";
 }
 
 type Hueco = { tipo: "lunes" | "martes" | "dia" | "creado" | "24h"; toca: Date };
@@ -89,21 +97,24 @@ export function huecos(e: EventoPlan): Hueco[] {
   return [{ tipo: "creado", toca: new Date(e.creado_en) }, { tipo: "24h", toca: new Date(ini.getTime() - 24 * 3600 * 1000) }];
 }
 
+/** Un hueco vale si ya toca (con el silencio aplicado), aun no ha pasado el margen, el evento no ha empezado y el momento
+ *  es posterior al encendido del interruptor. Devuelve la hora de envio, o null. */
+function valeHueco(e: EventoPlan, h: Hueco, d: Pick<DatosPlan, "ahora" | "encendidoDesde">) {
+  if (!d.encendidoDesde) return null;
+  const ahora = d.ahora.getTime();
+  const ini = inicioDe(e);
+  const envio = horaDeEnvio(h.toca, ini);
+  const ok = e.estado === "programado" && !e.sin_recordatorios && h.toca.getTime() >= d.encendidoDesde.getTime()
+    && envio.getTime() <= ahora && ahora < envio.getTime() + MARGEN_MS && ahora < ini.getTime() && h.toca.getTime() < ini.getTime();
+  return ok ? envio : null;
+}
+
 export function planificar(datos: DatosPlan): AvisoPlan[] {
   if (!datos.encendidoDesde) return [];
   // Los planes no oficiales no cuentan para nada del club (D118): fuera de estos recordatorios.
   const d = { ...datos, eventos: datos.eventos.filter((e) => e.oficial !== false) };
-  const ahora = d.ahora.getTime();
   const salida: AvisoPlan[] = [];
-  // Un hueco vale si ya toca (con el silencio aplicado), aun no ha pasado el margen, el evento no ha empezado y el
-  // momento es posterior al encendido del interruptor.
-  const vale = (e: EventoPlan, h: Hueco) => {
-    const ini = inicioDe(e);
-    const envio = horaDeEnvio(h.toca, ini);
-    const ok = e.estado === "programado" && !e.sin_recordatorios && h.toca.getTime() >= d.encendidoDesde!.getTime()
-      && envio.getTime() <= ahora && ahora < envio.getTime() + MARGEN_MS && ahora < ini.getTime() && h.toca.getTime() < ini.getTime();
-    return ok ? envio : null;
-  };
+  const vale = (e: EventoPlan, h: Hueco) => valeHueco(e, h, d);
   const sinResponder = (j: JugadorPlan, e: EventoPlan) => pendienteDe(j, e, d);
 
   // ---- lunes 19:00: agrupado por jugador (un domingo con dos partidos cuenta una vez)
@@ -167,6 +178,27 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
         const t = h.tipo === "dia" ? textoEntrenoHoy(e) : textoOtro(e, h.tipo === "creado" ? "creado" : "24h");
         salida.push({ clave: `rec:${h.tipo}:${e.id}:${j.person_id}`, tipo: "recordatorio", person_id: j.person_id, eventos: [e.id], ...t, url: urlEvento(e), toca: h.toca, programado_para: envio });
       }
+    }
+  }
+  return salida;
+}
+
+/** D151: el lunes a las 19:00 (el hueco «lunes» del entreno, con el silencio y el margen de siempre), UN aviso por
+ *  entreno a cada invitado al que le sale como «no va (por defecto)» (`respuestaEfectiva`, `por: "defecto"`): no si ya
+ *  respondio, si tiene una ausencia que cubre el dia, si un gestor se lo quito para ese entreno ni si no esta invitado
+ *  (D148, solo con ficha). Va aparte del aviso de «te faltan» (no se junta con nada) y su clave es por entreno y persona:
+ *  la tarea nunca lo repite, aunque el entreno cambie de dia. Solo con el interruptor encendido. */
+export function avisosPorDefecto(datos: DatosPlan): AvisoPlan[] {
+  if (!datos.encendidoDesde) return [];
+  const salida: AvisoPlan[] = [];
+  for (const e of datos.eventos) {
+    if (!esEntreno(e) || e.borrado_en) continue;
+    const h = huecos(e).find((x) => x.tipo === "lunes");
+    const envio = h && valeHueco(e, h, datos);
+    if (!h || !envio) continue;
+    for (const j of invitados(e, datos.jugadores)) {
+      if (efectivaDe(j, e, datos).por !== "defecto") continue;
+      salida.push({ clave: `rec:defecto:${e.id}:${j.person_id}`, tipo: "recordatorio", person_id: j.person_id, eventos: [e.id], ...textoNoVaPorDefecto(e), url: urlEvento(e), toca: h.toca, programado_para: envio });
     }
   }
   return salida;

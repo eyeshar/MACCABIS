@@ -5,7 +5,7 @@
 //   - un jugador y un gestor con cuentas que YA existen, dentro de una transaccion READ ONLY que adopta su rol y claims.
 // Demuestra que ni un anonimo ni un jugador leen notas, niveles, datos privados, convocatorias (aprobadas o no) ni
 // cambios, ni escriben nada; y que mi_convocatoria solo devuelve convocatorias aprobadas y solo lo suyo. Nunca imprime
-// niveles ni notas: solo recuentos. D146: las marcas de disponibilidad; D151: mi_disponibilidad_defecto() solo da a cada
+// niveles ni notas: solo recuentos. D146: las marcas de disponibilidad; D152: mi_disponibilidad_defecto() solo da a cada
 // jugador su marca y sus entrenos quitados.
 //
 //   npm run pruebas:convocatoria-real
@@ -177,7 +177,7 @@ try {
     }
   }
 
-  console.log('\n== «No vas (puesto por defecto)» del propio jugador (D151, migración 20261031150000)');
+  console.log('\n== «No vas (puesto por defecto)» del propio jugador (D152, migración 20261031150000)');
   const [m151] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261031150000'`;
   if (!m151.n) {
     const [f] = await sql`select to_regprocedure('public.mi_disponibilidad_defecto()') is not null fn`;

@@ -80,7 +80,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
     respuestasWebEncendido(), cargarMisEventos(hoy).catch(() => [] as MiEvento[]), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
     cargarMiConvocatoria().catch(() => []), cargarMisGrupos(), cargarAvisosPersonales(), sb.rpc("mi_posicion"),
   ]);
-  // D151: entrenos que le salen como «No vas (puesto por defecto)» (solo lo suyo; nunca se nombra la marca).
+  // D152: entrenos que le salen como «No vas (puesto por defecto)» (solo lo suyo; nunca se nombra la marca).
   const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias, encendido).catch(() => new Set<string>());
   const abierta = (u: Unidad) => u.eventos.some((e) => e.estado === "programado" && madrid(e.fecha, hhmm(e.inicio) ?? "00:00") > ahora);
   const todas = unidades(eventos);

@@ -12,7 +12,7 @@
 //     quitara para ese entreno) ni a quien es «nunca a partidos» en un partido.
 //   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo, ni con el interruptor apagado.
 //   - Horas de silencio (22:30–8:30): sale a las 8:30 salvo que el evento empiece en menos de 12 h.
-//   - D151: el lunes a las 19:00, a quien le sale un entreno como «no va (por defecto)», UN aviso por entreno
+//   - D152: el lunes a las 19:00, a quien le sale un entreno como «no va (por defecto)», UN aviso por entreno
 //     («Te hemos puesto que no vas…»; avisosPorDefecto). Nunca se repite (clave por entreno y persona).
 
 import { fueraPorFicha, quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
@@ -183,7 +183,7 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
   return salida;
 }
 
-/** D151: el lunes a las 19:00 (el hueco «lunes» del entreno, con el silencio y el margen de siempre), UN aviso por
+/** D152: el lunes a las 19:00 (el hueco «lunes» del entreno, con el silencio y el margen de siempre), UN aviso por
  *  entreno a cada invitado al que le sale como «no va (por defecto)» (`respuestaEfectiva`, `por: "defecto"`): no si ya
  *  respondio, si tiene una ausencia que cubre el dia, si un gestor se lo quito para ese entreno ni si no esta invitado
  *  (D148, solo con ficha). Va aparte del aviso de «te faltan» (no se junta con nada) y su clave es por entreno y persona:

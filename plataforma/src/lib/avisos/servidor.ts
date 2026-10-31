@@ -198,7 +198,7 @@ export async function ejecutarTarea(ahora = new Date()) {
     { ...datos, encendidoDesde: encendido ? desde : null },
   );
   encolados += await encolar(sb, recordatorios.map((p) => ({ ...p, person_id: p.person_id })));
-  // D151: «Te hemos puesto que no vas al entreno…», uno por entreno (aparte: no se junta con el de las dudas).
+  // D152: «Te hemos puesto que no vas al entreno…», uno por entreno (aparte: no se junta con el de las dudas).
   if (encendido) encolados += await encolar(sb, avisosPorDefecto({ ...datos, encendidoDesde: desde }));
   encolados += await encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas, jugadores: base.jugadores }, ahora));
   if (encendido) encolados += await encolarAlertasGestores(sb, base, ahora);

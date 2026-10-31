@@ -3,7 +3,7 @@
 //   lunes agrupado · martes a sin responder y a «duda» · miércoles del entreno · amistoso al crearlo y 24 h antes ·
 //   silencio y excepción de menos de 12 h · cambio de hora del 25/10/2026 · ausencia que cuenta como respondido ·
 //   «sin recordatorios» · nada con el interruptor apagado · textos de los avisos (sin motivos, niveles ni posiciones) ·
-//   el aviso «no va (por defecto)» al propio jugador (D151): único, y nunca si respondió, está ausente o no está invitado.
+//   el aviso «no va (por defecto)» al propio jugador (D152): único, y nunca si respondió, está ausente o no está invitado.
 //
 //   npm run pruebas:avisos-logica
 
@@ -320,7 +320,7 @@ console.log('\n== Disponibilidad por defecto (D146): «no suele entrenar» y «s
 }
 
 
-console.log('\n== Aviso «no va (por defecto)» al propio jugador (D151)');
+console.log('\n== Aviso «no va (por defecto)» al propio jugador (D152)');
 {
   // Sintéticos (D39): «nse» y «nse2» no suelen entrenar; «nsesf» tampoco y no tiene ficha (fuera de un entreno «solo con ficha»).
   const M1 = { no_suele_entrenar: true, nunca_partidos: false };

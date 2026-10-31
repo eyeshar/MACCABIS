@@ -1143,7 +1143,9 @@ Los avisos de prueba (botón de Cuenta, `tipo = 'prueba'`) no pasan por la tarea
 ---
 ## Bloque «Aviso al jugador de «no va por defecto»» (31/10/2026, rama `feat/aviso-no-va-defecto`, SIN merge: Iván revisa la vista previa)
 
-## D151 — El propio jugador ve su «No vas (puesto por defecto)» con «Sí voy» y recibe un aviso único el lunes del entreno (Iván, 31/10/2026) — COMPLETA D146 (apuntado en el BACKLOG para cuando los jugadores respondieran en la web, D78)
+## D152 — El propio jugador ve su «No vas (puesto por defecto)» con «Sí voy» y recibe un aviso único el lunes del entreno (Iván, 31/10/2026) — COMPLETA D146 (apuntado en el BACKLOG para cuando los jugadores respondieran en la web, D78)
+
+_Número: se apuntó como D151 y se renumeró a D152 al mergear, porque `feat/calendario-una-fuente` la había cogido antes._
 
 **Contexto:** con D146, a quien tiene la marca «No suele entrenar» y no responde a un entreno se le cuenta como «no va (por defecto)», pero solo lo veían los gestores: en su zona salía «sin responder» y no sabía que se le contaba fuera. Con «respuestas en la web» encendido (D136) ya se le puede decir y dejarle cambiarlo.
 

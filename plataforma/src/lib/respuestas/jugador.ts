@@ -80,7 +80,7 @@ export const cargarMisAusencias = cache(async (): Promise<MiAusencia[]> => {
   return (data ?? []) as MiAusencia[];
 });
 
-/** D151: su «no suele entrenar» y los entrenos en que un gestor se lo quito (`mi_disponibilidad_defecto`: solo lo suyo).
+/** D152: su «no suele entrenar» y los entrenos en que un gestor se lo quito (`mi_disponibilidad_defecto`: solo lo suyo).
  *  Si la funcion aun no esta en la base, null (todo sigue como antes: «sin responder»). */
 export const cargarMiDefecto = cache(async (): Promise<MiDefecto | null> => {
   if (!configurado()) return null;
@@ -91,7 +91,7 @@ export const cargarMiDefecto = cache(async (): Promise<MiDefecto | null> => {
   return { no_suele_entrenar: !!d.no_suele_entrenar, quitados: d.quitados ?? [] };
 });
 
-/** D151: los entrenos (de `eventos`) que a el le salen como «No vas (puesto por defecto)». Vacio con las respuestas en
+/** D152: los entrenos (de `eventos`) que a el le salen como «No vas (puesto por defecto)». Vacio con las respuestas en
  *  la web apagadas: entonces se responde en SportEasy y no hay «Sí voy». */
 export async function misEntrenosPorDefecto(eventos: MiEvento[], respuestas: MiRespuesta[], ausencias: MiAusencia[], encendido: boolean): Promise<Set<string>> {
   if (!encendido) return new Set();

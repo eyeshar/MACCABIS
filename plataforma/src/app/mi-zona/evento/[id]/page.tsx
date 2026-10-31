@@ -41,7 +41,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
   const quien = encendido ? (await cargarQuienVa([e.id])).get(e.id)! : null;
   const cambio = lineaCambio(e);
   const actual = r && r.respuesta !== "sin_responder" ? r.respuesta : null;
-  // D151: «No vas (puesto por defecto)» con «Sí voy» (solo lo suyo, con respuestaEfectiva; nunca se nombra la marca).
+  // D152: «No vas (puesto por defecto)» con «Sí voy» (solo lo suyo, con respuestaEfectiva; nunca se nombra la marca).
   const porDefecto = abierto && (await misEntrenosPorDefecto([e], respuestas, ausencias, encendido).catch(() => new Set<string>())).has(e.id);
   const etiqueta = e.estado === "cancelado" ? "Cancelado"
     : porDefecto ? TEXTO_POR_DEFECTO_JUGADOR

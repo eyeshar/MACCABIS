@@ -84,7 +84,7 @@ export function defectoDe(marcas: ({ person_id: string } & Partial<MarcasDisponi
   };
 }
 
-/** Zona del jugador (D151): lo SUYO, de `mi_disponibilidad_defecto()` (su marca y los entrenos en que se le quito). */
+/** Zona del jugador (D152): lo SUYO, de `mi_disponibilidad_defecto()` (su marca y los entrenos en que se le quito). */
 export type MiDefecto = { no_suele_entrenar: boolean; quitados: string[] };
 /** ¿Le sale a el mismo este entreno como «No vas (puesto por defecto)»? `respuestaEfectiva` con sus datos: solo
  *  `por: "defecto"` (si respondio o tiene una ausencia que cubre el dia, no). */

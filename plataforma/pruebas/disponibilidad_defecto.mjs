@@ -11,7 +11,7 @@
 //   - los gestores sí: marcan en jugadores_privado y quitan / devuelven el defecto de un entreno;
 //   - el rol de servicio (la tarea de avisos) NO puede leer jugadores_privado (niveles): solo marcas_disponibilidad()
 //     (migración 20261028233000, también reversible), que da el jugador y sus dos marcas; y lee las excepciones;
-//   - D151: mi_disponibilidad_defecto() (migración 20261031150000, reversible) da a cada jugador SOLO su «no suele
+//   - D152: mi_disponibilidad_defecto() (migración 20261031150000, reversible) da a cada jugador SOLO su «no suele
 //     entrenar» y sus entrenos quitados; porDefectoMio decide con respuestaEfectiva lo que ve en su zona.
 //
 //   npm run pruebas:disponibilidad
@@ -61,7 +61,7 @@ console.log('\n== La regla (funciones puras)');
   ok(d2.ausencias.length === 1 && D.efectivaEn({ tipo: 'entreno', id: 'e', fecha: '2026-11-04' }, 'a', 'sin_responder', d2).por === 'ausencia' && D.efectivaEn({ tipo: 'entreno', id: 'e', fecha: '2026-11-04' }, 'a', 'sin_responder', undefined).respuesta === 'sin_responder', 'efectivaEn: con las ausencias del gestor, «no»; sin ellas (pantallas de jugador), «sin responder»');
 }
 
-console.log('\n== Zona del jugador (D151): porDefectoMio, con respuestaEfectiva y solo sus datos');
+console.log('\n== Zona del jugador (D152): porDefectoMio, con respuestaEfectiva y solo sus datos');
 {
   const ent = { tipo: 'entreno', id: 'e1', fecha: '2026-11-04' }, liga = { tipo: 'liga', id: 'p1', fecha: '2026-11-08' }, plan = { tipo: 'entreno', oficial: false, id: 'x', fecha: '2026-11-04' };
   const MIO = { no_suele_entrenar: true, quitados: [] };
@@ -130,7 +130,7 @@ try {
   await new Promise((r) => setTimeout(r, 1500));
   for (let i = 0; i < 40 && (await api('/entreno_defecto_quitado')).status === 404; i++) await new Promise((r) => setTimeout(r, 250));
 
-  console.log('\n== Migración de D151 (mi_disponibilidad_defecto): aditiva y reversible');
+  console.log('\n== Migración de D152 (mi_disponibilidad_defecto): aditiva y reversible');
   {
     const MIG3 = '20261031150000_mi_disponibilidad_defecto';
     const texto3 = fs.readFileSync(path.join(MIGS, `${MIG3}.sql`), 'utf8').replace(/--.*$/gm, '');
@@ -212,7 +212,7 @@ try {
   console.log('\n== Devolver el defecto');
   r = await api(`/entreno_defecto_quitado?evento_id=eq.${entreno}&person_id=eq.sint-nse`, { metodo: 'DELETE', token: g.token });
   ok(r.status === 200 && r.datos?.length === 1 && (await sql`select count(*)::int n from public.entreno_defecto_quitado`)[0].n === 0, 'un gestor lo devuelve a «no va (por defecto)» (borra la excepción)', JSON.stringify(r));
-  console.log('\n== mi_disponibilidad_defecto() (D151): a cada jugador, solo lo suyo');
+  console.log('\n== mi_disponibilidad_defecto() (D152): a cada jugador, solo lo suyo');
   {
     await sql`insert into public.entreno_defecto_quitado (evento_id, person_id, por_nombre) values (${entreno}, 'sint-nse', 'Gestor') on conflict do nothing`;
     const mio = async (token) => api('/rpc/mi_disponibilidad_defecto', { metodo: 'POST', cuerpo: {}, token });

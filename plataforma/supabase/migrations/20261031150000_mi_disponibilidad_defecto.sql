@@ -1,5 +1,5 @@
 -- =============================================================================
--- El jugador ve SU «no va (puesto por defecto)» en su zona (D151, completa D146).
+-- El jugador ve SU «no va (puesto por defecto)» en su zona (D152, completa D146).
 --
 -- Quien tiene «no suele entrenar» y no ha respondido a un entreno cuenta como «no va (por defecto)». Hasta ahora eso
 -- solo lo veian los gestores. Para que el propio jugador lo vea en su zona (y pueda decir «Sí voy»), esta funcion le da
@@ -19,7 +19,7 @@ as $$
     'quitados', coalesce((select jsonb_agg(q.evento_id order by q.evento_id) from public.entreno_defecto_quitado q where q.person_id = public._mi_person_id()), '[]'::jsonb)
   )
 $$;
-comment on function public.mi_disponibilidad_defecto() is 'D151: solo para el propio jugador, su «no suele entrenar» y los entrenos en que se le quito. Sin niveles.';
+comment on function public.mi_disponibilidad_defecto() is 'D152: solo para el propio jugador, su «no suele entrenar» y los entrenos en que se le quito. Sin niveles.';
 
 revoke execute on function public.mi_disponibilidad_defecto() from public, anon, authenticated;
 grant execute on function public.mi_disponibilidad_defecto() to authenticated;

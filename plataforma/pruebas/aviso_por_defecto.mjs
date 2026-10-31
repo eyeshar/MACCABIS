@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// «No vas (puesto por defecto)» en la zona del propio jugador (D151, completa D146): pila local, web compilada y Chrome a
+// «No vas (puesto por defecto)» en la zona del propio jugador (D152, completa D146): pila local, web compilada y Chrome a
 // 375 px, con jugadores SINTÉTICOS (D39) y el interruptor «respuestas en la web» ENCENDIDO.
 //   - Quien «no suele entrenar» y no ha respondido: en su inicio, su agenda y el entreno, «No vas (puesto por defecto)»
 //     con «Sí voy»; «Sí voy» guarda «voy» (en la base y en la pantalla) desde el inicio y desde el entreno.

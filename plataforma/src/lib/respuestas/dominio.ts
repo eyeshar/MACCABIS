@@ -101,7 +101,7 @@ export function unidades(eventos: MiEvento[]): Unidad[] {
 // ---------------------------------------------------------------- estado de una unidad para el jugador
 export type Estado = { clase: "vas" | "novas" | "duda" | "responde" | "ausente" | "defecto" | "cancelado"; texto: string; pendiente: boolean };
 
-/** `porDefecto` (D151): los entrenos que a el le salen como «No vas (puesto por defecto)» (`misEntrenosPorDefecto`, con
+/** `porDefecto` (D152): los entrenos que a el le salen como «No vas (puesto por defecto)» (`misEntrenosPorDefecto`, con
  *  `respuestaEfectiva`). No es pendiente: ya cuenta como «no va»; si viene, «Sí voy». */
 export function estadoDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAusencia[], porDefecto?: ReadonlySet<string>): Estado {
   if (u.eventos.every((e) => e.estado === "cancelado")) return { clase: "cancelado", texto: "Cancelado", pendiente: false };

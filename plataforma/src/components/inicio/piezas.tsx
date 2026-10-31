@@ -45,7 +45,7 @@ export const tituloUnidad = (u: Unidad) => (u.tipo === "domingo" && u.eventos.le
  *  la pastilla de estado y el sitio. Los planes llevan «Plan no oficial»; un entreno con grupos publicados, «Tu grupo». */
 export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, encendido, porDefecto }: {
   u: Unidad; respuestas: MiRespuesta[]; ausencias: MiAusencia[]; convocatorias: Convocatorias; grupo?: { grupo: string; companeros: string[] } | null; encendido: boolean;
-  /** D151: entrenos que le salen como «No vas (puesto por defecto)». */
+  /** D152: entrenos que le salen como «No vas (puesto por defecto)». */
   porDefecto?: ReadonlySet<string>;
 }) {
   const e = u.eventos[0];
@@ -108,7 +108,7 @@ export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u
   );
 }
 
-/** D151: un entreno que le hemos puesto como «No vas (puesto por defecto)», con «Sí voy». Sin nombrar por que. */
+/** D152: un entreno que le hemos puesto como «No vas (puesto por defecto)», con «Sí voy». Sin nombrar por que. */
 export function TarjetaPorDefecto({ u }: { u: Unidad }) {
   const e = u.eventos[0];
   const h = horasDe(u);

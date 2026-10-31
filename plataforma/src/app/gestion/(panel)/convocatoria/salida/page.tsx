@@ -3,7 +3,7 @@ import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { diferencias, EQUIPOS } from "@/lib/convocatoria/motor";
-import { destinatariosAviso, diaTexto, firmaConvocatoria, sinAvisosTexto, mensajeConvocatoria, textoCambioConvocatoria, textoEstasConvocado, textoSportEasy } from "@/lib/convocatoria/mensajes";
+import { destinatariosAviso, diaTexto, firmaConvocatoria, sinAvisosTexto, mensajeConvocatoria, textoCambioConvocatoria, textoEstasConvocado } from "@/lib/convocatoria/mensajes";
 import { avisosDelFichero } from "@/lib/inicio/avisos";
 import CopiarTexto from "../../eventos/CopiarTexto";
 import { BotonAvisar, BotonMarcar } from "./Botones";
@@ -13,9 +13,8 @@ export const metadata = { title: "Salida de la convocatoria · Gestión Maccabis
 const fechaHora = (t: string | null) => (t ? new Date(t).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
 
 // Salida de una convocatoria aprobada (D107): (1) mensaje de WhatsApp listo para copiar (formato de D98), (2) aviso
-// «Estás convocado» en la web, con «Enviar ahora» y SIN depender del interruptor (D127) y (3) copia a SportEasy, que hace
-// Claude con el navegador y sin notificar (D104). Si la convocatoria cambia tras aprobarla, 1 y 3 vuelven a pendiente
-// y el mensaje dice qué ha cambiado.
+// «Estás convocado» en la web, con «Enviar ahora» y SIN depender del interruptor (D127). Si la convocatoria cambia tras
+// aprobarla, 1 vuelve a pendiente y el mensaje dice qué ha cambiado. (La copia a SportEasy se quito en D153.)
 export default async function SalidaConvocatoria({ searchParams }: { searchParams: Promise<{ fecha?: string }> }) {
   const { fecha } = await searchParams;
   const { supabase } = await exigirGestor();
@@ -31,11 +30,9 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
   }
   const nombre = (id: string) => ctx.jugadores.find((j) => j.person_id === id)?.nombre ?? id;
   const cambiosWa = c.whatsapp_estado === "pendiente" ? diferencias(c.whatsapp_base, c.equipos, nombre) : [];
-  const cambiosSe = c.sporteasy_estado === "pendiente" ? diferencias(c.sporteasy_base, c.equipos, nombre) : [];
   // Avisos de data/avisos.json vigentes ese domingo para los equipos que juegan (corte de calles, cambio de hora...).
   const avisosDomingo = avisosDelFichero(ctx.fecha, ctx.partidos.map((p) => p.equipo));
   const wa = mensajeConvocatoria(ctx.fecha, ctx.jornada, ctx.partidos, c.equipos, nombre, cambiosWa, avisosDomingo);
-  const se = textoSportEasy(ctx.fecha, ctx.jornada, ctx.partidos, c.equipos, nombre, cambiosSe);
   // Aviso de la web (D127): a quien toca ahora y como fue el ultimo envio (registro de avisos con la firma de lo avisado).
   const porAvisar = destinatariosAviso(c.equipos, c.aviso_estado === "enviado" ? c.aviso_base : null);
   const avisoAlDia = c.aviso_estado === "enviado" && porAvisar.personas.length === 0;
@@ -100,14 +97,6 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
           <p className="pequeno suave" style={{ margin: 0 }}>No depende de «respuestas en la web»: avisar de la convocatoria no pide respuestas (D127). Respeta las horas de silencio (22:30–8:00) y nunca manda dos veces lo mismo. En su inicio y en la página del domingo, cada convocado ve con quién juega; nadie ve niveles.</p>
         </section>
 
-        <section className="gs-bloque" aria-labelledby="t-se" data-testid="cv-salida-sporteasy">
-          <div className="cv-salida-cab"><h2 id="t-se">3 · SportEasy</h2><Estado al={c.sporteasy_estado === "al_dia"} /></div>
-          <p className="pequeno suave" style={{ margin: 0 }}>La copia la hace Claude en tu Chrome, con «Selección manual» y sin notificar (D104).</p>
-          <CopiarTexto texto={se} etiqueta="Copiar para SportEasy" />
-          {c.sporteasy_estado === "pendiente"
-            ? <BotonMarcar fecha={ctx.fecha} que="sporteasy" texto="Marcar como copiado" />
-            : <p className="pequeno suave" style={{ margin: 0 }}>Copiado el {fechaHora(c.sporteasy_en)}.</p>}
-        </section>
       </div>
     </>
   );

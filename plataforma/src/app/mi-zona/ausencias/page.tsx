@@ -32,7 +32,7 @@ export default async function MisAusencias({ searchParams }: { searchParams: Pro
         {lista.map((a) => (
           <article key={a.id} className="tarjeta rw-aus" data-abierta={a.hasta == null}>
             <strong>{a.hasta == null ? `Desde el ${dia(a.desde)} · sin fecha de vuelta` : a.desde === a.hasta ? `El ${dia(a.desde)}` : `Del ${dia(a.desde)} al ${dia(a.hasta)}`}</strong>
-            <span className="suave">{TEXTO_MOTIVO_TODO[a.motivo]}{a.detalle ? ` · ${a.detalle}` : ""}{a.origen === "gestor" ? " · puesta por un gestor" : a.origen === "sporteasy" ? " · leída de SportEasy" : ""}</span>
+            <span className="suave">{TEXTO_MOTIVO_TODO[a.motivo]}{a.detalle ? ` · ${a.detalle}` : ""}{a.origen === "gestor" ? " · puesta por un gestor" : a.origen === "sporteasy" ? " · importada" : ""}</span>
             <AccionesAusencia id={a.id} abierta={a.hasta == null} />
           </article>
         ))}

@@ -51,7 +51,7 @@ export function gruposEvento(
 }
 
 /** D148, solo gestores: quien no está invitado a un entreno en una pista «solo con ficha» por no tener ficha y aun así
- *  dijo «voy» (en SportEasy): va aparte, fuera de los cuatro contadores, con el aviso `avisoSinFicha`. */
+ *  dijo «voy»: va aparte, fuera de los cuatro contadores, con el aviso `avisoSinFicha`. */
 export function sinFichaQueVan(e: Pick<EventoFila, "tipo" | "equipo" | "oficial" | "solo_con_ficha_en">, jugadores: JugadorBasico[], filas: Pick<RespuestaPersona, "person_id" | "respuesta">[]): PersonaNum[] {
   const van = new Set(filas.filter((r) => r.respuesta === "va").map((r) => r.person_id));
   return jugadores.filter((j) => van.has(j.person_id) && fueraPorFicha(e, j))

@@ -219,7 +219,8 @@ ok(/select max\(i\.en\)/.test(fImp) && !/por_nombre|detalle|lineas|aceptadas/.te
 ok(!/to anon/.test(sql9) && /grant execute on function public\.convocados_del_domingo\(date\), public\.ultima_importacion_respuestas\(\) to authenticated/.test(sql9), 'nada para anónimos');
 const domingo = leer('src/app/mi-zona/domingo/[fecha]/page.tsx').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
 ok(/cargarConvocadosDomingo/.test(domingo) && !/v_quien_va|jugadores_privado|@\/lib\/convocatoria\/|nivel|\.motivo(?!.*horario)/.test(domingo.replace(/rNo\?\.motivo|r\.motivo (!==|===) "(horario|no_confirmo)"/g, '')), 'la página del domingo usa la función de convocados y, desde D141, «quién va» por respuestas solo vía cargarQuienVa (nombre y estado; sin la vista directa, ni datos de la convocatoria de Gestión)');
-ok(/rpc\("convocados_del_domingo"/.test(leer('src/lib/respuestas/jugador.ts')) && /rpc\("ultima_importacion_respuestas"\)/.test(leer('src/lib/respuestas/jugador.ts')), 'y la lee con la sesión del jugador (decide la base)');
+// D153 ampliada: la zona del jugador ya no lee la ultima importacion de SportEasy (ultima_importacion_respuestas).
+ok(/rpc\("convocados_del_domingo"/.test(leer('src/lib/respuestas/jugador.ts')) && !/ultima_importacion_respuestas/.test(leer('src/lib/respuestas/jugador.ts')), 'y la lee con la sesión del jugador (decide la base); ya no lee la última importación de SportEasy');
 // D127: el aviso «Estás convocado» sale del servidor con la clave de servicio; su texto no lleva datos privados.
 const avConv = leer('src/lib/convocatoria/avisos.ts');
 ok(/import "server-only"/.test(avConv) && !/estadoInterruptor/.test(avConv) && /firmaConvocatoria/.test(avConv), 'aviso de convocatoria: solo en el servidor, sin depender del interruptor y con clave única por convocatoria');

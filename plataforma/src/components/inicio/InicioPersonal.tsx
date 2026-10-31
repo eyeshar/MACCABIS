@@ -86,16 +86,15 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const todas = unidades(eventos);
   const limite = sumarDias(hoy, 14);
 
-  // «Te faltan N respuestas»: encendido, lo que la web pide (14 dias, D102); apagado (fase puente), lo que SportEasy da
-  // como «sin responder» en la ultima importacion. Los planes no oficiales, siempre (D118).
+  // «Te faltan N respuestas»: encendido, lo que la web pide (14 dias, D102); apagado, la web no pide respuesta a los
+  // eventos oficiales. Los planes no oficiales, siempre (D118).
   const pendientes = todas.filter((u) => {
     if (!abierta(u)) return false;
     const est = estadoDe(u, respuestas, ausencias, porDefecto);
     if (!est.pendiente) return false;
     if (esPlan(u.eventos[0])) return true;
     if (u.fecha > limite) return false;
-    if (encendido) return true;
-    return u.eventos.some((e) => respuestas.find((r) => r.evento_id === e.id)?.respuesta === "sin_responder");
+    return encendido;
   });
   const puestosPorDefecto = todas.filter((u) => abierta(u) && u.fecha <= limite && estadoDe(u, respuestas, ausencias, porDefecto).clase === "defecto");
   const conPlazas = pendientes.filter((u) => esPlan(u.eventos[0]) && u.eventos[0].plazas).map((u) => u.eventos[0].id);
@@ -145,7 +144,6 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
       <section className="in-sec in-faltan" id="pendientes" aria-labelledby="t-faltan" data-testid="pendientes">
         <div className="in-sec-cab">
           <h2 id="t-faltan">{pendientes.length === 0 ? "Lo tienes todo respondido" : pendientes.length === 1 ? "Te falta 1 respuesta" : `Te faltan ${pendientes.length} respuestas`}</h2>
-          {!encendido && pendientes.some((u) => !esPlan(u.eventos[0])) && <span className="pastilla pastilla-pendiente">Se responde en SportEasy</span>}
         </div>
         {pendientes.length > 0 && (
           <Carrusel etiqueta="Respuestas que te faltan">
@@ -160,7 +158,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
         <p className="in-nota" data-testid="regla-recordatorios">
           {encendido
             ? "Si no respondes, te lo recordamos: el lunes a las 19:00 (todo lo de la semana en un aviso), los entrenos también el mismo día a las 10:00 y los partidos el martes a las 10:00. Nunca de 22:30 a 8:00."
-            : "Por ahora, los partidos y entrenos se responden en SportEasy y los recordatorios llegan de allí. Los planes no oficiales se responden aquí."}
+            : "Las respuestas en la web a partidos y entrenos están desactivadas: no se piden ni hay recordatorios. Los planes no oficiales se responden aquí."}
           {" "}Los planes, solo si quien lo organiza lo pide: un aviso un día antes.
         </p>
       </section>

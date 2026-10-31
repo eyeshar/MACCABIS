@@ -52,8 +52,7 @@ function enlaceRival(liga: DatosLiga | null, e: Evento) {
   return e.local ? <>{n} – {rival}</> : <>{rival} – {n}</>;
 }
 
-// Panel de la semana (maqueta Gestion, D76): rutinas, partidos del domingo y pendientes. El recuadro del entreno con las
-// respuestas de SportEasy queda como hueco hasta el paso 2.
+// Panel de la semana (maqueta Gestion, D76): rutinas, partidos del domingo, el proximo entreno con sus respuestas y pendientes.
 export default async function InicioGestion() {
   const { supabase } = await exigirGestor();
   const [{ count: jugadores }, { count: conCorreo }, { data: campanas }, liga] = await Promise.all([
@@ -98,7 +97,7 @@ export default async function InicioGestion() {
   const habitual = entrenoHabitual(fuente);
   const pistaHabitual = proximo?.serie ? { nombre: proximo.serie.nombre, enObras: proximo.serie.estado === "en_obras" } : { nombre: habitual.pista, enObras: habitual.enObras };
   const sinCorreo = (jugadores ?? 0) - (conCorreo ?? 0);
-  // Respuestas de SportEasy al proximo entreno (leidas por Claude, paso 2): van / sin responder / no van.
+  // Respuestas al proximo entreno: van / dudan / no van / sin responder.
   // Y las de los partidos del domingo (por su clave, «mda-j4»), para enlazar a sus respuestas como en Eventos.
   const [js, { data: filasDomingo }] = await Promise.all([
     cargarJugadores(supabase),
@@ -139,7 +138,7 @@ export default async function InicioGestion() {
   const jornadasJugadas = Array.from({ length: ultimaJugada }, (_, i) => i + 1);
   const marcas = Object.fromEntries(((marcasDB ?? []) as { jornada: number; estado: "limpia" | "con_arreglo" }[]).map((m) => [m.jornada, m.estado]));
   const web = await origenMensajes();
-  const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis, no en SportEasy: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo, nunca de noche): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
+  const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo, nunca de noche): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
 
   const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
   // «Han entrado» y «con avisos» con sus nombres (D139): la plantilla son los activos que no son entrenador (la misma base que la tarjeta: incluye a quien solo entrena y no tiene ficha de equipo); quien falta, lo da la base.
@@ -276,9 +275,9 @@ export default async function InicioGestion() {
                 {respEntreno.dudas && <span className="pequeno suave" data-testid="linea-dudas">{respEntreno.dudas}</span>}
                 <Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} data-testid="enlace-respuestas" style={{ fontWeight: 600 }}>Ver respuestas y motivos →</Link>
               </div>
-            ) : (
-              <div className="hueco" data-testid="hueco-sporteasy">Sin respuestas de SportEasy todavía. Claude las trae (Importar → Respuestas) y el recordatorio lo propone él y lo envías tú.</div>
-            )}
+            ) : entreno ? (
+              <p className="suave" style={{ margin: 0 }} data-testid="entreno-sin-respuestas">Aún nadie ha respondido a este entreno.</p>
+            ) : null}
             {entreno && <PorDefectoEntreno eventoId={entreno.id} porDefecto={porDefecto} quitados={quitadosEntreno} />}
             {respEntreno && <AvisoSinFicha personas={respEntreno.sinFicha} pista={entreno?.solo_con_ficha_en} />}
           </section>

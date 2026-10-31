@@ -18,7 +18,7 @@ const pct = (f: number, t: number) => (t > 0 ? f / t : null);
 const TEXTO_NUEVO: Record<Motivo, string> = { lesion: "lesión", trabajo: "trabajo", viaje: "viaje", familia: "familia", otro: "otro" };
 
 /** Una fila por persona. Motivos: los del historico (con excusa, sin excusa, no convocado, lesión) y los «no voy» con
- *  motivo registrados en la plataforma desde las respuestas de SportEasy (lesión, trabajo, viaje, familia, otro). */
+ *  motivo registrados en la plataforma (lesión, trabajo, viaje, familia, otro). */
 export function resumenTemporada(filas: FilaResumen[], respuestas: RespuestaMotivo[] = [], maxMotivos = 3, nombres: Record<string, string> = {}): ResumenJugador[] {
   const por = new Map<string, ResumenJugador & { _m: Map<string, number> }>();
   const get = (id: string, nombre: string) => {

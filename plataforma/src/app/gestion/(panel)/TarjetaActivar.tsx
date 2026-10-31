@@ -5,18 +5,20 @@ import { useState, useTransition } from "react";
 import CopiarTexto from "./eventos/CopiarTexto";
 import Numeros, { type GrupoNum } from "@/components/numeros/Numeros";
 import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
-import { cambiarInterruptor, marcarJornada, marcarSporteasy } from "./eventos/respuestas-acciones";
+import { cambiarInterruptor, marcarJornada } from "./eventos/respuestas-acciones";
 
 export type EstadoActivacion = {
-  encendido: boolean; encendido_desde: string | null; sporteasy_comprobado: boolean; cambiado_en: string | null; cambiado_por: string | null;
+  encendido: boolean; encendido_desde: string | null; cambiado_en: string | null; cambiado_por: string | null;
   jornadas_seguidas: number; plantilla: number; entrados: number; con_avisos: number; se_puede_encender: boolean;
   minimo_entrados: number; faltan_por_entrar: string[]; puede_manejar: boolean;
   /** Con cuenta de Auth pero sin haber entrado nunca (pidieron un codigo y no lo usaron); ausente si la migracion D140 no esta aplicada. */
   pidio_codigo?: string[];
 };
 
-/** «Respuestas en la web: activar» (D99.13, D64): las cuatro condiciones, el boton y, al encender, los pasos en orden.
- *  Apagar vuelve a la fase puente sin perder nada. Cada cambio queda registrado en la base (quien y cuando). */
+/** «Respuestas en la web: activar» (D99.13, D64): las condiciones, el boton y, al encender, los pasos en orden.
+ *  Apagar no pierde nada. Cada cambio queda registrado en la base (quien y cuando).
+ *  La antigua condicion 4 (comprobacion de SportEasy) ya no se ensena: la base la sigue exigiendo para encender
+ *  (respuestas_web_config.sporteasy_comprobado), pero en el real ya esta cumplida. */
 export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mensajeEntrar, mensajeAvisos, grupos }: {
   estado: EstadoActivacion; jornadas: number[]; marcas: Record<number, "limpia" | "con_arreglo">; mensaje: string; mensajeEntrar: string; mensajeAvisos: string;
   grupos: { entrada: GrupoNum[]; avisos: GrupoNum[] };
@@ -27,7 +29,7 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
   const [error, setError] = useState<string | null>(null);
   const [pendiente, empezar] = useTransition();
   const hacer = (f: () => Promise<{ ok: boolean; error?: string }>) => empezar(async () => { setError(null); const r = await f(); if (!r.ok) setError(r.error ?? "No se pudo."); router.refresh(); });
-  const c1 = estado.jornadas_seguidas >= 3, c2 = estado.entrados >= estado.minimo_entrados, c4 = estado.sporteasy_comprobado;
+  const c1 = estado.jornadas_seguidas >= 3, c2 = estado.entrados >= estado.minimo_entrados;
   const Marca = ({ ok }: { ok: boolean }) => <span className={ok ? "ev-cond-ok" : "ev-cond-no"} aria-label={ok ? "cumplida" : "sin cumplir"}>{ok ? "✓" : "○"}</span>;
   const siguiente = (e?: "limpia" | "con_arreglo") => (e === "limpia" ? "con_arreglo" : "limpia");
 
@@ -61,9 +63,9 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
           <summary className="boton boton-claro" style={{ listStyle: "none", cursor: "pointer" }}>Más opciones</summary>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
             {solo && <p className="aviso aviso-info" style={{ margin: 0 }} data-testid="solo-lectura">Solo lectura: el interruptor lo maneja Iván.</p>}
-            <p className="pequeno suave" style={{ margin: 0 }}>SportEasy ya no tiene participantes en los eventos futuros: desactivar las respuestas en la web vuelve a la fase puente, pero <b>no los recupera</b>. Lo que se responda en SportEasy no contaría hasta que Claude los vuelva a invitar.</p>
+            <p className="pequeno suave" style={{ margin: 0 }}>Desactivar no borra nada, pero los jugadores dejan de poder responder en la web a los partidos y entrenos, y no salen los recordatorios.</p>
             {solo ? <button type="button" className="boton boton-peligro" disabled>Desactivar</button> : (
-              <ConfirmarEnPagina texto="Desactivar" testid="desactivar" pregunta="¿Desactivar las respuestas en la web? SportEasy ya no tiene participantes en los eventos y desactivar no los recupera." si="Sí, desactivar"
+              <ConfirmarEnPagina texto="Desactivar" testid="desactivar" pregunta="¿Desactivar las respuestas en la web? Los jugadores dejan de poder responder a los partidos y entrenos." si="Sí, desactivar"
                 accion={async () => { const r = await cambiarInterruptor(false); router.refresh(); return r; }} />
             )}
           </div>
@@ -76,7 +78,7 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
     <section className="gs-bloque ev-activar" aria-labelledby="t-activar" data-testid="tarjeta-activar">
       <div className="gs-bloque-cab">
         <h2 id="t-activar" style={{ fontSize: 24 }}>Respuestas en la web: activar</h2>
-        <span className={`pastilla ${estado.encendido ? "pastilla-ok" : "pastilla-pendiente"}`} data-testid="estado-interruptor">{estado.encendido ? "Encendido" : "Apagado · fase puente"}</span>
+        <span className={`pastilla ${estado.encendido ? "pastilla-ok" : "pastilla-pendiente"}`} data-testid="estado-interruptor">{estado.encendido ? "Encendido" : "Apagado"}</span>
       </div>
       {estado.cambiado_en && <p className="pequeno suave" style={{ margin: 0 }}>Último cambio: {estado.cambiado_por ?? "—"}, {new Date(estado.cambiado_en).toLocaleString("es-ES", { timeZone: "Europe/Madrid", dateStyle: "short", timeStyle: "short" })}.</p>}
       <ol className="ev-cond">
@@ -87,35 +89,31 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
           {estado.faltan_por_entrar.length > 0 && (<div className="pequeno" data-testid="faltan-entrar" style={{ marginTop: 4 }}><CopiarTexto texto={mensajeEntrar} etiqueta="Copiar mensaje para quien falta" /></div>)}</div></li>
         <li><span className="ev-cond-no" aria-hidden="true">i</span><div><b>{estado.con_avisos}/{estado.plantilla} con avisos activados</b> <span className="pequeno suave">(informativo, no bloquea)</span>
           <Numeros variante="linea" prueba="avisos-numeros" etiqueta="Jugadores con avisos activados" grupos={grupos.avisos} /></div></li>
-        <li><Marca ok={c4} /><div><label style={{ display: "flex", gap: 10, alignItems: "center", minHeight: 44, cursor: "pointer" }}>
-          <input type="checkbox" checked={c4} disabled={pendiente || solo} onChange={(e) => hacer(() => marcarSporteasy(e.target.checked))} style={{ width: 20, height: 20 }} />
-          <b>SportEasy deja de pedir respuesta, comprobado por Claude</b></label></div></li>
       </ol>
       <div>
         <b>Al activar, en este orden:</b>
         <ol className="ev-pasos-activar">
-          <li>Última Importar → Respuestas de los eventos futuros (Claude, desde SportEasy).</li>
           <li>Pulsar «Activar respuestas en la web».</li>
           <li>Mandar a la plantilla el mensaje de WhatsApp de abajo.</li>
           <li>Desde ese momento la web pide respuesta y salen los recordatorios (lunes 19:00, martes y miércoles 10:00).</li>
         </ol>
       </div>
-      {solo && <p className="aviso aviso-info" style={{ margin: 0 }} data-testid="solo-lectura">Solo lectura: el interruptor, las jornadas y la casilla de SportEasy los maneja Iván.</p>}
+      {solo && <p className="aviso aviso-info" style={{ margin: 0 }} data-testid="solo-lectura">Solo lectura: el interruptor y las jornadas los maneja Iván.</p>}
       {error && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{error}</p>}
       {estado.encendido ? (
         <>
           <CopiarTexto texto={mensaje} etiqueta="Copiar mensaje para la plantilla" />
           <div className="botones" style={{ margin: 0 }}>
-            <button type="button" className="boton boton-peligro" disabled={pendiente || solo} onClick={() => { if (window.confirm("¿Desactivar las respuestas en la web? Se vuelve a la fase puente (SportEasy) sin perder nada.")) hacer(() => cambiarInterruptor(false)); }}>Desactivar</button>
+            <button type="button" className="boton boton-peligro" disabled={pendiente || solo} onClick={() => { if (window.confirm("¿Desactivar las respuestas en la web? No se pierde nada.")) hacer(() => cambiarInterruptor(false)); }}>Desactivar</button>
           </div>
         </>
       ) : (
         <div className="botones" style={{ margin: 0 }}>
-          <button type="button" className="boton boton-amarillo" data-testid="boton-activar" disabled={pendiente || solo || !(c1 && c2 && c4)}
-            onClick={() => { if (window.confirm("¿Hiciste ya la última Importar → Respuestas? Desde ahora la web pide respuesta y salen los recordatorios.")) hacer(() => cambiarInterruptor(true)); }}>
+          <button type="button" className="boton boton-amarillo" data-testid="boton-activar" disabled={pendiente || solo || !(c1 && c2)}
+            onClick={() => { if (window.confirm("¿Activar las respuestas en la web? Desde ahora la web pide respuesta y salen los recordatorios.")) hacer(() => cambiarInterruptor(true)); }}>
             Activar respuestas en la web
           </button>
-          {!(c1 && c2 && c4) && <span className="pequeno suave" style={{ alignSelf: "center" }}>Se activa cuando se cumplan 1, 2 y 4.</span>}
+          {!(c1 && c2) && <span className="pequeno suave" style={{ alignSelf: "center" }}>Se activa cuando se cumplan 1 y 2.</span>}
         </div>
       )}
     </section>

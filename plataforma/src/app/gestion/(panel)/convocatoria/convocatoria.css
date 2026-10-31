@@ -4,9 +4,7 @@
 .cv-contadores { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cv-contadores span { overflow-wrap: anywhere; }
 .cv-enlace { display: inline-flex; align-items: center; min-height: var(--toque); font-weight: 600; }
-.cv-importacion { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--info-fondo); color: var(--info-tinta); overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 8px; }
-.cv-importacion .gs-importacion { color: var(--tinta); background: var(--tarjeta); }
-.cv-importacion a { display: inline-flex; align-items: center; min-height: var(--toque); font-weight: 700; }
+.cv-apagado { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--info-fondo); color: var(--info-tinta); overflow-wrap: anywhere; }
 .cv-empezar { display: flex; flex-direction: column; gap: 10px; }
 .cv-equipos { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
 .cv-equipo { min-width: 0; }
@@ -71,7 +69,7 @@
 @media (min-width: 769px) {
   .cv-hoja { inset: 0 0 0 auto; width: min(560px, 100%); border-left: 1px solid var(--borde); }
 }
-/* Salida (WhatsApp, aviso de la web y SportEasy) */
+/* Salida (WhatsApp y aviso de la web) */
 .cv-salidas { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); align-items: start; }
 .cv-salida-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .cv-salida-cab h2 { font-size: 22px; }

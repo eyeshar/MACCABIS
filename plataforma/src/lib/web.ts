@@ -27,10 +27,6 @@ export const MENU_SESION: Seccion[] = [
   { id: "historia", texto: "Historia", href: "/historia", externo: false },
 ];
 
-/** Calendario de SportEasy, para «Responder en SportEasy» en la fase puente (D117). No guardamos el id de cada evento en
- *  SportEasy: el enlace lleva a su calendario (BACKLOG: guardar el id para enlazar al evento). */
-export const SPORTEASY_CALENDARIO = "https://app.sporteasy.net/";
-
 /** Entrada del menu de Gestion. Sin href = aun no existe (llega en el paso 2): se ve en gris, sin enlace. */
 export type EntradaGestion = { texto: string; corto: string; descripcion: string; href?: string };
 export type GrupoGestion = { grupo: string; entradas: EntradaGestion[] };

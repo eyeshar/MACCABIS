@@ -3,7 +3,6 @@
 import type { Convocatoria, Dificultad, Entrada, Equipo, JugadorEntrada, Nivel, Posicion } from "./motor";
 import type { PartidoMensaje } from "./mensajes";
 import type { DatosProyeccion } from "./proyeccion";
-import type { EstadoImportacion } from "../eventos/importacionAuto";
 
 export type FilaPrivada = {
   person_id: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null; dobla: boolean;
@@ -19,7 +18,6 @@ export type FilaConvocatoria = {
   equipos: Convocatoria; dificultad: Partial<Record<Equipo, { valor: Dificultad; propuesta?: Dificultad; porque?: string }>>;
   cambiado_en: string; cambiado_por_nombre: string | null; aprobada_en: string | null; aprobada_por_nombre: string | null;
   whatsapp_estado: "pendiente" | "al_dia"; whatsapp_en: string | null; whatsapp_base: Convocatoria | null;
-  sporteasy_estado: "pendiente" | "al_dia"; sporteasy_en: string | null; sporteasy_base: Convocatoria | null;
   aviso_estado: "sin_preparar" | "en_espera" | "enviado"; aviso_en: string | null; aviso_base: Convocatoria | null;
 };
 export type Cambio = { id: string; en: string; por_nombre: string; accion: string; person_id: string | null; equipo: Equipo | null; motivo: string | null; nota: string | null };
@@ -45,12 +43,10 @@ export type Contexto = {
    *  dudas salen aparte como «posibles»; la propuesta definitiva se hace despues del limite. null = no hay partidos. */
   limiteDudas: string | null; dudasAbiertas: boolean;
   eventoRespuestas: string | null; encendido: boolean;
-  /** Fase puente (D95, D103): cuando se importaron por ultima vez respuestas de SportEasy, y cuantas hay de este domingo. */
-  ultimaImportacion: string | null; ultimaImportacionPor: string | null; respuestasDelDomingo: number;
+  /** Cuantas respuestas hay de este domingo (para avisar si no hay ninguna con el interruptor apagado). */
+  respuestasDelDomingo: number;
   /** Proyeccion de anotacion (D124): solo gestores. */
   proyeccion: DatosProyeccion;
-  /** Estado de la importacion de SportEasy y proxima automatica (D126). */
-  importacion: EstadoImportacion;
   /** La migracion de la convocatoria aun no esta aplicada en esta base: se ve la propuesta, no se guarda nada. */
   sinMigracion: boolean;
   sinDatosPrivados: number;

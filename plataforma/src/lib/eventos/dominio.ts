@@ -7,7 +7,6 @@ import { enlaceGoogle } from "../ubicacion.ts";
 export type TipoEvento = "entreno" | "liga" | "amistoso" | "torneo" | "interno" | "quedada" | "pachanga" | "otro";
 export type EquipoEvento = "MdA" | "MdL" | "ambos";
 export type EstadoPista = "habitual" | "provisional" | "en_obras" | "cerrada";
-export type EstadoCopia = "pendiente" | "copiado";
 export type Respuesta = "va" | "duda" | "no" | "sin_responder";
 export type Motivo = "lesion" | "trabajo" | "viaje" | "familia" | "otro";
 
@@ -31,7 +30,6 @@ export type EventoFila = {
   jornada: number | null; rival: string | null; es_local: boolean | null; fecha: string;
   inicio: string | null; fin: string | null; quedada: string | null; pista_id: string | null; numero_pista: number | null;
   notas: string | null; origen: "ayuntamiento" | "manual"; serie: string | null; estado: "programado" | "cancelado";
-  sporteasy_estado: EstadoCopia; sporteasy_cambio: string | null; sporteasy_copiado_en: string | null;
   /** Paso 3 (D99) */
   sin_recordatorios?: boolean; creado_en?: string; cambio_visible?: { campos: string[]; antes: string } | null; cambio_visible_en?: string | null;
   /** D118: plan no oficial (oficial = false) y su organizador; D119: ubicacion libre. */
@@ -143,7 +141,7 @@ export function deLaSerieDesde<T extends Pick<EventoFila, "serie" | "fecha" | "e
   return todos.filter((e) => e.serie === base.serie && e.fecha >= base.fecha && e.estado === "programado").sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
 }
 
-// ---------------------------------------------------------------- cambios y copia a SportEasy
+// ---------------------------------------------------------------- cambios
 export type CamposEditables = Pick<EventoFila, "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "fecha" | "inicio" | "fin" | "quedada" | "pista_id" | "numero_pista" | "notas" | "estado" | "jornada"> & UbicacionLibre;
 
 /** Cambios entre dos versiones de un evento, en lenguaje llano ("pista: Pista por confirmar → Caja Mágica"). */
@@ -167,16 +165,6 @@ export function describirCambios(antes: CamposEditables, despues: CamposEditable
   return c;
 }
 
-/** La base de pruebas local usa WIN1252 (sin la flecha «→»): lo que se guarda lleva « -> » y al mostrarlo vuelve a ser «→». */
-export const cambioParaGuardar = (t: string | null) => (t == null ? t : t.replaceAll("→", "->"));
-export const cambioParaVer = (t: string | null) => (t == null ? t : t.replaceAll(" -> ", " → "));
-
-/** Texto de "cambio pendiente": lo anterior + lo nuevo, sin repetir. */
-export const juntarCambios = (previo: string | null, nuevos: string[]) => {
-  const lista = [...(previo && previo !== "Cambio sin describir" && !previo.startsWith("Carga inicial") ? previo.split("; ") : []), ...nuevos];
-  return cambioParaGuardar([...new Set(lista.map((x) => cambioParaGuardar(x)!))].join("; ") || null);
-};
-
 /** Enlace «Cómo llegar» de un evento (D119): la pista efectiva si tiene coordenadas o direccion; si no, la ubicacion
  *  libre. null si no hay con que hacerlo (pista por confirmar, o solo un nombre sin mapa). */
 export function mapaDe(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista"> & UbicacionLibre, pistas: Pista[]) {
@@ -189,6 +177,17 @@ export function mapaDe(e: Pick<EventoFila, "tipo" | "pista_id" | "numero_pista">
 
 // ---------------------------------------------------------------- mensaje de WhatsApp al guardar
 export type AccionMensaje = "nuevo" | "cambio" | "cancelado";
+
+/** La lista de cambios del mensaje, desde la linea amarilla del evento (`cambio_visible`, «Guardar y avisar» o «Aplicar y
+ *  avisar»): «pista, hora (antes: Caja Mágica, 20:30–22:30)». Sin linea amarilla, ninguna. */
+export function cambiosDeVisible(cv: EventoFila["cambio_visible"] | undefined): string[] {
+  if (!cv || !cv.campos?.length) return [];
+  return [`${cv.campos.join(", ")}${cv.antes ? ` (antes: ${cv.antes})` : ""}`];
+}
+
+/** Que mensaje toca en la ficha: cancelado si lo esta; «nuevo» si se acaba de crear; si no, «cambio». */
+export const accionMensajeDe = (e: Pick<EventoFila, "estado">, recienCreado: boolean): AccionMensaje =>
+  e.estado === "cancelado" ? "cancelado" : recienCreado ? "nuevo" : "cambio";
 
 /** El texto para pegar en el grupo de WhatsApp. `lineaEquipacion` (rutina C) se pasa ya calculada, solo en partidos. */
 export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMensaje, opciones: { cambios?: string[]; lineaEquipacion?: string | null; respondeEnLaWeb?: string | null } = {}) {
@@ -218,8 +217,8 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
   if (mapa) lineas.push(`Cómo llegar: ${mapa}`);
   if (notas) lineas.push(notas.replace(/\.$/, "") + ".");
   if (opciones.lineaEquipacion) lineas.push(opciones.lineaEquipacion);
-  // Con «respuestas en la web» encendido (D99) se termina con el enlace a la web; si no, SportEasy (fase puente).
-  lineas.push(opciones.respondeEnLaWeb ? `Responde en la web: ${opciones.respondeEnLaWeb}` : "Responded en SportEasy, por favor.");
+  // Con «respuestas en la web» encendido (D99) se termina con el enlace a la web; apagado, sin linea de respuesta.
+  if (opciones.respondeEnLaWeb) lineas.push(`Responde en la web: ${opciones.respondeEnLaWeb}`);
   return lineas.join("\n");
 }
 
@@ -262,52 +261,3 @@ export const contarRespuestas = (filas: { respuesta: Respuesta }[]) => ({
   no: filas.filter((f) => f.respuesta === "no").length,
   sin_responder: filas.filter((f) => f.respuesta === "sin_responder").length,
 });
-
-/** Resumen por evento tras importar respuestas, para cotejarlo con SportEasy: solo cuenta a quien se le pide respuesta
- *  (los demas, aparte, en «fuera»). Sin nombres ni motivos: solo cuantos llevan motivo. Ordenado por fecha y hora. */
-export type FilaCotejo = { id: string; fecha: string; titulo: string; equipo: EquipoEvento; va: number; duda: number; no: number; sin_responder: number; conMotivo: number; fuera: number };
-export function resumenCotejo(
-  eventos: Pick<EventoFila, "id" | "fecha" | "inicio" | "tipo" | "equipo" | "titulo" | "rival" | "es_local" | "jornada" | "oficial" | "solo_con_ficha_en">[],
-  jugadores: JugadorBasico[], respuestas: { evento_id: string; person_id: string; respuesta: Respuesta; motivo: string | null }[],
-): FilaCotejo[] {
-  const porEvento = new Map<string, typeof respuestas>();
-  for (const r of respuestas) porEvento.set(r.evento_id, [...(porEvento.get(r.evento_id) ?? []), r]);
-  return [...eventos].sort((a, b) => (a.fecha + (a.inicio ?? "")).localeCompare(b.fecha + (b.inicio ?? ""))).map((e) => {
-    const invitados = new Set(convocadosDe(e, jugadores).map((j) => j.person_id));
-    const suyas = (porEvento.get(e.id) ?? []).filter((r) => invitados.has(r.person_id));
-    const filas = [...invitados].map((id) => suyas.find((r) => r.person_id === id) ?? { respuesta: "sin_responder" as Respuesta, motivo: null });
-    return {
-      id: e.id, fecha: e.fecha, titulo: tituloEvento(e), equipo: e.equipo, ...contarRespuestas(filas),
-      conMotivo: filas.filter((f) => f.respuesta !== "sin_responder" && f.motivo).length,
-      fuera: (porEvento.get(e.id) ?? []).filter((r) => !invitados.has(r.person_id) && r.respuesta !== "sin_responder").length,
-    };
-  });
-}
-/** «12 van · 3 no · 8 sin responder» (y «· 1 duda» si hay). */
-export const textoCotejo = (f: Pick<FilaCotejo, "va" | "duda" | "no" | "sin_responder">) =>
-  `${f.va} ${f.va === 1 ? "va" : "van"} · ${f.no} no${f.duda ? ` · ${f.duda} duda` : ""} · ${f.sin_responder} sin responder`;
-
-/** Lista y texto del recordatorio que Claude enviara desde SportEasy (con el OK de Ivan). Solo lo genera. */
-export function recordatorio(e: EventoFila, filas: FilaRespuesta[], pistas: Pista[]) {
-  const faltan = filas.filter((f) => f.respuesta === "sin_responder" && !f.porPeriodo).map((f) => f.nombre);
-  const hora = hhmm(e.inicio);
-  const que = e.tipo === "entreno" ? `entreno del ${diaCorto(e.fecha)}` : `${tituloEvento(e)} del ${diaCorto(e.fecha)}`;
-  const pe = pistaEfectiva(e, pistas);
-  const texto = faltan.length
-    ? `Chicos, os falta responder en SportEasy al ${que}${hora ? ` (${hora}${pe.porConfirmar ? "" : `, ${pe.texto.replace(" · Pista", ", pista")}`})` : ""}. Es un momento: Voy / No voy / Duda. ¡Gracias!`
-    : "";
-  return { faltan, texto };
-}
-
-// ---------------------------------------------------------------- resumen de la copia a SportEasy
-/** Cerrado SIN copiar a SportEasy por decisión de Iván (D148: «Iván: no se copia a SportEasy (29/10/2026)»): estado
- *  «copiado» con esa nota en sporteasy_cambio. No está pendiente ni sale en la tarjeta «Copia a SportEasy». */
-export const noSeCopia = (e: Pick<EventoFila, "sporteasy_estado" | "sporteasy_cambio">) => e.sporteasy_estado === "copiado" && /no se copia/i.test(e.sporteasy_cambio ?? "");
-
-export function resumenCopia(eventos: EventoFila[], hoy: string) {
-  // Los planes no oficiales no existen en SportEasy (D118): nunca entran en la cola de copia.
-  const pendientes = eventos.filter((e) => !esPlanFila(e) && e.sporteasy_estado === "pendiente" && (e.fecha >= hoy || e.estado === "cancelado"));
-  const deSerie = pendientes.filter((e) => e.serie && e.origen === "manual" && (e.sporteasy_cambio ?? "").startsWith("Carga inicial"));
-  const concretos = pendientes.filter((e) => !deSerie.includes(e));
-  return { pendientes, concretos, deSerie };
-}

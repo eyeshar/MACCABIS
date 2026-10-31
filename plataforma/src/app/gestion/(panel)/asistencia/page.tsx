@@ -48,7 +48,7 @@ export default async function Asistencia({ searchParams }: { searchParams: Promi
         {temporadas.map((x) => <Link key={x} href={x === TEMPORADA ? "/gestion/asistencia" : `/gestion/asistencia?t=${x}`} aria-current={x === temporada ? "true" : undefined}>{x.replace("-", "/")}</Link>)}
       </nav>
       <p className="pequeno suave">
-        Asistidos / total y porcentaje, por jugador. Los motivos son los más frecuentes: los históricos de SportEasy (con excusa, sin excusa, no convocado, lesión) y los «no voy» con motivo que Claude trae a la plataforma (lesión, trabajo, viaje, familia, otro). Ningún jugador ve esta pantalla ni los motivos de los demás (D46, D82).
+        Asistidos / total y porcentaje, por jugador. Los motivos son los más frecuentes: los del registro de asistencia de la temporada (con excusa, sin excusa, no convocado, lesión) y los «no voy» con motivo de las respuestas (lesión, trabajo, viaje, familia, otro). Ningún jugador ve esta pantalla ni los motivos de los demás (D46, D82).
       </p>
       {resumen.length === 0 ? <div className="hueco">No hay datos de asistencia de esta temporada.</div> : (
         <section className="gs-bloque" aria-labelledby="t-res">

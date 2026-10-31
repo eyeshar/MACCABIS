@@ -1,5 +1,5 @@
 // Textos de salida de la convocatoria (D107): el mensaje de WhatsApp (formato de D98: hora, encuentro, pista y
-// direccion), la copia a SportEasy y el aviso «Estás convocado». Funciones PURAS. Nunca llevan niveles, posiciones,
+// direccion) y el aviso «Estás convocado». Funciones PURAS. Nunca llevan niveles, posiciones,
 // reglas personales ni motivos: solo el nombre visible de cada convocado.
 
 import type { Convocatoria, Equipo } from "./motor";
@@ -45,17 +45,6 @@ export function mensajeConvocatoria(fecha: string, jornada: number | null, parti
     lineas.push(a.para === "todos" ? a.texto : `${a.para}: ${a.texto}`);
   }
   lineas.push("Recordad: el dorsal es obligatorio.");
-  return lineas.join("\n");
-}
-
-/** Lo que Claude copia a SportEasy (D104: evento con «Selección manual» y SIN notificación). */
-export function textoSportEasy(fecha: string, jornada: number | null, partidos: PartidoMensaje[], conv: Convocatoria, nombre: (id: string) => string, cambios: string[] = []) {
-  const lineas = partidos.map((p) => {
-    const ids = (conv[p.equipo] ?? []).map((c) => c.person_id);
-    return `${p.equipo} · J${jornada ?? "?"} ${cruce(p)} (${ddmm(fecha)}${p.inicio ? `, ${p.inicio}` : ""}): ${ids.length ? nombres(ids, nombre).join(", ") : "nadie"} (${ids.length}).`;
-  });
-  if (cambios.length) lineas.unshift(`Cambios desde la última copia: ${cambios.join("; ")}.`);
-  lineas.push("En SportEasy: «Modificar los participantes implicados», seleccionar solo estos, y «Enviar una notificación» apagado (D104).");
   return lineas.join("\n");
 }
 

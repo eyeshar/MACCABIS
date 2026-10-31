@@ -37,18 +37,15 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   const hoy = hoyMadrid();
   const [todos, pistas, jugadores, { data: filasResp }, { data: importaciones }, defecto] = await Promise.all([
     cargarEventos(supabase, { conPlanes: true }), cargarPistas(supabase), cargarJugadores(supabase),
-    supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle, leido_en"),
-    supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, aceptadas, bloqueadas").order("en", { ascending: false }).limit(4),
+    supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle"),
+    // Solo las del calendario del Ayuntamiento (las respuestas ya no se importan).
+    supabase.from("importaciones").select("id, por_nombre, en, lineas, aceptadas, bloqueadas").eq("tipo", "calendario").order("en", { ascending: false }).limit(4),
     cargarDefecto(supabase),
   ]);
   // Los planes no oficiales (D118) solo salen en su filtro: el resto de la pantalla es lo del club.
   const eventos = todos.filter((e) => !esPlanFila(e));
   const resp = new Map<string, RespuestaPersona[]>();
-  let ultimaLectura: string | null = null;
-  for (const r of (filasResp ?? []) as (RespuestaPersona & { evento_id: string; leido_en: string })[]) {
-    resp.set(r.evento_id, [...(resp.get(r.evento_id) ?? []), r]);
-    if (!ultimaLectura || r.leido_en > ultimaLectura) ultimaLectura = r.leido_en;
-  }
+  for (const r of (filasResp ?? []) as (RespuestaPersona & { evento_id: string })[]) resp.set(r.evento_id, [...(resp.get(r.evento_id) ?? []), r]);
 
   const planes = todos.filter((e) => esPlanFila(e) && e.fecha >= hoy);
   const futuros = eventos.filter((e) => e.fecha >= hoy);
@@ -138,15 +135,12 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
             ))}
           </section>
 
-          <section className="gs-bloque" aria-labelledby="t-lecturas" data-testid="ultimas-lecturas">
-            <div className="gs-bloque-cab"><h2 id="t-lecturas" style={{ fontSize: 22 }}>Últimas lecturas</h2><Link href="/gestion/eventos/importar?t=respuestas" style={{ fontWeight: 600, fontSize: 14 }}>Importar</Link></div>
-            <p className="pequeno" style={{ margin: 0 }}>
-              Respuestas de SportEasy: {ultimaLectura ? <b>{fechaHora(ultimaLectura)}</b> : <span className="suave">todavía no se ha leído ninguna</span>}
-            </p>
-            {(importaciones ?? []).length > 0 && (
+          <section className="gs-bloque" aria-labelledby="t-importaciones" data-testid="ultimas-importaciones">
+            <div className="gs-bloque-cab"><h2 id="t-importaciones" style={{ fontSize: 22 }}>Calendario importado</h2><Link href="/gestion/eventos/importar" style={{ fontWeight: 600, fontSize: 14 }}>Importar</Link></div>
+            {(importaciones ?? []).length === 0 ? <p className="pequeno suave" style={{ margin: 0 }}>Todavía no se ha importado el calendario del Ayuntamiento.</p> : (
               <ul className="gs-pendientes">
                 {(importaciones ?? []).map((i) => (
-                  <li key={i.id}><span>{i.tipo === "calendario" ? "Calendario" : "Respuestas"} · {fechaHora(i.en)} · {i.por_nombre}<br /><span className="suave">{i.lineas} líneas, {i.aceptadas} aceptadas{i.bloqueadas ? `, ${i.bloqueadas} bloqueadas` : ""}</span></span></li>
+                  <li key={i.id}><span>{fechaHora(i.en)} · {i.por_nombre}<br /><span className="suave">{i.lineas} líneas, {i.aceptadas} {i.aceptadas === 1 ? "cambio aplicado" : "cambios aplicados"}{i.bloqueadas ? `, ${i.bloqueadas} con error` : ""}</span></span></li>
                 ))}
               </ul>
             )}

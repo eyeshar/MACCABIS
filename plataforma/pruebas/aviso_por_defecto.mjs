@@ -7,7 +7,7 @@
 //     «Te falta…») ni si no está invitado (entreno «solo con ficha» y sin ficha); ni a quien no tiene la marca.
 //   - Nunca se nombra la marca ni nada privado: ni en la página ni en el HTML (tampoco a los demás, que lo siguen viendo
 //     como «sin responder», D146).
-//   - Con el interruptor apagado, nada (se responde en SportEasy).
+//   - Con el interruptor apagado, nada (las respuestas en la web están desactivadas).
 //
 //   npm run pruebas:aviso-defecto
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos, hasta, trasAccion } from './comun_e2e.mjs';
@@ -53,7 +53,7 @@ try {
   r = await rpc();
   ok(r.status >= 400, 'anónimo: no la puede ejecutar', String(r.status));
 
-  console.log('\n== Interruptor apagado: nada (se responde en SportEasy)');
+  console.log('\n== Interruptor apagado: nada (respuestas en la web desactivadas)');
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;
   const luz = await e.sesion('luz@pruebas.local', 375);
   await luz.goto(`${APP}/`);

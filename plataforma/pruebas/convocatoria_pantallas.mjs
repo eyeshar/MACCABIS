@@ -7,13 +7,13 @@
 //   - Cambiar a mano con motivo: pasar al otro equipo (vista previa de las líneas antes de guardar), queda en el historial.
 //   - Añadir a uno que dijo «no voy»: lo encuentra en toda la plantilla, avisa antes de guardar, entra con su aviso.
 //   - Aprobar y copiar el mensaje: WhatsApp con encuentro, pista, dirección y dorsal, sin niveles; «al día»; el aviso de
-//     la web «en espera» (interruptor apagado); SportEasy pendiente; cambiar tras aprobar → pendiente y «qué cambia».
+//     la web «en espera» (interruptor apagado); sin bloque de SportEasy (D153); cambiar tras aprobar → pendiente y «qué cambia».
 //   - Un domingo con un solo equipo (J4): una sola tarjeta.
 //   - Privacidad: el jugador no entra en Gestión; en Mi zona solo «Convocado» con equipo, hora y encuentro.
 //   - D124: proyección de anotación en cada tarjeta («Quién aporta», el rival, el acierto) y en el tablero.
 //   - D125: modo rápido. Arrastrar en escritorio (1280 px) con zonas de destino, zona no válida sin ficha, aviso de
 //     «no voy», «Deshacer»; en el móvil y con teclado, selección múltiple y «Mover a…».
-//   - D126: bloque de la importación de SportEasy (última, próxima automática de la regla, aviso de más de 48 horas).
+//   - D153: ni la salida, ni la convocatoria ni el tablero hablan de SportEasy (sin bloque de copia ni de importación).
 //   - D127: «Enviar ahora» con el interruptor APAGADO, solo a quien toca, «a N de M», sin dobles y «Cambio en la
 //     convocatoria» tras cambiarla (servicio de avisos falso).
 //
@@ -28,7 +28,6 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import webpush from 'web-push';
 import { arrancar } from './pila.mjs';
-import * as IMP from '../src/lib/eventos/importacionAuto.ts';
 import * as HOR from '../src/lib/avisos/horario.ts';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
@@ -58,22 +57,6 @@ const SINT = [
   ['escolta', 'A'], ['escolta', 'B', true], ['alero', 'B'], ['alero', 'C'], ['escolta', 'C', true], ['alero', 'D'], ['escolta', 'D'], ['alero', 'E'],
   ['pivot', 'A'], ['ala_pivot', 'B'], ['pivot', 'C'], ['ala_pivot', 'C'], ['pivot', 'D'], ['ala_pivot', 'E'],
 ].map(([posicion, nivel, reserva], i) => ({ id: `sint-${String(i + 1).padStart(2, '0')}`, nombre: `Sint ${String(i + 1).padStart(2, '0')}`, posicion, nivel, reserva: !!reserva }));
-
-console.log('\n== D126: próxima importación automática (lunes a miércoles a las 9:54 de Madrid) y aviso de más de 48 horas');
-{
-  const M = (f, h) => HOR.madrid(f, h);
-  const prox = (f, h) => IMP.proximaImportacion(M(f, h)).toISOString();
-  ok(prox('2026-10-24', '12:00') === M('2026-10-26', '09:54').toISOString(), 'sábado 24/10 → lunes 26/10 a las 9:54 (ya en hora de invierno)');
-  ok(prox('2026-10-26', '09:53') === M('2026-10-26', '09:54').toISOString() && prox('2026-10-26', '09:55') === M('2026-10-27', '09:54').toISOString(), 'lunes 9:53 → hoy a las 9:54; lunes 9:55 → martes');
-  ok(prox('2026-10-28', '10:00') === M('2026-11-02', '09:54').toISOString(), 'miércoles a las 10:00 → el lunes siguiente (jueves a domingo no hay)');
-  ok(IMP.textoProxima(IMP.proximaImportacion(M('2026-10-24', '12:00')), M('2026-10-24', '12:00')) === 'lunes 26/10 a las 9:54', '«lunes 26/10 a las 9:54»');
-  ok(IMP.textoProxima(IMP.proximaImportacion(M('2026-10-26', '08:00')), M('2026-10-26', '08:00')) === 'hoy a las 9:54' && IMP.textoProxima(IMP.proximaImportacion(M('2026-10-26', '18:00')), M('2026-10-26', '18:00')) === 'mañana (martes) a las 9:54', '«hoy a las 9:54» y «mañana (martes) a las 9:54»');
-  const ahora = M('2026-10-21', '12:00'), domingo = M('2026-10-25', '09:00');
-  ok(IMP.desactualizadas(new Date(ahora.getTime() - 49 * 3600e3), ahora, domingo), 'importación de hace 49 h y partido en 4 días → «pueden estar desactualizadas»');
-  ok(!IMP.desactualizadas(new Date(ahora.getTime() - 47 * 3600e3), ahora, domingo), 'de hace 47 h → no');
-  ok(!IMP.desactualizadas(new Date(ahora.getTime() - 72 * 3600e3), ahora, M('2026-10-27', '20:00')), 'partido dentro de 6 días → no');
-  ok(IMP.desactualizadas(null, ahora, domingo), 'sin ninguna importación y partido en 4 días → sí');
-}
 
 // Servicio de avisos falso (D127): HTTPS con certificado propio; responde 201 y apunta lo que recibe.
 const dirCert = fs.mkdtempSync(path.join(os.tmpdir(), 'maccabis-push-'));
@@ -314,11 +297,11 @@ try {
   const cortosBarra = await pequenos(pg, '.cv-casilla-sel');
   ok(!cortosBarra.length, 'casillas de selección de al menos 44 px', JSON.stringify(cortosBarra));
 
-  console.log('\n== D124/D126 en el tablero');
+  console.log('\n== D124 en el tablero');
   await pd.goto(`${APP}/gestion/tablero?domingo=${F2}`);
   ok(/Proyección ≈ \d+ puntos \(entre \d+ y \d+\)/.test(await pd.getByTestId('proyeccion-MdA').innerText().catch(() => '')), 'resumen del MdA con su proyección');
   ok(/^Factor rival \d,\d\d: dificultad marcada: /.test((await pd.getByTestId('factor-MdA').textContent().catch(() => '')) ?? ''), 'y en su «Quién aporta», el factor rival con la dificultad marcada (D133)');
-  ok(await visto(pd.getByTestId('bloque-importacion')), 'y el bloque de la importación de SportEasy');
+  ok(!(await pd.getByTestId('bloque-importacion').count()) && !/SportEasy/.test(await pd.locator('main').innerText()), 'sin bloque de importación ni nada de SportEasy en el tablero (D153)');
   await foto(pd, 'tablero_proyeccion_1280');
 
   console.log('\n== Aprobar y copiar el mensaje');
@@ -338,7 +321,7 @@ try {
   ok(await visto(pg.getByTestId('cv-salida-whatsapp').getByText('Al día')), 'tras pegarlo: al día');
   const [{ encendido }] = await sql`select encendido from public.respuestas_web_config where id = 1`;
   ok(!encendido && await visto(pg.getByTestId('cv-salida-aviso').getByText('Pendiente')) && await visto(pg.getByRole('button', { name: 'Enviar ahora' })), 'aviso «Estás convocado»: pendiente y con «Enviar ahora» aunque el interruptor esté APAGADO (D127)');
-  ok(await visto(pg.getByTestId('cv-salida-sporteasy').getByText('Pendiente')), 'SportEasy: pendiente');
+  ok(!(await pg.getByTestId('cv-salida-sporteasy').count()) && !/SportEasy/.test(await pg.locator('main').innerText()) && !(await pg.getByRole('button', { name: 'Marcar como copiado' }).count()), 'sin bloque «SportEasy» ni «Marcar como copiado» en la salida (D153)');
   ok(await sinDesbordar(pg), 'salida a 375 px sin desbordar');
   await foto(pg, 'convocatoria_salida_375');
 
@@ -390,29 +373,17 @@ try {
   ok(await sinDesbordar(pg), 'a 375 px sin desbordar');
   await foto(pg, 'convocatoria_un_equipo_375');
 
-  console.log('\n== Domingo sin respuestas (fase puente, sin importar)');
+  console.log('\n== Domingo sin respuestas (interruptor apagado)');
   const F0 = fechas.find((f) => ![F2, F1, proximo].includes(f));
   await pg.goto(`${APP}/gestion/convocatoria?fecha=${F0}`);
   const cont0 = await pg.getByTestId('cv-contadores').innerText();
   ok(/0\s*van/.test(cont0) && /0\s*no van/.test(cont0), `${F0}: 0 van y 0 no van`, cont0.replace(/\s+/g, ' '));
-  ok(await visto(pg.getByTestId('cv-importacion').getByText(/Última importación:\s*ninguna/)) && await visto(pg.getByTestId('cv-importacion').getByText(/Para este domingo todavía no hay ninguna respuesta importada\./)), '«Última importación: ninguna» y que este domingo no tiene respuestas importadas');
-  ok((await pg.getByTestId('importacion-proxima').innerText()) === 'Tarea de SportEasy pausada: respuestas en la web', '«Tarea de SportEasy pausada: respuestas en la web» (la tarea está pausada desde el 26/10; sin «Próxima automática»)');
-  ok(await visto(pg.getByTestId('bloque-importacion').getByText(/¿Lo necesitas ya\? Pídeselo a Claude en el chat o abre la app de Claude → Tareas programadas → «Maccabis · respuestas de SportEasy» → Ejecutar ahora\./)), '«¿Lo necesitas ya? Pídeselo a Claude… → Ejecutar ahora.»');
-  ok(!(await pg.getByTestId('bloque-importacion').getByRole('button').count()) && !(await pg.getByRole('link', { name: 'Importar respuestas →' }).count()), 'ningún botón que parezca lanzar a Claude, y fuera el enlace «Importar respuestas →»');
+  ok(await visto(pg.getByTestId('cv-respuestas-apagadas').getByText(/Las respuestas en la web están desactivadas\. Para este domingo todavía no hay ninguna respuesta\./)), '«Las respuestas en la web están desactivadas. Para este domingo todavía no hay ninguna respuesta.»');
+  ok(!(await pg.getByTestId('bloque-importacion').count()) && !(await pg.getByTestId('cv-importacion').count()) && !/SportEasy|[Ff]ase puente/.test(await pg.locator('main').innerText()), 'sin bloque de importación, sin «fase puente» y sin «SportEasy» en la convocatoria (D153)');
   const cajas0 = await pg.locator('.cv-aviso').allInnerTexts();
   ok(cajas0.length === porFecha.get(F0).length && cajas0.every((t) => t.startsWith('Todavía no hay disponibles para este domingo.')), `un solo mensaje por equipo (${cajas0.length}), ninguna caja por regla`, cajas0.join(' | ').slice(0, 200));
   ok(!(await pg.locator('.cv-aviso-error').count()), 'ninguna caja roja');
   await foto(pg, 'convocatoria_sin_respuestas_375');
-  const [{ n: nImp }] = await sql`select count(*)::int n from public.importaciones`;
-  ok(nImp === 0, 'la prueba no ha importado nada (la línea dice «ninguna» de verdad)');
-  // Más de 48 horas: una importación de hace 3 días. El aviso sale solo si hay partido en los próximos 5 días.
-  await sql`insert into public.importaciones (tipo, por_nombre, en) values ('respuestas', 'Claude', now() - interval '3 days')`;
-  const primerPartido = liga.filter((e) => e.fecha === proximo).map((e) => HOR.madrid(e.fecha, e.inicio.slice(0, 5))).sort((a, b) => a - b)[0];
-  const tocaAviso = IMP.desactualizadas(new Date(Date.now() - 72 * 3600e3), new Date(), primerPartido);
-  await pg.goto(`${APP}/gestion/convocatoria?fecha=${proximo}`);
-  ok(await visto(pg.getByTestId('bloque-importacion').getByText(/Última importación: .*\(Claude\)/)), '«Última importación: <fecha y hora> (Claude)»');
-  ok((await pg.getByTestId('importacion-desactualizada').count()) === (tocaAviso ? 1 : 0), tocaAviso ? 'hace 3 días y partido en menos de 5: «Las respuestas pueden estar desactualizadas»' : 'hace 3 días pero sin partido en 5 días: sin aviso');
-  await foto(pg, 'convocatoria_importacion_375');
 
   console.log('\n== Datos de los jugadores (solo gestores)');
   await pg.goto(`${APP}/gestion/convocatoria/datos`);

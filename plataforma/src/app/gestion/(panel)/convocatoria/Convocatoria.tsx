@@ -12,7 +12,6 @@ import { proyeccionDe, textoBajoMinimo, textoCorreccion, textoFactor, textoProye
 import { cruce, diaTexto } from "@/lib/convocatoria/mensajes";
 import { enMadrid } from "@/lib/avisos/horario";
 import { diaCorto } from "@/lib/eventos/dominio";
-import BloqueImportacion from "@/components/gestion/BloqueImportacion";
 import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
 import { ajusteRapido, aprobar, cambiarDificultad, deshacerRapido, empezar, guardarCambio, type Accion, type Motivo } from "./acciones";
 
@@ -250,9 +249,8 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
       <section className="gs-bloque cv-cab" aria-label="Respuestas del domingo">
         <Numeros prueba="cv-contadores" etiqueta="Respuestas del domingo" contenedor="gs-cifras cv-contadores num-cajas" grupos={gruposCabecera} />
         {!ctx.encendido && (
-          <div className="cv-importacion" data-testid="cv-importacion">
-            <p className="pequeno" style={{ margin: 0 }}>Fase puente: las respuestas llegan de SportEasy.{ctx.respuestasDelDomingo === 0 && " Para este domingo todavía no hay ninguna respuesta importada."}</p>
-            <BloqueImportacion estado={ctx.importacion} />
+          <div className="cv-apagado" data-testid="cv-respuestas-apagadas">
+            <p className="pequeno" style={{ margin: 0 }}>Las respuestas en la web están desactivadas.{ctx.respuestasDelDomingo === 0 && " Para este domingo todavía no hay ninguna respuesta."}</p>
           </div>
         )}
         {ctx.proyeccion.calibracion && <p className="pequeno suave" style={{ margin: 0 }} data-testid="cv-acierto" title={ctx.proyeccion.calibracion.puntos.map((x) => `J${x.jornada} ${x.equipo}: ${x.proyeccion} (real ${x.real})`).join(" · ")}>{ctx.proyeccion.calibracion.texto}.</p>}
@@ -335,9 +333,9 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
         <section className="gs-bloque cv-aprobar" aria-label="Aprobar">
           {fila!.estado === "aprobada" ? (
             <>
-              <p style={{ margin: 0 }}>Aprobada{fila!.aprobada_por_nombre ? ` por ${fila!.aprobada_por_nombre}` : ""}. {fila!.whatsapp_estado === "pendiente" || fila!.sporteasy_estado === "pendiente" ? "Hay salidas pendientes." : "WhatsApp y SportEasy al día."}</p>
+              <p style={{ margin: 0 }}>Aprobada{fila!.aprobada_por_nombre ? ` por ${fila!.aprobada_por_nombre}` : ""}. {fila!.whatsapp_estado === "pendiente" ? "WhatsApp pendiente." : "WhatsApp al día."}</p>
               <div className="botones" style={{ margin: 0 }}>
-                <Link className="boton boton-amarillo" href={`/gestion/convocatoria/salida?fecha=${ctx.fecha}`}>Ver salida (WhatsApp, aviso y SportEasy)</Link>
+                <Link className="boton boton-amarillo" href={`/gestion/convocatoria/salida?fecha=${ctx.fecha}`}>Ver salida (WhatsApp y aviso)</Link>
               </div>
             </>
           ) : (
@@ -377,7 +375,7 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
 const TEXTO_ACCION: Record<string, string> = {
   propuesta: "usa la propuesta", blanco: "empieza en blanco", recalcular: "recalcula la propuesta", mover: "cambia de equipo a", doblar: "hace doblar a",
   quitar: "quita a", anadir: "añade a", posicion: "cambia la posición de", dificultad: "cambia la dificultad", aprobar: "aprueba la convocatoria",
-  whatsapp: "copia el mensaje a WhatsApp", sporteasy: "marca SportEasy al día", aviso: "aviso de la web",
+  whatsapp: "copia el mensaje a WhatsApp", aviso: "aviso de la web",
 };
 function textoCambio(c: Contexto["cambios"][number], nombre: (id: string) => string) {
   const motivo = MOTIVOS.find((m) => m.id === c.motivo)?.texto;

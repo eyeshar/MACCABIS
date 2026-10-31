@@ -86,7 +86,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
               {r?.origen === "gestor" && r.puesto_por_nombre && <p className="tenue pequeno" style={{ margin: 0 }}>Respuesta puesta por {r.puesto_por_nombre}.</p>}
             </>
           ) : <p className="suave" style={{ margin: 0 }}>{e.estado === "cancelado" ? "No hace falta que hagas nada." : "El evento ya empezó: no se puede cambiar la respuesta."}</p>
-        ) : <p className="rw-sporteasy" style={{ margin: 0 }}>Por ahora, responde en SportEasy.</p>}
+        ) : <p className="rw-apagado" style={{ margin: 0 }}>Las respuestas en la web están desactivadas.</p>}
       </section>
 
       {quien && (

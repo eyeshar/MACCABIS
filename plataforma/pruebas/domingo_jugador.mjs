@@ -5,8 +5,8 @@
 //     rival por separado;
 //   - «Quién va»: con la convocatoria APROBADA, los convocados de cada equipo (solo nombres, «tú» en el suyo); sin
 //     aprobar, «Convocatoria pendiente: la verás aquí cuando esté hecha.»;
-//   - interruptor apagado: «Según SportEasy: vas al MdA · no al MdL», con la hora de la última importación y «Cambiar en
-//     SportEasy»; sin nada importado, «Aún no tenemos tu respuesta de SportEasy»; encendido: los botones de siempre;
+//   - interruptor apagado: «Tu respuesta: vas al MdA · no al MdL» (lo que tenga guardado) y «Las respuestas en la web
+//     están desactivadas»; sin respuesta, solo eso; nada de SportEasy; encendido: los botones de siempre;
 //   - privacidad: nada de niveles, posiciones, motivos ni respuestas de otros; la función de la base solo da nombres de
 //     convocatorias aprobadas, y nada a un anónimo.
 //
@@ -72,12 +72,13 @@ try {
   const qa = await pj.getByTestId('quien-va-MdA').innerText(), ql = await pj.getByTestId('quien-va-MdL').innerText();
   ok(/Quién va\s+2\s+convocados\s+Jon\s+tú\s+Zoe$/.test(qa.trim()), '«Quién va» del MdA: 2 convocados, en orden alfabético, «tú» en el suyo', qa);
   ok(/Quién va\s+1\s+convocados\s+Adriano$/.test(ql.trim()) && !/\btú\b/.test(ql), 'y los del MdL, solo nombres', ql);
-  const se = await pj.getByTestId('segun-sporteasy').innerText();
-  ok(se.includes('Según SportEasy: vas al MdA · no al MdL') && /Actualizado el \w+/.test(se), '«Según SportEasy: vas al MdA · no al MdL», con «Actualizado el …»', se);
-  ok((await pj.getByTestId('segun-sporteasy').getByRole('link', { name: 'Cambiar en SportEasy' }).getAttribute('href')).startsWith('https://app.sporteasy.net'), '«Cambiar en SportEasy» al calendario de SportEasy (aún no guardamos el id de cada evento)');
+  const se = await pj.getByTestId('respuestas-apagadas').innerText();
+  ok(se.includes('Tu respuesta: vas al MdA · no al MdL') && se.includes('Las respuestas en la web están desactivadas.'), '«Tu respuesta: vas al MdA · no al MdL» y «Las respuestas en la web están desactivadas»', se);
+  ok(!(await pj.getByTestId('segun-sporteasy').count()) && !(await pj.locator('a[href*="sporteasy"]').count()), 'sin «Según SportEasy» ni enlace a SportEasy');
   ok(await visto(pj.getByText('Estar disponible no es estar convocado')), 'mantiene la nota «Estar disponible no es estar convocado»');
   const texto = await pj.locator('main').innerText();
   ok(!/nivel|Nivel [A-E]|Base de reserva|posici|lesi[oó]n|trabajo|Noe|en casa|fuera\b|\(local\)|\(visitante\)/i.test(texto), 'sin niveles, posiciones ni motivos (ni el suyo ni el de Noe), sin «Noe» (no convocada) y sin «casa/fuera»', texto.match(/nivel|lesi[oó]n|trabajo|Noe|en casa|fuera/i)?.[0]);
+  ok(!/SportEasy/i.test(texto), 'la página del domingo no menciona SportEasy');
   ok(!(await pj.getByText(/Dudan|No van ·/).count()), 'ni respuestas de otros (quién no va o duda)');
   ok(await sinDesbordar(pj), '375 px sin desbordar');
   await foto(pj, 'domingo_convocado_375');
@@ -94,7 +95,8 @@ try {
   await pg.goto(URL_D);
   ok((await pg.getByTestId('situacion').innerText()) === 'No estás convocado este domingo', '«No estás convocado este domingo»');
   ok(!(await pg.locator('.rw-partido-mio, .rw-partido-otro').count()), 'ninguna tarjeta marcada ni apagada');
-  ok(await visto(pg.getByTestId('segun-sporteasy').getByText('Aún no tenemos tu respuesta de SportEasy')) && await visto(pg.getByTestId('segun-sporteasy').getByRole('link', { name: 'Cambiar en SportEasy' })), '«Aún no tenemos tu respuesta de SportEasy» y el mismo botón');
+  { const ap = await pg.getByTestId('respuestas-apagadas').innerText();
+    ok(ap.trim() === 'Las respuestas en la web están desactivadas.' && !/SportEasy/i.test(await pg.locator('main').innerText()), 'sin respuesta guardada: solo «Las respuestas en la web están desactivadas», sin «SportEasy»', ap); }
   ok(!/dorsal/.test(await pg.getByTestId('equipacion-MdA').innerText()), 'sin convocar, sin «tu dorsal»');
   await foto(pg, 'domingo_no_convocado_375');
   const conv = await (await api('convocados_del_domingo', { p_fecha: J3 }, P['galan-domingo-guillermo'].token)).json();
@@ -108,13 +110,13 @@ try {
   const pn = await e.sesion('noe@pruebas.local', 375);
   await pn.goto(URL_D);
   ok((await pn.getByTestId('situacion').innerText()) === 'No vas', '«No vas»');
-  ok((await pn.getByTestId('segun-sporteasy').innerText()).includes('Según SportEasy: no al MdA · no al MdL') && !/lesi/i.test(await pn.locator('main').innerText()), '«Según SportEasy: no al MdA · no al MdL» (sin su motivo en esta página)');
+  ok((await pn.getByTestId('respuestas-apagadas').innerText()).includes('Tu respuesta: no al MdA · no al MdL') && !/lesi/i.test(await pn.locator('main').innerText()), '«Tu respuesta: no al MdA · no al MdL» (sin su motivo en esta página)');
   await foto(pn, 'domingo_no_vas_375');
 
   console.log('\n== Interruptor encendido: los botones de respuesta de siempre');
   await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
   await pg.goto(URL_D);
-  ok(!(await pg.getByTestId('segun-sporteasy').count()) && (await pg.locator('.rw-vas button').count()) >= 2, 'encendido: sin «Según SportEasy», con los botones para responder');
+  ok(!(await pg.getByTestId('respuestas-apagadas').count()) && !(await pg.getByTestId('segun-sporteasy').count()) && (await pg.locator('.rw-vas button').count()) >= 2, 'encendido: sin «desactivadas» ni «Según SportEasy», con los botones para responder');
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;
 
   console.log('\n== Un jugador inactivo no lee nada');

@@ -12,10 +12,9 @@ import { textoColores } from "@/lib/colores";
 import { coloresDe } from "@/lib/equipacion";
 import { avisoDeEvento } from "@/lib/eventos/datos";
 import { temporadaDe } from "@/lib/publico";
-import { SPORTEASY_CALENDARIO } from "@/lib/web";
 import { cargarMiZona } from "@/app/mi-zona/datos";
 import {
-  cargarConvocadosDomingo, cargarMiConvocatoria, cargarMiDomingo, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, cargarUltimaImportacion, respuestasWebEncendido,
+  cargarConvocadosDomingo, cargarMiConvocatoria, cargarMiDomingo, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, respuestasWebEncendido,
 } from "@/lib/respuestas/jugador";
 import {
   enlaceMapa, estadoDe, fechaLarga, hhmm, lineaCambio, opcionActual, opcionesDomingo, pistaTexto, restar20, unidades,
@@ -27,14 +26,13 @@ export const metadata: Metadata = { title: "Domingo · Maccabis", robots: { inde
 
 const limpiar = (r: string | null) => (r ? r.replace(/([.,;:!?])\1+/g, "$1").trim() : "");
 const hora = (h: string | null) => (h ? h.replace(/^0/, "") : "—");
-const fechaHora = (t: string) => new Date(t).toLocaleString("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 type Eq = "MdA" | "MdL";
 
 // Domingo del jugador (D99, 3.5; D128): arriba su situacion en una frase; las dos tarjetas de partido (la suya marcada
 // si esta convocado), cada una con la equipacion nuestra y la del rival por separado y «Quién va» (los convocados de la
-// convocatoria APROBADA, solo nombres); «¿Puedes jugar?» con la respuesta en la web (interruptor encendido) o lo
-// importado de SportEasy (apagado). Estar disponible no es estar convocado (D46). Nada de niveles, posiciones, motivos
-// ni respuestas de otros.
+// convocatoria APROBADA, solo nombres); «¿Puedes jugar?» con la respuesta en la web (interruptor encendido) o, apagado,
+// el aviso de que las respuestas en la web estan desactivadas (con la respuesta que ya tenga guardada, si la hay). Estar
+// disponible no es estar convocado (D46). Nada de niveles, posiciones, motivos ni respuestas de otros.
 export default async function Domingo({ params }: { params: Promise<{ fecha: string }> }) {
   const { fecha } = await params;
   await exigirSesion();
@@ -42,8 +40,8 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
   const partidos = (await cargarMisEventosDelDia(fecha)).filter((e) => e.tipo === "liga");
   if (!partidos.length) notFound();
   const u = unidades(partidos).find((x) => x.tipo === "domingo");
-  const [encendido, respuestas, ausencias, miDomingo, zona, convocados, ultimaImp, misConv] = await Promise.all([
-    respuestasWebEncendido(), cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha), cargarMiZona(), cargarConvocadosDomingo(fecha), cargarUltimaImportacion(), cargarMiConvocatoria(),
+  const [encendido, respuestas, ausencias, miDomingo, zona, convocados, misConv] = await Promise.all([
+    respuestasWebEncendido(), cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha), cargarMiZona(), cargarConvocadosDomingo(fecha), cargarMiConvocatoria(),
   ]);
   const ahora = new Date();
   const conDuda = partidos.every((e) => dudaAbierta(e, ahora));
@@ -78,9 +76,9 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
     return dorsales[0] ?? null;
   };
 
-  // Fase puente: lo importado de SportEasy, partido a partido.
-  const importadas = partidos.filter((e) => respuestas.some((r) => r.evento_id === e.id && r.respuesta !== "sin_responder"));
-  const textoSe = (e: MiEvento) => {
+  // Apagado: la respuesta que ya tenga guardada, partido a partido.
+  const guardadas = partidos.filter((e) => respuestas.some((r) => r.evento_id === e.id && r.respuesta !== "sin_responder"));
+  const textoResp = (e: MiEvento) => {
     const r = resp(e);
     return r === "va" ? `vas al ${e.equipo}` : r === "no" ? `no al ${e.equipo}` : r === "duda" ? `duda al ${e.equipo}` : `sin responder al ${e.equipo}`;
   };
@@ -149,14 +147,9 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
               motivo={(rNo?.motivo as MotivoJugador) ?? null} detalle={rNo?.detalle ?? null} />
           ) : <p className="suave" style={{ margin: 0 }}>Los partidos ya empezaron: no se puede cambiar la respuesta.</p>
         ) : (
-          <div className="rw-sporteasy-estado" data-testid="segun-sporteasy">
-            {importadas.length ? (
-              <>
-                <p className="rw-segun"><b>Según SportEasy: {partidos.map(textoSe).join(" · ")}</b></p>
-                {ultimaImp && <p className="suave pequeno" style={{ margin: 0 }}>Actualizado el {fechaHora(ultimaImp)}.</p>}
-              </>
-            ) : <p className="rw-segun"><b>Aún no tenemos tu respuesta de SportEasy</b></p>}
-            <a className="boton boton-claro" href={SPORTEASY_CALENDARIO} target="_blank" rel="noopener noreferrer">Cambiar en SportEasy</a>
+          <div className="rw-apagado-estado" data-testid="respuestas-apagadas">
+            {guardadas.length > 0 && <p className="rw-segun"><b>Tu respuesta: {partidos.map(textoResp).join(" · ")}</b></p>}
+            <p className="suave" style={{ margin: 0 }}>Las respuestas en la web están desactivadas.</p>
           </div>
         )}
         {encendido && u && abierto && conDuda && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(partidos[0]), ahora)} para confirmar; si no, contarás como «no va».</p>}

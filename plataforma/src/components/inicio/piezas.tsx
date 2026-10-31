@@ -7,7 +7,6 @@ import {
   type MiAusencia, type MiRespuesta, type MotivoJugador, type Unidad,
 } from "@/lib/respuestas/dominio";
 import { dudaAbierta } from "@/lib/avisos/horario";
-import { SPORTEASY_CALENDARIO } from "@/lib/web";
 import { TEXTO_POR_DEFECTO_JUGADOR } from "@/lib/disponibilidad/porDefecto";
 
 // Piezas del inicio personal y de la Agenda (D117): la tarjeta de «Te faltan N respuestas» y la fila de «Tu agenda».
@@ -52,7 +51,7 @@ export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, enc
   const h = horasDe(u);
   const p = pastillaDe(u, respuestas, ausencias, convocatorias, porDefecto);
   const plan = esPlan(e);
-  // Apagado (fase puente) y sin respuesta: el estado de un evento oficial sale de SportEasy.
+  // Apagado y sin respuesta: un evento oficial sale como «Sin responder» (no se le pide respuesta en la web).
   const pastilla = !encendido && !plan && p.clase === "responde" ? { clase: "responde", texto: "Sin responder" } : p;
   return (
     <Link href={u.url} className={`in-fila${plan ? " es-plan" : ""}`} data-tipo={e.tipo} data-testid="fila-agenda">
@@ -73,7 +72,7 @@ export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, enc
 }
 
 /** Tarjeta de «Te faltan N respuestas»: tipo, fecha en grande, casillas Quedada / Empieza (o Partido), titulo y sitio.
- *  Encendido: Voy / No voy / Duda (No voy con su hoja de motivo). Apagado (fase puente): «Responder en SportEasy».
+ *  Encendido: Voy / No voy / Duda (No voy con su hoja de motivo). Apagado: solo el aviso de que las respuestas en la web estan desactivadas.
  *  Los planes se responden aqui siempre (D118). */
 export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u: Unidad; encendido: boolean; respuestas: MiRespuesta[]; plazasLlenas?: boolean }) {
   const e = u.eventos[0];
@@ -102,7 +101,7 @@ export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u
         <Responder eventoId={e.id} fecha={u.fecha} domingo={u.tipo === "domingo"} actual={null} nombre={u.tipo === "domingo" ? `partido del domingo ${+u.fecha.slice(8)}` : nombreCorto(e)}
           sinDuda={!u.eventos.every((x) => dudaAbierta(x, new Date()))} urlDomingo={u.modo === "distintas" ? u.url : undefined} motivo={r?.motivo === "no_confirmo" ? null : ((r?.motivo as MotivoJugador) ?? null)} detalle={r?.detalle ?? null} />
       ) : (
-        <a className="boton boton-amarillo in-sporteasy" href={SPORTEASY_CALENDARIO} target="_blank" rel="noopener noreferrer" data-testid="responder-sporteasy">Responder en SportEasy</a>
+        <p className="suave in-apagado" data-testid="respuestas-apagadas">Las respuestas en la web están desactivadas.</p>
       )}
     </article>
   );

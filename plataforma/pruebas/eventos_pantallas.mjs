@@ -4,11 +4,12 @@
 //
 //   npm run pruebas:eventos-pantallas
 //
-// Eventos (filtros, aviso de entrenos sin pista, copia a SportEasy), crear y editar (solo este / este y los siguientes,
-// partido del Ayuntamiento con solo quedada y notas, cancelar), pistas (reabrir Valdebernardo), importar calendario
-// (bloque oficial = 0 cambios, una linea cambiada = 1 cambio, aceptar), celdas de respuestas enlazadas (Eventos y Panel) y
-// pista del proximo entreno leida de la tabla (ubicacion libre, D119), importar respuestas (nombre desconocido bloquea
-// solo su linea), respuestas por evento, asistencia, movil a 375 px (tarjetas, sin desbordamiento) y sin errores de JS.
+// Eventos (filtros, aviso de entrenos sin pista), crear y editar (solo este / este y los siguientes, partido del
+// Ayuntamiento con solo quedada y notas, cancelar), pistas (reabrir Valdebernardo), importar calendario (bloque oficial =
+// 0 cambios, una linea cambiada = 1 cambio, aceptar; sin pestaña «Respuestas»), celdas de respuestas enlazadas (Eventos y
+// Panel) y pista del proximo entreno leida de la tabla (ubicacion libre, D119), respuestas por evento, el mensaje de
+// WhatsApp tras «Guardar y avisar» y tras cancelar (de los datos del evento), ninguna pantalla de eventos menciona
+// SportEasy, asistencia, movil a 375 px (tarjetas, sin desbordamiento) y sin errores de JS.
 // Deja capturas en privado/mockups_liga/rediseno/real_eventos_*.png (fuera de git).
 
 import fs from 'node:fs';
@@ -118,7 +119,8 @@ try {
   const futuros = (await sql`select count(*)::int n from public.eventos where fecha >= ${hoy}`)[0].n;
   ok(filas === Math.min(30, futuros), `Próximos: ${filas} filas (los ${Math.min(30, futuros)} primeros de ${futuros})`, String(filas));
   ok((await p.getByTestId('copia-sporteasy').count()) === 0 && !(await p.locator('main').textContent()).includes('Copia a SportEasy') && (await p.locator('[data-testid=tabla-eventos] th', { hasText: 'SportEasy' }).count()) === 0, 'sin tarjeta «Copia a SportEasy» ni columna SportEasy (D153)');
-  ok((await p.getByTestId('ultimas-lecturas').textContent()).includes('todavía no se ha leído'), '«Últimas lecturas»: aún ninguna');
+  ok((await p.getByTestId('ultimas-lecturas').count()) === 0 && (await p.getByTestId('ultimas-importaciones').textContent()).includes('Todavía no se ha importado el calendario'), '«Calendario importado»: aún ninguno (sin «Últimas lecturas» de SportEasy)');
+  ok(!(await p.locator('main').textContent()).includes('SportEasy'), '/gestion/eventos no menciona SportEasy');
   ok((await p.locator('aside').textContent()).includes('Valdebernardo (Faustina Valladolid)') && (await p.locator('aside').textContent()).includes('Caja Mágica') && (await p.locator('aside').textContent()).includes('CDM Moratalaz'), 'catálogo de pistas: Valdebernardo, Caja Mágica y CDM Moratalaz');
   // La J2 (18/10) ya puede haber pasado: entonces sale en «Pasados» y no en «Próximos» (lo dice la fecha, no la prueba).
   const j2Pasada = (await sql`select fecha::text f from public.eventos where clave = 'mda-j2'`)[0].f < hoy;
@@ -158,9 +160,10 @@ try {
   await guardado(p);
   ok((await p.getByTestId('aviso-guardado').textContent()).includes('Cambios guardados') && !(await p.getByTestId('aviso-guardado').textContent()).includes('SportEasy'), 'guardado, sin «pendiente de copiar a SportEasy» (D153)');
   const msg = await p.getByTestId('mensaje-whatsapp').textContent();
-  ok(msg.includes('Caja Mágica') && msg.includes('Cambio en el entreno del') && msg.includes('Responded en SportEasy'), 'mensaje de WhatsApp generado con la pista nueva', msg);
+  ok(msg.includes('Caja Mágica') && /Entreno del /.test(msg) && !/SportEasy|Responded/.test(msg), 'mensaje de WhatsApp con la pista nueva, sin «Responded en SportEasy» (interruptor apagado: sin línea de respuesta)', msg);
+  ok(!(await p.locator('main').textContent()).includes('SportEasy'), 'la ficha del evento no menciona SportEasy');
   const e1 = (await sql`select e.*, p.slug from public.eventos e left join public.pistas p on p.id = e.pista_id where e.clave = ${'entreno-semanal-' + f0}`)[0];
-  ok(e1.slug === 'caja-magica' && e1.sporteasy_estado === 'pendiente' && /pista: Pista por confirmar -> Caja Mágica/.test(e1.sporteasy_cambio), 'en la base: Caja Mágica, pendiente de copiar y con la descripción del cambio', e1.sporteasy_cambio);
+  ok(e1.slug === 'caja-magica', 'en la base: Caja Mágica', e1.slug);
   const otros = (await sql`select count(*)::int n from public.eventos where tipo = 'entreno' and pista_id is not null and clave <> ${'entreno-semanal-' + f0}`)[0].n;
   ok(otros === 1, 'solo cambia este miércoles (el otro con pista propia es el del 07/10)', String(otros));
   await p.goto(`${APP}/gestion/eventos`);
@@ -178,8 +181,8 @@ try {
   await guardado(p);
   ok((await p.getByTestId('aviso-guardado').textContent()).includes('este y en los siguientes'), 'guardado en la serie');
   const antes = await sql`select clave, fecha, inicio, fin, quedada from public.eventos where tipo = 'entreno' and fecha < ${f1} order by fecha`;
-  const desde = await sql`select clave, fecha, inicio, fin, quedada, sporteasy_estado from public.eventos where tipo = 'entreno' and fecha >= ${f1} order by fecha`;
-  ok(desde.length === entrenosFuturos.length - 1 && desde.every((e) => String(e.inicio).startsWith('21:00') && String(e.fin).startsWith('23:00') && String(e.quedada).startsWith('20:40') && e.sporteasy_estado === 'pendiente'), `los ${desde.length} entrenos desde el ${dma(f1)} pasan a 21:00–23:00 (quedada 20:40), pendientes de copiar`);
+  const desde = await sql`select clave, fecha, inicio, fin, quedada from public.eventos where tipo = 'entreno' and fecha >= ${f1} order by fecha`;
+  ok(desde.length === entrenosFuturos.length - 1 && desde.every((e) => String(e.inicio).startsWith('21:00') && String(e.fin).startsWith('23:00') && String(e.quedada).startsWith('20:40')), `los ${desde.length} entrenos desde el ${dma(f1)} pasan a 21:00–23:00 (quedada 20:40)`);
   ok(antes.some((e) => String(e.inicio).startsWith('20:00')) && antes.filter((e) => String(e.inicio).startsWith('20:30')).length === antes.length - 1, 'los anteriores no se tocan (el 07/10 sigue a las 20:00)');
   ok(!desde.some((e) => ['2026-12-23', '2026-12-30', '2027-01-06', '2027-03-24'].includes(e.fecha.toISOString().slice(0, 10))), 'y los miércoles sin sesión siguen sin existir');
   const sigueCaja = (await sql`select p.slug from public.eventos e join public.pistas p on p.id = e.pista_id where e.clave = ${'entreno-semanal-' + f0}`)[0]?.slug;
@@ -192,8 +195,8 @@ try {
   p.once('dialog', (d) => d.accept());
   await p.getByRole('button', { name: 'Cancelar solo este entreno' }).click();
   await guardado(p);
-  const canc = (await sql`select estado, sporteasy_estado, sporteasy_cambio from public.eventos where id = ${id2}`)[0];
-  ok(canc.estado === 'cancelado' && canc.sporteasy_estado === 'pendiente' && /cancelado/.test(canc.sporteasy_cambio), 'cancelar: estado cancelado y pendiente de copiar');
+  const canc = (await sql`select estado from public.eventos where id = ${id2}`)[0];
+  ok(canc.estado === 'cancelado', 'cancelar: estado cancelado');
   ok((await p.getByTestId('mensaje-whatsapp').textContent()).includes('Se cancela el entreno'), 'mensaje de cancelación');
   await p.goto(`${APP}/gestion/eventos`);
   ok((await p.locator('tr.ev-cancelado').count()) >= 1 && (await p.locator('tr.ev-cancelado').first().textContent()).includes('CANCELADO'), 'en la lista sale CANCELADO');
@@ -214,9 +217,8 @@ try {
   await p.locator('#notas').fill('Calentamiento a las 9:50');
   await p.getByRole('button', { name: 'Guardar y preparar mensaje' }).click();
   await guardado(p);
-  const j2b = (await sql`select fecha, inicio, rival, quedada, notas, sporteasy_estado, sporteasy_cambio from public.eventos where clave = 'mda-j2'`)[0];
+  const j2b = (await sql`select fecha, inicio, rival, quedada, notas from public.eventos where clave = 'mda-j2'`)[0];
   ok(String(j2b.quedada).startsWith('09:55') && j2b.notas === 'Calentamiento a las 9:50' && j2b.fecha.toISOString() === j2.fecha.toISOString() && String(j2b.inicio) === String(j2.inicio) && j2b.rival === j2.rival, 'se guardan las notas; fecha, hora, encuentro y rival intactos');
-  ok(j2b.sporteasy_estado === 'pendiente' && /notas: «Calentamiento a las 9:50»/.test(j2b.sporteasy_cambio), 'pendiente de copiar con las notas', j2b.sporteasy_cambio);
   ok((await p.getByTestId('mensaje-whatsapp').textContent()).includes('encuentro 09:55') && (await p.getByTestId('mensaje-whatsapp').textContent()).includes('Cambian ellos') === false && /amarilla|equipaci/i.test(await p.getByTestId('mensaje-whatsapp').textContent()), 'mensaje del partido: encuentro y línea de equipación');
 
   // ---------------------------------------------------------------- crear
@@ -231,8 +233,8 @@ try {
   await p.getByRole('button', { name: 'Crear evento' }).click();
   await guardado(p);
   const nuevo = (await sql`select * from public.eventos where titulo = 'Amistoso con Tres Cantos'`)[0];
-  ok(nuevo && nuevo.tipo === 'amistoso' && nuevo.origen === 'manual' && String(nuevo.quedada).startsWith('17:40') && nuevo.sporteasy_estado === 'pendiente', 'amistoso creado: manual, quedada 17:40 (20 min antes), pendiente de copiar');
-  ok((await p.getByTestId('mensaje-whatsapp').textContent()).toLowerCase().includes('amistoso'), 'mensaje de evento nuevo');
+  ok(nuevo && nuevo.tipo === 'amistoso' && nuevo.origen === 'manual' && String(nuevo.quedada).startsWith('17:40'), 'amistoso creado: manual, quedada 17:40 (20 min antes)');
+  ok((await p.getByTestId('mensaje-whatsapp').textContent()).toLowerCase().includes('amistoso') && (await p.getByTestId('mensaje-whatsapp').textContent()).includes('Evento nuevo'), 'mensaje de evento nuevo (?guardado=nuevo)');
   await p.goto(`${APP}/gestion/eventos?f=amistosos`);
   ok((await p.locator('[data-testid=tabla-eventos] tbody tr').count()) === 1, 'aparece en «Amistosos y torneos»');
   await p.goto(`${APP}/gestion/eventos/nuevo`);
@@ -245,8 +247,8 @@ try {
   ok((await p.locator('[data-pista=valdebernardo]').textContent()).includes('En obras') && (await p.locator('[data-pista=caja-magica]').textContent()).includes('Provisional') && (await p.locator('[data-pista=cdm-moratalaz]').textContent()).includes('Habitual'), 'catálogo con sus estados');
   await trasAccion(p, () => p.locator('[data-pista=valdebernardo]').getByRole('button', { name: 'Marcar como reabierta' }).click());
   ok((await sql`select estado from public.pistas where slug = 'valdebernardo'`)[0].estado === 'habitual', 'Valdebernardo pasa a habitual');
-  const sinProp = await sql`select clave, sporteasy_estado, sporteasy_cambio from public.eventos where tipo = 'entreno' and pista_id is null and estado = 'programado' and fecha >= ${hoy}`;
-  ok(sinProp.length > 0 && sinProp.every((e) => e.sporteasy_estado === 'pendiente' && /pista: Pista por confirmar -> Valdebernardo/.test(e.sporteasy_cambio)), `los ${sinProp.length} entrenos futuros sin pista propia vuelven a Valdebernardo y quedan pendientes de copiar`);
+  const sinProp = await sql`select clave from public.eventos where tipo = 'entreno' and pista_id is null and estado = 'programado' and fecha >= ${hoy}`;
+  ok(sinProp.length > 0, `hay ${sinProp.length} entrenos futuros sin pista propia (vuelven a Valdebernardo: lo comprueba la lista)`);
   await p.goto(`${APP}/gestion/eventos`);
   ok((await p.getByTestId('aviso-sin-pista').count()) === 0, 'desaparece el aviso de entrenos sin pista');
   ok((await p.locator('tr[data-evento="entreno-semanal-' + entrenosFuturos[3].fecha.toISOString().slice(0, 10) + '"]').textContent()).includes('Valdebernardo'), 'la lista muestra Valdebernardo en los entrenos sin pista propia');
@@ -303,8 +305,8 @@ try {
   await fila.getByRole('button', { name: 'Aceptar' }).click();
   await p.getByRole('button', { name: /Aplicar lo aceptado \(1\)/ }).click();
   await p.getByText('Aplicado: 1 cambio aceptado').waitFor();
-  const j2c = (await sql`select inicio, quedada, sporteasy_estado, sporteasy_cambio from public.eventos where clave = 'mda-j2'`)[0];
-  ok(j2c.inicio.startsWith('11:30') && j2c.sporteasy_estado === 'pendiente' && /hora: 10:15 -> 11:30 \(Ayuntamiento\)/.test(j2c.sporteasy_cambio), 'aceptado: hora 11:30 y pendiente de copiar a SportEasy', j2c.sporteasy_cambio);
+  const j2c = (await sql`select inicio, quedada from public.eventos where clave = 'mda-j2'`)[0];
+  ok(j2c.inicio.startsWith('11:30') && String(j2c.quedada).startsWith('11:10'), 'aceptado: hora 11:30 (encuentro 11:10)', JSON.stringify(j2c));
   ok((await p.getByTestId('titulo-resultado').textContent()) === '0 cambios', 'tras aplicar, la misma importación da «0 cambios»');
   const imp = (await sql`select tipo, por_nombre, lineas, validas, aceptadas, ignoradas from public.importaciones where tipo = 'calendario'`);
   ok(imp.length === 1 && imp[0].aceptadas === 1 && imp[0].lineas === 44 && imp[0].por_nombre === 'Gestor de pruebas', 'la importación queda registrada: quién, cuántas líneas y qué se aceptó', JSON.stringify(imp));
@@ -335,55 +337,37 @@ try {
   await p.waitForFunction(() => document.querySelectorAll('.aviso-error li').length === 2);
   ok(true, 'las líneas ilegibles se enumeran con su número y motivo');
 
-  // ---------------------------------------------------------------- importar respuestas
-  console.log('\n== Importar respuestas');
+  // ---------------------------------------------------------------- importar: sin respuestas (SportEasy ya no se usa)
+  console.log('\n== Importar: solo el calendario');
+  await p.goto(`${APP}/gestion/eventos/importar`);
+  ok((await p.locator('.ev-pestanas').count()) === 0 && (await p.getByRole('link', { name: 'Respuestas', exact: true }).count()) === 0, 'Importar no tiene pestaña «Respuestas»');
+  ok(!(await p.locator('main').textContent()).includes('SportEasy'), 'Importar no menciona SportEasy');
   await p.goto(`${APP}/gestion/eventos/importar?t=respuestas`);
+  ok((await p.locator('#cal-texto').count()) === 1 && (await p.locator('#resp-texto').count()) === 0, '/gestion/eventos/importar?t=respuestas enseña el calendario');
+  // Respuestas de ejemplo (las de la web) para la pantalla de respuestas del evento.
   const fEnt = entrenosFuturos[3].fecha.toISOString().slice(0, 10);
-  const txt = [
-    `${dma(fEnt)} entreno;Jon Adrian Esteban Peñas;No voy;Trabajo;Turno de tarde`,
-    `${dma(fEnt)} entreno;Adriano Gianatti;va`,
-    `${dma(fEnt)} entreno;Alonso Romero B.;duda`,
-    `${dma(fEnt)} entreno;Manu Calahorro;va`,
-    `Jon Adrian Esteban Peñas;20/12/2026;03/01/2027;Viaje`,
-  ].join('\n');
-  await p.locator('#resp-texto').fill(txt);
-  await p.getByRole('button', { name: 'Revisar' }).click();
-  await p.getByTestId('resultado-respuestas').waitFor();
-  ok((await p.getByTestId('resultado-respuestas').locator('h2').textContent()).includes('3 líneas válidas') && (await p.getByTestId('resultado-respuestas').locator('h2').textContent()).includes('2 bloqueadas'), '3 válidas y 2 bloqueadas («Alonso Romero B.» y «Manu Calahorro» no están en el diccionario)', await p.getByTestId('resultado-respuestas').locator('h2').textContent());
-  ok((await p.locator('[data-estado=bloqueada]').count()) === 2, 'solo bloquean sus propias líneas');
-  await p.getByRole('button', { name: 'Guardar las válidas' }).click();
-  await p.getByText(/Guardado: 2 respuestas y 1 ausencia/).waitFor();
-  ok((await sql`select count(*)::int n from public.respuestas`)[0].n === 2, 'se guardan las 2 respuestas válidas; las bloqueadas esperan');
-  const sel = p.locator('[data-estado=bloqueada]').first().locator('select');
-  const bloqueada1 = (await p.locator('[data-estado=bloqueada]').first().textContent()).includes('Alonso Romero B.');
-  await sel.selectOption({ value: bloqueada1 ? 'romero-barrueco-alonso' : 'calahorro-sanchez-manuel' });
-  await p.locator('[data-estado=bloqueada]').first().getByRole('button', { name: 'Asignar' }).click();
-  await p.waitForFunction(() => document.querySelectorAll('[data-estado=bloqueada]').length === 1);
-  ok((await sql`select person_id from public.diccionario_sporteasy where nombre_sporteasy in ('Alonso Romero B.', 'Manu Calahorro')`)[0]?.person_id === (bloqueada1 ? 'romero-barrueco-alonso' : 'calahorro-sanchez-manuel'), 'asignado a mano una vez: entra en el diccionario');
-  await p.getByRole('button', { name: 'Guardar las válidas' }).click();
-  await p.getByText(/Guardado: 3 respuestas/).waitFor();
-  ok((await sql`select count(*)::int n from public.respuestas`)[0].n === 3 && (await sql`select count(*)::int n from public.ausencias_periodo`)[0].n === 1, '3 respuestas y 1 ausencia por periodo guardadas (repetir no duplica)');
-  const impR = await sql`select aceptadas, bloqueadas, lineas from public.importaciones where tipo = 'respuestas' order by en`;
-  ok(impR.length === 2 && impR[1].aceptadas >= 3, 'cada importación de respuestas queda registrada', JSON.stringify(impR));
-  await p.screenshot({ path: path.join(SALIDA, 'real_eventos_importar_respuestas_escritorio.png'), fullPage: true });
+  const idR = entrenosFuturos[3].id;
+  await sql`select public._escribir_respuesta(${idR}, 'esteban-jon', 'no', 'trabajo', 'Turno de tarde', 'jugador', null, null, null)`;
+  await sql`select public._escribir_respuesta(${idR}, 'gianatti-adriano', 'va', null, null, 'jugador', null, null, null)`;
+  await sql`select public._escribir_respuesta(${idR}, 'romero-barrueco-alonso', 'duda', null, null, 'jugador', null, null, null)`;
+  await sql`insert into public.ausencias_periodo (person_id, desde, hasta, motivo, origen) values ('esteban-jon', '2026-12-20', '2027-01-03', 'viaje', 'jugador')`;
 
   // ---------------------------------------------------------------- respuestas por evento
   console.log('\n== Respuestas y motivos de un evento');
-  const idR = entrenosFuturos[3].id;
   await p.goto(`${APP}/gestion/eventos/${idR}/respuestas`);
   const orden = await p.locator('[data-testid=tabla-respuestas] tbody tr').evaluateAll((t) => t.map((x) => x.getAttribute('data-respuesta')));
   const rank = { no: 0, duda: 1, sin_responder: 2, va: 3 };
   ok(orden.length >= 4 && orden.every((x, i) => i === 0 || rank[orden[i - 1]] <= rank[x]) && orden[0] === 'no' && orden.at(-1) === 'va', `orden: no van → dudan → sin responder → van (${orden.join(' ')})`);
   const cont = await p.getByTestId('contadores').textContent();
-  ok(/1novan/.test(cont.replace(/\s/g, '')) && /1dudan/.test(cont.replace(/\s/g, '')) && /^1van/.test(cont.replace(/\s/g, '')), 'contadores: 1 no va, 1 duda, 1 va (la otra línea sigue bloqueada)', cont);
+  ok(/1novan/.test(cont.replace(/\s/g, '')) && /1dudan/.test(cont.replace(/\s/g, '')) && /^1van/.test(cont.replace(/\s/g, '')), 'contadores: 1 no va, 1 duda, 1 va', cont);
   ok((await p.locator('[data-respuesta=no]').first().textContent()).includes('Trabajo') && (await p.locator('[data-respuesta=no]').first().textContent()).includes('Turno de tarde'), 'el «no voy» lleva su motivo y detalle');
   ok((await p.getByTestId('franja-ausencias').textContent()).includes('Viaje') && (await p.getByTestId('franja-ausencias').textContent()).includes('20/12'), 'franja visual de ausencias por periodo');
-  await p.getByTestId('recordatorio').locator('summary').click();
-  const rec = await p.getByTestId('recordatorio').textContent();
-  ok(rec.includes('Faltan por responder') && rec.includes('Voy / No voy / Duda') && rec.includes('El envío lo hace Claude'), '«Pedir recordatorio a Claude»: genera la lista y el texto, sin enviar nada');
+  ok((await p.getByTestId('recordatorio').count()) === 0 && (await p.getByTestId('recordatorios-automaticos').count()) === 1, 'sin «Pedir recordatorio a Claude» (texto para SportEasy); quedan los recordatorios automáticos');
+  ok(!(await p.locator('main').textContent()).includes('SportEasy') && !(await p.locator('main').textContent()).includes('fase puente'), 'la página de respuestas no menciona SportEasy ni la fase puente');
+  ok((await p.getByTestId('origen-respuestas').textContent()) === 'Respuestas en la web desactivadas', 'interruptor apagado: «Respuestas en la web desactivadas»', await p.getByTestId('origen-respuestas').textContent());
   await p.screenshot({ path: path.join(SALIDA, 'real_eventos_respuestas_escritorio.png'), fullPage: true });
   await p.goto(`${APP}/gestion/eventos`);
-  ok((await p.getByTestId('ultimas-lecturas').textContent()).includes('Respuestas de SportEasy:') && !(await p.getByTestId('ultimas-lecturas').textContent()).includes('todavía no se ha leído'), '«Últimas lecturas» ya muestra la fecha');
+  ok((await p.getByTestId('ultimas-importaciones').locator('li').count()) >= 1 && (await p.getByTestId('ultimas-importaciones').textContent()).includes('Gestor de pruebas') && !(await p.getByTestId('ultimas-importaciones').textContent()).includes('SportEasy'), '«Calendario importado» muestra las importaciones del calendario');
   ok((await p.locator(`tr[data-evento="entreno-semanal-${fEnt}"] .ev-cuentas`).textContent()).includes('1 van'), 'en la lista: «1 van» en ese entreno');
 
   // ---------------------------------------------------------------- respuestas enlazadas y pista del entreno en el Panel
@@ -391,7 +375,7 @@ try {
   const [otro] = await sql`select person_id from public.jugadores where activo and ficha_mda and ficha_mdl and person_id <> 'esteban-jon' order by person_id limit 1`;
   const [liga1] = await sql`select id, clave from public.eventos where tipo = 'liga' and estado = 'programado' and fecha >= ${hoy} order by fecha, inicio limit 1`;
   const entP = entrenosFuturos[0];
-  for (const ev of [liga1.id, entP.id]) await sql`select public._escribir_respuesta(${ev}, ${otro.person_id}, 'va', null, null, 'sporteasy', null, null, null)`;
+  for (const ev of [liga1.id, entP.id]) await sql`select public._escribir_respuesta(${ev}, ${otro.person_id}, 'va', null, null, 'jugador', null, null, null)`;
   let enlazadas = 0;
   for (const f of ['proximos', 'entrenos', 'liga', 'pasados']) {
     await p.goto(`${APP}/gestion/eventos?f=${f}`);
@@ -424,6 +408,33 @@ try {
   ok(/pista por confirmar \(Valdebernardo en obras\)/.test(await p.getByTestId('entreno-pista').textContent()), 'sin pista ni ubicación: «pista por confirmar (Valdebernardo en obras)»');
   const fijar = p.locator('.gs-pendientes a', { hasText: 'Fijar la pista del entreno' });
   ok(await fijar.count() === 1 && (await fijar.getAttribute('href')) === `/gestion/eventos/${entP.id}`, '«Pendiente esta semana»: «Fijar la pista del entreno…» con enlace a ese evento');
+
+  // ---------------------------------------------------------------- WhatsApp desde los datos del evento (interruptor encendido)
+  console.log('\n== Mensaje de WhatsApp tras «Guardar y avisar» y tras cancelar');
+  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
+  try {
+    const idW = entrenosFuturos[5].id;
+    await p.goto(`${APP}/gestion/eventos/${idW}`);
+    await p.locator('#inicio').fill('21:15');
+    await p.getByRole('button', { name: 'Guardar y avisar' }).click();
+    await guardado(p);
+    const cvW = (await sql`select cambio_visible from public.eventos where id = ${idW}`)[0].cambio_visible;
+    ok(cvW && cvW.campos.join() === 'hora' && cvW.antes === '21:00–23:00', 'la línea amarilla guarda qué cambió y cómo era', JSON.stringify(cvW));
+    const wa = await p.getByTestId('mensaje-whatsapp').textContent();
+    ok(wa.includes('Cambio en el entreno del') && wa.includes('Qué cambia: hora (antes: 21:00–23:00)') && wa.includes('de 21:15 a 23:00') && wa.includes('Responde en la web:') && !/SportEasy|Responded/.test(wa), 'WhatsApp tras «Guardar y avisar»: «Cambio en…» y «Qué cambia» desde cambio_visible, con el enlace a la web', wa);
+    ok(!(await p.locator('main').textContent()).includes('SportEasy'), 'la ficha (interruptor encendido) no menciona SportEasy');
+    p.once('dialog', (d) => d.accept());
+    await p.getByRole('button', { name: 'Cancelar solo este entreno' }).click();
+    // El aviso «guardado» ya estaba en pantalla (del guardado anterior): se espera al mensaje de la cancelacion.
+    await p.waitForFunction(() => document.querySelector('[data-testid=mensaje-whatsapp]')?.textContent?.includes('Se cancela'), null, { timeout: 20000 }).catch(() => {});
+    const waC = await p.getByTestId('mensaje-whatsapp').textContent();
+    ok(/Se cancela el entreno del /.test(waC) && waC.includes('Cancelación') && !waC.includes('Qué cambia'), 'WhatsApp tras cancelar: «Se cancela el entreno…»', waC);
+    p.once('dialog', (d) => d.accept());
+    await p.getByRole('button', { name: 'Restablecer solo este' }).click();
+    await guardado(p);
+  } finally {
+    await sql`update public.respuestas_web_config set encendido = false where id = 1`;
+  }
 
   // ---------------------------------------------------------------- asistencia
   console.log('\n== Asistencia y motivos');

@@ -64,11 +64,3 @@ export async function marcarJornada(jornada: number, estado: "limpia" | "con_arr
   refrescar();
   return { ok: true };
 }
-
-export async function marcarSporteasy(comprobado: boolean): Promise<R> {
-  const { supabase } = await exigirGestor();
-  const { error } = await supabase.rpc("marcar_sporteasy", { p_comprobado: comprobado });
-  if (error) return { ok: false, error: err(error.message) };
-  refrescar();
-  return { ok: true };
-}

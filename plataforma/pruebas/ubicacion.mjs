@@ -35,7 +35,7 @@ ok(nom.nombre === 'Centro Deportivo Municipal Faustina Valladolid' && nom.direcc
 
 console.log('\n== Mensaje de WhatsApp y .ics: el enlace de Google Maps');
 const pistas = [{ id: 'p1', slug: 'cdm-moratalaz', nombre: 'CDM Moratalaz', nombre_corto: 'Moratalaz', direccion: 'C/ Valdebernardo, 2, 28030 Madrid', uso: 'partido', estado: 'habitual', es_de_serie: false, num_pistas: 3, nota: null, lat: 40.3975133, lng: -3.6315708 }];
-const ev = { id: 'e1', clave: 'mda-j3', temporada: '2026-27', tipo: 'liga', equipo: 'MdA', titulo: null, jornada: 3, rival: 'Rival', es_local: true, fecha: '2026-10-25', inicio: '09:00', fin: null, quedada: '08:40', pista_id: 'p1', numero_pista: 2, notas: null, origen: 'ayuntamiento', serie: null, estado: 'programado', sporteasy_estado: 'pendiente', sporteasy_cambio: null, sporteasy_copiado_en: null };
+const ev = { id: 'e1', clave: 'mda-j3', temporada: '2026-27', tipo: 'liga', equipo: 'MdA', titulo: null, jornada: 3, rival: 'Rival', es_local: true, fecha: '2026-10-25', inicio: '09:00', fin: null, quedada: '08:40', pista_id: 'p1', numero_pista: 2, notas: null, origen: 'ayuntamiento', serie: null, estado: 'programado' };
 let msg = mensajeWhatsApp(ev, pistas, 'nuevo');
 ok(msg.includes(`Cómo llegar: ${MAPA(40.3975133, -3.6315708)}`), 'WhatsApp de un partido en Moratalaz: «Cómo llegar» con sus coordenadas', msg);
 msg = mensajeWhatsApp({ ...ev, tipo: 'amistoso', pista_id: null, titulo: 'Amistoso', ubicacion_nombre: 'Pabellón X', ubicacion_direccion: 'Calle Y 3', ubicacion_lat: 40.5, ubicacion_lng: -3.7 }, pistas, 'nuevo');
@@ -126,7 +126,7 @@ try {
   ok(await sinDesbordar(pd), 'ficha a 1280 px sin desbordamiento');
   const pg = await e.sesion('ivan@pruebas.local', 1280);
   const [mda3] = await sql`select e.id from public.eventos e where e.clave = 'mda-j3'`;
-  await sql`update public.eventos set pista_id = (select id from public.pistas where slug = 'cdm-moratalaz'), numero_pista = 2, sporteasy_estado = 'pendiente', sporteasy_cambio = 'Evento nuevo: crearlo en SportEasy' where id = ${mda3.id}`;
+  await sql`update public.eventos set pista_id = (select id from public.pistas where slug = 'cdm-moratalaz'), numero_pista = 2 where id = ${mda3.id}`;
   await pg.goto(`${APP}/gestion/eventos/${mda3.id}`);
   const wa = await pg.getByTestId('mensaje-whatsapp').innerText().catch(() => '');
   ok(wa.includes(MAPA(40.3975133, -3.6315708)), 'Gestión: el mensaje de WhatsApp del partido lleva el enlace de Google Maps', wa.slice(0, 300));

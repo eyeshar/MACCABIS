@@ -205,7 +205,7 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
         )}
       </div>
       {!encendido && (
-        <p className="pequeno suave" style={{ margin: 0 }}>Fase puente: al guardar, el evento queda «pendiente de copiar» y se prepara el mensaje de WhatsApp. No sale ningún aviso a los móviles hasta que se encienda «respuestas en la web».</p>
+        <p className="pequeno suave" style={{ margin: 0 }}>Las respuestas en la web están desactivadas: al guardar se prepara el mensaje de WhatsApp, pero no sale ningún aviso a los móviles.</p>
       )}
     </form>
   );

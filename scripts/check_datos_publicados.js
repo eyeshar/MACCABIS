@@ -20,7 +20,7 @@ const PROTEGIDOS = [
   'plataforma/src/data/liga.json', 'plataforma/src/data/temporada.json', ':(glob)plataforma/src/data/estadisticas/season_*.json',
 ];
 const DATOS = /^datos\(/;
-const git = (...a) => execFileSync('git', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+const git = (...a) => execFileSync('git', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true }).trim();
 const intenta = (...a) => { try { return git(...a); } catch { return null; } };
 const lineas = (s) => (s ? s.split('\n').filter(Boolean) : []);
 

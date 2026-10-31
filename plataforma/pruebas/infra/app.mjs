@@ -37,7 +37,7 @@ export function compilar(env, clavesExtra = []) {
   } catch { /* sin huella: se compila */ }
   fs.rmSync(HUELLA, { force: true });
   try {
-    execFileSync(process.execPath, [NEXT, 'build'], { cwd: RAIZ, env, stdio: process.env.PRUEBAS_VER_BUILD ? 'inherit' : 'pipe', maxBuffer: 1e8 });
+    execFileSync(process.execPath, [NEXT, 'build'], { cwd: RAIZ, env, stdio: process.env.PRUEBAS_VER_BUILD ? 'inherit' : 'pipe', maxBuffer: 1e8, windowsHide: true });
   } catch (e) {
     console.log(`FALLO next build:\n${String(e.stdout ?? '').slice(-3000)}\n${String(e.stderr ?? '').slice(-3000)}`);
     throw e;

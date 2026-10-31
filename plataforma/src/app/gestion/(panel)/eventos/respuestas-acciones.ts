@@ -20,6 +20,22 @@ export async function responderPor(eventoId: string, personId: string, respuesta
   return { ok: true };
 }
 
+const ERR_MANO: Record<string, string> = {
+  solo_gestores: "Solo los gestores.", no_invitado: "No está invitado a este evento.", evento_cerrado: "Este evento está cancelado.",
+  limite_dudas: "Ya pasó la hora límite de las dudas: «Va» o «No va».", motivo_no_valido: "Ese motivo no es de la lista.",
+};
+
+/** Cambiar a mano la respuesta de un invitado (D159): va, duda, no va o sin responder, en un toque; motivo opcional
+ *  (de la lista, solo con «no va»). Queda «puesta por <gestor>» y en el registro del tablero (se puede deshacer allí). */
+export async function cambiarAMano(eventoId: string, personId: string, respuesta: "va" | "duda" | "no" | "sin_responder", motivo: string | null = null): Promise<R> {
+  const { supabase } = await exigirGestor();
+  const { error } = await supabase.rpc("gestor_responder", { p_evento: eventoId, p_personas: [personId], p_respuesta: respuesta, p_motivo: respuesta === "no" ? motivo : null, p_detalle: null });
+  if (error) return { ok: false, error: ERR_MANO[Object.keys(ERR_MANO).find((k) => error.message.includes(k)) ?? ""] ?? `No se pudo guardar: ${error.message}` };
+  refrescar(eventoId);
+  revalidatePath(`/gestion/eventos/${eventoId}`); revalidatePath("/gestion/tablero"); revalidatePath("/gestion/convocatoria", "layout");
+  return { ok: true };
+}
+
 export async function responderDomingoPor(eventoId: string, fecha: string, personId: string, opcion: string, soloEvento: string | null, motivo: string | null, detalle: string | null): Promise<R> {
   const { supabase } = await exigirGestor();
   const { error } = await supabase.rpc("responder_domingo_por", { p_fecha: fecha, p_person: personId, p_opcion: opcion, p_evento: soloEvento, p_motivo: motivo, p_detalle: detalle?.trim() || null });

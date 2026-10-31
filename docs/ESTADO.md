@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 31/10/2026, noche: **tablero y asistencia a mano** (`feat/tablero-asistencia-mano`, D159, PR abierto, sin merge): el selector «Ver» del Tablero trae todos los eventos de la temporada (antes, solo los programados de los 35 días siguientes), «Van / Disponible» con motivo opcional en la barra (también el domingo) y, en la ficha del evento y en «Respuestas y motivos», cambiar la respuesta de cada invitado en un toque (va, duda, no va, sin responder; motivo opcional), «puesta por» el gestor. **Migración `20261031190000_respuesta_a_mano` (función nueva `gestor_responder`) pendiente de aplicar en el real con D111 y el OK de Iván, antes del merge.**_
 _Última actualización: 31/10/2026, noche: **acceso que funciona en cualquier navegador** (`feat/acceso-cualquier-navegador`, D157, apilada sobre `feat/recuadro-respuestas-en-vivo`, PR abierto, sin merge): enlace del correo por `/auth/confirm` (botón «Entrar» por POST; el prefetch de Gmail no lo gasta; `verifyOtp` con `token_hash`, sin PKCE), código de 6 dígitos, mensajes claros si el enlace caducó o se usó, y el recuadro separa «no han pedido acceso» de «lo pidieron y no terminaron». **Pendiente de Iván: pegar la plantilla de correo en Supabase** (texto en el PR y en D157) y comprobar que «Site URL» es `https://maccabis.vercel.app`. Google revisado: activo y funcionando (un solo `invalid_grant` suelto). Sin migraciones._
 _Última actualización: 31/10/2026, noche: **recuadro «Respuestas en la web» en vivo** (`feat/recuadro-respuestas-en-vivo`, D156, PR abierto, sin merge): se actualiza solo cada 60 s con la pestaña visible y al volver a ella (`/api/gestion/activacion`, polling), con «Actualizado hh:mm»; la suscripción caducada (404/410) ya se desactivaba y vuelve a «sin avisos»; textos en singular/plural con «de noche solo si el partido es en pocas horas»; el total dice «jugadores · el entrenador también los tiene». Sin migraciones._
 _Última actualización: 31/10/2026, noche: **rutina B automática, fin de SportEasy y avisos** (`feat/rutina-b-auto`, D153, D154 y D155, PR abierto, sin merge): SportEasy ya no se usa (fuera la tarjeta «Copia a SportEasy» y la cola «pendiente de copiar»); la rutina B aplica y avisa sola con freno (tarea «Maccabis · calendario del jueves», jueves 20:20); avisos en el momento salvo de 22:30 a 08:00 (Madrid); Importar acepta la pista «Baloncesto 2 Moratalaz». J5 MdA aplicada el 31/10 a las 17:09; su aviso **no** salió ni está en cola._
@@ -21,6 +22,13 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+
+## Tablero y asistencia a mano (31/10/2026; D159) — `feat/tablero-asistencia-mano`, PR abierto, SIN merge
+
+- **«Ver» con toda la temporada:** el límite era `fecha <= hoy + 35` y solo programados. Ahora salen todos los eventos oficiales de 2026/27: próximos domingos, próximos eventos, domingos ya jugados y eventos pasados (los futuros primero).
+- **Barra de acciones:** «Van / Disponible» (también en el domingo) con motivo opcional en texto libre; «No van» sigue con motivo de la lista.
+- **Ficha del evento y «Respuestas y motivos»:** Va · Duda · No va · Sin resp. por invitado, en un toque; con «No va», motivo opcional. Queda `origen gestor`, `puesto_por`, `puesto_por_nombre` y el registro del tablero.
+- **Pendiente (Iván):** aplicar en el real la migración `20261031190000_respuesta_a_mano` (solo crea `gestor_responder`) con las protecciones de D111 **antes** de mergear; después, `npm run pruebas:respuestas-real`.
 
 ## Rutina B automática, fin de SportEasy y avisos (31/10/2026; D153, D154, D155) — `feat/rutina-b-auto`, PR abierto
 

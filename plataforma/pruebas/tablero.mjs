@@ -7,11 +7,21 @@
 //   - evento suelto: Van · Duda o sin responder · No van; cambiar respuestas guarda «puesta por», «No van» pide motivo,
 //     funciona con el interruptor apagado y una importacion posterior de SportEasy NO lo pisa (sale como conflicto);
 //   - un jugador no accede (ni a la pantalla ni a la base); 375 y 1280 px.
+//   - D159: el selector «Ver» trae TODOS los eventos de la temporada (futuros primero); «Van / Disponible» en la barra
+//     (también el domingo) con motivo opcional; en la ficha del evento y en «Respuestas y motivos», cambiar a mano la
+//     respuesta de cada invitado en un toque (va, duda, no va, sin responder; motivo opcional), «puesta por» el gestor;
+//     la migración de gestor_responder es aditiva y su .revertir.sql la deshace limpia.
 //
 //   npm run pruebas:tablero
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto } from './comun_e2e.mjs';
 import { adelantar, semanas } from './fechas_prueba.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { migrar } from '../scripts/db.mjs';
+
+const MIG = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations', '20261031190000_respuesta_a_mano');
 
 const { ok, fallos, sumar } = contador();
 const e = await preparar();
@@ -45,6 +55,10 @@ try {
   ok(r.status >= 400 && /solo_gestores/.test(await r.text()), 'la base rechaza tablero_responder a un jugador');
   const reg = await (await fetch(`${e.pila.url}/rest/v1/tablero_registro?select=id`, { headers: { apikey: e.pila.anonKey, authorization: `Bearer ${P['esteban-jon'].token}` } })).json();
   ok(Array.isArray(reg) && reg.length === 0, 'y no lee el registro del tablero');
+  const rm = await fetch(`${e.pila.url}/rest/v1/rpc/gestor_responder`, { method: 'POST', headers: { apikey: e.pila.anonKey, authorization: `Bearer ${P['esteban-jon'].token}`, 'content-type': 'application/json' }, body: JSON.stringify({ p_evento: mda, p_personas: ['esteban-jon'], p_respuesta: 'va' }) });
+  ok(rm.status >= 400 && /solo_gestores/.test(await rm.text()), 'la base rechaza gestor_responder (respuestas a mano, D159) a un jugador');
+  const ra = await fetch(`${e.pila.url}/rest/v1/rpc/gestor_responder`, { method: 'POST', headers: { apikey: e.pila.anonKey, 'content-type': 'application/json' }, body: JSON.stringify({ p_evento: mda, p_personas: ['esteban-jon'], p_respuesta: 'va' }) });
+  ok(ra.status >= 400, 'y a anónimo', `HTTP ${ra.status}`);
 
   console.log('\n== Domingo de partidos (1280 px): una línea por jugador');
   const pg = await e.sesion('ivan@pruebas.local', 1280);
@@ -65,6 +79,24 @@ try {
   ok(nJ === personasEnPantalla.length - (await novan.locator('tr[data-person]').count()) && nS0 === nJ, `cabecera «Juegan (${nJ}) · ${nS0} sin convocar»`);
   ok((await pg.locator('[data-bloque] .tb-bloque').allInnerTexts()).some((t) => /^bases/i.test(t)) && await visto(fila('sint-carla').getByText('base de reserva')), 'agrupado por posición (por defecto): Bases · Exteriores · Interiores; el base de reserva va en Exteriores con su marca');
   ok((await pg.locator('tbody[data-bloque="exterior"] tr[data-person="sint-carla"]').count()) === 1, 'Carla (escolta, base de reserva) en Exteriores');
+
+  console.log('\n== Selector «Ver»: todos los eventos de la temporada, los futuros primero (D159)');
+  const hoyS = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const evs = await sql`select id, fecha::text, tipo, estado from public.eventos where temporada = '2026-27' and oficial and borrado_en is null order by fecha, inicio nulls last`;
+  const opts = await pg.locator('#tb-ver option').evaluateAll((o) => o.map((x) => ({ v: x.value, g: x.parentElement.getAttribute('label') })));
+  const optEv = opts.filter((o) => o.v.startsWith('evento:'));
+  ok(optEv.length === evs.length && evs.every((x) => optEv.some((o) => o.v === `evento:${x.id}`)), `«Ver» trae los ${evs.length} eventos oficiales de la temporada (antes, solo los de las 5 semanas siguientes)`, `${optEv.length} en el selector`);
+  const lejano = evs.filter((x) => x.fecha > new Date(Date.now() + 40 * 864e5).toISOString().slice(0, 10)).at(-1);
+  ok(!lejano || optEv.some((o) => o.v === `evento:${lejano.id}`), 'incluye los de más de cinco semanas', lejano?.fecha);
+  const domFut = [...new Set(evs.filter((x) => x.tipo === 'liga' && x.estado === 'programado').map((x) => x.fecha))];
+  ok(opts.filter((o) => o.v.startsWith('domingo:')).length === domFut.length, `y los ${domFut.length} domingos de partidos (futuros y ya jugados)`);
+  const grupos = [...new Set(opts.map((o) => o.g))];
+  ok(grupos[0] === 'Próximos domingos de partidos' && grupos.indexOf('Próximos eventos') < (grupos.includes('Eventos pasados') ? grupos.indexOf('Eventos pasados') : 99), 'los futuros primero (Próximos domingos · Próximos eventos), después los pasados', grupos.join(' | '));
+  const fechaDe = (o) => evs.find((x) => `evento:${x.id}` === o.v).fecha;
+  const fechasFut = optEv.filter((o) => o.g === 'Próximos eventos').map(fechaDe);
+  ok(fechasFut.every((f, i) => i === 0 || fechasFut[i - 1] <= f) && fechasFut.every((f) => f >= hoyS), 'los próximos, del más cercano al más lejano');
+  const fechasPas = optEv.filter((o) => o.g === 'Eventos pasados').map(fechaDe);
+  ok(fechasPas.every((f, i) => i === 0 || fechasPas[i - 1] >= f) && fechasPas.every((f) => f < hoyS), `los pasados (${fechasPas.length}), del más reciente al más antiguo`);
 
   console.log('\n== Convocar y quitar desde la casilla; doblaje marcado');
   await trasAccion(pg, () => celdaDe('sint-ana', 'MdA').click());
@@ -136,6 +168,21 @@ try {
   ok(edu.length === 2 && edu.every((x) => x.respuesta === 'no' && x.motivo === 'familia' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván'), 'Eva: «no · familia» en los dos partidos, puesta por Iván (con el interruptor apagado)', JSON.stringify(edu));
   await pg.reload();
   ok(await visto(pg.getByTestId('tabla-novan').locator('tr[data-person="sint-eva"]')), 'y pasa al bloque «No van»');
+
+  console.log('\n== «Van / Disponible» en el domingo, con motivo opcional (D159)');
+  await pg.getByTestId('tabla-novan').locator('tr[data-person="sint-eva"] input[type=checkbox]').check();
+  await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Van / Disponible' }).click();
+  await pg.getByTestId('barra-acciones').getByLabel('Motivo (opcional)').fill('me lo dijo por WhatsApp');
+  await trasAccion(pg, () => pg.getByRole('button', { name: 'Guardar «Van»' }).click());
+  const evaVa = await sql`select r.respuesta, r.motivo, r.detalle, r.origen, r.puesto_por_nombre from public.respuestas r join public.eventos e on e.id = r.evento_id where r.person_id = 'sint-eva' and e.fecha = ${J3}`;
+  ok(evaVa.length === 2 && evaVa.every((x) => x.respuesta === 'va' && x.motivo === null && x.detalle === 'me lo dijo por WhatsApp' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván'), 'Eva: «va» en sus dos partidos, con el motivo opcional y puesta por Iván', JSON.stringify(evaVa));
+  await pg.reload();
+  ok(await visto(pg.getByTestId('tabla-juegan').locator('tr[data-person="sint-eva"]')) && await visto(pg.getByTestId('registro-cambios').getByText(/Van: Eva \(me lo dijo por WhatsApp\)/)), 'vuelve a «Juegan» y el registro dice quién y por qué');
+  await pg.getByTestId('tabla-juegan').locator('tr[data-person="sint-eva"] input[type=checkbox]').check();
+  await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Van / Disponible' }).click();
+  ok(!(await pg.getByRole('button', { name: 'Guardar «Van»' }).isDisabled()), 'sin motivo también se puede guardar');
+  await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Cancelar' }).click();
+  await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Quitar selección' }).click();
   await pg.evaluate(() => window.scrollTo(0, 0));
 
   console.log('\n== 375 px: la tabla se desplaza dentro de su caja, con el jugador fijo');
@@ -157,7 +204,8 @@ try {
   ok(await visto(colVa.locator('[data-person="sint-ana"]')) && (await colDuda.locator('[data-person]').count()) > 5, 'tres columnas con su número; Ana en «Van», los sin responder en «Duda o sin responder»');
   await colDuda.locator('[data-person="sint-bea"] input').check();
   await colDuda.locator('[data-person="sint-flor"] input').check();
-  await trasAccion(pg, () => pg.getByTestId('barra-acciones').getByRole('button', { name: 'Van', exact: true }).click());
+  await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Van / Disponible' }).click();
+  await trasAccion(pg, () => pg.getByRole('button', { name: 'Guardar «Van»' }).click());
   const rv = await sql`select person_id, respuesta, origen, puesto_por_nombre, cambiado_en from public.respuestas where evento_id = ${ent.id} and person_id in ('sint-bea', 'sint-flor')`;
   ok(rv.length === 2 && rv.every((x) => x.respuesta === 'va' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván' && x.cambiado_en), '«Van»: guardado como «puesta por Iván», con fecha y hora (interruptor apagado)');
   await pg.reload();
@@ -193,6 +241,40 @@ try {
   await trasAccion(pg, () => pg.getByRole('button', { name: 'Revisar' }).click());
   ok(!(await pg.getByTestId('conflicto').count()), 'la misma importación otra vez ya no sale como conflicto');
 
+  console.log('\n== Cambiar a mano la respuesta de cada invitado, en un toque (D159)');
+  const rDani = async () => (await sql`select respuesta, motivo, origen, puesto_por_nombre from public.respuestas where evento_id = ${ent.id} and person_id = 'sint-dani'`)[0] ?? null;
+  await pg.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
+  const manoDani = pg.locator('[data-testid=cambiar-a-mano][data-person="sint-dani"]');
+  ok(await visto(manoDani) && (await manoDani.getAttribute('data-valor')) === ((await rDani())?.respuesta ?? 'sin_responder'), '«Respuestas y motivos»: cada invitado con sus cuatro botones (va, duda, no va, sin responder) y el actual marcado');
+  await trasAccion(pg, () => manoDani.getByRole('button', { name: /^No va ·/ }).click());
+  let d = await rDani();
+  ok(d?.respuesta === 'no' && d.motivo === null && d.origen === 'gestor' && d.puesto_por_nombre === 'Iván', 'un toque en «No va»: guardado sin motivo (opcional), puesto por Iván (interruptor apagado)', JSON.stringify(d));
+  await trasAccion(pg, () => manoDani.getByLabel(/^Por qué no va \(opcional\)/).selectOption('lesion'));
+  d = await rDani();
+  ok(d?.respuesta === 'no' && d.motivo === 'lesion', 'el motivo opcional se guarda al elegirlo (lesión)', JSON.stringify(d));
+  await trasAccion(pg, () => manoDani.getByRole('button', { name: /^Sin resp\. ·/ }).click());
+  ok((await rDani())?.respuesta === 'sin_responder', '«Sin resp.» lo deja sin responder');
+  const regMano = await sql`select por_nombre, despues, motivo from public.tablero_registro where evento_id = ${ent.id} and 'sint-dani' = any(personas) order by en`;
+  ok(regMano.length >= 3 && regMano.at(-1).despues === 'sin_responder' && regMano.some((x) => x.motivo === 'lesion') && regMano.every((x) => x.por_nombre === 'Iván'), 'cada cambio queda en el registro del tablero (quién, qué), y se puede deshacer allí', JSON.stringify(regMano));
+  await pg.goto(`${APP}/gestion/eventos/${ent.id}`);
+  const fichaMano = pg.getByTestId('respuestas-a-mano');
+  ok(await visto(fichaMano) && (await fichaMano.locator('[data-testid=cambiar-a-mano]').count()) > 5, 'la ficha del evento también: «Respuestas · cambiar a mano» con todos los invitados');
+  await trasAccion(pg, () => fichaMano.locator('[data-testid=cambiar-a-mano][data-person="sint-dani"]').getByRole('button', { name: /^Va ·/ }).click());
+  d = await rDani();
+  ok(d?.respuesta === 'va' && d.origen === 'gestor' && d.puesto_por_nombre === 'Iván', 'un toque en «Va» desde la ficha: guardado, puesto por Iván');
+  ok(await sinDesbordar(pg), 'ficha a 1280 px sin desbordamiento');
+  const pf375 = await e.nuevaPagina(await e.contexto(375));
+  await pf375.context().addCookies(await pg.context().cookies());
+  await pf375.goto(`${APP}/gestion/eventos/${ent.id}`);
+  const b375 = await pf375.getByTestId('respuestas-a-mano').locator('[data-testid=cambiar-a-mano][data-person="sint-dani"] button').first().boundingBox();
+  ok(await sinDesbordar(pf375) && b375 && b375.height >= 44, 'móvil (375 px): sin desbordar y botones de 44 px', JSON.stringify(b375));
+  await foto(pf375, 'evento_respuestas_a_mano_375');
+  await pf375.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
+  ok(await sinDesbordar(pf375), '«Respuestas y motivos» a 375 px sin desbordar');
+  await pg.goto(`${APP}/gestion/eventos/${mda}/respuestas`);
+  const manoAna = pg.locator('[data-testid=cambiar-a-mano][data-person="sint-ana"]');
+  ok((await manoAna.count()) === 2 && /MdA/i.test((await manoAna.allInnerTexts()).join(' ')) && /MdL/i.test((await manoAna.allInnerTexts()).join(' ')), 'vista del domingo: un juego de botones por partido (MdA y MdL), con su etiqueta');
+
   console.log('\n== Arrastrar y soltar (escritorio; nunca la única forma)');
   await pg.goto(`${APP}/gestion/tablero?domingo=${J3}`);
   const antesA = enEq(await conv(), 'MdL', 'sint-flor');
@@ -200,6 +282,17 @@ try {
   await trasAccion(pg, () => pg.evaluate(() => { const dt = new DataTransfer(); const de = document.querySelector('tr[data-person="sint-flor"]'); const a = document.querySelector('[data-testid="resumen-MdL"]'); de.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt })); a.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt })); a.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt })); }));
   ok(!antesA && enEq(await conv(), 'MdL', 'sint-flor'), 'arrastrar a Flor al resumen del MdL lo convoca al MdL');
   ok(!e.errores.length, 'sin errores de consola', e.errores.slice(0, 5).join(' | '));
+
+  console.log('\n== Migración de gestor_responder: aditiva y reversible (D111)');
+  const texto = fs.readFileSync(`${MIG}.sql`, 'utf8').replace(/--.*$/gm, '');
+  ok(fs.existsSync(`${MIG}.revertir.sql`) && !/\bdrop\b|\btruncate\b|\bdelete\s+from\b|\bupdate\s+public\b|alter\s+table|create\s+or\s+replace/i.test(texto), 'solo crea una función nueva (sin DROP, DELETE, UPDATE, ALTER ni reemplazar nada) y tiene su .revertir.sql');
+  const fn = async () => (await sql`select to_regprocedure('public.gestor_responder(uuid, text[], text, text, text)') is not null f, (select count(*)::int from supabase_migrations.schema_migrations where version = '20261031190000') v`)[0];
+  ok((await fn()).f && (await fn()).v === 1, 'aplicada y registrada');
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(`${MIG}.revertir.sql`, 'utf8')));
+  const tras = await fn();
+  ok(!tras.f && tras.v === 0 && (await sql`select count(*)::int n from public.respuestas where person_id = 'sint-dani'`)[0].n > 0, 'revertir: quita la función y su registro, sin tocar las respuestas', JSON.stringify(tras));
+  await migrar(sql, { log: () => {} });
+  ok((await fn()).f && (await fn()).v === 1, 'y se vuelve a aplicar limpia');
 } catch (err) { console.error(err); sumar(); } finally {
   await e.parar();
 }

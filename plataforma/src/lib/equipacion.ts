@@ -38,5 +38,6 @@ export function coloresDe(nombre: string) {
   return e ? { camiseta: e.camiseta, pantalon: e.pantalon, css: equip.paleta[e.camiseta] ?? "#999", cssPantalon: equip.paleta[e.pantalon] ?? "#999" } : null;
 }
 
-/** Linea de la convocatoria / WhatsApp (rutina C) para un partido: "Llevad la equipación amarilla" o null si no toca. */
+/** Linea de equipacion de la convocatoria (D160): WhatsApp, aviso push, ficha del evento y Scouting. Siempre que haya
+ *  rival ("Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso."); null si descansa. */
 export const lineaEquipacion = (p: Partido | null) => lineaConvocatoria(equip, p);

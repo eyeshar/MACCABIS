@@ -1263,3 +1263,21 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - **Google (revisado):** activo a propósito (D68). Los logs de Auth del 30–31/10 muestran 6 salidas a Google y un único `500: Unable to exchange external code` (17:12, `invalid_grant`: un código de Google ya usado o caducado), seguido a los 4 s de otra salida a Google. Es un fallo suelto del canje, no una avería; no se ha cambiado nada. Si se repite, lo siguiente a mirar es que `/auth/callback` no se abra dos veces (navegador interno).
 - **Plantilla de correo (la pega Iván en Supabase → Authentication → Email Templates, en «Confirm signup» y en «Magic Link»):** ver ESTADO. Además, «Site URL» debe ser `https://maccabis.vercel.app`.
 - **Pruebas** (`pruebas`, `pruebas:avisos-logica`, `pruebas:entrados`): enlace abierto en un navegador sin sesión → entra; GET (prefetch) no lo gasta; segundo uso y caducado → mensaje y reenvío; código de 6 dígitos desde un navegador limpio; tipo no permitido; Panel con los dos grupos y sus mensajes. El doble de Auth de la pila (`pila.mjs`) entiende `token_hash` de un solo uso.
+
+## D160 — La convocatoria lleva SIEMPRE una línea de equipación, con la regla oficial y una tabla de colores parecidos (Iván, 31/10/2026, `feat/equipacion-convocatoria`) — COMPLETA D79 y D75
+
+**Antes:** la línea de equipación solo salía si había choque («Llevad la equipación AMARILLA (nos toca cambiar).» o «Jugamos de negro; cambia X…»); sin choque, el WhatsApp ponía «Equipación habitual (negra).» y el aviso al móvil nada. Choque = camiseta del rival en una lista fija (`camiseta_rival_choca`).
+
+**Decisión:**
+- **Una sola función** (`lineaConvocatoria` en `data/avisos_equipacion.js`, copia en `plataforma/src/data/`; `avisoPartido().convocatoria` es lo mismo) da la línea del **WhatsApp de la convocatoria**, el **aviso push «Estás convocado» / cambio de convocatoria**, el **WhatsApp de la ficha del evento** y **Scouting** (tarjeta del próximo partido contra nosotros). Siempre que haya rival; solo `null` si descansa.
+- **Textos** (siempre terminan en «Llevad la amarilla por si acaso.»):
+  - Sin coincidencia: «Jugamos de negro (ellos de rojo).»
+  - Coincidencia y vamos en segundo lugar (visitante): «Coinciden colores: cambiamos nosotros, de amarillo.»
+  - Coincidencia y van ellos en segundo lugar: «Coinciden colores: cambia Litros de Mahou.»
+  - Coincidencia sin saber quién es local (`es_local` vacío en la tabla): «Coinciden colores con X: no consta quién va en segundo lugar.» No se inventa quién cambia.
+  - Rival sin color en `equipaciones_2026-27.json`: «Jugamos de negro (no tenemos el color de X).»
+- **Regla de quién cambia:** Bases 47 JDM, 5.11 (cambia el que figura en segundo lugar del calendario, el visitante), con local/visitante de la **tabla de eventos** (D151). Nuestra 1.ª es negra y la 2.ª amarilla (`regla_choque`); si algún día cambian, los textos salen del fichero.
+- **Colores parecidos** (`COLORES_PARECIDOS`, simétrica; un color siempre se parece a sí mismo): negro ~ azul oscuro, negro ~ azul (decisión de Iván por Nabuco TD), azul oscuro ~ azul, rojo ~ naranja, rojo ~ rosa, naranja ~ amarillo. Blanco no se parece a nada. Hay choque si la camiseta del rival se parece a nuestra 1.ª; la lista `camiseta_rival_choca` del fichero queda como dato derivado y la prueba exige que coincida con la tabla.
+- **Dobla (aviso al móvil con dos partidos):** cada línea con su equipo delante y «Llevad la amarilla por si acaso.» una sola vez al final.
+- **Fuera de alcance:** la web pública de GitHub Pages y las tarjetas de aviso (Panel, Mi zona, Liga) siguen enseñando solo los choques; el bloque «3 · SportEasy» de la salida lo quita el PR #3 (`feat/cierre-sporteasy`, D153 ampliada).
+- **Pruebas:** `pruebas:fuente-eventos` (en la referencia de `/calendario.ics` solo cambian las 18 líneas «Equipación:» de los choques, al texto nuevo), `pruebas:equipacion` (todos los textos, la tabla de parecidos en los dos sentidos y lo que no se parece, todos los partidos con línea), `pruebas:avisos-logica` (aviso al móvil, uno y dos partidos), `pruebas:avisos-pantallas` (línea en Scouting).

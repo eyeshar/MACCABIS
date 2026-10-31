@@ -11,6 +11,7 @@
     "historia:en-curso": "node scripts/historia_en_curso.js",
     "check:historia": "node scripts/historia_en_curso.js --check && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/test_historia_en_curso.js",
     "datos:sync": "node plataforma/scripts/sincronizar_equipacion.mjs",
+    "calendario:exportar": "node plataforma/scripts/exportar_calendario.mjs",
     "check:copias": "node plataforma/scripts/sincronizar_equipacion.mjs --check",
     "check:personas": "node scripts/build_personas.js --check",
     "completar:historia": "node scripts/completar_historia.js",

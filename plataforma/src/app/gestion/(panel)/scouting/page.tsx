@@ -3,6 +3,8 @@ import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { AvisoCaja, Camiseta } from "@/components/ProximoPartido";
 import { avisoContra, coloresDe } from "@/lib/equipacion";
+import { cargarFuente } from "@/lib/eventos/fuente";
+import { partidosCalendario } from "@/lib/publico";
 import {
   bonito, cargarLiga, codigoNuestro, dec, fechaCorta, mmss, nombreNuestro, proximoPartido, quienDobla,
   type JugadorLiga,
@@ -53,7 +55,8 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
     .sort((a, b) => b.pts - a.pts || b.segundos - a.segundos);
   const dobla = quienDobla(liga.jugadores);
   const prox = elegido.nuestro ? null : proximoPartido(calendario, hoy, codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo);
-  const aviso = prox ? avisoContra(codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo) : null;
+  // Aviso de equipacion: de la tabla de eventos (D151), como el Panel y la convocatoria.
+  const aviso = prox ? avisoContra(codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo, partidosCalendario(await cargarFuente())) : null;
   const suma = (k: "pts" | "p2a" | "p3a" | "tla" | "tli" | "faltas" | "segundos") => jugadores.reduce((s, j) => s + j[k], 0);
   const grupos = ["G1", "G2"];
 

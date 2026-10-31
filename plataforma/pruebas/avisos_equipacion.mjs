@@ -108,5 +108,23 @@ for (const [tipo, titulo] of [['nos_toca', 'NOS TOCA CAMBIAR'], ['cambian_ellos'
 }
 ok(av.length === 18 && av.filter((x) => x.tipo === 'nos_toca').length === 9 && av.filter((x) => x.tipo === 'cambian_ellos').length === 9, '18 avisos en la temporada: 9 nos toca cambiar + 9 cambian ellos', String(av.length));
 
+console.log('\n== Una sola fuente del calendario (D151)');
+{
+  // El calendario de los avisos es la tabla de eventos: equipacion.ts no importa ningun calendario; lo recibe.
+  const eqTs = fs.readFileSync(path.join(RAIZ, 'plataforma', 'src', 'lib', 'equipacion.ts'), 'utf8');
+  ok(!eqTs.split('\n').some((l) => /^import /.test(l) && /calendario/.test(l)), 'equipacion.ts no importa el calendario del repo');
+  // El JSON del repo es copia generada: la tabla (filas como las de las vistas publicas) da exactamente el mismo fichero.
+  const { calendarioDesdeTabla, diferencias } = await import('../scripts/exportar_calendario.mjs');
+  const C = { MDA: 'MdA', MDL: 'MdL' };
+  const filas = cal.partidos.filter((p) => !p.descansa).map((p) => ({ tipo: 'liga', equipo: C[p.equipo], jornada: p.jornada, rival: p.rival, es_local: p.local, fecha: p.fecha, inicio: p.hora ? `${p.hora}:00` : null, numero_pista: p.campo ? Number(p.campo) : null, estado: 'programado' }));
+  const descansos = cal.partidos.filter((p) => p.descansa).map((p) => ({ equipo: C[p.equipo], jornada: p.jornada, fecha: p.fecha }));
+  const gen = calendarioDesdeTabla(filas, descansos);
+  ok(JSON.stringify(gen) === JSON.stringify(cal), 'data/calendario_2026-27.json = lo que genera calendario:exportar desde la tabla (copia generada, no editada a mano)', diferencias(cal, gen).join('; ') || 'cabecera distinta');
+  // Un cambio de local/visitante en la tabla cambia el aviso sin tocar ningun fichero a mano (la rutina B ya no edita el JSON).
+  const vuelta = calendarioDesdeTabla(filas.map((f) => (f.equipo === 'MdL' && f.jornada === 6 ? { ...f, es_local: true } : f)), descansos);
+  ok(A.avisoPartido(equip, partido('MDL', 6)).tipo === 'nos_toca' && A.avisoPartido(equip, vuelta.partidos.find((p) => p.equipo === 'MDL' && p.jornada === 6)).tipo === 'cambian_ellos', 'MdL J6 pasa de «nos toca cambiar» a «cambian ellos» si la tabla lo pone en casa');
+  ok(calendarioDesdeTabla(filas.map((f) => (f.equipo === 'MdA' && f.jornada === 1 ? { ...f, estado: 'cancelado' } : f)), descansos).partidos.length === 43, 'un partido cancelado en la tabla no sale en la copia (como en la web)');
+}
+
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

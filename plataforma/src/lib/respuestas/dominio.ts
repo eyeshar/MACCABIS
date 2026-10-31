@@ -1,6 +1,8 @@
 // Respuestas del jugador en la web (D99): funciones PURAS (las usan las pantallas y las pruebas). Un "domingo" con dos
 // partidos se responde una sola vez (D99.3) pero se guarda por evento (D95).
 
+import { TEXTO_POR_DEFECTO_JUGADOR } from "../disponibilidad/porDefecto.ts";
+
 export type Resp = "va" | "duda" | "no" | "sin_responder";
 export type MotivoJugador = "lesion" | "trabajo" | "viaje" | "familia" | "otro";
 /** `horario` y `no_confirmo` (D141, lo pone el sistema al pasar una «duda» a «no va») son internos: el jugador nunca los elige. */
@@ -97,9 +99,11 @@ export function unidades(eventos: MiEvento[]): Unidad[] {
 }
 
 // ---------------------------------------------------------------- estado de una unidad para el jugador
-export type Estado = { clase: "vas" | "novas" | "duda" | "responde" | "ausente" | "cancelado"; texto: string; pendiente: boolean };
+export type Estado = { clase: "vas" | "novas" | "duda" | "responde" | "ausente" | "defecto" | "cancelado"; texto: string; pendiente: boolean };
 
-export function estadoDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAusencia[]): Estado {
+/** `porDefecto` (D152): los entrenos que a el le salen como «No vas (puesto por defecto)» (`misEntrenosPorDefecto`, con
+ *  `respuestaEfectiva`). No es pendiente: ya cuenta como «no va»; si viene, «Sí voy». */
+export function estadoDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAusencia[], porDefecto?: ReadonlySet<string>): Estado {
   if (u.eventos.every((e) => e.estado === "cancelado")) return { clase: "cancelado", texto: "Cancelado", pendiente: false };
   const rs = u.eventos.map((e) => respuestas.find((r) => r.evento_id === e.id) ?? null);
   const aus = ausenciaQueCubre(u.fecha, ausencias);
@@ -109,6 +113,7 @@ export function estadoDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAuse
     return { clase: "ausente", texto: `Ausente · ${TEXTO_MOTIVO_TODO[aus.motivo]}`, pendiente: false };
   }
   const vals = rs.map((_, i) => valor(i));
+  if (u.eventos.length === 1 && vals[0] === "sin_responder" && porDefecto?.has(u.eventos[0].id)) return { clase: "defecto", texto: TEXTO_POR_DEFECTO_JUGADOR, pendiente: false };
   if (vals.includes("sin_responder")) return { clase: "responde", texto: "Responde", pendiente: true };
   if (vals.every((v) => v === "va")) return { clase: "vas", texto: u.modo === "distintas" ? "Vas a los dos" : "Vas", pendiente: false };
   // Un domingo con dos partidos y respuestas distintas en cada uno (importadas, o puestas por un gestor): manda la de

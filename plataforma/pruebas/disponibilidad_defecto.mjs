@@ -10,7 +10,9 @@
 //   - NINGÚN jugador (ni anónimo, ni jugador, ni una cuenta sin ficha) lee las marcas ni las excepciones, ni escribe;
 //   - los gestores sí: marcan en jugadores_privado y quitan / devuelven el defecto de un entreno;
 //   - el rol de servicio (la tarea de avisos) NO puede leer jugadores_privado (niveles): solo marcas_disponibilidad()
-//     (migración 20261028233000, también reversible), que da el jugador y sus dos marcas; y lee las excepciones.
+//     (migración 20261028233000, también reversible), que da el jugador y sus dos marcas; y lee las excepciones;
+//   - D152: mi_disponibilidad_defecto() (migración 20261031150000, reversible) da a cada jugador SOLO su «no suele
+//     entrenar» y sus entrenos quitados; porDefectoMio decide con respuestaEfectiva lo que ve en su zona.
 //
 //   npm run pruebas:disponibilidad
 import fs from 'node:fs';
@@ -59,6 +61,18 @@ console.log('\n== La regla (funciones puras)');
   ok(d2.ausencias.length === 1 && D.efectivaEn({ tipo: 'entreno', id: 'e', fecha: '2026-11-04' }, 'a', 'sin_responder', d2).por === 'ausencia' && D.efectivaEn({ tipo: 'entreno', id: 'e', fecha: '2026-11-04' }, 'a', 'sin_responder', undefined).respuesta === 'sin_responder', 'efectivaEn: con las ausencias del gestor, «no»; sin ellas (pantallas de jugador), «sin responder»');
 }
 
+console.log('\n== Zona del jugador (D152): porDefectoMio, con respuestaEfectiva y solo sus datos');
+{
+  const ent = { tipo: 'entreno', id: 'e1', fecha: '2026-11-04' }, liga = { tipo: 'liga', id: 'p1', fecha: '2026-11-08' }, plan = { tipo: 'entreno', oficial: false, id: 'x', fecha: '2026-11-04' };
+  const MIO = { no_suele_entrenar: true, quitados: [] };
+  ok(D.porDefectoMio(ent, 'sin_responder', MIO, []) === true, 'con su marca y sin responder: «No vas (puesto por defecto)»');
+  ok(['va', 'duda', 'no'].every((r) => D.porDefectoMio(ent, r, MIO, []) === false), 'si respondió (va, duda o no), no');
+  ok(D.porDefectoMio(ent, 'sin_responder', MIO, [{ desde: '2026-11-01', hasta: null }]) === false && D.porDefectoMio(ent, 'sin_responder', MIO, [{ desde: '2026-11-01', hasta: '2026-11-05', borrada_en: '2026-10-30' }]) === true, 'con una ausencia que cubre el día, no (cuenta por la ausencia); una borrada no cuenta');
+  ok(D.porDefectoMio(ent, 'sin_responder', { no_suele_entrenar: true, quitados: ['e1'] }, []) === false && D.porDefectoMio({ ...ent, id: 'e2' }, 'sin_responder', { no_suele_entrenar: true, quitados: ['e1'] }, []) === true, 'quitado en ese entreno, no; en otro, sí');
+  ok(D.porDefectoMio(ent, 'sin_responder', { no_suele_entrenar: false, quitados: [] }, []) === false && D.porDefectoMio(ent, 'sin_responder', null, []) === false, 'sin la marca (o sin datos), no');
+  ok(D.porDefectoMio(liga, 'sin_responder', MIO, []) === false && D.porDefectoMio(plan, 'sin_responder', MIO, []) === false, 'en un partido o en un plan no oficial, no');
+  ok(D.TEXTO_POR_DEFECTO_JUGADOR === 'No vas (puesto por defecto)' && !/suele/i.test(D.TEXTO_POR_DEFECTO_JUGADOR), 'el texto del jugador no nombra la marca');
+}
 const pila = await arrancar();
 try {
   const { sql, url, anonKey } = pila;
@@ -116,6 +130,26 @@ try {
   await new Promise((r) => setTimeout(r, 1500));
   for (let i = 0; i < 40 && (await api('/entreno_defecto_quitado')).status === 404; i++) await new Promise((r) => setTimeout(r, 250));
 
+  console.log('\n== Migración de D152 (mi_disponibilidad_defecto): aditiva y reversible');
+  {
+    const MIG3 = '20261031150000_mi_disponibilidad_defecto';
+    const texto3 = fs.readFileSync(path.join(MIGS, `${MIG3}.sql`), 'utf8').replace(/--.*$/gm, '');
+    ok(fs.existsSync(path.join(MIGS, `${MIG3}.revertir.sql`)) && !/\bdrop\b|\btruncate\b|\bdelete\b|\bupdate\b|alter\s+table|create\s+policy|grant\s+select/i.test(texto3), 'solo crea la función (sin tocar tablas, políticas ni permisos de tablas) y tiene su .revertir.sql');
+    const fn3 = async () => (await sql`select to_regprocedure('public.mi_disponibilidad_defecto()') is not null fn,
+      coalesce(has_function_privilege('authenticated', to_regprocedure('public.mi_disponibilidad_defecto()'), 'execute'), false) a,
+      coalesce(has_function_privilege('anon', to_regprocedure('public.mi_disponibilidad_defecto()'), 'execute'), false) n,
+      (select count(*)::int from supabase_migrations.schema_migrations where version = '20261031150000') reg`)[0];
+    let f3 = await fn3();
+    ok(f3.fn && f3.a && !f3.n && f3.reg === 1, 'aplicada: la ejecuta authenticated y no anon', JSON.stringify(f3));
+    const pol = async () => JSON.stringify(await sql`select tablename, policyname from pg_policies where schemaname = 'public' and tablename in ('jugadores_privado', 'entreno_defecto_quitado') order by 1, 2`);
+    const polAntes = await pol();
+    await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${MIG3}.revertir.sql`), 'utf8')));
+    f3 = await fn3();
+    ok(!f3.fn && f3.reg === 0 && (await pol()) === polAntes, 'revertir: quita la función y su registro; las políticas, igual', JSON.stringify(f3));
+    await migrar(sql, { log: () => {} });
+    f3 = await fn3();
+    ok(f3.fn && f3.a && !f3.n && f3.reg === 1, 'y se vuelve a aplicar, limpia');
+  }
   console.log('\n== Cuentas y datos sintéticos');
   for (const [i, p] of ['sint-nse', 'sint-nap', 'sint-normal'].entries()) {
     await sql`insert into public.jugadores (person_id, nombre_oficial, nombre_visible, ficha_mda, ficha_mdl, email) values (${p}, ${'Sintetico, ' + i}, ${'Sint ' + i}, true, true, ${p + '@pruebas.local'})`;
@@ -178,6 +212,22 @@ try {
   console.log('\n== Devolver el defecto');
   r = await api(`/entreno_defecto_quitado?evento_id=eq.${entreno}&person_id=eq.sint-nse`, { metodo: 'DELETE', token: g.token });
   ok(r.status === 200 && r.datos?.length === 1 && (await sql`select count(*)::int n from public.entreno_defecto_quitado`)[0].n === 0, 'un gestor lo devuelve a «no va (por defecto)» (borra la excepción)', JSON.stringify(r));
+  console.log('\n== mi_disponibilidad_defecto() (D152): a cada jugador, solo lo suyo');
+  {
+    await sql`insert into public.entreno_defecto_quitado (evento_id, person_id, por_nombre) values (${entreno}, 'sint-nse', 'Gestor') on conflict do nothing`;
+    const mio = async (token) => api('/rpc/mi_disponibilidad_defecto', { metodo: 'POST', cuerpo: {}, token });
+    let m = await mio(marcado.token);
+    ok(m.status === 200 && m.datos?.no_suele_entrenar === true && m.datos.quitados.join() === entreno && Object.keys(m.datos).sort().join() === 'no_suele_entrenar,quitados', 'el marcado: su marca y su entreno quitado, y nada más (ni nivel, ni la otra marca)', JSON.stringify(m));
+    m = await mio(jugador.token);
+    ok(m.status === 200 && m.datos?.no_suele_entrenar === false && m.datos.quitados.length === 0, 'otro jugador: false y sin quitados (no ve los del marcado)', JSON.stringify(m));
+    m = await mio(intruso.token);
+    ok(m.status === 200 && m.datos?.no_suele_entrenar === false && m.datos.quitados.length === 0, 'una cuenta sin ficha: false', JSON.stringify(m));
+    m = await mio(g.token);
+    ok(m.status === 200 && m.datos?.no_suele_entrenar === false, 'un gestor sin ficha de jugador: false (no le da la de nadie)', JSON.stringify(m));
+    m = await mio(undefined);
+    ok(m.status >= 400, 'anónimo: no la ejecuta', String(m.status));
+    await sql`delete from public.entreno_defecto_quitado where person_id = 'sint-nse'`;
+  }
 } catch (err) {
   console.log(`  FALLO ${err.stack}`); fallos++;
 } finally {

@@ -75,6 +75,12 @@ export function textoPasoNoVa(unidades: string[]): Texto {
   };
 }
 
+/** (a) D152, el lunes a las 19:00: a quien le hemos puesto «no va (por defecto)» en un entreno. Habla de SU respuesta:
+ *  nunca nombra la marca. */
+export function textoNoVaPorDefecto(e: Pick<EventoTexto, "tipo" | "fecha">): Texto {
+  return { titulo: `${mayus(queEs(e))}: no vas`, cuerpo: `Te hemos puesto que no vas al ${queEs(e)}. Si vienes, cámbialo aquí.` };
+}
+
 /** (a) El mismo dia del entreno a las 10:00. */
 export function textoEntrenoHoy(e: EventoTexto): Texto {
   return { titulo: "Entreno hoy: ¿vas?", cuerpo: `${horas(e)} en ${e.sitio}. Aún no has respondido.`.replace(" en pista por confirmar", ", pista por confirmar") };

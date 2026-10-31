@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Responder from "@/components/respuestas/Responder";
+import SiVoy from "@/components/respuestas/SiVoy";
 import { ResponderPlan } from "@/app/planes/[id]/AccionesPlan";
 import {
   enlaceLugar, esPlan, estadoDe, fechaAgenda, fechaTarjeta, hhmm, lugarTexto, nombreCorto, restar20, TEXTO_TIPO, tituloDe,
@@ -7,14 +8,15 @@ import {
 } from "@/lib/respuestas/dominio";
 import { dudaAbierta } from "@/lib/avisos/horario";
 import { SPORTEASY_CALENDARIO } from "@/lib/web";
+import { TEXTO_POR_DEFECTO_JUGADOR } from "@/lib/disponibilidad/porDefecto";
 
 // Piezas del inicio personal y de la Agenda (D117): la tarjeta de «Te faltan N respuestas» y la fila de «Tu agenda».
 
 export type Convocatorias = { fecha: string; equipos: ("MdA" | "MdL")[] }[];
 
 /** Pastilla de estado de una unidad: Convocado, Vas, No vas, Duda, Sin responder (o Cancelado). */
-export function pastillaDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAusencia[], convocatorias: Convocatorias) {
-  const est = estadoDe(u, respuestas, ausencias);
+export function pastillaDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAusencia[], convocatorias: Convocatorias, porDefecto?: ReadonlySet<string>) {
+  const est = estadoDe(u, respuestas, ausencias, porDefecto);
   if (est.clase === "cancelado") return { clase: "cancelado", texto: "Cancelado" };
   if (u.tipo === "domingo") {
     const c = convocatorias.find((x) => x.fecha === u.fecha);
@@ -22,6 +24,7 @@ export function pastillaDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAu
   }
   if (est.clase === "vas") return { clase: "vas", texto: est.texto };
   if (est.clase === "duda") return { clase: "duda", texto: "Duda" };
+  if (est.clase === "defecto") return { clase: "novas", texto: est.texto };
   if (est.clase === "novas" || est.clase === "ausente") return { clase: "novas", texto: est.clase === "ausente" ? est.texto : "No vas" };
   return { clase: "responde", texto: "Sin responder" };
 }
@@ -40,12 +43,14 @@ export const tituloUnidad = (u: Unidad) => (u.tipo === "domingo" && u.eventos.le
 
 /** Una fila de «Tu agenda»: a la izquierda el dia y la hora en grande y la quedada en amarillo; a la derecha el titulo,
  *  la pastilla de estado y el sitio. Los planes llevan «Plan no oficial»; un entreno con grupos publicados, «Tu grupo». */
-export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, encendido }: {
+export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, encendido, porDefecto }: {
   u: Unidad; respuestas: MiRespuesta[]; ausencias: MiAusencia[]; convocatorias: Convocatorias; grupo?: { grupo: string; companeros: string[] } | null; encendido: boolean;
+  /** D152: entrenos que le salen como «No vas (puesto por defecto)». */
+  porDefecto?: ReadonlySet<string>;
 }) {
   const e = u.eventos[0];
   const h = horasDe(u);
-  const p = pastillaDe(u, respuestas, ausencias, convocatorias);
+  const p = pastillaDe(u, respuestas, ausencias, convocatorias, porDefecto);
   const plan = esPlan(e);
   // Apagado (fase puente) y sin respuesta: el estado de un evento oficial sale de SportEasy.
   const pastilla = !encendido && !plan && p.clase === "responde" ? { clase: "responde", texto: "Sin responder" } : p;
@@ -99,6 +104,22 @@ export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u
       ) : (
         <a className="boton boton-amarillo in-sporteasy" href={SPORTEASY_CALENDARIO} target="_blank" rel="noopener noreferrer" data-testid="responder-sporteasy">Responder en SportEasy</a>
       )}
+    </article>
+  );
+}
+
+/** D152: un entreno que le hemos puesto como «No vas (puesto por defecto)», con «Sí voy». Sin nombrar por que. */
+export function TarjetaPorDefecto({ u }: { u: Unidad }) {
+  const e = u.eventos[0];
+  const h = horasDe(u);
+  return (
+    <article className="in-pordefecto" data-testid="tarjeta-por-defecto">
+      <div className="in-pordefecto-que">
+        <Link href={u.url}><strong>{tituloUnidad(u)}</strong> · {fechaAgenda(u.fecha)}{h.inicio ? ` · ${h.inicio}` : ""}</Link>
+        <span className="in-pastilla in-p-novas">{TEXTO_POR_DEFECTO_JUGADOR}</span>
+        <span className="suave pequeno">Te hemos puesto que no vas. Si vienes, cámbialo aquí.</span>
+      </div>
+      <SiVoy eventoId={e.id} nombre={nombreCorto(e)} />
     </article>
   );
 }

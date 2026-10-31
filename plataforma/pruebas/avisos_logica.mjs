@@ -2,7 +2,8 @@
 // Recordatorios y horas de silencio (D99.6, D99.7) con la HORA FIJA SIMULADA, sin base de datos:
 //   lunes agrupado · martes a sin responder y a «duda» · miércoles del entreno · amistoso al crearlo y 24 h antes ·
 //   silencio y excepción de menos de 12 h · cambio de hora del 25/10/2026 · ausencia que cuenta como respondido ·
-//   «sin recordatorios» · nada con el interruptor apagado · textos de los avisos (sin motivos, niveles ni posiciones).
+//   «sin recordatorios» · nada con el interruptor apagado · textos de los avisos (sin motivos, niveles ni posiciones) ·
+//   el aviso «no va (por defecto)» al propio jugador (D152): único, y nunca si respondió, está ausente o no está invitado.
 //
 //   npm run pruebas:avisos-logica
 
@@ -318,5 +319,50 @@ console.log('\n== Disponibilidad por defecto (D146): «no suele entrenar» y «s
   ok(P.pendienteDe({ person_id: 'jon' }, entreno14, sinNada) === true && P.pendienteDe({ person_id: 'jon' }, mdaJ2, sinNada) === true, 'pendienteDe sin marcas: como siempre');
 }
 
+
+console.log('\n== Aviso «no va (por defecto)» al propio jugador (D152)');
+{
+  // Sintéticos (D39): «nse» y «nse2» no suelen entrenar; «nsesf» tampoco y no tiene ficha (fuera de un entreno «solo con ficha»).
+  const M1 = { no_suele_entrenar: true, nunca_partidos: false };
+  const NSE = { ...jug('nse', true, false), marcas: M1 };
+  const NSE2 = { ...jug('nse2', false, true), marcas: M1 };
+  const NSESF = { ...jug('nsesf', false, false), marcas: M1 };
+  const conMarcas = (ahora, extra = {}) => datos(ahora, { jugadores: [...JUG, NSE, NSE2, NSESF], ...extra });
+  const lunes = M('2026-10-12', '19:05');
+  const pd = (d) => P.avisosPorDefecto(d);
+  let r = pd(conMarcas(lunes));
+  const suyo = de(r, 'nse');
+  ok(suyo.length === 1 && suyo[0].titulo === 'Entreno del miércoles 14: no vas' && suyo[0].cuerpo === 'Te hemos puesto que no vas al entreno del miércoles 14. Si vienes, cámbialo aquí.', 'lunes 19:00: UN aviso «Te hemos puesto que no vas al entreno del miércoles 14. Si vienes, cámbialo aquí.»', JSON.stringify(suyo));
+  ok(suyo[0]?.clave === 'rec:defecto:e14:nse' && suyo[0].url === '/mi-zona/evento/e14' && suyo[0].eventos.join() === 'e14' && iso(suyo[0].programado_para) === '2026-10-12T17:00:00.000Z', 'clave única por entreno y persona, abre el entreno y sale a las 19:00 de Madrid');
+  ok(de(r, 'jon').length === 0 && de(r, 'edimil').length === 0 && r.every((x) => x.person_id.startsWith('nse')), 'a quien no tiene la marca no le llega este aviso');
+  ok(!/suele|marca|defecto/i.test(r.map((x) => x.titulo + x.cuerpo).join(' ')), 'el texto no nombra la marca (lo ve la pantalla de bloqueo)');
+  ok(pd(conMarcas(M('2026-10-12', '18:55'))).length === 0 && pd(conMarcas(M('2026-10-12', '22:05'))).length === 0, 'antes de las 19:00 nada, y pasado el margen tampoco');
+  ok(pd(conMarcas(M('2026-10-14', '10:05'))).length === 0, 'el día del entreno no se repite (solo el lunes)');
+  const otraVez = pd(conMarcas(M('2026-10-12', '19:20')));
+  ok(de(otraVez, 'nse').map((x) => x.clave).join() === 'rec:defecto:e14:nse', 'la tarea 15 minutos después da la MISMA clave: el registro (clave única) no lo vuelve a mandar');
+  const movido = { ...entreno14, fecha: '2026-10-21' };
+  ok(de(pd(conMarcas(M('2026-10-19', '19:05'), { eventos: [movido] })), 'nse')[0]?.clave === 'rec:defecto:e14:nse', 'si el entreno cambia de semana, la clave es la misma: nunca se repite');
+  ok(de(pd(conMarcas(M('2026-10-19', '19:05'))), 'nse').map((x) => x.clave).join() === 'rec:defecto:e21:nse', 'uno por entreno: el de la semana siguiente es otro aviso');
+  // Los tres casos sin aviso (y los de alrededor)
+  r = pd(conMarcas(lunes, { respuestas: [{ evento_id: 'e14', person_id: 'nse', respuesta: 'va' }, { evento_id: 'e14', person_id: 'nse2', respuesta: 'no' }] }));
+  ok(de(r, 'nse').length === 0 && de(r, 'nse2').length === 0, 'sin aviso si ya respondió («voy» o «no voy»)');
+  r = pd(conMarcas(lunes, { respuestas: [{ evento_id: 'e14', person_id: 'nse', respuesta: 'duda' }] }));
+  ok(de(r, 'nse').length === 0 && de(r, 'nse2').length === 1, 'ni con «duda»; a los demás sí');
+  r = pd(conMarcas(lunes, { ausencias: [{ person_id: 'nse', desde: '2026-10-13', hasta: '2026-10-15' }, { person_id: 'nse2', desde: '2026-10-01', hasta: null }] }));
+  ok(de(r, 'nse').length === 0 && de(r, 'nse2').length === 0, 'sin aviso si tiene una ausencia que cubre el día (también sin fecha de vuelta)');
+  r = pd(conMarcas(lunes, { ausencias: [{ person_id: 'nse', desde: '2026-10-13', hasta: '2026-10-15', borrada_en: '2026-10-11T10:00:00Z' }] }));
+  ok(de(r, 'nse').length === 1, 'una ausencia borrada no cuenta');
+  const fichaE = { ...entreno14, solo_con_ficha_en: 'Valdebernardo' };
+  r = pd(conMarcas(lunes, { eventos: [fichaE] }));
+  ok(de(r, 'nsesf').length === 0 && de(r, 'nse').length === 1, 'sin aviso si no está invitado (entreno «solo con ficha» y sin ficha); con ficha, sí');
+  ok(de(pd(conMarcas(lunes)), 'nsesf').length === 1, 'en un entreno sin esa regla, el que no tiene ficha sí lo recibe');
+  r = pd(conMarcas(lunes, { quitados: [{ evento_id: 'e14', person_id: 'nse' }] }));
+  ok(de(r, 'nse').length === 0 && de(P.planificar(conMarcas(lunes, { quitados: [{ evento_id: 'e14', person_id: 'nse' }] })), 'nse')[0]?.eventos.includes('e14'), 'si un gestor se lo quitó para ese entreno, no: le llega el «te falta» de siempre');
+  ok(pd({ ...conMarcas(lunes), encendidoDesde: null }).length === 0, 'con el interruptor apagado, nada');
+  ok(pd(conMarcas(lunes, { eventos: [{ ...entreno14, sin_recordatorios: true }, { ...mdaJ2 }] })).length === 0, 'ni en un entreno «sin recordatorios», ni en un partido');
+  ok(pd(conMarcas(lunes, { eventos: [{ ...entreno14, estado: 'cancelado' }, { ...entreno14, id: 'eplan', oficial: false }] })).length === 0, 'ni cancelado, ni en un plan no oficial');
+  const base = P.planificar(conMarcas(lunes));
+  ok(de(base, 'nse').length === 1 && !de(base, 'nse')[0].eventos.includes('e14') && base.every((x) => !x.clave.startsWith('rec:defecto')), 'el «te faltan» del lunes sigue sin el entreno y no lleva el aviso por defecto');
+}
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

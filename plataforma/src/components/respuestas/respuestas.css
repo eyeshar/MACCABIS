@@ -42,6 +42,10 @@
   cursor: pointer; background: transparent; touch-action: manipulation;
 }
 .rw-responder.grande .rw-btn { min-height: 56px; font-size: 17px; }
+/* «Sí voy» (D152): a quien le pusimos «No vas (puesto por defecto)» en un entreno. */
+.rw-sivoy { display: flex; flex-direction: column; gap: 8px; }
+.rw-sivoy .rw-btn { width: 100%; }
+.rw-sivoy.grande .rw-btn { min-height: 56px; font-size: 17px; }
 .rw-btn:disabled { opacity: 0.5; cursor: wait; }
 .rw-btn:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 2px; }
 .rw-btn-va { color: var(--rw-va); border-color: color-mix(in srgb, var(--rw-va) 55%, transparent); }

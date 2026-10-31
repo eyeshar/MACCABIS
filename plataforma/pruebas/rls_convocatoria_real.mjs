@@ -5,7 +5,8 @@
 //   - un jugador y un gestor con cuentas que YA existen, dentro de una transaccion READ ONLY que adopta su rol y claims.
 // Demuestra que ni un anonimo ni un jugador leen notas, niveles, datos privados, convocatorias (aprobadas o no) ni
 // cambios, ni escriben nada; y que mi_convocatoria solo devuelve convocatorias aprobadas y solo lo suyo. Nunca imprime
-// niveles ni notas: solo recuentos.
+// niveles ni notas: solo recuentos. D146: las marcas de disponibilidad; D152: mi_disponibilidad_defecto() solo da a cada
+// jugador su marca y sus entrenos quitados.
 //
 //   npm run pruebas:convocatoria-real
 
@@ -176,6 +177,36 @@ try {
     }
   }
 
+  console.log('\n== «No vas (puesto por defecto)» del propio jugador (D152, migración 20261031150000)');
+  const [m151] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261031150000'`;
+  if (!m151.n) {
+    const [f] = await sql`select to_regprocedure('public.mi_disponibilidad_defecto()') is not null fn`;
+    ok(!f.fn, '(aún no aplicada) y la función no existe');
+  } else {
+    const [f] = await sql`select has_function_privilege('authenticated', 'public.mi_disponibilidad_defecto()', 'execute') a, has_function_privilege('anon', 'public.mi_disponibilidad_defecto()', 'execute') n,
+      pg_get_functiondef('public.mi_disponibilidad_defecto()'::regprocedure) def`;
+    ok(f.a && !f.n, 'mi_disponibilidad_defecto(): la ejecutan los usuarios con sesión, no anónimo');
+    ok(/_mi_person_id\(\)/.test(f.def) && !/nivel|posicion|nota_|nunca_partidos|dobla|por_nombre/.test(f.def), 'solo lee lo de quien consulta: su «no suele entrenar» y sus entrenos quitados (sin niveles, la otra marca ni quién lo quitó)');
+    const rA = await api('/rpc/mi_disponibilidad_defecto', { metodo: 'POST', cuerpo: {} });
+    ok(rA.status >= 400, 'anónimo (HTTPS) NO la ejecuta', String(rA.status));
+    if (jug) {
+      // Lo esperado, antes de la transacción (una sola conexión). Nunca se imprime: solo si coincide.
+      const [esp] = await sql`select coalesce((select no_suele_entrenar from public.jugadores_privado where person_id = ${jug.person_id}), false) nse,
+        (select count(*)::int from public.entreno_defecto_quitado where person_id = ${jug.person_id}) q`;
+      await como(jug.id, async (tx) => {
+        const r = await intenta(tx, 'select public.mi_disponibilidad_defecto() d');
+        const d = r.ok ? r.r[0].d : null;
+        ok(!!d && Object.keys(d).sort().join() === 'no_suele_entrenar,quitados', 'un jugador: solo dos campos (su marca y sus quitados)', r.ok ? '' : r.error);
+        ok(!!d && d.no_suele_entrenar === esp.nse && d.quitados.length === esp.q, 'y son los suyos (coinciden con la base; no se imprimen)');
+      });
+    }
+    if (ges) {
+      await como(ges.user_id, async (tx) => {
+        const r = await intenta(tx, 'select public.mi_disponibilidad_defecto() d');
+        ok(r.ok && Object.keys(r.r[0].d).sort().join() === 'no_suele_entrenar,quitados', 'un gestor: lo mismo, solo sus dos campos', r.ok ? '' : r.error);
+      });
+    }
+  }
   const cuentas1 = (await sql`select count(*)::int n from auth.users`)[0].n;
   ok(cuentas0 === cuentas1, `no se ha creado ni borrado ninguna cuenta (${cuentas0} antes y después)`);
 } finally {

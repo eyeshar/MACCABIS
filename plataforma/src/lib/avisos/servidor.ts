@@ -3,7 +3,7 @@ import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pistaEfectiva, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { horaDeEnvio } from "./horario";
-import { avisosPasoNoVa, conAvisosDeDudas, inicioDe, invitados, pendienteDe, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
+import { avisosPasoNoVa, avisosPorDefecto, conAvisosDeDudas, inicioDe, invitados, pendienteDe, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
 import { TEXTO_PRUEBA, textoCambio, textoCancelacion, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
 
 // Envio de avisos al movil (D99.5): Web Push estandar con claves VAPID. Corre SOLO en el servidor con la clave de
@@ -181,8 +181,8 @@ async function cerrarDudas(sb: SupabaseClient, ahora: Date) {
   return Array.isArray(data) ? data.length : 0;
 }
 
-/** La tarea de cada 15 minutos: cierra las dudas que llegan al limite, recordatorios que tocan (con el aviso de las dudas),
- *  alertas a los gestores y envio de lo pendiente. */
+/** La tarea de cada 15 minutos: cierra las dudas que llegan al limite, recordatorios que tocan (con el aviso de las dudas y el
+ *  de «no va (por defecto)»), alertas a los gestores y envio de lo pendiente. */
 export async function ejecutarTarea(ahora = new Date()) {
   const sb = clienteServicio();
   const { encendido, desde } = await estadoInterruptor(sb);
@@ -198,6 +198,8 @@ export async function ejecutarTarea(ahora = new Date()) {
     { ...datos, encendidoDesde: encendido ? desde : null },
   );
   encolados += await encolar(sb, recordatorios.map((p) => ({ ...p, person_id: p.person_id })));
+  // D152: «Te hemos puesto que no vas al entreno…», uno por entreno (aparte: no se junta con el de las dudas).
+  if (encendido) encolados += await encolar(sb, avisosPorDefecto({ ...datos, encendidoDesde: desde }));
   encolados += await encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas, jugadores: base.jugadores }, ahora));
   if (encendido) encolados += await encolarAlertasGestores(sb, base, ahora);
   const envio = await enviarPendientes(sb, ahora);

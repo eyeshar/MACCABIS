@@ -130,7 +130,9 @@ try {
   // Pista «solo con ficha» (D148): columna calculada de eventos para PostgREST (security invoker). Solo la aprovechan los
   // gestores: un jugador no lee eventos ni pistas (RLS), asi que no le devuelve nada.
   const PISTAS = ['solo_con_ficha_en'];
-  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
+  // «No vas (puesto por defecto)» del propio jugador (D152): solo su marca y sus entrenos quitados (_mi_person_id dentro).
+  const DISPONIBILIDAD = ['mi_disponibilidad_defecto'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, ...DISPONIBILIDAD, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

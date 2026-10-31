@@ -10,7 +10,7 @@ import { madrid } from "@/lib/avisos/horario";
 import { miEnlace } from "@/lib/calendario/enlace";
 import { hoyMadrid } from "@/lib/dias";
 import {
-  cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas, respuestasWebEncendido,
+  cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas, misEntrenosPorDefecto, respuestasWebEncendido,
 } from "@/lib/respuestas/jugador";
 import { hhmm, unidades, type Unidad } from "@/lib/respuestas/dominio";
 import "@/components/inicio/inicio.css";
@@ -33,6 +33,7 @@ export default async function Agenda() {
     respuestasWebEncendido(), cargarMisEventos(hoy).catch(() => []), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
     cargarMiConvocatoria().catch(() => []), cargarMisGrupos(), origen(),
   ]);
+  const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias, encendido).catch(() => new Set<string>());
   const enlace = await miEnlace(supabase, zona.jugador.person_id, base).catch(() => null);
   const abierta = (u: Unidad) => u.eventos.some((e) => e.estado === "programado" && madrid(e.fecha, hhmm(e.inicio) ?? "00:00") > ahora);
   const lista = unidades(eventos).filter((u) => abierta(u) || u.eventos.every((e) => e.estado === "cancelado"));
@@ -54,7 +55,7 @@ export default async function Agenda() {
             <section key={mes} className="in-sec" aria-label={`${MESES[+mes.slice(5) - 1]} ${mes.slice(0, 4)}`}>
               <h2>{MESES[+mes.slice(5) - 1]}</h2>
               <div className="in-lista">
-                {us.map((u) => <FilaAgenda key={u.clave} u={u} respuestas={respuestas} ausencias={ausencias} convocatorias={convocatorias} grupo={grupoDe(u)} encendido={encendido} />)}
+                {us.map((u) => <FilaAgenda key={u.clave} u={u} respuestas={respuestas} ausencias={ausencias} convocatorias={convocatorias} grupo={grupoDe(u)} encendido={encendido} porDefecto={porDefecto} />)}
               </div>
             </section>
           ))}

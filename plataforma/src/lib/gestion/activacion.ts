@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { GrupoNum } from "@/components/numeros/Numeros";
 import type { JugadorBasico } from "@/lib/eventos/dominio";
 import { hrefJugador } from "@/lib/numeros/enlaces";
-import { mensajeFaltanEntrar, mensajeSinAvisos } from "./mensajesActivacion";
+import { mensajeFaltanEntrar, mensajePidieronNoEntraron, mensajeSinAvisos } from "./mensajesActivacion";
 
 /** Lo que muestra el recuadro «Respuestas en la web» y que se vuelve a pedir cada minuto (la pagina y la API lo comparten). */
 export type EstadoActivacion = {
@@ -17,7 +17,10 @@ export type ActivacionViva = {
   estado: EstadoActivacion;
   grupos: { entrada: GrupoNum[]; avisos: GrupoNum[] };
   mensajeAvisos: string;
+  /** A quien aun no ha pedido acceso. */
   mensajeEntrar: string;
+  /** A quien lo pidio y no llego a entrar (cuenta en auth.users sin last_sign_in_at, D157). */
+  mensajePidieron: string;
   /** Entrenadores activos: quedan fuera del total y del recuento («Con avisos: 13/27 jugadores»). `conAvisos` = cuantos de ellos tienen avisos. */
   entrenadores: { total: number; conAvisos: number };
   calculadoEn: string;
@@ -43,7 +46,9 @@ export async function cargarActivacionViva(supabase: SupabaseClient, js: Jugador
   const persona = (j: JugadorBasico) => ({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: sinFicha(j) });
   const personaEntrada = (j: JugadorBasico) => ({ ...persona(j), nota: [sinFicha(j), pidioCodigo.has(j.nombre_visible) ? "pidió código pero no llegó a entrar" : null].filter(Boolean).join(" · ") || null });
   const entrados = plantilla.filter((j) => !faltan.includes(j.nombre_visible));
-  const sinEntrar = plantilla.filter((j) => faltan.includes(j.nombre_visible));
+  const faltantes = plantilla.filter((j) => faltan.includes(j.nombre_visible));
+  const pidieron = faltantes.filter((j) => pidioCodigo.has(j.nombre_visible));
+  const sinPedir = faltantes.filter((j) => !pidioCodigo.has(j.nombre_visible));
   const con = plantilla.filter((j) => conAvisos.has(j.person_id));
   const sin = plantilla.filter((j) => !conAvisos.has(j.person_id));
   const entrenadores = js.filter((j) => j.activo && j.rol === "entrenador");
@@ -52,7 +57,8 @@ export async function cargarActivacionViva(supabase: SupabaseClient, js: Jugador
     grupos: {
       entrada: [
         { k: "entrados", etiqueta: "han entrado", n: entrados.length, tono: "ok", personas: entrados.map(persona) },
-        { k: "faltan", etiqueta: "faltan por entrar", n: sinEntrar.length, tono: "sin", personas: sinEntrar.map(personaEntrada) },
+        { k: "faltan", etiqueta: "no han pedido acceso", n: sinPedir.length, tono: "sin", personas: sinPedir.map(persona) },
+        { k: "pidieron", etiqueta: "lo pidieron y no terminaron", n: pidieron.length, tono: "duda", personas: pidieron.map(personaEntrada) },
       ],
       avisos: [
         { k: "con", etiqueta: "con avisos activados", n: con.length, tono: "ok", personas: con.map(persona) },
@@ -60,7 +66,8 @@ export async function cargarActivacionViva(supabase: SupabaseClient, js: Jugador
       ],
     },
     mensajeAvisos: mensajeSinAvisos(sin.map((j) => j.nombre_visible), web),
-    mensajeEntrar: mensajeFaltanEntrar(faltan, web),
+    mensajeEntrar: mensajeFaltanEntrar(sinPedir.map((j) => j.nombre_visible), web),
+    mensajePidieron: mensajePidieronNoEntraron(pidieron.map((j) => j.nombre_visible), web),
     entrenadores: { total: entrenadores.length, conAvisos: entrenadores.filter((j) => conAvisos.has(j.person_id)).length },
     calculadoEn: new Date().toISOString(),
   };

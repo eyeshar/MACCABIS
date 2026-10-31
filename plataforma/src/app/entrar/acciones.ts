@@ -25,7 +25,7 @@ export async function verificarCodigo(prev: EstadoCodigo, form: FormData): Promi
   if (!codigo) return { paso: "codigo", email, error: "Escribe el código que te hemos mandado." };
   const supabase = await clienteSesion();
   const { error } = await supabase.auth.verifyOtp({ email, token: codigo, type: "email" });
-  if (error) return { paso: "codigo", email, error: "Código incorrecto o caducado. Pide uno nuevo." };
+  if (error) return { paso: "codigo", email, error: "Código incorrecto o caducado. Pide otro con el botón de abajo." };
   redirect(await destinoTrasEntrar(supabase));
 }
 

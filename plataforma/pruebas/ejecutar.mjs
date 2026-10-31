@@ -254,6 +254,61 @@ try {
   await pAnon.getByText('Código incorrecto o caducado.').waitFor({ timeout: 5000 }).catch(() => {});
   ok(await pAnon.getByText('Código incorrecto o caducado.').isVisible(), 'codigo equivocado: rechazado, sigue sin sesion');
   await captura(pAnon, '02-codigo-incorrecto');
+  ok(await pAnon.getByTestId('pedir-otro-codigo').isVisible(), 'tras un código incorrecto hay un botón «Pedir otro código»');
+  await pAnon.getByTestId('pedir-otro-codigo').click();
+  await pAnon.getByText('Te hemos mandado un código').waitFor({ timeout: 10000 }).catch(() => {});
+  ok(await pAnon.getByText('Te hemos mandado un código').isVisible() && !!(await codigoDe(C.email)), '«Pedir otro código» manda uno nuevo sin volver a escribir el correo');
+  const contextoLimpio = async () => { const c = await navegador.newContext(movil); const pg = await c.newPage(); pg.on('pageerror', (e) => erroresJS.push(String(e))); return { c, pg }; };
+  // Un código de 6 dígitos vale en cualquier dispositivo (no depende del navegador donde se pidió el enlace): otro contexto sin nada previo.
+  { const { c, pg } = await contextoLimpio(); await entrarPorCodigo(pg, B.email); await pg.waitForURL(`${APP}/`, { timeout: 15000 }).catch(() => {});
+    ok(await pg.getByRole('heading', { name: `Hola, ${B.nombre_visible}` }).isVisible().catch(() => false), 'el código de 6 dígitos del correo entra desde un navegador sin sesión previa', pg.url()); await c.close(); }
+  await ctxAnon.clearCookies();
+
+  seccion('Enlace del correo (D157): token_hash, botón «Entrar» y un solo uso');
+  const nuevoEnlace = async (email, minutos = 10) => {
+    const t = `th-${Math.random().toString(36).slice(2)}${Date.now()}`;
+    await sql`insert into public._enlaces_pruebas (token_hash, email, expira) values (${t}, ${email}, now() + (${minutos} * interval '1 minute'))`;
+    return t;
+  };
+  const th = await nuevoEnlace(B.email);
+  const urlEnlace = `${APP}/auth/confirm?token_hash=${th}&type=email`;
+  const previo = await fetch(urlEnlace, { redirect: 'manual', headers: { 'user-agent': 'GoogleImageProxy' } });
+  const htmlPrevio = await previo.text();
+  ok(previo.status === 200 && /<button[^>]*>Entrar<\/button>/.test(htmlPrevio) && /method="post"/i.test(htmlPrevio), 'GET al enlace (lo que hace el prefetch de Gmail): enseña el botón «Entrar», no entra');
+  ok(!/set-cookie/i.test([...previo.headers.keys()].join(',')) && (await sql`select 1 from public._enlaces_pruebas where token_hash = ${th}`).length === 1, '…no pone cookies ni gasta el enlace (sigue valiendo)');
+  await fetch(urlEnlace); await fetch(urlEnlace);
+  ok((await sql`select 1 from public._enlaces_pruebas where token_hash = ${th}`).length === 1, 'varios GET seguidos tampoco lo gastan');
+  const { c: cN, pg: pN } = await contextoLimpio();
+  await pN.goto(urlEnlace);
+  await pN.getByTestId('confirmar-enlace').getByRole('button', { name: 'Entrar' }).click();
+  await pN.waitForURL(`${APP}/`, { timeout: 15000 }).catch(() => {});
+  ok(await pN.getByRole('heading', { name: `Hola, ${B.nombre_visible}` }).isVisible().catch(() => false), 'enlace abierto en un navegador SIN sesión previa (sin code_verifier): pulsa «Entrar» y entra', pN.url());
+  ok((await cN.cookies()).some((x) => x.name.startsWith('sb-')), 'la sesión queda en cookies');
+  await cN.close();
+  const { c: cR, pg: pR } = await contextoLimpio();
+  await pR.goto(urlEnlace);
+  await pR.getByTestId('confirmar-enlace').getByRole('button', { name: 'Entrar' }).click();
+  await pR.waitForURL(/\/entrar\?enlace=caducado/, { timeout: 15000 }).catch(() => {});
+  ok(await pR.getByTestId('aviso-enlace').isVisible().catch(() => false) && /ya se había usado/.test(await pR.getByTestId('aviso-enlace').innerText()) && /Pide otro código aquí/.test(await pR.getByTestId('aviso-enlace').innerText()), 'enlace ya usado: mensaje claro con «Pide otro código aquí»');
+  await captura(pR, '03-enlace-usado');
+  await pR.getByTestId('aviso-enlace').getByRole('link', { name: 'Pide otro código aquí' }).click();
+  await pR.getByLabel('Tu correo').fill(B.email);
+  await pR.getByRole('button', { name: 'Enviarme el código' }).click();
+  await pR.getByText('Código enviado a').waitFor({ timeout: 10000 }).catch(() => {});
+  ok(await pR.getByText('Código enviado a').isVisible(), '…y desde ahí pide otro código en el mismo sitio');
+  await cR.close();
+  const caducado = await nuevoEnlace(C.email, -5);
+  const { c: cC, pg: pC } = await contextoLimpio();
+  await pC.goto(`${APP}/auth/confirm?token_hash=${caducado}&type=email`);
+  await pC.getByTestId('confirmar-enlace').getByRole('button', { name: 'Entrar' }).click();
+  await pC.waitForURL(/\/entrar\?enlace=caducado/, { timeout: 15000 }).catch(() => {});
+  ok(await pC.getByTestId('aviso-enlace').isVisible().catch(() => false) && /caducado/.test(await pC.getByTestId('aviso-enlace').innerText()), 'enlace caducado: mensaje y a pedir otro código');
+  ok(await pC.getByRole('button', { name: 'Enviarme el código' }).isVisible(), '…con el botón para reenviar a la vista');
+  await cC.close();
+  const raro = await fetch(`${APP}/auth/confirm?token_hash=x&type=recovery`, { redirect: 'manual' });
+  ok(raro.status >= 300 && raro.status < 400 && (raro.headers.get('location') ?? '').includes('enlace=invalido'), 'tipo de enlace no permitido: a /entrar con aviso de enlace no válido');
+  const postRaro = await fetch(`${APP}/auth/confirm/entrar`, { method: 'POST', redirect: 'manual', body: new URLSearchParams({ token_hash: 'no-existe', type: 'email' }) });
+  ok(postRaro.status === 303 && (postRaro.headers.get('location') ?? '').includes('enlace=caducado'), 'POST con un token que no existe: 303 a /entrar con aviso, sin sesión');
 
   seccion('Gestor: entrar y abrir la campana');
   await entrarPorCodigo(pG, gestorEmail);

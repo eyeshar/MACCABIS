@@ -38,16 +38,19 @@ try {
   await pg.goto(`${APP}/gestion`);
   const tarjeta = await pg.getByTestId('tarjeta-activar').innerText();
   ok(/2\/\d+ jugadores ya han entrado en la web/.test(tarjeta), 'la tarjeta dice «2/N jugadores ya han entrado»', tarjeta.slice(0, 300));
-  await pg.getByTestId('entrada-numeros-faltan').click();
+  await pg.getByTestId('entrada-numeros-pidieron').click();
   const lista = await pg.getByTestId('entrada-numeros-lista').innerText();
-  ok(/Fernando T\.\s*pidió código pero no llegó a entrar/.test(lista), '«Faltan por entrar» lista a Fernando T. con «pidió código pero no llegó a entrar»', lista.slice(0, 200));
+  ok(/Fernando T\.\s*pidió código pero no llegó a entrar/.test(lista), '«Lo pidieron y no terminaron» lista a Fernando T. con «pidió código pero no llegó a entrar»', lista.slice(0, 200));
+  await pg.getByTestId('entrada-numeros-faltan').click();
+  ok(!/Fernando T./.test(await pg.getByTestId('entrada-numeros-lista').innerText()), '…y no sale en «no han pedido acceso» (D157)');
+  { const m = await pg.locator('.ev-mensaje', { hasText: 'llegó el correo' }).innerText(); ok(/^Hola, Fernando T\.: te llegó el correo pero no llegaste a entrar\. Pide el código otra vez en .+\/entrar y escribe los 6 números\.$/.test(m), 'mensaje a quien no terminó: singular, con «escribe los 6 números»', m); ok(!/Fernando T/.test(await pg.locator('.ev-mensaje', { hasText: 'aún no habéis entrado' }).innerText().catch(() => '')) && !/Fernando T/.test(await pg.locator('.ev-mensaje', { hasText: 'aún no has entrado' }).innerText().catch(() => '')), 'y Fernando T. no está en el mensaje de quien no ha pedido acceso'); }
   await pg.getByTestId('entrada-numeros-entrados').click();
   ok(!/Fernando T\./.test(await pg.getByTestId('entrada-numeros-lista').innerText()), 'y no sale en «han entrado»');
 
   console.log('\n== Panel (interruptor encendido, franja compacta)');
   await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
   await pg.goto(`${APP}/gestion`);
-  await pg.getByTestId('entrada-numeros-faltan').click();
+  await pg.getByTestId('entrada-numeros-pidieron').click();
   ok(/Fernando T\.\s*pidió código pero no llegó a entrar/.test(await pg.getByTestId('entrada-numeros-lista').innerText()), 'la franja también lo dice');
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;
 

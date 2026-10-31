@@ -399,6 +399,9 @@ console.log('\== Mensajes para copiar: singular / plural y la noche según D155'
   const e1 = MA.mensajeFaltanEntrar(['Fernando'], W), eN = MA.mensajeFaltanEntrar(['Fernando', 'Luis'], W);
   ok(/aún no has entrado/.test(e1) && /Entra una vez con tu correo/.test(e1) && !/habéis|Entrad/.test(e1), 'faltan por entrar, una persona: «aún no has entrado… Entra una vez»');
   ok(/aún no habéis entrado/.test(eN) && /Entrad una vez/.test(eN), 'faltan por entrar, varias: plural');
+  const p1 = MA.mensajePidieronNoEntraron(['Fernando'], W), pN = MA.mensajePidieronNoEntraron(['Fernando', 'Luis'], W);
+  ok(p1 === `Hola, Fernando: te llegó el correo pero no llegaste a entrar. Pide el código otra vez en ${W}/entrar y escribe los 6 números.`, 'lo pidieron y no terminaron, una persona: singular', p1);
+  ok(/^Hola, Fernando, Luis: os llegó el correo pero no llegasteis a entrar\. Pedid el código otra vez en .+\/entrar y escribid los 6 números\.$/.test(pN), 'lo pidieron y no terminaron, varias: plural', pN);
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

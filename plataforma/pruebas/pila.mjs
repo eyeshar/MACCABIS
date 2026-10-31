@@ -107,6 +107,8 @@ export async function arrancar({ log = () => {} } = {}) {
   // Tabla SOLO de pruebas (no va en ninguna migracion): guarda los codigos de
   // un solo uso que "manda" el doble de /otp, para que el test los lea.
   await sql`create table if not exists public._otp_pruebas (email text primary key, codigo text not null, expira timestamptz not null)`;
+  // Idem para los ENLACES del correo (token_hash, D157): un solo uso, como en GoTrue.
+  await sql`create table if not exists public._enlaces_pruebas (token_hash text primary key, email text not null, expira timestamptz not null)`;
 
   const exe = descargarPostgrest();
   const conf = path.join(dir, 'postgrest.conf');
@@ -177,6 +179,15 @@ export async function arrancar({ log = () => {} } = {}) {
     }
     if (req.method === 'POST' && u.pathname === '/verify') {
       const body = JSON.parse((await leerCuerpo(req)) || '{}');
+      if (body.token_hash) {
+        // verifyOtp({ type, token_hash }): el enlace del correo. Se gasta al canjearlo (solo el POST de la app lo canjea).
+        const [enl] = await sql`delete from public._enlaces_pruebas where token_hash = ${String(body.token_hash)} returning email, expira`;
+        if (!enl || new Date(enl.expira) < new Date()) return json(403, { code: 403, error_code: 'otp_expired', msg: 'Email link is invalid or has expired' });
+        let [usr] = await sql`select id, email, created_at from auth.users where lower(email) = ${enl.email}`;
+        if (!usr) [usr] = await sql`insert into auth.users (email) values (${enl.email}) returning id, email, created_at`;
+        await sql`update auth.users set last_sign_in_at = now() where id = ${usr.id}`;
+        return json(200, await sesionPara(usr));
+      }
       const email = String(body.email || '').toLowerCase();
       const [fila] = await sql`select codigo, expira from public._otp_pruebas where email = ${email}`;
       if (!fila || fila.codigo !== String(body.token || '') || new Date(fila.expira) < new Date()) {

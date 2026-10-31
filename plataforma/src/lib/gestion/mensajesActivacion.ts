@@ -15,3 +15,10 @@ export function mensajeFaltanEntrar(nombres: string[], web: string) {
     ? `Hola, ${nombres[0]}: aún no has entrado en la web de Maccabis. Entra una vez con tu correo (te llega un código) para tenerlo listo: ${web}/entrar. Si puedes, instálala en el móvil y activa los avisos: ${web}/avisos`
     : `Hola, ${nombres.join(", ")}: aún no habéis entrado en la web de Maccabis. Entrad una vez con vuestro correo (os llega un código) para tenerlo listo: ${web}/entrar. Si podéis, instaladla en el móvil y activad los avisos: ${web}/avisos`;
 }
+
+/** A quien pidio acceso (le llego el correo) pero no llego a entrar: que pida el codigo otra vez y escriba los numeros (D157). */
+export function mensajePidieronNoEntraron(nombres: string[], web: string) {
+  return nombres.length === 1
+    ? `Hola, ${nombres[0]}: te llegó el correo pero no llegaste a entrar. Pide el código otra vez en ${web}/entrar y escribe los 6 números.`
+    : `Hola, ${nombres.join(", ")}: os llegó el correo pero no llegasteis a entrar. Pedid el código otra vez en ${web}/entrar y escribid los 6 números.`;
+}

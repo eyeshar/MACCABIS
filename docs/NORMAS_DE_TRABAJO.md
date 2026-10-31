@@ -14,7 +14,7 @@
 ## 3. Automatización por navegador y por emulador ("me enseñas una vez, lo repito yo")
 - Las tareas recurrentes del club se automatizan con **Claude navegando el Chrome de Iván** (calendario, convocatoria) o **controlando un emulador Android** en su ordenador para las apps que no tienen web (actas, Afición FBM, D69), con la sesión de Iván iniciada, a ritmo humano y solo sobre datos del club. No se montan conexiones automáticas contra bases de datos ni APIs de terceros.
 - Ciclo de cada rutina: (1) sesión de aprendizaje con Iván, (2) procedimiento escrito en `docs/RUTINAS/<rutina>.md`, (3) 2 ejecuciones supervisadas, (4) **tarea programada** que Claude ejecuta sola en el ordenador de Iván.
-- **Leer y descargar**: sin pedir permiso. **Crear, modificar o enviar algo en nombre de Iván** (SportEasy, WhatsApp, publicar en la web): con su OK explícito, salvo que una regla escrita lo autorice (p. ej. publicar estadísticas si todo cuadra, D66).
+- **Leer y descargar**: sin pedir permiso. **Crear, modificar o enviar algo en nombre de Iván** (WhatsApp, publicar en la web): con su OK explícito, salvo que una regla escrita lo autorice (p. ej. la rutina A publica estadísticas si todo cuadra, D66; la rutina B aplica los cambios del calendario y avisa a los jugadores si no salta el freno, D154).
 - Requisito técnico: ordenador encendido; Chrome abierto con la extensión de Claude y la sesión de cada web iniciada; para la rutina A, Android Studio con el emulador y la sesión de Google Play/Afición FBM iniciada (D69).
 - **Alcance de las herramientas en el Chrome y el emulador de Iván**: Claude solo las configura y usa dentro del proyecto Maccabis. Nunca toca nada del entorno de Tres Cantos (TCPC), aunque comparta el mismo ordenador (D67).
 
@@ -49,8 +49,7 @@
 Prompts para Code en un único bloque · los docs del repo son la fuente de verdad · nunca dar algo por hecho sin verificar (git, pruebas) · mockup aprobado antes de construir · cambios de esquema directamente en el Supabase real, siempre con las protecciones de §10 (D111; ya no hay «staging antes de producción») · una sesión, un worktree (§11, D114) · cierre exhaustivo de bloque · no inventar datos deportivos · privacidad de adultos de primer orden · niveles de jugador confidenciales (D39) · ninguna clave privada en el chat ni en el repositorio.
 
 ## 8. SportEasy
-- Se mantiene **completo como respaldo hasta que acabe la suscripción (septiembre de 2027)**. No se quita antes.
-- La plataforma lo sustituye **función a función**. Una función pasa a la plataforma cuando ha funcionado **3 jornadas seguidas sin arreglos a mano** y Iván lo aprueba. Mientras tanto, nunca se pide a los jugadores lo mismo en dos sitios.
+- **Derogada por D153 (31/10/2026):** SportEasy ya no se usa para nada; ninguna rutina lee ni escribe en él. _(Decía: respaldo completo hasta septiembre de 2027, D64, y sustitución función a función.)_
 
 ## 9. Publicación automática de estadísticas
 - La rutina A (actas y estadísticas) **publica sola** cuando todo cuadra (puntos del boxscore = marcador del acta), y avisa a Iván de lo publicado. **Si algo no cuadra, no publica y avisa** del motivo para que Iván decida. Ver D66.

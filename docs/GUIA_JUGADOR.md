@@ -74,7 +74,7 @@ Domingos con dos partidos. Si tienes ficha en MdA y MdL, respondes una vez por d
 
 Quién va. En cada evento ves cuántos van, dudan, no van y no han contestado. Pulsa un número para ver los nombres. Pulsando el número de «no han contestado» ves quiénes faltan por responder.
 
-Recordatorios. Si no respondes, te avisamos el lunes a las 19:00 (todo lo de la semana en un aviso), el martes a las 10:00 para el partido y el mismo día a las 10:00 para el entreno. Nunca entre las 22:30 y las 8:30.
+Recordatorios. Si no respondes, te avisamos el lunes a las 19:00 (todo lo de la semana en un aviso), el martes a las 10:00 para el partido y el mismo día a las 10:00 para el entreno. Nunca entre las 22:30 y las 8:00.
 
 ## Ausencias por periodo
 

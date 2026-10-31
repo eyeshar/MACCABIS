@@ -6,7 +6,7 @@ import { exigirGestor } from "@/lib/sesion";
 import { hoyMadrid } from "@/lib/dias";
 import { cargarEvento, cargarEventos, cargarJugadores, cargarPistas, TEMPORADA } from "@/lib/eventos/datos";
 import {
-  describirCambios, deLaSerieDesde, fechaDMA, hhmm, juntarCambios, pistaEfectiva, quedadaPorDefecto, resumenCopia, resumenCotejo, sumarDias,
+  describirCambios, deLaSerieDesde, fechaDMA, hhmm, juntarCambios, pistaEfectiva, quedadaPorDefecto, resumenCotejo, sumarDias,
   type CamposEditables, type FilaCotejo, type Respuesta, type EquipoEvento, type EstadoPista, type EventoFila, type Pista, type TipoEvento,
 } from "@/lib/eventos/dominio";
 import { avisarCambioEvento, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/servidor";
@@ -17,7 +17,8 @@ import {
 } from "@/lib/eventos/importador";
 
 // Todas las acciones usan la sesion del gestor: la base (RLS + is_gestor) decide si se puede. Nadie borra: un evento se
-// CANCELA (D94). Cada cambio deja el evento "pendiente de copiar" a SportEasy, con la descripcion de lo que cambia.
+// CANCELA (D94). Cada cambio apunta su descripcion en `sporteasy_cambio` (columna de la fase puente, D94; SportEasy ya no se
+// usa, D153): de ahi sale el mensaje de WhatsApp de la ficha del evento.
 
 export type Estado = { error?: string } | null;
 const TIPOS: TipoEvento[] = ["entreno", "liga", "amistoso", "torneo", "interno", "quedada", "pachanga", "otro"];
@@ -160,9 +161,15 @@ export async function guardarEvento(id: string, _prev: Estado, f: FormData): Pro
     if (visible && o.fecha <= sumarDias(hoyMadrid(), AVISAR_DIAS)) avisados.push({ id: o.id, cambiaDia: actual.fecha !== aplicar.fecha });
   }
   let n = 0;
-  for (const a of avisados) n += (await avisarCambioEvento(a.id, "cambio", a.cambiaDia)).avisados;
+  let sale: Date | null = null;
+  for (const a of avisados) {
+    const r = await avisarCambioEvento(a.id, "cambio", a.cambiaDia);
+    n += r.avisados;
+    if (r.avisados && "programado" in r && r.programado && r.programado > new Date()) sale = r.programado;
+  }
   refrescar();
-  redirect(`/gestion/eventos/${id}?guardado=${alcance === "siguientes" ? `serie-${objetivos.length}` : "cambio"}${avisar ? `&avisados=${n}` : ""}`);
+  // `sale`: solo si el aviso espera a que acabe la franja de noche (22:30-08:00, D155); si no, ha salido ya.
+  redirect(`/gestion/eventos/${id}?guardado=${alcance === "siguientes" ? `serie-${objetivos.length}` : "cambio"}${avisar ? `&avisados=${n}${sale ? `&sale=${sale.toISOString()}` : ""}` : ""}`);
 }
 
 // ---------------------------------------------------------------- cancelar y restablecer
@@ -181,27 +188,14 @@ export async function cancelarEvento(id: string, alcance: "este" | "siguientes",
     }).eq("id", o.id);
     if (error) throw new Error(error.message);
   }
-  // Cancelar avisa a los invitados (D99.9) con «respuestas en la web» encendido (apagado no sale nada: sigue la cola de
-  // SportEasy). En una serie, solo los de las dos proximas semanas.
+  // Cancelar avisa a los invitados (D99.9) con «respuestas en la web» encendido. En una serie, solo los de las dos
+  // proximas semanas.
   if (!restablecer) {
     const limite = sumarDias(hoyMadrid(), AVISAR_DIAS);
     for (const o of objetivos) if (o.fecha >= hoyMadrid() && o.fecha <= limite) await avisarCambioEvento(o.id, "cancelacion", false);
   }
   refrescar();
   redirect(`/gestion/eventos/${id}?guardado=${restablecer ? "restablecido" : "cancelado"}${objetivos.length > 1 ? `-${objetivos.length}` : ""}`);
-}
-
-// ---------------------------------------------------------------- copia a SportEasy
-/** "Marcar como copiado": lo usa Claude tras copiar el evento a SportEasy con el OK de Ivan. */
-export async function marcarCopiado(f: FormData) {
-  const { supabase } = await exigirGestor();
-  const ids = new Set(f.getAll("id").map(String).filter(Boolean));
-  // «Entrenos de la serie» (carga inicial sin confirmar): se resuelven aqui, con el mismo criterio que la tarjeta.
-  if (f.get("serie")) for (const e of resumenCopia(await cargarEventos(supabase), hoyMadrid()).deSerie) ids.add(e.id);
-  if (!ids.size) return;
-  const { error } = await supabase.from("eventos").update({ sporteasy_estado: "copiado", sporteasy_cambio: null, sporteasy_copiado_en: new Date().toISOString() }).in("id", [...ids]);
-  if (error) throw new Error(error.message);
-  refrescar();
 }
 
 // ---------------------------------------------------------------- pistas
@@ -283,7 +277,13 @@ export type ResultadoCalendario = {
   lineas: number; nuestras: number; ajenas: number; iguales: number;
   errores: { n: number; crudo: string; error: string }[];
   cambios: CambioCalendario[]; senales: Senal[];
-  aplicado?: { aceptadas: number; ignoradas: number; cambiosEn: string[]; avisados?: number | null };
+  aplicado?: {
+    aceptadas: number; ignoradas: number; cambiosEn: string[]; avisados?: number | null;
+    /** Si el aviso espera a la franja de noche (22:30-08:00, D155): cuando sale (ISO). Sin esto, ha salido ya. */
+    sale?: string | null;
+    /** Partidos cambiados de los que no sale aviso (ya jugados) o por que no sale ninguno (avisos sin configurar). */
+    sinAviso?: string[];
+  };
 };
 
 async function compararConLaBase(textoPegado: string) {
@@ -304,7 +304,9 @@ export async function analizarCalendario(textoPegado: string): Promise<Resultado
   return aResultado(comp);
 }
 
-/** Aplica SOLO los cambios aceptados (por su id) y registra la importacion. Lo aceptado queda pendiente de copiar. */
+/** Aplica SOLO los cambios aceptados (por su id) y registra la importacion. «Aplicar y avisar» (D103, D155) avisa de
+ *  cada partido cambiado que no se ha jugado, sea cuando sea (no solo los de las dos proximas semanas: cada linea es un
+ *  partido concreto, no una serie), con la franja de noche. */
 export async function aplicarCalendario(textoPegado: string, aceptados: string[], avisar = false): Promise<ResultadoCalendario> {
   const { supabase, nombre, user, eventos, comp } = await compararConLaBase(textoPegado);
   const elegidos = comp.cambios.filter((c) => aceptados.includes(c.id));
@@ -312,7 +314,9 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
   for (const c of elegidos) porEvento.set(c.eventoId, [...(porEvento.get(c.eventoId) ?? []), c]);
   const aplicadosEn: string[] = [];
   const porAvisar: { id: string; cambiaDia: boolean }[] = [];
+  const sinAviso: string[] = [];
   let avisados = 0;
+  let sale: Date | null = null;
   for (const [eventoId, cs] of porEvento) {
     const e = eventos.find((x) => x.id === eventoId);
     if (!e) continue;
@@ -340,9 +344,15 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
     if (error) throw new Error(`No se pudo aplicar ${e.clave}: ${error.message}`);
     aplicadosEn.push(`${e.equipo} J${e.jornada}`);
     const fechaNueva = (cambio.fecha as string | undefined) ?? e.fecha;
-    if (visible && fechaNueva >= hoyMadrid() && fechaNueva <= sumarDias(hoyMadrid(), AVISAR_DIAS)) porAvisar.push({ id: eventoId, cambiaDia: "fecha" in cambio });
+    if (visible && fechaNueva >= hoyMadrid()) porAvisar.push({ id: eventoId, cambiaDia: "fecha" in cambio });
+    else if (visible) sinAviso.push(`${e.equipo} J${e.jornada} (ya jugado)`);
   }
-  for (const a of porAvisar) avisados += (await avisarCambioEvento(a.id, "cambio", a.cambiaDia)).avisados;
+  for (const a of porAvisar) {
+    const r = await avisarCambioEvento(a.id, "cambio", a.cambiaDia);
+    avisados += r.avisados;
+    if (r.motivo === "sin_configurar" || r.motivo === "apagado") sinAviso.push(r.motivo === "apagado" ? "«respuestas en la web» apagado" : "avisos sin configurar en el servidor");
+    if (r.avisados && "programado" in r && r.programado && r.programado > new Date()) sale = r.programado;
+  }
   await supabase.from("importaciones").insert({
     tipo: "calendario", por_user_id: user.id, por_nombre: nombre, lineas: comp.lineas, validas: comp.nuestras,
     aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, bloqueadas: comp.errores.length,
@@ -350,7 +360,10 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
   });
   refrescar();
   const re = await compararConLaBase(textoPegado);
-  return { ...aResultado(re.comp), aplicado: { aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, cambiosEn: aplicadosEn, avisados: avisar ? avisados : null } };
+  return { ...aResultado(re.comp), aplicado: {
+    aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, cambiosEn: aplicadosEn,
+    avisados: avisar ? avisados : null, sale: sale?.toISOString() ?? null, sinAviso: [...new Set(sinAviso)],
+  } };
 }
 
 // ---------------------------------------------------------------- importar: respuestas y ausencias de SportEasy

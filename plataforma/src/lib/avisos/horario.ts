@@ -30,29 +30,38 @@ export const sumarDias = (f: string, n: number) => { const x = new Date(`${f}T12
 export const diaSemana = (f: string) => (new Date(`${f}T12:00:00Z`).getUTCDay() + 6) % 7;
 export const lunesDe = (f: string) => sumarDias(f, -diaSemana(f));
 
-// ---------------------------------------------------------------- horas de silencio (D99.7)
+// ---------------------------------------------------------------- horas de silencio (D99.7, D155)
+// Los avisos salen en el momento salvo entre las 22:30 y las 08:00 de Madrid; lo generado en esa franja sale a las 08:00.
+// Siempre con la hora de Madrid del instante (nunca la del servidor, que en Vercel es UTC).
 export const SILENCIO_DESDE = 22 * 60 + 30; // 22:30
-export const SILENCIO_HASTA = 8 * 60 + 30; // 08:30
+export const SILENCIO_HASTA = 8 * 60; // 08:00
+const FIN_SILENCIO = "08:00";
 
 export function enSilencio(t: Date) {
   const m = enMadrid(t).minutos;
   return m >= SILENCIO_DESDE || m < SILENCIO_HASTA;
 }
 
-/** Fin del silencio en el que cae t: las 08:30 de ese dia (de madrugada) o del siguiente (de noche). */
+/** Fin del silencio en el que cae t: las 08:00 de ese dia (de madrugada) o del siguiente (de noche). */
 export function finDelSilencio(t: Date) {
   const m = enMadrid(t);
-  return madrid(m.minutos >= SILENCIO_DESDE ? sumarDias(m.fecha, 1) : m.fecha, "08:30");
+  return madrid(m.minutos >= SILENCIO_DESDE ? sumarDias(m.fecha, 1) : m.fecha, FIN_SILENCIO);
 }
 
 const DOCE_HORAS = 12 * 3600 * 1000;
 
-/** Cuando sale de verdad un aviso que "toca" en t: fuera del silencio, en t; dentro, a las 08:30, salvo que el evento
+/** Cuando sale de verdad un aviso que "toca" en t: fuera del silencio, en t; dentro, a las 08:00, salvo que el evento
  *  empiece en menos de 12 horas (tiempo real, no de reloj): entonces en t. */
 export function horaDeEnvio(t: Date, inicioEvento: Date | null) {
   if (!enSilencio(t)) return t;
   if (inicioEvento && inicioEvento.getTime() - t.getTime() < DOCE_HORAS) return t;
   return finDelSilencio(t);
+}
+
+/** Para las pantallas de gestion, cuando un aviso espera a la franja de noche: "de noche: sale el 01/11 a las 08:00". */
+export function textoSale(t: Date) {
+  const m = enMadrid(t);
+  return `de noche: sale el ${m.fecha.slice(8, 10)}/${m.fecha.slice(5, 7)} a las ${m.hora}`;
 }
 
 // ---------------------------------------------------------------- dudas con hora limite (D141)
@@ -75,8 +84,8 @@ export function limiteDudas(e: { tipo: string; fecha: string; inicio: string | n
 export const dudaAbierta = (e: Parameters<typeof limiteDudas>[0], ahora: Date) => ahora.getTime() < limiteDudas(e).getTime();
 
 /** Cuando sale el aviso de «te quedan hasta las HH:MM» a quien siga en «duda»: las 12:00 del dia del limite; si el limite es
- *  antes de las 13:00, una hora antes del limite pero nunca antes de las 08:30 (fin del silencio); null si ni asi cabe
- *  (limite antes de las 09:30 pasado el silencio: no hay aviso previo, solo el paso a «no va»). */
+ *  antes de las 13:00, una hora antes del limite pero nunca antes de las 08:00 (fin del silencio); null si ni asi cabe
+ *  (limite antes de las 09:00 pasado el silencio: no hay aviso previo, solo el paso a «no va»). */
 export function avisoDeDudas(limite: Date): Date | null {
   const l = enMadrid(limite);
   if (l.minutos >= 13 * 60) return madrid(l.fecha, "12:00");

@@ -11,7 +11,7 @@
 //   - D146: tampoco a quien «no suele entrenar» en un entreno (cuenta como «no va (por defecto)», salvo que un gestor se lo
 //     quitara para ese entreno) ni a quien es «nunca a partidos» en un partido.
 //   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo, ni con el interruptor apagado.
-//   - Horas de silencio (22:30–8:30): sale a las 8:30 salvo que el evento empiece en menos de 12 h.
+//   - Horas de silencio (22:30–8:00, D155): sale a las 8:00 salvo que el evento empiece en menos de 12 h.
 //   - D152: el lunes a las 19:00, a quien le sale un entreno como «no va (por defecto)», UN aviso por entreno
 //     («Te hemos puesto que no vas…»; avisosPorDefecto). Nunca se repite (clave por entreno y persona).
 

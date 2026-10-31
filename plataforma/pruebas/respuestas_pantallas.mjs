@@ -395,10 +395,20 @@ try {
   await importar(conAvisar, /^Aplicar y avisar/);
   const avJ2 = await sql`select titulo, cuerpo from public.avisos_registro where tipo = 'cambio' and ${E.mdaJ2} = any(eventos)`;
   ok(avJ2.length > 10 && avJ2.every((a) => a.titulo === `Cambio en el partido del ${diaNumero(F('2026-10-18'))}` && /11:30/.test(a.cuerpo)), `«Aplicar y avisar»: aviso de cambio a los invitados del MdA (${avJ2.length})`, JSON.stringify(avJ2[0]));
+  // D155 (bug del 31/10 a las 17:09): el resultado dice a cuántos y si ha salido ya o, de 22:30 a 08:00, cuándo sale.
+  const txtAviso = await pg.getByTestId('aviso-movil').innerText();
+  ok(/Aviso al móvil para \d+ jugadores \((enviado ya|de noche: sale el \d\d\/\d\d a las 08:00)\)/.test(txtAviso) && !txtAviso.includes('08:30'), 'el resultado dice a cuántos jugadores y «enviado ya» (o, de noche, «sale el dd/mm a las 08:00»), nunca un «08:30» fijo', txtAviso);
+  // Un partido a más de dos semanas también avisa (la J5 MdA del 31/10: 15/11 → 20/12, fuera de los 14 días, no avisó).
+  const lejos = conAvisar.find((l) => { const m = l.match(/^G1;(\d+);[^;]*;[^;]+;(\d\d)\/(\d\d)\/(\d{4});(\d\d:\d\d);/); return m && new Date(`${m[4]}-${m[3]}-${m[2]}T12:00:00Z`) > new Date(Date.now() + 20 * 864e5); });
+  const jLejos = +lejos.split(';')[1];
+  const idLejos = await id(`mda-j${jLejos}`);
+  await importar(conAvisar.map((l) => (l === lejos ? l.replace(/;(\d\d:\d\d);/, (_, h) => `;${h === '13:30' ? '12:30' : '13:30'};`) : l)), /^Aplicar y avisar/);
+  const avLejos = (await sql`select count(*)::int n from public.avisos_registro where tipo = 'cambio' and ${idLejos} = any(eventos)`)[0].n;
+  ok(avLejos > 10, `«Aplicar y avisar» en un partido a más de dos semanas (MdA J${jLejos}): también avisa (${avLejos})`);
   const [vj2] = await sql`select cambio_visible, inicio::text from public.eventos where id = ${E.mdaJ2}`;
   ok(vj2.inicio.startsWith('11:30') && vj2.cambio_visible?.campos?.includes('hora') && /10:15/.test(vj2.cambio_visible.antes), 'y la línea amarilla «Cambió la hora … (antes: 10:15)»', JSON.stringify(vj2.cambio_visible));
 
-  console.log('\n== Otro gestor (Carlos): la tarjeta del interruptor en solo lectura; copia a SportEasy sin notificar');
+  console.log('\n== Otro gestor (Carlos): la tarjeta del interruptor en solo lectura; sin tarjeta de copia a SportEasy (D153)');
   const ctxCg = await nav.newContext({ viewport: { width: 1280, height: 900 } });
   const pcg = await nuevaPagina(ctxCg);
   await entrar(pcg, 'carlos-gestor@pruebas.local');
@@ -409,7 +419,7 @@ try {
   await pg.getByTestId('mas-opciones').locator('summary').click();
   ok(await visto(pg.getByTestId('tarjeta-activar')) && !(await pg.getByTestId('solo-lectura').count()) && await pg.getByRole('button', { name: 'Desactivar' }).isEnabled(), 'Iván sí la maneja');
   await pcg.goto(`${APP}/gestion/eventos`);
-  ok(/Selección manual/.test(await pcg.getByTestId('copia-sin-notificar').innerText()) && /«Enviar una notificación» apagado/.test(await pcg.getByTestId('copia-sin-notificar').innerText()), 'tarjeta «Copia a SportEasy»: formulario completo, «Selección manual» y sin notificación (D104)');
+  ok(await visto(pcg.getByTestId('tabla-eventos')) && !(await pcg.getByTestId('copia-sin-notificar').count()) && !(await pcg.getByTestId('copia-sporteasy').count()), 'Eventos ya no tiene la tarjeta «Copia a SportEasy» (D153)');
   await ctxCg.close();
 
   console.log('\n== Importar respuestas ENCENDIDO: todo el curso de una pasada, manda la web y resumen para cotejar');

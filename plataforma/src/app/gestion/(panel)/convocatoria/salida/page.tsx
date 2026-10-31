@@ -97,7 +97,7 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
               )}
             </div>
           )}
-          <p className="pequeno suave" style={{ margin: 0 }}>No depende de «respuestas en la web»: avisar de la convocatoria no pide respuestas (D127). Respeta las horas de silencio (22:30–8:30) y nunca manda dos veces lo mismo. En su inicio y en la página del domingo, cada convocado ve con quién juega; nadie ve niveles.</p>
+          <p className="pequeno suave" style={{ margin: 0 }}>No depende de «respuestas en la web»: avisar de la convocatoria no pide respuestas (D127). Respeta las horas de silencio (22:30–8:00) y nunca manda dos veces lo mismo. En su inicio y en la página del domingo, cada convocado ve con quién juega; nadie ve niveles.</p>
         </section>
 
         <section className="gs-bloque" aria-labelledby="t-se" data-testid="cv-salida-sporteasy">

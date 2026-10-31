@@ -159,7 +159,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
         )}
         <p className="in-nota" data-testid="regla-recordatorios">
           {encendido
-            ? "Si no respondes, te lo recordamos: el lunes a las 19:00 (todo lo de la semana en un aviso), los entrenos también el mismo día a las 10:00 y los partidos el martes a las 10:00. Nunca de 22:30 a 8:30."
+            ? "Si no respondes, te lo recordamos: el lunes a las 19:00 (todo lo de la semana en un aviso), los entrenos también el mismo día a las 10:00 y los partidos el martes a las 10:00. Nunca de 22:30 a 8:00."
             : "Por ahora, los partidos y entrenos se responden en SportEasy y los recordatorios llegan de allí. Los planes no oficiales se responden aquí."}
           {" "}Los planes, solo si quien lo organiza lo pide: un aviso un día antes.
         </p>

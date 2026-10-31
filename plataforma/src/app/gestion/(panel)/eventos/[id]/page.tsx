@@ -5,8 +5,8 @@ import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import { lineaEquipacion } from "@/lib/equipacion";
 import { convocadosDe, diaCorto } from "@/lib/eventos/dominio";
 import { avisoDeEvento, cargarEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
-import { cambioParaVer, deLaSerieDesde, mensajeWhatsApp, noSeCopia, pistaEfectiva, textoTipo, tituloEvento } from "@/lib/eventos/dominio";
-import { fechaHora } from "@/lib/fechas";
+import { cambioParaVer, deLaSerieDesde, mensajeWhatsApp, pistaEfectiva, textoTipo, tituloEvento } from "@/lib/eventos/dominio";
+import { textoSale } from "@/lib/avisos/horario";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import FormularioEvento from "../FormularioEvento";
 import CopiarTexto from "../CopiarTexto";
@@ -14,9 +14,9 @@ import { cancelarEvento } from "../acciones";
 
 export const metadata = { title: "Editar evento · Gestión Maccabis" };
 
-export default async function EditarEvento({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ guardado?: string; alcance?: string; avisados?: string }> }) {
+export default async function EditarEvento({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ guardado?: string; alcance?: string; avisados?: string; sale?: string }> }) {
   const { id } = await params;
-  const { guardado, alcance, avisados } = await searchParams;
+  const { guardado, alcance, avisados, sale } = await searchParams;
   const { supabase } = await exigirGestor();
   const [evento, pistas, todos, jugadores, { data: encendido }, { data: subs }] = await Promise.all([
     cargarEvento(supabase, id), cargarPistas(supabase), cargarEventos(supabase), cargarJugadores(supabase),
@@ -66,8 +66,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
       {textoGuardado && (
         <div className="aviso aviso-ok" role="status" data-testid="aviso-guardado">
           <b>{textoGuardado}</b>{" "}
-          {evento.sporteasy_estado === "pendiente" ? "Queda «pendiente de copiar» a SportEasy." : ""}
-          {avisados != null ? ` Aviso al móvil para ${avisados} ${avisados === "1" ? "invitado" : "invitados"} (de noche, sale a las 08:30).` : ""}
+          {avisados != null ? ` Aviso al móvil para ${avisados} ${avisados === "1" ? "invitado" : "invitados"}${sale ? ` (${textoSale(new Date(sale))})` : avisados !== "0" ? " (enviado ya)" : ""}.` : ""}
         </div>
       )}
 
@@ -76,15 +75,10 @@ export default async function EditarEvento({ params, searchParams }: { params: P
           <h2 id="t-whatsapp" style={{ fontSize: 22 }}>{encendido ? `Mensaje de WhatsApp para quien no tiene avisos · ${sinAvisos.length}` : "Mensaje para WhatsApp"}</h2>
           {encendido && sinAvisos.length > 0 && <p className="pequeno" style={{ margin: 0 }}>Sin avisos: {sinAvisos.map((j) => j.nombre_visible).join(", ")}.</p>}
           <p className="pequeno suave" style={{ margin: 0 }}>
-            {evento.estado === "cancelado" ? "Cancelación" : nuevo ? "Evento nuevo" : "Cambio"} pendiente de copiar a SportEasy{evento.sporteasy_cambio && !evento.sporteasy_cambio.startsWith("Carga inicial") ? `: ${cambioParaVer(evento.sporteasy_cambio)}` : ""}. Copia este texto al grupo; Claude copia el evento a SportEasy con tu OK.
+            {evento.estado === "cancelado" ? "Cancelación" : nuevo ? "Evento nuevo" : "Cambio"}{evento.sporteasy_cambio && !evento.sporteasy_cambio.startsWith("Carga inicial") ? `: ${cambioParaVer(evento.sporteasy_cambio)}` : ""}. Copia este texto al grupo de WhatsApp si quieres avisar también por ahí.
           </p>
           <CopiarTexto texto={mensaje} />
         </section>
-      )}
-      {noSeCopia(evento) ? (
-        <p className="pequeno suave" data-testid="no-se-copia">SportEasy: no se copia. {evento.sporteasy_cambio}</p>
-      ) : evento.sporteasy_estado === "copiado" && evento.sporteasy_copiado_en && (
-        <p className="pequeno suave">Copiado a SportEasy el {fechaHora(evento.sporteasy_copiado_en)}.</p>
       )}
 
       {evento.estado === "cancelado" && <div className="aviso aviso-error">Este evento está <b>cancelado</b>.</div>}
@@ -98,10 +92,10 @@ export default async function EditarEvento({ params, searchParams }: { params: P
 
       <section className="gs-bloque" style={{ marginTop: 16, maxWidth: 960 }} aria-labelledby="t-cancelar">
         <h2 id="t-cancelar" style={{ fontSize: 22 }}>{evento.estado === "cancelado" ? "Restablecer el evento" : `Cancelar ${evento.tipo === "entreno" ? "este entreno" : "este evento"}`}</h2>
-        <p className="pequeno suave" style={{ margin: 0 }}>Un evento no se borra: se cancela y la cancelación queda pendiente de copiar a SportEasy.</p>
+        <p className="pequeno suave" style={{ margin: 0 }}>Un evento no se borra: se cancela (a los invitados de las dos próximas semanas les llega el aviso).</p>
         <div className="botones" style={{ margin: 0 }}>
           <form action={cancelarEvento.bind(null, evento.id, "este", evento.estado === "cancelado")}>
-            <BotonConfirmar className={evento.estado === "cancelado" ? "boton boton-claro" : "boton boton-peligro"} pregunta={evento.estado === "cancelado" ? "¿Restablecer este evento?" : "¿Cancelar este evento? Quedará pendiente de copiar a SportEasy."}>
+            <BotonConfirmar className={evento.estado === "cancelado" ? "boton boton-claro" : "boton boton-peligro"} pregunta={evento.estado === "cancelado" ? "¿Restablecer este evento?" : "¿Cancelar este evento?"}>
               {evento.estado === "cancelado" ? "Restablecer solo este" : `Cancelar solo este${evento.tipo === "entreno" ? " entreno" : ""}`}
             </BotonConfirmar>
           </form>

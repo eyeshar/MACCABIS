@@ -1193,3 +1193,48 @@ _Número: se apuntó como D151 y se renumeró a D152 al mergear, porque `feat/ca
 - **Aviso:** `avisosPorDefecto` (`lib/avisos/planificador.ts`, puro): el hueco «lunes» del entreno (`valeHueco`, el mismo de los recordatorios), a cada invitado (`quienResponde`) con `efectivaDe(...).por === "defecto"`; clave `rec:defecto:<entreno>:<persona>` (el registro tiene la clave única: la tarea nunca lo repite, tampoco si el entreno cambia de día). Va **aparte** del «Te faltan» del lunes y no se junta con el de las «duda» (D141): en el móvil es otra notificación (otra etiqueta). `pendienteDe` pasa a usar la misma `efectivaDe`. Lo encola la tarea de cada 15 minutos solo con el interruptor encendido. Si no tiene avisos activados, queda en el registro como «sin_avisos» y no se manda nada.
 
 **Pruebas:** `pruebas:avisos-logica` (el aviso único con el texto exacto, la hora y la clave; no antes de las 19:00 ni pasado el margen ni el día del entreno; la misma clave al repetir la tarea y si el entreno cambia de semana; uno por entreno; sin aviso si respondió —va, no o duda—, con ausencia —también sin fecha de vuelta; una borrada no cuenta—, quitado, no invitado por «solo con ficha», interruptor apagado, «sin recordatorios», cancelado, partido o plan; el «te faltan» del lunes no cambia), `pruebas:disponibilidad` (`porDefectoMio`; la migración aditiva y reversible; la función da a cada uno solo lo suyo y anónimo no la ejecuta), `pruebas:aviso-defecto` (nueva: de extremo a extremo a 375 px, el bloque del inicio, la agenda y el entreno, «Sí voy» desde el entreno y desde el inicio guarda «voy», los casos en que no sale —respondió, ausencia, quitado, sin marca, sin ficha en «solo con ficha»—, interruptor apagado, y que ni la página ni el HTML llevan la marca ni nada privado) y `pruebas:convocatoria-real` (en el real, en solo lectura: la función, sus permisos, que solo lee lo de quien consulta y que a un jugador le da solo sus dos campos, que coinciden con la base sin imprimirlos).
+
+---
+## Bloque «Rutina B automática, fin de SportEasy y avisos» (31/10/2026, rama `feat/rutina-b-auto`)
+
+## D153 — SportEasy ya no se usa para nada (Iván, 31/10/2026) — DEROGA D64 (respaldo hasta 09/2027) y la fase puente de copia a SportEasy (D80, D94, D95, D104); deja sin objeto NORMAS §8
+
+**Decisión de Iván:** SportEasy deja de usarse **desde hoy y para todo**: ni respaldo hasta septiembre de 2027 (D64), ni copia de eventos (D80, D95), ni «Marcar como copiado» (D94), ni el formulario completo sin notificar (D104), ni leer respuestas. **Ninguna rutina lee ni escribe en SportEasy.** Los eventos, las respuestas, las ausencias y los avisos viven solo en la web.
+
+**Qué cambia en la plataforma (Claude, esta rama):**
+- `/gestion/eventos`: fuera la tarjeta **«Copia a SportEasy»**, el filtro **«Pendientes de SportEasy»** (la cola «pendiente de copiar», con sus casillas y «Marcar como copiado»), la columna **SportEasy** de la tabla y el texto de «fase puente». Se borran `FormularioCopia.tsx` y la acción `marcarCopiado`.
+- Ficha del evento: sin «Queda pendiente de copiar a SportEasy», sin «Copiado a SportEasy el…» ni «No se copia»; el mensaje de WhatsApp se queda (para avisar también por el grupo) sin mencionar SportEasy; cancelar ya no dice «quedará pendiente de copiar».
+- Importar → Calendario: sin «Quedan pendientes de copiar a SportEasy» ni «queda pendiente de copiar».
+- **Se queda, sin borrar (Iván decide):** ver la lista de código que depende de SportEasy en ESTADO («Rutina B automática, fin de SportEasy y avisos»). Lo principal: **Importar → Respuestas** («evento;jugador;respuesta» de SportEasy), su diccionario (`diccionario_sporteasy`) y su estado (`BloqueImportacion`, `importacionAuto`), y las columnas `sporteasy_estado`/`sporteasy_cambio` de `eventos` (la segunda sigue describiendo el último cambio para el mensaje de WhatsApp). Sin cambios de esquema.
+- **La tarea programada «Maccabis · respuestas de SportEasy»** (si sigue activa) hay que pausarla o borrarla en el Chrome de Iván: Code no tiene acceso a las tareas programadas.
+
+**Por qué:** desde D136 los jugadores responden en la web y desde D148 los cambios ya no se copiaban; mantener la cola solo generaba avisos «pendiente» que nadie iba a resolver.
+
+## D154 — La rutina B aplica sola los cambios del Ayuntamiento y avisa, con freno; tarea programada «Maccabis · calendario del jueves» (Iván, 31/10/2026) — MATIZA D63 (B pasa de proponer a aplicar) y D103
+
+**Decisión de Iván:**
+1. **Sin OK previo:** la rutina B pega la programación de Deportes/web en **Importar → Calendario**, pulsa **Comparar**, **Aceptar todos** y **«Aplicar y avisar»**, y después informa a Iván de lo aplicado.
+2. **Freno — no aplica nada y avisa a Iván** (con lo que ha visto) si se da cualquiera de estas: (a) alguna línea con error; (b) alguna señal «no aparece en lo pegado»; (c) algún partido nuevo; (d) **más de 4 cambios** en total. Con el freno, Iván decide y lo aplica él (o lo pide).
+3. **Tarea programada «Maccabis · calendario del jueves»**: **jueves a las 20:20 (Europe/Madrid)**, en el Chrome de Iván. Entrada con la regla de D131: si las credenciales de Deportes/web o de maccabis.vercel.app están rellenadas por Chrome, entra sola; si no, para y avisa.
+4. **Lee también la clasificación oficial** (columna «Sanc») y convierte la pista de Deportes/web («Baloncesto 2 Moratalaz») a «Pista N» (desde esta rama Importar acepta las dos).
+5. **Sin segunda ejecución supervisada**: Iván da por aprendida la rutina con la del 31/10 (excepción a NORMAS §3 para la B).
+Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
+
+**Por qué:** los cambios del Ayuntamiento son pocos y oficiales; esperar al OK retrasaba el aviso a los jugadores. El freno cubre lo que no es un cambio normal (líneas rotas, partidos que aparecen o desaparecen, cambios masivos).
+
+## D155 — Avisos en el momento salvo de 22:30 a 08:00 (hora de Madrid); Importar avisa de cualquier partido no jugado (Iván, 31/10/2026) — SUSTITUYE D99.7 (silencio 22:30–8:30) y AJUSTA D103.1
+
+**Contexto (bug confirmado por Iván):** el 31/10 a las 17:09 (Madrid), «Aplicar y avisar» en Importar → Calendario (J5 MdA, 15/11 09:00 → 20/12 13:30) respondió «Aviso al móvil: (de noche, sale a las 08:30)» y no envió nada.
+
+**Causa (Claude):** no era la hora. `horario.ts` ya calculaba la franja con la hora de Madrid del instante (no la del servidor) y a las 17:09 no estaba en silencio. Había dos fallos:
+1. **Importar solo avisaba de los partidos de las próximas dos semanas** (el límite de 14 días de las series, D102/D103.5, copiado a Importar). El 31/10, ni el 15/11 ni el 20/12 caían dentro, así que no se puso ningún aviso en cola (comprobado en el real en solo lectura: 0 avisos de la J5 MdA en `avisos_registro`).
+2. **El texto del resultado estaba roto desde que se escribió** (`7b896a3`): ponía «Aviso al móvil:   (de noche, sale a las 08:30).» siempre, sin el número y sin mirar la hora. Lo mismo en la ficha del evento tras «Guardar y avisar».
+
+**Decisión de Iván (regla nueva):** los avisos se envían **en el momento** salvo **entre las 22:30 y las 08:00 hora de Madrid** (Europe/Madrid, cambio de hora incluido); los generados en esa franja **salen a las 08:00**. Se mira la hora real de Madrid del momento de enviar, nunca la del servidor.
+
+**Cómo queda (Claude):**
+- `horario.ts`: `SILENCIO_HASTA` = 08:00 y fin del silencio a las 08:00 (también el aviso de «duda», que nunca sale antes de las 08:00). **Se mantiene la excepción de D99.7:** si el evento empieza en menos de 12 horas reales, el aviso sale en el momento aunque sea de noche (si no, un cambio a las 23:00 para un partido a las 09:00 llegaría a las 08:00). Si Iván la quiere quitar, es una línea.
+- **Importar → «Aplicar y avisar» avisa de cada partido cambiado que no se ha jugado, sea cuando sea** (cada línea es un partido concreto, no una serie). Editar evento y cancelar siguen con el límite de dos semanas para las series.
+- Los textos dicen la verdad: «Aviso al móvil para N jugadores (enviado ya)» o «(de noche: sale el dd/mm a las 08:00)»; si no sale aviso de algún partido, lo dice («Sin aviso: MdA J2 (ya jugado)»). Igual en la ficha del evento y en «Enviar un recordatorio ahora». Pantallas, guía del jugador e inicio: «nunca de 22:30 a 8:00».
+- **Pruebas** (`pruebas:avisos-logica`): 17:09 → sale ya; 22:29 → sale ya; 22:31 → 08:00 del día siguiente; 07:59 → 08:00; 08:00 → sale ya; 00:15 → 08:00; los dos lados de UTC frente a Madrid; y a cada lado de los cambios de hora de otoño (25/10/2026) y primavera (28/03/2027). `pruebas:respuestas-pantallas`: el texto del resultado y que un partido a más de dos semanas también avisa.
+- **El aviso de la J5 MdA no está en cola** y no se reenvía a ciegas (Iván decide).

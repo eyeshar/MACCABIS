@@ -114,14 +114,14 @@ try {
 
   // ------------------------------------------------------------------ «← volver»
   console.log('\n== «← volver»: origen con filtro, jornada y pestaña');
-  await pg.goto(`${APP}/gestion/eventos?f=pendientes`);
+  await pg.goto(`${APP}/gestion/eventos?f=entrenos`);
   await pg.locator('.ev-titulo a').first().click();
   await pg.waitForURL(/\/gestion\/eventos\/[0-9a-f-]{36}$/);
   const v1 = pg.getByTestId('volver');
   ok(await visto(v1.filter({ hasText: /← Eventos/i }), 15000), 'Evento: «← Eventos»', await pg.locator('[data-testid=volver]').evaluateAll((l) => l.map((x) => x.outerHTML).join(' | ')));
   await v1.click();
-  await pg.waitForURL(/\/gestion\/eventos\?f=pendientes$/);
-  ok(true, 'volver conserva el filtro (?f=pendientes)');
+  await pg.waitForURL(/\/gestion\/eventos\?f=entrenos$/);
+  ok(true, 'volver conserva el filtro (?f=entrenos)');
   await pg.goto(`${APP}/gestion/convocatoria?fecha=${J3}`);
   await pg.getByRole('link', { name: /Datos de los jugadores/ }).first().click();
   await pg.waitForURL(/\/convocatoria\/datos/);

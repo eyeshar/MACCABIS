@@ -10,6 +10,20 @@
 5. Cada importación queda registrada (quién, cuándo, líneas, qué se aceptó) en la misma pantalla.
 **El calendario no se edita en ningún fichero (D151).** La rutina B solo cambia la tabla de eventos (Importar → Calendario). Los avisos de equipación (Panel, convocatoria, WhatsApp, Liga, Scouting, página de partido) leen la tabla, así que un cambio de local/visitante aceptado aquí ya cambia el aviso en la web en un minuto (la caché de 60 s), sin tocar nada más. `data/calendario_2026-27.json` es una copia generada de la tabla: la regenera sola la rutina A (`npm run jornada`) y, si hace falta antes, `npm run calendario:exportar`. Lo único que se sigue editando a mano son los **colores de los rivales** (D75, abajo): no son calendario.
 
+**Nota (31/10/2026):** en Consulta de partidos sale la temporada completa con resultados y una columna de estado («Reprogramado»). Los filtros cargan en cascada (2–3 s cada uno): elegir uno, esperar, elegir el siguiente.
+
+## Clasificación oficial (desde 31/10/2026)
+Ruta: Deportes/web → Competiciones municipales → **Consulta de clasificaciones** → Moratalaz → Temporada 2026/2027 · BALONCESTO · SENIOR MASCULINO · Grupo «JDM MOR DOM MAÑ BC SEN MAS G1» (MdA) / «…G2» (MdL). La jornada viene por defecto en la última jugada; tipo **«General por equipos de la jornada»** → Buscar.
+- **Columnas:** Puntos, J, G, P, I, TF, TC, TF-TC, TF/TC, Sanc, Progreso. Puntuación observada: victoria 2, derrota 1.
+- **Se contrasta** con la clasificación calculada (BACKLOG, D74).
+- **«Sanc»** es el control semanal de incidencias por equipo. La ficha de sanciones con nombres no se consulta salvo que Sanc > 0, y nada de ella va a la web pública.
+- **«Clasificación de máximos anotadores»** (solo en G1): contiene nombres de terceros; no se extrae (D73).
+
+**Hallazgos del 31/10 (ejecución supervisada 1, Claude en el Chrome de Iván):**
+- **(a) Posible cambio de la J5 de MdA:** MdA–NABUCO TD figura el **20/12/2026 13:30** en Baloncesto 1 Moratalaz, mientras el resto de la J5 es el 15/11; sin marca de reprogramado. `data/calendario_2026-27.json` tiene hoy ese partido el 15/11/2026 a las 09:00 (local, campo 1), es decir, **difiere**. Pendiente: pasarlo por Importar → Calendario y proponerlo a Iván; nada se aplica sin su OK.
+- **(b) Clasificación oficial tras la J3 (25/10):** MdA 1.º en G1 (6 pts, 3-0, 192-71); MdL 1.º en G2 (6 pts, 3-0, 171-101). Sanc = 0 en ambos grupos.
+- **(c)** J2 y J13 de MdA/MdL a las 10:15: sin cambios.
+
 ---
 ## Texto original (v0, 02/10/2026)
 

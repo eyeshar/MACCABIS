@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 31/10/2026: **rutina B, ejecución supervisada 1 de 2** (Claude en el Chrome de Iván; solo docs): la rutina incluye ya la clasificación oficial de Deportes/web (`docs/RUTINAS/B_CALENDARIO.md`). Tras la J3: MdA 1.º G1 (6 pts, 3-0, 192-71) y MdL 1.º G2 (6 pts, 3-0, 171-101), Sanc = 0. Pendiente de OK de Iván: MdA–NABUCO TD (J5) figura el 20/12 13:30 en Deportes/web y en nuestro calendario el 15/11 09:00. Falta 1 ejecución supervisada más._
 _Última actualización: 31/10/2026: **aviso al jugador de «no va por defecto»** (`feat/aviso-no-va-defecto`, D152, **mergeada en main** con el OK de Iván a la vista previa; migración `20261031150000` ya aplicada en el real con D111)._
 _Última actualización: 31/10/2026: **una sola fuente del calendario** (`feat/calendario-una-fuente`, D151, sin merge: Iván revisa la vista previa): los avisos de equipación leen la tabla de eventos y `data/calendario_2026-27.json` pasa a copia generada (`npm run calendario:exportar`, lo lanza la rutina A)._
 _Última actualización: 30/10/2026: **ausencias por periodo = «no va» en todas las pantallas de gestión y Panel en móvil** (`feat/ausencias-panel-movil`, D150, mergeada en `main` el 31/10 con el OK de Iván y Actions en verde, run `41119004201`; sin migraciones; worktree cerrado y rama borrada)._

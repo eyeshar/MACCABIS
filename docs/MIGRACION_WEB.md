@@ -3,9 +3,53 @@
 > 06/10/2026, bloque «Unificación web (paso 1 del rediseño)». Una sola web en `maccabis.vercel.app`: la portada nueva
 > ya vive en la plataforma (Next.js). Las secciones de la web de estadísticas de GitHub Pages
 > (`https://eyeshar.github.io/MACCABIS/`, `index.html` + `data/`) **siguen funcionando sin cambios** y el menú nuevo
-> enlaza a ellas hasta que se migren.
+> enlaza a ellas hasta que se migren. **Actualizado el 01/11/2026: migración terminada (ver «Estado»).**
 
-## Qué hay ya en la web nueva
+## Estado a 01/11/2026: migración TERMINADA
+
+> Revisado el 01/11/2026 (bloque de Iván del 31/10, apartado F). Este documento decía «pendiente de migrar» para Liga,
+> Plantilla e Historia, pero **las diez pestañas de GitHub Pages están migradas desde el 07/10/2026** (D91, D92, D93) y
+> **las redirecciones están activas y la barra «← Volver a Maccabis» retirada** desde el OK final de Iván (commit
+> `7a9b041`, ESTADO). No queda ninguna sección por migrar en el siguiente bloque; lo que sigue abierto está abajo.
+
+| Pestaña de GitHub Pages (`?p=`) | Página en la web nueva | Decisión | Menú / enlaces |
+|---|---|---|---|
+| `liga` (Liga 26/27) | `/liga` (`?g=`, `?hoy=`) | D91 | Cabecera «Liga» (con y sin sesión) |
+| `equipo` | `/liga/<temporada>/equipo` (`?eq=MDA\|MDL`) | D91 | Liga → «Estadísticas por temporada» |
+| `jugadores` | `/plantilla?t=` (`/liga/<t>/jugadores` redirige ahí) | D91, D92 | Cabecera «Plantilla» (sin sesión) |
+| `jugador` (Ficha) | `/jugador/<person_id>?t=` | D92 | Cada nombre de Plantilla, Rankings e Historia; «Mis números» (con sesión) |
+| `rankings`, `cuartos` | `/liga/<t>/rankings`, `/liga/<t>/cuartos` | D91 | Pestañas de la temporada |
+| `rivales` (Rivales 26/27) | `/liga/rivales` (`?g=`, `?r=`) | D91 | Liga → «Rivales 26/27» |
+| `historia` (El Club) | `/historia` (`?persona=`) | D93 | Cabecera «Historia» |
+| `mda` | `/liga/<t>/mda` | D91 | Pestañas de 23/24 y 24/25 |
+| `asistencia` | `/liga/<t>/asistencia` | D91, D82 | Pestañas de 25/26 y 26/27 |
+
+- **Redirecciones:** `data/redireccion_web.js` con `ESTA_ACTIVA = true` y las diez pestañas en `MIGRADAS`: cualquier URL
+  antigua (`?t=`, `#2013-14`, `?p=`, `?j=`) salta a su página nueva. Se deshace con `git revert 7a9b041`
+  (`docs/ACTIVAR_REDIRECCIONES.md`). Pruebas: `pruebas:activacion` y `pruebas:cuadre` (12 temporadas, mismos números que
+  GitHub Pages).
+- **Menú** (`plataforma/src/lib/web.ts`): `MENU` (sin sesión: Inicio, Partidos, Liga, Plantilla, Historia, El club) y
+  `MENU_SESION` (Inicio, Agenda, Mis números, Liga, Historia) ya solo tienen rutas de la web nueva. Desde D162, con sesión,
+  la Liga añade «Scouting rivales» y «Liga consolidada» (datos por jugador de terceros: nunca sin sesión).
+- **P1 (privacidad, D82, D46):** ninguna página pública publica por jugador las ausencias «con excusa», «sin excusa»,
+  «no convocado» ni «lesión»: la pestaña Asistencia y los `season_*.json` públicos solo llevan `{fueron, total, pct}`; los
+  motivos viven en Supabase (`asistencia_motivos`, solo gestores, «Asistencia y motivos» de Gestión). Lo vigilan
+  `npm run test:privacidad` (datos, código y HTML renderizado de las páginas migradas) y `pruebas:privacidad`.
+
+### Lo que queda (no es migrar secciones)
+
+1. **Retirar GitHub Pages del todo** (decide Iván): hoy `index.html` + `data/` siguen publicados solo para redirigir; los
+   ficheros de `data/` siguen siendo públicos porque el repositorio lo es. Retirarla = desactivar Pages en GitHub; las
+   URL antiguas dejarían de redirigir (404). Recomendación: mantenerla redirigiendo hasta final de temporada.
+2. **`index.html` aún lee `data/calendario_2026-27.json`** para su pestaña Liga (solo si alguien desactivase la
+   redirección): es la copia generada de la tabla de eventos (D151), no una fuente.
+3. **P4–P6** de la tabla de abajo siguen como estaban (baja severidad).
+
+## Histórico: el plan de 06/10/2026
+
+_Lo que sigue es el inventario y el plan con el que se hizo la migración; se conserva como referencia._
+
+### Qué había en la web nueva el 06/10/2026
 
 | Pieza | Dónde | Datos |
 |---|---|---|
@@ -14,18 +58,7 @@
 | Acceso `/entrar`, Mi zona, Gestión con el aspecto nuevo | `plataforma/src/app/...` | Supabase (con sesión) + `src/data/` |
 | Privacidad `/privacidad` | `plataforma/src/app/privacidad/page.tsx` | — |
 
-## Menú nuevo → destino hoy
-
-| Menú | Destino | Nota |
-|---|---|---|
-| Inicio | `/` | nuevo |
-| Partidos | `/#calendario` | nuevo (calendario público) |
-| Liga | GitHub Pages `?p=liga` | pendiente de migrar (orden 1) |
-| Plantilla | GitHub Pages `?p=jugadores` | pendiente de migrar (orden 2) |
-| Historia | GitHub Pages `?p=historia` (El Club) | pendiente de migrar (orden 5) |
-| El club | `/club` | nuevo (D86, 06/10/2026): qué es el club, MdA y MdL, cifras, entrenos y dónde jugamos; enlaza a la rejilla de Historia de GitHub Pages |
-
-## Inventario de secciones de GitHub Pages
+### Inventario de secciones de GitHub Pages (06/10/2026)
 
 `index.html`: 1.217 líneas (≈240 de CSS y ≈835 de JS en un solo `<script>`), más `data/avisos_equipacion.js`. Las 7
 pestañas de temporada viven en `initDashboard(D)` y comparten `applySeasonUI()`, que oculta columnas y pestañas según las
@@ -48,7 +81,7 @@ métricas que existían cada temporada (`D.metrics`). Parámetros comunes: `?t=<
 Ficheros de `data/` que la web **no lee** pero son públicos (repositorio público): `fichas_inscripcion.json`,
 `diccionario_nombres.json`, `rivales_2026-27.json`, `rivales_jdm.json`.
 
-## Orden de migración propuesto
+### Orden de migración propuesto (06/10/2026; hecho: D91–D93)
 
 | # | Sección | Por qué en este orden | Esfuerzo |
 |---|---|---|---|

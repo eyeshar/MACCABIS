@@ -78,6 +78,7 @@
     "pruebas:dudas": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/dudas_limite.mjs",
     "pruebas:disponibilidad": "node pruebas/disponibilidad_defecto.mjs",
     "pruebas:disponibilidad-pantallas": "node pruebas/disponibilidad_pantallas.mjs",
+    "pruebas:reserva": "node pruebas/reserva.mjs",
     "pruebas:aviso-defecto": "node pruebas/aviso_por_defecto.mjs",
     "pruebas:safe-area": "node pruebas/safe_area.mjs",
     "pruebas:chat-ia": "node pruebas/chat_ia.mjs",

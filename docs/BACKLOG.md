@@ -32,6 +32,7 @@
 ## Pendiente de Iván
 
 **Operativa de ahora**
+- [ ] **OK a la marca «Reserva» (D158, `feat/reserva`):** aplicar en el real la migración `20261031180000_reserva` (con D111) y la carga `node plataforma/scripts/cargar_reserva.mjs --aplicar` (reserva para Fernando M. y Guillermo), **antes** de mergear la rama (la convocatoria lee la columna). Lo hace Code cuando Iván dé el OK.
 - [ ] **Pausar o borrar la tarea programada «Maccabis · respuestas de SportEasy»** en el Chrome de Iván, si sigue activa (D153; Code no tiene acceso a las tareas programadas).
 - [ ] **Cuando Carlos entre por primera vez:** comprobar que su plaza se vinculó sola (`npm run db:estado`: 3 gestores vinculados) y que ve Gestión, el tablero y la banda del inicio. Aún no tiene cuenta (simulado en una transacción deshecha: se vincula y ve los niveles).
    - **26/10/2026:** Iván dice que Carlos ya ha entrado, pero `npm run db:estado` da **3 gestores y 2 vinculados** (Iván y Eduardo) y en `auth.users` **no hay ninguna cuenta con el correo de su ficha** (el mismo de su plaza de gestor; no es de Gmail). Hay que ver con Carlos con qué correo entró: con ese correo, «Entrar con Google» no sirve; la vía es «Recibir código por correo» a esa dirección.

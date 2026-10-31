@@ -46,6 +46,7 @@ export const REGLAS = {
   "1.5": "Solo con el equipo en el que tiene ficha",
   "1.6": "Los sancionados no se convocan",
   "1.7": "«Solo entreno: nunca a partidos» (marca privada): no se convoca nunca, ni para cubrir huecos",
+  "1.8": "Reserva (marca privada): solo entra si sin él no se cubren los mínimos o el número compensado; con 20 o más disponibles, no va",
   "2.1": "Bases: ideal 2 puros; los de reserva cuentan como base",
   "2.2": "Exteriores: ideal 4; si faltan, los bases cuentan como exteriores",
   "2.3": "Interiores: ideal 4, mínimo 3, evitar 5",
@@ -74,6 +75,9 @@ export type DatosPrivados = {
   /** «Solo entreno: nunca a partidos» (D146, regla 1.7): no se propone nunca. Distinto de `solo_entreno` (el rol), que sí
    *  entra para cubrir huecos con menos de 20 disponibles. */
   nunca_partidos?: boolean;
+  /** Reserva (D158, regla 1.8): si dice «voy», solo entra para cubrir mínimos (7, y las líneas) o el número compensado
+   *  entre los dos equipos; si no, sale como «reserva disponible». Con 20 o más disponibles no va por defecto. */
+  reserva?: boolean;
 };
 export type JugadorEntrada = {
   person_id: string;
@@ -148,6 +152,7 @@ const lineaDe = (j: JugadorEntrada, c?: Convocado): Linea => { const p = posicio
 const nivelDe = (j: JugadorEntrada) => VALOR_NIVEL[datos(j).nivel ?? "C"];
 const disponibleEn = (j: JugadorEntrada, e: Equipo) => j.respuesta[e] === "va";
 const nuncaPartidos = (j: JugadorEntrada) => !!j.privado?.nunca_partidos;
+const esReserva = (j: JugadorEntrada) => !!j.privado?.reserva;
 const porId = (a: { person_id: string }, b: { person_id: string }) => (a.person_id < b.person_id ? -1 : a.person_id > b.person_id ? 1 : 0);
 
 export const tieneDeuda = (j: JugadorEntrada) => j.domingosFuera >= LIMITES.deudaDomingos;
@@ -280,6 +285,7 @@ export function revisar(entrada: Entrada, convocatoria: Convocatoria, sinConvoca
       if (nuncaPartidos(j)) avisos.push({ regla: "1.7", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} es «solo entreno: nunca a partidos».` });
       const resp = j.respuesta[e] ?? "sin_responder";
       if (resp !== "va") avisos.push({ regla: "0.1", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} ${resp === "no" ? "dijo «no voy»" : resp === "duda" ? "tiene «duda»" : "no ha respondido"} a este partido.` });
+      if (esReserva(j) && disponibles >= LIMITES.umbralAmpliar) avisos.push({ regla: "1.8", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} es reserva y hay ${disponibles} disponibles.` });
       if (j.solo_entreno && disponibles >= LIMITES.umbralAmpliar) avisos.push({ regla: "1.2", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} es «solo entreno» y hay ${disponibles} disponibles.` });
       if (d.regla?.tipo === "fijo" && d.regla.equipo !== e) avisos.push({ regla: "6.1", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `${j.nombre} es fijo del ${d.regla.equipo}.` });
       if (!j.privado || !d.posicion || !d.nivel) avisos.push({ regla: "0.2", gravedad: "aviso", equipo: e, person_id: j.person_id, texto: `Faltan datos privados de ${j.nombre} (${[!d.posicion && "posición", !d.nivel && "nivel"].filter(Boolean).join(" y ") || "todos"}): cuenta como exterior de nivel C.` });
@@ -345,6 +351,7 @@ function motivoFuera(j: JugadorEntrada, partidos: PartidoEntrada[], disponibles:
   if (j.sancionado) return { person_id: j.person_id, motivo: "Sancionado", regla: "1.6" };
   if (nuncaPartidos(j)) return { person_id: j.person_id, motivo: "Solo entreno: nunca a partidos", regla: "1.7" };
   if (!eqs.some((e) => j.ficha[e])) return { person_id: j.person_id, motivo: `Sin ficha del ${eqs.join(" ni del ")}`, regla: "1.5" };
+  if (esReserva(j)) return { person_id: j.person_id, motivo: disponibles >= LIMITES.umbralAmpliar ? "Reserva (20 o más disponibles)" : "Reserva disponible", regla: "1.8" };
   if (j.solo_entreno && disponibles >= LIMITES.umbralAmpliar) return { person_id: j.person_id, motivo: "Solo entreno (20 o más disponibles)", regla: "1.2" };
   return { person_id: j.person_id, motivo: "No convocado a mano", regla: "4.1" };
 }
@@ -365,6 +372,7 @@ export function proponer(entrada: Entrada): Propuesta {
   // 1. Quien puede ir y a donde.
   const flexibles: JugadorEntrada[] = [];
   const comodines: JugadorEntrada[] = [];
+  const reservas: JugadorEntrada[] = []; // regla 1.8: se apartan y solo entran en el paso 4 si hacen falta
   for (const j of jugadores) {
     const dice = eqs.filter((e) => disponibleEn(j, e));
     if (!dice.length) continue; // no esta disponible: no sale ni en «sin convocar»
@@ -372,6 +380,11 @@ export function proponer(entrada: Entrada): Propuesta {
     if (nuncaPartidos(j)) { fuera(j, "Solo entreno: nunca a partidos", "1.7"); continue; }
     const puede = dice.filter((e) => j.ficha[e]);
     if (!puede.length) { fuera(j, `Sin ficha del ${dice.join(" ni del ")}`, "1.5"); continue; }
+    if (esReserva(j)) {
+      if (disponibles >= LIMITES.umbralAmpliar) fuera(j, "Reserva (20 o más disponibles)", "1.8");
+      else reservas.push(j);
+      continue;
+    }
     if (j.solo_entreno && disponibles >= LIMITES.umbralAmpliar) { fuera(j, "Solo entreno (20 o más disponibles)", "1.2"); continue; }
     const regla = datos(j).regla;
     if (regla?.tipo === "fijo") {
@@ -465,11 +478,54 @@ export function proponer(entrada: Entrada): Propuesta {
     }
   }
 
-  // 4. Solo se dobla para cubrir MINIMOS (seccion 5, D108): 7 por equipo y 3 interiores. Nunca para llegar al ideal
+  // 4. Reservas (regla 1.8, D158): entran solo si sin ellos un equipo no llega a un minimo (7 en total, 2 bases contando
+  //    los de reserva, 3 exteriores, 3 interiores) o, con rivales parejos, si los dos equipos quedan descompensados (mas
+  //    de 1 de diferencia). Van antes que doblar: un reserva que dice «voy» cubre el hueco mejor que alguien que ya juega
+  //    otro partido. El resto sale como «reserva disponible», con su boton de añadir a mano.
+  const extra: Aviso[] = [];
+  if (reservas.length) {
+    const minimos: { para: string; falta: (e: Equipo) => boolean; vale: (j: JugadorEntrada) => boolean }[] = [
+      { para: `llegar a ${LIMITES.minimo}`, falta: (e) => conv[e].length < LIMITES.minimo, vale: () => true },
+      { para: `tener ${LIMITES.minimoLinea.base} bases`, falta: (e) => { const r = recuentoDe(conv[e].map((j) => ({ person_id: j.person_id })), mapa); return r.bases.puros + r.bases.reserva < LIMITES.minimoLinea.base; }, vale: (j) => lineaDe(j) === "base" || (lineaDe(j) === "exterior" && datos(j).base_reserva) },
+      { para: `tener ${LIMITES.minimoLinea.exterior} exteriores`, falta: (e) => recuentoDe(conv[e].map((j) => ({ person_id: j.person_id })), mapa).exteriores.n < LIMITES.minimoLinea.exterior, vale: (j) => lineaDe(j) === "exterior" },
+      { para: `tener ${LIMITES.minimoLinea.interior} interiores`, falta: (e) => conv[e].filter((j) => lineaDe(j) === "interior").length < LIMITES.minimoLinea.interior, vale: (j) => lineaDe(j) === "interior" },
+    ];
+    const entra = (j: JugadorEntrada, e: Equipo, para: string) => {
+      reservas.splice(reservas.indexOf(j), 1);
+      conv[e].push(j);
+      extra.push({ regla: "1.8", gravedad: "info", equipo: e, person_id: j.person_id, texto: `${j.nombre} (reserva) entra para ${para} en el ${e}.` });
+    };
+    // Entre los que valen, primero el que ademas cubre otra linea por debajo de su minimo; despues, por prioridad.
+    const candidato = (e: Equipo, vale: (j: JugadorEntrada) => boolean) => {
+      const validos = reservas.filter((j) => disponibleEn(j, e) && j.ficha[e] && vale(j) && !(datos(j).regla?.tipo === "fijo" && (datos(j).regla as { equipo: Equipo }).equipo !== e));
+      const lineasFaltan = minimos.slice(1).filter((m) => m.falta(e));
+      return validos.find((j) => lineasFaltan.some((m) => m.vale(j))) ?? validos[0];
+    };
+    for (const m of minimos) {
+      for (const e of eqs) {
+        while (m.falta(e) && conv[e].length < maximo) {
+          const j = candidato(e, m.vale);
+          if (!j) break;
+          entra(j, e, m.para);
+        }
+      }
+    }
+    if (eqs.length === 2 && partidos[0].dificultad === partidos[1].dificultad) {
+      while (Math.abs(conv.MdA.length - conv.MdL.length) > 1) {
+        const c: Equipo = conv.MdA.length < conv.MdL.length ? "MdA" : "MdL";
+        if (conv[c].length >= maximo) break;
+        const j = candidato(c, () => true);
+        if (!j) break;
+        entra(j, c, "compensar el número de convocados");
+      }
+    }
+    for (const j of reservas) fuera(j, "Reserva disponible", "1.8");
+  }
+
+  // 5. Solo se dobla para cubrir MINIMOS (seccion 5, D108): 7 por equipo y 3 interiores. Nunca para llegar al ideal
   //    (4 interiores) ni por bases (D115: 2 bases es lo ideal; el hueco lo cubre un base de reserva disponible para ese
   //    partido y, si no hay, sale el aviso 2.1). Las excepciones las hace Ivan a mano. Primero los «Dobla»; despues un
   //    «No dobla», con aviso. Nunca a la misma hora.
-  const extra: Aviso[] = [];
   const dobladores = new Set<string>();
   if (eqs.length === 2 && !mismaHora) {
     const falta = (e: Equipo, l: Linea) => LIMITES.ideal[l] - conv[e].filter((j) => lineaDe(j) === l).length;

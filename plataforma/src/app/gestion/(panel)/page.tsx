@@ -4,7 +4,8 @@ import { cargarJugadores } from "@/lib/eventos/datos";
 import { type Respuesta } from "@/lib/eventos/dominio";
 import "./eventos/eventos.css";
 import { exigirGestor, origenMensajes } from "@/lib/sesion";
-import TarjetaActivar, { type EstadoActivacion } from "./TarjetaActivar";
+import TarjetaActivar from "./TarjetaActivar";
+import { cargarActivacionViva } from "@/lib/gestion/activacion";
 import { AvisoCaja } from "@/components/ProximoPartido";
 import { bonito, cargarLiga, type DatosLiga } from "@/lib/liga";
 import { clave } from "@/data/avisosEquipacion";
@@ -129,42 +130,18 @@ export default async function InicioGestion() {
   const porDefecto = conMarca.filter((j) => !quitado(j.person_id)).map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
   const quitadosEntreno = conMarca.filter((j) => quitado(j.person_id)).map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
 
-  // «Respuestas en la web: activar» (D99.13): estado, condiciones y jornadas jugadas para marcarlas.
-  const [{ data: activacion }, { data: marcasDB }, { data: jugadas }] = await Promise.all([
-    supabase.rpc("estado_activacion"),
+  // «Respuestas en la web: activar» (D99.13): estado, condiciones y jornadas jugadas para marcarlas. Lo en vivo (D156) sale de cargarActivacionViva.
+  const web = await origenMensajes();
+  const [viva, { data: marcasDB }, { data: jugadas }] = await Promise.all([
+    cargarActivacionViva(supabase, js, web),
     supabase.from("jornadas_control").select("jornada, estado").eq("temporada", "2026-27"),
     supabase.from("eventos").select("jornada").eq("tipo", "liga").lt("fecha", hoy).not("jornada", "is", null),
   ]);
   const ultimaJugada = Math.max(0, ...((jugadas ?? []) as { jornada: number }[]).map((x) => x.jornada));
   const jornadasJugadas = Array.from({ length: ultimaJugada }, (_, i) => i + 1);
   const marcas = Object.fromEntries(((marcasDB ?? []) as { jornada: number; estado: "limpia" | "con_arreglo" }[]).map((m) => [m.jornada, m.estado]));
-  const web = await origenMensajes();
-  const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis, no en SportEasy: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo, nunca de noche): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
+  const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis, no en SportEasy: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo; de noche solo si el partido es en pocas horas): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
 
-  const faltan = ((activacion as EstadoActivacion | null)?.faltan_por_entrar ?? []);
-  // «Han entrado» y «con avisos» con sus nombres (D139): la plantilla son los activos que no son entrenador (la misma base que la tarjeta: incluye a quien solo entrena y no tiene ficha de equipo); quien falta, lo da la base.
-  const { data: subsAvisos } = await supabase.from("suscripciones_avisos").select("person_id").eq("activa", true);
-  const conAvisos = new Set(((subsAvisos ?? []) as { person_id: string | null }[]).map((s) => s.person_id));
-  const plantilla = js.filter((j) => j.activo && j.rol !== "entrenador");
-  // Quien tiene cuenta pero nunca ha entrado (pidio un codigo y no lo uso) cuenta como «falta», con su nota (D140).
-  const pidioCodigo = new Set((activacion as EstadoActivacion | null)?.pidio_codigo ?? []);
-  // Quien no tiene ficha MdA/MdL va marcado: «solo entrenos» si es su rol, «sin ficha» si no.
-  const sinFicha = (j: (typeof js)[number]) => (j.ficha_mda || j.ficha_mdl ? null : j.rol === "solo_entreno" ? "solo entrenos" : "sin ficha");
-  const persona = (j: (typeof js)[number]) => ({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: sinFicha(j) });
-  const personaEntrada = (j: (typeof js)[number]) => ({ ...persona(j), nota: [sinFicha(j), pidioCodigo.has(j.nombre_visible) ? "pidió código pero no llegó a entrar" : null].filter(Boolean).join(" · ") || null });
-  const sinAvisosNombres = plantilla.filter((j) => !conAvisos.has(j.person_id)).map((j) => j.nombre_visible);
-  const mensajeAvisos = `Hola, ${sinAvisosNombres.join(", ")}: aún no tenéis activados los avisos de Maccabis en el móvil. Así os llega cuándo hay que responder y si cambia la hora o la pista (nunca de noche). Es un minuto: ${web}/avisos`;
-  const gruposActivacion: { entrada: GrupoNum[]; avisos: GrupoNum[] } = {
-    entrada: [
-      { k: "entrados", etiqueta: "han entrado", n: plantilla.filter((j) => !faltan.includes(j.nombre_visible)).length, tono: "ok", personas: plantilla.filter((j) => !faltan.includes(j.nombre_visible)).map(persona) },
-      { k: "faltan", etiqueta: "faltan por entrar", n: plantilla.filter((j) => faltan.includes(j.nombre_visible)).length, tono: "sin", personas: plantilla.filter((j) => faltan.includes(j.nombre_visible)).map(personaEntrada) },
-    ],
-    avisos: [
-      { k: "con", etiqueta: "con avisos activados", n: plantilla.filter((j) => conAvisos.has(j.person_id)).length, tono: "ok", personas: plantilla.filter((j) => conAvisos.has(j.person_id)).map(persona) },
-      { k: "sin", etiqueta: "sin avisos", n: plantilla.filter((j) => !conAvisos.has(j.person_id)).length, tono: "sin", personas: plantilla.filter((j) => !conAvisos.has(j.person_id)).map(persona) },
-    ],
-  };
-  const mensajeEntrar = `Hola, ${faltan.join(", ")}: aún no habéis entrado en la web de Maccabis. Entrad una vez con vuestro correo (os llega un código) para tenerlo listo: ${web}/entrar. Si podéis, instaladla en el móvil y activad los avisos: ${web}/avisos`;
   // «Pendiente esta semana»: la misma lista (con enlaces) que la banda «Gestión esta semana» del inicio (D117).
   const pendientes = await cargarPendientesSemana(supabase);
   const ropaAbierta = campana ? campanaAbiertaAhora(campana) : false;
@@ -200,7 +177,7 @@ export default async function InicioGestion() {
         </div>
       </section>
 
-      {activacion && <div style={{ marginBottom: 20 }}><TarjetaActivar estado={activacion as EstadoActivacion} jornadas={jornadasJugadas} marcas={marcas} mensaje={mensajeActivar} mensajeEntrar={mensajeEntrar} mensajeAvisos={mensajeAvisos} grupos={gruposActivacion} /></div>}
+      {viva && <div style={{ marginBottom: 20 }}><TarjetaActivar inicial={viva} jornadas={jornadasJugadas} marcas={marcas} mensaje={mensajeActivar} /></div>}
 
       <div className="gs-dos">
         <div className="gs-izq">

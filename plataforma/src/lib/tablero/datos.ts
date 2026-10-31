@@ -9,9 +9,9 @@ import { convocadosDe, tituloEvento, TEXTO_MOTIVO, type Motivo } from "@/lib/eve
 import { hoyMadrid, sumarDias } from "@/lib/dias";
 import type { FilaTablero, PartidoTablero } from "./vista";
 import { hrefJugador } from "@/lib/numeros/enlaces";
-import { cargarDefecto } from "@/lib/convocatoria/defecto";
-import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto } from "@/lib/disponibilidad/porDefecto";
-import { sinFichaQueVan } from "@/lib/numeros/respuestas";
+import { cargarAusencias, cargarDefecto } from "@/lib/convocatoria/defecto";
+import { ausenciaQueCubre, efectivaEn, NOTA_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
+import { notaAusencia, sinFichaQueVan } from "@/lib/numeros/respuestas";
 import type { PersonaNum } from "@/components/numeros/Numeros";
 
 // Lo que lee el tablero (D121), con la sesion del GESTOR: la base (RLS + is_gestor) decide. Nada de esto llega nunca a
@@ -21,15 +21,8 @@ export type Registro = { id: string; en: string; por: string; texto: string };
 export type OpcionSelector = { valor: string; texto: string; grupo: "Domingos de partidos" | "Eventos sueltos" };
 
 type Privado = { person_id: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null };
-type Ausencia = { person_id: string; desde: string; hasta: string | null; motivo: Motivo; borrada_en: string | null };
 
 const motivoTexto = (m: string | null) => (m ? (m === "horario" ? "Solo puede al otro partido" : TEXTO_MOTIVO[m as Motivo] ?? m) : null);
-const ausenciaTexto = (a: Ausencia | undefined) => (a ? `Ausente del ${a.desde.slice(8, 10)}/${a.desde.slice(5, 7)}${a.hasta ? ` al ${a.hasta.slice(8, 10)}/${a.hasta.slice(5, 7)}` : ", sin fecha de vuelta"} (${TEXTO_MOTIVO[a.motivo]})` : null);
-
-async function ausenciasDel(sb: Cliente, fecha: string) {
-  const { data } = await sb.from("ausencias_periodo").select("person_id, desde, hasta, motivo, borrada_en").is("borrada_en", null).lte("desde", fecha);
-  return ((data ?? []) as Ausencia[]).filter((a) => a.hasta == null || a.hasta >= fecha);
-}
 
 /** Opciones del selector: los domingos de partidos (de la convocatoria) y los eventos sueltos de las proximas semanas
  *  (entrenos y demas oficiales, y cada partido por separado). */
@@ -56,7 +49,7 @@ export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise
   if (!ctx || ctx.sinMigracion) return null;
   const [privados, ausencias, resp] = await Promise.all([
     sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel"),
-    ausenciasDel(sb, ctx.fecha),
+    cargarAusencias(sb),
     sb.from("respuestas").select("evento_id, person_id, puesto_por_nombre, origen").in("evento_id", ctx.partidos.map((p) => p.evento_id)),
   ]);
   const priv = new Map(((privados.data ?? []) as Privado[]).map((p) => [p.person_id, p]));
@@ -67,7 +60,7 @@ export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise
     return {
       person_id: j.person_id, href: hrefJugador(j.person_id), nombre: j.nombre, posicion: p?.posicion ?? null, base_reserva: Boolean(p?.base_reserva), nivel: p?.nivel ?? null,
       ficha: j.ficha, solo_entreno: j.solo_entreno, respuesta: j.respuesta, invitadoA: j.invitadoA,
-      motivo: motivoTexto(motivos.find((m) => m !== "horario") ?? motivos[0] ?? null), ausencia: ausenciaTexto(ausencias.find((a) => a.person_id === j.person_id)),
+      motivo: motivoTexto(motivos.find((m) => m !== "horario") ?? motivos[0] ?? null), ausencia: notaAusencia(ausenciaQueCubre(j.person_id, ctx.fecha, ausencias)),
       puestaPor: puesta.get(j.person_id) ?? null,
     };
   });
@@ -93,26 +86,27 @@ export type TableroEvento = {
 export async function cargarTableroEvento(sb: Cliente, id: string): Promise<TableroEvento | null> {
   const e = await cargarEvento(sb, id);
   if (!e || e.oficial === false) return null;
-  const [jugadores, privados, resp, ausencias, enc, defecto] = await Promise.all([
+  const [jugadores, privados, resp, enc, defecto] = await Promise.all([
     cargarJugadores(sb), sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel"),
     sb.from("respuestas").select("person_id, respuesta, motivo, origen, puesto_por_nombre").eq("evento_id", id),
-    ausenciasDel(sb, e.fecha), sb.rpc("respuestas_web_encendido"), cargarDefecto(sb, [id]),
+    sb.rpc("respuestas_web_encendido"), cargarDefecto(sb, [id]),
   ]);
   const priv = new Map(((privados.data ?? []) as Privado[]).map((p) => [p.person_id, p]));
   const rs = new Map(((resp.data ?? []) as { person_id: string; respuesta: RespuestaPartido; motivo: string | null; origen: string; puesto_por_nombre: string | null }[]).map((r) => [r.person_id, r]));
-  // D146, igual que el Panel: en un partido, un «nunca a partidos» sin responder no cuenta; en un entreno, quien «no suele
-  // entrenar» y no ha respondido es «no va (por defecto)», salvo que se le pasara a «sin responder» para este entreno.
-  const respuestaDe = (p: string) => rs.get(p)?.respuesta ?? "sin_responder";
-  const filas: FilaTablero[] = convocadosDe(e, jugadores).filter((j) => !fueraDelPartido(e, defecto.marcas.get(j.person_id), respuestaDe(j.person_id))).map((j) => {
+  // La misma regla que el Panel (`respuestaEfectiva`, D146 y D150): en un partido, un «nunca a partidos» sin responder no
+  // cuenta; sin responder y con una ausencia que cubre el dia, «no»; en un entreno, quien «no suele entrenar» y no ha
+  // respondido es «no va (por defecto)», salvo que se le pasara a «sin responder» para este entreno.
+  const efectiva = (p: string) => efectivaEn(e, p, rs.get(p)?.respuesta ?? "sin_responder", defecto);
+  const filas: FilaTablero[] = convocadosDe(e, jugadores).filter((j) => !efectiva(j.person_id).fuera).map((j) => {
     const p = priv.get(j.person_id), r = rs.get(j.person_id);
-    const aus = ausencias.find((a) => a.person_id === j.person_id);
-    const porDefecto = !aus && noVaPorDefecto(e, defecto.marcas.get(j.person_id), respuestaDe(j.person_id), defecto.quitados.has(claveQuitado(id, j.person_id)));
-    // Sin respuesta y con una ausencia que cubre el dia: cuenta como «no» (como en «Quién va», D99).
-    const valor: RespuestaPartido = r?.respuesta && r.respuesta !== "sin_responder" ? r.respuesta : aus || porDefecto ? "no" : "sin_responder";
+    const ef = efectiva(j.person_id);
+    const aus = ausenciaQueCubre(j.person_id, e.fecha, defecto.ausencias);
+    const porDefecto = ef.por === "defecto";
+    const valor: RespuestaPartido = ef.respuesta;
     return {
       person_id: j.person_id, href: hrefJugador(j.person_id), nombre: j.nombre_visible, posicion: p?.posicion ?? null, base_reserva: Boolean(p?.base_reserva), nivel: p?.nivel ?? null,
       ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, solo_entreno: j.rol === "solo_entreno", respuesta: { evento: valor }, invitadoA: ["evento"],
-      motivo: porDefecto ? NOTA_POR_DEFECTO : valor === "no" ? motivoTexto(r?.motivo ?? null) : null, ausencia: ausenciaTexto(aus), puestaPor: r?.origen === "gestor" ? r.puesto_por_nombre : null,
+      motivo: porDefecto ? NOTA_POR_DEFECTO : valor === "no" ? motivoTexto(r?.motivo ?? null) : null, ausencia: notaAusencia(aus), puestaPor: r?.origen === "gestor" ? r.puesto_por_nombre : null,
     };
   });
   const registro = await registroDe(sb, null, [id], new Map(jugadores.map((j) => [j.person_id, j.nombre_visible])));

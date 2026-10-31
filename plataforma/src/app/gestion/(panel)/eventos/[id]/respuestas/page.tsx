@@ -21,7 +21,7 @@ import { sinFichaQueVan } from "@/lib/numeros/respuestas";
 import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
-import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
+import { ausenciaQueCubre, claveQuitado, efectivaEn, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
 export const metadata = { title: "Respuestas y motivos · Gestión Maccabis" };
 const SEMANAS = 12;
@@ -69,7 +69,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const nombre = new Map(jugadores.map((j) => [j.person_id, j.nombre_visible]));
   const filasR = (resp ?? []) as (Fila & { evento_id: string; person_id: string })[];
   const de = (eid: string, p: string) => filasR.find((r) => r.evento_id === eid && r.person_id === p) ?? null;
-  const periodoDe = (p: string, f: string) => periodos.find((x) => x.person_id === p && x.desde <= f && (x.hasta == null || x.hasta >= f)) ?? null;
+  const periodoDe = (p: string, f: string) => ausenciaQueCubre(p, f, periodos);
 
   // Personas: invitadas a alguno de los eventos de la vista. D146: en un partido, quien es «nunca a partidos» y no ha
   // respondido no cuenta (ni sale); en un entreno, quien «no suele entrenar» y no ha respondido va a «no va (por defecto)».
@@ -150,8 +150,9 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const enviadosDe = (tipo: string) => reg.filter((x) => x.clave.startsWith(`rec:${tipo}:`) && x.enviado_en && x.resultado === "enviado");
   const manuales = reg.filter((x) => x.clave.startsWith("rec:manual:") && x.enviado_en);
   const sinRecordatorios = (evento as EventoFila & { sin_recordatorios?: boolean }).sin_recordatorios;
-  // «Pedir recordatorio a Claude» (rutina C): ni los «no va (por defecto)» ni los «nunca a partidos» (D146).
-  const rec = recordatorio(evento, ordenarRespuestas(evento, invitadosDe(evento).filter((j) => !porDefecto(evento, j.person_id)), filasR.filter((r) => r.evento_id === evento.id).map((r) => ({ ...r, motivo: r.motivo === "horario" ? "otro" : r.motivo })) as never, periodos.filter((p) => p.hasta) as Periodo[]), pistas);
+  // «Pedir recordatorio a Claude» (rutina C): ni los «no va (por defecto)» ni los «nunca a partidos» (D146) ni quien tiene
+  // una ausencia que cubre el dia, también sin fecha de vuelta (D150): la regla de todas las pantallas.
+  const rec = recordatorio(evento, ordenarRespuestas(evento, invitadosDe(evento).filter((j) => !efectivaEn(evento, j.person_id, respDe(evento, j.person_id), defecto).por), filasR.filter((r) => r.evento_id === evento.id).map((r) => ({ ...r, motivo: r.motivo === "horario" ? "otro" : r.motivo })) as never, periodos.filter((p) => p.hasta) as Periodo[]), pistas);
   const alertasL = (alertas ?? []) as { id: string; evento_id: string; person_id: string; antes: Respuesta; despues: Respuesta; en: string }[];
 
   const enFranja = periodos.filter((p) => nombre.has(p.person_id)).sort((a, b) => (nombre.get(a.person_id)! < nombre.get(b.person_id)! ? -1 : 1));

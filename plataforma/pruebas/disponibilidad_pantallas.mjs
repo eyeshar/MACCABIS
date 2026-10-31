@@ -8,6 +8,11 @@
 //   - Tablero de un entreno: las mismas cifras que el Panel (también tras «pasar a sin responder»); de un partido, sin los «nunca a partidos».
 //   - Grupos: no salen en «van» salvo que hayan dicho «voy».
 //   - Convocatoria: un «nunca a partidos» que dice «voy» sale en «Disponibles sin convocar» con su motivo (regla 1.7).
+//   - Ausencias por periodo (D150): sin respuesta y con una ausencia, «no van» en el Panel, el tablero (evento y domingo),
+//     las respuestas y los grupos, con el motivo solo para gestores, y fuera de «Pedir recordatorio a Claude»; si responde,
+//     gana su respuesta. Panel y tablero, con los mismos datos, dan las mismas cifras con ausencias, con «no suele
+//     entrenar» y con «solo con ficha».
+//   - Panel a 375 px: «Partidos del domingo» en tarjetas, sin desbordar; en escritorio, la tabla.
 //   - El jugador marcado, en su zona (375 px): nada de las marcas.
 //
 //   npm run pruebas:disponibilidad-pantallas
@@ -24,6 +29,9 @@ try {
   // Luz y Teo «no suelen entrenar» (Teo responde «voy»); Ugo es «nunca a partidos» (con fichas, para probar el motor);
   // Ana y Bea, sin marca (Bea dice «voy»).
   await sinteticos(sql, [['sint-luz', 'Luz', true, false], ['sint-teo', 'Teo', true, true], ['sint-ugo', 'Ugo', true, true], ['sint-ana', 'Ana', true, true], ['sint-bea', 'Bea', true, true]]);
+  // Para las ausencias (D150, al final): Vicaus y Noaus con ficha; Solsf y Pausf sin ficha (la lista de jugadores se lee
+  // al arrancar: se crean aquí).
+  await sinteticos(sql, [['sint-vic', 'Vicaus', true, true], ['sint-noa', 'Noaus', true, true], ['sint-sol', 'Solsf', false, false], ['sint-pau', 'Pausf', false, false]]);
   for (const [p, pos, niv, nse, nap] of [['sint-luz', 'base', 'B', true, false], ['sint-teo', 'pivot', 'C', true, false], ['sint-ugo', 'alero', 'A', false, true], ['sint-ana', 'escolta', 'C', false, false], ['sint-bea', 'alero', 'D', false, false]]) {
     await sql`insert into public.jugadores_privado (person_id, posicion, nivel, dobla, no_suele_entrenar, nunca_partidos) values (${p}, ${pos}, ${niv}, ${!nap}, ${nse}, ${nap})`;
   }
@@ -144,12 +152,87 @@ try {
   const fila = await sql`select equipos from public.convocatorias where fecha = ${J3}`;
   ok(!JSON.stringify(fila[0]?.equipos ?? {}).includes('sint-ugo'), 'y la propuesta guardada no lo lleva', JSON.stringify(fila[0]?.equipos ?? null));
 
+  console.log('\n== Ausencias por periodo (D150): cuentan como «no va» en todas las pantallas');
+  await sql`delete from public.respuestas where evento_id = ${mda.id} and person_id = 'sint-ugo'`;
+  // Vic: ausencia y sin responder. Noa: ausencia pero dice «voy» al entreno (gana su respuesta). Luz («no suele entrenar»):
+  // además, una ausencia sin fecha de vuelta (cuenta por la ausencia). Sol y Pau, sin ficha (Sol dice «voy», Pau ausente).
+  const [desde, hasta] = [ent.fecha, J3].sort();
+  await sql`insert into public.ausencias_periodo (person_id, desde, hasta, motivo, origen) values
+    ('sint-vic', ${desde}, ${hasta}, 'viaje', 'jugador'), ('sint-noa', ${desde}, ${hasta}, 'trabajo', 'jugador'),
+    ('sint-luz', ${desde}, null, 'lesion', 'gestor'), ('sint-pau', ${desde}, ${hasta}, 'otro', 'jugador')`;
+  await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen) values (${ent.id}, 'sint-noa', 'va', 'jugador'), (${ent.id}, 'sint-sol', 'va', 'sporteasy')`;
+  const lista = async (pagina, prueba, k) => { await pagina.getByTestId(`${prueba}-${k}`).click(); const t = await pagina.getByTestId(`${prueba}-lista`).innerText(); await pagina.getByTestId(`${prueba}-${k}`).click(); return t; };
+
+  for (const conFicha of [false, true]) {
+    if (conFicha) {
+      // «Solo con ficha» (D148): el entreno pasa a una pista con la marca; Sol y Pau dejan de estar invitados.
+      await sql`update public.pistas set solo_con_ficha = true where slug = 'valdebernardo'`;
+      await sql`update public.eventos set pista_id = (select id from public.pistas where slug = 'valdebernardo'), ubicacion_nombre = null where id = ${ent.id}`;
+      ok((await sql`select public.solo_con_ficha_en(e) s from public.eventos e where id = ${ent.id}`)[0].s !== null, 'el entreno queda en una pista «solo con ficha»');
+    }
+    const cual = conFicha ? 'con «solo con ficha»' : 'pista sin marca';
+    cp = await cifrasPanel();
+    const noVan = await lista(pg, 'entreno-numeros', 'no'), vanP = await lista(pg, 'entreno-numeros', 'va'), sinP = await lista(pg, 'entreno-numeros', 'sin');
+    ok(/Vicaus/.test(noVan) && /Ausente del .*\(Viaje\)/.test(noVan), `Panel (${cual}): Vic, sin responder y ausente, en «no van» con su ausencia y motivo`, noVan);
+    ok(/Luz/.test(noVan) && /Ausente del .*sin fecha de vuelta \(Lesión\)/.test(noVan) && !(await pg.getByTestId('por-defecto-linea').count()), `Panel (${cual}): Luz cuenta por la ausencia (sin fecha de vuelta), no por defecto`, noVan);
+    ok(/Noaus/.test(vanP) && !/Noaus/.test(noVan), `Panel (${cual}): Noa dijo «voy»: gana su respuesta`, vanP);
+    ok(!/Vicaus|Luz/.test(sinP) && /Ana/.test(sinP), `Panel (${cual}): ni Vic ni Luz en «sin responder»; Ana sí`, sinP.replace(/\n/g, ' · '));
+    ok(conFicha ? !/Solsf|Pausf/.test(noVan + vanP + sinP) : /Solsf/.test(vanP) && /Pausf/.test(noVan), conFicha ? 'Panel: Sol y Pau (sin ficha) fuera de los contadores' : 'Panel: sin la marca de la pista, Sol va y Pau no va (ausente)', noVan + ' | ' + vanP);
+    ct = await cifrasTablero();
+    ok(JSON.stringify(cp) === JSON.stringify(ct), `mismas cifras en el Panel y en el tablero del entreno, ${cual} (van ${ct.va} · dudan o sin responder ${ct.dudaYSin} · no van ${ct.no})`, `${JSON.stringify(cp)} / ${JSON.stringify(ct)}`);
+    const vicT = pg.getByTestId('columna-no').locator('[data-person="sint-vic"]');
+    ok(await visto(vicT) && /Ausente del/.test(await vicT.innerText()), `tablero (${cual}): Vic en «No van» con su ausencia`);
+    ok((await pg.getByTestId('columna-va').locator('[data-person="sint-noa"]').count()) === 1, `tablero (${cual}): Noa en «Van»`);
+  }
+
+  // Domingo: el partido del MdA en el Panel (si es el domingo que enseña) y su tablero dan lo mismo; el tablero del domingo
+  // pone a Vic en «No van».
+  await pg.goto(`${APP}/gestion/tablero?evento=${mda.id}`);
+  await visto(pg.getByTestId('columna-no'));
+  const cMda = { va: await pg.getByTestId('columna-va').locator('[data-person]').count(), dudaYSin: await pg.getByTestId('columna-duda').locator('[data-person]').count(), no: await pg.getByTestId('columna-no').locator('[data-person]').count() };
+  ok((await pg.getByTestId('columna-no').locator('[data-person="sint-vic"]').count()) === 1, 'tablero del partido: Vic (ausente, sin responder) en «No van»');
+  await pg.goto(`${APP}/gestion`);
+  if (await pg.getByTestId(`respuestas-${mda.id}`).count()) {
+    const n = async (k) => Number((await pg.getByTestId(`respuestas-${mda.id}-${k}`).innerText()).match(/\d+/)[0]);
+    const cPanel = { va: await n('va'), dudaYSin: (await n('duda')) + (await n('sin')), no: await n('no') };
+    ok(JSON.stringify(cPanel) === JSON.stringify(cMda), `Panel y tablero del partido del MdA: mismas cifras (no van ${cMda.no})`, `${JSON.stringify(cPanel)} / ${JSON.stringify(cMda)}`);
+  } else console.log('  (el Panel enseña otro domingo: el partido se comprueba en su tablero y en el del domingo)');
+  await pg.goto(`${APP}/gestion/tablero?domingo=${J3}`);
+  await visto(pg.getByTestId('tabla-novan'));
+  const vicD = pg.getByTestId('tabla-novan').locator('[data-person="sint-vic"]');
+  ok(await visto(vicD) && /Ausente del/.test(await vicD.innerText()), 'tablero del domingo: Vic en «No van», con su ausencia', await pg.getByTestId('tabla-novan').innerText().catch(() => ''));
+  ok(!(await pg.getByTestId('tabla-juegan').locator('[data-person="sint-vic"]').count()), 'y no en «Duda o sin responder»');
+
+  await pg.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
+  const filaVic = pg.locator('tr[data-respuesta]').filter({ hasText: 'Vicaus' });
+  ok((await filaVic.getAttribute('data-respuesta')) === 'no', 'respuestas del entreno: Vic, «no va» por su ausencia', await filaVic.innerText());
+  await pg.getByTestId('recordatorio').locator('summary').click();
+  const recA = await pg.getByTestId('recordatorio').innerText();
+  ok(/Ana/.test(recA) && !/Vicaus|Luz/.test(recA), '«Pedir recordatorio a Claude»: Ana sí; ni Vic ni Luz (ausencia sin fecha de vuelta)', recA.slice(0, 300));
+
+  await pg.goto(`${APP}/gestion/grupos/${ent.id}`);
+  const poolA = await pg.locator('.gr-sin').innerText();
+  ok(/3 dicen «Voy»/.test(await pg.locator('.gs-titulo').innerText()) && /Noaus/.test(poolA) && !/Vicaus|Luz|Solsf/.test(poolA), 'grupos: «3 dicen «Voy»» (Teo, Bea y Noa); ni Vic ni Luz (ausentes) ni Sol (sin ficha)', poolA);
+
+  console.log('\n== Panel a 375 px: «Partidos del domingo» en tarjetas');
+  await pm.goto(`${APP}/gestion`);
+  ok(await sinDesbordar(pm), 'Panel a 375 px, con ausencias y contadores: sin desbordar');
+  const tarjeta = pm.locator('.gs-partidos tr.eq-partido').first();
+  ok((await tarjeta.evaluate((el) => getComputedStyle(el).display)) === 'grid' && (await tarjeta.evaluate((el) => el.getBoundingClientRect().right <= document.documentElement.clientWidth)), 'cada partido es una tarjeta que cabe en el ancho');
+  const resp = tarjeta.locator('td[data-label="Respuestas"]');
+  if (await resp.locator('[data-testid="enlace-respuestas"]').count()) {
+    ok(await resp.evaluate((td) => { const a = td.querySelector('[data-testid="enlace-respuestas"]').getBoundingClientRect(); return a.width > 0 && a.right <= td.getBoundingClientRect().right + 1; }), '«Ver respuestas y motivos» entero dentro de la tarjeta (no se corta)');
+  }
+  await pg.goto(`${APP}/gestion`);
+  ok((await pg.locator('.gs-partidos tr.eq-partido').first().evaluate((el) => getComputedStyle(el).display)) === 'table-row', 'en escritorio, la tabla de siempre');
+
   console.log('\n== El jugador marcado, en su zona (375 px): nada de las marcas');
   const pj = await e.sesion('luz@pruebas.local', 375);
   for (const ruta of ['/', `/mi-zona/evento/${ent.id}`, '/mi-zona']) {
     await pj.goto(`${APP}${ruta}`);
     const html = await pj.content();
     ok(!/por defecto|suele entrenar|nunca a partidos|nunca_partidos|no_suele/i.test(html), `${ruta}: ni en la página ni en el HTML`);
+    ok(!/Ausente del/.test(html), `${ruta}: tampoco la nota de una ausencia (solo gestores)`);
     ok(await sinDesbordar(pj), `${ruta}: sin desbordar a 375 px`);
   }
   const r = await pj.goto(`${APP}/gestion/convocatoria/datos`);

@@ -23,7 +23,7 @@ import { gruposEvento, lineaDudas, sinFichaQueVan, type RespuestaPersona } from 
 import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
-import { claveQuitado, noVaPorDefecto } from "@/lib/disponibilidad/porDefecto";
+import { ausenciaQueCubre, claveQuitado, noVaPorDefecto } from "@/lib/disponibilidad/porDefecto";
 import PorDefectoEntreno from "./PorDefectoEntreno";
 
 export const metadata = { title: "Gestión · Maccabis" };
@@ -116,13 +116,15 @@ export default async function InicioGestion() {
     const grupos = gruposEvento(ev as never, js, rs, true, defecto);
     const n = (k: string) => grupos.find((g) => g.k === k)!.n;
     // D148: quien dijo «voy» sin ficha a un entreno en una pista «solo con ficha»: aparte, con su aviso.
-    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0, dudas: lineaDudas({ ...ev, oficial: ev.oficial ?? true } as never, grupos, rs), sinFicha: sinFichaQueVan(ev as never, js, rs) };
+    // `respondidas`: las respuestas de verdad (sin los «no» por defecto ni por ausencia, D146 y D150).
+    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0, respondidas: rs.filter((r) => r.respuesta !== "sin_responder").length, dudas: lineaDudas({ ...ev, oficial: ev.oficial ?? true } as never, grupos, rs), sinFicha: sinFichaQueVan(ev as never, js, rs) };
   };
   const cuentasDomingo = new Map(evDomingo.map((e) => [e.clave, cuentas(e)]));
   const respEntreno = entreno ? cuentas(entreno) : null;
-  // D146: quien «no suele entrenar» y no ha respondido a este entreno (por defecto, «no va») y a quien se le quito.
+  // D146: quien «no suele entrenar» y no ha respondido a este entreno (por defecto, «no va») y a quien se le quito. Si
+  // tiene una ausencia que cubre el dia, cuenta por la ausencia (D150) y no sale aqui.
   const sinMarca = (p: string) => ((rsTodas ?? []) as { evento_id: string; person_id: string; respuesta: Respuesta }[]).find((r) => r.evento_id === entreno?.id && r.person_id === p)?.respuesta ?? "sin_responder";
-  const conMarca = entreno ? convocadosDe(entreno, js).filter((j) => noVaPorDefecto(entreno, defecto.marcas.get(j.person_id), sinMarca(j.person_id))) : [];
+  const conMarca = entreno ? convocadosDe(entreno, js).filter((j) => noVaPorDefecto(entreno, defecto.marcas.get(j.person_id), sinMarca(j.person_id)) && !ausenciaQueCubre(j.person_id, entreno.fecha, defecto.ausencias)) : [];
   const quitado = (p: string) => !!entreno && defecto.quitados.has(claveQuitado(entreno.id, p));
   const porDefecto = conMarca.filter((j) => !quitado(j.person_id)).map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
   const quitadosEntreno = conMarca.filter((j) => quitado(j.person_id)).map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
@@ -209,7 +211,7 @@ export default async function InicioGestion() {
             </div>
             {delDomingo.length ? (
               <div className="tabla-desplazable">
-                <table className="gs-tabla">
+                <table className="gs-tabla gs-partidos">
                   <thead><tr><th>Equipo</th><th>Partido</th><th>Hora · pista</th><th>Equipación</th><th>Respuestas</th><th>Convocados</th></tr></thead>
                   <tbody>
                     {delDomingo.map((e) => {
@@ -268,7 +270,7 @@ export default async function InicioGestion() {
                 {" "}(lo habitual: miércoles {habitual.inicio}–{habitual.fin} en {pistaHabitual.nombre}{pistaHabitual.enObras ? ", en obras" : ""})
               </span>
             ) : <span className="suave">No quedan entrenos en el calendario.</span>}
-            {respEntreno && respEntreno.va + respEntreno.duda + respEntreno.no - porDefecto.length > 0 ? (
+            {respEntreno && respEntreno.respondidas > 0 ? (
               <div data-testid="respuestas-entreno" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <Numeros variante="cajas" columnas={4} prueba="entreno-numeros" etiqueta="Respuestas al entreno" grupos={respEntreno.grupos} />
                 {respEntreno.dudas && <span className="pequeno suave" data-testid="linea-dudas">{respEntreno.dudas}</span>}

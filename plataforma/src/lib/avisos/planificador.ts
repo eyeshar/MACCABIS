@@ -14,7 +14,7 @@
 //   - Horas de silencio (22:30–8:30): sale a las 8:30 salvo que el evento empiece en menos de 12 h.
 
 import { fueraPorFicha, quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
-import { claveQuitado, pendiente, type MarcasDisponibilidad } from "../disponibilidad/porDefecto.ts";
+import { ausenciaQueCubre, claveQuitado, pendiente, type MarcasDisponibilidad } from "../disponibilidad/porDefecto.ts";
 import { avisoDeDudas, enMadrid, horaDeEnvio, limiteDudas, lunesDe, madrid, sumarDias } from "./horario.ts";
 import { queEs, textoDudas, textoPasoNoVa, textoEntrenoHoy, textoLunes, textoMartes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
 
@@ -68,15 +68,15 @@ export const urlDomingo = (fecha: string) => `/mi-zona/domingo/${fecha}`;
 export function estadoPara(person: string, e: Pick<EventoPlan, "id" | "fecha">, respuestas: RespuestaPlan[], ausencias: AusenciaPlan[]) {
   const r = respuestas.find((x) => x.evento_id === e.id && x.person_id === person)?.respuesta ?? "sin_responder";
   if (r !== "sin_responder") return r;
-  const cubre = ausencias.some((a) => !a.borrada_en && a.person_id === person && a.desde <= e.fecha && (a.hasta == null || a.hasta >= e.fecha));
-  return cubre ? "no" : "sin_responder";
+  return ausenciaQueCubre(person, e.fecha, ausencias) ? "no" : "sin_responder";
 }
 
 /** ¿Le toca recordatorio a este jugador en este evento? Sin responder (ni ausencia) y sin estar fuera por D146. */
 export function pendienteDe(j: Pick<JugadorPlan, "person_id" | "marcas">, e: Pick<EventoPlan, "id" | "fecha" | "tipo" | "oficial">, d: Pick<DatosPlan, "respuestas" | "ausencias" | "quitados">) {
-  const estado = estadoPara(j.person_id, e, d.respuestas, d.ausencias);
+  // La regla de todas las pantallas (`respuestaEfectiva`, D146 y D150): con una ausencia que cubre el dia, no es pendiente.
+  const r = d.respuestas.find((x) => x.evento_id === e.id && x.person_id === j.person_id)?.respuesta ?? "sin_responder";
   const quitado = !!d.quitados?.some((q) => claveQuitado(q.evento_id, q.person_id) === claveQuitado(e.id, j.person_id));
-  return pendiente(e, j.marcas, estado, quitado);
+  return pendiente(e, j.marcas, r, quitado, ausenciaQueCubre(j.person_id, e.fecha, d.ausencias));
 }
 
 type Hueco = { tipo: "lunes" | "martes" | "dia" | "creado" | "24h"; toca: Date };

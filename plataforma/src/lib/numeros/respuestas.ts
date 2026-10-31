@@ -3,13 +3,14 @@ import { convocadosDe, TEXTO_MOTIVO, type EventoFila, type JugadorBasico, type M
 import { fueraPorFicha } from "@/lib/respuestas/dominio";
 import { dudaAbierta, enMadrid, limiteDudas, madrid } from "@/lib/avisos/horario";
 import { hrefJugador } from "./enlaces";
-import { claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, type Defecto } from "@/lib/disponibilidad/porDefecto";
+import { efectivaEn, NOTA_POR_DEFECTO, type AusenciaDisp, type Defecto } from "@/lib/disponibilidad/porDefecto";
 
 // Los cuatro contadores de un evento (van / dudan / sin responder / no van) con sus nombres (D139). Lo usan el Panel, Eventos y
 // las Respuestas del evento. `conMotivos` solo lo pasan las pantallas de gestion: el motivo y el detalle del «no» no salen nunca
 // de aqui hacia una pantalla de jugador (D46, D82). `defecto` (D146, marcas privadas) solo lo pasan las pantallas de
 // gestion: en un entreno, quien «no suele entrenar» y no ha respondido va a «no van» con la nota «Por defecto»; en un
-// partido, quien es «nunca a partidos» y no ha respondido no cuenta.
+// partido, quien es «nunca a partidos» y no ha respondido no cuenta; y quien no ha respondido y tiene una ausencia por
+// periodo que cubre el dia va a «no van» con la ausencia como nota (D150). La regla es `respuestaEfectiva`.
 export type RespuestaPersona = { person_id: string; respuesta: Respuesta; motivo?: Motivo | "horario" | "no_confirmo" | null; detalle?: string | null };
 
 export function notaMotivo(motivo: Motivo | "horario" | "no_confirmo" | null | undefined, detalle?: string | null) {
@@ -17,18 +18,25 @@ export function notaMotivo(motivo: Motivo | "horario" | "no_confirmo" | null | u
   return `${motivo === "horario" ? "Horario" : motivo === "no_confirmo" ? "No confirmó" : TEXTO_MOTIVO[motivo]}${detalle ? ` · ${detalle}` : ""}`;
 }
 
+/** «Ausente del 02/11 al 09/11 (Viaje)»: la nota de una ausencia por periodo. Solo gestores. */
+export function notaAusencia(a: Pick<AusenciaDisp, "desde" | "hasta" | "motivo"> | null | undefined) {
+  if (!a) return null;
+  const dm = (f: string) => `${f.slice(8, 10)}/${f.slice(5, 7)}`;
+  return `Ausente del ${dm(a.desde)}${a.hasta ? ` al ${dm(a.hasta)}` : ", sin fecha de vuelta"}${a.motivo ? ` (${TEXTO_MOTIVO[a.motivo as Motivo] ?? a.motivo})` : ""}`;
+}
+
 export function gruposEvento(
-  e: Pick<EventoFila, "tipo" | "equipo" | "oficial" | "solo_con_ficha_en"> & { id?: string }, jugadores: JugadorBasico[], filas: RespuestaPersona[], conMotivos = true, defecto?: Defecto,
+  e: Pick<EventoFila, "tipo" | "equipo" | "oficial" | "solo_con_ficha_en" | "fecha"> & { id?: string }, jugadores: JugadorBasico[], filas: RespuestaPersona[], conMotivos = true, defecto?: Defecto,
 ): GrupoNum[] {
   const porPersona = new Map(filas.map((r) => [r.person_id, r]));
   const g: Record<Respuesta, PersonaNum[]> = { va: [], duda: [], no: [], sin_responder: [] };
   for (const j of convocadosDe(e, jugadores)) {
     const r = porPersona.get(j.person_id);
     const respuesta = r?.respuesta ?? "sin_responder";
-    const m = defecto?.marcas.get(j.person_id);
-    if (fueraDelPartido(e, m, respuesta)) continue;
-    if (noVaPorDefecto(e, m, respuesta, !!e.id && !!defecto?.quitados.has(claveQuitado(e.id, j.person_id)))) {
-      g.no.push({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: NOTA_POR_DEFECTO });
+    const ef = efectivaEn(e, j.person_id, respuesta, defecto);
+    if (ef.fuera) continue;
+    if (ef.por) {
+      g.no.push({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: !conMotivos ? null : ef.por === "defecto" ? NOTA_POR_DEFECTO : notaAusencia(ef.ausencia) });
       continue;
     }
     g[respuesta].push({ nombre: j.nombre_visible, href: hrefJugador(j.person_id), nota: conMotivos && respuesta === "no" ? notaMotivo(r?.motivo, r?.detalle) : null });

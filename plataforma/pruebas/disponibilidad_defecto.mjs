@@ -4,7 +4,8 @@
 //   - la regla única (src/lib/disponibilidad/porDefecto.ts): «no suele entrenar» sin respuesta = «no va (por defecto)»
 //     solo en entrenos; si responde, manda su respuesta; quitado para un entreno, vuelve a «sin responder»; sin marca,
 //     todo igual; en un partido, la marca no cuenta. «Nunca a partidos»: fuera de los partidos sin responder; en entrenos,
-//     como cualquiera;
+//     como cualquiera; y la ausencia por periodo (D150): sin respuesta y con una ausencia que cubre el día, «no» en
+//     cualquier evento y sin recordatorios; si responde, gana su respuesta;
 //   - la migración 20261028230000 es solo aditiva y reversible (su .revertir.sql la deshace limpia y se vuelve a aplicar);
 //   - NINGÚN jugador (ni anónimo, ni jugador, ni una cuenta sin ficha) lee las marcas ni las excepciones, ni escribe;
 //   - los gestores sí: marcan en jugadores_privado y quitan / devuelven el defecto de un entreno;
@@ -40,6 +41,22 @@ console.log('\n== La regla (funciones puras)');
   ok(!D.fueraDelPartido(liga, NAP, 'va') && !D.fueraDelPartido(entreno, NAP, 'sin_responder') && D.pendiente(entreno, NAP, 'sin_responder'), 'si respondió se ve; en un entreno, como cualquiera');
   const d = D.defectoDe([{ person_id: 'a', no_suele_entrenar: true, nunca_partidos: false }, { person_id: 'b', no_suele_entrenar: false, nunca_partidos: false }], [{ evento_id: 'e1', person_id: 'a' }]);
   ok(d.marcas.size === 1 && d.marcas.get('a').no_suele_entrenar && d.quitados.has(D.claveQuitado('e1', 'a')) && !d.quitados.has(D.claveQuitado('e2', 'a')), 'defectoDe: solo quien tiene alguna marca; el quitado vale para su entreno');
+
+  console.log('\n== Ausencias por periodo en la regla única (D150)');
+  const AUS = { person_id: 'a', desde: '2026-11-01', hasta: '2026-11-08', motivo: 'viaje' };
+  const ABIERTA = { person_id: 'a', desde: '2026-11-20', hasta: null, motivo: 'lesion' };
+  ok(D.ausenciaQueCubre('a', '2026-11-04', [AUS]) === AUS && D.ausenciaQueCubre('a', '2026-11-08', [AUS]) === AUS && !D.ausenciaQueCubre('a', '2026-11-09', [AUS]) && !D.ausenciaQueCubre('b', '2026-11-04', [AUS]), 'ausenciaQueCubre: del primer al último día, solo de esa persona');
+  ok(D.ausenciaQueCubre('a', '2027-03-01', [ABIERTA]) === ABIERTA && !D.ausenciaQueCubre('a', '2026-11-04', [{ ...AUS, borrada_en: '2026-10-30' }]), 'sin fecha de vuelta cubre en adelante; una borrada no cuenta');
+  const ef = (e, m, r, o) => D.respuestaEfectiva(e, m, r, o);
+  ok(ef(entreno, null, 'sin_responder', { ausencia: AUS }).respuesta === 'no' && ef(entreno, null, 'sin_responder', { ausencia: AUS }).por === 'ausencia', 'sin responder y con ausencia, en un entreno: «no» por la ausencia');
+  ok(ef(liga, null, 'sin_responder', { ausencia: AUS }).respuesta === 'no' && ef(amistoso, null, 'sin_responder', { ausencia: AUS }).respuesta === 'no', 'y en un partido, igual');
+  ok(['va', 'duda', 'no'].every((r) => ef(entreno, null, r, { ausencia: AUS }).respuesta === r && ef(entreno, null, r, { ausencia: AUS }).por === null), 'si responde explícitamente, gana su respuesta (va, duda o no)');
+  ok(!D.pendiente(entreno, null, 'sin_responder', false, AUS) && !D.pendiente(liga, null, 'sin_responder', false, AUS) && D.pendiente(liga, null, 'sin_responder', false, null), 'con ausencia no está pendiente (sin recordatorios); sin ella, sí');
+  ok(ef(entreno, NSE, 'sin_responder', { ausencia: AUS }).por === 'ausencia' && ef(entreno, NSE, 'sin_responder', { ausencia: AUS, quitado: true }).respuesta === 'no', '«no suele entrenar» con ausencia: cuenta por la ausencia (también si se le quitó el defecto)');
+  ok(ef(liga, NAP, 'sin_responder', { ausencia: AUS }).fuera, '«nunca a partidos» con ausencia, en un partido: fuera, como sin ausencia');
+  ok(ef(entreno, NSE, 'sin_responder').por === 'defecto' && ef(entreno, null, 'sin_responder').respuesta === 'sin_responder', 'sin ausencia: el defecto y «sin responder», como antes');
+  const d2 = D.defectoDe([], [], [AUS, { ...ABIERTA, borrada_en: '2026-10-30' }]);
+  ok(d2.ausencias.length === 1 && D.efectivaEn({ tipo: 'entreno', id: 'e', fecha: '2026-11-04' }, 'a', 'sin_responder', d2).por === 'ausencia' && D.efectivaEn({ tipo: 'entreno', id: 'e', fecha: '2026-11-04' }, 'a', 'sin_responder', undefined).respuesta === 'sin_responder', 'efectivaEn: con las ausencias del gestor, «no»; sin ellas (pantallas de jugador), «sin responder»');
 }
 
 const pila = await arrancar();

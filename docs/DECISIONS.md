@@ -1115,3 +1115,28 @@ Los avisos de prueba (botón de Cuenta, `tipo = 'prueba'`) no pasan por la tarea
 **Pruebas:** ninguna se ha borrado ni desactivado. Las 51 suites de la batería (sin las 7 de solo local) dan **los mismos OK que antes, una a una**. Batería local: **766 s (12,8 min)** frente a 1.421 s en serie. Ver el resumen del bloque en ESTADO.
 
 **Vercel: no construir lo que no toca `plataforma/` (OK de Iván, 30/10/2026).** Medido en 30 días: 68 de 176 construcciones de Maccabis (39 %) no tocaban `plataforma/` (53 eran de `docs`). Va **en el repositorio, no en el panel**: `plataforma/vercel.json` (la Root Directory del proyecto en Vercel es `plataforma/`) con `ignoreCommand: sh scripts/vercel_construir.sh`. El script compara `plataforma/` contra el último commit desplegado bien de esa rama (`VERCEL_GIT_PREVIOUS_SHA`; así un push con varios commits no se salta los de antes del último) o, si no lo hay, contra `HEAD^1`, el primer padre: en un `merge --no-ff` a `main` es el `main` anterior y el diff recoge toda la rama. Sale con 0 (no construir) solo si nada cambia en `plataforma/` (incluido `plataforma/src/data/`, que sí construye); ante cualquier duda (commit desplegado que no está en el clon, sin padre, error de git) construye. Nada tocado en el panel de Vercel ni en TCPC. La propuesta 2 (vistas previas solo si la rama cambia `src/`, `public/` o la configuración) queda sin aplicar.
+
+
+## D150 — Una ausencia por periodo sin respuesta cuenta como «no va» en todas las pantallas de gestión; la regla de disponibilidad vive en un solo sitio (Iván, 30/10/2026, `feat/ausencias-panel-movil`) — COMPLETA D146 (y D99)
+
+**Contexto:** quedó apuntado al cerrar D146. Un jugador con una ausencia por periodo que cubre el evento y sin respuesta salía en «No van» en el tablero de un evento suelto, en «Duda o sin responder» en el tablero del domingo y en «sin responder» en el Panel y en Eventos. Las respuestas del evento y los recordatorios automáticos ya lo contaban como «no», pero «Pedir recordatorio a Claude» solo descartaba las ausencias con fecha de vuelta: una «sin fecha de vuelta» seguía en la lista.
+
+**Decisión de Iván:** cuenta como **«no va»** en el Panel y en el tablero (en todos), con el **motivo de la ausencia visible solo para gestores**. Sin recordatorios. **Si responde explícitamente, gana su respuesta.** Una sola regla para el Panel, el tablero, los grupos y los recordatorios.
+
+**La regla (`respuestaEfectiva`, `lib/disponibilidad/porDefecto.ts`, pura), en este orden:**
+1. Si respondió (va, duda o no), su respuesta.
+2. Si no, en un partido y con «nunca a partidos» (D146): fuera (ni invitado ni pendiente). Igual aunque tenga ausencia.
+3. Si no, con una ausencia que cubre el día (también sin fecha de vuelta; las borradas no cuentan): **«no»**, con la nota «Ausente del 02/11 al 09/11 (Viaje)».
+4. Si no, en un entreno y con «no suele entrenar» (y no quitado para ese entreno): «no va (por defecto)». Si además tiene ausencia, cuenta por la ausencia (la 3) y no sale en la línea «N no van por defecto».
+5. Si no, «sin responder» (pendiente: recibe recordatorios).
+«Solo con ficha» (D148) va antes de todo esto: quien no está invitado (`quienResponde`) no entra en ninguna cuenta.
+
+**Dónde se aplica (todas la llaman):** `gruposEvento` (los contadores del Panel —partidos del domingo y entreno— y de Eventos), el tablero de un evento suelto (`cargarTableroEvento`), `cargarContexto` de la convocatoria (y con él el tablero del domingo, la convocatoria y su motor: un ausente sin responder es un «no» con el motivo de la ausencia), los grupos de entreno (`cargarGrupos`: «van» y «dudan»), las respuestas del evento («Pedir recordatorio a Claude») y `pendienteDe` del planificador de avisos (lunes, martes, día del entreno y «Enviar un recordatorio ahora»). Las ausencias las lee `cargarDefecto` con la sesión del gestor (RLS) y viajan en `Defecto` junto a las marcas de D146; `efectivaEn` aplica la regla con eso.
+
+**Privacidad:** la nota de la ausencia solo sale en pantallas de gestión. Las pantallas de jugador no pasan `Defecto`: ahí nada cambia (D141, D46) y el HTML no lleva la nota (comprobado en `pruebas:disponibilidad-pantallas`).
+
+**Sin migraciones ni cambios de permisos.**
+
+**Panel en móvil (mismo bloque, BACKLOG):** la tabla «Partidos del domingo» ya pasaba a tarjetas por debajo de 640 px (solo CSS, `fix/deuda-octubre`), pero la columna «Respuestas» que llegó después ponía los cuatro contadores en columna junto a su etiqueta y cortaba «Ver respuestas y motivos» a 375 px. Ahora cada partido es una tarjeta como las de Scouting: equipo y hora · pista arriba, el partido, la equipación en una línea y «Respuestas» y «Convocados» a todo el ancho, con la etiqueta encima. Solo CSS (`.gs-partidos`, por debajo de 640 px): mismo HTML, así que ni identificadores duplicados ni cambios en escritorio.
+
+**Pruebas:** `pruebas:disponibilidad` (la regla: ausencia en entreno y partido, gana la respuesta explícita, sin fecha de vuelta, borrada, con «no suele entrenar», con «nunca a partidos», `efectivaEn` con y sin las ausencias del gestor) y `pruebas:disponibilidad-pantallas` (con los mismos datos, **el Panel y el tablero dan las mismas cifras** con ausencias, con «no suele entrenar» y con «solo con ficha»; el ausente en «No van» con su nota en el Panel, el tablero del entreno, el del partido y el del domingo; el que tiene ausencia y dice «voy», en «Van»; fuera de «Pedir recordatorio a Claude» también sin fecha de vuelta; grupos; Panel a 375 px en tarjetas, sin desbordar y con el enlace entero; en escritorio, la tabla; la nota no llega a la zona del jugador). `pruebas:avisos` comprobaba `display: flex` en la tarjeta: ahora es `grid` (misma comprobación, nuevo valor).

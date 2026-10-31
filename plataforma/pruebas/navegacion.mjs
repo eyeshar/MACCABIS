@@ -262,6 +262,13 @@ try {
         ok((await botonGestion.getAttribute('data-dentro')) !== null && (await botonGestion.evaluate((b) => getComputedStyle(b).backgroundColor)) === 'rgb(243, 197, 25)', 'dentro de /gestion, el boton GESTIÓN va relleno de amarillo');
         await p.goto(`${APP}/`);
         ok((await botonGestion.evaluate((b) => getComputedStyle(b).backgroundColor)) !== 'rgb(243, 197, 25)', 'fuera de /gestion, el boton GESTIÓN va con borde, sin relleno');
+        // Contraste de la clasificación con la oficial (D164, rutina B): pegar y «Contrastar», sin guardar nada.
+        await p.goto(`${APP}/gestion/clasificacion`);
+        await p.fill('#oficial', 'G1;MACCABI DE ACOSTAR;99;3;3;0;192;71;0');
+        await p.getByRole('button', { name: 'Contrastar' }).click();
+        const res = p.locator('[data-testid="contraste-resultado"]');
+        ok(await hasta(async () => (await res.count()) === 1) && /DIFIERE/.test(await res.textContent()) && (await res.textContent()).includes('G1 MdA: puntos calculada'), '/gestion/clasificacion: lo pegado se contrasta solo y dice «DIFIERE» con la diferencia', await res.textContent().catch(() => ''));
+        await p.goto(`${APP}/`);
       }
 
       // ---- Hoja "Mas" (movil)
@@ -270,6 +277,7 @@ try {
         const textos = await barra.locator(':scope > a, :scope > button').allTextContents();
         const barraPrevista = { anon: ['Inicio', 'Partidos', 'Liga', 'Acceso', 'Más'], jugador: ['Inicio', 'Agenda', 'Mis números', 'Liga', 'Más'], gestor: ['Inicio', 'Agenda', 'Mis números', 'Gestión', 'Más'] }[rol];
         ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(barraPrevista), `barra inferior: ${barraPrevista.join(' · ')} (D117)`, textos.join(','));
+        if (rol === 'anon') ok((await barra.getByRole('link', { name: 'Partidos' }).getAttribute('aria-current')) === null, 'barra inferior: «Partidos» (ancla de la portada) sin estado activo hasta que tenga página propia');
         await mas.click();
         const hoja = p.getByRole('dialog', { name: 'Más' });
         ok(await hoja.isVisible() && (await mas.getAttribute('aria-expanded')) === 'true', '"Más" abre la hoja desde abajo');

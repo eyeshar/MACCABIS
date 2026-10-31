@@ -21,7 +21,11 @@ let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
 
 const sql = conectar();
+const cuentas = async () => (await sql`select count(*)::int n from auth.users`)[0].n;
 try {
+  // Las cuentas se cuentan antes y después de ESTA ejecución (no contra la foto: entre la foto y hoy se han dado de alta
+  // cuentas de verdad). La foto solo guarda su número de entonces, como dato.
+  const auth0 = await cuentas();
   await sql.begin('read only', async (tx) => {
     const auth = (await tx`select count(*)::int n from auth.users`)[0].n;
     console.log(`  cuentas de auth.users: ${auth}`);
@@ -78,8 +82,8 @@ try {
     ok((await tx`select count(*)::int n from public.eventos`)[0].n === 0, 'no lee la tabla de eventos (ni la columna calculada)');
     ok((await tx`select count(*)::int n from public.jugadores where person_id <> ${jug.person_id}`)[0].n === 0, 'no lee la ficha de otros jugadores (igual que antes)');
     await tx.unsafe('reset role');
-    ok(auth === foto.auth, `cuentas de auth: ${foto.auth} antes y ${auth} después`);
   });
+  if (!ANTES) { const auth1 = await cuentas(); ok(auth1 === auth0, `no se ha creado ni borrado ninguna cuenta (${auth0} antes y ${auth1} después)`); }
 } catch (e) {
   console.log(`  FALLO ${e.message}`); fallos++;
 } finally {

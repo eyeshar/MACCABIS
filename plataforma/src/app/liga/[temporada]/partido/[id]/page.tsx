@@ -9,6 +9,7 @@ import { cargarTemporada } from "@/lib/estadisticas/datos";
 import { LIGA, NUESTRO_DE, TEMPORADA_LIGA, hrefEquipo, partidoPorId, type EstEquipo, type Grupo, type ResultadoLiga } from "@/lib/estadisticas/liga";
 import { bonito, mmss } from "@/lib/jugadoresLiga";
 import { partidosCalendario } from "@/lib/publico";
+import { cargarFuente } from "@/lib/eventos/fuente";
 import { esGestorActual, sesionActual } from "@/lib/sesion";
 import { diaLargo } from "@/lib/dias";
 
@@ -110,8 +111,8 @@ export default async function PaginaPartido({ params }: { params: Promise<{ temp
   const nosLocal = r.local_id === nuestroId;
   const conHoja = !r.incomparecencia && !!r.est;
 
-  // Hora y pista: del calendario oficial, que solo trae los partidos de MdA y MdL.
-  const cal = esNuestro ? partidosCalendario().find((p) => p.equipo === G.nuestro && p.jornada === r.jornada && !p.descansa) : undefined;
+  // Hora y pista: del calendario (tabla de eventos, D151), que solo trae los partidos de MdA y MdL.
+  const cal = esNuestro ? partidosCalendario(await cargarFuente()).find((p) => p.equipo === G.nuestro && p.jornada === r.jornada && !p.descansa) : undefined;
   // Parciales (actas) y boxscore de los nuestros: de la temporada publica (data/season_<t>.json), el mismo de la pestaña Equipo.
   const t = esNuestro ? await cargarTemporada(TEMPORADA_LIGA) : null;
   const sp = t?.partidos.find((p) => p.equipo === G.nuestro && p.fecha === r.fecha) as

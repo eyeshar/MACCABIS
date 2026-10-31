@@ -15,6 +15,9 @@
  *   npm run jornada -- --resumen <f.json> (deja el resultado en un JSON: estado, jornada, texto, motivo)
  *
  * Qué hace:
+ *   0. Regenera data/calendario_<temporada>.json desde la tabla de eventos (D151: es una copia generada; la fuente es la
+ *      tabla, que se cambia en Importar → Calendario). Si la tabla no responde, sigue con la copia que hay. Con
+ *      --no-interactivo y «Nada nuevo», la deja como estaba (la rutina A no deja cambios sin publicar).
  *   1. Localiza los ficheros NUEVOS de la temporada (las actas por su fecha, las hojas por la
  *      etiqueta "26/27" de su título) y los COPIA a fuentes_fbm/<temporada>/ con copia segura
  *      (nunca sobrescribe; si choca un nombre con contenido distinto, para y avisa). Los
@@ -255,6 +258,15 @@ if (require.main === module) {
     if (!cfg) para(`No hay configuración para ${TEMPORADA}.`);
     const BASE = path.join(ROOT, cfg.carpeta);
 
+    // 0. Calendario (D151): copia generada de la tabla de eventos, ANTES de usarlo (jornada, rival y local de cada hoja).
+    const CAL = [path.join(ROOT, 'data', `calendario_${TEMPORADA}.json`), path.join(ROOT, 'plataforma', 'src', 'data', 'calendario.json')];
+    const calPrevio = CAL.map(f => (fs.existsSync(f) ? fs.readFileSync(f) : null));
+    if (!DRY && TEMPORADA === '2026-27') {
+      try { console.log(execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'exportar_calendario.mjs')], { stdio: 'pipe' }).toString().trim()); }
+      catch (e) { console.log(String(e.stdout || e.message).trim() || 'Calendario: no se ha podido regenerar; se usa la copia que hay.'); }
+    }
+    const restaurarCalendario = () => CAL.forEach((f, i) => { if (calPrevio[i]) fs.writeFileSync(f, calPrevio[i]); });
+
     console.log(`Procesar jornada ${TEMPORADA}: buscando ficheros en ${DESDE}${NOINT ? ' (no interactivo)' : ''}`);
     let plan, descartes;
     try {
@@ -263,6 +275,7 @@ if (require.main === module) {
     if (descartes.length) console.log(`${descartes.length} fichero(s) descartado(s) por estar ya cargados.`);
     resumen.nuevos = plan.length;
     if (NOINT && !plan.length) {
+      restaurarCalendario();
       console.log('\nNada nuevo: no hay ficheros nuevos de la temporada; no se regenera nada.');
       resumen.estado = 'nada'; escribeResumen(); return;
     }
@@ -380,6 +393,6 @@ if (require.main === module) {
     } catch (e) { console.log('Proyección: no se ha podido calibrar (' + String(e.stderr || e.message).split('\n')[0] + '). No afecta a la jornada.'); }
 
     resumen.estado = 'lista'; escribeResumen();
-    console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/index.json, data/historia_club.json, data/personas.json y plataforma/src/data/.');
+    console.log('\nListo para revisar. Publicar = commit y push de data/season_' + TEMPORADA + '.json, data/liga_' + TEMPORADA + '.json, data/calendario_' + TEMPORADA + '.json, data/index.json, data/historia_club.json, data/personas.json y plataforma/src/data/.');
   })().catch(e => para(e.message, 'ERROR: ' + e.message));
 }

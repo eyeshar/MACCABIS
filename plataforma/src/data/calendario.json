@@ -5,7 +5,7 @@
   "fichero": null,
   "modificado_portal": null,
   "manual": null,
-  "origen": "Deportes/web (deportesweb.madrid.es), consulta de partidos, leído el 02/10/2026"
+  "origen": "Copia generada de la tabla de eventos (npm run calendario:exportar, D151). No editar a mano: el calendario se cambia en Importar → Calendario."
  },
  "equipos": {
   "MDA": {

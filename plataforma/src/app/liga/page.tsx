@@ -6,6 +6,7 @@ import LigaGrupoPanel from "@/components/liga/LigaGrupo";
 import { SecH } from "@/components/liga/Comunes";
 import { datosLiga, fichasPorNombre, grupoParaPantalla, hrefEquipo, hrefPartido, RIVALES, type Grupo } from "@/lib/estadisticas/liga";
 import { diaLargo, hoyMadrid } from "@/lib/dias";
+import { cargarFuente } from "@/lib/eventos/fuente";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 export default async function Liga({ searchParams }: { searchParams: Promise<{ g?: string; hoy?: string }> }) {
   const { g, hoy: hoyPrueba } = await searchParams;
   const hoy = hoyPrueba && /^\d{4}-\d{2}-\d{2}$/.test(hoyPrueba) ? hoyPrueba : hoyMadrid();
-  const { liga, colores, contra, proximos } = datosLiga(hoy);
+  const { liga, colores, contra, proximos } = datosLiga(hoy, await cargarFuente()); // tabla de eventos (D151)
   const grupo: Grupo = g === "G2" ? "G2" : "G1";
   const fichas = fichasPorNombre();
   // Enlaces de cada equipo y de cada partido (D129), calculados aqui para que el panel no lleve la logica.

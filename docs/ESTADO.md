@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 30/10/2026: **ausencias por periodo = «no va» en todas las pantallas de gestión y Panel en móvil** (`feat/ausencias-panel-movil`, D150, sin merge: Iván revisa la vista previa; sin migraciones)._
+_Última actualización: 30/10/2026: **ausencias por periodo = «no va» en todas las pantallas de gestión y Panel en móvil** (`feat/ausencias-panel-movil`, D150, mergeada en `main` el 31/10 con el OK de Iván y Actions en verde, run `41119004201`; sin migraciones; worktree cerrado y rama borrada)._
 _Última actualización: 30/10/2026, tarde: **procesos de Postgres que quedaban vivos en Windows** (`chore/procesos-postgres`): causa reproducida (hijo `--forkchild` suspendido al matar el postmaster) y arreglada; Postgres se para con `pg_ctl` y `pruebas:limpiar` encuentra los restos por carpeta, por puerto y sin padre (ver la sección)._
 _Última actualización: 30/10/2026: **auditoría del BACKLOG** (`docs/auditoria-backlog`, solo docs): 108 casillas abiertas revisadas contra ESTADO, DECISIONS y git — 33 hechas y 19 obsoletas (al «Histórico», con su prueba o decisión), 17 pendientes de Code, 29 de Iván y 10 con fecha; 11 contradicciones con decisiones vigentes listadas sin resolver; recomendación: archivar `feat/calendario-automatico` (motivos en el BACKLOG, «Pendiente de Iván»)._
 _Última actualización: 30/10/2026, mañana: **cabos técnicos** (`chore/cabos-tecnicos`, mergeada en `main` con Actions en verde): las páginas de partido de la liga en el sitemap y la fecha de descarga antigua de una hoja de liga ya no para la rutina A (ver la sección)._
@@ -16,7 +16,7 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
-## Ausencias por periodo y Panel en móvil (30/10/2026; D150) — `feat/ausencias-panel-movil`, SIN merge (Iván revisa la vista previa)
+## Ausencias por periodo y Panel en móvil (30/10/2026; D150) — `feat/ausencias-panel-movil`, MERGEADA en `main` (31/10, OK de Iván, Actions en verde, run `41119004201`)
 - **Regla:** sin respuesta y con una ausencia por periodo que cubre el evento (también sin fecha de vuelta), cuenta como **«no va»** en el Panel, Eventos, el tablero (evento suelto y domingo), la convocatoria, los grupos y las respuestas del evento, con la nota «Ausente del 02/11 al 09/11 (Viaje)» **solo para gestores**, y **sin recordatorios** (automáticos, «Enviar un recordatorio ahora» y «Pedir recordatorio a Claude», que antes sí incluía las ausencias sin fecha de vuelta). **Si responde, gana su respuesta.** Con «no suele entrenar» y ausencia, cuenta por la ausencia; «nunca a partidos» sigue fuera del partido; «solo con ficha» va antes (quien no está invitado no cuenta).
 - **Un solo sitio:** `respuestaEfectiva` / `efectivaEn` en `lib/disponibilidad/porDefecto.ts`; las ausencias viajan en `Defecto` (`cargarDefecto`, sesión del gestor). Pantallas de jugador sin cambios.
 - **Panel en móvil:** «Partidos del domingo», por debajo de 640 px, en tarjetas como las de Scouting (equipo y hora · pista arriba; respuestas y convocados a todo el ancho). Solo CSS (`.gs-partidos`); escritorio igual. A 375 px, sin desbordamiento y con «Ver respuestas y motivos» entero.

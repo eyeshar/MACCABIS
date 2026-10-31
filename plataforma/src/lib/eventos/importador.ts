@@ -41,12 +41,18 @@ export function leerHora(t: string): string | null | undefined {
   const h = +r[1], m = r[2] ? +r[2] : 0;
   return h > 23 || m > 59 ? undefined : `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
-/** "2", "Pista 2", "Moratalaz - Pista 2" -> 2; vacio -> null; ilegible -> undefined. */
+/** "2", "Pista 2", "Moratalaz - Pista 2" -> 2; tambien como lo escribe Deportes en su web: "Baloncesto 2 Moratalaz",
+ *  "Pabellón baloncesto 3 Moratalaz" -> 2, 3. Vacio -> null; ilegible (sin numero, o con varios sin «pista»/«baloncesto»
+ *  delante) -> undefined. */
 export function leerPista(t: string): number | null | undefined {
   const s = t.trim();
   if (!s) return null;
-  const r = s.match(/(\d{1,2})\s*$/);
-  return r ? +r[1] : undefined;
+  const alFinal = s.match(/(?:^|\D)(\d{1,2})\s*$/);
+  if (alFinal) return +alFinal[1];
+  const trasNombre = normalizar(s).match(/(?:pista|baloncesto|cancha)\s*(?:n[o.º°]?\s*)?(\d{1,2})(?!\d)/);
+  if (trasNombre) return +trasNombre[1];
+  const numeros = s.match(/\d+/g) ?? [];
+  return numeros.length === 1 && numeros[0].length <= 2 ? +numeros[0] : undefined;
 }
 
 // ================================================================ CALENDARIO
@@ -93,7 +99,7 @@ export function leerCalendario(texto: string): LineaCalendario[] {
     const hora = leerHora(c[5] ?? "");
     if (hora === undefined) { salida.push(error("La hora no se entiende (usa 10:15).")); continue; }
     const pista = leerPista(c[6] ?? "");
-    if (pista === undefined) { salida.push(error("La pista debe llevar su número (Pista 2).")); continue; }
+    if (pista === undefined) { salida.push(error("La pista debe llevar su número (Pista 2 o «Baloncesto 2 Moratalaz»).")); continue; }
     salida.push({ n, crudo, tipo: "partido", equipo, grupo, jornada, esLocal: nuestroLocal, rival: (nuestroLocal ? visitante : local).trim(), fecha, hora, pista });
   }
   return salida;

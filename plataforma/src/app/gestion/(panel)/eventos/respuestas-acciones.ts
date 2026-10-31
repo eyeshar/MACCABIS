@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { exigirGestor } from "@/lib/sesion";
 import { textoError } from "@/lib/respuestas/dominio";
 import { recordatorioManual } from "@/lib/avisos/servidor";
+import { textoSale } from "@/lib/avisos/horario";
 
 // Gestion de las respuestas en la web (D99): «Responder por él», «Visto» de la banda roja, «Enviar un recordatorio
 // ahora» y el interruptor con sus condiciones. Todo con la sesion del gestor: la base (is_gestor) decide.
@@ -39,7 +40,7 @@ export async function recordatorioAhora(eventoId: string): Promise<R> {
   const r = await recordatorioManual(eventoId);
   refrescar(eventoId);
   if (!r.avisados) return { ok: true, texto: "No hay nadie a quien recordar (o los avisos no están configurados)." };
-  const mas = r.programado && r.programado > new Date() ? ` Es de noche: saldrá a las 08:30.` : "";
+  const mas = r.programado && r.programado > new Date() ? ` ${textoSale(r.programado).replace(/^d/, "D")}.` : "";
   return { ok: true, texto: `Recordatorio para ${r.avisados} ${r.avisados === 1 ? "jugador" : "jugadores"}.${mas}` };
 }
 

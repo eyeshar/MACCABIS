@@ -7,16 +7,16 @@
 
 ## Pendiente de Code
 
-> Ordenado por lo que más trabajo manual le quita a Iván. Lo que necesita su OK (esquema, datos del real, SportEasy) lo dice.
+> Ordenado por lo que más trabajo manual le quita a Iván. Lo que necesita su OK (esquema, datos del real) lo dice.
 
 1. [x] **Tablero y Panel con las ausencias por periodo (diferencia anterior a D146):** un jugador con una ausencia por periodo que cubre el evento y sin respuesta sale en «No van» en `/gestion/tablero` y en «Duda o sin responder» en el Panel. Decidir una sola regla y aplicarla en los dos (probablemente la del tablero: la ausencia ya es un «no»), con prueba de que cuadran. _Code propone la regla y la aplica con el OK de Iván._ — **Hecho (D150, `feat/ausencias-panel-movil`, mergeada el 31/10):** «no va» en todas las pantallas de gestión, con el motivo solo para gestores y sin recordatorios; gana la respuesta explícita.
 2. [ ] **Evaluar los CSV de gesdeportiva.fbm.es/clubes** (clasificación y listado completo de partidos, D106) para la **rutina B**: contraste de la clasificación calculada con la oficial (D74) y posible calendario de los dos grupos sin Deportes/web.
    - Junto con: **Contrastar la clasificación calculada con la oficial** de Deportes/web (jueves 20:00) y, si hay incomparecencias, anotar sus puntos oficiales (D74).
 3. [x] **Hecho (30/10/2026, `chore/cabos-tecnicos`):** la fecha sola **solo avisa** (no para la rutina A; el aviso va en su mensaje); para si además el partido ya está cargado en otra jornada o la hoja no tiene puntos (`test:duplicados`). Mejora menor: la «fecha de descarga» de una hoja de liga se toma de la fecha de modificación del fichero. Si un fichero se copia conservando una fecha antigua (p. ej. una hoja bajada tarde pero con la fecha original), la comprobación «descargada antes de que se jugara la jornada» puede dar una **parada en falso** (también con `--jornada N`); la salida es actualizar la fecha del fichero (volver a guardarlo o bajarlo de nuevo). Si molesta, cambiar esa comprobación por un aviso o quitarla. _(Cada parada en falso obliga a Iván a volver a bajar la hoja desde el móvil.)_
 4. [x] **Aviso al propio jugador de «no va (por defecto)» (D146, fuera del bloque de disponibilidad por defecto):** a quien tiene la marca «No suele entrenar», un aviso del tipo «Te hemos puesto que no vas al entreno del miércoles; cámbialo si vienes» y su estado visible en su zona. Va aquí (D78), cuando los jugadores respondan en la plataforma. Ojo: hoy las marcas no se ven nunca en la zona del jugador (salen como «sin responder»); el aviso debe hablar de *su* respuesta, sin nombrar la marca. _Ya se puede: «respuestas en la web» está encendido desde el 26/10 (D136)._ — **Hecho (D152, `feat/aviso-no-va-defecto`, 31/10, sin merge: Iván revisa la vista previa):** «No vas (puesto por defecto)» con «Sí voy» en su inicio, agenda y entreno; aviso único el lunes a las 19:00 («Te hemos puesto que no vas al entreno del miércoles X. Si vienes, cámbialo aquí.»); sin nombrar la marca. Migración `20261031150000` aplicada en el real con D111.
-5. [ ] **Exportar el balance de asistencias de SportEasy de 2026/27** (Claude, por navegador en el Chrome de Iván), para conservar las respuestas de la fase puente (hasta la activación del 26/10, D136). Sustituye a la línea antigua «antes de apagarlo (noviembre)», que D64 dejó sin fecha (ver Histórico).
+5. [ ] **Exportar el balance de asistencias de SportEasy de 2026/27** (Claude, por navegador en el Chrome de Iván), para conservar las respuestas de la fase puente (hasta la activación del 26/10, D136). Sustituye a la línea antigua «antes de apagarlo (noviembre)», que D64 dejó sin fecha (ver Histórico). _(D153, 31/10/2026: SportEasy ya no se usa para nada; esto sería una lectura única para conservar el histórico, no una rutina. **Solo si Iván lo pide**; si no, pasa a obsoleta.)_
 6. [ ] Más adelante: «partidos convocado» con las convocatorias aprobadas (hoy sale solo de las hojas cargadas); entrenos de 4 semanas con el pase de lista real cuando exista.
-7. [ ] **Borrar en SportEasy las 3 ubicaciones duplicadas "Moratalaz"** (dirección "Pista 1/2/3") que creó la carga en bloque; ya no las usa ningún partido. _(Por navegador, con el OK de Iván.)_
+7. [~] ~~**Borrar en SportEasy las 3 ubicaciones duplicadas "Moratalaz"** (dirección "Pista 1/2/3") que creó la carga en bloque; ya no las usa ningún partido. _(Por navegador, con el OK de Iván.)_~~ _(Obsoleta por D153 (31/10/2026): SportEasy ya no se usa para nada.)_
 8. [ ] Asistente (D142): comprobar en producción, sin crear cuentas, que el botón sale con sesión y no sin ella ni en la parte pública.
 9. [ ] Más adelante: aviso al móvil del recordatorio de un plan también si el plan se crea con menos de un día de margen (hoy, sin «un día antes», no sale nada).
 10. [ ] D129: pista de los partidos entre rivales (el calendario que tenemos solo trae la de MdA y MdL); si se carga el calendario completo del Ayuntamiento, la página de partido la enseña. _(Puede salir del listado completo de partidos de gesdeportiva, punto 2.)_
@@ -27,16 +27,18 @@
 15. [ ] **Clasificaciones**: no se han tocado en el sondeo. Criterio ya acordado: la clasificación **de la fase donde acabó Maccabi** cada año. Los recursos de clasificaciones del dataset son los n impares (1, 5, 9, 13, 16, 20, 24, 28, 32).
 16. [ ] **Cruzar la fuente JDM con el histórico propio** (`season_*.json`, `personas.json`, la matriz): bloque futuro, sólo cuando la fuente JDM esté cerrada.
 17. [ ] **Tapar 2013/14, 2019/20 y 2025/26 desde las actas propias**: no están en el histórico del portal (2025/26 vive en el dataset 211549 de temporada en curso).
+18. [ ] **Decidir con Iván qué hacer con el código que aún depende de SportEasy** (Importar → Respuestas, `diccionario_sporteasy`, `BloqueImportacion`/`importacionAuto`, columnas `sporteasy_*`, textos del modo apagado) — D153; no se borra sin su OK. Lista completa en `ESTADO.md` («Rutina B automática, fin de SportEasy y avisos»).
 
 ## Pendiente de Iván
 
 **Operativa de ahora**
+- [ ] **Pausar o borrar la tarea programada «Maccabis · respuestas de SportEasy»** en el Chrome de Iván, si sigue activa (D153; Code no tiene acceso a las tareas programadas).
 - [ ] **Cuando Carlos entre por primera vez:** comprobar que su plaza se vinculó sola (`npm run db:estado`: 3 gestores vinculados) y que ve Gestión, el tablero y la banda del inicio. Aún no tiene cuenta (simulado en una transacción deshecha: se vincula y ve los niveles).
    - **26/10/2026:** Iván dice que Carlos ya ha entrado, pero `npm run db:estado` da **3 gestores y 2 vinculados** (Iván y Eduardo) y en `auth.users` **no hay ninguna cuenta con el correo de su ficha** (el mismo de su plaza de gestor; no es de Gmail). Hay que ver con Carlos con qué correo entró: con ese correo, «Entrar con Google» no sirve; la vía es «Recibir código por correo» a esa dirección.
-- [ ] **Borrar en SportEasy el evento «Prueba Claude - no responder» del 30/10** (lo hace Iván).
+- [~] ~~**Borrar en SportEasy el evento «Prueba Claude - no responder» del 30/10** (lo hace Iván).~~ _(Obsoleta por D153 (31/10/2026): SportEasy ya no se usa para nada.)_
 - [ ] **Prueba de los avisos en iPhone y Android reales** (`docs/PRUEBA_AVISOS_MOVILES.md`; venía del paso 3, D99).
 - [ ] Sanciones, si las hay (las pone un gestor en «Datos de los jugadores»).
-- [ ] **En espera, sin fecha (decisión de Iván, 26/10/2026).** **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27; **a 24/10/2026 sigue fuera de la plantilla 26/27** (`nombres_sporteasy.json` sin cambios). **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma.
+- [ ] **En espera, sin fecha (decisión de Iván, 26/10/2026).** **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27; **a 24/10/2026 sigue fuera de la plantilla 26/27** (`nombres_sporteasy.json` sin cambios). **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma. _(D153: el paso de `nombres_sporteasy.json` depende de qué se haga con el código de SportEasy, «Pendiente de Code» 18.)_
 - [ ] **Explorar una tablet Android siempre encendida, vinculada a Enlace Móvil**, para automatizar también la descarga de las hojas de Afición FBM (hoy las baja Iván desde el móvil; D69/D70: la app no se instala en emuladores).
 - [ ] **Una única consulta a Indalweb** (soporte@gesdeportiva.es) sobre una exportación oficial de actas y estadísticas; si dicen que no, se cierra (D49).
 - [ ] **Corregir el delegado del MdA** en la organización (Varas → Barreiro; Barreiro también en el MdL).
@@ -87,7 +89,7 @@
 
 **Domingo 8/11 — J4 (solo juega el MdL, 11:30)**
 - [ ] Comprobar en la J4 (08/11; el MdA descansa) la proyección del MdL, el modo rápido y «Enviar ahora» de verdad.
-- [ ] Probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp, SportEasy por Claude).
+- [ ] Probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp~~, SportEasy por Claude~~). _(SportEasy fuera por D153, 31/10/2026.)_
 
 **Tras la J6**
 - [ ] **Recalibrar tras la J6** (ya estaba: umbral de anotación mínima de 45) y, con más jornadas, revisar los parámetros de la proyección (pesos, 60 minutos, 240/40, ±15/±10 %) con el error medio acumulado.
@@ -236,7 +238,7 @@
      - **Eventos** (gestión, entrada «Calendario y eventos» del menú lateral): cabecera «Temporada 26/27 · Calendario y eventos» con botones «Entreno semanal» (editar la serie) y «Nuevo evento»; **banner de pista** cuando la habitual está en obras («Valdebernardo está cerrado por obras. Hasta que reabra, cada miércoles hay que fijar pista. Sin pista todavía: miércoles 14» + «Elegir pista del día 14»); pestañas **Próximos · Entrenos · Partidos · Amistosos y torneos · Pasados**; tabla **Fecha · Evento · Pista · Respuestas · SportEasy**: hora y hora de encuentro de los partidos («10:15 · encuentro 9:55»), aviso de equipación, «Cambiado solo esta semana», respuestas «11 van · 8 ? · 5 no» (o «Se abre al fijar pista», «Convocatoria el martes»), estado de copia («Al día», «Pendiente de copiar», «Aún no»); los dos partidos del mismo domingo agrupados («09:00 y 14:00»). Lateral: **Pistas** (+ Añadir: Valdebernardo habitual · cerrada por obras; Caja Mágica provisional; Moratalaz pistas 1 a 3, partidos de liga) y **Copia a SportEasy** («1 cambio pendiente: entreno del 14, falta la pista. Cuando la fijes, Claude lo copia y avisa a la plantilla»). Nota de fase puente.
      - **EventoEditar**: tipo (Entreno · Partido de liga · Amistoso · Torneo · Entre nosotros); fecha, empieza, termina, quedada; pista (desplegable + «Nueva pista»; si la habitual sigue en obras y no se elige, sale «Pista por confirmar» y **no se piden respuestas**); si es de la serie «miércoles 20:30–22:30»: aplicar a **solo este miércoles** o **este y los siguientes**; quién (toda la plantilla · solo MdA · solo MdL); recordatorios (lunes 19:00 y el mismo día a las 12:00); «avisar a la plantilla al guardar» (llega en el paso 3); fase puente: al guardar, Claude prepara la copia en SportEasy y pide el OK; «Cancelar este entreno»; «Guardar sin avisar» / «Guardar y avisar».
      - Gestión → panel: el recuadro «Entreno del miércoles» se llena con las respuestas leídas de SportEasy (van / sin responder / no van) y «Recordar a los N que no han respondido» (lo propone Claude, lo envía Iván). Mi zona → «Tu agenda»: «Vas / No vas / Responde» y «Convocado» en lugar de «pendiente».
-     - Rutina de navegador nueva (o ampliación de la B/C): copiar a SportEasy los eventos creados o cambiados, con OK.
+     - Rutina de navegador nueva (o ampliación de la B/C): copiar a SportEasy los eventos creados o cambiados, con OK. _(Sin efecto desde D153, 31/10/2026: ya no se copia nada a SportEasy.)_
      - Primera sección migrada: **Liga 26/27** (`docs/MIGRACION_WEB.md`).
    - [x] **Paso 3 EN PRODUCCIÓN desde el 09/10/2026 (merge `67d88f1`, D99–D105), interruptor APAGADO; tarea de avisos programada.** Pendiente: [→] prueba de avisos en iPhone/Android reales (movida a «Pendiente de Iván»); [~] 3 jornadas limpias seguidas (sin efecto: Iván activó sin esperar, D136) (**2/3 en el panel a 26/10**; falta marcar la J3); [x] 20 de 27 dentro de la web (**26/27 a 26/10**); [x] casilla de SportEasy (activado el 26/10). **1/27 con avisos activados. Decisión de Iván (26/10/2026): activar ya, con el procedimiento de D136** (arriba, «Limpieza de octubre»). (Detalle de lo construido, 08/10:) Hecho: correcciones de D103; condición 4 resuelta (D104, SportEasy sin notificar); volcado completo + 2 migraciones aplicadas en el Supabase real + `pruebas:respuestas-real` en verde. Pendiente: (1) OK de Iván a la vista previa; (3) `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` y las 5 variables en Vercel (`plataforma/LEEME.md` §8) + redeploy; (4) merge a `main`; (5) `npm run avisos:programar -- --aplicar`; (6) Iván prueba en iPhone y Android (`docs/PRUEBA_AVISOS_MOVILES.md`); (7) marcar jornadas limpias desde la J2 y, cuando se cumplan las condiciones, encender (D99.13). Lo de abajo es el detalle original.
    - [x] **Paso 3 — El jugador responde en la plataforma y avisos (D78).** _(Auditoría 30/10: hecho, paso 3 en producción (D99–D105) y «respuestas en la web» encendido desde el 26/10 (D136; D141, corrección); el aviso al jugador de D146 está en «Pendiente de Code».)_
@@ -294,12 +296,12 @@
 **Plan B (02/10/2026, D69/D70; matizado el 23/10/2026, D106):** **subida de actas desde la zona de gestión** (hoy: actas desde la web gesdeportiva.fbm.es con la sesión de Iván en Chrome, D106; hojas con Claude controlando Afición FBM por Enlace Móvil, D70, `docs/PROCEDIMIENTO_JORNADA.md`). Solo se construye si esa vía deja de ser viable (p. ej. si Afición FBM bloquea el acceso remoto).
 
 **Además:**
-- [~] **Exportar el balance de asistencias de SportEasy antes de apagarlo** (noviembre), para conservar los eventos de 26/27. _(Auditoría 30/10: obsoleto, D64 (SportEasy como respaldo hasta septiembre de 2027) deja sin efecto «antes de apagarlo (noviembre)»; reformulada en «Pendiente de Code».)_
+- [~] **Exportar el balance de asistencias de SportEasy antes de apagarlo** (noviembre), para conservar los eventos de 26/27. _(Auditoría 30/10: obsoleto, D64 (SportEasy como respaldo hasta septiembre de 2027) deja sin efecto «antes de apagarlo (noviembre)»; reformulada en «Pendiente de Code».)_ _(D64 derogada por D153, 31/10/2026.)_
 - [x] ~~Mergear `feat/pipeline-estadisticas`~~ — HECHO (26/09/2026, `f69a39f`), test de regresión OK en `main`. Listo para la J1 (5/10).
 - [~] `feat/calendario-automatico`: revisar y mergear como detector de cambios (D47), dentro del bloque de la J2. _(Auditoría 30/10: obsoleto, decisión de Iván del 26/10: sustituida por Importar → Calendario de la rutina B (ESTADO, «Limpieza de octubre»); recomendación sobre la rama en «Pendiente de Iván».)_
 
 **SportEasy 26/27 (02/10/2026, D62):**
-- [x] ~~Decidir si se mantiene el apagado de SportEasy en noviembre o se usa toda la temporada.~~ — **RESUELTO:** `docs/NORMAS_DE_TRABAJO.md` §8 (D64) fija que se mantiene **completo como respaldo hasta septiembre de 2027**, sin apagarlo antes.
+- [x] ~~Decidir si se mantiene el apagado de SportEasy en noviembre o se usa toda la temporada.~~ — **RESUELTO:** `docs/NORMAS_DE_TRABAJO.md` §8 (D64) fija que se mantiene **completo como respaldo hasta septiembre de 2027**, sin apagarlo antes. _(D64 derogada por D153, 31/10/2026: SportEasy ya no se usa para nada.)_
 - [x] **Jornadas 2 (18/10/2026) y 13 (07/02/2027):** MdA y MdL juegan a la misma hora (10:15); esos domingos los de doble ficha no pueden estar en los dos partidos. Tenerlo en cuenta en el motor de convocatorias. _(Auditoría 30/10: hecho, lo cubre la convocatoria v1: no se dobla si los dos partidos empiezan a la misma hora exacta (D107; `pruebas:convocatoria-motor`, caso «misma hora»).)_
 - [x] **Pasar el calendario 26/27 a datos del repo** (p. ej. `data/calendario_2026-27.json`) para la futura web, si se mantiene el plan de calendario propio. Sin datos personales. _(Auditoría 30/10: hecho, `data/calendario_2026-27.json` con los 44 partidos, desde el 02/10 (`3b66676`; ESTADO, «Calendario oficial 2026/27»).)_
 
@@ -347,7 +349,7 @@
 - [x] **Reglas v1** tras las jornadas 1 y 2, con los ajustes anotados por Iván. _(Auditoría 30/10: hecho, reglas v1 (D107, 23/10).)_
 - [x] Jornadas 1 y 2: se convocan como hasta ahora, aplicando las reglas v0 a mano (D34, D40). _(Auditoría 30/10: hecho, J1 y J2 convocadas así (D34, D40); la v1 entró después (D107).)_
 
-#### 4. Hacia 27/28: sustituir SportEasy (D30)
+#### 4. Hacia 27/28: sustituir SportEasy (D30) — _sin objeto desde D153 (31/10/2026): SportEasy ya no se usa para nada_
 - [x] **Confirmación de disponibilidad:** primera función candidata. Puede adelantarse a 26/27: ver "Decisión pendiente" arriba. _(Auditoría 30/10: hecho, respuestas en la web (D99) y activadas el 26/10 (D136).)_
 
 ### Después — migración a Next.js (continúa, por detrás de lo anterior, D32)
@@ -416,10 +418,10 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
   - Cruzar disponibilidad (de export SportEasy) para decidir quién juega en cada ficha.
   - Generar mensaje de WhatsApp de convocatoria listo para copiar/pegar.
   - Generar recordatorio para quien no ha contestado.
-- [~] **Puente con SportEasy**: _(Auditoría 30/10: obsoleto, D62/D64/D136: SportEasy queda como respaldo y la plataforma lo sustituye función a función.)_
+- [~] **Puente con SportEasy**: _(Auditoría 30/10: obsoleto, D62/D64/D136: SportEasy queda como respaldo y la plataforma lo sustituye función a función.)_ _(D153, 31/10/2026: ya no hay respaldo; SportEasy no se usa para nada.)_
   - ~~Generar el Excel del calendario de la temporada en formato importable (evita crear ~20 eventos a mano por equipo).~~ — **OBSOLETO (02/10/2026):** resuelto con la creación en bloque de SportEasy más el agente de navegador (D62).
   - ~~Investigar la sección "Campeonatos" de SportEasy para vincular la liga JDM y traer el calendario hecho.~~ — **OBSOLETO (02/10/2026):** resuelto con la creación en bloque más el agente (D62); la importación automática de calendario no cubre nuestra federación (ver SPORTEASY.md).
-  - PRESIONAR por vías de sacar/subir datos de SportEasy más allá del Excel (deseo de Iván). Si no sale nada, Excel plan B.
+  - ~~PRESIONAR por vías de sacar/subir datos de SportEasy más allá del Excel (deseo de Iván). Si no sale nada, Excel plan B.~~ _(Obsoleta por D153 (31/10/2026): SportEasy ya no se usa para nada.)_
 
 ### Temporada 26/27 (cuando arranque y se defina)
 

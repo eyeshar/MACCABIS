@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Recordatorios y horas de silencio (D99.6, D99.7) con la HORA FIJA SIMULADA, sin base de datos:
+// Recordatorios y horas de silencio (D99.6, D99.7, D155: 22:30–08:00) con la HORA FIJA SIMULADA, sin base de datos:
 //   lunes agrupado · martes a sin responder y a «duda» · miércoles del entreno · amistoso al crearlo y 24 h antes ·
 //   silencio y excepción de menos de 12 h · cambio de hora del 25/10/2026 · ausencia que cuenta como respondido ·
 //   «sin recordatorios» · nada con el interruptor apagado · textos de los avisos (sin motivos, niveles ni posiciones) ·
@@ -43,11 +43,33 @@ ok(iso(M('2026-10-25', '09:00')) === '2026-10-25T08:00:00.000Z' && iso(M('2026-1
 ok(iso(M('2026-10-25', '02:30')) === '2026-10-25T00:30:00.000Z', 'las 02:30 del 25/10 ocurren dos veces: se toma la primera');
 ok(H.enMadrid(new Date('2026-10-25T01:30:00Z')).hora === '02:30', 'y la segunda también existe (01:30 UTC = 02:30 de invierno)');
 ok(iso(M('2027-03-28', '02:30')) === '2027-03-28T01:30:00.000Z', 'las 02:30 del 28/03/2027 no existen: se leen como las 03:30');
-ok(iso(H.finDelSilencio(new Date('2026-10-24T21:00:00Z'))) === '2026-10-25T07:30:00.000Z', 'silencio del sábado 24 a las 23:00: termina el domingo a las 08:30 de invierno (07:30 UTC)');
+ok(iso(H.finDelSilencio(new Date('2026-10-24T21:00:00Z'))) === '2026-10-25T07:00:00.000Z', 'silencio del sábado 24 a las 23:00: termina el domingo a las 08:00 de invierno (07:00 UTC)');
 const sabado23 = M('2026-10-24', '23:00');
-ok(iso(H.horaDeEnvio(sabado23, M('2026-10-25', '10:30'))) === '2026-10-25T07:30:00.000Z', 'evento el domingo 25 a las 10:30: de reloj son 11 h 30, pero con la hora de más son 12 h 30 reales → espera a las 08:30');
+ok(iso(H.horaDeEnvio(sabado23, M('2026-10-25', '10:30'))) === '2026-10-25T07:00:00.000Z', 'evento el domingo 25 a las 10:30: de reloj son 11 h 30, pero con la hora de más son 12 h 30 reales → espera a las 08:00');
 ok(iso(H.horaDeEnvio(sabado23, M('2026-10-25', '09:30'))) === iso(sabado23), 'evento a las 09:30: 11 h 30 reales → sale al momento');
-ok(!H.enSilencio(M('2026-10-25', '08:30')) && H.enSilencio(M('2026-10-25', '08:29')) && H.enSilencio(M('2026-10-24', '22:30')) && !H.enSilencio(M('2026-10-24', '22:29')), 'el silencio va de 22:30 a 08:30 (08:30 ya no; 22:30 ya sí)');
+ok(!H.enSilencio(M('2026-10-25', '08:00')) && H.enSilencio(M('2026-10-25', '07:59')) && H.enSilencio(M('2026-10-24', '22:30')) && !H.enSilencio(M('2026-10-24', '22:29')), 'el silencio va de 22:30 a 08:00 (08:00 ya no; 22:30 ya sí)');
+
+console.log('\n== Franja de noche (D155, Iván 31/10/2026): en el momento salvo de 22:30 a 08:00 de Madrid, que sale a las 08:00');
+// Sin evento cercano (null): la regla tal cual. La hora es la de Madrid del instante, nunca la del servidor (UTC en Vercel).
+const envio = (f, h) => H.horaDeEnvio(M(f, h), null);
+ok(iso(envio('2026-10-31', '17:09')) === iso(M('2026-10-31', '17:09')) && iso(M('2026-10-31', '17:09')) === '2026-10-31T16:09:00.000Z', '17:09 del sábado 31/10 (el «Aplicar y avisar» de la J5 MdA) → sale ya');
+ok(iso(envio('2026-10-31', '22:29')) === iso(M('2026-10-31', '22:29')), '22:29 → sale ya');
+ok(iso(envio('2026-10-31', '22:31')) === iso(M('2026-11-01', '08:00')) && iso(envio('2026-10-31', '22:31')) === '2026-11-01T07:00:00.000Z', '22:31 → a las 08:00 del día siguiente (07:00 UTC en invierno)');
+ok(iso(envio('2026-11-01', '07:59')) === iso(M('2026-11-01', '08:00')), '07:59 → a las 08:00 de ese mismo día');
+ok(iso(envio('2026-11-01', '08:00')) === iso(M('2026-11-01', '08:00')), '08:00 → sale ya');
+ok(iso(envio('2026-10-31', '00:15')) === iso(M('2026-10-31', '08:00')), '00:15 → a las 08:00 de ese día (de madrugada)');
+// Si se usara la hora UTC del servidor, en invierno las 22:45 de Madrid (21:45 UTC) saldrían al momento y las 08:30 de
+// Madrid (07:30 UTC) esperarían: se comprueban los dos lados.
+ok(iso(H.horaDeEnvio(new Date('2026-11-02T21:45:00Z'), null)) === iso(M('2026-11-03', '08:00')), 'invierno: 21:45 UTC son las 22:45 de Madrid → espera a las 08:00');
+ok(iso(H.horaDeEnvio(new Date('2026-11-03T07:30:00Z'), null)) === '2026-11-03T07:30:00.000Z', 'invierno: 07:30 UTC son las 08:30 de Madrid → sale ya');
+// Cambio de hora de otoño (domingo 25/10/2026, 03:00 → 02:00): un caso a cada lado.
+ok(iso(envio('2026-10-24', '22:31')) === '2026-10-25T07:00:00.000Z', 'otoño, antes del cambio: sábado 24 a las 22:31 (verano, 20:31 UTC) → domingo 25 a las 08:00 de invierno (07:00 UTC)');
+ok(iso(envio('2026-10-25', '22:31')) === '2026-10-26T07:00:00.000Z' && iso(M('2026-10-25', '22:31')) === '2026-10-25T21:31:00.000Z', 'otoño, después: domingo 25 a las 22:31 (invierno, 21:31 UTC) → lunes 26 a las 08:00 (07:00 UTC)');
+ok(iso(envio('2026-10-24', '22:29')) === '2026-10-24T20:29:00.000Z' && iso(envio('2026-10-26', '07:59')) === '2026-10-26T07:00:00.000Z', 'otoño: 22:29 de verano sale ya; 07:59 de invierno espera a las 08:00');
+// Cambio de hora de primavera (domingo 28/03/2027, 02:00 → 03:00): un caso a cada lado.
+ok(iso(envio('2027-03-27', '22:31')) === '2027-03-28T06:00:00.000Z', 'primavera, antes del cambio: sábado 27/03 a las 22:31 (invierno, 21:31 UTC) → domingo 28 a las 08:00 de verano (06:00 UTC)');
+ok(iso(envio('2027-03-28', '22:31')) === '2027-03-29T06:00:00.000Z' && iso(envio('2027-03-28', '08:00')) === '2027-03-28T06:00:00.000Z', 'primavera, después: domingo 28 a las 22:31 → lunes 29 a las 08:00 (06:00 UTC); a las 08:00 de verano sale ya');
+ok(H.textoSale(M('2026-11-01', '08:00')) === 'de noche: sale el 01/11 a las 08:00', 'el texto de gestión dice cuándo sale de verdad (no un 08:30 fijo)');
 
 console.log('\n== Lunes 19:00: un solo aviso por jugador con todo lo que le falta');
 let a = P.planificar(datos(M('2026-10-12', '19:05')));
@@ -104,18 +126,18 @@ ok(P.planificar(datos(M('2026-10-16', '11:00'), { eventos: [delMdA] })).map((x) 
 const antesDeEncender = { ...amistoso, creado_en: '2026-10-09T10:00:00Z' };
 ok(!P.planificar(datos(new Date('2026-10-10T08:05:00Z'), { eventos: [antesDeEncender] })).some((x) => x.clave.startsWith('rec:creado')), 'un evento creado antes de encender el interruptor no manda el «al crearlo» atrasado');
 
-console.log('\n== Horas de silencio (22:30–8:30) y la excepción de menos de 12 horas');
+console.log('\n== Horas de silencio (22:30–8:00) y la excepción de menos de 12 horas');
 const tarde = { ...amistoso, id: 'am3', creado_en: M('2026-10-15', '22:45').toISOString() };
 ok(!P.planificar(datos(M('2026-10-15', '22:50'), { eventos: [tarde] })).length, 'creado a las 22:45: de noche no sale');
-a = P.planificar(datos(M('2026-10-16', '08:31'), { eventos: [tarde] }));
-ok(a.filter((x) => x.clave.startsWith('rec:creado')).length === 2 && iso(a[0].programado_para) === iso(M('2026-10-16', '08:30')), 'sale a las 08:30');
+a = P.planificar(datos(M('2026-10-16', '08:01'), { eventos: [tarde] }));
+ok(a.filter((x) => x.clave.startsWith('rec:creado')).length === 2 && iso(a[0].programado_para) === iso(M('2026-10-16', '08:00')), 'sale a las 08:00');
 const urgente = { ...amistoso, id: 'am4', fecha: '2026-10-16', inicio: '09:00', creado_en: M('2026-10-15', '23:00').toISOString() };
 a = P.planificar(datos(M('2026-10-15', '23:05'), { eventos: [urgente] }));
 ok(a.filter((x) => x.clave.startsWith('rec:creado')).length === 2, 'creado a las 23:00 para mañana a las 09:00 (menos de 12 h): sale al momento');
 const amDST = { ...amistoso, id: 'am5', fecha: '2026-10-25', inicio: '10:30', creado_en: M('2026-10-24', '23:00').toISOString() };
 ok(!P.planificar(datos(M('2026-10-24', '23:05'), { eventos: [amDST] })).length, 'noche del cambio de hora: creado el sábado 24 a las 23:00 para el domingo a las 10:30 (12 h 30 reales) → espera');
-a = P.planificar(datos(new Date('2026-10-25T07:31:00Z'), { eventos: [amDST] }));
-ok(a.filter((x) => x.clave.startsWith('rec:creado')).length === 2 && H.enMadrid(a[0].programado_para).hora === '08:30', 'y sale a las 08:30 de invierno del domingo');
+a = P.planificar(datos(new Date('2026-10-25T07:01:00Z'), { eventos: [amDST] }));
+ok(a.filter((x) => x.clave.startsWith('rec:creado')).length === 2 && H.enMadrid(a[0].programado_para).hora === '08:00', 'y sale a las 08:00 de invierno del domingo');
 a = P.planificar(datos(M('2026-10-26', '19:02')));
 ok(de(a, 'jon').some((x) => x.clave === 'rec:lunes:2026-10-26:jon' && iso(x.programado_para) === '2026-10-26T18:00:00.000Z'), 'el lunes después del cambio, a las 19:00 de invierno (18:00 UTC)');
 
@@ -193,9 +215,9 @@ console.log('\n== Aviso de convocatoria (D127): sin depender del interruptor, a 
   ok(CM.firmaConvocatoria(conv) === CM.firmaConvocatoria({ MdL: [{ person_id: 'ana' }, { person_id: 'jon' }], MdA: [{ person_id: 'guille' }, { person_id: 'jon' }] }) && CM.firmaConvocatoria(conv) !== CM.firmaConvocatoria(despues), 'la firma de la clave única no depende del orden y cambia si cambia la convocatoria');
   const todos = [t1, t2, tc].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
   ok(!/nivel|posici|motivo|exterior|interior|Dobla/i.test(todos), 'sin niveles, posiciones ni motivos en la pantalla de bloqueo');
-  // Silencio (D99.7): aprobada y enviada el viernes a las 23:00, el aviso del domingo a las 09:00 espera a las 08:30 del
+  // Silencio (D99.7): aprobada y enviada el viernes a las 23:00, el aviso del domingo a las 09:00 espera a las 08:00 del
   // sabado; el sabado a las 23:30, con el partido a menos de 12 h reales, sale al momento.
-  ok(iso(H.horaDeEnvio(M('2026-10-23', '23:00'), M('2026-10-25', '09:00'))) === iso(M('2026-10-24', '08:30')), 'respeta el silencio: el viernes a las 23:00 sale el sábado a las 08:30');
+  ok(iso(H.horaDeEnvio(M('2026-10-23', '23:00'), M('2026-10-25', '09:00'))) === iso(M('2026-10-24', '08:00')), 'respeta el silencio: el viernes a las 23:00 sale el sábado a las 08:00');
   ok(iso(H.horaDeEnvio(M('2026-10-24', '23:30'), M('2026-10-25', '09:00'))) === iso(M('2026-10-24', '23:30')), 'y con el partido a menos de 12 h, sale al momento');
 }
 
@@ -219,7 +241,7 @@ ok(H.textoLimite(lim(entreno14), M('2026-10-13', '12:05')) === 'hoy a las 20:00'
 console.log('\n== Aviso de las 12:00 a quien siga en «duda»');
 ok(iso(H.avisoDeDudas(lim(entreno14))) === iso(M('2026-10-13', '12:00')), 'límite de las 20:00: aviso a las 12:00 del mismo día');
 ok(iso(H.avisoDeDudas(M('2026-10-16', '10:00'))) === iso(M('2026-10-16', '09:00')), 'límite temprano (10:00): una hora antes, a las 09:00');
-ok(H.avisoDeDudas(M('2026-10-16', '09:00')) === null && iso(H.avisoDeDudas(M('2026-10-16', '09:45'))) === iso(M('2026-10-16', '08:45')), 'límite a las 09:00: no cabe fuera del silencio (sin aviso previo); a las 09:45, a las 08:45');
+ok(H.avisoDeDudas(M('2026-10-16', '08:45')) === null && iso(H.avisoDeDudas(M('2026-10-16', '09:00'))) === iso(M('2026-10-16', '08:00')) && iso(H.avisoDeDudas(M('2026-10-16', '09:45'))) === iso(M('2026-10-16', '08:45')), 'límite a las 08:45: no cabe fuera del silencio (sin aviso previo); a las 09:00, a las 08:00; a las 09:45, a las 08:45');
 const duda = (ev_, p) => ({ evento_id: ev_, person_id: p, respuesta: 'duda' });
 const rd = [duda('e14', 'jon'), duda('mda2', 'jon'), duda('mdl2', 'jon')];
 const dd = (ahora, extra = {}) => P.conAvisosDeDudas(P.planificar(datos(ahora, extra)), datos(ahora, extra));
@@ -268,13 +290,13 @@ ok(P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('e14', 'jon')] }, M('2026-
 ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [{ ...sis('e14', 'jon'), respuesta: 'va', motivo: null, origen: 'jugador' }] }, M('2026-10-13', '20:05')).length, 'quien ya volvió a decir «Voy» no recibe el aviso');
 ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('e14', 'jon', '2026-10-10T18:00:20Z')] }, M('2026-10-13', '20:05')).length, 'un paso de hace más de 24 h ya no se avisa');
 ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [{ ...sis('e14', 'jon'), motivo: 'trabajo', origen: 'jugador' }] }, M('2026-10-13', '20:05')).length, 'solo avisa de lo que cerró el sistema');
-// Silencio: el límite de un amistoso de las 23:00 cierra a las 23:00 del día anterior; el aviso espera a las 08:30.
+// Silencio: el límite de un amistoso de las 23:00 cierra a las 23:00 del día anterior; el aviso espera a las 08:00.
 const am23 = ev('a4', 'amistoso', 'ambos', '2026-10-18', '23:00', '23:59');
 const pas2 = P.avisosPasoNoVa({ eventos: [am23], respuestas: [sis('a4', 'jon', iso(M('2026-10-17', '23:05')))] }, M('2026-10-17', '23:10'));
-ok(pas2.length === 1 && iso(pas2[0].programado_para) === iso(M('2026-10-18', '08:30')), 'el paso a las 23:05 (horas de silencio) se avisa a las 08:30 del día siguiente', iso(pas2[0]?.programado_para ?? new Date(0)));
-const am08 = ev('a5', 'amistoso', 'ambos', '2026-10-18', '08:00', '10:00');
-const pas3 = P.avisosPasoNoVa({ eventos: [am08], respuestas: [sis('a5', 'jon', iso(M('2026-10-17', '08:05')))] }, M('2026-10-17', '08:10'));
-ok(pas3.length === 1 && iso(pas3[0].programado_para) === iso(M('2026-10-17', '08:30')), 'el paso a las 08:05 (silencio, evento a 24 h) se avisa a las 08:30', iso(pas3[0]?.programado_para ?? new Date(0)));
+ok(pas2.length === 1 && iso(pas2[0].programado_para) === iso(M('2026-10-18', '08:00')), 'el paso a las 23:05 (horas de silencio) se avisa a las 08:00 del día siguiente', iso(pas2[0]?.programado_para ?? new Date(0)));
+const am08 = ev('a5', 'amistoso', 'ambos', '2026-10-18', '07:30', '10:00');
+const pas3 = P.avisosPasoNoVa({ eventos: [am08], respuestas: [sis('a5', 'jon', iso(M('2026-10-17', '07:35')))] }, M('2026-10-17', '07:40'));
+ok(pas3.length === 1 && iso(pas3[0].programado_para) === iso(M('2026-10-17', '08:00')), 'el paso a las 07:35 (silencio, evento a 24 h) se avisa a las 08:00', iso(pas3[0]?.programado_para ?? new Date(0)));
 const textosN = [T.textoDudas([{ que: 'entreno del miércoles 14', limite: lim(entreno14) }], ['Domingo 18: aún no has respondido']), T.textoPasoNoVa(['entreno del miércoles 14'])].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
 ok(!/nivel|posici|exterior|interior|Dobla|lesi|trabajo|viaje|familia/i.test(textosN), 'los textos no llevan motivos, niveles ni posiciones');
 

@@ -11,10 +11,9 @@ import { avisoDeEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/l
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import type { Defecto } from "@/lib/disponibilidad/porDefecto";
 import {
-  esPlanFila, hhmm, noSeCopia, pistaEfectiva, rangoHoras, resumenCopia, cambioParaVer, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,
+  esPlanFila, hhmm, pistaEfectiva, rangoHoras, TEXTO_ESTADO_PISTA, textoTipo, tituloEvento,
   type EventoFila, type JugadorBasico, type Pista,
 } from "@/lib/eventos/dominio";
-import FormularioCopia, { MarcarTodos } from "./FormularioCopia";
 
 export const metadata = { title: "Eventos · Gestión Maccabis" };
 
@@ -23,7 +22,6 @@ const FILTROS = [
   { id: "entrenos", texto: "Entrenos" },
   { id: "liga", texto: "Liga" },
   { id: "amistosos", texto: "Amistosos y torneos" },
-  { id: "pendientes", texto: "Pendientes de SportEasy" },
   { id: "pasados", texto: "Pasados" },
   // D118: los planes no oficiales de los jugadores (no cuentan para nada del club; aqui se ven, se editan o se hacen oficiales).
   { id: "planes", texto: "Planes de jugadores" },
@@ -37,11 +35,10 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   const filtro: Filtro = FILTROS.some((x) => x.id === f) ? (f as Filtro) : "proximos";
   const { supabase } = await exigirGestor();
   const hoy = hoyMadrid();
-  const [todos, pistas, jugadores, { data: filasResp }, { data: importaciones }, { data: encendidoWeb }, defecto] = await Promise.all([
+  const [todos, pistas, jugadores, { data: filasResp }, { data: importaciones }, defecto] = await Promise.all([
     cargarEventos(supabase, { conPlanes: true }), cargarPistas(supabase), cargarJugadores(supabase),
     supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle, leido_en"),
     supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, aceptadas, bloqueadas").order("en", { ascending: false }).limit(4),
-    supabase.rpc("respuestas_web_encendido"),
     cargarDefecto(supabase),
   ]);
   // Los planes no oficiales (D118) solo salen en su filtro: el resto de la pantalla es lo del club.
@@ -56,15 +53,12 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   const planes = todos.filter((e) => esPlanFila(e) && e.fecha >= hoy);
   const futuros = eventos.filter((e) => e.fecha >= hoy);
   const sinPista = futuros.filter((e) => e.tipo === "entreno" && e.estado === "programado" && pistaEfectiva(e, pistas).porConfirmar);
-  const { concretos, deSerie } = resumenCopia(eventos, hoy);
-  const pendientesTodos = resumenCopia(eventos, hoy).pendientes;
 
   const lista = ((): EventoFila[] => {
     switch (filtro) {
       case "entrenos": return futuros.filter((e) => e.tipo === "entreno");
       case "liga": return eventos.filter((e) => e.tipo === "liga");
       case "amistosos": return eventos.filter((e) => ["amistoso", "torneo", "interno"].includes(e.tipo));
-      case "pendientes": return pendientesTodos;
       case "pasados": return eventos.filter((e) => e.fecha < hoy).reverse();
       case "planes": return planes;
       default: return futuros.slice(0, MAX_PROXIMOS);
@@ -72,7 +66,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   })();
   const cuenta: Record<Filtro, number> = {
     proximos: futuros.length, entrenos: futuros.filter((e) => e.tipo === "entreno").length, liga: eventos.filter((e) => e.tipo === "liga").length,
-    amistosos: eventos.filter((e) => ["amistoso", "torneo", "interno"].includes(e.tipo)).length, pendientes: pendientesTodos.length, pasados: eventos.filter((e) => e.fecha < hoy).length,
+    amistosos: eventos.filter((e) => ["amistoso", "torneo", "interno"].includes(e.tipo)).length, pasados: eventos.filter((e) => e.fecha < hoy).length,
     planes: planes.length,
   };
   const proximoEntreno = futuros.find((e) => e.tipo === "entreno" && e.estado === "programado" && e.serie);
@@ -113,76 +107,24 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
           <nav className="ev-filtros" aria-label="Filtrar eventos">
             {FILTROS.map((x) => (
               <Link key={x.id} href={x.id === "proximos" ? "/gestion/eventos" : `/gestion/eventos?f=${x.id}`} aria-current={filtro === x.id ? "true" : undefined}>
-                {x.texto} {(x.id === "pendientes" || x.id === "pasados" || x.id === "planes") && cuenta[x.id] > 0 && <small>{cuenta[x.id]}</small>}
+                {x.texto} {(x.id === "pasados" || x.id === "planes") && cuenta[x.id] > 0 && <small>{cuenta[x.id]}</small>}
               </Link>
             ))}
           </nav>
           {lista.length === 0 ? <p className="suave" style={{ margin: 0 }}>No hay eventos en esta vista.</p> : (
-            <Envoltorio activo={filtro === "pendientes"}>
             <div className="tabla-desplazable">
               <table className="gs-tabla ev-tabla" data-testid="tabla-eventos">
-                <thead><tr><th>Fecha</th><th>Evento</th><th>Pista</th><th>Respuestas</th><th>SportEasy</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Evento</th><th>Pista</th><th>Respuestas</th></tr></thead>
                 <tbody>
-                  {lista.map((e) => <Fila key={e.id} casilla={filtro === "pendientes"} e={e} pistas={pistas} respuestas={resp.get(e.id) ?? []} jugadores={jugadores} defecto={defecto} />)}
+                  {lista.map((e) => <Fila key={e.id} e={e} pistas={pistas} respuestas={resp.get(e.id) ?? []} jugadores={jugadores} defecto={defecto} />)}
                 </tbody>
               </table>
             </div>
-            {filtro === "pendientes" && (
-              <div className="botones" style={{ margin: "12px 0 0" }}>
-                <button className="boton boton-amarillo" type="submit" data-testid="marcar-copiado-lista">Marcar como copiado</button>
-                <MarcarTodos />
-                <span className="pequeno suave">Pulsa solo si ya está copiado en SportEasy. Te pedirá confirmación.</span>
-              </div>
-            )}
-            </Envoltorio>
           )}
           {filtro === "proximos" && futuros.length > MAX_PROXIMOS && <p className="pequeno suave" style={{ margin: 0 }}>Se ven los próximos {MAX_PROXIMOS} de {futuros.length}. Para el resto, usa los filtros (Entrenos, Liga…).</p>}
-          <p className="pequeno suave" style={{ margin: 0 }}>
-            Fase puente: los eventos se crean y cambian aquí; Claude los copia a SportEasy con tu OK. Los jugadores siguen respondiendo en SportEasy y Claude trae sus respuestas.
-          </p>
         </section>
 
-        <aside className="gs-der ev-lateral" aria-label="Pistas y copia a SportEasy" style={{ flex: "1 1 300px" }}>
-          <section className="gs-bloque ev-copiar" aria-labelledby="t-copia" data-testid="copia-sporteasy">
-            <span className="gs-eyebrow" style={{ color: "var(--c-amarillo)" }}>Copia a SportEasy</span>
-            <h2 id="t-copia" style={{ fontSize: 20 }}>
-              {concretos.length === 0 && deSerie.length === 0 ? "Todo al día" : `${concretos.length} ${concretos.length === 1 ? "cambio pendiente" : "cambios pendientes"}${deSerie.length ? ` + ${deSerie.length} entrenos de la serie` : ""}`}
-            </h2>
-            {concretos.length === 0 && deSerie.length === 0 ? <p className="pequeno suave" style={{ margin: 0 }}>No hay nada que copiar.</p> : (
-              <FormularioCopia style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <ul>
-                  {concretos.map((e) => (
-                    <li key={e.id}>
-                      <label>
-                        <input type="checkbox" name="id" value={e.id} defaultChecked />
-                        <span><Link href={`/gestion/eventos/${e.id}`}>{e.estado === "cancelado" ? "CANCELADO · " : ""}{tituloEvento(e)} · {diaYNumero(e.fecha)}</Link><br /><span className="suave">{cambioParaVer(e.sporteasy_cambio) ?? "Cambio sin describir"}</span></span>
-                      </label>
-                    </li>
-                  ))}
-                  {deSerie.length > 0 && (
-                    <li>
-                      <label>
-                        <input type="checkbox" name="serie" value="1" data-n={deSerie.length} />
-                        <span><b>{deSerie.length} entrenos de la serie</b> (del {diaYNumero(deSerie[0].fecha)} al {diaYNumero(deSerie[deSerie.length - 1].fecha)}) sin confirmar en SportEasy.<br />
-                          <span className="suave">Márcalos cuando la serie esté creada en SportEasy (o uno a uno desde el filtro «Pendientes de SportEasy»).</span></span>
-                      </label>
-                    </li>
-                  )}
-                </ul>
-                <div className="botones" style={{ margin: 0 }}>
-                  <button className="boton boton-amarillo" type="submit">Marcar como copiado</button>
-                  <MarcarTodos />
-                </div>
-                <span className="pequeno suave">Pulsa solo si ya está copiado en SportEasy. Te pedirá confirmación.</span>
-              </FormularioCopia>
-            )}
-            {encendidoWeb ? (
-              <p className="pequeno" style={{ margin: 0 }} data-testid="copia-sin-notificar">
-                <b>Respuestas en la web encendido (D104):</b> cada evento se crea en SportEasy con el formulario completo (<span className="mono">/calendar/create/</span>, «Ajustes avanzados»): <b>«Selección manual»</b> (nace sin participantes) y <b>«Enviar una notificación» apagado</b>. Nunca el formulario rápido de «Crear evento»: invita a todos y notifica.
-              </p>
-            ) : <p className="pequeno suave" style={{ margin: 0 }}>Fase puente: la copia sigue como hasta ahora.</p>}
-          </section>
-
+        <aside className="gs-der ev-lateral" aria-label="Pistas e importaciones" style={{ flex: "1 1 300px" }}>
           <section className="gs-bloque" aria-labelledby="t-pistas">
             <div className="gs-bloque-cab"><h2 id="t-pistas" style={{ fontSize: 24 }}>Pistas</h2><Link href="/gestion/eventos/pistas" style={{ fontWeight: 600, fontSize: 14 }}>Gestionar</Link></div>
             {pistas.map((p) => (
@@ -215,11 +157,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
   );
 }
 
-function Envoltorio({ activo, children }: { activo: boolean; children: React.ReactNode }) {
-  return activo ? <FormularioCopia>{children}</FormularioCopia> : <>{children}</>;
-}
-
-function Fila({ e, pistas, respuestas, jugadores, casilla, defecto }: { casilla?: boolean; e: EventoFila; pistas: Pista[]; respuestas: RespuestaPersona[]; jugadores: JugadorBasico[]; defecto: Defecto }) {
+function Fila({ e, pistas, respuestas, jugadores, defecto }: { e: EventoFila; pistas: Pista[]; respuestas: RespuestaPersona[]; jugadores: JugadorBasico[]; defecto: Defecto }) {
   const pe = pistaEfectiva(e, pistas);
   const aviso = chipEquipacion(avisoDeEvento(e));
   const cancelado = e.estado === "cancelado";
@@ -229,7 +167,6 @@ function Fila({ e, pistas, respuestas, jugadores, casilla, defecto }: { casilla?
   return (
     <tr className={`${cancelado ? "ev-cancelado" : ""} ${sinPista ? "ev-sin-pista" : ""}`} data-evento={e.clave}>
       <td data-label="Fecha">
-        {casilla && e.sporteasy_estado === "pendiente" && <input type="checkbox" name="id" value={e.id} aria-label={`Marcar como copiado: ${tituloEvento(e)} ${diaYNumero(e.fecha)}`} style={{ marginRight: 8 }} />}
         <strong>{diaYNumero(e.fecha)}</strong>
         <div className="ev-hora">{rangoHoras(e)}{e.tipo === "liga" && quedada ? ` · encuentro ${quedada}` : ""}</div>
       </td>
@@ -251,13 +188,6 @@ function Fila({ e, pistas, respuestas, jugadores, casilla, defecto }: { casilla?
             dudas={e.estado === "programado" ? lineaDudas(e, gruposEvento(e, jugadores, respuestas, true, defecto), respuestas) : null} />
         ) : e.tipo === "liga" ? <span className="suave">Convocatoria el martes</span> : <span className="suave">—</span>}
         <AvisoSinFicha personas={sinFichaQueVan(e, jugadores, respuestas)} pista={e.solo_con_ficha_en} />
-      </td>
-      <td data-label="SportEasy">
-        {esPlanFila(e) ? <span className="suave">No se copia</span> : noSeCopia(e)
-          ? <span className="suave" title={e.sporteasy_cambio ?? undefined} data-testid="no-se-copia">No se copia</span>
-          : e.sporteasy_estado === "copiado"
-          ? <span className="ev-copia ev-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10" /></svg>Al día</span>
-          : <span className="pastilla etiqueta-aviso" title={cambioParaVer(e.sporteasy_cambio) ?? undefined}>{cancelado ? "Cancelación pendiente" : "Pendiente de copiar"}</span>}
       </td>
     </tr>
   );

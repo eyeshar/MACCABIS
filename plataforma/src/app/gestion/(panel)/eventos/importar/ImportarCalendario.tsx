@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { analizarCalendario, aplicarCalendario, type ResultadoCalendario } from "../acciones";
+import { textoSale } from "@/lib/avisos/horario";
 
 const EJEMPLO = `G1;1;Enfermos del Aro;Maccabi de Acostar;04/10/2026;14:00;2
 G1;4;Maccabi de Acostar descansa;;08/11/2026;;
@@ -33,7 +34,7 @@ export default function ImportarCalendario({ encendido = false }: { encendido?: 
       <section className="gs-bloque" aria-labelledby="t-pegar">
         <h2 id="t-pegar" style={{ fontSize: 22 }}>Pega el calendario del Ayuntamiento</h2>
         <p className="pequeno suave" style={{ margin: 0 }}>
-          Una línea por partido: <code className="mono">grupo;jornada;local;visitante;fecha;hora;pista</code>. G1 = MdA, G2 = MdL. Una jornada de descanso es «Maccabi de Acostar descansa». Las líneas de otros equipos se ignoran. Compara con los partidos de liga y enseña <b>solo los cambios</b>; nada se aplica sin tu OK.
+          Una línea por partido: <code className="mono">grupo;jornada;local;visitante;fecha;hora;pista</code>. G1 = MdA, G2 = MdL. La pista vale como «Pista 2» o tal como la escribe Deportes («Baloncesto 2 Moratalaz», «Pabellón baloncesto 3 Moratalaz»). Una jornada de descanso es «Maccabi de Acostar descansa». Las líneas de otros equipos se ignoran. Compara con los partidos de liga y enseña <b>solo los cambios</b>; nada se aplica sin tu OK.
         </p>
         <label htmlFor="cal-texto" className="solo-lectores">Calendario del Ayuntamiento</label>
         <textarea id="cal-texto" className="ev-texto" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={EJEMPLO} spellCheck={false} />
@@ -53,7 +54,10 @@ export default function ImportarCalendario({ encendido = false }: { encendido?: 
           </p>
           {res.aplicado && (
             <div className="aviso aviso-ok" role="status" style={{ margin: 0 }}>
-              Aplicado: {res.aplicado.aceptadas} {res.aplicado.aceptadas === 1 ? "cambio aceptado" : "cambios aceptados"}{res.aplicado.cambiosEn.length ? ` (${res.aplicado.cambiosEn.join(", ")})` : ""}. Quedan <b>pendientes de copiar a SportEasy</b>. Importación registrada.{res.aplicado.avisados != null ? ` Aviso al móvil:   (de noche, sale a las 08:30).` : ""}
+              Aplicado: {res.aplicado.aceptadas} {res.aplicado.aceptadas === 1 ? "cambio aceptado" : "cambios aceptados"}{res.aplicado.cambiosEn.length ? ` (${res.aplicado.cambiosEn.join(", ")})` : ""}. Importación registrada.
+              {res.aplicado.avisados != null && (
+                <span data-testid="aviso-movil"> Aviso al móvil para {res.aplicado.avisados} {res.aplicado.avisados === 1 ? "jugador" : "jugadores"}{res.aplicado.sale ? ` (${textoSale(new Date(res.aplicado.sale))})` : res.aplicado.avisados ? " (enviado ya)" : ""}.{res.aplicado.sinAviso?.length ? ` Sin aviso: ${res.aplicado.sinAviso.join(", ")}.` : ""}</span>
+              )}
             </div>
           )}
 
@@ -98,7 +102,7 @@ export default function ImportarCalendario({ encendido = false }: { encendido?: 
                   <button className="boton boton-amarillo" type="button" onClick={() => aplicar(false)} disabled={pendiente || aceptados.length === 0}>{pendiente ? "Aplicando…" : `Aplicar lo aceptado (${aceptados.length})`}</button>
                 )}
               </div>
-              <p className="pequeno suave" style={{ margin: 0 }}>Lo que no aceptes se queda como está. Lo aceptado cambia el evento y queda «pendiente de copiar» a SportEasy.{encendido ? " «Aplicar y avisar» manda el aviso de cambio a los invitados (nunca de 22:30 a 8:30); si cambia el día, sus respuestas vuelven a «sin responder»." : " Con «respuestas en la web» apagado no sale ningún aviso a los móviles."}</p>
+              <p className="pequeno suave" style={{ margin: 0 }}>Lo que no aceptes se queda como está. Lo aceptado cambia el evento.{encendido ? " «Aplicar y avisar» manda el aviso de cambio a los invitados de cada partido que no se ha jugado: en el momento, salvo de 22:30 a 8:00 (hora de Madrid), que sale a las 8:00; si cambia el día, sus respuestas vuelven a «sin responder»." : " Con «respuestas en la web» apagado no sale ningún aviso a los móviles."}</p>
             </>
           )}
 

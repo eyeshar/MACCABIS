@@ -38,15 +38,9 @@ input:disabled, select:disabled { opacity: 0.6; }
 .ev-ok { color: var(--ok); }
 .ev-duda { color: var(--amarillo-tinta); }
 .ev-no { color: var(--error); }
-.ev-copia { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
 .ev-lateral { display: flex; flex-direction: column; gap: 16px; }
 .ev-pista { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--panel-3); }
 .ev-pista small { font-size: 13px; color: var(--tinta-suave); }
-.ev-copiar { background: var(--panel-2); border: 1px solid var(--c-amarillo); }
-.ev-copiar ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.ev-copiar li label { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; font-size: 14px; margin: 0; }
-.ev-copiar li a { display: inline-flex; align-items: center; min-height: 44px; }
-.ev-copiar li input { width: 20px; height: 20px; accent-color: var(--c-amarillo); flex: none; margin-top: 2px; }
 .ev-radios { display: flex; flex-wrap: wrap; gap: 8px; }
 .ev-radios label { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: var(--toque); padding: 0 16px; border-radius: 10px; border: 1px solid var(--borde-fuerte); background: var(--tarjeta); font-weight: 600; margin: 0; cursor: pointer; }
 .ev-radios label:has(input:checked) { background: var(--c-amarillo); color: var(--c-sobre-acento); border-color: var(--c-amarillo); font-weight: 700; }

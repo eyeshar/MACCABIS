@@ -176,7 +176,7 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
         <ul className="ev-pasos-activar">
           {HUECOS[tipo].map((h) => <li key={h}>{TEXTO_HUECO[h]}</li>)}
         </ul>
-        <p className="pequeno suave" style={{ margin: 0 }}>Solo a quien no ha respondido (una ausencia cuenta como respondido) y nunca de 22:30 a 8:30.{encendido ? "" : " Se activan cuando se encienda «respuestas en la web»."}</p>
+        <p className="pequeno suave" style={{ margin: 0 }}>Solo a quien no ha respondido (una ausencia cuenta como respondido) y nunca de 22:30 a 8:00.{encendido ? "" : " Se activan cuando se encienda «respuestas en la web»."}</p>
         <label className="ev-radios" style={{ margin: 0 }}><input type="checkbox" name="sin_recordatorios" checked={sinRec} onChange={(e) => setSinRec(e.target.checked)} />Sin recordatorios para este evento</label>
       </section>
 

@@ -90,6 +90,11 @@ ok(mixto[6].tipo === 'partido' && mixto[6].fecha === '2026-11-15' && mixto[6].ho
 ok(mixto[7].tipo === 'partido' && mixto[7].hora === '09:00' && mixto[7].pista === null, '«9h» es 09:00 y la pista vacía es «por confirmar»');
 ok(I.leerCalendario('G1;1;Maccabi de Acostar;X;04/10/2026;25:00;1')[0].tipo === 'error', 'una hora imposible es un error');
 ok(I.leerCalendario('G1\t1\tMaccabi de Acostar\tX\t04/10/2026\t14:00\t2')[0].tipo === 'partido', 'también vale pegar con tabuladores (desde una hoja)');
+// La pista tal como la escribe Deportes en su web (31/10/2026: con «Baloncesto 2 Moratalaz» daban error todas las líneas).
+const deportes = I.leerCalendario(['G1;5;Maccabi de Acostar;NABUCO TD;20/12/2026;13:30;Baloncesto 2 Moratalaz', 'G2;5;Vanner;Maccabi de Levantar;15/11/2026;12:45;Pabellón baloncesto 3 Moratalaz', 'G1;6;Maccabi de Acostar;X;22/11/2026;09:00;PABELLÓN BALONCESTO 1 MORATALAZ', 'G1;7;Maccabi de Acostar;Y;29/11/2026;09:00;Pista 2', 'G1;8;Maccabi de Acostar;Z;06/12/2026;09:00;Moratalaz'].join('\n'));
+ok(deportes.slice(0, 4).every((l) => l.tipo === 'partido') && deportes.slice(0, 4).map((l) => l.pista).join() === '2,3,1,2', '«Baloncesto 2 Moratalaz», «Pabellón baloncesto 3 Moratalaz» (y en mayúsculas) y «Pista 2» dan Pista 2, 3, 1 y 2', JSON.stringify(deportes.map((l) => l.pista ?? l.error)));
+ok(deportes[4].tipo === 'error', 'una pista sin número («Moratalaz») sigue siendo un error');
+ok(I.leerPista('Moratalaz - Pista 2') === 2 && I.leerPista('') === null && I.leerPista('Pabellón 1 baloncesto 3') === 3, 'leerPista: «Moratalaz - Pista 2» = 2, vacío = por confirmar, y con dos números manda el de «baloncesto»');
 
 console.log('\n== Importador de respuestas');
 const personas = [{ person_id: 'esteban-jon', nombre: 'Jon Esteban' }, { person_id: 'gianatti-adriano', nombre: 'Adriano Gianatti' }, { person_id: 'romero-barrueco-alonso', nombre: 'Alonso Romero' }];

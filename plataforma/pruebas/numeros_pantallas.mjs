@@ -137,7 +137,7 @@ try {
 
   console.log('\n== Todas las pantallas interiores llevan «← volver»');
   const urls = [
-    '/gestion/eventos', '/gestion/convocatoria', '/gestion/convocatoria/datos', `/gestion/convocatoria/salida?fecha=${J3}`, '/gestion/tablero', '/gestion/scouting', '/gestion/liga',
+    '/gestion/eventos', '/gestion/convocatoria', '/gestion/convocatoria/datos', `/gestion/convocatoria/salida?fecha=${J3}`, '/gestion/tablero', '/liga/scouting', '/liga/consolidada',
     '/gestion/jugadores', '/gestion/ropa', '/gestion/asistencia', '/gestion/grupos', '/gestion/eventos/nuevo', '/gestion/eventos/importar', '/gestion/eventos/pistas',
     `/gestion/eventos/${ent.id}`, `/gestion/eventos/${ent.id}/respuestas`, '/jugador/esteban-jon', '/cuenta', '/avisos', '/mi-zona/ausencias', '/planes/nuevo',
   ];

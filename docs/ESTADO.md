@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 31/10/2026, noche: **asistencia 2026/27 con el último export de SportEasy** (`feat/asistencia-sporteasy`, D161, PR abierto): SportEasy cuenta hasta el 23/10 y la plataforma desde el 24/10 (respuestas de los eventos ya pasados), sin duplicar. **Pendiente del OK de Iván:** copiar el export a `fuentes_fbm/` tras el merge y cargarlo en el real (cuadre en D161). Sin migraciones._
 _Última actualización: 31/10/2026, noche: **acceso que funciona en cualquier navegador** (`feat/acceso-cualquier-navegador`, D157, apilada sobre `feat/recuadro-respuestas-en-vivo`, PR abierto, sin merge): enlace del correo por `/auth/confirm` (botón «Entrar» por POST; el prefetch de Gmail no lo gasta; `verifyOtp` con `token_hash`, sin PKCE), código de 6 dígitos, mensajes claros si el enlace caducó o se usó, y el recuadro separa «no han pedido acceso» de «lo pidieron y no terminaron». **Pendiente de Iván: pegar la plantilla de correo en Supabase** (texto en el PR y en D157) y comprobar que «Site URL» es `https://maccabis.vercel.app`. Google revisado: activo y funcionando (un solo `invalid_grant` suelto). Sin migraciones._
 _Última actualización: 31/10/2026, noche: **recuadro «Respuestas en la web» en vivo** (`feat/recuadro-respuestas-en-vivo`, D156, PR abierto, sin merge): se actualiza solo cada 60 s con la pestaña visible y al volver a ella (`/api/gestion/activacion`, polling), con «Actualizado hh:mm»; la suscripción caducada (404/410) ya se desactivaba y vuelve a «sin avisos»; textos en singular/plural con «de noche solo si el partido es en pocas horas»; el total dice «jugadores · el entrenador también los tiene». Sin migraciones._
 _Última actualización: 31/10/2026, noche: **rutina B automática, fin de SportEasy y avisos** (`feat/rutina-b-auto`, D153, D154 y D155, PR abierto, sin merge): SportEasy ya no se usa (fuera la tarjeta «Copia a SportEasy» y la cola «pendiente de copiar»); la rutina B aplica y avisa sola con freno (tarea «Maccabis · calendario del jueves», jueves 20:20); avisos en el momento salvo de 22:30 a 08:00 (Madrid); Importar acepta la pista «Baloncesto 2 Moratalaz». J5 MdA aplicada el 31/10 a las 17:09; su aviso **no** salió ni está en cola._
@@ -21,6 +22,12 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+
+## Asistencia 2026/27 con el último export de SportEasy (31/10/2026; D161) — `feat/asistencia-sporteasy`, PR abierto
+- **Qué trae el export** (`privado/sporteasy/bilan_presence_maccabis (12).xlsx`, solo lectura): por evento, una hoja por mes (julio–octubre 2026), 27 eventos del 19/07 al 30/10, 46 miembros de SportEasy, estados «A tiempo / Con excusa / Sin excusa / No convocado / Lesionado».
+- **Corte:** SportEasy hasta el 23/10 (`temporadas.json`, `asistencia.hasta`); desde el 24/10, la plataforma en «Asistencia y motivos» (eventos de liga y entrenos ya pasados, respuesta efectiva). Los «no voy» de eventos futuros ya no cuentan.
+- **Carga pendiente del OK de Iván** (en este orden, tras el merge): copiar el export a `fuentes_fbm/2026-27/asistencia/bilan_presence_2026-10-31.xlsx`; `node scripts/estadisticas/generar_temporada.js 2026-27 --solo-asistencia`; en `plataforma/`, `npm run db:asistencia -- 2026-27`. Cuadre en D161 (partidos 37/116, entrenos 82/203; 29 personas). Los JSON públicos los pondrá al día la siguiente jornada de la rutina A.
+- 11 nombres del export sin casar (8 nunca responden, 3 solo en eventos que no cuentan): lista en `privado/sporteasy/cruce_nombres_2026-10-31.json`.
 
 ## Rutina B automática, fin de SportEasy y avisos (31/10/2026; D153, D154, D155) — `feat/rutina-b-auto`, PR abierto
 

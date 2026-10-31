@@ -1238,3 +1238,15 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - Los textos dicen la verdad: «Aviso al móvil para N jugadores (enviado ya)» o «(de noche: sale el dd/mm a las 08:00)»; si no sale aviso de algún partido, lo dice («Sin aviso: MdA J2 (ya jugado)»). Igual en la ficha del evento y en «Enviar un recordatorio ahora». Pantallas, guía del jugador e inicio: «nunca de 22:30 a 8:00».
 - **Pruebas** (`pruebas:avisos-logica`): 17:09 → sale ya; 22:29 → sale ya; 22:31 → 08:00 del día siguiente; 07:59 → 08:00; 08:00 → sale ya; 00:15 → 08:00; los dos lados de UTC frente a Madrid; y a cada lado de los cambios de hora de otoño (25/10/2026) y primavera (28/03/2027). `pruebas:respuestas-pantallas`: el texto del resultado y que un partido a más de dos semanas también avisa.
 - **El aviso de la J5 MdA no está en cola** y no se reenvía a ciegas (Iván decide).
+
+## D156 — El recuadro «Respuestas en la web» se actualiza solo, por polling simple (Iván, 31/10/2026)
+
+**Contexto:** el recuadro de Gestión (contadores «Con avisos», listas, «Faltan por entrar» y los mensajes de «Copiar mensaje») se calculaba solo al cargar la página; con la pestaña abierta no se enteraba de una suscripción nueva o caducada. Comprobado el 31/10 contra la base real (solo lectura): 13/27 con avisos (el entrenador queda fuera), 14 sin avisos, 1 sin entrar.
+
+**Decisión:**
+- **Polling, no Realtime:** la tarjeta (`TarjetaActivar`) vuelve a pedir `GET /api/gestion/activacion` cada 60 s mientras la pestaña está visible, y además al volver a la pestaña o a la app (`visibilitychange`, `focus`). Con la pestaña oculta, en pausa. No recarga la página ni toca el estado de los contadores desplegados (el mismo componente `Numeros` sigue montado). Muestra «Actualizado hh:mm» (hora de Madrid).
+- **Un solo cálculo:** `src/lib/gestion/activacion.ts` (`cargarActivacionViva`) lo usan la página (primera pintura) y la API; la API solo responde a gestores (401/403 si no), con la sesión de quien pregunta (RLS) y sin caché.
+- **Suscripciones muertas:** ya se hacía (`enviarA`, `servidor.ts`): 404/410 del servicio push → `activa=false`, `desactivada_en=now()`, `motivo_baja='caducada'`; la persona vuelve sola a «sin avisos». Queda cubierto por prueba (la caducada baja el contador sin recargar).
+- **Textos:** «(nunca de noche)» → «(de noche solo si el partido es en pocas horas)» (D155) en el mensaje a quien no tiene avisos (Panel, ficha de respuestas, salida de convocatoria) y en el de lanzamiento. Singular/plural según destinatarios (`mensajesActivacion.ts`): «aún no has activado… te llega» / «aún no tenéis… os llega»; «aún no has entrado… Entra una vez» / «aún no habéis entrado… Entrad una vez».
+- **El total excluye al entrenador y lo dice:** «Con avisos: 13/27 jugadores · el entrenador también los tiene» (o «sin contar al entrenador» si no los tiene). No se cuenta en el total.
+- **Pruebas:** `pruebas:avisos-logica` (textos) y `pruebas:respuestas-pantallas` (suscripción nueva, caducada → «sin avisos», lista desplegada que se mantiene, «Actualizado», API sin sesión).

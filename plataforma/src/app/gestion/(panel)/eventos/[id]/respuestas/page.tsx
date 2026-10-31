@@ -1,3 +1,4 @@
+import { mensajeSinAvisos } from "@/lib/gestion/mensajesActivacion";
 import Link from "next/link";
 import Volver from "@/components/nav/Volver";
 import { notFound } from "next/navigation";
@@ -138,7 +139,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const ultimaLectura = filasR.filter((r) => r.origen === "sporteasy").map((r) => r.leido_en ?? "").sort().at(-1);
   const sinAvisos = lineas.filter((l) => !l.avisos);
   const web = await origenWeb();
-  const msgSinAvisos = `Hola, ${sinAvisos.map((l) => l.nombre).join(", ")}: aún no tenéis activados los avisos de Maccabis en el móvil. Así os llega cuándo hay que responder y si cambia la hora o la pista (nunca de noche). Es un minuto: ${web}/avisos`;
+  const msgSinAvisos = mensajeSinAvisos(sinAvisos.map((l) => l.nombre), web);
   const opcionesPor = (l: Linea) => (dia && distintas && l.dos
     ? [{ id: "ambos", texto: "A los dos", opcion: "ambos" }, ...dia.map((e) => ({ id: `solo-${e.id}`, texto: `Solo al de las ${hhmm(e.inicio)} (${e.equipo})`, opcion: "solo", evento: e.id })), { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
     : dia ? [{ id: "voy", texto: "Va", opcion: "voy" }, { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]

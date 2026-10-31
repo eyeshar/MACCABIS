@@ -11,6 +11,7 @@ import * as H from '../src/lib/avisos/horario.ts';
 import * as P from '../src/lib/avisos/planificador.ts';
 import * as T from '../src/lib/avisos/textos.ts';
 import * as CM from '../src/lib/convocatoria/mensajes.ts';
+import * as MA from '../src/lib/gestion/mensajesActivacion.ts';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -386,5 +387,19 @@ console.log('\n== Aviso «no va (por defecto)» al propio jugador (D152)');
   const base = P.planificar(conMarcas(lunes));
   ok(de(base, 'nse').length === 1 && !de(base, 'nse')[0].eventos.includes('e14') && base.every((x) => !x.clave.startsWith('rec:defecto')), 'el «te faltan» del lunes sigue sin el entreno y no lleva el aviso por defecto');
 }
+// ---------------------------------------------------------------- mensajes del recuadro «Respuestas en la web» (D156)
+console.log('\== Mensajes para copiar: singular / plural y la noche según D155');
+{
+  const W = 'https://maccabis.vercel.app';
+  const a1 = MA.mensajeSinAvisos(['Fernando'], W), aN = MA.mensajeSinAvisos(['Fernando', 'Luis'], W);
+  ok(/^Hola, Fernando: aún no has activado los avisos/.test(a1) && /Así te llega/.test(a1) && !/tenéis|os llega/.test(a1), 'sin avisos, una persona: singular («has activado», «te llega»)', a1);
+  ok(/^Hola, Fernando, Luis: aún no tenéis activados/.test(aN) && /Así os llega/.test(aN), 'sin avisos, varias: plural');
+  ok(a1.includes('(de noche solo si el partido es en pocas horas)') && aN.includes('(de noche solo si el partido es en pocas horas)') && !/nunca de noche/.test(a1 + aN), 'sin «nunca de noche»: «de noche solo si el partido es en pocas horas»');
+  ok(a1.endsWith(`${W}/avisos`), 'lleva el enlace a /avisos');
+  const e1 = MA.mensajeFaltanEntrar(['Fernando'], W), eN = MA.mensajeFaltanEntrar(['Fernando', 'Luis'], W);
+  ok(/aún no has entrado/.test(e1) && /Entra una vez con tu correo/.test(e1) && !/habéis|Entrad/.test(e1), 'faltan por entrar, una persona: «aún no has entrado… Entra una vez»');
+  ok(/aún no habéis entrado/.test(eN) && /Entrad una vez/.test(eN), 'faltan por entrar, varias: plural');
+}
+
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

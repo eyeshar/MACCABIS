@@ -4,7 +4,7 @@ import equipJson from "@/data/equipaciones.json";
 import rivalesJson from "@/data/estadisticas/rivales.json";
 import { equipoPorNombre, type Aviso, type Equipaciones } from "@/data/avisosEquipacion";
 import { avisoDe, coloresDe, proximoConAviso } from "@/lib/equipacion";
-import { partidosCalendario } from "@/lib/publico";
+import { partidosCalendario, type FuenteCalendario } from "@/lib/publico";
 
 // Liga 26/27 publica (migrada de GitHub Pages): clasificacion calculada, resultados por jornada y ficha por equipo.
 // SOLO datos por equipo (D73): nada por jugador de otros equipos, que vive en la zona de gestion (Liga consolidada).
@@ -78,8 +78,10 @@ export type ProximoLiga = {
 };
 export type ContraNosotros = { jornada: number; fecha: string; aviso: Aviso | null };
 
-/** Todo lo que la pantalla de Liga necesita ya calculado en el servidor (colores, avisos de equipacion, proximos partidos). */
-export function datosLiga(hoy: string) {
+/** Todo lo que la pantalla de Liga necesita ya calculado en el servidor (colores, avisos de equipacion, proximos partidos).
+ *  `fuente`: el calendario de la tabla de eventos (`cargarFuente()`, D151); sin ella, su copia generada del repo. */
+export function datosLiga(hoy: string, fuente?: FuenteCalendario) {
+  const cal = partidosCalendario(fuente);
   const equip = equipJson as unknown as Equipaciones;
   const colores: Record<string, Color | null> = {};
   const contra: Record<string, ContraNosotros | null> = {};
@@ -91,14 +93,14 @@ export function datosLiga(hoy: string) {
       if (e.nuestro) { contra[`${g}:${e.id}`] = null; continue; }
       // Proximo partido de nuestro equipo contra ese rival (desde hoy), con su aviso de equipacion.
       const ref = equipoPorNombre(equip, e.nombre);
-      const p = partidosCalendario()
+      const p = cal
         .filter((x) => x.equipo === eq && !x.descansa && x.fecha && x.fecha >= hoy && x.rival && equipoPorNombre(equip, x.rival) === ref)
         .sort((a, b) => (a.fecha! < b.fecha! ? -1 : 1))[0];
       contra[`${g}:${e.id}`] = p ? { jornada: p.jornada, fecha: p.fecha!, aviso: avisoDe(p) } : null;
     }
   }
   const proximos: (ProximoLiga | null)[] = (["MDA", "MDL"] as const).map((eq) => {
-    const x = proximoConAviso(eq, hoy);
+    const x = proximoConAviso(eq, cal, hoy);
     if (!x) return null;
     const rival = x.partido.rival ?? "";
     return {

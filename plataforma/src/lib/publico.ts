@@ -42,8 +42,9 @@ const ENTRENOS = entrenosJson as unknown as Entrenos;
 type PartidoCal = Partido & { fase?: string };
 const CALENDARIO = calJson as unknown as { partidos: PartidoCal[] };
 
-/** Origen del calendario publico. Por defecto, los ficheros del repo (la fuente de siempre). Desde el paso 2 (D94) las
- *  paginas pueden pasar la fuente leida de la tabla de eventos (vistas publicas de Supabase, `cargarFuente`). */
+/** Origen del calendario publico. La fuente es la tabla de eventos (D47/D95; vistas publicas de Supabase, `cargarFuente`):
+ *  las paginas la pasan. Sin ella (Supabase no responde, o una funcion que aun no la recibe: resultados jugados), la copia
+ *  del repo, que es una COPIA GENERADA de la tabla (`npm run calendario:exportar`, D151) y nunca se edita a mano. */
 export type FuenteCalendario = {
   partidos: PartidoCal[];
   /** Entrenos ya expandidos (uno por miercoles). null = salen de data/entrenos_2026-27.json. */

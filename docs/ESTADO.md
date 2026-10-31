@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 31/10/2026: **una sola fuente del calendario** (`feat/calendario-una-fuente`, D151, sin merge: Iván revisa la vista previa): los avisos de equipación leen la tabla de eventos y `data/calendario_2026-27.json` pasa a copia generada (`npm run calendario:exportar`, lo lanza la rutina A)._
 _Última actualización: 30/10/2026: **ausencias por periodo = «no va» en todas las pantallas de gestión y Panel en móvil** (`feat/ausencias-panel-movil`, D150, mergeada en `main` el 31/10 con el OK de Iván y Actions en verde, run `41119004201`; sin migraciones; worktree cerrado y rama borrada)._
 _Última actualización: 30/10/2026, tarde: **procesos de Postgres que quedaban vivos en Windows** (`chore/procesos-postgres`): causa reproducida (hijo `--forkchild` suspendido al matar el postmaster) y arreglada; Postgres se para con `pg_ctl` y `pruebas:limpiar` encuentra los restos por carpeta, por puerto y sin padre (ver la sección)._
 _Última actualización: 30/10/2026: **auditoría del BACKLOG** (`docs/auditoria-backlog`, solo docs): 108 casillas abiertas revisadas contra ESTADO, DECISIONS y git — 33 hechas y 19 obsoletas (al «Histórico», con su prueba o decisión), 17 pendientes de Code, 29 de Iván y 10 con fecha; 11 contradicciones con decisiones vigentes listadas sin resolver; recomendación: archivar `feat/calendario-automatico` (motivos en el BACKLOG, «Pendiente de Iván»)._
@@ -15,6 +16,13 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+
+## Una sola fuente del calendario (31/10/2026; D151) — `feat/calendario-una-fuente`, SIN MERGE (Iván revisa la vista previa)
+- **Avisos de equipación desde la tabla de eventos:** Liga 26/27 (`/liga`), Scouting y la página de partido pasan de `data/calendario_2026-27.json` a `cargarFuente()` (vistas públicas, caché de 60 s); Panel, convocatoria, WhatsApp y página del evento ya leían la tabla. `equipacion.ts` ya no importa ningún calendario. Sin Supabase, respaldo en la copia del repo (como desde D94).
+- **Copia generada:** `npm run calendario:exportar` (`-- --check` solo compara) regenera `data/calendario_2026-27.json` y `plataforma/src/data/calendario.json` desde las vistas públicas; lo lanza `npm run jornada` (rutina A) antes de procesar. Regenerado hoy contra el real: mismo contenido (solo cambia `fuente.origen`).
+- **Comparación partido a partido** (fichero de `main` frente a la tabla real): 44/44 iguales; 18 avisos (9 «nos toca cambiar», 9 «cambian ellos»). Detalle y lectores que quedan en D151.
+- **Rutina B:** fuera el paso 6 (editar el JSON a mano); solo cambia la tabla (Importar → Calendario) y, aparte, los colores de los rivales (D75). D129 anota la excepción de `index.html` («en casa / fuera»).
+- **Sin migraciones ni cambios de permisos.** Pruebas: nivel 1 (`pruebas:rapidas`, 35 suites) en verde en local —la tanda se cortó tras 25 sin fallo (Node salió con 127 en Windows) y las 10 restantes se pasaron una a una—, con `test:regresion`, `test:liga`, `test:privacidad`, `pruebas:liga`, `pruebas:pantallas`, `pruebas:liga-partidos` y `pruebas:cuadre`; `pruebas:equipacion` con la sección nueva (51 OK).
 
 ## Ausencias por periodo y Panel en móvil (30/10/2026; D150) — `feat/ausencias-panel-movil`, MERGEADA en `main` (31/10, OK de Iván, Actions en verde, run `41119004201`)
 - **Regla:** sin respuesta y con una ausencia por periodo que cubre el evento (también sin fecha de vuelta), cuenta como **«no va»** en el Panel, Eventos, el tablero (evento suelto y domingo), la convocatoria, los grupos y las respuestas del evento, con la nota «Ausente del 02/11 al 09/11 (Viaje)» **solo para gestores**, y **sin recordatorios** (automáticos, «Enviar un recordatorio ahora» y «Pedir recordatorio a Claude», que antes sí incluía las ausencias sin fecha de vuelta). **Si responde, gana su respuesta.** Con «no suele entrenar» y ausencia, cuenta por la ausencia; «nunca a partidos» sigue fuera del partido; «solo con ficha» va antes (quien no está invitado no cuenta).

@@ -29,6 +29,7 @@
     "pruebas:equipacion": "node pruebas/avisos_equipacion.mjs",
     "pruebas:avisos": "node pruebas/avisos_pantallas.mjs",
     "datos:sync": "node scripts/sincronizar_equipacion.mjs",
+    "calendario:exportar": "node scripts/exportar_calendario.mjs",
     "pruebas:portada": "node pruebas/portada.mjs",
     "pruebas:navegacion": "node pruebas/navegacion.mjs",
     "pruebas:cuadre": "node pruebas/liga_cuadre.mjs",

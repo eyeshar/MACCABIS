@@ -7,7 +7,7 @@ import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import TarjetaActivar from "./TarjetaActivar";
 import { cargarActivacionViva } from "@/lib/gestion/activacion";
 import { AvisoCaja } from "@/components/ProximoPartido";
-import { bonito, cargarLiga, type DatosLiga } from "@/lib/liga";
+import { bonito, cargarLiga, dec, masPeligrosos, type DatosLiga } from "@/lib/liga";
 import { clave } from "@/data/avisosEquipacion";
 import {
   chipEquipacion, entrenoHabitual, estadoClasificacion, proximosPartidos, ultimosResultados, type Evento,
@@ -31,17 +31,17 @@ export const metadata = { title: "Gestión · Maccabis" };
 
 const cruce = (e: Evento) => { const n = NOMBRE_EQUIPO[e.equipo!]; return e.local ? `${n} – ${e.rival}` : `${e.rival} – ${n}`; };
 
-/** Tarjeta de scouting del proximo rival: puesto y sus 3 maximos anotadores (datos de terceros: solo gestores, D73). */
+/** Tarjeta de scouting del proximo rival: puesto y sus 3 mas peligrosos, por media (D169; datos de terceros, D73). */
 function scoutingDe(liga: DatosLiga | null, e: Evento) {
   if (!liga || !e.rival) return null;
   const fila = liga.clasificacion.find((c) => clave(c.equipo) === clave(e.rival));
   if (!fila) return null;
-  const top = liga.jugadores.filter((j) => j.grupo === fila.grupo && j.equipo === fila.equipo).sort((a, b) => b.pts - a.pts).slice(0, 3);
+  const top = masPeligrosos(liga.jugadores.filter((j) => j.grupo === fila.grupo && j.equipo === fila.equipo), fila.pj);
   const apellido = (n: string) => bonito(n).split(",")[0].split(" ")[0];
   return {
     equipo: fila.equipo,
     texto: `${fila.equipo} · ${fila.pos}.º ${fila.grupo}`,
-    detalle: top.length ? top.map((j) => `${apellido(j.nombre)} ${j.pts}`).join(" · ") : "Aún sin partidos en las hojas de esta temporada",
+    detalle: top.length ? top.map((j) => `${apellido(j.nombre)} ${dec(j.pts / j.pj)}/p`).join(" · ") : "Aún sin partidos en las hojas de esta temporada",
   };
 }
 

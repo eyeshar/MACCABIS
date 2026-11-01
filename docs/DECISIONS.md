@@ -1367,6 +1367,29 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - **Cualquier diferencia nueva sí avisa:** la misma en otra cantidad (si la oficial pasara a otro número), en otro campo o en otro equipo sale como «DIFIERE». Si el Ayuntamiento corrige el 16, el desfase desaparece y las conocidas dejan de aparecer solas.
 - **Pruebas:** `pruebas:clasificacion-oficial` (la J1 conocida no avisa; 73 en vez de 71 sí; una diferencia en otro equipo sí; sin la lista, el caso real sigue diciendo «DIFIERE»).
 
+## D168 — Jugadores de otros equipos: uno por equipo y nombre normalizado, sin el dorsal (Iván, 01/11/2026, `feat/scouting-medias`) — COMPLETA D73 y D162
+
+**Problema:** en Scouting rivales y Liga consolidada el mismo jugador salía en dos líneas cuando cambiaba de dorsal o su nombre venía escrito distinto en las hojas de la FBM (caso real en Vallekas Basket: el mismo jugador con #9 y #16, con y sin tilde, 1 PJ cada uno; también en Tropicaleros, en mayúsculas y con un espacio ante la coma). La vista `v_liga_jugadores` agrupa por nombre exacto. Y quien figura en las hojas sin haber jugado ningún minuto salía con 0 PJ y 0:00.
+
+**Decisión de Iván:**
+- **Identidad de un jugador de otro equipo = grupo + equipo + nombre normalizado** (sin tildes, en minúsculas, con espacios y puntuación colapsados). **El dorsal no es identidad** (en un mismo equipo hay dos #0 distintos).
+- Al agrupar se suman PJ (partidos con minutos), minutos, puntos, 2P, 3P, TL y faltas; media, TL% y F/P se recalculan. Se muestran **todos los dorsales usados** («#9 / #16») y el nombre en su **forma más completa** (con tildes si alguna hoja las trae).
+- **Mismo nombre normalizado con dorsales distintos en el MISMO partido = dos personas:** no se fusionan (se separan por dorsal) y el **informe de la jornada** lo avisa (`liga.js`, `nombresRepetidos`; también en el aviso de la rutina A).
+- **Quien no ha jugado ningún minuto no sale** (estaba en la hoja sin minutos: convocado sin jugar).
+- **Dónde:** `cargarLiga` (`src/lib/liga.ts`) lee las filas de cada hoja (`liga_estadisticas_jugador` con su partido, por páginas de 1000) y las agrupa con `agruparJugadores` (`src/lib/jugadoresLiga.ts`): Scouting, Liga consolidada (líderes y «Todos los jugadores») y la tarjeta de scouting del Panel. Nuestros jugadores no cambian (su «dobla» MdA + MdL se reconoce también con tildes distintas). **Sin migración:** la vista sigue igual (ninguna pantalla la lee ya) y los permisos no cambian (las dos tablas ya las leen jugadores y gestores, D162).
+- **Pruebas:** `pruebas:jugadores-rivales` (nueva, sintética: caso Miragaya, dos personas con el mismo dorsal, mismo nombre en el mismo partido, 0 PJ, aviso de la jornada) y `pruebas:pantallas` con las hojas reales (nadie repetido, nadie con 0 PJ, alguien con dos dorsales en una línea).
+
+## D169 — Scouting: medias, no totales; «Más peligrosos» con un mínimo de partidos (Iván, 01/11/2026, a partir de Andrés, `feat/scouting-medias`) — COMPLETA D73 y D162
+
+**Problema (Andrés, jugador):** en el móvil lo primero de Scouting eran las tres tarjetas de «máximo anotador» con el total («17 pts») sin decir en cuántos partidos; parece mucho y es 8,5 por partido. Para scouting importa lo que hace por partido.
+
+**Decisión de Iván:**
+- Las tarjetas pasan a **«Más peligrosos»**, ordenadas por **puntos por partido jugado**, solo entre quienes llegan al **mínimo de partidos: la mitad de los de su equipo, redondeando hacia arriba, o 2, lo que sea menor** (`minimoPartidos`). Los que no llegan, solo en la tabla.
+- En cada tarjeta, el número grande es la **media** («8,5 pts/partido»); debajo, pequeño: «17 pts en 2 partidos · 4 dobles · 2 triples · TL 3/4 · 6 faltas».
+- **Tabla** (móvil y escritorio; ya no hay tarjetas por jugador en el móvil): por defecto, **por media**; columnas Jugador, PJ, **MEDIA (pts/partido)**, PTS y después Min, 2P, 3P, TL, TL%, Faltas y F/P. A 375 px las cuatro primeras se ven sin desplazar (jugador fijo a la izquierda) y el resto con desplazamiento lateral. Cada encabezado ordena por su columna y el orden vive en la URL (`?o=pts`, norma 13).
+- **Liga consolidada:** los líderes abren en **«Por partido»** y el mínimo «Automático» es el mismo (también el de la tabla «Todos los jugadores» al ordenar por una media). El Panel enseña los tres más peligrosos del próximo rival por media («Apellido 8,5/p»).
+- **Pruebas:** `pruebas:jugadores-rivales` (mínimo de partidos y orden de «Más peligrosos»), `pruebas:pantallas` (a 375 px y en escritorio: tarjetas con media y detalle, tabla por media, las cuatro columnas a la vista, desplazamiento lateral en el móvil, orden por encabezado en la URL, líderes «Por partido» por defecto) y `verificar_produccion`.
+
 ## D167 — Pruebas ligeras en local, completas en Actions (Iván, 01/11/2026, `docs/norma-pruebas-ligera`) — AJUSTA D149
 
 **Problema:** la norma de D149 seguía siendo excesiva en la práctica: con varios PR a la vez se pasaban en local tandas de 30–60 suites (cuatro carriles en paralelo, cada uno con su Postgres, PostgREST y la web), y el 01/11 el sistema cortó la batería del PR #3 por falta de memoria (4,2 GB libres de 32).

@@ -346,6 +346,8 @@ if (require.main === module) {
     if (cfg.liga) {
       const l = liga.construir(TEMPORADA);
       l.avisos.forEach(a => console.log('  ! ' + a));
+      // D168: un mismo nombre con dos dorsales en un partido va también en el aviso a Iván (rutina A).
+      resumen.avisos.push(...l.avisos.filter(a => /sale dos veces en .* con dorsales/.test(a)));
       if (l.errores.length) { console.log(`\nERRORES DE LIGA — no se ha escrito data/liga_${TEMPORADA}.json:`); l.errores.forEach(e => console.log('  X ' + e)); para(`Liga: ${l.errores[0]}`, ''); }
       fs.writeFileSync(path.join(ROOT, 'data', `liga_${TEMPORADA}.json`), JSON.stringify(l.publico, null, 1) + '\n', 'utf8');
       console.log(`\nLiga: ${l.fuentes} hojas -> data/liga_${TEMPORADA}.json (clasificación calculada, pendiente de contrastar con la oficial).`);

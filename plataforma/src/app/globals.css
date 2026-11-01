@@ -248,6 +248,18 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .lg-tabla tr.lg-nuestro td { background: var(--resalte); }
 .lg-tabla tr.lg-equipo td { border-top: 2px solid var(--borde); }
 .lg-tabla small { color: var(--tinta-suave); }
+/* Scouting (D169): MEDIA con su aclaracion debajo; encabezados que ordenan (enlaces); en el movil, jugador, PJ, MEDIA y PTS a la vista */
+.lg-tabla-scouting th small { display: block; font-size: 0.68rem; text-transform: none; letter-spacing: 0; font-weight: 400; }
+.lg-tabla-scouting th a { color: inherit; text-decoration: none; display: block; }
+.lg-tabla-scouting th a:hover, .lg-tabla-scouting th a:focus-visible { text-decoration: underline; }
+.lg-tabla-scouting .lg-orden-on { display: block; border-bottom: 3px solid var(--amarillo); }
+.lg-tabla-scouting th:nth-child(2), .lg-tabla-scouting td:nth-child(2) { text-align: right; }
+.lg-tabla-scouting th:first-child, .lg-tabla-scouting td:first-child { position: sticky; left: 0; z-index: 1; background: var(--tarjeta); }
+@media (max-width: 639px) {
+  .lg-tabla-scouting th, .lg-tabla-scouting td { padding: 6px 5px; font-size: 0.88rem; }
+  .lg-tabla-scouting td:first-child { white-space: normal; min-width: 104px; max-width: 128px; }
+  .lg-tabla-scouting td:first-child small { display: block; }
+}
 .solo-movil, .lg-tarjetas.solo-movil { display: none; }
 .lg-tarjetas { display: grid; gap: 8px; }
 .lg-jug { border: 1px solid var(--borde); border-radius: 10px; padding: 8px 10px; background: var(--tarjeta); }

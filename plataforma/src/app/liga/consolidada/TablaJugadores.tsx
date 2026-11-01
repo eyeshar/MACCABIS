@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { bonito, dec, mmss, type FilaTabla } from "@/lib/jugadoresLiga";
+import { bonito, dec, mmss, textoDorsales, type FilaTabla } from "@/lib/jugadoresLiga";
 import { comparadorTabla, pasaMinimo, type Columna, type Minimo } from "@/lib/ordenLideres";
 
 // Tabla "Todos los jugadores" de la liga (G1 + G2, con MdA y MdL). Con sesion de jugador o gestor (D73, D162): son datos de terceros.
@@ -170,7 +170,7 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
           <tbody>
             {visible.map((j) => (
               <tr key={clave(j)} className={j.nuestro ? "lg-nuestro" : ""}>
-                <td><Link href={urlEquipo(j.equipos[0])} className="lg-enlace"><b>{bonito(j.nombre)}</b></Link> <small>#{j.dorsal}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}{j.soloFicha && <small className="lg-solo-ficha"> solo ficha {j.soloFicha}</small>}</td>
+                <td><Link href={urlEquipo(j.equipos[0])} className="lg-enlace"><b>{bonito(j.nombre)}</b></Link> <small>{textoDorsales(j)}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}{j.soloFicha && <small className="lg-solo-ficha"> solo ficha {j.soloFicha}</small>}</td>
                 <td>{enlaceEquipos(j)} <small>{j.grupos.join("+")}</small></td>
                 <td>{j.pj}</td><td>{celda(j, "segundos", porPartido)}</td><td><b>{j.pts}</b></td><td>{celda(j, "media", false)}</td>
                 <td>{celda(j, "p2a", porPartido)}</td><td>{celda(j, "p3a", porPartido)}</td><td>{celda(j, "tla", porPartido)}</td><td>{celda(j, "pctTL", false)}</td>
@@ -192,7 +192,7 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
             <li key={k} className={`lg-fila${j.nuestro ? " lg-nuestro" : ""}${abierto ? " abierta" : ""}`}>
               <button type="button" className="lg-fila-cab" aria-expanded={abierto} onClick={() => setAbierta(abierto ? null : k)}>
                 <span className="lg-fila-nom">
-                  <b>{bonito(j.nombre)}</b> <small>#{j.dorsal}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}{j.soloFicha && <small className="lg-solo-ficha"> solo ficha {j.soloFicha}</small>}
+                  <b>{bonito(j.nombre)}</b> <small>{textoDorsales(j)}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}{j.soloFicha && <small className="lg-solo-ficha"> solo ficha {j.soloFicha}</small>}
                   <small className="lg-fila-eq">{j.equipos.join(" + ")} · {j.grupos.join("+")}</small>
                 </span>
                 {otra && <span className="lg-fila-val"><small>{nombreCol.t}</small>{celda(j, col, porPartido)}</span>}

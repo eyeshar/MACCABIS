@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 01/11/2026: **Scouting sin jugadores duplicados y con medias** (`feat/scouting-medias`, D168 y D169, PR abierto): el jugador rival es equipo + nombre normalizado (no el dorsal), sin los de 0 PJ; «Más peligrosos» por media con mínimo de partidos; tabla por media (Jugador, PJ, MEDIA y PTS a la vista en el móvil); líderes de la consolidada «Por partido»._
 _Última actualización: 01/11/2026: **ventanas de consola vacías diagnosticadas** (`docs/ventanas-diagnostico`, solo docs): las abre Windows Terminal como terminal por defecto con procesos de consola visibles; nuestro código ya no lo hace (#13); el origen encontrado, la rutina A, se lanza ya con `conhost --headless` (aplicado); la terminal por defecto la cambia Iván._
 _Última actualización: 01/11/2026: **J1 de MdA como diferencia conocida** (`fix/clasificacion-diferencia-conocida`, D165): el 16-62 publicado no coincide con el acta 392895 (14-62); mandan acta y hoja. La pantalla de clasificación oficial la marca «conocida» y la rutina B no la vuelve a avisar; cualquier diferencia nueva sí._
 _Última actualización: 01/11/2026: **export completo de SportEasy descrito** (`docs/sporteasy-export`, solo docs, `docs/SPORTEASY_EXPORT.md`): estructura sin datos personales; 2026/27 contrastado evento a evento con el Excel (0 diferencias de estado con la misma persona; 6 «Lesionado» que la API no trae); cuadre de 2025/26 frente a lo cargado (no se ha escrito nada: decide Iván entre las tres opciones del documento); propuesta de qué más del histórico merece entrar._
@@ -43,6 +44,12 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+
+## Scouting y Liga consolidada: jugador rival sin duplicar y medias en vez de totales (01/11/2026; D168 y D169) — `feat/scouting-medias`, PR abierto
+
+- **D168:** un jugador de otro equipo es equipo + nombre normalizado (el dorsal no cuenta): el mismo con #9 y #16 o escrito con y sin tilde sale una vez, con todos sus dorsales y sus números sumados; con dos dorsales en el mismo partido, dos personas y aviso en el informe de la jornada; quien no ha jugado ningún minuto no sale. `cargarLiga` agrupa las filas de las hojas (sin migración).
+- **D169:** Scouting abre con «Más peligrosos» (media de puntos por partido; mínimo: la mitad de los partidos de su equipo, hacia arriba, o 2, lo que sea menor) y una tabla por media con Jugador, PJ, MEDIA y PTS a la vista a 375 px. Liga consolidada: líderes «Por partido» por defecto con el mismo mínimo. Panel: los tres más peligrosos del próximo rival por media.
+- **Pruebas:** `pruebas:jugadores-rivales` (nueva) y `pruebas:pantallas` (375 px y escritorio).
 
 ## Ventanas de consola vacías (`F:\node\node.exe`): diagnóstico y arreglos (01/11/2026) — `docs/ventanas-diagnostico`
 - **Mecanismo (demostrado):** en Windows → Configuración → Sistema → Para programadores → **Terminal** está «Dejar que Windows decida» (la clave `HKCU\Console\%%Startup` existe vacía), que en este Windows 11 es **Windows Terminal** 1.24. Con eso, **todo proceso de consola que nace con ventana visible abre una ventana de Windows Terminal**, titulada con el programa que corre (`F:\node\node.exe` mientras va npm o node). Y con `closeOnExit` en su valor por defecto («graceful»), si el proceso acaba con error la ventana **se queda abierta y vacía** (las «ventanas de cmd vacías»).

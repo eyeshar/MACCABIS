@@ -3,9 +3,15 @@
 // ni borra cuentas ni escribe nada en la base. Nunca imprime niveles ni datos personales: solo recuentos y, de quien queda
 // fuera por no tener ficha, el nombre visible (lo que ya ve un gestor).
 //
-//   npm run pruebas:solo-ficha-real -- --antes   ANTES de aplicar: guarda la foto de invitados y de la copia a SportEasy
-//                                                 en privado/backups/ (fuera de git)
-//   npm run pruebas:solo-ficha-real              DESPUÉS: la migración y los datos aplicados, y que solo cambia lo debido
+//   npm run pruebas:solo-ficha-real -- --antes   guarda la foto de invitados y de la copia a SportEasy en privado/backups/
+//                                                 (fuera de git; no pisa una foto que ya exista)
+//   npm run pruebas:solo-ficha-real              la migración y los datos aplicados, y que solo cambia lo debido
+//
+// La foto se rehízo el 01/11/2026 con los datos reales de ese día (la del 29/10, de antes de D148, ya no servía: desde
+// entonces la rutina B movió la J5 de MdA (15/11 → 20/12, su estado de copia cambia) y Fernando M. pasó de «solo entreno»
+// a jugador con ficha (es invitado a los partidos). Con D148 ya aplicada, la foto nueva es el estado bueno: la suite
+// comprueba que la regla sigue igual y que nadie más cambia. Si cambia la plantilla o un evento de verdad, se rehace la foto
+// (borrar el fichero y `-- --antes`) y se dice en ESTADO por qué.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +20,7 @@ import { conectar } from '../scripts/db.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(RAIZ, '.env.local') });
-const FOTO = path.join(RAIZ, '..', 'privado', 'backups', '2026-10-29_valdebernardo_foto_antes.json');
+const FOTO = path.join(RAIZ, '..', 'privado', 'backups', '2026-11-01_solo_ficha_foto.json');
 const NOTA = 'Iván: no se copia a SportEasy (29/10/2026)';
 const ANTES = process.argv.includes('--antes');
 let fallos = 0;

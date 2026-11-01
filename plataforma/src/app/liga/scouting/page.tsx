@@ -113,6 +113,8 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
               <div className="lg-prox-f">{prox.local === false ? `${elegido.equipo} – ${nombreNuestro(grupo)}` : `${nombreNuestro(grupo)} – ${elegido.equipo}`}</div>
               <div className="lg-prox-d">J{prox.jornada} · {prox.fecha ? fechaCorta(prox.fecha) : ""} · {prox.hora} · pista {prox.campo}</div>
               {aviso?.hay && <AvisoCaja a={aviso} />}
+              {/* D160: la misma línea que la convocatoria, el WhatsApp y el aviso al móvil. */}
+              {aviso?.convocatoria && <p className="lg-sub" data-testid="linea-equipacion">{aviso.convocatoria}</p>}
             </div>
           )}
           {elegido.nuestro && <p className="lg-sub">Es uno de los nuestros: así nos ven los rivales.</p>}

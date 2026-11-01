@@ -74,9 +74,24 @@ ok(a('MDA', 5).hay && a('MDA', 5).colorRival === 'azul', 'J5 MdA–Nabuco TD: av
 ok(a('MDL', 1).hay && a('MDL', 1).colorRival === 'azul oscuro', 'J1 MdL–Mejorada: aviso (azul oscuro)');
 ok(!a('MDA', 1).hay && !a('MDA', 6).hay && !a('MDA', 7).hay, 'rival blanco / naranja / amarillo: sin aviso');
 ok(A.avisoPartido(equip, partido('MDA', 4)) === null, 'jornada de descanso: sin aviso ni rival');
-ok(A.lineaConvocatoria(equip, partido('MDL', 6)) === 'Llevad la equipación AMARILLA (nos toca cambiar).', 'convocatoria, nos toca: "Llevad la equipación AMARILLA (nos toca cambiar)."');
-ok(A.lineaConvocatoria(equip, partido('MDA', 2)) === 'Jugamos de negro; cambia Litros de Mahou. Llevad la amarilla por si acaso.', 'convocatoria, cambian ellos: "Jugamos de negro; cambia Litros de Mahou. Llevad la amarilla por si acaso."');
-ok(A.lineaConvocatoria(equip, partido('MDL', 2)) === null, 'convocatoria: sin linea cuando no hay choque');
+const FIN = ' Llevad la amarilla por si acaso.';
+const lc = (p) => A.lineaConvocatoria(equip, p);
+ok(lc(partido('MDL', 6)) === 'Coinciden colores: cambiamos nosotros, de amarillo.' + FIN, 'convocatoria (D160), nos toca: «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.»', lc(partido('MDL', 6)));
+ok(lc(partido('MDA', 2)) === 'Coinciden colores: cambia Litros de Mahou.' + FIN, 'convocatoria, cambian ellos: «Coinciden colores: cambia Litros de Mahou. Llevad…»', lc(partido('MDA', 2)));
+ok(lc(partido('MDL', 1)) === 'Coinciden colores: cambia Mejorada 2012 C.B.' + FIN, 'un nombre que acaba en punto no sale con «..»', lc(partido('MDL', 1)));
+ok(lc(partido('MDL', 2)) === 'Jugamos de negro (ellos de naranja).' + FIN, 'convocatoria SIN choque: también hay línea, «Jugamos de negro (ellos de naranja). Llevad…»', lc(partido('MDL', 2)));
+ok(lc({ ...partido('MDA', 2), local: null }) === 'Coinciden colores con Litros de Mahou: no consta quién va en segundo lugar.' + FIN, 'choque sin saber quién es local: lo dice y no inventa quién cambia');
+ok(lc({ equipo: 'MDA', rival: 'Equipo Inventado', descansa: false }) === 'Jugamos de negro (no tenemos el color de Equipo Inventado).' + FIN, 'rival sin color: «Jugamos de negro (no tenemos el color de …)»');
+ok(lc(partido('MDA', 4)) === null, 'jornada de descanso: sin línea');
+ok(cal.partidos.filter((p) => !p.descansa && p.rival).every((p) => lc(p)?.endsWith(FIN) && A.avisoPartido(equip, p).convocatoria === lc(p)), 'TODOS los partidos con rival tienen línea, acaba en «Llevad la amarilla por si acaso.» y es la misma en avisoPartido().convocatoria');
+
+console.log('\n== Colores parecidos (D160)');
+ok(A.parecidos('negro', 'negro') && A.parecidos('negra', 'negro'), 'un color se parece a sí mismo (con o sin género)');
+for (const [x, y] of [['negro', 'azul oscuro'], ['negro', 'azul'], ['azul oscuro', 'azul'], ['rojo', 'naranja'], ['rojo', 'rosa'], ['naranja', 'amarillo']]) ok(A.parecidos(x, y) && A.parecidos(y, x), `${x} ~ ${y} (y al revés)`);
+for (const [x, y] of [['negro', 'blanco'], ['negro', 'rojo'], ['negro', 'amarillo'], ['negro', 'naranja'], ['negro', 'rosa'], ['blanco', 'amarillo'], ['azul', 'rojo'], ['amarillo', 'rosa']]) ok(!A.parecidos(x, y), `${x} y ${y} NO se parecen`);
+ok(!A.parecidos('', 'negro') && !A.parecidos(null, 'negro'), 'sin color: no se parece a nada');
+ok(Object.keys(equip.paleta).filter((c) => A.chocan(equip, c)).join(',') === equip.regla_choque.camiseta_rival_choca.join(','), 'la lista camiseta_rival_choca del fichero es exactamente la que sale de la tabla de parecidos con nuestra 1.ª (negro)');
+ok(A.COLORES_PARECIDOS.flat().every((c) => c in equip.paleta), 'todos los colores de la tabla existen en la paleta');
 
 console.log('\n== Orden del calendario (Bases 5.11) y sin regla');
 const mismo = { equipo: 'MDA', rival: 'Litros de Mahou' };

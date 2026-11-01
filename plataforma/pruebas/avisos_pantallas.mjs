@@ -189,6 +189,7 @@ try {
     ok((await bloque.textContent()).includes('Próximo partido contra nosotros') && (await pg.textContent('.lg-cab-equipo h2')).includes(A.equipoPorNombre(equip, aMdA.rival).nombre), 'Scouting: por defecto, el proximo rival de MdA con su tarjeta de proximo partido');
     ok((await pg.locator('[data-testid="color-equipo"]').textContent()).includes('camiseta'), 'Scouting: se ve el color del rival (camiseta y pantalon)');
     ok((await bloque.locator('.eq-aviso').count()) === (eti(avisoReal('MDA')) ? 1 : 0), 'Scouting (MdA): el aviso sale en la tarjeta del proximo partido si choca');
+    { const l = avisoReal('MDA')?.convocatoria; ok(!l || (await bloque.locator('[data-testid="linea-equipacion"]').textContent()) === l, 'Scouting (MdA): la línea de equipación de la convocatoria (D160), la misma del WhatsApp', l); }
     await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_scouting_cambian_ellos_${etiqueta}.png`), fullPage: true });
     await pg.getByRole('link', { name: /^MdL:/ }).click();
     await pg.waitForURL(/v=mdl/);
@@ -199,6 +200,7 @@ try {
     await pg.waitForURL(/e=Chavalitros/);
     const cajaNos = pg.locator('.lg-prox .eq-nos_toca');
     ok((await cajaNos.count()) === 1 && (await cajaNos.textContent()).includes('⚠ Nos toca cambiar: equipación AMARILLA') && (await cajaNos.textContent()).includes('partido perdido (Bases 47 JDM, 5.11)'), 'Scouting (Chavalitros, J10 fuera): NOS TOCA CAMBIAR con la advertencia de partido perdido');
+    ok((await pg.locator('.lg-prox [data-testid="linea-equipacion"]').textContent()) === 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.', 'Scouting (Chavalitros): «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.» (D160)');
     ok((await cajaNos.evaluate((e) => getComputedStyle(e).backgroundColor)) === 'rgb(255, 212, 0)', 'Scouting: el aviso "nos toca" es amarillo intenso');
     await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_scouting_nos_toca_${etiqueta}.png`), fullPage: true });
     await pg.selectOption('select[name="e"]', 'Craps');

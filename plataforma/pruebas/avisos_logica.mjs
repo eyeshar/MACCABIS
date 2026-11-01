@@ -194,13 +194,13 @@ ok(!todos.some((x) => /lesi[oó]n|trabajo|viaje|familia|horario|nivel|posici|bas
 console.log('\n== Aviso de convocatoria (D127): sin depender del interruptor, a quien toca y sin dobles');
 {
   const PART = [
-    { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '09:00', encuentro: '08:40', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: null },
-    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '14:00', encuentro: '13:40', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Llevad la equipación amarilla' },
+    { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '09:00', encuentro: '08:40', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: 'Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' },
+    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '14:00', encuentro: '13:40', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.' },
   ];
   const t1 = CM.textoEstasConvocado('2026-10-25', PART, ['MdA']);
-  ok(t1.titulo === 'Estás convocado · domingo 25/10' && t1.cuerpo === 'MdA a las 09:00 (quedada 08:40).', '«Estás convocado · domingo 25/10» / «MdA a las 09:00 (quedada 08:40).»', JSON.stringify(t1));
+  ok(t1.titulo === 'Estás convocado · domingo 25/10' && t1.cuerpo === 'MdA a las 09:00 (quedada 08:40). Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.', '«Estás convocado · domingo 25/10» / «MdA a las 09:00 (quedada 08:40).» + la línea de equipación (D160)', JSON.stringify(t1));
   const t2 = CM.textoEstasConvocado('2026-10-25', PART, ['MdA', 'MdL']);
-  ok(t2.cuerpo === 'MdA a las 09:00 (quedada 08:40) y MdL a las 14:00 (quedada 13:40). Llevad la equipación amarilla.', 'dobla: los dos partidos y el aviso de la jornada (equipación)', t2.cuerpo);
+  ok(t2.cuerpo === 'MdA a las 09:00 (quedada 08:40) y MdL a las 14:00 (quedada 13:40). MdA: Jugamos de negro (ellos de rojo). MdL: Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.', 'dobla: cada equipo con su línea de equipación y «Llevad la amarilla por si acaso.» una vez (D160)', t2.cuerpo);
   const conv = { MdA: [{ person_id: 'jon' }, { person_id: 'guille' }], MdL: [{ person_id: 'jon' }, { person_id: 'ana' }] };
   let d = CM.destinatariosAviso(conv, null);
   ok(!d.cambio && d.personas.map((p) => p.person_id).sort().join() === 'ana,guille,jon' && d.personas.find((p) => p.person_id === 'jon').equipos.join() === 'MdA,MdL', 'primer envío: a todos los convocados (Jon con sus dos equipos)');
@@ -211,7 +211,7 @@ console.log('\n== Aviso de convocatoria (D127): sin depender del interruptor, a 
   const de = (id) => d.personas.find((p) => p.person_id === id);
   ok(d.cambio && d.personas.length === 3 && de('ana').equipos.join() === 'MdA' && de('luis').equipos.join() === 'MdL' && de('guille').equipos.length === 0 && !de('jon'), 'cambio tras enviar: a quien cambia (Ana pasa, Luis entra, Guille sale), no a Jon');
   const tc = CM.textoCambioConvocatoria('2026-10-25', PART, ['MdA']);
-  ok(tc.titulo === 'Cambio en la convocatoria · domingo 25/10' && tc.cuerpo === 'Estás convocado: MdA a las 09:00 (quedada 08:40).', '«Cambio en la convocatoria · domingo 25/10»', JSON.stringify(tc));
+  ok(tc.titulo === 'Cambio en la convocatoria · domingo 25/10' && tc.cuerpo === 'Estás convocado: MdA a las 09:00 (quedada 08:40). Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.', '«Cambio en la convocatoria · domingo 25/10»', JSON.stringify(tc));
   ok(CM.textoCambioConvocatoria('2026-10-25', PART, []).cuerpo === 'Ya no estás convocado este domingo.', 'quien sale: «Ya no estás convocado este domingo.»');
   ok(CM.firmaConvocatoria(conv) === CM.firmaConvocatoria({ MdL: [{ person_id: 'ana' }, { person_id: 'jon' }], MdA: [{ person_id: 'guille' }, { person_id: 'jon' }] }) && CM.firmaConvocatoria(conv) !== CM.firmaConvocatoria(despues), 'la firma de la clave única no depende del orden y cambia si cambia la convocatoria');
   const todos = [t1, t2, tc].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');

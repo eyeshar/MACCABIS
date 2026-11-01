@@ -1,13 +1,18 @@
 #!/usr/bin/env node
-// Pruebas de RLS de las tablas de liga (D73), contra la pila local (Postgres + PostgREST reales con
-// NUESTRAS migraciones, ver pila.mjs). Los datos por jugador de otros equipos son de terceros: solo los
-// gestores pueden leerlos; anon y los jugadores, nada.
+// Pruebas de RLS de las tablas de liga (D73, D162), contra la pila local (Postgres + PostgREST reales con
+// NUESTRAS migraciones, ver pila.mjs). Los datos por jugador de otros equipos son de terceros: los leen los
+// gestores y, desde D162, los jugadores con sesion y ficha; anon y una cuenta sin ficha, nada. liga_calendario
+// sigue solo para gestores. Tambien prueba el .revertir.sql de D162 (vuelve a solo gestores) y que se reaplica.
 //
 //   npm run pruebas:liga
 //
 // Carga las hojas reales de fuentes_fbm/ (fuera de git) con el mismo script que `npm run db:liga`.
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
+import { migrar } from '../scripts/db.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
 import { filasTabla, filasFichas } from '../src/lib/jugadoresLiga.ts';
 
@@ -98,15 +103,25 @@ try {
   }
   ok(fichas.filter((f) => f.dobla).every((f) => f.soloFicha === f.equipos[0]), 'las fichas de los dobladores van marcadas con su ficha (MdA o MdL)');
 
-  console.log('\n== RLS: anonimo, jugador e intruso no ven nada');
+  console.log('\n== RLS: anonimo e intruso no ven nada; el jugador con ficha, todo menos liga_calendario (D162)');
   const tablas = ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores', 'liga_calendario', 'liga_clasificacion'];
+  const abiertas = tablas.filter((t) => t !== 'liga_calendario');
+  const jugadorLee = async () => {
+    const r = {};
+    for (const t of abiertas) { const x = await api(`/${t}?select=*&limit=3`, { token: tJugador }); r[t] = x.status === 200 && x.datos.length > 0; }
+    return r;
+  };
   for (const t of tablas) {
     ok(vacioOBloqueado(await api(`/${t}?select=*`)), `anonimo NO lee ${t}`);
-    ok(vacioOBloqueado(await api(`/${t}?select=*`, { token: tJugador })), `un jugador (sesion real, no gestor) NO lee ${t}`);
     ok(vacioOBloqueado(await api(`/${t}?select=*`, { token: tIntruso })), `un usuario sin ficha NO lee ${t}`);
   }
-  const porNombre = await api('/liga_estadisticas_jugador?select=nombre&nombre=ilike.*PASTOR*', { token: tJugador });
-  ok(vacioOBloqueado(porNombre), 'un jugador no saca un rival ni buscandolo por nombre');
+  const lee = await jugadorLee();
+  for (const t of abiertas) ok(lee[t], `un jugador con ficha y sesion lee ${t} (D162)`);
+  ok(vacioOBloqueado(await api('/liga_calendario?select=*', { token: tJugador })), 'un jugador NO lee liga_calendario (solo gestores; ya no la lee ninguna pantalla)');
+  ok(vacioOBloqueado(await api('/liga_estadisticas_jugador?select=nombre&nombre=ilike.*PASTOR*', { token: tIntruso })), 'una cuenta sin ficha no saca un rival ni buscandolo por nombre');
+  await sql`update public.jugadores set activo = false where person_id = 'esteban-jon'`;
+  ok(vacioOBloqueado(await api('/liga_clasificacion?select=*', { token: tJugador })), 'un jugador dado de baja (activo = false) deja de leer la liga');
+  await sql`update public.jugadores set activo = true where person_id = 'esteban-jon'`;
 
   console.log('\n== RLS: el gestor lee todo');
   for (const [t, n] of [['liga_calendario', 44], ['liga_clasificacion', 22]]) {
@@ -144,10 +159,28 @@ try {
   }
   const rls = await sql`select relname, relrowsecurity from pg_class where relname in ('liga_partidos', 'liga_estadisticas_jugador', 'liga_calendario', 'liga_clasificacion')`;
   ok(rls.length === 4 && rls.every((x) => x.relrowsecurity), 'RLS activada en las cuatro tablas');
-  const pol = await sql`select tablename, cmd, roles::text from pg_policies where tablename like 'liga_%'`;
-  ok(pol.length === 4 && pol.every((x) => x.cmd === 'SELECT'), 'cada tabla tiene una unica politica, de SELECT para gestores', JSON.stringify(pol));
+  const pol = await sql`select tablename, policyname, cmd from pg_policies where tablename like 'liga_%' order by tablename, policyname`;
+  ok(pol.length === 7 && pol.every((x) => x.cmd === 'SELECT'), 'solo politicas de SELECT: gestores_leen en las cuatro y jugadores_leen en partidos, estadisticas y clasificacion', JSON.stringify(pol));
+  ok(!pol.some((x) => x.tablename === 'liga_calendario' && x.policyname === 'jugadores_leen'), 'liga_calendario sin politica de jugadores');
+  const [{ anon_ex }] = await sql`select has_function_privilege('anon', 'public.puede_ver_liga()', 'execute') anon_ex`;
+  ok(!anon_ex, 'anon no puede ejecutar puede_ver_liga()');
   const [{ inv }] = await sql`select (reloptions::text like '%security_invoker=true%') as inv from pg_class where relname = 'v_liga_jugadores'`;
   ok(inv === true, 'la vista v_liga_jugadores es security_invoker (hereda la RLS de quien consulta)');
+
+  console.log('\n== Reversion de D162 (.revertir.sql) y vuelta a aplicar');
+  const MIGS = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations');
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261031200000_liga_para_jugadores.revertir.sql'), 'utf8')));
+  await new Promise((r) => setTimeout(r, 600)); // PostgREST recarga el esquema (notify)
+  const trasRevertir = await jugadorLee();
+  ok(abiertas.every((t) => !trasRevertir[t]), 'revertida: el jugador vuelve a no leer nada (solo gestores, D73)', JSON.stringify(trasRevertir));
+  ok((await sql`select count(*)::int n from pg_policies where tablename like 'liga_%'`)[0].n === 4, 'revertida: quedan solo las 4 politicas de gestores');
+  ok((await sql`select 1 from supabase_migrations.schema_migrations where version = '20261031200000'`).length === 0, 'revertida: borra su registro de migraciones');
+  r = await api('/liga_partidos?select=*', { token: tGestor });
+  ok(r.status === 200 && r.datos.length === N, 'revertida: el gestor sigue leyendo todo');
+  await migrar(sql, { log: () => {} });
+  await new Promise((r2) => setTimeout(r2, 600));
+  const otraVez = await jugadorLee();
+  ok(abiertas.every((t) => otraVez[t]), 'reaplicada: el jugador vuelve a leer la liga', JSON.stringify(otraVez));
 } finally {
   await pila.parar();
 }

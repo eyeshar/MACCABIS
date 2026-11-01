@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Verificacion del despliegue de PRODUCCION (https://maccabis.vercel.app) con una sesion de gestor temporal.
 // No toca la configuracion de Vercel ni de Supabase. Crea un usuario temporal (como verificar_real.mjs), entra con su
-// contrasena por la API de Supabase, pasa la sesion al navegador como cookies y recorre /entrar, /gestion, Scouting y
+// contrasena por la API de Supabase, pasa la sesion al navegador como cookies y recorre /entrar, /gestion, Scouting y (D162: en /liga/…)
 // Liga consolidada a 375 px y escritorio. Al final BORRA el usuario y la ficha de gestor temporales, pase lo que pase.
 //
 //   node pruebas/verificar_produccion.mjs [url]
@@ -59,7 +59,7 @@ try {
 
   nav = await chromium.launch({ channel: 'chrome', headless: true });
   console.log(`\n== Sin sesion (${BASE})`);
-  for (const r of ['/gestion', '/gestion/scouting', '/gestion/liga']) {
+  for (const r of ['/gestion', '/liga/scouting', '/liga/consolidada']) {
     const resp = await fetch(BASE + r, { redirect: 'manual' });
     ok(resp.status >= 300 && resp.status < 400 && (resp.headers.get('location') || '').includes('/entrar'), `${r} sin sesion manda a /entrar`, `HTTP ${resp.status}`);
   }
@@ -221,14 +221,14 @@ try {
       ok(!txt.includes('interruptor') && (boton === 1 || /Enviado/.test(txt)), `convocatoria del ${fecha}: «Aviso en la web» sin depender del interruptor (${encendido ? 'encendido' : 'apagado'}): ${boton ? '«Enviar ahora» disponible' : 'enviado'}`, txt.slice(0, 200));
     }
 
-    await p.goto(`${BASE}/gestion/scouting`);
-    ok((await p.textContent('h1')).includes('Scouting rivales') && (await p.textContent('h2:nth-of-type(1)')).length > 0, 'Scouting rivales carga');
+    await p.goto(`${BASE}/liga/scouting`);
+    ok((await p.textContent('.e-sec h2')).includes('Scouting rivales') && (await p.textContent('.lg-cab-equipo h2')).length > 0, 'Scouting rivales carga');
     ok((await p.locator('.lg-max').count()) === 3 && (await p.locator('.lg-prox').count()) === 1, 'Scouting: 3 maximos anotadores y proximo partido contra nosotros');
     ok((await p.locator('.lg-tarjetas').isVisible()) === movil, movil ? 'Scouting movil: tarjetas' : 'Scouting escritorio: tabla');
     ok(await sinDesbordar(), 'Scouting sin desbordamiento');
 
-    await p.goto(`${BASE}/gestion/liga`);
-    ok((await p.textContent('h1')).includes('Liga consolidada') && (await p.locator('#lideres .lg-lider').count()) === 4, 'Liga consolidada carga con sus listas de lideres (Totales)');
+    await p.goto(`${BASE}/liga/consolidada`);
+    ok((await p.textContent('.e-sec h2')).includes('Liga consolidada') && (await p.locator('#lideres .lg-lider').count()) === 4, 'Liga consolidada carga con sus listas de lideres (Totales)');
     await p.locator('#lideres').getByRole('button', { name: 'Por partido' }).click();
     ok((await p.locator('#lideres .lg-lider').count()) === 7, 'lideres Por partido: 7 listas');
     ok((await p.locator('nav.lg-indice a').count()) === 3 && (await p.locator('.lg-todos').isVisible()), 'indice de la pagina y tabla Todos los jugadores');

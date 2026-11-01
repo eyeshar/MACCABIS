@@ -66,6 +66,7 @@ let app, nav;
 try {
   const { sql, url, anonKey } = pila;
   await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  await (await import('../scripts/cargar_eventos.mjs')).cargarEventos(sql, { log: () => {} }); // Scouting lee el calendario de la tabla de eventos (D162)
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;
@@ -260,10 +261,10 @@ try {
     await p.goto(`${APP}/liga/2026-27/partido/${SIN_HOJA.id}`);
     ok((await p.locator('[data-testid="rival-por-jugador-seccion"]').count()) === 0, 'sin hoja: tampoco hay seccion de rivales (no hay datos)');
     // Liga consolidada: cada equipo enlaza a su ficha
-    await p.goto(`${APP}/gestion/liga`);
+    await p.goto(`${APP}/liga/consolidada`);
     const enl = await p.locator('details.lg-ranking tbody a.lg-enlace').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
     ok(enl.length > 0 && enl.every((h) => /^\/liga\/(rivales\?g=Md[AL]&r=|2026-27\/equipo\?eq=MD[AL])/.test(h)), `Liga consolidada: los ${enl.length} equipos del ranking enlazan a su ficha`);
-    await p.goto(`${APP}/gestion/scouting`);
+    await p.goto(`${APP}/liga/scouting`);
     ok(!CASA_FUERA.test(await p.locator('.lg-prox').innerText()), 'Scouting: proximo partido sin «en casa / fuera»');
     await ctx.close();
   }

@@ -17,6 +17,7 @@ const CALC = {
     { equipo: 'MdA', pj: 3, g: 3, p: 0, pf: 192, pc: 69, pts: 6 },
     { equipo: 'Nabuco TD', pj: 3, g: 3, p: 0, pf: 181, pc: 96, pts: 6 },
     { equipo: 'Castañazo', pj: 2, g: 0, p: 2, pf: 50, pc: 90, pts: null },
+    { equipo: 'Enfermos del Aro', pj: 3, g: 0, p: 3, pf: 40, pc: 150, pts: 3 },
   ] },
   G2: { jornadas: [1, 2, 3], clasificacion: [{ equipo: 'MdL', pj: 3, g: 3, p: 0, pf: 171, pc: 101, pts: 6 }] },
 };
@@ -31,18 +32,31 @@ console.log('\n== Leer lo pegado');
 
 console.log('\n== Contrastar');
 {
-  const igual = 'G1;MACCABI DE ACOSTAR;6;3;3;0;192;69;0\nG1;NABUCO TD;6;3;3;0;181;96;0\nG1;CASTAÑAZO;2;2;0;2;50;90;0';
+  const igual = 'G1;MACCABI DE ACOSTAR;6;3;3;0;192;69;0\nG1;NABUCO TD;6;3;3;0;181;96;0\nG1;CASTAÑAZO;2;2;0;2;50;90;0\nG1;ENFERMOS DEL ARO;3;3;0;3;40;150;0';
   const r = C.contrastar({ G1: { ...CALC.G1, clasificacion: CALC.G1.clasificacion.map((x) => (x.pts == null ? { ...x, pts: 2 } : x)) } }, igual);
   ok(r.coincide && r.diferencias.length === 0, 'todo igual: COINCIDE', JSON.stringify(r.diferencias));
   ok(/COINCIDE/.test(C.textoInforme(r)) && /G1 hasta la J3/.test(C.textoInforme(r)), 'el informe dice «COINCIDE» y hasta qué jornada', C.textoInforme(r));
 
-  // Caso real del 31/10 (rutina B, J3): la oficial da a MdA 192-71; las hojas, 192-69.
-  const real = C.contrastar(CALC, 'G1;MACCABI DE ACOSTAR;6;3;3;0;192;71;0\nG1;NABUCO TD;6;3;3;0;181;96;0\nG1;CASTAÑAZO;2;2;0;2;50;90;0\nG2;MACCABI DE LEVANTAR;6;3;3;0;171;101;0');
-  ok(!real.coincide, 'MdA 192-71 en la oficial y 192-69 en la calculada: DIFIERE');
+  // Caso real del 31/10 (rutina B, J3): la oficial da a MdA 192-71; las hojas, 192-69. Sin la lista de conocidas, avisa.
+  const pegadoReal = 'G1;MACCABI DE ACOSTAR;6;3;3;0;192;71;0\nG1;NABUCO TD;6;3;3;0;181;96;0\nG1;CASTAÑAZO;2;2;0;2;50;90;0\nG1;ENFERMOS DEL ARO;3;3;0;3;42;150;0\nG2;MACCABI DE LEVANTAR;6;3;3;0;171;101;0';
+  const real = C.contrastar(CALC, pegadoReal, []);
+  ok(!real.coincide, 'MdA 192-71 en la oficial y 192-69 en la calculada: DIFIERE (sin diferencias conocidas)');
   ok(real.diferencias.some((d) => d.equipo === 'MdA' && d.campo === 'TC' && d.calculada === '69' && d.oficial === '71'), 'la diferencia dice equipo, campo, calculada y oficial', JSON.stringify(real.diferencias));
   ok(real.diferencias.some((d) => d.equipo === 'Castañazo' && d.campo === 'puntos' && d.calculada === 'pendiente de la oficial'), 'una incomparecencia «pendiente de la oficial» sale como diferencia (hay que anotar sus puntos, D74)');
   const t = C.textoInforme(real);
-  ok(/^Clasificación: DIFIERE de la oficial \(2 diferencias/.test(t) && t.includes('- G1 MdA: TC calculada 69 · oficial 71'), 'el informe: «DIFIERE (N diferencias…)» y una línea por diferencia', t);
+  ok(/^Clasificación: DIFIERE de la oficial \(3 diferencias/.test(t) && t.includes('- G1 MdA: TC calculada 69 · oficial 71'), 'el informe: «DIFIERE (N diferencias…)» y una línea por diferencia', t);
+
+  // D165: la J1 (16-62 publicado, 14-62 en acta y hoja) es conocida: con su desfase exacto (+2) no avisa.
+  const sinCast = pegadoReal.replace('G1;CASTAÑAZO;2;2;0;2;50;90;0\n', '');
+  const calcSinCast = { ...CALC, G1: { ...CALC.G1, clasificacion: CALC.G1.clasificacion.filter((x) => x.equipo !== 'Castañazo') } };
+  const conocida = C.contrastar(calcSinCast, sinCast);
+  ok(conocida.coincide && conocida.diferencias.length === 0 && conocida.conocidas.length === 2, 'D165: MdA TC +2 y Enfermos del Aro TF +2 son conocidas: COINCIDE', JSON.stringify(conocida));
+  const tc = C.textoInforme(conocida);
+  ok(/COINCIDE con la oficial \(salvo 2 diferencias conocidas, que no se avisan\)/.test(tc) && /Conocida: G1 MdA: TC calculada 69 · oficial 71 \(J1/.test(tc), 'el informe dice COINCIDE y lista las conocidas con su motivo (la rutina B no avisa)', tc);
+  const otra = C.contrastar(calcSinCast, sinCast.replace(';192;71;0', ';192;73;0'));
+  ok(!otra.coincide && otra.diferencias.some((d) => d.equipo === 'MdA' && d.oficial === '73') && /DIFIERE/.test(C.textoInforme(otra)), 'si la oficial se aparta en otra cantidad (73 en vez de 71), es una diferencia nueva: DIFIERE', JSON.stringify(otra.diferencias));
+  const nueva = C.contrastar(calcSinCast, sinCast.replace('NABUCO TD;6;3;3;0;181;96;0', 'NABUCO TD;6;3;3;0;183;96;0'));
+  ok(!nueva.coincide && nueva.conocidas.length === 2 && nueva.diferencias.length === 1, 'una diferencia nueva en otro equipo avisa aunque las conocidas sigan ahí');
 
   const falta = C.contrastar(CALC, 'G1;MACCABI DE ACOSTAR;6;3;3;0;192;69;0\nG1;EQUIPO NUEVO;0;0;0;0;0;0;0');
   ok(falta.sinPareja.some((s) => s.equipo === 'EQUIPO NUEVO' && s.falta === 'en la calculada') && falta.sinPareja.some((s) => s.equipo === 'Nabuco TD' && s.falta === 'en la oficial'), 'equipos que están en una y no en la otra');

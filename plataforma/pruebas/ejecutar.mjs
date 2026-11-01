@@ -604,7 +604,7 @@ try {
   ok(fs.statSync(ruta).size > 1000, 'el gestor descarga el Excel');
   if (fs.existsSync(PLANTILLA_VIVE)) {
     try {
-      const salida = execFileSync('python', [path.join(AQUI, 'comparar_excel.py'), PLANTILLA_VIVE, ruta], { encoding: 'utf8' });
+      const salida = execFileSync('python', [path.join(AQUI, 'comparar_excel.py'), PLANTILLA_VIVE, ruta], { encoding: 'utf8', windowsHide: true });
       salida.trim().split('\n').forEach((l) => log(`        ${l}`));
       ok(/^RESULTADO: IGUAL/m.test(salida), 'el Excel coincide en estructura, celda a celda, con la plantilla');
     } catch (e) {

@@ -50,7 +50,7 @@ export function procesos() {
     const salida = execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', orden], { encoding: 'utf8', maxBuffer: 1e8, windowsHide: true });
     return JSON.parse(salida).map((p) => ({ pid: p.ProcessId, ppid: p.ParentProcessId, t: p.t || 0, cmd: p.CommandLine || '' }));
   }
-  return execFileSync('ps', ['-eo', 'pid=,ppid=,args='], { encoding: 'utf8' }).split('\n').filter(Boolean)
+  return execFileSync('ps', ['-eo', 'pid=,ppid=,args='], { encoding: 'utf8', windowsHide: true }).split('\n').filter(Boolean)
     .map((l) => { const m = l.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/); return { pid: Number(m[1]), ppid: Number(m[2]), t: 0, cmd: m[3] }; });
 }
 

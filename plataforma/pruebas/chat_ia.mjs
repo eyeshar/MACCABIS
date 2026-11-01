@@ -27,7 +27,7 @@ import * as W from '../../chat-worker/src/logica.js';
 const { ok, fallos, sumar } = contador();
 
 console.log('\n== 1. Worker (chat-worker/prueba.mjs)');
-try { execFileSync(process.execPath, [path.join(REPO, 'chat-worker', 'prueba.mjs')], { stdio: 'pipe' }); ok(true, 'pruebas del Worker en verde'); }
+try { execFileSync(process.execPath, [path.join(REPO, 'chat-worker', 'prueba.mjs')], { stdio: 'pipe', windowsHide: true }); ok(true, 'pruebas del Worker en verde'); }
 catch (e) { ok(false, 'pruebas del Worker', String(e.stdout).split('\n').filter((l) => l.includes('FALLO')).join(' | ')); }
 
 console.log('\n== 2. Contexto (puro) con datos envenenados');

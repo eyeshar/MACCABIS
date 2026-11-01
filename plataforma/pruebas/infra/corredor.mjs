@@ -32,7 +32,7 @@ const tiene = (n) => args.includes(n);
 const EN_CI = !!process.env.CI;
 const PLAT = path.join(REPO, 'plataforma');
 const SALIDA = path.join(PLAT, 'pruebas', 'resultados', 'tanda');
-const git = (...a) => { try { return execFileSync('git', a, { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; } };
+const git = (...a) => { try { return execFileSync('git', a, { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true }).trim(); } catch { return ''; } };
 const todas = catalogo();
 const porId = new Map(todas.map((s) => [s.id, s]));
 const motivos = new Map();
@@ -173,7 +173,7 @@ fs.mkdirSync(SALIDA, { recursive: true });
 const t0 = Date.now();
 // typecheck sin next-env.d.ts (worktree o Actions recien clonados): lo genera `next typegen`.
 if (motivos.has('typecheck') && !fs.existsSync(path.join(PLAT, 'next-env.d.ts'))) {
-  execFileSync(process.execPath, [path.join(PLAT, 'node_modules', 'next', 'dist', 'bin', 'next'), 'typegen'], { cwd: PLAT, stdio: 'ignore' });
+  execFileSync(process.execPath, [path.join(PLAT, 'node_modules', 'next', 'dist', 'bin', 'next'), 'typegen'], { cwd: PLAT, stdio: 'ignore', windowsHide: true });
 }
 // PostgREST, una vez y antes de nada (si no, varias suites lo descargan a la vez y se pisan)
 if (plan.some((s) => s.tipo !== 'logica')) (await import('../pila.mjs')).descargarPostgrest();

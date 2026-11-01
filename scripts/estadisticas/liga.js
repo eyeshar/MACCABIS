@@ -125,7 +125,7 @@ function publicadas(temporada) {
   const out = [];
   for (const ref of ['origin/main', 'main']) {
     try {
-      const txt = execFileSync('git', ['show', `${ref}:data/liga_${temporada}.json`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const txt = execFileSync('git', ['show', `${ref}:data/liga_${temporada}.json`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true });
       out.push({ ref, json: JSON.parse(txt) });
     } catch { /* nada que comparar */ }
   }

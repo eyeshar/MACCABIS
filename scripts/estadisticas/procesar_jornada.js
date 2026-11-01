@@ -262,7 +262,7 @@ if (require.main === module) {
     const CAL = [path.join(ROOT, 'data', `calendario_${TEMPORADA}.json`), path.join(ROOT, 'plataforma', 'src', 'data', 'calendario.json')];
     const calPrevio = CAL.map(f => (fs.existsSync(f) ? fs.readFileSync(f) : null));
     if (!DRY && TEMPORADA === '2026-27') {
-      try { console.log(execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'exportar_calendario.mjs')], { stdio: 'pipe' }).toString().trim()); }
+      try { console.log(execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'exportar_calendario.mjs')], { stdio: 'pipe', windowsHide: true }).toString().trim()); }
       catch (e) { console.log(String(e.stdout || e.message).trim() || 'Calendario: no se ha podido regenerar; se usa la copia que hay.'); }
     }
     const restaurarCalendario = () => CAL.forEach((f, i) => { if (calPrevio[i]) fs.writeFileSync(f, calPrevio[i]); });
@@ -362,11 +362,11 @@ if (require.main === module) {
     // Historia del club (D137): la temporada en curso = plantilla con ficha de esta temporada + cuerpo técnico; y el
     // índice de personas.json, para que quien debuta pase de amarillo a naranja sin tocar nada.
     try {
-      const h = execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'historia_en_curso.js')], { stdio: 'pipe' }).toString().trim();
-      execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js')], { stdio: 'pipe' });
+      const h = execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'historia_en_curso.js')], { stdio: 'pipe', windowsHide: true }).toString().trim();
+      execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js')], { stdio: 'pipe', windowsHide: true });
       console.log(h);
     } catch (e) { para('historia: no se ha podido recalcular la temporada en curso.', 'Historia: PROBLEMAS\n' + (e.stderr || '') + (e.stdout || '')); }
-    try { execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js'), '--check'], { stdio: 'pipe' }); console.log('Identidades: OK (check:personas).'); }
+    try { execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build_personas.js'), '--check'], { stdio: 'pipe', windowsHide: true }); console.log('Identidades: OK (check:personas).'); }
     catch (e) { para('identidades: problemas en check:personas.', 'Identidades: PROBLEMAS\n' + e.stdout); }
 
     // Privacidad de la asistencia (D82): ningún JSON público puede llevar motivos de ausencia.
@@ -381,14 +381,14 @@ if (require.main === module) {
 
     // Portada de la web (D84): copias de data/ en plataforma/src/data/. Solo se llega aquí si la jornada cuadra.
     try {
-      const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'sincronizar_equipacion.mjs')], { stdio: 'pipe' }).toString().trim();
+      const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'sincronizar_equipacion.mjs')], { stdio: 'pipe', windowsHide: true }).toString().trim();
       console.log(`Plataforma: ${salida} (npm run datos:sync)`);
     } catch (e) { para('no se han podido sincronizar las copias de plataforma/src/data/.', 'Plataforma: NO se han podido sincronizar las copias de plataforma/src/data/:\n' + (e.stderr || e.message)); }
 
     // Calibración de la proyección de anotación (D124): proyección y resultado de cada partido nuestro, a privado/ (fuera
     // de git). Nunca para la jornada: si falla (sin conexión, sin plataforma), solo se avisa.
     try {
-      const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'calibrar_proyeccion.mjs')], { stdio: 'pipe', cwd: path.join(ROOT, 'plataforma') }).toString().trim();
+      const salida = execFileSync(process.execPath, [path.join(ROOT, 'plataforma', 'scripts', 'calibrar_proyeccion.mjs')], { stdio: 'pipe', cwd: path.join(ROOT, 'plataforma'), windowsHide: true }).toString().trim();
       console.log(salida.split('\n')[0]);
     } catch (e) { console.log('Proyección: no se ha podido calibrar (' + String(e.stderr || e.message).split('\n')[0] + '). No afecta a la jornada.'); }
 

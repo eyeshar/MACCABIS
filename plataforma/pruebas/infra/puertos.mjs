@@ -50,11 +50,11 @@ function sePuedeAbrir(puerto) {
 function quien(puerto) {
   if (process.platform !== 'win32') return '';
   try {
-    const linea = execFileSync('netstat', ['-ano', '-p', 'tcp'], { encoding: 'utf8' }).split(/\r?\n/)
+    const linea = execFileSync('netstat', ['-ano', '-p', 'tcp'], { encoding: 'utf8', windowsHide: true }).split(/\r?\n/)
       .find((l) => /LISTENING/.test(l) && new RegExp(`:${puerto}\\s`).test(l));
     const pid = linea?.trim().split(/\s+/).pop();
     if (!pid) return '';
-    const exe = execFileSync('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { encoding: 'utf8' }).split(',')[0].replace(/"/g, '');
+    const exe = execFileSync('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { encoding: 'utf8', windowsHide: true }).split(',')[0].replace(/"/g, '');
     return ` (PID ${pid}, ${exe})`;
   } catch { return ''; }
 }

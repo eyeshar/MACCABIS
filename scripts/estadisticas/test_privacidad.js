@@ -154,7 +154,7 @@ const jsonPublicos = [path.join(ROOT, 'data'), path.join(PLAT, 'src', 'data'), p
 const conConv = jsonPublicos.map((f) => [f, clavesConv(JSON.parse(fs.readFileSync(f, 'utf8')))]).filter(([, r]) => r.length);
 ok(jsonPublicos.length > 10 && conConv.length === 0, `ningún JSON público (${jsonPublicos.length}) lleva nivel, posición, Dobla, reglas, sanción ni dificultad`, conConv.map(([f, r]) => `${path.relative(ROOT, f)}: ${r.slice(0, 2)}`).join(' | '));
 const { execSync } = require('child_process');
-const enGit = execSync('git ls-files', { cwd: ROOT, encoding: 'utf8' }).split('\n').filter((f) => /\.(csv|tsv|xlsx?)$/i.test(f));
+const enGit = execSync('git ls-files', { cwd: ROOT, encoding: 'utf8', windowsHide: true }).split('\n').filter((f) => /\.(csv|tsv|xlsx?)$/i.test(f));
 const csvNiveles = enGit.filter((f) => /\.(csv|tsv)$/i.test(f) && /(^|[;,\t])nivel([;,\t]|$)/im.test(fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n')[0]));
 ok(csvNiveles.length === 0, 'ningún CSV del repositorio tiene una columna «nivel»', csvNiveles.join(', '));
 const pruebasConv = ['convocatoria_motor.mjs', 'rls_convocatoria.mjs', 'convocatoria_pantallas.mjs'].map((f) => leer('pruebas', f)).join('\n');
@@ -203,7 +203,7 @@ ok(usanProy.length > 0 && usanProy.every((f) => f.includes(path.join('gestion', 
 ok(/nota_ataque/.test(leer('src/lib/convocatoria/datos.ts')) && /import "server-only"/.test(leer('src/lib/convocatoria/datos.ts')), 'las letras de Ataque se leen solo en el servidor (datos.ts, server-only)');
 const calib = leer('scripts/calibrar_proyeccion.mjs');
 ok(/privado/.test(calib) && /read only/.test(calib) && !/console\.log\([^;]*letras\.get/.test(calib), 'la calibración se guarda en privado/ (fuera de git), lee la base en solo lectura y nunca imprime letras');
-const enGitProy = execSync('git ls-files', { cwd: ROOT, encoding: 'utf8' }).split('\n').filter((f) => /proyecciones_/.test(f));
+const enGitProy = execSync('git ls-files', { cwd: ROOT, encoding: 'utf8', windowsHide: true }).split('\n').filter((f) => /proyecciones_/.test(f));
 ok(enGitProy.length === 0, 'ningún fichero de proyecciones en git', enGitProy.join(', '));
 const jsonProy = jsonPublicos.filter((f) => /"(aportes|pocosDatos|nota_ataque|letras|sinFactor)"/.test(fs.readFileSync(f, 'utf8')));
 ok(jsonProy.length === 0, 'ningún JSON público lleva puntos esperados, tasas ni letras', jsonProy.map((f) => path.relative(ROOT, f)).join(', '));

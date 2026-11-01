@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 01/11/2026: **asistencia histórica 2018/19–2024/25 de SportEasy** (`feat/asistencia-historica`, D166, PR abierto, **cargada en el real** con D111): identidad por id de perfil; 36 perfiles casados y 40 personas históricas (sin cuenta ni acceso, solo en «Asistencia y motivos»); 475 filas en 7 pestañas; 23 de los 40 con propuesta en `privado/sporteasy/propuestas_para_ivan.md` (pendiente de Iván); 28 cuentas antes y después._
 _Última actualización: 01/11/2026: **ventanas de consola vacías diagnosticadas** (`docs/ventanas-diagnostico`, solo docs): las abre Windows Terminal como terminal por defecto con procesos de consola visibles; nuestro código ya no lo hace (#13); el origen encontrado, la rutina A, se lanza ya con `conhost --headless` (aplicado); la terminal por defecto la cambia Iván._
 _Última actualización: 01/11/2026: **J1 de MdA como diferencia conocida** (`fix/clasificacion-diferencia-conocida`, D165): el 16-62 publicado no coincide con el acta 392895 (14-62); mandan acta y hoja. La pantalla de clasificación oficial la marca «conocida» y la rutina B no la vuelve a avisar; cualquier diferencia nueva sí._
 _Última actualización: 01/11/2026: **export completo de SportEasy descrito** (`docs/sporteasy-export`, solo docs, `docs/SPORTEASY_EXPORT.md`): estructura sin datos personales; 2026/27 contrastado evento a evento con el Excel (0 diferencias de estado con la misma persona; 6 «Lesionado» que la API no trae); cuadre de 2025/26 frente a lo cargado (no se ha escrito nada: decide Iván entre las tres opciones del documento); propuesta de qué más del histórico merece entrar._
@@ -43,6 +44,15 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+
+## Asistencia histórica 2018/19–2024/25 desde el export de SportEasy (01/11/2026; D166) — `feat/asistencia-historica`, PR abierto; CARGADA en el real
+
+- **Identidad = id de perfil de SportEasy** (`profile.id`), estable entre temporadas; el nombre no une temporadas. 76 perfiles en las 7 temporadas: **36 casados** (28 por `diccionario_sporteasy`/`nombres_sporteasy.json`, 8 por nombre exacto con el diccionario del histórico, 3 de ellos solo sin tildes) y **40 sin casar**.
+- **Propuestas para Iván:** `privado/sporteasy/propuestas_para_ivan.md` (fuera de git), una línea por id de perfil. Temporada a temporada contra las 88 personas de la Historia (`data/historia_club.json`, con o sin estadísticas): nombre + primer apellido, o mote registrado esa temporada + primer apellido, sin tildes ni mayúsculas, con UN solo candidato. **23 de los 40 con propuesta** (12 coinciden en 2 o más temporadas); 17 sin propuesta (3 con «pista»: casarían con alguien del club que la Historia no tiene en esas temporadas).
+- **Cargado en el real (01/11/2026, OK de Iván, D111):** volcado previo `privado/backups/2026-11-01_pre-asistencia-historica.sql` (2.209.865 bytes, 73 `COPY`, ignorado por git); `npm run db:asistencia -- 2018-19 … 2024-25`. Filas por temporada: 2018/19 65 (36 personas, 23 históricas), 2019/20 62 (35, 20), 2020/21 68 (39, 21), 2021/22 75 (47, 24), 2022/23 71 (38, 15), 2023/24 73 (40, 16), 2024/25 61 (33, 5): **475 filas, 40 personas históricas**. 2025/26 (43) y 2026/27 (58) sin tocar. Huella de permisos idéntica antes y después; anónimo por la API: 401; **28 cuentas antes y después**. Sin migración.
+- **Pantalla:** «Asistencia y motivos» ya enseñaba una pestaña por temporada cargada; ahora las históricas llevan una nota (de SportEasy, menos completo: sin «no convocado» y casi sin lesiones) y la marca «histórico» en las personas sin ficha del club. Solo gestores (RLS de siempre).
+- **Pendiente de Iván:** devolver `propuestas_para_ivan.md` con OK/NO. Después, desde la carpeta del proyecto: `npm run db:asistencia-vincular` (en `plataforma/`; `-- --dry` antes). Solo reescribe las filas de las personas vinculadas.
+- **Pruebas:** `pruebas:asistencia-historica` (nueva) y `pruebas:eventos-pantallas` (pestaña 2019/20, nota y marca).
 
 ## Ventanas de consola vacías (`F:\node\node.exe`): diagnóstico y arreglos (01/11/2026) — `docs/ventanas-diagnostico`
 - **Mecanismo (demostrado):** en Windows → Configuración → Sistema → Para programadores → **Terminal** está «Dejar que Windows decida» (la clave `HKCU\Console\%%Startup` existe vacía), que en este Windows 11 es **Windows Terminal** 1.24. Con eso, **todo proceso de consola que nace con ventana visible abre una ventana de Windows Terminal**, titulada con el programa que corre (`F:\node\node.exe` mientras va npm o node). Y con `closeOnExit` en su valor por defecto («graceful»), si el proceso acaba con error la ventana **se queda abierta y vacía** (las «ventanas de cmd vacías»).

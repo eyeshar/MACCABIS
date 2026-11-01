@@ -61,7 +61,8 @@ try {
   // comprobar que la pantalla no la lee.
   await sql`insert into public.asistencia_motivos (temporada, person_id, nombre, ambito, fueron, total, excusa, lesion) values
     ('2026-27', 'esteban-jon', 'Jon Esteban', 'entrenos', 3, 4, 1, 0), ('2026-27', 'esteban-jon', 'Jon Esteban', 'partidos', 2, 2, 0, 0),
-    ('2025-26', 'esteban-jon', 'Jon Esteban', 'entrenos', 20, 30, 5, 4)`;
+    ('2025-26', 'esteban-jon', 'Jon Esteban', 'entrenos', 20, 30, 5, 4),
+    ('2019-20', 'esteban-jon', 'Jon Esteban', 'partidos', 7, 9, 2, 0), ('2019-20', 'sporteasy-424242', 'Sint Histórico', 'entrenos', 5, 10, 5, 0)`;
   await sql`insert into public.asistencia_resumen (temporada, person_id, nombre, ambito, fueron, total, con_excusa, lesion) values
     ('2026-27', 'esteban-jon', 'Jon Esteban', 'entrenos', 1, 9, 0, 0)`;
   const codigoDe = async (email) => (await sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
@@ -453,6 +454,12 @@ try {
   ok((await fa.textContent()).includes('viaje ×1') && (await fa.textContent()).includes('con excusa ×1') && !(await fa.textContent()).includes('familia'), 'motivos más frecuentes: históricos + «no voy» de eventos ya pasados de la plataforma (el del futuro no cuenta)', await fa.textContent());
   await p.goto(`${APP}/gestion/asistencia?t=2025-26`);
   ok((await p.locator('[data-person=esteban-jon]').textContent()).includes('20 / 30') && (await p.locator('[data-person=esteban-jon]').textContent()).includes('67 %'), 'otra temporada: 20/30 = 67 %');
+  ok(await p.locator('[data-testid=nota-historico]').count() === 0, '2025/26 no lleva la nota del histórico');
+  await p.goto(`${APP}/gestion/asistencia?t=2019-20`);
+  ok(await p.locator('nav[aria-label=Temporada] a[aria-current=true]').textContent() === '2019/20', 'histórico de SportEasy (D166): pestaña propia de la temporada');
+  ok(await p.locator('[data-testid=nota-historico]').count() === 1, 'histórico: nota de que es de SportEasy y menos completo');
+  ok((await p.locator('[data-person=esteban-jon]').textContent()).includes('7 / 9') && await p.locator('[data-person=esteban-jon] [data-testid=marca-historico]').count() === 0, 'histórico: persona del club con su ficha, sin marca');
+  ok((await p.locator('[data-person="sporteasy-424242"]').textContent()).includes('5 / 10') && await p.locator('[data-person="sporteasy-424242"] [data-testid=marca-historico]').count() === 1, 'histórico: persona sin ficha con su nombre de SportEasy y la marca «histórico»');
   await p.screenshot({ path: path.join(SALIDA, 'real_asistencia_gestion_escritorio.png'), fullPage: true });
 
   // ---------------------------------------------------------------- movil

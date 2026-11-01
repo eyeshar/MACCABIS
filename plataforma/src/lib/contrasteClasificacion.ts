@@ -10,9 +10,19 @@ export type GrupoCalculado = { jornadas: number[]; clasificacion: FilaCalculada[
 export type FilaOficial = { grupo: string; equipo: string; pts: number; pj: number; g: number; p: number; pf: number; pc: number; sanc: number };
 
 export type Diferencia = { grupo: string; equipo: string; campo: string; calculada: string; oficial: string };
+/** Diferencia ya revisada (D165): la oficial se aparta de la calculada EXACTAMENTE `desfase` (oficial - calculada) en ese
+ *  campo, por un motivo conocido. Si el desfase es otro, es una diferencia nueva y avisa. */
+export type DiferenciaConocida = { grupo: string; equipo: string; campo: string; desfase: number; motivo: string };
+export const DIFERENCIAS_CONOCIDAS: DiferenciaConocida[] = [
+  // D165: J1 (04/10/2026) Enfermos del Aro – MdA. El resultado publicado es 16-62; el acta 392895 y la hoja dicen 14-62.
+  // Mandan acta y hoja: la calculada lleva 14 y la oficial, 2 tantos más en contra de MdA y a favor de Enfermos del Aro.
+  { grupo: "G1", equipo: "mda", campo: "TC", desfase: 2, motivo: "J1: el publicado es 16-62; acta 392895 y hoja, 14-62 (D165)" },
+  { grupo: "G1", equipo: "enfermos del aro", campo: "TF", desfase: 2, motivo: "J1: el publicado es 16-62; acta 392895 y hoja, 14-62 (D165)" },
+];
 export type Contraste = {
   errores: string[];                 // lineas que no se entienden
   diferencias: Diferencia[];
+  conocidas: (Diferencia & { motivo: string })[];   // las de DIFERENCIAS_CONOCIDAS, con su desfase exacto: no avisan
   sinPareja: { grupo: string; equipo: string; falta: "en la oficial" | "en la calculada" }[];
   sanciones: { grupo: string; equipo: string; sanc: number }[];
   jornadaCalculada: Record<string, number>;   // ultima jornada cargada en la calculada, por grupo
@@ -51,9 +61,10 @@ export function leerOficial(texto: string): { filas: FilaOficial[]; errores: str
 }
 
 /** Compara la oficial pegada con la calculada de los grupos que aparecen en lo pegado. */
-export function contrastar(calculada: Record<string, GrupoCalculado>, texto: string): Contraste {
+export function contrastar(calculada: Record<string, GrupoCalculado>, texto: string, conocidasLista: DiferenciaConocida[] = DIFERENCIAS_CONOCIDAS): Contraste {
   const { filas, errores } = leerOficial(texto);
   const diferencias: Diferencia[] = [];
+  const conocidas: Contraste["conocidas"] = [];
   const sinPareja: Contraste["sinPareja"] = [];
   const grupos = [...new Set(filas.map((f) => f.grupo))].sort();
   const jornadaCalculada: Record<string, number> = {};
@@ -71,20 +82,22 @@ export function contrastar(calculada: Record<string, GrupoCalculado>, texto: str
       for (const [campo, texto] of CAMPOS) {
         const vc = x[campo];
         if (vc === o[campo]) continue;
-        diferencias.push({ grupo, equipo: x.equipo, campo: texto, calculada: vc == null ? "pendiente de la oficial" : String(vc), oficial: String(o[campo]) });
+        const d = { grupo, equipo: x.equipo, campo: texto, calculada: vc == null ? "pendiente de la oficial" : String(vc), oficial: String(o[campo]) };
+        const c = vc == null ? undefined : conocidasLista.find((q) => q.grupo === grupo && claveEquipo(q.equipo) === k && q.campo === texto && Number(o[campo]) - Number(vc) === q.desfase);
+        if (c) conocidas.push({ ...d, motivo: c.motivo }); else diferencias.push(d);
       }
     }
     for (const x of calc.clasificacion) if (!vistos.has(claveEquipo(x.equipo))) sinPareja.push({ grupo, equipo: x.equipo, falta: "en la oficial" });
   }
   const sanciones = filas.filter((f) => f.sanc > 0).map((f) => ({ grupo: f.grupo, equipo: f.equipo, sanc: f.sanc }));
-  return { errores, diferencias, sinPareja, sanciones, jornadaCalculada, coincide: filas.length > 0 && !errores.length && !diferencias.length && !sinPareja.length };
+  return { errores, diferencias, conocidas, sinPareja, sanciones, jornadaCalculada, coincide: filas.length > 0 && !errores.length && !diferencias.length && !sinPareja.length };
 }
 
 /** El texto que la rutina B copia en su informe a Iván. */
 export function textoInforme(c: Contraste) {
   const jornadas = Object.entries(c.jornadaCalculada).map(([g, j]) => `${g} hasta la J${j}`).join(", ");
   const lineas: string[] = [];
-  if (c.coincide) lineas.push(`Clasificación: la calculada (${jornadas}) COINCIDE con la oficial.`);
+  if (c.coincide) lineas.push(`Clasificación: la calculada (${jornadas}) COINCIDE con la oficial${c.conocidas.length ? ` (salvo ${c.conocidas.length === 1 ? "una diferencia conocida" : `${c.conocidas.length} diferencias conocidas`}, que no se avisan)` : ""}.`);
   else {
     const n = c.diferencias.length + c.sinPareja.length + c.errores.length;
     lineas.push(`Clasificación: DIFIERE de la oficial (${n} ${n === 1 ? "diferencia" : "diferencias"}; calculada ${jornadas || "sin datos"}).`);
@@ -92,6 +105,7 @@ export function textoInforme(c: Contraste) {
     for (const s of c.sinPareja) lineas.push(`- ${s.grupo} ${s.equipo}: no está ${s.falta}`);
     for (const e of c.errores) lineas.push(`- ${e}`);
   }
+  for (const k of c.conocidas) lineas.push(`- Conocida: ${k.grupo} ${k.equipo}: ${k.campo} calculada ${k.calculada} · oficial ${k.oficial} (${k.motivo})`);
   for (const s of c.sanciones) lineas.push(`- Sanc ${s.sanc} en ${s.grupo} ${s.equipo}: Iván decide (no se consulta más).`);
   return lineas.join("\n");
 }

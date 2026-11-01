@@ -1357,6 +1357,16 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - **«Nunca de noche» → «de noche solo si el partido es en pocas horas» (D155):** guía de planes («Recordar a los invitados»), aviso de prueba, `/avisos`, la banda «Activa los avisos» y la guía del jugador.
 - **Ya hechos antes, sin cambios:** «Partidos del domingo» del Panel en tarjetas a 375 px (D150, `feat/ausencias-panel-movil`; `pruebas:avisos` lo comprueba) y la comparación de EventoRespuestas y EventoImportar con el lienzo (Claude, en producción, 08/10: coinciden, D98). El PR #3 (`feat/cierre-sporteasy`) cambia esas dos pantallas (quita Importar → Respuestas): si se quiere otra comparación, después de su merge.
 
+## D165 — J1 de MdA: el resultado oficial publicado (16-62) no coincide con el acta 392895 (14-62); mandan acta y hoja (Iván, 01/11/2026, `fix/clasificacion-diferencia-conocida`) — COMPLETA D74 y D164
+
+**Hecho:** tras la J3, la clasificación oficial de Deportes/web da a MdA **192-71** y la calculada (las hojas) **192-69**. Los resultados oficiales publicados son J1 Enfermos del Aro **16**-62 MdA, J2 MdA 74-17 Litros de Mahou y J3 Los Khinkis Rusos 38-56 MdA (16 + 17 + 38 = 71). La J2 y la J3 coinciden con las hojas. En la J1, el **acta oficial del partido 392895 dice «Tanteo final: Equipo A 14, Equipo B 62»** y la hoja de estadística da al rival 0 + 3 + 4 + 7 = 14.
+
+**Decisión de Iván:**
+- **Mandan el acta y la hoja (14-62).** No se cambia nada de lo publicado por nosotros: la calculada sigue con 14.
+- La diferencia queda como **conocida** en el contraste con la oficial (`DIFERENCIAS_CONOCIDAS`, `src/lib/contrasteClasificacion.ts`): G1, MdA, tantos en contra, +2, y G1, Enfermos del Aro, tantos a favor, +2 (oficial − calculada). Con ese desfase **exacto**, la pantalla `/gestion/clasificacion` dice «Coincide · 2 diferencias conocidas (no avisan)» y el informe las lista como «Conocida: …» con su motivo, sin el aviso de la rutina B.
+- **Cualquier diferencia nueva sí avisa:** la misma en otra cantidad (si la oficial pasara a otro número), en otro campo o en otro equipo sale como «DIFIERE». Si el Ayuntamiento corrige el 16, el desfase desaparece y las conocidas dejan de aparecer solas.
+- **Pruebas:** `pruebas:clasificacion-oficial` (la J1 conocida no avisa; 73 en vez de 71 sí; una diferencia en otro equipo sí; sin la lista, el caso real sigue diciendo «DIFIERE»).
+
 ## D167 — Pruebas ligeras en local, completas en Actions (Iván, 01/11/2026, `docs/norma-pruebas-ligera`) — AJUSTA D149
 
 **Problema:** la norma de D149 seguía siendo excesiva en la práctica: con varios PR a la vez se pasaban en local tandas de 30–60 suites (cuatro carriles en paralelo, cada uno con su Postgres, PostgREST y la web), y el 01/11 el sistema cortó la batería del PR #3 por falta de memoria (4,2 GB libres de 32).

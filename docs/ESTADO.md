@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 01/11/2026: **J1 de MdA como diferencia conocida** (`fix/clasificacion-diferencia-conocida`, D165): el 16-62 publicado no coincide con el acta 392895 (14-62); mandan acta y hoja. La pantalla de clasificación oficial la marca «conocida» y la rutina B no la vuelve a avisar; cualquier diferencia nueva sí._
 _Última actualización: 01/11/2026: **export completo de SportEasy descrito** (`docs/sporteasy-export`, solo docs, `docs/SPORTEASY_EXPORT.md`): estructura sin datos personales; 2026/27 contrastado evento a evento con el Excel (0 diferencias de estado con la misma persona; 6 «Lesionado» que la API no trae); cuadre de 2025/26 frente a lo cargado (no se ha escrito nada: decide Iván entre las tres opciones del documento); propuesta de qué más del histórico merece entrar._
 _Última actualización: 01/11/2026: **PR #3 (cierre de SportEasy) mergeado al final del bloque, fotos de las pruebas `-real` al día y J1 de MdA revisada con el acta** (`fix/fotos-pruebas-real`): ver la primera sección._
 _Última actualización: 31/10/2026, noche: **cierre de SportEasy y aviso J5** (`feat/cierre-sporteasy`, D153 ampliada, PR abierto, sin merge): aviso del cambio de la J5 MdA enviado a las 18:40 (12 de 23 invitados lo recibieron); toda la plataforma sin SportEasy (Importar → Respuestas, salida «3 · SportEasy», casilla del interruptor, textos del modo apagado); lo de la base queda huérfano._

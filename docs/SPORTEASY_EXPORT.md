@@ -94,6 +94,8 @@ Por qué no cuadran:
 - En entrenos, el Excel compuesto **solo tenía a 19 personas**; el export trae a 27 (8 más) y 16 «sin excusa» que el Excel no
   distinguía.
 
+**Decisión de Iván (01/11/2026): opción 1, 2025/26 no se toca.**
+
 **Recomendación (no aplicada; decide Iván):** no sustituir la temporada. Opciones:
 1. **No tocar 2025/26** (lo cargado es lo curado y lo que da la web pública).
 2. **Solo entrenos desde el export** (27 personas, con «sin excusa»), manteniendo partidos como están. Se pierde la
@@ -103,6 +105,8 @@ Por qué no cuadran:
 Cuadre por persona (con nombres, fuera de git): `privado/sporteasy/cuadre_asistencia_2025-26.md`.
 
 ## Qué más del histórico podría entrar (propuesta, no construida)
+
+> **Decisión de Iván (01/11/2026):** la asistencia de 2017/18 a 2024/25 **sí** se carga, una pestaña por temporada en «Asistencia y motivos» (solo gestores), casando por nombre exacto; los antiguos que no casen, en una lista para que decida Iván. Lo demás, no por ahora.
 
 | Qué | Qué hay en el export | Valor | Coste | Recomendación |
 |---|---|---|---|---|

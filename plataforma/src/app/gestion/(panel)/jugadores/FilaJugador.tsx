@@ -16,6 +16,8 @@ export type JugadorGestion = {
   rol: "jugador" | "solo_entreno" | "entrenador";
   telefono: string | null;
   activo: boolean;
+  /** D158: reserva (de jugadores_privado; solo gestores). */
+  reserva: boolean;
 };
 
 const ROLES = { jugador: "Jugador", solo_entreno: "Solo entreno", entrenador: "Entrenador" } as const;
@@ -49,7 +51,7 @@ export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorG
     <li className="fila-jugador" data-person={j.person_id}>
       <h3 style={{ marginBottom: 2 }}>{j.nombre_visible}</h3>
       <p className="pequeno suave" style={{ marginBottom: 6 }}>
-        {j.nombre_oficial} · {fichas} · {ROLES[j.rol]}{j.entrena ? " · entrena" : ""}
+        {j.nombre_oficial} · {fichas} · {ROLES[j.rol]}{j.reserva ? " · reserva" : ""}{j.entrena ? " · entrena" : ""}
       </p>
       <p className="pequeno" style={{ marginBottom: 0 }}>
         {j.email ? (
@@ -102,6 +104,7 @@ export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorG
             <label className="opcion"><input type="checkbox" name="ficha_mdl" defaultChecked={j.ficha_mdl} /> Ficha MdL</label>
             <label className="opcion"><input type="checkbox" name="entrena" defaultChecked={j.entrena} /> Entrena</label>
             <label className="opcion"><input type="checkbox" name="activo" defaultChecked={j.activo} /> Activo</label>
+            <label className="opcion" title="Solo entra en la convocatoria si sin él no se cubren los mínimos (D158)"><input type="checkbox" name="reserva" defaultChecked={j.reserva} data-campo="reserva" /> Reserva</label>
           </div>
           <div>
             <button className="boton" disabled={guardando}>{guardando ? "Guardando…" : "Guardar datos"}</button>

@@ -58,8 +58,8 @@ export const MENU_GESTION: GrupoGestion[] = [
   {
     grupo: "Competición",
     entradas: [
-      { texto: "Scouting rivales", corto: "Scouting rivales", descripcion: "Próximo rival y sus máximos anotadores", href: "/gestion/scouting" },
-      { texto: "Liga consolidada", corto: "Liga consolidada", descripcion: "Líderes y todos los jugadores de la liga", href: "/gestion/liga" },
+      { texto: "Scouting rivales", corto: "Scouting rivales", descripcion: "Próximo rival y sus máximos anotadores", href: "/liga/scouting" },
+      { texto: "Liga consolidada", corto: "Liga consolidada", descripcion: "Líderes y todos los jugadores de la liga", href: "/liga/consolidada" },
     ],
   },
 ];

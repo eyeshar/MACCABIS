@@ -121,3 +121,22 @@ input:disabled, select:disabled { opacity: 0.6; }
 .ev-pasos-activar { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .ev-resp-ver { margin-top: 4px; }
 .ev-resp-ver .pequeno { font-weight: 600; text-decoration: underline; }
+
+/* ---------- D159: cambiar a mano la respuesta de cada invitado (un toque) */
+.ev-mano { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; justify-content: flex-end; }
+.ev-mano + .ev-mano { margin-top: 6px; }
+.ev-mano-etq { font-family: var(--f-cifras); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tinta-tenue); }
+.ev-mano-botones { display: inline-flex; border: 1px solid var(--borde-fuerte); border-radius: var(--radio); overflow: hidden; }
+.ev-mano-b { min-height: var(--toque); min-width: 52px; padding: 0 10px; border: 0; border-left: 1px solid var(--borde); background: var(--panel-2); color: var(--tinta-suave); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.ev-mano-b:first-child { border-left: 0; }
+.ev-mano-b:disabled { opacity: 0.45; cursor: not-allowed; }
+.ev-mano-b[aria-pressed="true"] { opacity: 1; }
+.ev-mano-ok[aria-pressed="true"] { background: var(--ok-fondo); color: var(--ok); }
+.ev-mano-duda[aria-pressed="true"] { background: var(--amarillo-claro); color: var(--amarillo-tinta); }
+.ev-mano-no[aria-pressed="true"] { background: var(--error-fondo); color: var(--error); }
+.ev-mano-sin[aria-pressed="true"] { background: var(--panel-3); color: var(--tinta); }
+.ev-mano-motivo { min-height: var(--toque); }
+.ev-mano-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ev-mano-lista li { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--linea-suave); }
+.ev-mano-lista li:first-child { border-top: 0; }
+@media (max-width: 420px) { .ev-mano-b { min-width: 0; padding: 0 8px; font-size: 13px; } }

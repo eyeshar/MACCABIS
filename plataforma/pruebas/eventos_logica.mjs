@@ -210,9 +210,31 @@ const res = A.resumenTemporada([
   { temporada: '2026-27', person_id: 'a', nombre: 'A', ambito: 'entrenos', fueron: 3, total: 4, con_excusa: 1, sin_excusa: 0, no_convocado: 0, lesion: 0 },
   { temporada: '2026-27', person_id: 'a', nombre: 'A', ambito: 'partidos', fueron: 2, total: 2, con_excusa: 0, sin_excusa: 0, no_convocado: 0, lesion: 0 },
   { temporada: '2026-27', person_id: 'b', nombre: 'B', ambito: 'entrenos', fueron: 1, total: 4, con_excusa: 1, sin_excusa: 0, no_convocado: 0, lesion: 2 },
-], [{ person_id: 'b', fecha: '2026-10-14', respuesta: 'no', motivo: 'viaje' }, { person_id: 'b', fecha: '2026-10-21', respuesta: 'no', motivo: 'viaje' }, { person_id: 'a', fecha: '2026-10-21', respuesta: 'va', motivo: null }]);
+], [{ person_id: 'b', ambito: 'entrenos', fue: false, motivo: 'viaje' }, { person_id: 'b', ambito: 'entrenos', fue: false, motivo: 'viaje' }]);
 ok(res[0].person_id === 'a' && res[0].entrenos.pct === 0.75 && res[0].partidos.pct === 1, 'asistidos / total / %: A 3/4 = 75 % en entrenos, 2/2 = 100 % en partidos');
 ok(res[1].motivos.some((m) => m.texto === 'viaje' && m.veces === 2) && res[1].motivos.some((m) => m.texto === 'lesión' && m.veces === 2) && res[1].motivos.length === 3, 'motivos más frecuentes (viaje ×2 de la plataforma, lesión ×2 del histórico, con excusa ×1)');
+ok(res[1].entrenos.fueron === 1 && res[1].entrenos.total === 6, 'lo de la plataforma suma al total de SportEasy (B: 1/4 + 2 ausencias = 1/6)', JSON.stringify(res[1].entrenos));
+{
+  // D161: SportEasy hasta el 23/10, la plataforma desde el 24/10 y solo eventos YA pasados; sin duplicar.
+  const ev = [
+    { id: 'e21', fecha: '2026-10-21', tipo: 'entreno' }, { id: 'l25', fecha: '2026-10-25', tipo: 'liga' }, { id: 'e28', fecha: '2026-10-28', tipo: 'entreno' },
+    { id: 'a27', fecha: '2026-10-27', tipo: 'amistoso' }, { id: 'l08', fecha: '2026-11-08', tipo: 'liga' },
+  ];
+  const R = (evento_id, person_id, respuesta, motivo = null) => ({ evento_id, person_id, respuesta, motivo });
+  const defecto = { marcas: new Map([['s', { no_suele_entrenar: true, nunca_partidos: true }]]), quitados: new Set(), ausencias: [{ person_id: 'v', desde: '2026-10-26', hasta: '2026-10-30', motivo: 'viaje' }] };
+  const p = A.asistenciaPlataforma(ev, [
+    R('e21', 'a', 'no', 'trabajo'),                 // antes del 24/10: ya está en el export de SportEasy
+    R('l25', 'a', 'va'), R('l25', 'b', 'no', 'lesion'), R('l25', 's', 'sin_responder'), R('l25', 'd', 'duda'),
+    R('e28', 'a', 'va'), R('e28', 's', 'sin_responder'), R('e28', 'v', 'sin_responder'), R('e28', 'b', 'no'),
+    R('a27', 'a', 'va'),                            // amistoso: no cuenta
+    R('l08', 'a', 'va'),                            // futuro: no cuenta
+  ], defecto, '2026-10-31');
+  const de = (id) => p.filter((x) => x.person_id === id).map((x) => `${x.ambito[0]}:${x.fue ? 'fue' : x.motivo}`).join(',');
+  ok(de('a') === 'p:fue,e:fue', 'plataforma: solo liga y entrenos pasados desde el 24/10 (ni el 21/10, ni amistosos, ni futuros)', de('a'));
+  ok(de('b') === 'p:lesión,e:no va, sin motivo', 'plataforma: «no» con su motivo o «no va, sin motivo»', de('b'));
+  ok(de('s') === 'e:no suele entrenar', 'plataforma: «nunca a partidos» sin responder no cuenta en el partido; «no suele entrenar» cuenta como no fue', de('s'));
+  ok(de('v') === 'e:viaje' && de('d') === 'p:sin responder', 'plataforma: la ausencia por periodo da su motivo; «duda» en un evento pasado = sin responder', de('v') + ' ' + de('d'));
+}
 ok(A.textoPct(0.756) === '76 %' && A.textoPct(null) === '—', 'porcentajes legibles');
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

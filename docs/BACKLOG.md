@@ -10,15 +10,15 @@
 > Lo que se hace ahora, en este orden. Sustituye al «Orden vigente» del 26/09/2026 (en el «Histórico»).
 
 **1. Bloque «Tablero, asistencias, convocatoria, scouting y migración» (31/10/2026, un PR por apartado)**
-- **A. Marca «reserva»** (`feat/reserva`, D158): `jugadores_privado.reserva`; el motor solo mete a un reserva si sin él no se cubren los mínimos o el número compensado; casilla en Gestión → Jugadores. _Migración y carga (Fernando M. y Guillermo) con el OK de Iván._
-- **B. Tablero y asistencia a mano** (`feat/tablero-asistencia-mano`, D159): el selector «Ver» con todos los eventos de la temporada; «Van / Disponible» en la barra de acciones; cambiar a mano la respuesta de cada invitado en la ficha del evento.
-- **C. Mensaje de convocatoria** (`feat/equipacion-convocatoria`, D160): línea de equipación siempre presente (Bases 47 JDM 5.11), la misma en el aviso push, el WhatsApp y Scouting. (La salida «SportEasy» se va con el PR #3, `feat/cierre-sporteasy`.)
-- **D. Asistencias históricas de SportEasy** (`feat/asistencia-sporteasy`, D161): SportEasy hasta el 23/10, la plataforma desde el 24/10. _Carga en el real con el OK de Iván._
-- **E. Scouting y Liga** (`feat/scouting-liga-fuente-unica`, D162): fuente única = tabla de eventos; Scouting rivales y Liga consolidada para cualquier jugador con sesión (matiza D73).
-- **F. Migración de GitHub Pages** (`feat/migracion-liga-equipo`, D163): Liga y Equipo/Jugadores/Ficha (`docs/MIGRACION_WEB.md`); lo siguiente, Rankings y Cuartos → Rivales → El Club → MdA → Asistencia.
-- **G. Pendientes menores** (`feat/pendientes-menores`): Panel en móvil con tarjetas, «Partidos» activo, contraste de la clasificación oficial en la rutina B (D74), lienzo de EventoRespuestas/EventoImportar, textos «de noche solo si el partido es en pocas horas» (D155).
-- **H. Limpieza de docs** (`docs/orden-vigente-31-10`): este orden, SMTP y ESTADO.
-- **I. Sin ventanas de consola en Windows** (`fix/ventanas-consola`, pedido por Iván el 31/10): `windowsHide: true` en todos los procesos hijos de pruebas y utilidades, y que se cierren al terminar cada suite, también si falla. Sin cambios de comportamiento.
+- [x] **A. Marca «reserva»** (`feat/reserva`, D158; #9, mergeada y aplicada el 01/11): `jugadores_privado.reserva`; el motor solo mete a un reserva si sin él no se cubren los mínimos o el número compensado; casilla en Gestión → Jugadores. _Migración y carga (Fernando M. y Guillermo) con el OK de Iván._
+- [x] **B. Tablero y asistencia a mano** (`feat/tablero-asistencia-mano`, D159; #10, mergeada y aplicada el 01/11): el selector «Ver» con todos los eventos de la temporada; «Van / Disponible» en la barra de acciones; cambiar a mano la respuesta de cada invitado en la ficha del evento.
+- [x] **C. Mensaje de convocatoria** (`feat/equipacion-convocatoria`, D160; #11, mergeada el 01/11): línea de equipación siempre presente (Bases 47 JDM 5.11), la misma en el aviso push, el WhatsApp y Scouting. (La salida «SportEasy» se va con el PR #3, `feat/cierre-sporteasy`.)
+- [x] **D. Asistencias históricas de SportEasy** (`feat/asistencia-sporteasy`, D161; #7, mergeada y cargada el 01/11): SportEasy hasta el 23/10, la plataforma desde el 24/10. _Carga en el real con el OK de Iván._
+- [x] **E. Scouting y Liga** (`feat/scouting-liga-fuente-unica`, D162; #14, mergeada y aplicada el 01/11): fuente única = tabla de eventos; Scouting rivales y Liga consolidada para cualquier jugador con sesión (matiza D73).
+- **F. Migración de GitHub Pages** (`feat/migracion-liga-equipo`, #8; no quedaba nada por migrar): Liga y Equipo/Jugadores/Ficha (`docs/MIGRACION_WEB.md`); lo siguiente, Rankings y Cuartos → Rivales → El Club → MdA → Asistencia.
+- [x] **G. Pendientes menores** (`feat/pendientes-menores`, D164; #12, mergeada el 01/11): Panel en móvil con tarjetas, «Partidos» activo, contraste de la clasificación oficial en la rutina B (D74), lienzo de EventoRespuestas/EventoImportar, textos «de noche solo si el partido es en pocas horas» (D155).
+- **H. Limpieza de docs** (`docs/orden-vigente-31-10`, #6): este orden, SMTP y ESTADO.
+- **I. Sin ventanas de consola en Windows** (`fix/ventanas-consola`, #13, pedido por Iván el 31/10): `windowsHide: true` en todos los procesos hijos de pruebas y utilidades, y que se cierren al terminar cada suite, también si falla. Sin cambios de comportamiento.
 
 **2. Rediseño de la rutina C sin SportEasy** (lo diseña Iván con Claude en el chat; D153 deja sin objeto la parte de SportEasy de `docs/RUTINAS/C_CONVOCATORIA.md`).
 
@@ -46,6 +46,7 @@
 ## Pendiente de Iván
 
 **Operativa de ahora**
+- [x] **Hecho (01/11/2026, OK de Iván, con D111; 28 cuentas antes y después):** **OK a la marca «Reserva» (D158, `feat/reserva`):** aplicar en el real la migración `20261031180000_reserva` (con D111) y la carga `node plataforma/scripts/cargar_reserva.mjs --aplicar` (reserva para Fernando M. y Guillermo), **antes** de mergear la rama (la convocatoria lee la columna). Lo hace Code cuando Iván dé el OK.
 - [ ] **Pausar o borrar la tarea programada «Maccabis · respuestas de SportEasy»** en el Chrome de Iván, si sigue activa (D153; Code no tiene acceso a las tareas programadas).
 - [ ] **Cuando Carlos entre por primera vez:** comprobar que su plaza se vinculó sola (`npm run db:estado`: 3 gestores vinculados) y que ve Gestión, el tablero y la banda del inicio. Aún no tiene cuenta (simulado en una transacción deshecha: se vincula y ve los niveles).
    - **26/10/2026:** Iván dice que Carlos ya ha entrado, pero `npm run db:estado` da **3 gestores y 2 vinculados** (Iván y Eduardo) y en `auth.users` **no hay ninguna cuenta con el correo de su ficha** (el mismo de su plaza de gestor; no es de Gmail). Hay que ver con Carlos con qué correo entró: con ese correo, «Entrar con Google» no sirve; la vía es «Recibir código por correo» a esa dirección.

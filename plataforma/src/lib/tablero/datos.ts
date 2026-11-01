@@ -6,7 +6,7 @@ import type { EstadoImportacion } from "@/lib/eventos/importacionAuto";
 import type { Convocatoria, Entrada, Equipo, Nivel, Posicion, RespuestaPartido } from "@/lib/convocatoria/motor";
 import { cargarEvento, cargarEventos, cargarJugadores, type Cliente } from "@/lib/eventos/datos";
 import { convocadosDe, tituloEvento, TEXTO_MOTIVO, type Motivo } from "@/lib/eventos/dominio";
-import { hoyMadrid, sumarDias } from "@/lib/dias";
+import { hoyMadrid } from "@/lib/dias";
 import type { FilaTablero, PartidoTablero } from "./vista";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 import { cargarAusencias, cargarDefecto } from "@/lib/convocatoria/defecto";
@@ -18,22 +18,32 @@ import type { PersonaNum } from "@/components/numeros/Numeros";
 // un jugador.
 
 export type Registro = { id: string; en: string; por: string; texto: string };
-export type OpcionSelector = { valor: string; texto: string; grupo: "Domingos de partidos" | "Eventos sueltos" };
+export type OpcionSelector = { valor: string; texto: string; grupo: "Próximos domingos de partidos" | "Próximos eventos" | "Domingos ya jugados" | "Eventos pasados" };
 
 type Privado = { person_id: string; posicion: Posicion | null; base_reserva: boolean; nivel: Nivel | null };
 
 const motivoTexto = (m: string | null) => (m ? (m === "horario" ? "Solo puede al otro partido" : TEXTO_MOTIVO[m as Motivo] ?? m) : null);
 
-/** Opciones del selector: los domingos de partidos (de la convocatoria) y los eventos sueltos de las proximas semanas
- *  (entrenos y demas oficiales, y cada partido por separado). */
+/** Opciones del selector «Ver»: TODOS los eventos oficiales de la temporada (D159; antes solo los programados de las
+ *  cinco semanas siguientes). Los futuros primero, del más cercano al más lejano; despues los pasados, del más reciente
+ *  al más antiguo. Los domingos de partidos (de la convocatoria) y cada evento por separado (entrenos, partidos sueltos
+ *  y demas oficiales). Un evento cancelado sale con «cancelado». */
 export async function opcionesSelector(sb: Cliente): Promise<OpcionSelector[]> {
   const hoy = hoyMadrid();
-  const eventos = (await cargarEventos(sb)).filter((e) => e.estado === "programado" && e.fecha >= hoy && e.fecha <= sumarDias(hoy, 35));
-  const domingos = [...new Map(eventos.filter((e) => e.tipo === "liga").map((e) => [e.fecha, e])).values()];
+  const eventos = await cargarEventos(sb);
+  const futuros = eventos.filter((e) => e.fecha >= hoy);
+  const pasados = eventos.filter((e) => e.fecha < hoy).reverse();
+  const domingosDe = (lista: typeof eventos) => [...new Map(lista.filter((e) => e.tipo === "liga" && e.estado === "programado").map((e) => [e.fecha, e])).values()];
   const dia = (f: string) => new Date(`${f}T12:00:00Z`).toLocaleDateString("es-ES", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" });
+  const domingo = (grupo: OpcionSelector["grupo"]) => (e: (typeof eventos)[number]) => ({ valor: `domingo:${e.fecha}`, texto: `${dia(e.fecha)} · J${e.jornada ?? "?"} (los partidos del domingo)`, grupo });
+  const suelto = (grupo: OpcionSelector["grupo"]) => (e: (typeof eventos)[number]) => ({
+    valor: `evento:${e.id}`, texto: `${dia(e.fecha)} · ${e.tipo === "liga" ? `solo ${tituloEvento(e)}` : tituloEvento(e)}${e.estado === "cancelado" ? " · cancelado" : ""}`, grupo,
+  });
   return [
-    ...domingos.map((e) => ({ valor: `domingo:${e.fecha}`, texto: `${dia(e.fecha)} · J${e.jornada ?? "?"} (los partidos del domingo)`, grupo: "Domingos de partidos" as const })),
-    ...eventos.map((e) => ({ valor: `evento:${e.id}`, texto: `${dia(e.fecha)} · ${e.tipo === "liga" ? `solo ${tituloEvento(e)}` : tituloEvento(e)}`, grupo: "Eventos sueltos" as const })),
+    ...domingosDe(futuros).map(domingo("Próximos domingos de partidos")),
+    ...futuros.map(suelto("Próximos eventos")),
+    ...domingosDe(pasados).map(domingo("Domingos ya jugados")),
+    ...pasados.map(suelto("Eventos pasados")),
   ];
 }
 
@@ -114,7 +124,7 @@ export async function cargarTableroEvento(sb: Cliente, id: string): Promise<Tabl
   return { vista: "evento", evento: { id: e.id, titulo: tituloEvento(e), fecha: e.fecha, inicio: e.inicio, tipo: e.tipo, equipo: e.equipo }, filas, registro, encendido: enc.data === true, sinFicha };
 }
 
-const TEXTO_RESP: Record<string, string> = { va: "Van", duda: "Duda", no: "No van" };
+const TEXTO_RESP: Record<string, string> = { va: "Van", duda: "Duda", no: "No van", sin_responder: "Sin responder" };
 const ACCION: Record<string, string> = { anadir: "Convocar", quitar: "Quitar convocatoria", mover: "Ajuste", doblar: "Doblar", propuesta: "Usar propuesta", blanco: "Empezar en blanco", aprobar: "Aprobar", recalcular: "Recalcular" };
 
 /** Registro de cambios (quien, a quien, cuando): la convocatoria y las respuestas puestas desde el tablero. */

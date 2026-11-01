@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Pruebas por niveles (D149).
 //
-//   npm run pruebas:rapidas      NIVEL 1, en local, en cada cambio: typecheck + las suites de lo tocado (frente a
-//                                origin/main), elegidas solas. Objetivo: menos de 3 minutos.
-//   npm run pruebas:completas    NIVEL 2: la bateria completa, lo mismo que GitHub Actions al subir una rama.
+//   npm run pruebas:rapidas      NIVEL 1, en local, en cada PR (D167): las suites de lo tocado (frente a origin/main),
+//                                elegidas solas, mas el humo (typecheck + arranque de la web).
+//   npm run pruebas:completas    NIVEL 2: la bateria completa. La corre GitHub Actions en cada PR y es la puerta para
+//                                mergear; en local, solo si Iván lo pide (D167).
 //
 // Opciones (tras `--`):
 //   --lista             solo dice que pasaria y por que, sin ejecutar nada
@@ -12,10 +13,12 @@
 //   --locales           (completas) tambien las que solo pueden ir en local (Supabase real, fuentes_fbm...)
 //   --capturas          hace las capturas de pantalla (por defecto no, para ir mas rapido)
 //
-// Las suites que compilan la web van una detras de otra (comparten plataforma/.next y reutilizan la compilacion si no
-// ha cambiado nada); el resto va en paralelo, cada una en su carril de puertos. Resultado en
+// En Actions: las suites que compilan la web van una detras de otra (comparten plataforma/.next) y el resto en paralelo,
+// cada una en su carril de puertos. En local (D167): nunca mas de UNA suite pesada (web o pila) a la vez, tampoco entre
+// worktrees (un cerrojo en la carpeta temporal del sistema); las de logica, de dos en dos. Resultado en
 // plataforma/pruebas/resultados/tanda/ (fuera de git).
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { chromium } from 'playwright';
@@ -103,7 +106,7 @@ function elegirRapidas() {
   const plataforma = cambios.filter((f) => f.startsWith('plataforma/') && !f.endsWith('.md'));
   if (plataforma.length) elegir('typecheck', 'hay cambios en plataforma/');
   if (cambios.some((f) => f.startsWith('plataforma/pruebas/infra/') || /^plataforma\/pruebas\/(pila|comun_e2e)\.mjs$/.test(f))) {
-    console.log('AVISO: has tocado la infraestructura de pruebas (infra/, pila.mjs o comun_e2e.mjs): pasa npm run pruebas:completas.');
+    console.log('AVISO: has tocado la infraestructura de pruebas: la batería completa la pasa GitHub Actions en el PR (D167); en local, solo si Iván lo pide.');
   }
   // 1. La propia suite tocada, o lo que importa directamente (src/lib, src/components, scripts/).
   for (const s of todas) {
@@ -132,28 +135,49 @@ function elegirRapidas() {
     }
   }
   const web = todas.filter((s) => s.tipo === 'web');
+  const pantallas = new Map();
   for (const [ruta, por] of rutasTocadas) {
     const suites = ruta === '/' ? web.filter((s) => ['pruebas:portada', 'pruebas:navegacion'].includes(s.id)) : web.filter((s) => s.rutas.includes(ruta));
-    for (const s of suites) elegir(s.id, `pantalla ${ruta} (${por})`);
+    for (const s of suites) if (!pantallas.has(s.id)) pantallas.set(s.id, `pantalla ${ruta} (${por})`);
   }
-  // 3. Estadisticas y liga: solo si se tocan datos, el pipeline, las migraciones o sus pantallas.
+  // D167: un fichero compartido llega a casi todas las pantallas; en local, como mucho 4 suites de pantallas (si son mas,
+  // solo el humo) y el resto lo cubre la bateria de GitHub Actions del PR.
+  const MAX_PANTALLAS = 4;
+  const nuevas = [...pantallas].filter(([id]) => !motivos.has(id));
+  const cortadas = nuevas.length > MAX_PANTALLAS;
+  // las paginas tocadas a mano (no las alcanzadas por imports): con el limite, solo estas cuentan para estadisticas
+  const directas = plataforma.filter((f) => f.startsWith('plataforma/src/app/')).map((f) => claveRuta(path.posix.dirname(f.slice('plataforma/src/app'.length))));
+  if (cortadas) console.log(`AVISO: el cambio llega a ${nuevas.length} suites de pantallas: en local va solo el humo; las pantallas las prueba GitHub Actions en el PR (D167). Añade alguna con --suite si hace falta.`);
+  else for (const [id, motivo] of nuevas) elegir(id, motivo);
+  // 3. Estadisticas y liga: solo si se tocan datos, el pipeline, una migración de la liga o sus pantallas (D167).
   const PANT_EST = ['/liga', '/historia', '/plantilla', '/jugador', '/mis-numeros', '/liga/scouting', '/liga/consolidada'];
-  const est = cambios.find((f) => /^(data\/|scripts\/|index\.html$|plataforma\/src\/data\/|plataforma\/supabase\/migrations\/|plataforma\/scripts\/(cargar_liga|sincronizar_equipacion))/.test(f))
-    ?? [...rutasTocadas.keys()].find((r) => PANT_EST.includes(r));
+  const est = cambios.find((f) => /^(data\/|scripts\/|index\.html$|plataforma\/src\/data\/|plataforma\/scripts\/(cargar_liga|sincronizar_equipacion))/.test(f)
+      || (/^plataforma\/supabase\/migrations\//.test(f) && /liga/i.test(f)))
+    ?? (cortadas ? directas : [...rutasTocadas.keys()]).find((r) => PANT_EST.includes(r));
   if (est) {
     for (const id of ESTADISTICAS) elegir(id, `estadisticas y liga (${est})`);
     if (cambios.some((f) => /^(data\/|scripts\/|index\.html$)/.test(f))) for (const s of todas.filter((x) => x.dir === REPO)) elegir(s.id, 'datos o scripts de la raiz');
   }
-  // 4. Migraciones o permisos: todas las de la pila local y las de solo lectura contra el Supabase real.
+  // 4. Migraciones o permisos (D167): las suites que prueban esa migración (las que nombran su versión) y, como el cambio
+  //    escribe en producción o toca permisos, las de solo lectura contra el Supabase real. El resto de la pila, en Actions.
   const mig = cambios.find((f) => f.startsWith('plataforma/supabase/'));
   if (mig) {
-    for (const s of todas.filter((x) => x.tipo === 'pila' && !x.id.endsWith('-real'))) elegir(s.id, `migracion o permisos (${mig})`);
+    const versiones = cambios.map((f) => f.match(/^plataforma\/supabase\/migrations\/(\d{14})_/)?.[1]).filter(Boolean);
+    for (const s of todas.filter((x) => x.tipo === 'pila' && x.fuente && !x.id.endsWith('-real'))) {
+      const src = fs.readFileSync(path.join(REPO, s.fuente), 'utf8');
+      const v = versiones.find((x) => src.includes(x));
+      if (v) elegir(s.id, `prueba la migración ${v}`);
+    }
     if (fs.existsSync(path.join(PLAT, '.env.local'))) for (const s of todas.filter((x) => x.id.endsWith('-real'))) elegir(s.id, `migracion o permisos (${mig}): solo lectura contra el real`);
   }
 }
 
 // en una tanda, test:privacidad deja el HTML renderizado a pruebas:privacidad (en completas ya va en la bateria, en su grupo)
 if (modo === 'rapidas' && motivos.has('test:privacidad')) elegir('pruebas:privacidad', 'va con test:privacidad (el HTML renderizado)');
+// Humo (D167): si se toca la web y ninguna suite elegida la arranca ya, una que compila, arranca y abre lo principal.
+if (modo === 'rapidas' && cambiados().some((f) => /^plataforma\/(src|supabase|public)\/|^plataforma\/(next\.config|package)/.test(f)) && ![...motivos.keys()].some((id) => porId.get(id)?.tipo === 'web')) {
+  elegir('pruebas:humo', 'humo: arranque de la web (D167)');
+}
 const plan = [...motivos.keys()].map((id) => porId.get(id));
 console.log(`\n${modo === 'rapidas' ? 'NIVEL 1 (pruebas:rapidas)' : 'NIVEL 2 (pruebas:completas)'}: ${plan.length} suites · puertos ${BASE}-${BASE + 99}`);
 for (const s of plan) console.log(`  ${s.id.padEnd(34)} ${s.tipo.padEnd(7)} ${motivos.get(s.id)}`);
@@ -216,10 +240,37 @@ const ejecutar = (s, carril) => new Promise((listo) => {
   });
 });
 
-// Las que compilan la web, en serie en el carril 0; el resto en los carriles 1-4. La web espera al typecheck (lee
-// .next/types mientras next build los reescribe).
-const web = plan.filter((s) => s.tipo === 'web');
-const otras = plan.filter((s) => s.tipo !== 'web').sort((a, b) => (a.id === 'typecheck' ? -1 : b.id === 'typecheck' ? 1 : b.segundos - a.segundos));
+// Cerrojo de suite pesada para todo el equipo (D167): una carpeta en el temporal del sistema con quién la tiene. Si su
+// dueño ya no existe (prueba cortada de golpe), se quita. Solo en local.
+const CERROJO = path.join(os.tmpdir(), 'maccabis-pruebas-pesada');
+let cerrojoMio = false;
+const vivo = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+async function tomarCerrojo(s) {
+  let avisado = false;
+  for (;;) {
+    try {
+      fs.mkdirSync(CERROJO);
+      fs.writeFileSync(path.join(CERROJO, 'dueno.json'), JSON.stringify({ pid: process.pid, worktree: REPO, suite: s.id, desde: new Date().toISOString() }));
+      cerrojoMio = true;
+      return;
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      let d = null; try { d = JSON.parse(fs.readFileSync(path.join(CERROJO, 'dueno.json'), 'utf8')); } catch { /* recién creada */ }
+      if (d && !vivo(d.pid)) { fs.rmSync(CERROJO, { recursive: true, force: true }); continue; }
+      if (!avisado && d) { console.log(`  (esperando: hay otra suite pesada en marcha, ${d.suite} en ${path.basename(d.worktree)}, desde ${d.desde.slice(11, 19)})`); avisado = true; }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+}
+const soltarCerrojo = () => { if (cerrojoMio) { cerrojoMio = false; try { fs.rmSync(CERROJO, { recursive: true, force: true }); } catch {} } };
+process.on('exit', soltarCerrojo);
+
+// En Actions: las que compilan la web, en serie en el carril 0; el resto en los carriles 1-4. En local (D167): todas las
+// pesadas (web y pila) en serie en el carril 0 y con el cerrojo; las de logica en los carriles 1-2. La web espera al
+// typecheck (lee .next/types mientras next build los reescribe).
+const pesada = (s) => (EN_CI ? s.tipo === 'web' : s.tipo !== 'logica');
+const web = plan.filter(pesada);
+const otras = plan.filter((s) => !pesada(s)).sort((a, b) => (a.id === 'typecheck' ? -1 : b.id === 'typecheck' ? 1 : b.segundos - a.segundos));
 let avisarTypecheck = () => {};
 const typecheckHecho = motivos.has('typecheck') ? new Promise((r) => { avisarTypecheck = r; }) : Promise.resolve();
 const colaOtras = async (carril) => {
@@ -229,8 +280,14 @@ const colaOtras = async (carril) => {
     if (s.id === 'typecheck') avisarTypecheck();
   }
 };
-const colaWeb = async () => { await typecheckHecho; for (const s of web) await ejecutar(s, 0); };
-await Promise.all([colaWeb(), ...[1, 2, 3, 4].map(colaOtras)]);
+const colaWeb = async () => {
+  await typecheckHecho;
+  for (const s of web) {
+    if (!EN_CI) await tomarCerrojo(s);
+    try { await ejecutar(s, 0); } finally { soltarCerrojo(); }
+  }
+};
+await Promise.all([colaWeb(), ...(EN_CI ? [1, 2, 3, 4] : [1, 2]).map(colaOtras)]);
 if (servidor) await servidor.close().catch(() => {});
 
 const malas = resultados.filter((r) => r.codigo !== 0);

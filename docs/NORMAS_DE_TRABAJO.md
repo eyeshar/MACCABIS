@@ -87,5 +87,10 @@ Vale para **toda** pantalla nueva o que se toque. Un único componente (`compone
 1. **Si se puede evitar, no se crean.** Antes de crear una cuenta para probar en el real, buscar otra vía: la pila local, el Worker o la función con datos sintéticos, o que Iván pruebe con su propia cuenta.
 2. **Si hace falta crearla:** apuntar el **recuento de cuentas de `auth.users` antes** de crearla y **después** de borrarla, y ponerlo en el informe. Si no coinciden, es un fallo. Se borra siempre al final (`finally`), pase lo que pase, y se comprueba que no queda nada suyo (sesiones, identidades, suscripciones, fichas de gestor, respuestas) ni fuera de Supabase (p. ej. el KV del asistente). Así lo hacen `verificar_produccion.mjs` y `verificar_chat_preview.mjs`.
 
-## 15. Pruebas por niveles (D149)
-Nivel 1 en local en cada cambio (`npm run pruebas:rapidas`, menos de 3 minutos); la batería completa en GitHub Actions al subir la rama, que Code no espera pero comprueba en verde antes de mergear (`npm run ci:estado`). Estadísticas y liga solo si se tocan datos, pipeline, migraciones o sus pantallas; las `-real`, solo con migración o permisos. Detalle, tabla «si tocas X, pasa Y», puertos y lo que solo va en local: `CLAUDE.md` en la raíz.
+## 15. Pruebas: ligeras en local, completas en Actions (D167, Iván 01/11/2026; aligera D149)
+La norma anterior era excesiva y agotaba la memoria del equipo. Desde el 01/11/2026:
+1. **En local, por PR: solo las suites de lo tocado más un humo rápido** (`typecheck` + arranque de la web). **Nunca la batería completa en local** salvo que Iván lo pida.
+2. **La batería completa la corre GitHub Actions en cada PR; es la puerta para mergear** (`npm run ci:estado` en verde para el último commit).
+3. **Las suites `-real` contra producción, solo cuando el cambio escriba en producción o toque permisos.**
+4. **Varios PR en paralelo: nunca más de una suite pesada a la vez en local** (cerrojo común de `pruebas:rapidas`).
+`npm run pruebas:rapidas` ya lo aplica solo. Detalle, tabla «si tocas X, pasa Y», puertos y lo que solo va en local: `CLAUDE.md` en la raíz.

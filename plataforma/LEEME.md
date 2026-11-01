@@ -132,7 +132,11 @@ Entra en `/entrar` con tu Google o con un código a tu correo, y comprueba que t
 campaña (Estado: Abierta, fecha límite), mira "Jugadores" (los correos que importaste), y haz un pedido de prueba
 desde `/mi-zona`. Hasta que lo apruebes, no se avisa a nadie de que ya puede entrar.
 
-### 7. Correo propio para los códigos (SMTP con Gmail del club) — hazlo antes de avisar a todos
+### 7. Correo propio para los códigos (SMTP con Gmail) — HECHO
+**Estado (31/10/2026, comprobado por Claude en el panel de Supabase):** **Envío propio de correo YA configurado** (comprobado por Claude en el panel de Supabase el 31/10/2026): SMTP de **Gmail personal de Iván** (`smtp.gmail.com`), remitente **«Maccabis»**, límite de **unos 500 correos al día**. Los códigos y enlaces de acceso ya no salen por el servicio compartido de Supabase. Plantillas «Confirm sign up» y
+«Magic link or OTP» con el botón «Entrar» (`/auth/confirm`, D157) y el código de 6 dígitos («Email OTP Length» = 6).
+Lo que sigue queda como guía por si hay que volver a configurarlo (otra cuenta, otra contraseña de aplicación).
+
 **Por qué:** hasta que no actives esto, Supabase manda los códigos de un solo uso (y cualquier otro correo de
 Auth) con su servicio compartido, que solo está pensado para pruebas: pocos envíos por hora y sin garantía de que
 lleguen a una bandeja ajena (puede acabar en spam, o no enviarse si se supera el límite). Todo el que no tiene
@@ -140,7 +144,7 @@ Gmail (ve "Entrará con código por correo" en Gestión → Jugadores) depende d
 que conviene ponerlo antes de avisar al equipo. Revisa en tu panel **Authentication → Rate Limits** cuál es hoy el
 límite de envíos de tu proyecto: no se puede saber desde fuera del panel, y varía según el plan.
 
-1. En la cuenta de Gmail del club (o la tuya), activa la verificación en dos pasos si no la tienes
+1. En la cuenta de Gmail (hoy, la personal de Iván), activa la verificación en dos pasos si no la tienes
    (**Cuenta de Google → Seguridad**) y genera una **contraseña de aplicación**
    (**Cuenta de Google → Seguridad → Verificación en dos pasos → Contraseñas de aplicaciones**). Cópiala: son 16
    caracteres, sin espacios. Esto **no es tu contraseña normal de Gmail**: es una clave aparte, solo para esto.
@@ -148,7 +152,7 @@ límite de envíos de tu proyecto: no se puede saber desde fuera del panel, y va
    **Authentication → Settings → SMTP Provider**): activa **"Enable Custom SMTP"** y rellena:
    - **Host:** `smtp.gmail.com`
    - **Port:** `465`
-   - **Username:** la cuenta de Gmail del club completa (`tu-cuenta@gmail.com`)
+   - **Username:** la cuenta de Gmail completa (`tu-cuenta@gmail.com`)
    - **Password:** la contraseña de aplicación del paso 1. **Pégala tú mismo directamente en el panel de
      Supabase: nunca por el chat, ni a Claude ni a nadie.**
    - **Sender email:** la misma cuenta de Gmail.
@@ -156,9 +160,9 @@ límite de envíos de tu proyecto: no se puede saber desde fuera del panel, y va
 3. Guarda. El panel deja mandar un correo de prueba desde ahí mismo: compruébalo antes de avisar a nadie.
 4. Revisa la plantilla del código (**Authentication → Emails → Magic Link**, es la que usa el código OTP de
    "Recibir código por correo"): que el texto esté en español, que dentro se vea bien claro el código
-   `{{ .Token }}` (los 6 dígitos) y que quede claro que el correo viene del club (el remitente ya lo dice con el
+   `{{ .Token }}` (los 6 dígitos) y el botón de `/auth/confirm` (D157), y que quede claro que el correo viene del club (el remitente ya lo dice con el
    "Sender name" del paso 2, pero conviene que el cuerpo también lo diga, p. ej. "Tu código de Maccabis es:").
-   Gmail SMTP admite unos 500 correos al día por cuenta: de sobra para un club de este tamaño.
+   Gmail SMTP admite **unos 500 correos al día** por cuenta: de sobra para un club de este tamaño (y es el límite real hoy).
 
 ### 8. Avisos al móvil (paso 3, D99–D104): claves en Vercel y tarea programada
 Estado (08/10/2026): las dos migraciones del paso 3 **ya están aplicadas** en el Supabase real (volcado previo en

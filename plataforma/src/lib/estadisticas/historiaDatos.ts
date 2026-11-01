@@ -6,7 +6,7 @@ import { ordenBase, type PersonaH } from "./historia";
 
 // Datos de la Historia del club: personas.json (identidades y temporadas con estadisticas) + historia_club.json (presencia
 // por año), copias de data/ hechas por npm run datos:sync. Solo nombres y presencia por temporada: nada personal (D17).
-type Registro = { person_id: string; formal: string; display: string; es_entrenador: boolean; solo_mote: boolean; alias_ids: string[] };
+type Registro = { person_id: string; formal: string; display: string; es_entrenador: boolean; solo_mote: boolean; de_paso?: boolean; alias_ids: string[] };
 const REG = personasJson as unknown as { personas: Registro[]; indice_stats: Record<string, string[]> };
 const HIST = historiaJson as unknown as { personas: Omit<PersonaH, "stats" | "destinos" | "formal" | "display">[] & { formal?: string; display?: string }[] };
 
@@ -33,7 +33,7 @@ export function personasHistoria(): Promise<PersonaH[]> {
       return {
         ...p,
         display: r?.display || p.display || "", formal: r?.formal || p.formal || "",
-        es_entrenador: !!p.es_entrenador, solo_mote: !!p.solo_mote,
+        es_entrenador: !!p.es_entrenador, solo_mote: !!p.solo_mote, de_paso: !!p.de_paso,
         stats,
         destinos: Object.fromEntries(stats.map((s) => [s, fichas.get(s)?.has(p.person_id) ? "ficha" : mda.get(s)?.has(p.person_id) ? "mda" : null])),
       } as PersonaH;

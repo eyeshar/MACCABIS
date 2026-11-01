@@ -8,6 +8,8 @@
  *   2. nombre completo igual al de una persona del diccionario del histórico (data/diccionario_nombres.json, las de las
  *      temporadas con estadísticas), ignorando tildes y mayúsculas, si es única;
  *   3. vínculos aceptados por Iván (privado/sporteasy/vinculos_historico.json: { "<id de perfil>": "<person_id>" });
+ *      los perfiles que Iván descarta (privado/sporteasy/descartes_historico.json: [ "<id de perfil>" ], p. ej. un
+ *      «Jugador Generico» de relleno) no cuentan en ninguna temporada;
  *   4. el resto, persona histórica `sporteasy-<id>` con el nombre de SportEasy (sin cuenta ni acceso: solo existe como
  *      filas de asistencia_motivos, que solo leen los gestores).
  * Para los del punto 4 se PROPONE pareja (no se aplica) temporada a temporada, solo contra las personas que estaban en el
@@ -131,7 +133,7 @@ function motesDeTemporada(dicc, t) {
 /**
  * Resuelve cada perfil. Devuelve { resolucion: Map(id -> { person_id, como }), propuestas: [...], sinPropuesta: [...] }.
  */
-function resolver({ temporadas, historia, dicc, sporteasyPorNombre, vinculos }) {
+function resolver({ temporadas, historia, dicc, sporteasyPorNombre, vinculos, descartes = [] }) {
   const porNombre = new Map();
   for (const p of dicc.personas) { const k = norm(p.display); porNombre.set(k, porNombre.has(k) ? null : p.person_id); }
   const perfiles = new Map(); // id -> { nombre, porTemporada: { t: apariciones } }
@@ -144,7 +146,8 @@ function resolver({ temporadas, historia, dicc, sporteasyPorNombre, vinculos }) 
     const nombres = [...p.nombres];
     const dic = nombres.map((n) => sporteasyPorNombre.get(limpia(n))).find(Boolean);
     const exacto = nombres.map((n) => porNombre.get(norm(n))).find(Boolean);
-    if (dic) resolucion.set(id, { person_id: dic, como: 'diccionario_sporteasy' });
+    if (descartes.includes(String(id))) resolucion.set(id, { person_id: null, como: 'descartado' });
+    else if (dic) resolucion.set(id, { person_id: dic, como: 'diccionario_sporteasy' });
     else if (exacto) resolucion.set(id, { person_id: exacto, como: 'nombre exacto' });
     else if (vinculos[id]) resolucion.set(id, { person_id: vinculos[id], como: 'vínculo aceptado' });
   }
@@ -182,6 +185,7 @@ function resolver({ temporadas, historia, dicc, sporteasyPorNombre, vinculos }) 
 function contar({ filas, perfiles }, resolucion, displayDe) {
   const porEvento = new Map(); let solapes = 0;
   for (const f of filas) {
+    if (resolucion.get(f.id)?.como === 'descartado') continue;
     const pid = resolucion.get(f.id)?.person_id || PREFIJO + f.id;
     const k = `${pid}|${f.evento}`;
     const prev = porEvento.get(k);
@@ -242,16 +246,44 @@ function leerAceptadas(md) {
   return out;
 }
 
-/** Escribe los JSON de privado/asistencia/ y las propuestas. */
-function escribir(c) {
+/**
+ * Decisiones del .md revisado por Iván. Por cada línea con un id de perfil entre comillas invertidas:
+ *   - «NO» antes del id: descartar el perfil (no es una persona);
+ *   - «OK» (o «[x]») antes del id: vincular. La persona es el person_id entre (`…`) de la línea o, si no lo hay, el nombre
+ *     tras «→», que tiene que ser EXACTAMENTE el nombre completo (display) de una sola persona del club.
+ * Lo que no se resuelve así va a `sinResolver`: no se adivina.
+ */
+function leerDecisiones(md, personas) {
+  const porDisplay = new Map();
+  for (const p of personas) porDisplay.set(p.display, porDisplay.has(p.display) ? null : p.person_id);
+  const existe = new Set(personas.map((p) => p.person_id));
+  const vincular = {}; const descartar = []; const sinResolver = [];
+  for (const linea of md.split(/\r?\n/)) {
+    const m = linea.match(/^(.*?)`(\d+)`(.*)$/);
+    if (!m) continue;
+    const [, marca, id, resto] = m;
+    if (/\bNO\b/.test(marca)) { descartar.push(id); continue; }
+    if (!/\bOK\b/i.test(marca) && !/\[[xX]\]/.test(marca)) continue;
+    const pid = resto.match(/\(`([a-z0-9-]+)`\)/)?.[1];
+    const nombre = resto.match(/→\s*\**([^(*]+?)\**\s*(?:\(|$)/)?.[1]?.trim();
+    const elegido = pid ?? (nombre ? porDisplay.get(nombre) : undefined);
+    if (elegido && existe.has(elegido)) vincular[id] = elegido;
+    else sinResolver.push({ id, nombre: nombre ?? null, motivo: pid ? `el person_id ${pid} no existe` : 'no hay exactamente una persona con ese nombre completo' });
+  }
+  return { vincular, descartar, sinResolver };
+}
+
+/** Escribe los JSON de privado/asistencia/ y, si no se pide lo contrario, las propuestas (que pisan el .md de Iván). */
+function escribir(c, { propuestas = true } = {}) {
   for (const [t, { jugadores }] of Object.entries(c.porTemporada)) {
     const f = path.join(RAIZ, 'privado/asistencia', `asistencia_${t}.json`);
     fs.writeFileSync(f, JSON.stringify({ _fuente: 'SportEasy, export completo 2026-11-01 (D166); generado por scripts/estadisticas/asistencia_historica.js', temporada: t, jugadores }, null, 1));
   }
-  fs.writeFileSync(path.join(RAIZ, 'privado/sporteasy/propuestas_para_ivan.md'), informe(c, c.displayDe));
+  if (propuestas) fs.writeFileSync(path.join(RAIZ, 'privado/sporteasy/propuestas_para_ivan.md'), informe(c, c.displayDe));
 }
 
 const F_VINCULOS = path.join(RAIZ, 'privado/sporteasy/vinculos_historico.json');
+const F_DESCARTES = path.join(RAIZ, 'privado/sporteasy/descartes_historico.json');
 
 function cargarEntradas() {
   const leer = (f) => JSON.parse(fs.readFileSync(path.join(RAIZ, f), 'utf8'));
@@ -264,7 +296,8 @@ function cargarEntradas() {
   const fDic = path.join(RAIZ, 'privado/sporteasy/diccionario_sporteasy_2026-10-31.json');
   if (fDic.length && fs.existsSync(fDic)) for (const x of JSON.parse(fs.readFileSync(fDic, 'utf8'))) sporteasyPorNombre.set(limpia(x.nombre_sporteasy), x.person_id);
   const vinculos = fs.existsSync(F_VINCULOS) ? JSON.parse(fs.readFileSync(F_VINCULOS, 'utf8')) : {};
-  return { exp, personas, historia, dicc, sporteasyPorNombre, vinculos };
+  const descartes = fs.existsSync(F_DESCARTES) ? JSON.parse(fs.readFileSync(F_DESCARTES, 'utf8')).map(String) : [];
+  return { exp, personas, historia, dicc, sporteasyPorNombre, vinculos, descartes };
 }
 
 /** Todo el cálculo, sin escribir: { porTemporada: { t: { jugadores, solapes } }, ...resolver() }. */
@@ -281,7 +314,7 @@ function calcular(e) {
 if (require.main === module) {
   const dry = process.argv.includes('--dry');
   const c = calcular(cargarEntradas());
-  const casados = [...c.resolucion.values()];
+  const casados = [...c.resolucion.values()].filter((x) => x.como !== 'descartado');
   console.log(`Perfiles: ${casados.length + c.propuestas.length + c.sinPropuesta.length} · casados ${casados.length} `
     + `(diccionario ${casados.filter((x) => x.como === 'diccionario_sporteasy').length}, nombre exacto ${casados.filter((x) => x.como === 'nombre exacto').length}, `
     + `vínculo ${casados.filter((x) => x.como === 'vínculo aceptado').length}) · sin casar ${c.propuestas.length + c.sinPropuesta.length} `
@@ -297,5 +330,5 @@ if (require.main === module) {
   }
 }
 
-module.exports = { TEMPORADAS, PREFIJO, F_VINCULOS, norm, claseEvento, estado, leerExport, candidatos, motesDeTemporada, resolver, contar,
+module.exports = { TEMPORADAS, PREFIJO, F_VINCULOS, F_DESCARTES, leerDecisiones, norm, claseEvento, estado, leerExport, candidatos, motesDeTemporada, resolver, contar,
   informe, calcular, cargarEntradas, escribir, leerAceptadas };

@@ -27,7 +27,7 @@ export default function HistoriaClub({ personas, personaInicial }: { personas: P
         <div className="e-hn">
           <span className="e-hnum">{n}</span>
           <span className="e-hdisp" title={p.formal || p.display}>{p.display}</span>
-          {p.solo_mote && <span className="e-hchip e-hchip-mote">de paso</span>}
+          {(p.solo_mote || p.de_paso) && <span className="e-hchip e-hchip-mote">de paso</span>}
           {p.es_entrenador && <span className="e-hchip e-hchip-coach">entrenador</span>}
           <span className="e-hveter" title={orden === "debut" ? "Se incorporó en la temporada " + etiquetaAnio(p.temporadas_jugadas[0] || "") : p.n_temporadas + " temporadas en el club"}>
             {orden === "debut" ? (p.temporadas_jugadas.length ? etiquetaAnio(p.temporadas_jugadas[0]) : "—") : p.n_temporadas}
@@ -163,7 +163,7 @@ function FichaPersona({ p, onCerrar }: { p: PersonaH; onCerrar: () => void }) {
           <div className="e-hficha-cab">
             <div className="e-hini-letra">{p.display.charAt(0)}</div>
             <div>
-              <h3>{p.display}{p.solo_mote && <span className="e-hchip e-hchip-mote">de paso</span>}{p.es_entrenador && <span className="e-hchip e-hchip-coach">entrenador</span>}</h3>
+              <h3>{p.display}{(p.solo_mote || p.de_paso) && <span className="e-hchip e-hchip-mote">de paso</span>}{p.es_entrenador && <span className="e-hchip e-hchip-coach">entrenador</span>}</h3>
               <div className="e-modal-sub">{p.solo_mote ? "sin nombre formal registrado" : p.formal || ""}</div>
             </div>
           </div>

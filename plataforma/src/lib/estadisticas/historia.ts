@@ -17,6 +17,8 @@ export const norm = (s: string) => String(s).normalize("NFD").replace(/[̀-ͯ]/g
 export type PersonaH = {
   person_id: string; display: string; formal: string; temporadas_jugadas: string[]; n_temporadas: number;
   solo_mote: boolean; es_entrenador: boolean;
+  /** De paso con nombre: estuvo en el club sin llegar a debutar, solo entrenó (D166). */
+  de_paso?: boolean;
   /** Temporadas con estadisticas (indice de personas.json). */
   stats: string[];
   /** A donde lleva cada una de esas temporadas: su ficha en /jugador, o (si solo hay resumen agregado del MdA) la pestaña MdA. */
@@ -82,5 +84,6 @@ export function motivoSinStats(p: PersonaH) {
   return p.n_temporadas === 1 && p.temporadas_jugadas.includes(EN_CURSO) && !p.es_entrenador ? "Primera temporada en el club (2026/27, en curso): todavía no ha jugado ningún partido."
     : p.es_entrenador ? "Es el entrenador: nunca jugó, así que no tiene estadísticas de jugador."
     : p.solo_mote ? "Jugador de paso del que sólo se conserva el mote, sin ficha ni estadísticas."
+    : p.de_paso ? "Jugador de paso: entrenó con el equipo sin llegar a debutar, así que no tiene estadísticas."
     : "De las temporadas en que estuvo en el club no se conservan estadísticas suyas (años sin actas, o jugó en la ficha que no las registraba).";
 }

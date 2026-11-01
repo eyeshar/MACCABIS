@@ -20,9 +20,13 @@ export const DIR = path.join(RAIZ, '..', 'privado', 'asistencia');
 export function leerAsistencia(temporada) {
   const f = path.join(DIR, `asistencia_${temporada}.json`);
   if (!fs.existsSync(f)) throw new Error(`No existe ${f} (lo genera "npm run jornada").`);
-  const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+  return filasDeJugadores(temporada, JSON.parse(fs.readFileSync(f, 'utf8')).jugadores);
+}
+
+/** Filas de asistencia_motivos de una lista de jugadores ({ person_id, display, partidos, entrenos }). */
+export function filasDeJugadores(temporada, jugadores) {
   const filas = [];
-  for (const p of j.jugadores) {
+  for (const p of jugadores) {
     for (const ambito of ['partidos', 'entrenos']) {
       const d = p[ambito];
       if (!d) continue;

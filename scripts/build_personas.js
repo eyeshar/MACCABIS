@@ -63,10 +63,11 @@ function main() {
   const reg = new Map();   // person_id canónico -> persona
   const upsert = (id, datos, origen) => {
     id = canon(id);
-    const p = reg.get(id) || { person_id: id, formal: null, display: null, es_entrenador: false, solo_mote: false, alias_ids: [], en_historia: false, en_estadisticas: false };
+    const p = reg.get(id) || { person_id: id, formal: null, display: null, es_entrenador: false, solo_mote: false, de_paso: false, alias_ids: [], en_historia: false, en_estadisticas: false };
     for (const k of ['formal', 'display']) if (datos[k] && !p[k]) p[k] = datos[k];
     if (datos.es_entrenador) p.es_entrenador = true;
     if (datos.solo_mote) p.solo_mote = true;
+    if (datos.de_paso) p.de_paso = true;
     p[origen] = true;
     reg.set(id, p);
     return p;
@@ -78,7 +79,7 @@ function main() {
   }
   // --- identidades de la matriz de historia
   for (const p of hist.personas) {
-    upsert(p.person_id, { formal: p.formal, display: p.display, es_entrenador: p.es_entrenador, solo_mote: p.solo_mote }, 'en_historia');
+    upsert(p.person_id, { formal: p.formal, display: p.display, es_entrenador: p.es_entrenador, solo_mote: p.solo_mote, de_paso: p.de_paso }, 'en_historia');
   }
   // --- alias registrados en la persona canónica
   for (const [viejo, nuevo] of Object.entries(ALIAS)) {
@@ -138,6 +139,7 @@ function main() {
   for (const p of reg.values()) {
     if (!p.formal || !p.display) problemas.push(`"${p.person_id}" sin nombre formal o display.`);
     if (p.es_entrenador && indice[p.person_id]) problemas.push(`"${p.person_id}" está marcado como entrenador pero tiene fichas de estadísticas: ${indice[p.person_id].join(', ')}.`);
+    if (p.de_paso && indice[p.person_id]) problemas.push(`"${p.person_id}" es de_paso (no llegó a debutar) pero tiene fichas de estadísticas: ${indice[p.person_id].join(', ')}.`);
     if (p.solo_mote && indice[p.person_id]) problemas.push(`"${p.person_id}" es solo_mote pero tiene fichas de estadísticas: ${indice[p.person_id].join(', ')}.`);
     if (p.en_estadisticas && !p.en_historia) avisos.push(`"${p.person_id}" (${p.display}) tiene estadísticas pero NO aparece en la matriz de historia.`);
   }

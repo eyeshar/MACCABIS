@@ -7,7 +7,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { cambios } from '../scripts/vincular_asistencia_historica.mjs';
+import { cambios, decidir } from '../scripts/vincular_asistencia_historica.mjs';
 
 const PLAT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const H = createRequire(import.meta.url)(path.join(PLAT, '..', 'scripts', 'estadisticas', 'asistencia_historica.js'));
@@ -101,6 +101,34 @@ const v18 = Object.fromEntries(v.porTemporada['2018-19'].jugadores.map((j) => [j
 ok(!v18['sporteasy-3'] && v18['sint-dos']?.partidos.fueron === 1 && v18['sint-dos'].display === 'Bruno Beta Gama', 'vinculada: la histórica desaparece y sus eventos pasan a la persona del club');
 ok(!v.propuestas.some((p) => p.id === 3), 'una vinculada ya no sale en las propuestas');
 ok(typeof cambios === 'function', 'el vínculo en la base solo reescribe las personas afectadas (cambios por temporada)');
+
+console.log('\n== Decisiones de Iván en el .md revisado');
+const revisado = [
+  '- OK `3` «Bruno Beta» → Bruno Beta Gama (`sint-dos`)',
+  '- OK `4` «Carla Delta» → Carla Delta',
+  '- OK `7` «Fede Sigma» → **Federico Sigma Tau** (confirmado por Iván)',
+  '- OK `5` «Dario Omega» → Dario Omega',
+  '- OK `8` «Zacarías Nadie» → NO está en «Quién ha pasado por el club» y debería: créalo',
+  '- NO `6` «Carla Delta» · perfil de relleno',
+  '- [ ] `2` sin marcar',
+].join('\n');
+const dec = H.leerDecisiones(revisado, personas);
+ok(JSON.stringify(dec.vincular) === JSON.stringify({ 3: 'sint-dos', 4: 'sint-tres', 7: 'sint-siete' }), 'OK: por person_id entre (`…`) o por el nombre completo exacto tras «→» (con o sin negrita)', JSON.stringify(dec.vincular));
+ok(dec.descartar.join() === '6', 'NO antes del id: descartar el perfil');
+ok(dec.sinResolver.map((x) => x.id).join() === '5,8', 'nombre incompleto o inexistente: sin resolver, no se adivina', JSON.stringify(dec.sinResolver));
+const d1 = decidir(dec, {}, []);
+ok(d1.faltan.map((x) => x.id).join() === '5,8', 'si falta alguno, el script para');
+const d2 = decidir(dec, { 5: 'sint-cuatro', 8: 'sint-nueva' }, []);
+ok(!d2.faltan.length && d2.vinculos[8] === 'sint-nueva' && d2.vinculos[3] === 'sint-dos', 'los que ya estaban vinculados a mano (personas creadas) no faltan');
+ok(JSON.stringify(decidir({ vincular: {}, descartar: ['6'], sinResolver: [] }, { 6: 'sint-tres' }, []).vinculos) === '{}', 'un descarte quita un vínculo previo del mismo perfil');
+const dd = H.calcular({ ...entradas, vinculos: { 3: 'sint-dos' }, descartes: ['8', '6'] });
+const d18 = Object.fromEntries(dd.porTemporada['2018-19'].jugadores.map((j) => [j.person_id, j]));
+ok(!d18['sporteasy-8'] && !d18['sporteasy-6'], 'descartado: sus filas desaparecen');
+ok(!dd.sinPropuesta.some((p) => p.id === 8) && !dd.propuestas.some((p) => p.id === 6), 'descartado: ya no sale en las propuestas');
+const cb = cambios({ perfiles: ['3', '8'], pids: ['sint-dos'] }, dd.porTemporada);
+const cb18 = cb.find((x) => x.temporada === '2018-19');
+ok(cb18.borrar.join() === 'sporteasy-3,sporteasy-8,sint-dos' && cb18.nuevas.every((f) => f.person_id === 'sint-dos') && cb18.nuevas.length === 2, 'en la base: se borran la histórica, la descartada y la persona del club, y se escriben solo las filas nuevas de la persona del club', JSON.stringify(cb18));
+ok(!cb.some((x) => x.nuevas.some((f) => !cb18.borrar.includes(f.person_id))), 'nadie más se toca');
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

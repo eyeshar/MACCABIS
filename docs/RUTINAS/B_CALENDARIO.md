@@ -27,9 +27,9 @@
    - Qué pasa al aplicar: el evento cambia; la ficha y el inicio de cada jugador muestran la línea amarilla «Cambió …»; si cambia el **día**, **todas las respuestas del partido vuelven a «sin responder»** (lo hace la base); el aviso al móvil sale **en el momento salvo de 22:30 a 08:00 (Madrid), que sale a las 08:00** (D155), de cualquier partido que no se haya jugado.
    - Con «respuestas en la web» apagado solo hay «Aplicar lo aceptado» (no avisa): entonces **freno** y avisar a Iván.
 6. **«0 cambios»:** nada que aplicar.
-7. **Clasificación oficial** (abajo): leer la de los dos grupos tras la última jornada jugada, con la columna **«Sanc»**.
+7. **Clasificación oficial** (abajo): leer la de los dos grupos tras la última jornada jugada, con la columna **«Sanc»**, y **contrastarla sola** (D164): escribir una línea por equipo, `grupo;equipo;puntos;J;G;P;TF;TC;Sanc` (p. ej. `G1;MACCABI DE ACOSTAR;6;3;3;0;192;71;0`; los nombres tal cual salen), pegarlas en `https://maccabis.vercel.app/gestion/clasificacion` → **Contrastar**. Sale **«Coincide»** (verde) o **«DIFIERE»** (rojo) con una línea por diferencia (equipo, campo, calculada · oficial). Copiar el texto tal cual al informe. Si dice **DIFIERE**, el informe **empieza** por «AVISO: la clasificación calculada difiere de la oficial» (no se corrige nada: lo decide Iván; si la calculada va una jornada por detrás, porque la rutina A aún no ha publicado, se dice).
 8. **Colores de los rivales** (D75, abajo): mirar si algún rival ha cambiado de equipación. Si cambia, **no se edita nada**: se avisa a Iván en el informe (editar `data/equipaciones_2026-27.json` es trabajo de Code).
-9. **Informe a Iván** (empieza por «Iván,»): cambios aplicados (partido, campo, antes → después) y el texto del aviso; o «0 cambios»; o **FRENO: motivo** con las líneas, señales o cambios que lo han hecho saltar; la clasificación de MdA y MdL (puesto, puntos, G-P, TF-TC) y **Sanc** (si Sanc > 0, decirlo y no consultar más: Iván decide); cualquier «Reprogramado» o rareza.
+9. **Informe a Iván** (empieza por «Iván,»; si el contraste dijo DIFIERE, lo primero es ese aviso): cambios aplicados (partido, campo, antes → después) y el texto del aviso; o «0 cambios»; o **FRENO: motivo** con las líneas, señales o cambios que lo han hecho saltar; la clasificación de MdA y MdL (puesto, puntos, G-P, TF-TC) y **Sanc** (si Sanc > 0, decirlo y no consultar más: Iván decide); cualquier «Reprogramado» o rareza.
 
 **El calendario no se edita en ningún fichero (D151).** La rutina B solo cambia la tabla de eventos (Importar → Calendario). Los avisos de equipación (Panel, convocatoria, WhatsApp, Liga, Scouting, página de partido) leen la tabla, así que un cambio de local/visitante aplicado aquí ya cambia el aviso en la web en un minuto (la caché de 60 s). `data/calendario_2026-27.json` es una copia generada de la tabla: la regenera sola la rutina A (`npm run jornada`) y, si hace falta antes, `npm run calendario:exportar`. Lo único que se edita a mano son los **colores de los rivales** (D75): no son calendario.
 
@@ -38,7 +38,7 @@
 ## Clasificación oficial (desde 31/10/2026)
 Ruta: Deportes/web → Competiciones municipales → **Consulta de clasificaciones** → Moratalaz → Temporada 2026/2027 · BALONCESTO · SENIOR MASCULINO · Grupo «JDM MOR DOM MAÑ BC SEN MAS G1» (MdA) / «…G2» (MdL). La jornada viene por defecto en la última jugada; tipo **«General por equipos de la jornada»** → Buscar.
 - **Columnas:** Puntos, J, G, P, I, TF, TC, TF-TC, TF/TC, Sanc, Progreso. Puntuación observada: victoria 2, derrota 1.
-- **Se contrasta** con la clasificación calculada (BACKLOG, D74).
+- **Se contrasta sola** con la clasificación calculada en `/gestion/clasificacion` (D74, D164; paso 7).
 - **«Sanc»** es el control semanal de incidencias por equipo. La ficha de sanciones con nombres no se consulta salvo que Sanc > 0, y nada de ella va a la web pública.
 - **«Clasificación de máximos anotadores»** (solo en G1): contiene nombres de terceros; no se extrae (D73).
 

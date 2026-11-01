@@ -1,5 +1,7 @@
-import { exigirGestor } from "@/lib/sesion";
+import { SecH } from "@/components/liga/Comunes";
 import Volver from "@/components/nav/Volver";
+import type { Metadata } from "next";
+import { exigirLiga } from "@/lib/sesion";
 import { cargarLiga, dec } from "@/lib/liga";
 import { filasFichas, filasTabla } from "@/lib/jugadoresLiga";
 import Link from "next/link";
@@ -7,14 +9,16 @@ import { fichasPorNombreSolo } from "@/lib/estadisticas/liga";
 import Lideres from "./Lideres";
 import TablaJugadores from "./TablaJugadores";
 
-export const metadata = { title: "Liga consolidada · Gestión Maccabis" };
+export const dynamic = "force-dynamic";
+// Con sesion (D162): nunca se indexa (ademas, robots.txt y la cabecera X-Robots-Tag de RUTAS_PRIVADAS).
+export const metadata: Metadata = { title: "Liga consolidada · Maccabis", robots: { index: false, follow: false } };
 
 export default async function LigaConsolidada() {
-  const { supabase } = await exigirGestor();
+  const { supabase } = await exigirLiga();
   const liga = await cargarLiga(supabase);
   const { clasificacion } = liga;
   if (!clasificacion.length) {
-    return (<><Volver defecto="/gestion" etiqueta="Panel" /><h1>Liga consolidada</h1><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
+    return (<><Volver defecto="/liga" etiqueta="Liga" /><SecH titulo="Liga consolidada" tag="Con sesión" /><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
   }
   const pjEquipo = new Map(clasificacion.map((c) => [`${c.grupo}|${c.equipo}`, c.pj]));
   const sumadas = filasTabla(liga.jugadores, pjEquipo);   // quien dobla cuenta una vez, con las dos fichas sumadas
@@ -27,10 +31,10 @@ export default async function LigaConsolidada() {
 
   return (
     <>
-      <Volver defecto="/gestion" etiqueta="Panel" />
-      <h1>Liga consolidada</h1>
+      <Volver defecto="/liga" etiqueta="Liga" />
+      <SecH titulo="Liga consolidada" tag="Con sesión" />
       <div className="aviso aviso-info">
-        <b>Solo gestores.</b> Datos por jugador de otros equipos: son de terceros y no se publican ni se enseñan a los jugadores (D73).
+        <b>Solo con sesión.</b> Datos por jugador de otros equipos: son de terceros; los ves por ser del equipo, no se publican (D73, D162).
       </div>
       <nav className="lg-indice" aria-label="En esta página">
         <a href="#lideres">Líderes</a>

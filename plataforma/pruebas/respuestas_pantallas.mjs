@@ -143,7 +143,7 @@ try {
   ok(await visto(pj.getByRole('heading', { name: '¿Vas?' })) && await visto(pj.getByText('Por ahora, responde en SportEasy.')) && !(await pj.locator('.rw-btn').count()), 'evento: la información, sin botones, con «Por ahora, responde en SportEasy»');
   ok(await visto(pj.getByText(/encuentro \d\d:\d\d/)), 'evento: «HH:MM–HH:MM · encuentro HH:MM»');
   await pj.goto(`${APP}/avisos`);
-  ok(await visto(pj.getByText('Solo te avisamos si te falta responder')) && await visto(pj.getByText('Nunca de noche.')), '/avisos: el texto de arriba');
+  ok(await visto(pj.getByText('Solo te avisamos si te falta responder')) && await visto(pj.getByText('De noche, solo si el partido es en pocas horas.')), '/avisos: el texto de arriba');
   ok(await visto(pj.getByRole('button', { name: 'Activar avisos en este móvil' })), '/avisos (Chrome, no iPhone): «Activar avisos en este móvil»');
   ok(await visto(pj.getByText('Si dijiste «No permitir»')), '/avisos: bloque «Si dijiste No permitir»');
   ok(await sinDesbordar(pj), '/avisos a 375 px sin desbordamiento');

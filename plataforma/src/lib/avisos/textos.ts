@@ -126,7 +126,7 @@ export function textoCambio(e: EventoTexto, respuesta: RespuestaTexto, cambiaElD
 export const textoCancelacion = (e: EventoTexto): Texto => ({ titulo: `Se cancela el ${queEs(e)}`, cuerpo: "No hace falta que hagas nada." });
 
 /** (d) Aviso de prueba. */
-export const TEXTO_PRUEBA: Texto = { titulo: "Aviso de prueba", cuerpo: "Así te llegarán los avisos de Maccabis. Solo si te falta responder, si cambia algo o si se cancela; nunca de noche." };
+export const TEXTO_PRUEBA: Texto = { titulo: "Aviso de prueba", cuerpo: "Así te llegarán los avisos de Maccabis. Solo si te falta responder, si cambia algo o si se cancela; de noche solo si el partido es en pocas horas." };
 
 const TEXTO_ESTADO: Record<RespuestaTexto, string> = { va: "Voy", duda: "Duda", no: "No voy", sin_responder: "Sin responder" };
 /** (e) A los gestores: un jugador cambia un partido despues del martes a las 20:00. Solo nombre y respuesta. */

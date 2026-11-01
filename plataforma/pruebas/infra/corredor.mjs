@@ -137,7 +137,7 @@ function elegirRapidas() {
     for (const s of suites) elegir(s.id, `pantalla ${ruta} (${por})`);
   }
   // 3. Estadisticas y liga: solo si se tocan datos, el pipeline, las migraciones o sus pantallas.
-  const PANT_EST = ['/liga', '/historia', '/plantilla', '/jugador', '/mis-numeros', '/gestion/liga', '/gestion/scouting'];
+  const PANT_EST = ['/liga', '/historia', '/plantilla', '/jugador', '/mis-numeros', '/liga/scouting', '/liga/consolidada'];
   const est = cambios.find((f) => /^(data\/|scripts\/|index\.html$|plataforma\/src\/data\/|plataforma\/supabase\/migrations\/|plataforma\/scripts\/(cargar_liga|sincronizar_equipacion))/.test(f))
     ?? [...rutasTocadas.keys()].find((r) => PANT_EST.includes(r));
   if (est) {

@@ -1367,6 +1367,20 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - **Cualquier diferencia nueva sí avisa:** la misma en otra cantidad (si la oficial pasara a otro número), en otro campo o en otro equipo sale como «DIFIERE». Si el Ayuntamiento corrige el 16, el desfase desaparece y las conocidas dejan de aparecer solas.
 - **Pruebas:** `pruebas:clasificacion-oficial` (la J1 conocida no avisa; 73 en vez de 71 sí; una diferencia en otro equipo sí; sin la lista, el caso real sigue diciendo «DIFIERE»).
 
+## D166 — Asistencia histórica 2018/19–2024/25 desde el export de SportEasy: una persona por id de perfil (Iván, 01/11/2026, `feat/asistencia-historica`) — COMPLETA D82, D116 y D161
+
+**Contexto:** el export completo de SportEasy (01/11/2026, `docs/SPORTEASY_EXPORT.md`) trae la asistencia evento a evento desde 2017/18. Iván decidió cargar 2018/19–2024/25 (2017/18 solo tiene 3 eventos, ninguno de entreno ni de liga; 2025/26 no se toca, opción 1) en «Asistencia y motivos», una pestaña por temporada, solo gestores.
+
+**Decisión de Iván:**
+- **Identidad = id de perfil de SportEasy** (`detalle.attendees[].results[].profile.id`), estable entre temporadas. El nombre no une temporadas.
+- **Casados:** por `diccionario_sporteasy` (copia del real) y `scripts/estadisticas/nombres_sporteasy.json` (nombre exacto), y por nombre completo igual al del diccionario del histórico (`data/diccionario_nombres.json`) ignorando tildes y mayúsculas → su `person_id`.
+- **El resto, persona histórica** `sporteasy-<id de perfil>` con el nombre de SportEasy: sin cuenta, sin ficha y sin acceso; solo existe como filas de `asistencia_motivos` (que leen solo los gestores). La pantalla la marca «histórico».
+- **Propuestas, no adivinanzas:** temporada a temporada, solo contra las personas que estaban en el club esa temporada según la Historia (`data/historia_club.json`, con o sin estadísticas): nombre + primer apellido, o mote registrado esa temporada + primer apellido, sin tildes ni mayúsculas, con **un solo** candidato; coincidir en varias temporadas suma confianza; candidatos distintos según la temporada o más de uno, sin propuesta. Van a `privado/sporteasy/propuestas_para_ivan.md` (fuera de git) para que Iván marque OK/NO. Las aceptadas se vinculan **sin recargar nada** (`npm run db:asistencia-vincular`): se guardan en `privado/sporteasy/vinculos_historico.json`, se regeneran los JSON de `privado/asistencia/` y en la base solo se reescriben las filas de esas personas (si dos perfiles de la misma persona coinciden en un evento, cuenta una vez, con el mejor estado).
+- **Qué cuenta:** entrenos y partidos de campeonato (liga, 2.ª fase y play-off) jugados y no cancelados; amistosos, torneos, «entre nosotros» y «Evento», no. Presente = asistió; ausente con excusa = con excusa; sin excusa o sin responder = sin excusa; lesionado = lesión. La API no trae «no convocado» (quien no estaba convocado no aparece).
+- **Carga:** `node scripts/estadisticas/asistencia_historica.js` escribe `privado/asistencia/asistencia_<t>.json` y las propuestas; `npm run db:asistencia -- <temporadas>` las carga (reemplaza cada temporada entera, repetible). Con D111 (volcado previo, huella de permisos y cuentas antes y después). Sin migración.
+- **Resultado (01/11/2026):** 76 perfiles; 36 casados (28 + 8); 40 personas históricas; 23 de los 40 con propuesta; 475 filas en el real.
+- **Pruebas:** `pruebas:asistencia-historica` (sintética: qué cuenta, casar, proponer, recuento, vínculos) y `pruebas:eventos-pantallas` (pestaña histórica, nota, marca «histórico»).
+
 ## D167 — Pruebas ligeras en local, completas en Actions (Iván, 01/11/2026, `docs/norma-pruebas-ligera`) — AJUSTA D149
 
 **Problema:** la norma de D149 seguía siendo excesiva en la práctica: con varios PR a la vez se pasaban en local tandas de 30–60 suites (cuatro carriles en paralelo, cada uno con su Postgres, PostgREST y la web), y el 01/11 el sistema cortó la batería del PR #3 por falta de memoria (4,2 GB libres de 32).

@@ -17,7 +17,7 @@ export default function ContrastarClasificacion({ calculada }: { calculada: Reco
       </div>
       {r && (
         <div className={`aviso ${r.coincide ? "aviso-ok" : "aviso-error"}`} role="status" data-testid="contraste-resultado" style={{ marginTop: 12 }}>
-          <b>{r.coincide ? "Coincide" : "DIFIERE"}</b>
+          <b>{r.coincide ? "Coincide" : "DIFIERE"}</b>{r.conocidas.length > 0 && <span className="pequeno" data-testid="contraste-conocidas"> · {r.conocidas.length === 1 ? "1 diferencia conocida" : `${r.conocidas.length} diferencias conocidas`} (no avisan)</span>}
           <pre style={{ whiteSpace: "pre-wrap", margin: "8px 0 0", fontFamily: "inherit" }}>{textoInforme(r)}</pre>
         </div>
       )}

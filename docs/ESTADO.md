@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 01/11/2026: **PR #3 (cierre de SportEasy) mergeado al final del bloque, fotos de las pruebas `-real` al día y J1 de MdA revisada con el acta** (`fix/fotos-pruebas-real`): ver la primera sección._
 _Última actualización: 31/10/2026, noche: **cierre de SportEasy y aviso J5** (`feat/cierre-sporteasy`, D153 ampliada, PR abierto, sin merge): aviso del cambio de la J5 MdA enviado a las 18:40 (12 de 23 invitados lo recibieron); toda la plataforma sin SportEasy (Importar → Respuestas, salida «3 · SportEasy», casilla del interruptor, textos del modo apagado); lo de la base queda huérfano._
 _Última actualización: 31/10/2026, noche: **rutina B automática, fin de SportEasy y avisos** (`feat/rutina-b-auto`, D153, D154 y D155, PR #2, mergeada en main el 31/10 y desplegada a las 17:16 UTC): SportEasy ya no se usa (fuera la tarjeta «Copia a SportEasy» y la cola «pendiente de copiar»); la rutina B aplica y avisa sola con freno (tarea «Maccabis · calendario del jueves», jueves 20:20); avisos en el momento salvo de 22:30 a 08:00 (Madrid); Importar acepta la pista «Baloncesto 2 Moratalaz». J5 MdA aplicada el 31/10 a las 17:09; su aviso **no** salió ni está en cola._
 
@@ -39,6 +40,13 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+
+## Fotos de las pruebas `-real`, J1 de MdA y cierre del bloque (01/11/2026) — `fix/fotos-pruebas-real`
+- **PR #3 (`feat/cierre-sporteasy`) mergeado** el último, tras traerle todo `main` (12 conflictos resueltos: en `TarjetaActivar` se aplicó lo que quitaba el #3 sobre la versión nueva de D156/D157; en el tablero se quita la prueba de «importación de SportEasy», que ya no existe, y se queda la de D159; `guiaJugador.json` regenerado desde `GUIA_JUGADOR.md`). Batería de Actions en verde (run `41300534697`). La batería local (`pruebas:completas -- --locales`) la cortó el sistema por falta de memoria (4,2 GB libres de 32 con otras sesiones abiertas) y no se relanzó: las suites que llegaron a correr pasaron.
+- **`pruebas:inicio-real`:** esperaba **3 pistas con coordenadas** (las del 24/10, cuando se escribió). Hoy el real tiene **17 pistas y 14 con coordenadas**: desde entonces se dieron de alta las de amistosos, torneos y planes (D119/D138). La comprobación pasa a la foto del 01/11 (14 de 17); si se da de alta otra pista, se cambia en la suite.
+- **`pruebas:solo-ficha-real`:** comparaba con la foto del **29/10**, tomada *antes* de aplicar D148. Desde entonces: la **rutina B movió la J5 de MdA** (MdA–Nabuco TD, 15/11 09:00 → 20/12 13:30; su estado de copia cambió) y **Fernando M. pasó de «solo entreno» a jugador** con ficha (ya es invitado a los partidos). Eso daba 4 fallos sin que la regla de D148 hubiera cambiado. Foto nueva con los datos reales del 01/11 (`privado/backups/2026-11-01_solo_ficha_foto.json`, fuera de git; `CLAUDE.md` al día): 18 OK. Con D148 ya aplicada, la suite comprueba que la regla sigue igual y que nadie más cambia; si cambia la plantilla o un evento de verdad, se rehace la foto (`-- --antes`) y se dice aquí.
+- **J1 de MdA (Enfermos del Aro – MdA), revisada con el acta:** la clasificación oficial da a MdA **192-71** tras la J3 y nuestras hojas **192-69**. La diferencia está en la J1: el **acta oficial (partido 392895) dice «Tanteo final: Equipo A 14, Equipo B 62»** y la hoja de estadística da al rival 0+3+4+7 = 14. Las otras dos (J2 74-17 y J3 38-56) coinciden. **No se ha cambiado nada:** acta y hoja coinciden en 14; el 16-62 es del resultado publicado por el Ayuntamiento. Si Deportes/web lo corrige, cuadra solo; si no, es para que Iván lo consulte (la pantalla `/gestion/clasificacion` de D164 lo seguirá marcando como «DIFIERE»).
+- **Fallo intermitente en Actions:** `pruebas:planes` falló dos veces en Actions (A y G) con «404 Could not find the function public.crear_plan» (PostgREST aún no había recargado el esquema) y pasó al relanzar el grupo. Apuntado en el BACKLOG.
 
 ## Cierre de SportEasy y aviso J5 (31/10/2026; D153 ampliada) — `feat/cierre-sporteasy`, PR abierto
 

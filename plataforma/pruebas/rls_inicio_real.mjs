@@ -104,8 +104,10 @@ try {
         const [{ n }] = await tx.unsafe(`select count(*)::int n from public.${t}`);
         ok(n >= 0, `el gestor lee ${t} (${n})`);
       }
-      const [{ n: pistas }] = await tx`select count(*)::int n from public.pistas where lat is not null`;
-      ok(pistas === 3, 'las tres pistas con coordenadas');
+      // Foto del real del 01/11/2026: 17 pistas, 14 con coordenadas (eran 3 cuando se escribió esta suite, el 24/10; desde
+      // entonces se han dado de alta las de los amistosos, torneos y planes). Si se da de alta otra pista, se cambia aquí.
+      const [{ n: pistas, total }] = await tx`select count(*) filter (where lat is not null)::int n, count(*)::int total from public.pistas`;
+      ok(pistas === 14 && total === 17, `pistas como en la foto del 01/11: 14 con coordenadas de 17 (hoy ${pistas} de ${total})`);
     }
   });
   const [{ n: cuentas2 }] = await sql`select count(*)::int n from auth.users`;

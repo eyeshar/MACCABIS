@@ -135,7 +135,7 @@ cd plataforma && npm ci     # instalación PROPIA, plataforma (no enlazar node_m
 Y copiar lo que no está en git (si falta, algunas pruebas fallan sin que el código tenga la culpa):
 `plataforma/.env.local`, `privado/` **sin `backups/` ni `tmp/`** (`robocopy <origen> <destino> /E /XD backups tmp`),
 `fuentes_fbm/` al día, `.cache-jdm/`, `data/raw/` y `plataforma/pruebas/.bin/` (PostgREST; si no está, se descarga).
-`pruebas:solo-ficha-real` necesita además `privado/backups/2026-10-29_valdebernardo_foto_antes.json` (solo ese fichero).
+`pruebas:solo-ficha-real` necesita además `privado/backups/2026-11-01_solo_ficha_foto.json` (solo ese fichero; la foto del real del 01/11/2026).
 Las suites de avisos push (`respuestas-pantallas`, `convocatoria-pantallas`…) necesitan `openssl` en el PATH: pásalas
 desde Git Bash (en PowerShell no está).
 `next-env.d.ts` lo crea `pruebas:rapidas` si falta.

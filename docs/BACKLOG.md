@@ -45,6 +45,8 @@
 19. [ ] **Migración que borra lo huérfano de SportEasy** (columnas `sporteasy_*` de `eventos` y de la convocatoria, `diccionario_sporteasy`, `respuestas.sporteasy_descartado`, `respuestas_web_config.sporteasy_comprobado` y la condición 4 de la función del interruptor): **solo cuando Iván lo diga**, con D111 (volcado, `.revertir.sql`, permisos y cuentas antes y después). D153.
 20. [ ] **¿Quitar el interruptor «respuestas en la web»?** Sin SportEasy, apagado deja a los jugadores sin sitio donde responder. Propuesta de Code (D153 ampliada): quitar la tarjeta y dar por encendido para siempre; lo decide Iván.
 
+21. [ ] **`pruebas:planes` intermitente en Actions** (01/11/2026, 2 veces): «404 Could not find the function public.crear_plan in the schema cache»; pasa al relanzar. Esperar a que PostgREST vea la función (reintento con `hasta()` o `notify pgrst` tras migrar) antes de la primera llamada.
+
 ## Pendiente de Iván
 
 **Operativa de ahora**

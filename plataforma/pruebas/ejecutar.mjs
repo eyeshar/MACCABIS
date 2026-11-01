@@ -132,7 +132,9 @@ try {
   const PISTAS = ['solo_con_ficha_en'];
   // «No vas (puesto por defecto)» del propio jugador (D152): solo su marca y sus entrenos quitados (_mi_person_id dentro).
   const DISPONIBILIDAD = ['mi_disponibilidad_defecto'];
-  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, ...DISPONIBILIDAD, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
+  // Liga con sesion (D162): ¿jugador activo con ficha o gestor? Solo devuelve un booleano de quien consulta.
+  const LIGA = ['puede_ver_liga'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, ...DISPONIBILIDAD, ...LIGA, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

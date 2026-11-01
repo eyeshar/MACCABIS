@@ -6,7 +6,8 @@
    "2026=temporada EN CURSO 2026-27: la plantilla con ficha y el cuerpo técnico (scripts/historia_en_curso.js, D137).",
    "person_id unificado y compartido con las estadísticas.",
    "solo_mote=true: persona real de paso sin nombre formal (Pupo, Eric, Alejandro-Alicante).",
-   "es_entrenador=true: Barreiro, nunca jugó."
+   "es_entrenador=true: Barreiro, nunca jugó.",
+   "de_paso=true: persona real con nombre que estuvo en el club sin llegar a debutar (solo entrenó); sin ficha de jugador. Distinta de solo_mote (D166)."
   ],
   "reconciliacion": {
    "fecha": "2026-08-04",
@@ -60,6 +61,15 @@
    "regla": "En 2026-27 (en curso) cuentan la plantilla con ficha MdA y/o MdL de data/season_2026-27.json y el cuerpo técnico; los «solo entreno» sin ficha no. Se recalcula en cada npm run jornada (D137).",
    "jugadores_con_ficha": 24,
    "cuerpo_tecnico": 1
+  },
+  "anadidas_sporteasy": {
+   "fecha": "2026-11-01",
+   "decision": "Iván, propuestas_para_ivan.md devuelto (D166)",
+   "personas": [
+    "andreotti-bodra-eduardo",
+    "moreno-vega-eduardo",
+    "cardoza-jaylin"
+   ]
   }
  },
  "personas": [
@@ -956,6 +966,19 @@
    "es_entrenador": false
   },
   {
+   "person_id": "moreno-vega-eduardo",
+   "formal": "Moreno Vega, Eduardo",
+   "display": "Eduardo Moreno Vega",
+   "temporadas_jugadas": [
+    "2023",
+    "2024"
+   ],
+   "solo_mote": false,
+   "es_entrenador": false,
+   "n_temporadas": 2,
+   "nota": "Añadida el 01/11/2026 (Iván) desde la asistencia de SportEasy (D166): estuvo en el club sin estadísticas."
+  },
+  {
    "person_id": "espinola-fernando-abel",
    "formal": "Espínola, Fernando Abel",
    "display": "Fernando Abel Espínola",
@@ -1016,6 +1039,20 @@
    "solo_mote": false,
    "es_entrenador": false,
    "nota": "Añadida a la matriz el 04/08/2026 al cruzarla con estadísticas."
+  },
+  {
+   "person_id": "cardoza-jaylin",
+   "formal": "Cardoza, Jaylin",
+   "display": "Jaylin Cardoza",
+   "temporadas_jugadas": [
+    "2023",
+    "2024"
+   ],
+   "solo_mote": false,
+   "de_paso": true,
+   "es_entrenador": false,
+   "n_temporadas": 2,
+   "nota": "Añadida el 01/11/2026 (Iván) desde la asistencia de SportEasy (D166): de paso, solo entrenó y no llegó a debutar."
   },
   {
    "person_id": "porras-calzada-jose-maria",
@@ -1146,6 +1183,18 @@
    "n_temporadas": 1,
    "solo_mote": false,
    "es_entrenador": false
+  },
+  {
+   "person_id": "andreotti-bodra-eduardo",
+   "formal": "Andreotti Bodra, Eduardo",
+   "display": "Eduardo Andreotti Bodra",
+   "temporadas_jugadas": [
+    "2023"
+   ],
+   "solo_mote": false,
+   "es_entrenador": false,
+   "n_temporadas": 1,
+   "nota": "Añadida el 01/11/2026 (Iván) desde la asistencia de SportEasy (D166): estuvo en el club sin estadísticas."
   },
   {
    "person_id": "garcia-gijon-eduardo",

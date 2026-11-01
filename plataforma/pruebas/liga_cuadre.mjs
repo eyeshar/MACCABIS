@@ -319,7 +319,7 @@ try {
     ok((await nueva.locator('[data-testid="historia-tira"] .e-htcard').count()) === 14, 'historia: tira temporal con 14 temporadas (la 26/27 en curso)');
     await clic(nueva, '.e-segmento button', 'Rejilla');
     const pids = await nueva.locator('[data-testid="historia-rejilla"] tr[data-pid]').evaluateAll((trs) => trs.map((t) => t.dataset.pid));
-    ok(pids.length === 87, `historia: ${pids.length} personas en la rejilla (88 identidades menos un «solo entreno» sin temporadas)`);
+    ok(pids.length === 90, `historia: ${pids.length} personas en la rejilla (91 identidades menos un «solo entreno» sin temporadas)`);
     let sinEnlace = 0, enlaces = 0; const rotos = [], porPedir = [];
     // las fichas de las 87 personas, repartidas en 6 pestañas (una detras de otra eran 3 minutos)
     const TROZOS = 6;
@@ -353,7 +353,7 @@ try {
     ok(rotos.length === 0, `historia: ${enlaces} enlaces desde las fichas de persona, ninguno da 404`, rotos.slice(0, 3).join(' | '));
     ok(sinEnlace === 0, 'historia: toda temporada con estadisticas tiene destino (ficha o resumen MdA)', String(sinEnlace));
     // casos pedidos por Ivan: Eric y Pupo (solo mote), Barreiro (cuerpo tecnico), Lonchas (fila sin ficha en un boxscore)
-    for (const [pid, dice] of [['eric', /de paso/i], ['pupo', /de paso/i], ['barreiro-carballal-carlos-jose', /entrenador/i]]) {
+    for (const [pid, dice] of [['eric', /de paso/i], ['pupo', /de paso/i], ['cardoza-jaylin', /de paso/i], ['barreiro-carballal-carlos-jose', /entrenador/i]]) {
       await nueva.goto(`${APP}/historia?persona=${pid}`, { waitUntil: 'networkidle' });
       ok(dice.test(await nueva.locator('[data-testid="historia-ficha"]').innerText()) && (await nueva.locator('[data-testid="historia-ficha"] a.e-hy').count()) === 0, `${pid}: ficha de persona sin estadisticas y sin enlaces`);
     }

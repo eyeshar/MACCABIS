@@ -738,7 +738,7 @@ function hPersonas(){
     const r=reg.get(p.person_id)||{};
     const stats=HREG.indice_stats[p.person_id]||[];
     return {...p,display:r.display||p.display,formal:r.formal||p.formal,
-      es_entrenador:!!p.es_entrenador,solo_mote:!!p.solo_mote,
+      es_entrenador:!!p.es_entrenador,solo_mote:!!p.solo_mote,de_paso:!!p.de_paso,
       anios:new Set(p.temporadas_jugadas),stats:new Set(stats),nStats:stats.length};
   }).sort((a,b)=>b.n_temporadas-a.n_temporadas||a.display.localeCompare(b.display));
 }
@@ -789,7 +789,7 @@ function renderRejilla(){
   const fila=(p,i)=>{
     let td='<td class="hname"><div class="hn"><span class="hnum">'+i+'</span>'+
       '<span class="hdisp" title="'+(p.formal||p.display)+'">'+p.display+'</span>'+
-      (p.solo_mote?'<span class="hchip mote">de paso</span>':'')+
+      ((p.solo_mote||p.de_paso)?'<span class="hchip mote">de paso</span>':'')+
       (p.es_entrenador?'<span class="hchip coach">entrenador</span>':'')+
       '<span class="hveter" title="'+(hs.orden==='debut'?'Se incorporó en la temporada '+hLabel(p.temporadas_jugadas[0]||''):p.n_temporadas+' temporadas en el club')+'">'+
       (hs.orden==='debut'?(p.temporadas_jugadas.length?hLabel(p.temporadas_jugadas[0]):'—'):p.n_temporadas)+'</span></div></td>';
@@ -872,10 +872,11 @@ function abrirFicha(pid){
   const motivo=!p.n_temporadas&&p.previsto_2627?'Se incorpora al club en la temporada 2026/27: todavía no ha jugado.'
     :p.es_entrenador?'Es el entrenador: nunca jugó, así que no tiene estadísticas de jugador.'
     :p.solo_mote?'Jugador de paso del que sólo se conserva el mote, sin ficha ni estadísticas.'
+    :p.de_paso?'Jugador de paso: entrenó con el equipo sin llegar a debutar, así que no tiene estadísticas.'
     :'De las temporadas en que estuvo en el club no se conservan estadísticas suyas (años sin actas, o jugó en la ficha que no las registraba).';
   const html='<div class="hmodal" id="hModal"><div class="hbox">'+
     '<div class="hhead"><div class="hini">'+p.display.charAt(0)+'</div><div>'+
-    '<h3>'+p.display+(p.solo_mote?'<span class="hchip mote">de paso</span>':'')+(p.es_entrenador?'<span class="hchip coach">entrenador</span>':'')+'</h3><div class="hsub">'+(p.solo_mote?'sin nombre formal registrado':(p.formal||''))+'</div></div>'+
+    '<h3>'+p.display+((p.solo_mote||p.de_paso)?'<span class="hchip mote">de paso</span>':'')+(p.es_entrenador?'<span class="hchip coach">entrenador</span>':'')+'</h3><div class="hsub">'+(p.solo_mote?'sin nombre formal registrado':(p.formal||''))+'</div></div>'+
     '<button class="hclose" id="hCerrar" title="Cerrar">×</button></div>'+
     '<div class="hbody">'+
     '<div class="kpis" style="margin-bottom:18px">'+

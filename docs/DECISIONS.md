@@ -1366,3 +1366,20 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - La diferencia queda como **conocida** en el contraste con la oficial (`DIFERENCIAS_CONOCIDAS`, `src/lib/contrasteClasificacion.ts`): G1, MdA, tantos en contra, +2, y G1, Enfermos del Aro, tantos a favor, +2 (oficial − calculada). Con ese desfase **exacto**, la pantalla `/gestion/clasificacion` dice «Coincide · 2 diferencias conocidas (no avisan)» y el informe las lista como «Conocida: …» con su motivo, sin el aviso de la rutina B.
 - **Cualquier diferencia nueva sí avisa:** la misma en otra cantidad (si la oficial pasara a otro número), en otro campo o en otro equipo sale como «DIFIERE». Si el Ayuntamiento corrige el 16, el desfase desaparece y las conocidas dejan de aparecer solas.
 - **Pruebas:** `pruebas:clasificacion-oficial` (la J1 conocida no avisa; 73 en vez de 71 sí; una diferencia en otro equipo sí; sin la lista, el caso real sigue diciendo «DIFIERE»).
+
+## D167 — Pruebas ligeras en local, completas en Actions (Iván, 01/11/2026, `docs/norma-pruebas-ligera`) — AJUSTA D149
+
+**Problema:** la norma de D149 seguía siendo excesiva en la práctica: con varios PR a la vez se pasaban en local tandas de 30–60 suites (cuatro carriles en paralelo, cada uno con su Postgres, PostgREST y la web), y el 01/11 el sistema cortó la batería del PR #3 por falta de memoria (4,2 GB libres de 32).
+
+**Decisión de Iván:**
+1. **En local, por PR: solo las suites de lo tocado más un humo** (`typecheck` + `pruebas:humo`: compila, arranca contra la pila local y abre lo principal). **Nunca la batería completa en local** salvo que Iván lo pida.
+2. **La batería completa la corre GitHub Actions en cada PR y es la puerta para mergear.**
+3. **Las `-real`, solo cuando el cambio escriba en producción o toque permisos.**
+4. **Varios PR en paralelo: nunca más de una suite pesada a la vez en local.**
+
+**Cómo lo aplica `pruebas:rapidas`** (`plataforma/pruebas/infra/corredor.mjs`; Actions no cambia):
+- En local, las pesadas (web y pila) van **en fila** y con un **cerrojo común a todos los worktrees** (`%TEMP%\maccabis-pruebas-pesada`, con quién lo tiene; si su dueño ya no existe, se quita); las de lógica, de dos en dos.
+- **Pantallas: como mucho 4.** Si un fichero compartido llega a más, en local solo el humo y aviso; las pantallas, en Actions.
+- **Migraciones:** solo las suites de la pila que nombran esa migración (o las tocadas en el PR) y las `-real`; ya no arrastran toda la pila ni las de estadísticas (salvo una migración de la liga).
+- **Humo** si se toca la web y ninguna suite elegida la arranca.
+- Tocar la infraestructura de pruebas ya no obliga a `pruebas:completas` en local.

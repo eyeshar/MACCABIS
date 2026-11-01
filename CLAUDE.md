@@ -3,11 +3,20 @@
 Lo lee toda sesión de Claude Code. Contexto del proyecto: `docs/MEMORIA.md`, `docs/ESTADO.md`, `docs/DECISIONS.md` y
 `docs/NORMAS_DE_TRABAJO.md` (normas de trabajo con Iván; esto no las sustituye).
 
-## Pruebas por niveles (D149)
+## Pruebas por niveles (D149, aligerada por D167)
 
-La batería completa ya no se pasa en local en cada bloque. **Nivel 1 en local, nivel 2 en GitHub Actions.**
+**Norma de Iván (01/11/2026, D167): la anterior era excesiva y agotaba la memoria del equipo.**
 
-### Nivel 1 — en local, en cada cambio (objetivo: menos de 3 minutos)
+1. **En local, por PR: solo las suites de lo tocado más el humo** (`typecheck` + arranque de la web, `pruebas:humo`).
+   **Nunca la batería completa en local** salvo que Iván lo pida.
+2. **La batería completa la corre GitHub Actions en cada PR**; **es la puerta para mergear** (`npm run ci:estado`).
+3. **Las `-real` contra producción, solo cuando el cambio escriba en producción o toque permisos** (migración, carga de
+   datos, RLS).
+4. **Varios PR en paralelo: nunca más de una suite pesada a la vez en local** (las que compilan la web o levantan la
+   base). `pruebas:rapidas` las pone en fila y con un cerrojo común a todos los worktrees
+   (`%TEMP%\maccabis-pruebas-pesada`): si otra sesión tiene una en marcha, espera y lo dice.
+
+### Nivel 1 — en local, en cada PR
 
 ```
 npm run pruebas:rapidas                 # desde la raíz o desde plataforma/
@@ -15,22 +24,28 @@ npm run pruebas:rapidas -- --lista      # solo dice qué pasaría y por qué
 npm run pruebas:rapidas -- --suite pruebas:grupos   # añadir una a mano
 ```
 
-Es **lo único que Code ejecuta y espera**. Compara la rama con `origin/main` (más lo no guardado) y elige solo:
+Es **lo único que Code ejecuta y espera** en local. Compara la rama con `origin/main` (más lo no guardado) y elige solo:
 
 - `typecheck` si cambia algo de `plataforma/`. (No hay lint en el proyecto.)
+- **Humo** (`pruebas:humo`): si se toca la web y ninguna suite elegida la arranca ya, una que compila, arranca contra la
+  pila local y abre lo principal (sin sesión: lo público responde y lo privado manda a `/entrar`; sin errores de JS).
 - **La lógica tocada:** la suite que importa directamente el fichero cambiado (`src/lib/…`, `src/components/…`,
   `scripts/…`) y la propia suite si la has tocado.
 - **Pantallas, solo las tocadas:** de cada fichero de `src/` sigue los imports hasta las páginas de `src/app/` que lo usan
   y pasa las suites que visitan esas rutas (las rutas de cada suite salen de su código: `${APP}/gestion/eventos`…).
+  **Como mucho 4** (D167): si un fichero compartido llega a más, en local va solo el humo y esas pantallas las prueba
+  Actions; si hace falta alguna, `--suite`.
 - **Estadísticas y liga** (`test:regresion`, `test:liga`, `test:privacidad`, `pruebas:liga`, y con `test:privacidad`
   siempre `pruebas:privacidad`): **solo** si el cambio toca datos (`data/`, `plataforma/src/data/`, `fuentes_fbm`), el
-  pipeline (`scripts/`, `index.html`), las migraciones o las pantallas de estadísticas y liga (`/liga`, `/historia`,
-  `/plantilla`, `/jugador`, `/mis-numeros`, `/gestion/liga`, `/gestion/scouting`).
-- **Las `-real`** (solo lectura contra el Supabase real) **solo** si hay migración o cambio de permisos
-  (`plataforma/supabase/`), y solo si hay `plataforma/.env.local`.
+  pipeline (`scripts/`, `index.html`), una migración de la liga o las pantallas de estadísticas y liga (`/liga`,
+  `/historia`, `/plantilla`, `/jugador`, `/mis-numeros`, `/liga/scouting`, `/liga/consolidada`).
+- **Migraciones:** solo las suites de la pila que prueban esa migración (las que nombran su versión) o las que se tocan
+  en el PR; el resto de la pila, en Actions.
+- **Las `-real`** (solo lectura contra el Supabase real) **solo** si el cambio escribe en producción o toca permisos
+  (`plataforma/supabase/`, o con `--suite` cuando se carguen datos), y solo si hay `plataforma/.env.local`.
 
-Si `--lista` elige algo que no encaja o se queda corto, añade con `--suite`. Si tocas la infraestructura de pruebas
-(`plataforma/pruebas/infra/`, `pila.mjs`, `comun_e2e.mjs`), pasa `npm run pruebas:completas`.
+Si `--lista` elige algo que no encaja o se queda corto, añade con `--suite`. Aunque toques la infraestructura de pruebas
+(`plataforma/pruebas/infra/`, `pila.mjs`, `comun_e2e.mjs`), la batería completa la pasa Actions (D167).
 
 ### Si tocas X, pasa Y
 
@@ -59,7 +74,7 @@ Si `--lista` elige algo que no encaja o se queda corto, añade con `--suite`. Si
   `npm run ci:estado` (usa `gh` con el token que ya guarda Git; `-- --esperar` espera a que acabe). **Si está en rojo,
   se arregla en la rama** y se vuelve a subir. Iván lo ve también en GitHub → Actions.
 - En local, lo mismo que Actions: `npm run pruebas:completas` (`-- --grupo k/4` para un grupo; `-- --locales` añade
-  las de solo local).
+  las de solo local). **Solo si Iván lo pide** (D167): en local también va de una pesada en una.
 
 ### Solo en local, antes del merge cuando el cambio las toque
 
@@ -73,8 +88,8 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
 | `pruebas:eventos-real`, `pruebas:respuestas-real`, `pruebas:convocatoria-real`, `pruebas:inicio-real` | solo lectura contra el Supabase real: claves de `plataforma/.env.local` |
 | `pruebas:solo-ficha-real` | ídem, y la foto previa de `privado/backups/` (prueba de la migración de D148) |
 
-`pruebas:rapidas` las incluye cuando toca (estadísticas o migraciones). Las de `verificar_*` (producción, vista previa)
-siguen siendo manuales.
+`pruebas:rapidas` las incluye cuando toca (estadísticas, o escribir en producción o tocar permisos). Las de `verificar_*`
+(producción, vista previa) siguen siendo manuales.
 
 ### Reglas de las pruebas
 

@@ -92,7 +92,7 @@ export const cargarMiDefecto = cache(async (): Promise<MiDefecto | null> => {
 });
 
 /** D152: los entrenos (de `eventos`) que a el le salen como «No vas (puesto por defecto)». Vacio con las respuestas en
- *  la web apagadas: entonces se responde en SportEasy y no hay «Sí voy». */
+ *  la web apagadas: entonces no hay «Sí voy». */
 export async function misEntrenosPorDefecto(eventos: MiEvento[], respuestas: MiRespuesta[], ausencias: MiAusencia[], encendido: boolean): Promise<Set<string>> {
   if (!encendido) return new Set();
   const mio = await cargarMiDefecto();
@@ -149,11 +149,3 @@ export async function cargarConvocadosDomingo(fecha: string): Promise<Partial<Re
   return (data as Partial<Record<"MdA" | "MdL", string[]>> | null) ?? null;
 }
 
-/** Cuando se importaron por ultima vez las respuestas de SportEasy (solo la hora; fase puente, D128). */
-export const cargarUltimaImportacion = cache(async (): Promise<string | null> => {
-  if (!configurado()) return null;
-  const sb = await clienteSesion();
-  const { data, error } = await sb.rpc("ultima_importacion_respuestas");
-  if (error) return null;
-  return (data as string | null) ?? null;
-});

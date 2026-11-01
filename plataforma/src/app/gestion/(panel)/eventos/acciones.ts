@@ -4,21 +4,17 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { exigirGestor } from "@/lib/sesion";
 import { hoyMadrid } from "@/lib/dias";
-import { cargarEvento, cargarEventos, cargarJugadores, cargarPistas, TEMPORADA } from "@/lib/eventos/datos";
+import { cargarEvento, cargarEventos, cargarPistas, TEMPORADA } from "@/lib/eventos/datos";
 import {
-  describirCambios, deLaSerieDesde, fechaDMA, hhmm, juntarCambios, pistaEfectiva, quedadaPorDefecto, resumenCotejo, sumarDias,
-  type CamposEditables, type FilaCotejo, type Respuesta, type EquipoEvento, type EstadoPista, type EventoFila, type Pista, type TipoEvento,
+  describirCambios, deLaSerieDesde, fechaDMA, hhmm, pistaEfectiva, quedadaPorDefecto, sumarDias,
+  type CamposEditables, type EquipoEvento, type EstadoPista, type EventoFila, type Pista, type TipoEvento,
 } from "@/lib/eventos/dominio";
 import { avisarCambioEvento, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/servidor";
 import { leerEnlaceGoogle } from "@/lib/ubicacion";
-import {
-  compararCalendario, crearDiccionario, leerCalendario, leerFecha, leerRespuestas, normalizar,
-  type CambioCalendario, type LineaRespuesta, type Senal,
-} from "@/lib/eventos/importador";
+import { compararCalendario, leerCalendario, leerFecha, normalizar, type CambioCalendario, type Senal } from "@/lib/eventos/importador";
 
 // Todas las acciones usan la sesion del gestor: la base (RLS + is_gestor) decide si se puede. Nadie borra: un evento se
-// CANCELA (D94). Cada cambio apunta su descripcion en `sporteasy_cambio` (columna de la fase puente, D94; SportEasy ya no se
-// usa, D153): de ahi sale el mensaje de WhatsApp de la ficha del evento.
+// CANCELA (D94). El mensaje de WhatsApp de la ficha del evento sale de sus propios datos (estado y `cambio_visible`).
 
 export type Estado = { error?: string } | null;
 const TIPOS: TipoEvento[] = ["entreno", "liga", "amistoso", "torneo", "interno", "quedada", "pachanga", "otro"];
@@ -105,7 +101,6 @@ export async function crearEvento(_prev: Estado, f: FormData): Promise<Estado> {
   if (!r.campos) return { error: r.error };
   const { data, error } = await supabase.from("eventos").insert({
     ...aFila(r.campos), clave: `m-${crypto.randomUUID()}`, temporada: TEMPORADA, origen: "manual",
-    sporteasy_estado: "pendiente", sporteasy_cambio: "Evento nuevo: crearlo en SportEasy",
   }).select("id").single();
   if (error) return { error: `No se pudo crear: ${error.message}` };
   if (f.get("sin_recordatorios") === "on") await supabase.from("eventos").update({ sin_recordatorios: true }).eq("id", data.id);
@@ -125,7 +120,7 @@ export async function guardarEvento(id: string, _prev: Estado, f: FormData): Pro
   const nuevo = r.campos, viejo = editables(antes);
   const alcance = texto(f, "alcance") === "siguientes" && antes.serie ? "siguientes" : "este";
   const diff = describirCambios(viejo, nuevo, pistas);
-  // «Sin recordatorios para este evento» (D99.6): no es un cambio para SportEasy ni avisa a nadie.
+  // «Sin recordatorios para este evento» (D99.6): no es un cambio del evento ni avisa a nadie.
   const sinRec = f.get("sin_recordatorios") === "on";
   if (sinRec !== Boolean(antes.sin_recordatorios)) {
     const { error } = await supabase.from("eventos").update({ sin_recordatorios: sinRec }).eq("id", id);
@@ -148,13 +143,11 @@ export async function guardarEvento(id: string, _prev: Estado, f: FormData): Pro
       // Si cambia la hora de inicio y no se toco la quedada, la quedada acompaña (20 minutos antes).
       if (nuevo.inicio !== viejo.inicio && nuevo.quedada === viejo.quedada) aplicar.quedada = quedadaPorDefecto(aplicar.inicio);
     }
-    const cambios = describirCambios(actual, aplicar, pistas);
-    if (!cambios.length) continue;
-    const previo = o.sporteasy_estado === "pendiente" ? o.sporteasy_cambio : null;
+    if (!describirCambios(actual, aplicar, pistas).length) continue;
     // «Guardar y avisar» (D99.9): la linea amarilla del evento dice que cambio y como era antes.
     const visible = avisar ? cambioVisible(actual, aplicar, pistas) : null;
     const { error } = await supabase.from("eventos").update({
-      ...aFila(aplicar), sporteasy_estado: "pendiente", sporteasy_cambio: juntarCambios(previo, cambios),
+      ...aFila(aplicar),
       ...(visible ? { cambio_visible: visible, cambio_visible_en: new Date().toISOString() } : {}),
     }).eq("id", o.id);
     if (error) return { error: `No se pudo guardar: ${error.message}` };
@@ -181,11 +174,7 @@ export async function cancelarEvento(id: string, alcance: "este" | "siguientes",
     ? todos.filter((e) => e.serie === antes.serie && e.fecha >= antes.fecha && e.estado === (restablecer ? "cancelado" : "programado"))
     : [antes];
   for (const o of objetivos) {
-    const previo = o.sporteasy_estado === "pendiente" ? o.sporteasy_cambio : null;
-    const { error } = await supabase.from("eventos").update({
-      estado: restablecer ? "programado" : "cancelado", sporteasy_estado: "pendiente",
-      sporteasy_cambio: juntarCambios(previo, [restablecer ? "evento restablecido" : "evento cancelado"]),
-    }).eq("id", o.id);
+    const { error } = await supabase.from("eventos").update({ estado: restablecer ? "programado" : "cancelado" }).eq("id", o.id);
     if (error) throw new Error(error.message);
   }
   // Cancelar avisa a los invitados (D99.9) con «respuestas en la web» encendido. En una serie, solo los de las dos
@@ -232,7 +221,7 @@ export async function crearPista(_prev: Estado, f: FormData): Promise<Estado> {
 }
 
 /** Cambia el estado o la direccion de una pista. Si es la de la serie y cambia su estado (en obras ↔ habitual), los
- *  entrenos futuros sin pista propia cambian de «Pista por confirmar» a ella (o al reves): quedan pendientes de copiar. */
+ *  entrenos futuros sin pista propia cambian de «Pista por confirmar» a ella (o al reves): lo calcula `pistaEfectiva`. */
 export async function cambiarPista(id: string, _prev: Estado, f: FormData): Promise<Estado> {
   const { supabase } = await exigirGestor();
   const pistas = await cargarPistas(supabase);
@@ -257,17 +246,6 @@ export async function cambiarPista(id: string, _prev: Estado, f: FormData): Prom
   const cambios = { nombre, uso, estado, direccion: texto(f, "direccion") || null, num_pistas: Number.isInteger(n) && n > 0 ? n : null, nota: texto(f, "nota") || null, lat: c.lat, lng: c.lng, ...solo, ...fichaDesde, ...habitualDesde };
   const { error } = await supabase.from("pistas").update(cambios).eq("id", id);
   if (error) return { error: `No se pudo guardar: ${error.message}` };
-  if (antes.es_de_serie && antes.estado !== estado) {
-    const despues = pistas.map((p) => (p.id === id ? { ...p, ...cambios } : p));
-    const hoy = hoyMadrid();
-    const eventos = (await cargarEventos(supabase)).filter((e) => e.tipo === "entreno" && !e.pista_id && e.estado === "programado" && e.fecha >= hoy);
-    for (const e of eventos) {
-      const a = pistaEfectiva(e, pistas), d = pistaEfectiva(e, despues);
-      if (a.texto === d.texto) continue;
-      const previo = e.sporteasy_estado === "pendiente" ? e.sporteasy_cambio : null;
-      await supabase.from("eventos").update({ sporteasy_estado: "pendiente", sporteasy_cambio: juntarCambios(previo, [`pista: ${a.texto} → ${d.texto}`]) }).eq("id", e.id);
-    }
-  }
   revalidatePath("/gestion/eventos/pistas"); refrescar();
   return null;
 }
@@ -328,7 +306,6 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
       if (c.campo === "local") cambio.es_local = c.valorOficial;
       if (c.campo === "rival") cambio.rival = c.valorOficial;
     }
-    const previo = e.sporteasy_estado === "pendiente" ? e.sporteasy_cambio : null;
     // «Aplicar y avisar» (D103): como en Editar evento, la linea amarilla dice que cambio y como era antes.
     const avisables = cs.filter((c) => c.campo === "fecha" || c.campo === "hora" || c.campo === "pista");
     const ORDEN_CAMPO = { pista: 0, fecha: 1, hora: 2 } as Record<string, number>;
@@ -337,8 +314,7 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
       antes: avisables.sort((a, b) => ORDEN_CAMPO[a.campo] - ORDEN_CAMPO[b.campo]).map((c) => (c.campo === "pista" ? `pista ${c.actual}` : String(c.actual))).join(", "),
     } : null;
     const { error } = await supabase.from("eventos").update({
-      ...cambio, sporteasy_estado: "pendiente",
-      sporteasy_cambio: juntarCambios(previo, cs.map((c) => `${c.textoCampo.toLowerCase()}: ${c.actual} → ${c.oficial} (Ayuntamiento)`)),
+      ...cambio,
       ...(visible ? { cambio_visible: visible, cambio_visible_en: new Date().toISOString() } : {}),
     }).eq("id", eventoId);
     if (error) throw new Error(`No se pudo aplicar ${e.clave}: ${error.message}`);
@@ -364,169 +340,4 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
     aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, cambiosEn: aplicadosEn,
     avisados: avisar ? avisados : null, sale: sale?.toISOString() ?? null, sinAviso: [...new Set(sinAviso)],
   } };
-}
-
-// ---------------------------------------------------------------- importar: respuestas y ausencias de SportEasy
-/** D121: una importacion NO pisa un cambio de gestor mas reciente (el tablero, «Responder por el»): sale como conflicto
- *  para que se decida. Si se decide mantener lo del gestor, el valor de SportEasy queda descartado y no vuelve a salir
- *  como conflicto mientras SportEasy diga lo mismo.
- *  Con el interruptor ENCENDIDO manda la web: una importacion nunca pisa una respuesta ni una ausencia dada en la web
- *  (origen jugador o gestor), sin opcion de «Usar SportEasy». Es la red de seguridad por si la tarea programada de
- *  SportEasy se ejecutara por error tras la activacion. */
-export type Conflicto = { clave: string; gestor: string; puestoPor: string | null; en: string | null; sporteasy: string };
-export type Protegida = { quien: string; web: string; sporteasy: string };
-export type LineaVista = { n: number; crudo: string; estado: "valida" | "bloqueada" | "error"; tipo: string; nombre?: string; resumen: string; error?: string; conflicto?: Conflicto; protegida?: Protegida };
-export type ResultadoRespuestas = {
-  lineas: LineaVista[]; validas: number; bloqueadas: number; errores: number; conflictos: number; protegidas: number; nombresPendientes: string[];
-  guardadas?: { respuestas: number; ausencias: number; mantenidas: number; protegidas: number };
-  /** Tras guardar: por evento de lo pegado, como queda en la web (para cotejar con SportEasy). */
-  resumen?: FilaCotejo[];
-};
-
-type Actual = { evento_id: string; person_id: string; respuesta: string; origen: string; puesto_por_nombre: string | null; cambiado_en: string | null; sporteasy_descartado: string | null };
-
-/** Supabase devuelve como mucho 1000 filas por consulta: se leen por paginas (con un orden estable) para que una
- *  importacion de todo el curso (todos los entrenos y partidos abiertos) no se quede corta. */
-const PAGINA = 1000;
-async function todasLasFilas<T>(consulta: (desde: number, hasta: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T[]> {
-  const filas: T[] = [];
-  for (let i = 0; ; i += PAGINA) {
-    const { data, error } = await consulta(i, i + PAGINA - 1);
-    if (error) throw new Error(error.message);
-    const pagina = (data ?? []) as T[];
-    filas.push(...pagina);
-    if (pagina.length < PAGINA) return filas;
-  }
-}
-
-async function leerConLaBase(textoPegado: string) {
-  const { supabase, nombre, user } = await exigirGestor();
-  const [eventos, jugadores, { data: dic }] = await Promise.all([
-    cargarEventos(supabase), cargarJugadores(supabase), supabase.from("diccionario_sporteasy").select("nombre_sporteasy, person_id"),
-  ]);
-  const personas = jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
-  const lineas = leerRespuestas(textoPegado, crearDiccionario((dic ?? []) as { nombre_sporteasy: string; person_id: string }[]), eventos, personas);
-  const ids = [...new Set(lineas.filter((l) => l.tipo === "respuesta" && l.estado === "valida").map((l) => (l as { evento: { id: string } }).evento.id))];
-  const { data: enc } = await supabase.rpc("respuestas_web_encendido");
-  const encendido = Boolean(enc);
-  // Apagado: solo los cambios de gestor (D121). Encendido: tambien lo que respondio el jugador en la web.
-  const act = ids.length
-    ? await todasLasFilas<Actual>((a, b) => supabase.from("respuestas").select("evento_id, person_id, respuesta, origen, puesto_por_nombre, cambiado_en, sporteasy_descartado")
-      .in("evento_id", ids).in("origen", encendido ? ["gestor", "jugador"] : ["gestor"]).order("evento_id").order("person_id").range(a, b))
-    : [];
-  const actuales = new Map(act.map((a) => [`${a.evento_id}|${a.person_id}`, a]));
-  // Encendido: las ausencias puestas en la web (mismo jugador y mismas fechas) tampoco se pisan.
-  const personasAus = [...new Set(lineas.filter((l) => l.tipo === "ausencia" && l.estado === "valida").map((l) => (l as { person_id: string }).person_id))];
-  const { data: ausWeb } = encendido && personasAus.length
-    ? await supabase.from("ausencias_periodo").select("person_id, desde, hasta").in("person_id", personasAus).neq("origen", "sporteasy")
-    : { data: [] };
-  const ausenciasWeb = new Set(((ausWeb ?? []) as { person_id: string; desde: string; hasta: string | null }[]).map((a) => `${a.person_id}|${a.desde}|${a.hasta ?? ""}`));
-  return { supabase, nombre, user, lineas, jugadores, eventos, actuales, encendido, ausenciasWeb };
-}
-
-const TEXTO_R: Record<string, string> = { va: "Va", duda: "Duda", no: "No va", sin_responder: "Sin responder" };
-type Contexto = { actuales: Map<string, Actual>; encendido: boolean; ausenciasWeb: Set<string> };
-const SIN_CONTEXTO: Contexto = { actuales: new Map(), encendido: false, ausenciasWeb: new Set() };
-/** Encendido: la linea toca una respuesta dada en la web. Si dice lo mismo no hay nada que hacer (y no se marca). */
-function protegidaDe(l: LineaRespuesta, c: Contexto): Protegida | undefined {
-  if (!c.encendido || l.estado !== "valida") return undefined;
-  if (l.tipo === "ausencia") return c.ausenciasWeb.has(`${l.person_id}|${l.desde}|${l.hasta ?? ""}`) ? { quien: "en la web", web: "esa ausencia", sporteasy: "la misma ausencia" } : undefined;
-  const a = c.actuales.get(`${l.evento.id}|${l.person_id}`);
-  if (!a || a.respuesta === l.respuesta) return undefined;
-  return { quien: a.origen === "jugador" ? "el jugador en la web" : `${a.puesto_por_nombre ?? "un gestor"} en la web`, web: TEXTO_R[a.respuesta] ?? a.respuesta, sporteasy: TEXTO_R[l.respuesta] ?? l.respuesta };
-}
-function conflictoDe(l: LineaRespuesta, actuales: Map<string, Actual>, encendido = false): Conflicto | undefined {
-  if (l.tipo !== "respuesta" || l.estado !== "valida" || encendido) return undefined;
-  const clave = `${l.evento.id}|${l.person_id}`;
-  const a = actuales.get(clave);
-  if (!a || a.respuesta === l.respuesta || a.sporteasy_descartado === l.respuesta) return undefined;
-  return { clave, gestor: TEXTO_R[a.respuesta] ?? a.respuesta, puestoPor: a.puesto_por_nombre, en: a.cambiado_en, sporteasy: TEXTO_R[l.respuesta] ?? l.respuesta };
-}
-const vista = (l: LineaRespuesta): LineaVista => {
-  if (l.estado === "error") return { n: l.n, crudo: l.crudo, estado: "error", tipo: "error", resumen: "", error: l.error };
-  if (l.estado === "bloqueada") return { n: l.n, crudo: l.crudo, estado: "bloqueada", tipo: l.tipo, nombre: l.nombre, resumen: "", error: l.motivoBloqueo };
-  if (l.tipo === "ausencia") return { n: l.n, crudo: l.crudo, estado: "valida", tipo: "ausencia", nombre: l.nombre, resumen: `${l.nombre}: ausente del ${l.desde.slice(8, 10)}/${l.desde.slice(5, 7)} al ${l.hasta.slice(8, 10)}/${l.hasta.slice(5, 7)} (${l.motivo})` };
-  return { n: l.n, crudo: l.crudo, estado: "valida", tipo: "respuesta", nombre: l.nombre, resumen: `${l.nombre}: ${l.respuesta === "sin_responder" ? "sin responder" : l.respuesta === "no" ? "no va" : l.respuesta}${l.motivo ? ` (${l.motivo})` : ""} · ${l.evento.clave}` };
-};
-const aResultadoR = (lineas: LineaRespuesta[], c: Contexto = SIN_CONTEXTO): ResultadoRespuestas => {
-  const vistas = lineas.map((l) => ({ ...vista(l), conflicto: conflictoDe(l, c.actuales, c.encendido), protegida: protegidaDe(l, c) }));
-  return {
-    lineas: vistas, validas: lineas.filter((l) => l.estado === "valida").length, bloqueadas: lineas.filter((l) => l.estado === "bloqueada").length,
-    errores: lineas.filter((l) => l.estado === "error").length, conflictos: vistas.filter((v) => v.conflicto).length, protegidas: vistas.filter((v) => v.protegida).length,
-    nombresPendientes: [...new Set(lineas.filter((l) => l.estado === "bloqueada").map((l) => (l as { nombre: string }).nombre))],
-  };
-};
-
-export async function analizarRespuestas(textoPegado: string): Promise<ResultadoRespuestas> {
-  const { lineas, ...c } = await leerConLaBase(textoPegado);
-  return aResultadoR(lineas, c);
-}
-
-/** Guarda las lineas validas (una respuesta por persona y evento) y registra la importacion. Las bloqueadas esperan.
- *  Un conflicto con un cambio de gestor (D121) se queda como lo dejo el gestor salvo que se elija «Usar SportEasy». */
-export async function guardarRespuestas(textoPegado: string, usarSportEasy: string[] = []): Promise<ResultadoRespuestas> {
-  const { supabase, nombre, user, lineas, jugadores, eventos, actuales, encendido, ausenciasWeb } = await leerConLaBase(textoPegado);
-  const ahora = new Date().toISOString();
-  const rs = lineas.filter((l): l is Extract<LineaRespuesta, { tipo: "respuesta"; estado: "valida" }> => l.tipo === "respuesta" && l.estado === "valida");
-  const todasAus = lineas.filter((l): l is Extract<LineaRespuesta, { tipo: "ausencia"; estado: "valida" }> => l.tipo === "ausencia" && l.estado === "valida");
-  // Si el mismo jugador sale dos veces en el mismo evento, vale la ultima linea.
-  const ultimas = new Map(rs.map((l) => [`${l.evento.id}|${l.person_id}`, l]));
-  // Encendido: lo respondido en la web no se toca nunca (ni se apunta lo de SportEasy: ese update tambien cuenta como
-  // un cambio y anularia la respuesta del domingo). Tampoco las ausencias puestas en la web.
-  let protegidas = 0;
-  if (encendido) {
-    for (const [k, l] of [...ultimas.entries()]) if (actuales.has(k)) { if (actuales.get(k)!.respuesta !== l.respuesta) protegidas++; ultimas.delete(k); }
-  }
-  const as = todasAus.filter((l) => !(encendido && ausenciasWeb.has(`${l.person_id}|${l.desde}|${l.hasta ?? ""}`)));
-  protegidas += todasAus.length - as.length;
-  // Conflictos con un cambio de gestor: se mantiene lo del gestor (y se apunta lo que decia SportEasy) salvo que se elija SportEasy.
-  const mantenidas = [...ultimas.entries()].filter(([k, l]) => conflictoDe(l, actuales) && !usarSportEasy.includes(k));
-  for (const [k, l] of mantenidas) {
-    ultimas.delete(k);
-    await supabase.from("respuestas").update({ sporteasy_descartado: l.respuesta, leido_en: ahora }).eq("evento_id", l.evento.id).eq("person_id", l.person_id);
-  }
-  // Igual que lo que ya dijo el gestor: no hay nada que cambiar (y sigue «puesta por» el gestor).
-  for (const [k, l] of [...ultimas.entries()]) if (actuales.get(k)?.respuesta === l.respuesta && !usarSportEasy.includes(k)) ultimas.delete(k);
-  if (ultimas.size) {
-    const { error } = await supabase.from("respuestas").upsert(
-      [...ultimas.values()].map((l) => ({ evento_id: l.evento.id, person_id: l.person_id, respuesta: l.respuesta, motivo: l.motivo, detalle: l.detalle, fuente: "sporteasy", origen: "sporteasy", puesto_por: null, puesto_por_nombre: null, sporteasy_descartado: null, leido_en: ahora })),
-      { onConflict: "evento_id,person_id" });
-    if (error) throw new Error(`No se pudieron guardar las respuestas: ${error.message}`);
-  }
-  if (as.length) {
-    const { error } = await supabase.from("ausencias_periodo").upsert(
-      as.map((l) => ({ person_id: l.person_id, desde: l.desde, hasta: l.hasta, motivo: l.motivo, fuente: "sporteasy", leido_en: ahora })),
-      { onConflict: "person_id,desde,hasta" });
-    if (error) throw new Error(`No se pudieron guardar las ausencias: ${error.message}`);
-  }
-  const bloq = lineas.filter((l) => l.estado === "bloqueada").length, err = lineas.filter((l) => l.estado === "error").length;
-  await supabase.from("importaciones").insert({
-    tipo: "respuestas", por_user_id: user.id, por_nombre: nombre, lineas: lineas.length, validas: ultimas.size + as.length,
-    aceptadas: ultimas.size + as.length, ignoradas: err, bloqueadas: bloq,
-    detalle: { respuestas: ultimas.size, ausencias: as.length, eventos: [...new Set([...ultimas.values()].map((l) => l.evento.clave))] },
-  });
-  refrescar(); revalidatePath("/gestion/asistencia");
-  const re = await leerConLaBase(textoPegado);
-  // Resumen por evento de lo pegado, como queda ahora en la web (todas las respuestas, por paginas).
-  const idsResumen = [...new Set(rs.map((l) => l.evento.id))];
-  const enLaWeb = idsResumen.length
-    ? await todasLasFilas<{ evento_id: string; person_id: string; respuesta: Respuesta; motivo: string | null }>((a, b) => supabase.from("respuestas")
-      .select("evento_id, person_id, respuesta, motivo").in("evento_id", idsResumen).order("evento_id").order("person_id").range(a, b))
-    : [];
-  const resumen = resumenCotejo(eventos.filter((e) => idsResumen.includes(e.id)), jugadores, enLaWeb);
-  return { ...aResultadoR(re.lineas, re), guardadas: { respuestas: ultimas.size, ausencias: as.length, mantenidas: mantenidas.length, protegidas }, resumen };
-}
-
-/** Asigna a mano, una vez, un nombre de SportEasy a una persona: entra en el diccionario cerrado. */
-export async function asignarNombre(nombreSportEasy: string, personId: string): Promise<{ ok: boolean; error?: string }> {
-  const { supabase, nombre } = await exigirGestor();
-  const limpio = nombreSportEasy.trim();
-  if (!limpio) return { ok: false, error: "Falta el nombre." };
-  const jugadores = await cargarJugadores(supabase);
-  if (!jugadores.some((j) => j.person_id === personId)) return { ok: false, error: "Elige una persona de la lista." };
-  const { data: dic } = await supabase.from("diccionario_sporteasy").select("nombre_sporteasy");
-  if ((dic ?? []).some((d) => normalizar(d.nombre_sporteasy) === normalizar(limpio))) return { ok: false, error: "Ese nombre ya está en el diccionario." };
-  const { error } = await supabase.from("diccionario_sporteasy").insert({ nombre_sporteasy: limpio, person_id: personId, creado_por: nombre });
-  if (error) return { ok: false, error: `No se pudo guardar: ${error.message}` };
-  return { ok: true };
 }

@@ -48,7 +48,7 @@ export default async function Agenda() {
         <Link href="/planes/nuevo" className="boton boton-amarillo">Proponer un plan</Link>
         {encendido && <Link href="/mi-zona/ausencias" className="boton boton-claro"><Calendario size={20} />Marcar días que no estoy</Link>}
       </div>
-      {!encendido && <p className="in-nota">Por ahora, los partidos y entrenos se responden en SportEasy. Los planes no oficiales, aquí.</p>}
+      {!encendido && <p className="in-nota">Las respuestas en la web a partidos y entrenos están desactivadas. Los planes no oficiales se responden aquí.</p>}
       <div className="in-cols in-cols-agenda">
         <div className="in-col">
           {[...porMes.entries()].map(([mes, us]) => (

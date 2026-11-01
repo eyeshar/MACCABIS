@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 // Estado de un domingo con dos partidos para el jugador (lib/respuestas/dominio.ts), sin base de datos: manda la
-// respuesta de CADA partido (importada de SportEasy o puesta por un gestor), no solo la del domingo.
-// Caso real (J3, 25/10/2026): «va» al MdA y «no» al MdL salía «Vas a los dos» en el inicio. Y el resumen por evento
-// tras importar respuestas (para cotejar con SportEasy antes de activar las respuestas en la web).
+// respuesta de CADA partido (importada o puesta por un gestor), no solo la del domingo.
+// Caso real (J3, 25/10/2026): «va» al MdA y «no» al MdL salía «Vas a los dos» en el inicio.
 //
 //   npm run pruebas:respuestas-dominio
 
 import * as D from '../src/lib/respuestas/dominio.ts';
-import { resumenCotejo, textoCotejo } from '../src/lib/eventos/dominio.ts';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -46,27 +44,6 @@ console.log('\nMisma hora (no se puede doblar)');
 const [mismo] = D.unidades([ev('a', 'MdA', '10:15:00'), ev('b', 'MdL', '10:15:00')]);
 ok(D.estadoDe(mismo, [r('a', 'va'), r('b', 'no')], []).texto === 'Vas al MdA · no al MdL', '«va» al MdA y «no» al MdL: «Vas al MdA · no al MdL»');
 ok(D.estadoDe(mismo, [r('a', 'va'), r('b', 'va')], []).texto === 'Vas', '«va» a los dos a la misma hora: «Vas»');
-
-console.log('\nResumen por evento tras importar (cotejo con SportEasy)');
-{
-  const J = (person_id, o = {}) => ({ person_id, nombre_visible: person_id, ficha_mda: true, ficha_mdl: false, entrena: true, activo: true, rol: 'jugador', ...o });
-  const jug = [J('a'), J('b'), J('c'), J('d', { ficha_mda: false, ficha_mdl: true }), J('e', { ficha_mda: false, rol: 'solo_entreno' })];
-  const entreno = { ...ev('ent', 'ambos', '20:30:00'), tipo: 'entreno', fecha: '2026-10-28', oficial: true };
-  const partido = { ...ev('p', 'MdA', '10:15:00'), fecha: '2026-11-01', oficial: true };
-  const rs = [
-    { evento_id: 'p', person_id: 'a', respuesta: 'va', motivo: null },
-    { evento_id: 'p', person_id: 'b', respuesta: 'no', motivo: 'trabajo' },
-    { evento_id: 'p', person_id: 'd', respuesta: 'va', motivo: null },
-    { evento_id: 'ent', person_id: 'e', respuesta: 'no', motivo: 'lesion' },
-    { evento_id: 'ent', person_id: 'a', respuesta: 'duda', motivo: null },
-  ];
-  const [f1, f2] = resumenCotejo([partido, entreno], jug, rs);
-  ok(f1.id === 'ent' && f2.id === 'p', 'ordenado por fecha (el entreno del 28/10 antes que el partido del 1/11)');
-  ok(f2.va === 1 && f2.no === 1 && f2.sin_responder === 1 && f2.conMotivo === 1 && f2.fuera === 1, 'partido del MdA: 1 va · 1 no · 1 sin responder, 1 con motivo y 1 respuesta de alguien sin ficha del MdA (aparte)', JSON.stringify(f2));
-  ok(textoCotejo(f2) === '1 va · 1 no · 1 sin responder', `texto «${textoCotejo(f2)}»`);
-  ok(f1.va === 0 && f1.duda === 1 && f1.no === 1 && f1.sin_responder === 3 && f1.conMotivo === 1 && textoCotejo(f1) === '0 van · 1 no · 1 duda · 3 sin responder', `entreno (todos responden): «${textoCotejo(f1)}»`);
-  ok(!JSON.stringify([f1, f2]).includes('trabajo') && !JSON.stringify([f1, f2]).includes('lesion'), 'el resumen no lleva motivos, solo cuántos llevan motivo');
-}
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

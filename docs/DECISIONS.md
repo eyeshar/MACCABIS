@@ -1233,11 +1233,30 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 **Decisión de Iván (regla nueva):** los avisos se envían **en el momento** salvo **entre las 22:30 y las 08:00 hora de Madrid** (Europe/Madrid, cambio de hora incluido); los generados en esa franja **salen a las 08:00**. Se mira la hora real de Madrid del momento de enviar, nunca la del servidor.
 
 **Cómo queda (Claude):**
-- `horario.ts`: `SILENCIO_HASTA` = 08:00 y fin del silencio a las 08:00 (también el aviso de «duda», que nunca sale antes de las 08:00). **Se mantiene la excepción de D99.7:** si el evento empieza en menos de 12 horas reales, el aviso sale en el momento aunque sea de noche (si no, un cambio a las 23:00 para un partido a las 09:00 llegaría a las 08:00). Si Iván la quiere quitar, es una línea.
+- `horario.ts`: `SILENCIO_HASTA` = 08:00 y fin del silencio a las 08:00 (también el aviso de «duda», que nunca sale antes de las 08:00). **Se mantiene la excepción de D99.7:** si el evento empieza en menos de 12 horas reales, el aviso sale en el momento aunque sea de noche (si no, un cambio a las 23:00 para un partido a las 09:00 llegaría a las 08:00). **Iván la mantiene (31/10/2026).**
 - **Importar → «Aplicar y avisar» avisa de cada partido cambiado que no se ha jugado, sea cuando sea** (cada línea es un partido concreto, no una serie). Editar evento y cancelar siguen con el límite de dos semanas para las series.
 - Los textos dicen la verdad: «Aviso al móvil para N jugadores (enviado ya)» o «(de noche: sale el dd/mm a las 08:00)»; si no sale aviso de algún partido, lo dice («Sin aviso: MdA J2 (ya jugado)»). Igual en la ficha del evento y en «Enviar un recordatorio ahora». Pantallas, guía del jugador e inicio: «nunca de 22:30 a 8:00».
 - **Pruebas** (`pruebas:avisos-logica`): 17:09 → sale ya; 22:29 → sale ya; 22:31 → 08:00 del día siguiente; 07:59 → 08:00; 08:00 → sale ya; 00:15 → 08:00; los dos lados de UTC frente a Madrid; y a cada lado de los cambios de hora de otoño (25/10/2026) y primavera (28/03/2027). `pruebas:respuestas-pantallas`: el texto del resultado y que un partido a más de dos semanas también avisa.
 - **El aviso de la J5 MdA no está en cola** y no se reenvía a ciegas (Iván decide).
+
+
+## D153 (ampliada, 31/10/2026, `feat/cierre-sporteasy`) — Se quita de la plataforma todo lo que dependía de SportEasy; lo de la base queda huérfano (Iván)
+
+**Requisito previo comprobado:** el export de asistencias 2026/27 está guardado (`privado/sporteasy/bilan_presence_maccabis (12).xlsx`, fuera de git): evento a evento, 46 jugadores × 27 eventos del 19/07 al 30/10/2026, con el estado de asistencia de cada uno (sin motivos ni la respuesta original). Detalle en BACKLOG (Code 5).
+
+**Decisión de Iván:** se elimina de la plataforma:
+- **Importar → Respuestas** (`ImportarRespuestas.tsx`, `analizarRespuestas`, `guardarRespuestas`, `asignarNombre` y la pestaña «Respuestas»: Importar queda solo con el calendario).
+- `BloqueImportacion`, `importacionAuto` y «Últimas lecturas · Respuestas de SportEasy».
+- Convocatoria → Salida, bloque **«3 · SportEasy»** («Copiar para SportEasy», «Marcar como copiado») y el paso «marca SportEasy al día».
+- La casilla **«SportEasy deja de pedir respuesta»** de la tarjeta del interruptor.
+- Los textos del modo apagado que mandaban a SportEasy («Responded en SportEasy», «Según SportEasy», «Leído de SportEasy»…): con el interruptor apagado salen textos neutros.
+- **El mensaje de WhatsApp** de la ficha del evento sale de los datos propios del evento (estado, fecha, hora, pista y la línea amarilla `cambio_visible`), no de `sporteasy_cambio`.
+
+**Base de datos: no se toca (sin staging, D111).** Quedan **huérfanas** —el código ya no las lee ni las escribe— las columnas `sporteasy_estado`, `sporteasy_cambio` y `sporteasy_copiado_en` de `eventos`, las `sporteasy_*` de la convocatoria, la tabla `diccionario_sporteasy`, `respuestas.sporteasy_descartado` y `respuestas_web_config.sporteasy_comprobado`. **Se borrarán en una migración aparte cuando Iván lo diga** (BACKLOG, Code 19). El valor `origen = 'sporteasy'` de respuestas y ausencias antiguas se queda como dato histórico. La función de la base que enciende el interruptor sigue exigiendo `sporteasy_comprobado` (en el real ya está a `true`); se quitará con esa migración. Además, algunas funciones de la base **siguen rellenando** esas columnas (el disparador `_eventos_antes_de_escribir`, `convocatoria_guardar/aprobar/marcar`, «Hacer oficial»): nadie las lee; también se quitan con esa migración. En la pantalla, «Activar» ya solo depende de las condiciones 1 y 2.
+
+**Propuesta de Code (sin aplicar, decide Iván):** sin SportEasy, el interruptor «respuestas en la web» apagado deja a los jugadores sin sitio donde responder. Se propone quitar la tarjeta y dar «respuestas en la web» por encendido para siempre (BACKLOG, Code 20).
+
+**D155 (nota, 31/10/2026):** Iván mantiene la **excepción de las 12 horas**: un aviso generado de noche (22:30–08:00) para un evento que empieza en menos de 12 horas reales sale en el momento.
 
 ## D156 — El recuadro «Respuestas en la web» se actualiza solo, por polling simple (Iván, 31/10/2026)
 

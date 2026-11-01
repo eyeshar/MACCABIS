@@ -2,7 +2,6 @@ import "server-only";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { entradaDe, type Contexto } from "@/lib/convocatoria/vista";
 import type { DatosProyeccion } from "@/lib/convocatoria/proyeccion";
-import type { EstadoImportacion } from "@/lib/eventos/importacionAuto";
 import type { Convocatoria, Entrada, Equipo, Nivel, Posicion, RespuestaPartido } from "@/lib/convocatoria/motor";
 import { cargarEvento, cargarEventos, cargarJugadores, type Cliente } from "@/lib/eventos/datos";
 import { convocadosDe, tituloEvento, TEXTO_MOTIVO, type Motivo } from "@/lib/eventos/dominio";
@@ -50,8 +49,8 @@ export async function opcionesSelector(sb: Cliente): Promise<OpcionSelector[]> {
 export type TableroDomingo = {
   vista: "domingo"; fecha: string; jornada: number | null; partidos: (PartidoTablero & { evento_id: string })[]; filas: FilaTablero[];
   conv: Convocatoria; estado: "sin" | "borrador" | "aprobada" | "cambiada"; entrada: Entrada; registro: Registro[]; encendido: boolean;
-  /** Proyeccion de anotacion (D124) y estado de la importacion de SportEasy (D126). Solo gestores. */
-  proyeccion: DatosProyeccion; importacion: EstadoImportacion;
+  /** Proyeccion de anotacion (D124). Solo gestores. */
+  proyeccion: DatosProyeccion;
 };
 
 export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise<TableroDomingo | null> {
@@ -75,14 +74,14 @@ export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise
     };
   });
   const c = ctx.convocatoria;
-  const estado = !c?.origen ? "sin" : c.estado === "borrador" ? "borrador" : c.aprobada_en && c.cambiado_en > c.aprobada_en && (c.whatsapp_estado === "pendiente" || c.sporteasy_estado === "pendiente") ? "cambiada" : "aprobada";
+  const estado = !c?.origen ? "sin" : c.estado === "borrador" ? "borrador" : c.aprobada_en && c.cambiado_en > c.aprobada_en && c.whatsapp_estado === "pendiente" ? "cambiada" : "aprobada";
   const nombres = new Map(ctx.jugadores.map((j) => [j.person_id, j.nombre]));
   const registro = await registroDe(sb, c?.id ?? null, ctx.partidos.map((p) => p.evento_id), nombres);
   return {
     vista: "domingo", fecha: ctx.fecha, jornada: ctx.jornada,
     partidos: ctx.partidos.map((p) => ({ evento_id: p.evento_id, equipo: p.equipo, rival: p.rival ?? "rival por confirmar", inicio: p.inicio, dificultad: p.dificultad.valor })),
     filas, conv: c?.equipos ?? {}, estado, entrada: entradaDe(ctx), registro, encendido: ctx.encendido,
-    proyeccion: ctx.proyeccion, importacion: ctx.importacion,
+    proyeccion: ctx.proyeccion,
   };
 }
 
@@ -136,6 +135,7 @@ async function registroDe(sb: Cliente, convId: string | null, eventos: string[],
   const quien = (ids: string[]) => ids.map((i) => nombres.get(i) ?? i).join(", ");
   const out: Registro[] = [
     ...((conv.data ?? []) as { id: string; en: string; por_nombre: string; accion: string; person_id: string | null; equipo: Equipo | null; nota: string | null; detalle: { personas?: string[] } }[])
+      // «sporteasy»: marcas antiguas de la copia a SportEasy (quitada en D153), no se muestran.
       .filter((c) => !["whatsapp", "sporteasy", "aviso", "dificultad"].includes(c.accion))
       .map((c) => ({ id: c.id, en: c.en, por: c.por_nombre, texto: `${ACCION[c.accion] ?? c.accion}${c.equipo ? ` (${c.equipo})` : ""}${(c.detalle?.personas?.length || c.person_id) ? `: ${quien(c.detalle?.personas ?? [c.person_id!])}` : ""}${c.nota ? ` · ${c.nota}` : ""}` })),
     ...((tab.data ?? []) as { id: string; en: string; por_nombre: string; accion: string; personas: string[]; despues: string | null; motivo: string | null }[])

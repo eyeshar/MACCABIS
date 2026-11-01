@@ -6,8 +6,7 @@ import equipJson from "@/data/equipaciones.json";
 import historialRivalesJson from "@/data/historialRivales.json";
 import { clave, equipoPorNombre, type Equipaciones } from "@/data/avisosEquipacion";
 import { hoyMadrid, sumarDias } from "@/lib/dias";
-import { limiteDudas, madrid } from "@/lib/avisos/horario";
-import { estadoImportacion } from "@/lib/eventos/importacionAuto";
+import { limiteDudas } from "@/lib/avisos/horario";
 import { avisoDeEvento, cargarEventos, cargarPistas, type Cliente } from "@/lib/eventos/datos";
 import { limpiarRival, pistaEfectiva, quedadaPorDefecto, hhmm, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { nombreRival } from "@/lib/equipacion";
@@ -111,14 +110,14 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   // Domingos ya jugados (regla 4.2, D109): para saber quien estuvo disponible y se quedo fuera.
   const pasados = liga.filter((e) => e.fecha < fecha && e.fecha < hoy);
 
-  const [jug, resp, respEnt, priv, conv, enc, imp, respPas, convPas, ausencias] = await Promise.all([
+  const [jug, resp, respEnt, priv, conv, enc, respPas, convPas, ausencias] = await Promise.all([
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos, reserva"),
-    sb.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle(),
+    // Columnas explicitas: las de la copia a SportEasy (sporteasy_*) quedan en la base sin uso (D153).
+    sb.from("convocatorias").select("id, fecha, jornada, estado, origen, equipos, dificultad, cambiado_en, cambiado_por_nombre, aprobada_en, aprobada_por_nombre, whatsapp_estado, whatsapp_en, whatsapp_base, aviso_estado, aviso_en, aviso_base").eq("fecha", fecha).maybeSingle(),
     sb.rpc("respuestas_web_encendido"),
-    sb.from("importaciones").select("en, por_nombre").eq("tipo", "respuestas").order("en", { ascending: false }).limit(1),
     pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D133).
     sb.from("convocatorias").select("fecha, equipos, dificultad").eq("estado", "aprobada"),
@@ -133,7 +132,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   let cambios: Cambio[] = [];
   if (fila) {
     const { data } = await sb.from("convocatoria_cambios").select("id, en, por_nombre, accion, person_id, equipo, motivo, nota").eq("convocatoria_id", fila.id).order("en", { ascending: false }).limit(50);
-    cambios = (data ?? []) as Cambio[];
+    // Las marcas antiguas de la copia a SportEasy (accion «sporteasy», antes de D153) no se muestran.
+    cambios = ((data ?? []) as Cambio[]).filter((c) => c.accion !== "sporteasy");
   }
 
   const privados = new Map(((sinMigracion ? [] : priv.data) ?? [] as FilaPrivada[]).map((p: FilaPrivada) => [p.person_id, p]));
@@ -227,10 +227,6 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     fecha, jornada, partidos, jugadores, convocatoria: fila, cambios, contadores,
     limiteDudas: limiteDe?.toISOString() ?? null, dudasAbiertas: limiteDe ? Date.now() < limiteDe.getTime() : false,
     eventoRespuestas: delDia[0]?.id ?? null, encendido: enc.data === true, sinMigracion,
-    ultimaImportacion: ((imp.data ?? []) as { en: string }[])[0]?.en ?? null,
-    ultimaImportacionPor: ((imp.data ?? []) as { por_nombre: string }[])[0]?.por_nombre ?? null,
-    importacion: estadoImportacion(((imp.data ?? []) as { en: string }[])[0]?.en ?? null, ((imp.data ?? []) as { por_nombre: string }[])[0]?.por_nombre ?? null,
-      madrid(fecha, partidos.map((p) => p.inicio).filter(Boolean).sort()[0] ?? "10:00")),
     proyeccion: datosProyeccion(jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre })), new Map(jugadores.map((j) => [j.person_id, ((privados.get(j.person_id) as FilaPrivada | undefined)?.nota_ataque ?? null) as Letra | null])),
       delDia.map((e) => ({ equipo: e.equipo as Equipo, rival: e.rival, jornada: e.jornada })), dificultades),
     respuestasDelDomingo: ((resp.data ?? []) as { respuesta: string }[]).filter((r) => r.respuesta !== "sin_responder").length,

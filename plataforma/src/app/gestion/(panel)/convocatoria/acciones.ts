@@ -107,7 +107,7 @@ export async function cambiarDificultad(fecha: string, equipo: Equipo, valor: Di
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
-/** «Aprobar convocatoria»: aprobada y las tres salidas pendientes. El aviso de la web sale con «Enviar ahora» (D127). */
+/** «Aprobar convocatoria»: aprobada y sus salidas (WhatsApp y aviso) pendientes. El aviso de la web sale con «Enviar ahora» (D127). */
 export async function aprobar(fecha: string): Promise<R> {
   try {
     const { supabase } = await contexto(fecha);
@@ -118,8 +118,8 @@ export async function aprobar(fecha: string): Promise<R> {
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
-/** WhatsApp copiado al grupo, o SportEasy copiado por Claude. */
-export async function marcar(fecha: string, que: "whatsapp" | "sporteasy"): Promise<R> {
+/** WhatsApp copiado al grupo. */
+export async function marcar(fecha: string, que: "whatsapp"): Promise<R> {
   const { supabase } = await exigirGestor();
   const { error: e } = await supabase.rpc("convocatoria_marcar", { p_fecha: fecha, p_que: que });
   if (e) return { ok: false, error: error(e.message) };

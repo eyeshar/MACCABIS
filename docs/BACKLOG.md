@@ -41,7 +41,9 @@
 15. [ ] **Clasificaciones**: no se han tocado en el sondeo. Criterio ya acordado: la clasificación **de la fase donde acabó Maccabi** cada año. Los recursos de clasificaciones del dataset son los n impares (1, 5, 9, 13, 16, 20, 24, 28, 32).
 16. [ ] **Cruzar la fuente JDM con el histórico propio** (`season_*.json`, `personas.json`, la matriz): bloque futuro, sólo cuando la fuente JDM esté cerrada.
 17. [ ] **Tapar 2013/14, 2019/20 y 2025/26 desde las actas propias**: no están en el histórico del portal (2025/26 vive en el dataset 211549 de temporada en curso).
-18. [ ] _(Las pantallas y el código salen con el PR #3, `feat/cierre-sporteasy`; quedan las columnas y tablas de la base, que no se tocan sin el OK de Iván, D111.)_ **Decidir con Iván qué hacer con el código que aún depende de SportEasy** (Importar → Respuestas, `diccionario_sporteasy`, `BloqueImportacion`/`importacionAuto`, columnas `sporteasy_*`, textos del modo apagado) — D153; no se borra sin su OK. Lista completa en `ESTADO.md` («Rutina B automática, fin de SportEasy y avisos»).
+18. [x] ~~**Decidir con Iván qué hacer con el código que aún depende de SportEasy**~~ **Hecho (31/10/2026, `feat/cierre-sporteasy`, D153 ampliada):** Iván decidió quitarlo todo de la plataforma; columnas `sporteasy_*`, `diccionario_sporteasy`, `respuestas.sporteasy_descartado` y `respuestas_web_config.sporteasy_comprobado` quedan huérfanas en la base (sin leer ni escribir).
+19. [ ] **Migración que borra lo huérfano de SportEasy** (columnas `sporteasy_*` de `eventos` y de la convocatoria, `diccionario_sporteasy`, `respuestas.sporteasy_descartado`, `respuestas_web_config.sporteasy_comprobado` y la condición 4 de la función del interruptor): **solo cuando Iván lo diga**, con D111 (volcado, `.revertir.sql`, permisos y cuentas antes y después). D153.
+20. [ ] **¿Quitar el interruptor «respuestas en la web»?** Sin SportEasy, apagado deja a los jugadores sin sitio donde responder. Propuesta de Code (D153 ampliada): quitar la tarjeta y dar por encendido para siempre; lo decide Iván.
 
 ## Pendiente de Iván
 

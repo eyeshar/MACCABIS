@@ -2,8 +2,8 @@
 // Lógica pura de eventos (paso 2, pista E, D94), sin base de datos ni navegador:
 //   - el importador de calendario con el BLOQUE OFICIAL del Ayuntamiento (44 líneas, leído el 02/10/2026) sale "0 cambios";
 //     con una línea modificada a mano sale 1 cambio; los partidos nuevos y desaparecidos se señalan, no se borran solos;
-//   - el importador de respuestas: nombres desconocidos bloquean SOLO su línea y no se emparejan por parecido;
-//   - pista efectiva, quedada, series, cambios, mensaje de WhatsApp, respuestas ordenadas, recordatorio y asistencia.
+//   - pista efectiva, quedada, series, cambios, mensaje de WhatsApp (desde la línea amarilla del evento, sin SportEasy),
+//     respuestas ordenadas y asistencia.
 //
 //   npm run pruebas:eventos-logica
 
@@ -96,55 +96,13 @@ ok(deportes.slice(0, 4).every((l) => l.tipo === 'partido') && deportes.slice(0, 
 ok(deportes[4].tipo === 'error', 'una pista sin número («Moratalaz») sigue siendo un error');
 ok(I.leerPista('Moratalaz - Pista 2') === 2 && I.leerPista('') === null && I.leerPista('Pabellón 1 baloncesto 3') === 3, 'leerPista: «Moratalaz - Pista 2» = 2, vacío = por confirmar, y con dos números manda el de «baloncesto»');
 
-console.log('\n== Importador de respuestas');
-const personas = [{ person_id: 'esteban-jon', nombre: 'Jon Esteban' }, { person_id: 'gianatti-adriano', nombre: 'Adriano Gianatti' }, { person_id: 'romero-barrueco-alonso', nombre: 'Alonso Romero' }];
-const dic = I.crearDiccionario([{ nombre_sporteasy: 'Jon Adrian Esteban Peñas', person_id: 'esteban-jon' }, { nombre_sporteasy: 'Adriano Gianatti', person_id: 'gianatti-adriano' }]);
-const evs = [
-  ...entrenosIniciales().map((e, i) => ({ id: `e${i}`, clave: e.clave, fecha: e.fecha, tipo: 'entreno', equipo: 'ambos', estado: 'programado' })),
-  ...partidos.map((p) => ({ id: p.clave, clave: p.clave, fecha: p.fecha, tipo: 'liga', equipo: p.equipo, estado: 'programado' })),
-];
-const txt = [
-  'evento;jugador;respuesta;motivo;detalle',
-  '14/10/2026 entreno;Jon Adrian Esteban Peñas;No voy;Trabajo;Turno de tarde',
-  'entreno-semanal-2026-10-14;Adriano Gianatti;va;;',
-  '18/10/2026 MdA;Adriano Gianatti;duda',
-  '18/10/2026 MdL;Jon Adrian Esteban Peñas;va',
-  '2026-10-14 entreno;Alonso Romero;no voy;vacaciones',                 // Alonso no esta en el diccionario
-  '2026-10-14 entreno;Jon Esteban;va',                                   // "parecido" a un nombre del diccionario
-  '18/10/2026;Adriano Gianatti;va',                                      // dos partidos ese dia: ambiguo
-  '15/10/2026 entreno;Adriano Gianatti;va',                              // no hay evento
-  '14/10/2026 entreno;Adriano Gianatti;puede ser;;',                    // respuesta rara
-  '14/10/2026 entreno;Adriano Gianatti;no;aburrimiento',                 // motivo fuera de la lista
-  'Jon Adrian Esteban Peñas;20/12/2026;03/01/2027;Viaje',
-  'Alonso Romero;20/12/2026;03/01/2027;viaje',
-  'Adriano Gianatti;10/12/2026;01/12/2026;viaje',
-].join('\n');
-const r = I.leerRespuestas(txt, dic, evs, personas);
-const valida = r.filter((l) => l.estado === 'valida'), bloq = r.filter((l) => l.estado === 'bloqueada'), err = r.filter((l) => l.estado === 'error');
-ok(r.length === 13, '13 líneas leídas (sin la cabecera)', String(r.length));
-ok(valida.length === 5, '5 válidas: 4 respuestas y 1 ausencia', `${valida.length} ${valida.map((l) => l.n)}`);
-ok(valida[0].respuesta === 'no' && valida[0].motivo === 'trabajo' && valida[0].detalle === 'Turno de tarde' && valida[0].person_id === 'esteban-jon', 'respuesta con motivo y detalle');
-ok(valida[1].evento.clave === 'entreno-semanal-2026-10-14' && valida[1].respuesta === 'va', 'el evento se puede dar por su clave');
-ok(valida[2].evento.clave === 'mda-j2' && valida[2].respuesta === 'duda', '«18/10/2026 MdA» encuentra el partido de MdA');
-ok(valida[4].tipo === 'ausencia' && valida[4].motivo === 'viaje' && valida[4].desde === '2026-12-20' && valida[4].hasta === '2027-01-03', 'ausencia por periodo con su motivo');
-ok(bloq.length === 3, '3 líneas BLOQUEADAS por nombre desconocido (Alonso dos veces y «Jon Esteban»)', `${bloq.length}`);
-ok(bloq.some((l) => l.nombre === 'Jon Esteban'), '«Jon Esteban» NO se empareja con «Jon Adrian Esteban Peñas» por parecido');
-ok(bloq.some((l) => l.tipo === 'ausencia' && l.nombre === 'Alonso Romero'), 'la ausencia de un desconocido también se bloquea, solo ella');
-ok(I.nombresBloqueados(r).length === 2, 'se pide asignar 2 nombres distintos');
-ok(err.length === 5, '5 líneas con error propio (evento ambiguo, inexistente, respuesta, motivo, periodo al revés)', String(err.length));
-ok(valida.every((l) => !!l.person_id), 'toda línea válida lleva un person_id');
-const dic2 = I.crearDiccionario([{ nombre_sporteasy: 'Jon Adrian Esteban Peñas', person_id: 'esteban-jon' }, { nombre_sporteasy: 'Adriano Gianatti', person_id: 'gianatti-adriano' }, { nombre_sporteasy: 'Alonso Romero', person_id: 'romero-barrueco-alonso' }]);
-const r2 = I.leerRespuestas(txt, dic2, evs, personas);
-ok(r2.filter((l) => l.estado === 'bloqueada').length === 1 && r2.filter((l) => l.estado === 'valida').length === 7, 'tras asignar «Alonso Romero» a mano (una vez), sus 2 líneas pasan a válidas');
-ok(I.leerRespuestas('14/10/2026 entreno;adriano gianatti;VA', dic, evs, personas)[0].estado === 'valida', 'mayúsculas y espacios no cuentan, pero sí el nombre entero');
-
 console.log('\n== Pista efectiva, quedada y series');
 const pistas = [
   { id: 'v', slug: 'valdebernardo', nombre: 'Valdebernardo (Faustina Valladolid)', nombre_corto: 'Valdebernardo', direccion: null, uso: 'entreno', estado: 'en_obras', es_de_serie: true, num_pistas: null, nota: null },
   { id: 'c', slug: 'caja-magica', nombre: 'Caja Mágica', nombre_corto: 'Caja Mágica', direccion: null, uso: 'entreno', estado: 'provisional', es_de_serie: false, num_pistas: null, nota: null },
   { id: 'm', slug: 'cdm-moratalaz', nombre: 'CDM Moratalaz', nombre_corto: 'Moratalaz', direccion: 'C/ Valdebernardo, 2, 28030 Madrid', uso: 'partido', estado: 'habitual', es_de_serie: false, num_pistas: 3, nota: null },
 ];
-const miercoles = { id: 'x', clave: 'entreno-semanal-2026-10-14', temporada: '2026-27', tipo: 'entreno', equipo: 'ambos', titulo: 'Entrenamiento', jornada: null, rival: null, es_local: null, fecha: '2026-10-14', inicio: '20:30:00', fin: '22:30:00', quedada: '20:10:00', pista_id: null, numero_pista: null, notas: null, origen: 'manual', serie: 'entreno-semanal', estado: 'programado', sporteasy_estado: 'pendiente', sporteasy_cambio: null, sporteasy_copiado_en: null };
+const miercoles = { id: 'x', clave: 'entreno-semanal-2026-10-14', temporada: '2026-27', tipo: 'entreno', equipo: 'ambos', titulo: 'Entrenamiento', jornada: null, rival: null, es_local: null, fecha: '2026-10-14', inicio: '20:30:00', fin: '22:30:00', quedada: '20:10:00', pista_id: null, numero_pista: null, notas: null, origen: 'manual', serie: 'entreno-semanal', estado: 'programado' };
 let pe = D.pistaEfectiva(miercoles, pistas);
 ok(pe.porConfirmar && pe.texto === 'Pista por confirmar' && pe.motivo === 'Valdebernardo en obras', 'entreno sin pista con Valdebernardo en obras -> «Pista por confirmar (Valdebernardo en obras)»');
 const reabiertas = pistas.map((p) => (p.slug === 'valdebernardo' ? { ...p, estado: 'habitual' } : p));
@@ -165,10 +123,18 @@ const cs = D.describirCambios(miercoles, nuevoEv, pistas);
 ok(cs.includes('pista: Pista por confirmar → Caja Mágica') && cs.includes('hora de inicio: 20:30 → 21:00'), 'describe lo que cambia', cs.join(' | '));
 ok(D.describirCambios(miercoles, { ...miercoles, estado: 'cancelado' }, pistas).join() === 'evento cancelado', 'cancelar se describe como «evento cancelado»');
 ok(D.describirCambios(miercoles, miercoles, pistas).length === 0, 'sin cambios no hay nada que copiar');
-ok(D.juntarCambios('pista: A → B', ['pista: B → C']).includes('; '), 'los cambios se acumulan hasta copiarlos');
 const msg = D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: cs });
 ok(/^Entreno del miércoles 14\/10: /.test(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: [] })) && !/Cambio en el/.test(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio')), '«Cambio en el entreno…» solo si hay un cambio real');
-ok(/Cambio en el entreno del miércoles 14\/10/.test(msg) && /Caja Mágica/.test(msg) && /Responded en SportEasy/.test(msg), 'mensaje de cambio de entreno', msg);
+ok(/Cambio en el entreno del miércoles 14\/10/.test(msg) && /Caja Mágica/.test(msg), 'mensaje de cambio de entreno', msg);
+ok(!/SportEasy|Responded/.test(msg) && !/Responde en la web/.test(msg), 'apagado: sin línea de respuesta ni SportEasy', msg);
+ok(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: cs, respondeEnLaWeb: 'https://x/mi-zona' }).endsWith('\nResponde en la web: https://x/mi-zona'), 'encendido: termina con el enlace a la web');
+// El mensaje de la ficha sale de los datos propios del evento: estado, recién creado y la línea amarilla (cambio_visible).
+const cv = { campos: ['pista', 'hora'], antes: 'Pista por confirmar, 20:30–22:30' };
+ok(D.cambiosDeVisible(cv).join() === 'pista, hora (antes: Pista por confirmar, 20:30–22:30)', 'cambios desde cambio_visible', D.cambiosDeVisible(cv).join());
+ok(D.cambiosDeVisible(null).length === 0 && D.cambiosDeVisible(undefined).length === 0 && D.cambiosDeVisible({ campos: [], antes: '' }).length === 0, 'sin línea amarilla, sin lista de cambios');
+const msgCv = D.mensajeWhatsApp({ ...nuevoEv, cambio_visible: cv }, pistas, D.accionMensajeDe(nuevoEv, false), { cambios: D.cambiosDeVisible(cv) });
+ok(/^Cambio en el entreno del miércoles 14\/10: de 21:00 a 22:30 \(encuentro 20:40\) en Caja Mágica\.\nQué cambia: pista, hora \(antes: Pista por confirmar, 20:30–22:30\)\.$/.test(msgCv), 'WhatsApp tras «Guardar y avisar»: cabecera de cambio y «Qué cambia» desde cambio_visible', msgCv);
+ok(D.accionMensajeDe({ estado: 'cancelado' }, true) === 'cancelado' && D.accionMensajeDe({ estado: 'programado' }, true) === 'nuevo' && D.accionMensajeDe({ estado: 'programado' }, false) === 'cambio', 'acción del mensaje: cancelado > recién creado > cambio');
 ok(/pista por confirmar \(Valdebernardo en obras\)/.test(D.mensajeWhatsApp(miercoles, pistas, 'nuevo')), 'con la pista por confirmar lo dice');
 ok(/^Se cancela el entreno del miércoles 14\/10/.test(D.mensajeWhatsApp(miercoles, pistas, 'cancelado')), 'mensaje de cancelación');
 const partido = { ...miercoles, tipo: 'liga', equipo: 'MdA', titulo: null, jornada: 2, rival: 'Litros de Mahou', es_local: false, fecha: '2026-10-18', inicio: '10:15:00', fin: null, quedada: '09:55:00', pista_id: 'm', numero_pista: 2, serie: null, origen: 'ayuntamiento' };
@@ -181,11 +147,11 @@ const pAdm = [...pistas, adm];
 ok(D.mensajeWhatsApp(e1410, pAdm, 'nuevo').split('\n')[0] === 'Entreno del miércoles 14/10: de 20:00 a 22:00 (encuentro 19:40) en Antonio Díaz Miguel, pista 3 — Calle Joaquín Dicenta, 1.', 'WhatsApp: horario, encuentro, pista, número (de las notas) y dirección', D.mensajeWhatsApp(e1410, pAdm, 'nuevo'));
 ok(!/Pista 3\./.test(D.mensajeWhatsApp(e1410, pAdm, 'nuevo')), 'la nota «Pista 3» no se repite');
 const conNota = D.mensajeWhatsApp({ ...e1410, numero_pista: 2, notas: 'Traed agua' }, pAdm, 'nuevo');
-ok(/en Antonio Díaz Miguel, pista 2 — Calle/.test(conNota) && /\nTraed agua\.\n/.test(conNota), 'el número de pista del evento manda y las notas reales se añaden', conNota);
+ok(/en Antonio Díaz Miguel, pista 2 — Calle/.test(conNota) && /\nTraed agua\.$/.test(conNota), 'el número de pista del evento manda y las notas reales se añaden', conNota);
 ok(/^Entreno del miércoles 14\/10: de 20:00 a 22:00 \(encuentro 19:40\), pista por confirmar/.test(D.mensajeWhatsApp({ ...e1410, pista_id: null }, pistas, 'nuevo')), 'sin pista: «pista por confirmar»');
 ok(/a las 20:00 \(encuentro 19:40\) en Antonio/.test(D.mensajeWhatsApp({ ...e1410, fin: null }, pAdm, 'nuevo')), 'sin hora de fin: «a las…»');
 
-console.log('\n== Respuestas ordenadas, recordatorio y asistencia');
+console.log('\n== Respuestas ordenadas y asistencia');
 const plantilla = ['a', 'b', 'c', 'd', 'e'].map((x) => ({ person_id: x, nombre_visible: x.toUpperCase(), ficha_mda: true, ficha_mdl: false, entrena: true, activo: true }));
 const filas = D.ordenarRespuestas(miercoles, plantilla, [
   { person_id: 'a', respuesta: 'va', motivo: null, detalle: null, leido_en: null }, { person_id: 'b', respuesta: 'no', motivo: 'viaje', detalle: null, leido_en: null },
@@ -195,8 +161,6 @@ ok(filas.map((f) => f.person_id).join('') === 'bcdea', 'orden: no van → dudan 
 ok(filas.find((f) => f.person_id === 'e').porPeriodo?.motivo === 'trabajo', 'quien tiene una ausencia por periodo que cubre el día sale marcado');
 const c = D.contarRespuestas(filas);
 ok(c.va === 1 && c.no === 1 && c.duda === 1 && c.sin_responder === 2, 'contadores');
-const rec = D.recordatorio(miercoles, filas, pistas);
-ok(rec.faltan.join() === 'D' && /Voy \/ No voy \/ Duda/.test(rec.texto), 'el recordatorio pide solo a quien no ha respondido y no está ausente por periodo', rec.faltan.join());
 ok(D.convocadosDe({ tipo: 'liga', equipo: 'MdL' }, plantilla).length === 0 && D.convocadosDe({ tipo: 'entreno', equipo: 'ambos' }, plantilla).length === 5, 'convocados: entreno = quien entrena; MdL = fichas de MdL');
 {
   const base = { ficha_mda: true, ficha_mdl: true, entrena: true, activo: true, rol: 'jugador' };

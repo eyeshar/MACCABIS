@@ -1,33 +1,18 @@
-import Link from "next/link";
 import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
-import { cargarEventos, cargarJugadores } from "@/lib/eventos/datos";
-import { hhmm } from "@/lib/eventos/dominio";
-import { madrid } from "@/lib/avisos/horario";
-import { estadoImportacion } from "@/lib/eventos/importacionAuto";
-import BloqueImportacion from "@/components/gestion/BloqueImportacion";
 import { fechaHora } from "@/lib/fechas";
 import ImportarCalendario from "./ImportarCalendario";
-import ImportarRespuestas from "./ImportarRespuestas";
 
 export const metadata = { title: "Importar · Gestión Maccabis" };
 
-export default async function Importar({ searchParams }: { searchParams: Promise<{ t?: string }> }) {
-  const { t } = await searchParams;
-  const pestana = t === "respuestas" ? "respuestas" : "calendario";
+/** Importar: solo el calendario del Ayuntamiento (las respuestas ya no se importan; un enlace viejo con
+ *  `?t=respuestas` cae aqui igual). */
+export default async function Importar() {
   const { supabase } = await exigirGestor();
-  const [jugadores, { data: registro }, { data: encendido }, eventos] = await Promise.all([
-    cargarJugadores(supabase),
-    supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, validas, aceptadas, ignoradas, bloqueadas, detalle").order("en", { ascending: false }).limit(10),
+  const [{ data: registro }, { data: encendido }] = await Promise.all([
+    supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, validas, aceptadas, ignoradas, bloqueadas").order("en", { ascending: false }).limit(10),
     supabase.rpc("respuestas_web_encendido"),
-    cargarEventos(supabase),
   ]);
-  // D126: ultima importacion de respuestas, proxima automatica y si pueden estar desactualizadas.
-  const ultimaResp = (registro ?? []).find((r) => r.tipo === "respuestas") ?? null;
-  const ahora = new Date();
-  const proximo = eventos.filter((e) => e.tipo === "liga" && e.estado === "programado").map((e) => madrid(e.fecha, hhmm(e.inicio) ?? "10:00")).filter((t) => t > ahora).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
-  const estadoImp = estadoImportacion(ultimaResp?.en ?? null, ultimaResp?.por_nombre ?? null, proximo, ahora);
-  const personas = jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
   return (
     <>
       <div className="gs-titulo">
@@ -36,11 +21,7 @@ export default async function Importar({ searchParams }: { searchParams: Promise
           <h1>Importar</h1>
         </div>
       </div>
-      <nav className="ev-pestanas" aria-label="Qué importar">
-        <Link href="/gestion/eventos/importar" aria-current={pestana === "calendario" ? "true" : undefined}>Calendario</Link>
-        <Link href="/gestion/eventos/importar?t=respuestas" aria-current={pestana === "respuestas" ? "true" : undefined}>Respuestas</Link>
-      </nav>
-      {pestana === "calendario" ? <ImportarCalendario encendido={Boolean(encendido)} /> : <><BloqueImportacion estado={estadoImp} enlaceImportar={false} /><div style={{ height: 16 }} /><ImportarRespuestas personas={personas} /></>}
+      <ImportarCalendario encendido={Boolean(encendido)} />
 
       <section className="gs-bloque" style={{ marginTop: 20 }} aria-labelledby="t-registro" data-testid="registro-importaciones">
         <h2 id="t-registro" style={{ fontSize: 22 }}>Importaciones registradas</h2>

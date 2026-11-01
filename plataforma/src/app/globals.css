@@ -636,9 +636,6 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .gs-bloque { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: var(--radio-grande); padding: 22px; display: flex; flex-direction: column; gap: 14px; }
 .gs-bloque h2 { margin: 0; font-size: 26px; }
 .gs-bloque-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-/* Estado de la importacion de respuestas de SportEasy (D126). */
-.gs-importacion { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--borde); border-radius: var(--radio); font-size: 15px; overflow-wrap: anywhere; }
-.gs-importacion-aviso { margin: 0; padding: 8px 10px; border-radius: var(--radio); background: var(--amarillo-claro); color: var(--amarillo-tinta); border: 1px solid color-mix(in srgb, var(--amarillo) 45%, transparent); }
 .gs-tabla th { font-family: var(--f-cifras); font-weight: 400; font-size: 12px; color: var(--tinta-tenue); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 0; }
 .gs-tabla td { padding: 14px 6px; border-bottom: 0; border-top: 1px solid var(--linea-suave); vertical-align: middle; }
 /* Partidos del domingo: por debajo de 640 px cada fila es una tarjeta como las de Scouting (equipo, partido, hora · pista, equipación, convocados). */

@@ -11,7 +11,6 @@ import {
 } from "@/lib/tablero/vista";
 import type { OpcionSelector, TableroDomingo, TableroEvento } from "@/lib/tablero/datos";
 import { proyeccionDe, textoBajoMinimo, textoCorreccion, textoFactor, textoProyeccion, textoRival } from "@/lib/convocatoria/proyeccion";
-import BloqueImportacion from "@/components/gestion/BloqueImportacion";
 import { cambiarConvocatoria, deshacerRespuestas, responderTablero, restaurarConvocatoria } from "./acciones";
 
 const CLAVE_AGRUPAR = "maccabis:tablero-agrupar";
@@ -263,7 +262,6 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
           <Selector opciones={opciones} actual={actual} />
         </div>
         {avisoEstado}
-        {!datos.encendido && <BloqueImportacion estado={datos.importacion} />}
         <div className="tb-resumenes">
           {resumen.map((r) => {
             const pr = proyeccionDe(datos.proyeccion, r.equipo, (conv[r.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombres.get(c.person_id) ?? c.person_id })), datos.partidos.find((p) => p.equipo === r.equipo)?.dificultad);
@@ -315,7 +313,7 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
         <div>
           <div className="gs-eyebrow">Tablero · evento</div>
           <h1>{datos.evento.titulo}</h1>
-          <span className="suave">{new Date(`${datos.evento.fecha}T12:00:00Z`).toLocaleDateString("es-ES", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" })}{datos.evento.inicio ? ` · ${datos.evento.inicio.slice(0, 5)}` : ""}{!datos.encendido ? " · fase puente: lo que cambies aquí queda «puesto por ti» y una importación de SportEasy no lo pisa" : ""}</span>
+          <span className="suave">{new Date(`${datos.evento.fecha}T12:00:00Z`).toLocaleDateString("es-ES", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" })}{datos.evento.inicio ? ` · ${datos.evento.inicio.slice(0, 5)}` : ""}</span>
         </div>
         <Selector opciones={opciones} actual={actual} />
       </div>

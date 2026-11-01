@@ -53,7 +53,7 @@
 .in-pendiente-titulo { font-size: 1.05rem; }
 .in-pendiente-lugar { font-size: 0.92rem; }
 .in-pendiente .rw-responder { margin-top: auto; }
-.in-sporteasy { margin-top: auto; }
+.in-apagado { margin-top: auto; margin-bottom: 0; }
 @media (min-width: 1024px) {
   .in-tarjetas { overflow-x: visible; scroll-snap-type: none; flex-wrap: wrap; }
   .in-tarjeta-caja { flex: 1 1 280px; max-width: 380px; }

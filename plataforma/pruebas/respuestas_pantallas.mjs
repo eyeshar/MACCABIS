@@ -3,14 +3,14 @@
 // claves VAPID de prueba, un servicio de avisos FALSO por HTTPS (para ver lo que se envia y simular una suscripcion
 // caducada, 410) y Chrome con sesion de jugador y de gestor.
 //
-//   - Interruptor APAGADO: Mi zona y el evento informan sin botones («Por ahora, responde en SportEasy»), sin Ausencias;
+//   - Interruptor APAGADO: Mi zona y el evento informan sin botones («Las respuestas en la web están desactivadas»), sin
+//     Ausencias y sin ninguna mención de SportEasy;
 //     la banda y /avisos sí; el aviso de prueba sale.
 //   - ENCENDIDO: «Te faltan N respuestas», Voy / No voy (hoja con motivo obligatorio, Esc) / Duda, domingo con «Solo al
 //     de las 09:00», ausencia con calendario y aviso de «tenías voy», «Quién va» sin motivos.
 //   - Gestión: respuestas en la web, «Responder por él», banda roja y «Visto», vista de domingo, editar evento con
-//     encuentro calculado y aviso de cambio, tarjeta del interruptor; tarea protegida con secreto.
-//   - Importar respuestas ENCENDIDO: todo el curso de una pasada, nunca pisa lo respondido en la web (respuestas ni
-//     ausencias) y, tras «Guardar», un resumen por evento para cotejar con SportEasy.
+//     encuentro calculado y aviso de cambio, tarjeta del interruptor (sin la casilla ni los pasos de SportEasy); tarea
+//     protegida con secreto.
 //   - Suscripción caducada (410): se desactiva sola. 375 px sin desbordamiento y botones de al menos 44 px.
 //
 //   npm run pruebas:respuestas-pantallas
@@ -129,18 +129,21 @@ try {
   await entrar(pj, jugadorEmail);
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.getByText('Activa los avisos en este móvil')), 'banda amarilla «Activa los avisos en este móvil»');
-  ok(/se responden en SportEasy/.test(await pj.getByTestId('regla-recordatorios').innerText()), 'inicio (D117): «los partidos y entrenos se responden en SportEasy»');
+  ok(/desactivadas/.test(await pj.getByTestId('regla-recordatorios').innerText()), 'inicio: «Las respuestas en la web a partidos y entrenos están desactivadas»');
+  ok(!/SportEasy/i.test(await pj.locator('main').innerText()) && !(await pj.getByTestId('responder-sporteasy').count()), 'inicio apagado: ni «SportEasy» ni «Responder en SportEasy»');
   ok((await pj.locator('.rw-banda svg').count()) === 1 && !(await pj.locator('.rw-banda').innerText()).includes('🔔'), 'la banda lleva la campana dibujada (icono), no el emoji 🔔');
   ok(!(await pj.locator('.rw-btn').count()) && !(await pj.getByText(/Te faltan|Te falta 1/).count()), 'sin botones para responder ni «Te faltan…»');
   await pj.goto(`${APP}/agenda`);
   ok(!(await pj.getByText('Marcar días que no estoy').count()), 'agenda: sin «Marcar días que no estoy»');
+  ok(await visto(pj.getByText(/Las respuestas en la web a partidos y entrenos están desactivadas/)) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'agenda apagada: «Las respuestas en la web … están desactivadas», sin «SportEasy»');
   await pj.goto(`${APP}/`);
   ok(await sinDesbordar(pj), 'Mi zona a 375 px sin desbordamiento');
   await foto(pj, 'mizona_apagado_375');
   await pj.goto(`${APP}/mi-zona/ausencias`);
   ok(new URL(pj.url()).pathname === '/agenda', '/mi-zona/ausencias apagado → vuelve a la Agenda');
   await pj.goto(`${APP}/mi-zona/evento/${E.entreno}`);
-  ok(await visto(pj.getByRole('heading', { name: '¿Vas?' })) && await visto(pj.getByText('Por ahora, responde en SportEasy.')) && !(await pj.locator('.rw-btn').count()), 'evento: la información, sin botones, con «Por ahora, responde en SportEasy»');
+  ok(await visto(pj.getByRole('heading', { name: '¿Vas?' })) && await visto(pj.getByText('Las respuestas en la web están desactivadas.')) && !(await pj.locator('.rw-btn').count()), 'evento: la información, sin botones, con «Las respuestas en la web están desactivadas»');
+  ok(!/SportEasy/i.test(await pj.locator('main').innerText()), 'evento apagado: sin «SportEasy»');
   ok(await visto(pj.getByText(/encuentro \d\d:\d\d/)), 'evento: «HH:MM–HH:MM · encuentro HH:MM»');
   await pj.goto(`${APP}/avisos`);
   ok(await visto(pj.getByText('Solo te avisamos si te falta responder')) && await visto(pj.getByText('De noche, solo si el partido es en pocas horas.')), '/avisos: el texto de arriba');
@@ -186,7 +189,7 @@ try {
   await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.getByText(/Te faltan \d+ respuestas|Te falta 1 respuesta/).first()), '«Te faltan N respuestas»');
-  ok(!(await pj.getByText('Por ahora, responde en SportEasy').count()) && !(await pj.getByText('(SportEasy)').count()) && !/SportEasy/.test(await pj.getByTestId('regla-recordatorios').innerText()), 'ya no se habla de SportEasy');
+  ok(!(await pj.getByText('Las respuestas en la web están desactivadas').count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'encendido: ni «desactivadas» ni «SportEasy»');
   const tarjeta = pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/mi-zona/evento/${E.entreno}"]`) });
   ok(await tarjeta.count() === 1, 'el próximo entreno tiene su tarjeta con los botones');
   const pequenos = await tactiles(pj, '.rw-btn, .rw-banda, .rw-marcar, .zb a');
@@ -287,7 +290,7 @@ try {
   ok((await pg.getByTestId('contadores').innerText()).includes('van') && (await pg.getByTestId('contadores').innerText()).includes('sin responder'), 'cajas van / dudan / no van / sin responder');
   const tabla = await pg.getByTestId('tabla-respuestas').innerText();
   ok(/Trabajo · Turno de tarde/.test(tabla) && /Lesión · Rodilla izquierda/.test(tabla), 'los gestores ven motivo y detalle');
-  ok(/en la web/.test(tabla) && /leído de SportEasy/.test(tabla), 'cada respuesta dice su origen');
+  ok(/en la web/.test(tabla) && !/SportEasy/i.test(tabla), 'cada respuesta dice su origen (la importada, sin «SportEasy»)');
   ok(!(await pg.getByTestId('recordatorio').count()) && await visto(pg.getByRole('button', { name: 'Enviar un recordatorio ahora' })), 'sin «Pedir recordatorio a Claude»; con «Enviar un recordatorio ahora»');
   ok(await visto(pg.getByTestId('recordatorios-automaticos').getByText('Lunes a las 19:00')), 'lateral «Recordatorios automáticos»');
   ok(await visto(pg.getByTestId('sin-avisos').getByText(/Sin avisos activados · \d+/)) && await visto(pg.getByTestId('sin-avisos').getByRole('button', { name: /Copiar mensaje/ })), 'tarjeta «Sin avisos activados · N» con «Copiar mensaje»');
@@ -345,7 +348,7 @@ try {
   const franja = await pg.getByTestId('tarjeta-activar').innerText();
   ok(/Respuestas en la web: encendido desde .+\./.test(await pg.getByTestId('franja-encendido').innerText()), 'franja: «Respuestas en la web: encendido desde <fecha, hora>» (y «(quién)» si se sabe)', franja.slice(0, 300));
   { const m = /Con avisos: (\d+)\/(\d+)/.exec(franja); const l = (await pg.getByTestId('avisos-numeros').innerText()).match(/\d+/g) || []; ok(!!m && l.length >= 2 && +m[2] === +l[0] + +l[1] && +m[2] === 27 && +m[1] === +l[0], 'franja: «Con avisos: N/M» cuadra con «con avisos» + «sin avisos»', franja.slice(0, 300) + ' | ' + l.join(',')); }
-  ok(!/jornadas seguidas|Al activar, en este orden|mínimo 20|SportEasy deja de pedir respuesta|Copiar mensaje para la plantilla/.test(franja), 'sin condiciones 1, 2 y 4, sin los pasos de activar ni el mensaje de lanzamiento');
+  ok(!/jornadas seguidas|Al activar, en este orden|mínimo 20|SportEasy|Copiar mensaje para la plantilla/.test(franja), 'sin condiciones 1 y 2, sin los pasos de activar, sin el mensaje de lanzamiento y sin «SportEasy»');
 
   // D156: el recuadro se actualiza solo (aqui se fuerza la vuelta a la pestaña con visibilitychange; el reloj de 60 s lo prueba la unitaria de abajo).
   const conAv = async () => +((/Con avisos: (\d+)\//.exec(await pg.getByTestId('con-avisos-cabecera').innerText()) || [])[1] ?? -1);
@@ -372,7 +375,7 @@ try {
   await pg.getByTestId('mas-opciones').locator('summary').click();
   ok(await visto(pg.getByTestId('desactivar')), 'con «Desactivar» dentro de «Más opciones»');
   await pg.getByTestId('desactivar').click();
-  ok(await visto(pg.getByTestId('desactivar-confirmar')) && /SportEasy ya no tiene participantes/.test(await pg.getByTestId('desactivar-confirmar').innerText()) && /no los recupera/.test(await pg.getByTestId('desactivar-confirmar').innerText()), 'confirmación en la página (sin diálogo del navegador) que explica que SportEasy ya no tiene participantes y que no se recuperan');
+  ok(await visto(pg.getByTestId('desactivar-confirmar')) && /dejan de poder responder/.test(await pg.getByTestId('desactivar-confirmar').innerText()) && !/SportEasy/i.test(await pg.getByTestId('mas-opciones').innerText()), 'confirmación en la página (sin diálogo del navegador): los jugadores dejan de poder responder; sin «SportEasy»');
   await pg.getByTestId('desactivar-confirmar').getByRole('button', { name: 'No' }).click();
   ok((await sql`select encendido from public.respuestas_web_config where id = 1`)[0].encendido === true, '«No» deja el interruptor encendido');
   ok(!/Preparar convocatoria|llega en el paso 2/.test(await pg.locator('main').innerText()), 'el panel ya no dice «Preparar convocatoria: llega en el paso 2»');
@@ -444,78 +447,16 @@ try {
   ok(await visto(pcg.getByTestId('tabla-eventos')) && !(await pcg.getByTestId('copia-sin-notificar').count()) && !(await pcg.getByTestId('copia-sporteasy').count()), 'Eventos ya no tiene la tarjeta «Copia a SportEasy» (D153)');
   await ctxCg.close();
 
-  console.log('\n== Importar respuestas ENCENDIDO: todo el curso de una pasada, manda la web y resumen para cotejar');
-  {
-    // Todos los eventos abiertos futuros (entrenos hasta mayo y partidos de MdA y MdL) × todos sus invitados, con motivos.
-    const pares = await sql`select e.id, e.clave, j.person_id from public.eventos e cross join public.jugadores j
-                            where e.estado = 'programado' and e.oficial and e.borrado_en is null and e.fecha >= ${hoy} and public._invitado(j.person_id, e.id)
-                            order by e.fecha, e.inicio, j.person_id`;
-    const eventosAbiertos = [...new Set(pares.map((x) => x.id))];
-    const RESP = ['va', 'no', 'sin responder', 'duda'];
-    const esperado = new Map();
-    const lineas = ['evento;jugador;respuesta;motivo;detalle'];
-    pares.forEach((x, i) => {
-      let r = RESP[i % 4];
-      // Jon dijo «no voy» (trabajo) en la web y Daniele tiene «duda» puesta por Iván: SportEasy dice otra cosa.
-      if (x.id === E.entreno && x.person_id === 'esteban-jon') r = 'va';
-      if (x.id === E.entreno && x.person_id === 'vallesi-daniele') r = 'no';
-      const motivo = r === 'no' ? (i % 3 ? 'viaje' : 'trabajo') : '';
-      lineas.push(`${x.clave};${x.person_id};${r};${motivo};${r === 'no' ? 'Detalle sintético' : ''}`);
-      esperado.set(`${x.id}|${x.person_id}`, { respuesta: r === 'sin responder' ? 'sin_responder' : r, motivo: motivo || null });
-    });
-    // Una ausencia puesta en la web: SportEasy trae la misma con otro motivo.
-    await sql`insert into public.ausencias_periodo (person_id, desde, hasta, motivo, fuente, origen) values ('gianatti-adriano', '2027-02-08', '2027-02-10', 'viaje', 'web', 'jugador')`;
-    lineas.push('gianatti-adriano;08/02/2027;10/02/2027;lesion');
-    const ultimoEntreno = (await sql`select max(fecha)::text f from public.eventos where tipo = 'entreno' and estado = 'programado' and oficial`)[0].f;
-    ok(pares.length > 1000 && eventosAbiertos.length > 50, `lo pegado: ${pares.length} respuestas de ${eventosAbiertos.length} eventos abiertos (hasta el último entreno, ${ultimoEntreno}) y una ausencia`);
-    const webAntes = await sql`select evento_id, person_id, respuesta, motivo, origen from public.respuestas where origen in ('jugador', 'gestor') and evento_id = any(${eventosAbiertos})`;
-    ok(webAntes.some((w) => w.evento_id === E.entreno && w.person_id === 'esteban-jon' && w.respuesta === 'no' && w.origen === 'jugador') && webAntes.some((w) => w.evento_id === E.entreno && w.person_id === 'vallesi-daniele' && w.origen === 'gestor'), `antes: ${webAntes.length} respuestas dadas en la web (Jon «no», Daniele «duda» por Iván)`);
-
-    await pg.goto(`${APP}/gestion/eventos/importar?t=respuestas`);
-    await pg.locator('#resp-texto').fill(lineas.join('\n'));
-    await pg.getByRole('button', { name: 'Revisar' }).click();
-    await pg.getByTestId('resultado-respuestas').waitFor({ timeout: 60000 });
-    const titulo = (await pg.getByTestId('resultado-respuestas').locator('h2').first().textContent()).trim(); // el CSS lo pone en mayúsculas
-    ok(titulo.startsWith(`${pares.length + 1} líneas válidas`) && !/bloqueadas|error/.test(titulo), `todas válidas, sin límite de fechas ni de líneas: «${titulo}»`);
-    ok(await visto(pg.getByTestId('aviso-protegidas')) && /ya respondidas? en la web/.test(titulo), '«Las respuestas en la web están activadas: manda la web» y el número de líneas ya respondidas en la web');
-    const filaJon = pg.locator('[data-testid=tabla-lineas] tr', { hasText: 'Jon' }).filter({ has: pg.getByTestId('protegida') }).first();
-    ok(/No se toca: el jugador en la web puso «No va»; SportEasy dice «Va»/.test(await filaJon.innerText().catch(() => '')), 'la línea de Jon: «No se toca: el jugador en la web puso «No va»; SportEasy dice «Va»»');
-    ok(!(await pg.getByTestId('conflicto').count()) && !(await pg.getByText('Usar SportEasy').count()), 'encendido no hay conflictos ni «Usar SportEasy»: nada puede pisar la web');
-    await pg.getByRole('button', { name: 'Guardar las válidas' }).click();
-    await pg.getByText(/^Guardado: /).waitFor({ timeout: 120000 });
-    const guardado = await pg.getByText(/^Guardado: /).innerText();
-    ok(/no se tocan: ya estaban respondidas en la web/.test(guardado), `«Guardado: …» dice cuántas no se tocan («${guardado.replace(/\s+/g, ' ')}»)`);
-
-    const webDespues = await sql`select evento_id, person_id, respuesta, motivo, origen from public.respuestas where origen in ('jugador', 'gestor') and evento_id = any(${eventosAbiertos})`;
-    const clave = (w) => `${w.evento_id}|${w.person_id}|${w.respuesta}|${w.motivo}|${w.origen}`;
-    ok(webDespues.length === webAntes.length && webAntes.every((w) => webDespues.some((x) => clave(x) === clave(w))), `las ${webAntes.length} respuestas dadas en la web siguen igual (origen, respuesta y motivo)`);
-    const [jon] = await sql`select respuesta, motivo, detalle, origen from public.respuestas where evento_id = ${E.entreno} and person_id = 'esteban-jon'`;
-    ok(jon.respuesta === 'no' && jon.motivo === 'trabajo' && jon.detalle === 'Turno de tarde' && jon.origen === 'jugador', 'Jon sigue en «no · trabajo · Turno de tarde» (en la web)');
-    ok((await sql`select motivo from public.ausencias_periodo where person_id = 'gianatti-adriano' and desde = '2027-02-08'`)[0].motivo === 'viaje', 'la ausencia puesta en la web no cambia de motivo');
-    const todas = await sql`select evento_id, person_id, respuesta, motivo, origen from public.respuestas where evento_id = any(${eventosAbiertos})`;
-    const enBase = new Map(todas.map((x) => [`${x.evento_id}|${x.person_id}`, x]));
-    const web = new Set(webAntes.map((w) => `${w.evento_id}|${w.person_id}`));
-    const mal = [...esperado.entries()].filter(([k, v]) => !web.has(k) && (enBase.get(k)?.respuesta !== v.respuesta || (enBase.get(k)?.motivo ?? null) !== v.motivo || enBase.get(k)?.origen !== 'sporteasy'));
-    ok(!mal.length, `el resto (${esperado.size - web.size}) se guarda tal cual, con sus motivos y como «sporteasy»`, mal.slice(0, 3).map(([k, v]) => `${k}: ${JSON.stringify(v)} ≠ ${JSON.stringify(enBase.get(k))}`).join(' | '));
-
-    const resumen = pg.getByTestId('resumen-cotejo');
-    ok(await visto(resumen) && (await resumen.locator('tbody tr').count()) === eventosAbiertos.length, `después de «Guardar», un resumen por evento para cotejar con SportEasy (${eventosAbiertos.length} filas)`);
-    const invE = pares.filter((x) => x.id === E.entreno).map((x) => x.person_id);
-    const cuenta = (r) => invE.filter((p) => (enBase.get(`${E.entreno}|${p}`)?.respuesta ?? 'sin_responder') === r).length;
-    const conMot = invE.filter((p) => { const x = enBase.get(`${E.entreno}|${p}`); return x && x.respuesta !== 'sin_responder' && x.motivo; }).length;
-    const filaE = await resumen.locator(`tr[data-evento="${E.entreno}"]`).innerText();
-    const textoE = `${cuenta('va')} ${cuenta('va') === 1 ? 'va' : 'van'} · ${cuenta('no')} no${cuenta('duda') ? ` · ${cuenta('duda')} duda` : ''} · ${cuenta('sin_responder')} sin responder`;
-    ok(filaE.includes(textoE) && filaE.trim().endsWith(String(conMot)), `la fila del entreno cuadra con la base: «${textoE}», ${conMot} con motivo`, filaE.replace(/\s+/g, ' '));
-    ok(!/Detalle sintético|Viaje|Trabajo/.test(await resumen.innerText()), 'el resumen no enseña motivos ni detalles, solo cuántos llevan motivo');
-    await foto(pg, 'gestion_importar_resumen_escritorio');
-  }
-
-  console.log('\n== Apagar: fase puente sin perder nada');
+  console.log('\n== Apagar: sin perder nada y sin SportEasy');
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;
   await pj.goto(`${APP}/mi-zona/evento/${E.entreno}`);
-  ok(await visto(pj.getByText('Por ahora, responde en SportEasy.')) && !(await pj.locator('.rw-btn').count()), 'apagado otra vez: sin botones');
+  ok(await visto(pj.getByText('Las respuestas en la web están desactivadas.')) && !(await pj.locator('.rw-btn').count()), 'apagado otra vez: sin botones');
   await pg.goto(`${APP}/gestion/eventos/${E.entreno}/respuestas`);
-  ok(await pg.getByTestId('origen-respuestas').innerText() === 'Leído de SportEasy' && await visto(pg.getByTestId('recordatorio')), 'Gestión vuelve a «Leído de SportEasy» y «Pedir recordatorio a Claude»');
+  ok((await pg.getByTestId('origen-respuestas').innerText()) !== 'Respuestas en la web' && !/SportEasy/i.test(await pg.locator('main').innerText()), 'Gestión: ya no dice «Respuestas en la web» y no menciona SportEasy');
+  await pg.goto(`${APP}/gestion`);
+  ok((await pg.getByTestId('estado-interruptor').innerText()) === 'Apagado' && await visto(pg.getByTestId('boton-activar')), 'Panel apagado: tarjeta «Respuestas en la web: activar» («Apagado») con su botón');
+  ok(!(await pg.getByTestId('tarjeta-activar').locator('input[type=checkbox]').count()) && !/SportEasy|Importar → Respuestas|fase puente/i.test(await pg.getByTestId('tarjeta-activar').innerText()), 'la tarjeta ya no tiene la casilla de SportEasy, ni «Importar → Respuestas», ni «fase puente»');
+  ok(!(await pg.getByTestId('hueco-sporteasy').count()) && !/SportEasy/i.test(await pg.locator('main').innerText()), 'Panel: sin el hueco de SportEasy y sin «SportEasy» en ninguna parte');
 
   await pg.goto(`${APP}/gestion/eventos/${E.entreno}/respuestas`);
   ok(!(await pg.getByRole('button', { name: /^Responder por / }).count()), 'apagado: «Responder por él» no aparece en la lista de respuestas');

@@ -207,7 +207,7 @@ export async function ejecutarTarea(ahora = new Date()) {
 }
 
 /** (b) y (c): al guardar un cambio de fecha, hora, pista o encuentro, o al cancelar, con «Guardar y avisar». Solo con el
- *  interruptor encendido (apagado sigue la cola «Copia a SportEasy»). Pasa por el silencio. */
+ *  interruptor encendido. Pasa por el silencio. */
 export async function avisarCambioEvento(eventoId: string, tipo: "cambio" | "cancelacion", cambiaElDia: boolean) {
   if (!configuradoEnvio()) return { avisados: 0, motivo: "sin_configurar" as const };
   const sb = clienteServicio();

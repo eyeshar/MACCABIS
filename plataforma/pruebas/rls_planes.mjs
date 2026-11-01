@@ -18,7 +18,7 @@ import { migrar } from '../scripts/db.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { planificar, planificarPlanes } from '../src/lib/avisos/planificador.ts';
 import { madrid } from '../src/lib/avisos/horario.ts';
-import { resumenCopia, convocadosDe } from '../src/lib/eventos/dominio.ts';
+import { convocadosDe } from '../src/lib/eventos/dominio.ts';
 import { quienResponde } from '../src/lib/respuestas/dominio.ts';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -145,8 +145,6 @@ try {
   const eventosGestor = (await api(`/eventos?select=id,tipo,equipo,fecha,oficial,sporteasy_estado,estado,serie,origen,sporteasy_cambio,inicio,fin,quedada,titulo,creado_en,sin_recordatorios,recordar_un_dia_antes,borrado_en&temporada=eq.2026-27`, { token: tG })).datos ?? [];
   const planes = eventosGestor.filter((e) => e.oficial === false);
   ok(planes.length === 2 && planes.every((e) => e.sporteasy_estado === 'pendiente'), 'los planes existen (los ve un gestor)');
-  const cola = resumenCopia(eventosGestor, hoy).pendientes;
-  ok(cola.length > 0 && !cola.some((e) => e.oficial === false), `«Copia a SportEasy»: ${cola.length} pendientes y ningún plan`);
   const jug = (await api('/jugadores?select=person_id,nombre_visible,ficha_mda,ficha_mdl,entrena,activo,rol', { token: tG })).datos;
   const ahoraRec = new Date(Date.now());
   const recClub = planificar({ ahora: ahoraRec, encendidoDesde: new Date(Date.now() - 30 * 86400000), eventos: eventosGestor.map((e) => ({ ...e, sitio: 'x' })), jugadores: jug, respuestas: [], ausencias: [] });

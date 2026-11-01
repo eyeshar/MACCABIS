@@ -5,7 +5,7 @@ import { exigirGestor, origenMensajes } from "@/lib/sesion";
 import { lineaEquipacion } from "@/lib/equipacion";
 import { convocadosDe, diaCorto } from "@/lib/eventos/dominio";
 import { avisoDeEvento, cargarEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
-import { cambioParaVer, deLaSerieDesde, mensajeWhatsApp, pistaEfectiva, textoTipo, tituloEvento } from "@/lib/eventos/dominio";
+import { accionMensajeDe, cambiosDeVisible, deLaSerieDesde, mensajeWhatsApp, pistaEfectiva, textoTipo, tituloEvento } from "@/lib/eventos/dominio";
 import { textoSale } from "@/lib/avisos/horario";
 import BotonConfirmar from "@/components/BotonConfirmar";
 import FormularioEvento from "../FormularioEvento";
@@ -44,9 +44,10 @@ export default async function EditarEvento({ params, searchParams }: { params: P
   const web = await origenMensajes();
   const siguientes = deLaSerieDesde(todos, evento).length;
   const pe = pistaEfectiva(evento, pistas);
-  const nuevo = (evento.sporteasy_cambio ?? "").startsWith("Evento nuevo");
-  const accionMensaje = evento.estado === "cancelado" ? "cancelado" : nuevo ? "nuevo" : "cambio";
-  const cambios = evento.sporteasy_estado === "pendiente" && evento.sporteasy_cambio && !nuevo && !evento.sporteasy_cambio.startsWith("Carga inicial") ? cambioParaVer(evento.sporteasy_cambio)!.split("; ") : [];
+  // El mensaje para el grupo sale de los datos del propio evento: cancelado, recien creado (?guardado=nuevo) o cambio, con
+  // la lista de lo que cambio desde su linea amarilla (`cambio_visible`, «Guardar y avisar»).
+  const accionMensaje = accionMensajeDe(evento, guardado === "nuevo");
+  const cambios = accionMensaje === "cambio" ? cambiosDeVisible(evento.cambio_visible) : [];
   const mensaje = mensajeWhatsApp(evento, pistas, accionMensaje, {
     cambios, lineaEquipacion: evento.tipo === "liga" ? lineaEquipacion(avisoPartidoDe(evento)) : null,
     respondeEnLaWeb: encendido ? `${web}/mi-zona` : null,
@@ -78,21 +79,19 @@ export default async function EditarEvento({ params, searchParams }: { params: P
         </div>
       )}
 
-      {evento.sporteasy_estado === "pendiente" && (
-        <section className="gs-bloque" style={{ marginBottom: 16, maxWidth: 960 }} aria-labelledby="t-whatsapp" data-testid="mensaje-whatsapp">
-          <h2 id="t-whatsapp" style={{ fontSize: 22 }}>{encendido ? `Mensaje de WhatsApp para quien no tiene avisos · ${sinAvisos.length}` : "Mensaje para WhatsApp"}</h2>
-          {encendido && sinAvisos.length > 0 && <p className="pequeno" style={{ margin: 0 }}>Sin avisos: {sinAvisos.map((j) => j.nombre_visible).join(", ")}.</p>}
-          <p className="pequeno suave" style={{ margin: 0 }}>
-            {evento.estado === "cancelado" ? "Cancelación" : nuevo ? "Evento nuevo" : "Cambio"}{evento.sporteasy_cambio && !evento.sporteasy_cambio.startsWith("Carga inicial") ? `: ${cambioParaVer(evento.sporteasy_cambio)}` : ""}. Copia este texto al grupo de WhatsApp si quieres avisar también por ahí.
-          </p>
-          <CopiarTexto texto={mensaje} />
-        </section>
-      )}
+      <section className="gs-bloque" style={{ marginBottom: 16, maxWidth: 960 }} aria-labelledby="t-whatsapp" data-testid="mensaje-whatsapp">
+        <h2 id="t-whatsapp" style={{ fontSize: 22 }}>{encendido ? `Mensaje de WhatsApp para quien no tiene avisos · ${sinAvisos.length}` : "Mensaje para WhatsApp"}</h2>
+        {encendido && sinAvisos.length > 0 && <p className="pequeno" style={{ margin: 0 }}>Sin avisos: {sinAvisos.map((j) => j.nombre_visible).join(", ")}.</p>}
+        <p className="pequeno suave" style={{ margin: 0 }}>
+          {accionMensaje === "cancelado" ? "Cancelación" : accionMensaje === "nuevo" ? "Evento nuevo" : "Cambio"}{cambios.length ? `: ${cambios.join("; ")}` : ""}. Copia este texto al grupo de WhatsApp si quieres avisar también por ahí.
+        </p>
+        <CopiarTexto texto={mensaje} />
+      </section>
 
       {evento.estado === "cancelado" && <div className="aviso aviso-error">Este evento está <b>cancelado</b>.</div>}
 
       <FormularioEvento
-        key={`${evento.id}-${evento.fecha}-${evento.inicio}-${evento.pista_id}-${evento.notas}-${evento.sporteasy_cambio}`}
+        key={[evento.id, evento.tipo, evento.equipo, evento.titulo, evento.rival, evento.es_local, evento.jornada, evento.fecha, evento.inicio, evento.fin, evento.quedada, evento.pista_id, evento.numero_pista, evento.notas, evento.ubicacion_nombre, evento.estado, evento.sin_recordatorios, evento.cambio_visible_en].join("|")}
         evento={evento} pistas={pistas} nSiguientes={siguientes}
         alcanceInicial={alcance === "siguientes" ? "siguientes" : "este"} volver="/gestion/eventos"
         encendido={Boolean(encendido)} invitadosPor={invitadosPor}

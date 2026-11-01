@@ -162,7 +162,7 @@ try {
   await sql`update public.eventos set estado = 'programado' where id = ${E.fut}`;
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;
   rows = await cerrar(lim + 60000);
-  ok(rows.filter((x) => x.r_evento === E.fut).length === 0, 'con el interruptor apagado, los eventos oficiales no se tocan (siguen las respuestas de SportEasy)');
+  ok(rows.filter((x) => x.r_evento === E.fut).length === 0, 'con el interruptor apagado, los eventos oficiales no se tocan (siguen las respuestas que ya tenían)');
   await poner(E.plan, 'sint-dos', 'duda');
   const plan = await limiteBase(E.plan);
   rows = await cerrar(plan.l.getTime() + 60000);

@@ -1,5 +1,4 @@
 import { mensajeSinAvisos } from "@/lib/gestion/mensajesActivacion";
-import Link from "next/link";
 import Volver from "@/components/nav/Volver";
 import { notFound } from "next/navigation";
 import { exigirGestor, origenMensajes as origenWeb } from "@/lib/sesion";
@@ -7,8 +6,8 @@ import { diaYNumero, hoyMadrid, sumarDias } from "@/lib/dias";
 import { fechaHora } from "@/lib/fechas";
 import { cargarEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
 import {
-  convocadosDe, diaCorto, fechaDMA, hhmm, ordenarRespuestas, pistaEfectiva, rangoHoras, recordatorio, TEXTO_MOTIVO, tituloEvento,
-  type EventoFila, type Motivo, type Periodo, type Respuesta,
+  convocadosDe, diaCorto, fechaDMA, hhmm, pistaEfectiva, rangoHoras, TEXTO_MOTIVO, tituloEvento,
+  type EventoFila, type Motivo, type Respuesta,
 } from "@/lib/eventos/dominio";
 import { calendarioRecordatorios, TEXTO_HUECO } from "@/lib/avisos/planificador";
 import { sitioAviso } from "@/lib/avisos/servidor";
@@ -23,7 +22,7 @@ import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
 import CambiarAMano from "../../CambiarAMano";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
-import { ausenciaQueCubre, claveQuitado, efectivaEn, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
+import { ausenciaQueCubre, claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
 export const metadata = { title: "Respuestas y motivos · Gestión Maccabis" };
 const SEMANAS = 12;
@@ -89,7 +88,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
     const per = periodoDe(j.person_id, evento.fecha);
     const rNo = rs.find((r) => r?.respuesta === "no" && r.motivo && r.motivo !== "horario");
     const ultimo = rs.filter(Boolean).sort((a, b) => ((a!.cambiado_en ?? a!.leido_en ?? "") < (b!.cambiado_en ?? b!.leido_en ?? "") ? 1 : -1))[0];
-    const origenTxt = !ultimo || ultimo.respuesta === "sin_responder" ? null : ultimo.origen === "sistema" ? "automático: no confirmó a tiempo" : ultimo.origen === "gestor" ? `puesto por ${ultimo.puesto_por_nombre ?? "un gestor"}` : ultimo.origen === "jugador" ? (ultimo.ausencia_id ? "por su ausencia" : "en la web") : "leído de SportEasy";
+    const origenTxt = !ultimo || ultimo.respuesta === "sin_responder" ? null : ultimo.origen === "sistema" ? "automático: no confirmó a tiempo" : ultimo.origen === "gestor" ? `puesto por ${ultimo.puesto_por_nombre ?? "un gestor"}` : ultimo.origen === "jugador" ? (ultimo.ausencia_id ? "por su ausencia" : "en la web") : "importada";
     let clase: Linea["clase"], texto: string, solo: string | null = null;
     const defectoAqui = !per && suyos.length === 1 && porDefecto(suyos[0], j.person_id);
     if (defectoAqui) { clase = "no"; texto = TEXTO_POR_DEFECTO; }
@@ -140,7 +139,6 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const noConfirmaron = filasR.filter((r) => r.evento_id === evento.id && r.respuesta === "no" && r.motivo === "no_confirmo").length;
 
   const pe = pistaEfectiva(evento, pistas);
-  const ultimaLectura = filasR.filter((r) => r.origen === "sporteasy").map((r) => r.leido_en ?? "").sort().at(-1);
   const sinAvisos = lineas.filter((l) => !l.avisos);
   const web = await origenWeb();
   const msgSinAvisos = mensajeSinAvisos(sinAvisos.map((l) => l.nombre), web);
@@ -155,9 +153,6 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const enviadosDe = (tipo: string) => reg.filter((x) => x.clave.startsWith(`rec:${tipo}:`) && x.enviado_en && x.resultado === "enviado");
   const manuales = reg.filter((x) => x.clave.startsWith("rec:manual:") && x.enviado_en);
   const sinRecordatorios = (evento as EventoFila & { sin_recordatorios?: boolean }).sin_recordatorios;
-  // «Pedir recordatorio a Claude» (rutina C): ni los «no va (por defecto)» ni los «nunca a partidos» (D146) ni quien tiene
-  // una ausencia que cubre el dia, también sin fecha de vuelta (D150): la regla de todas las pantallas.
-  const rec = recordatorio(evento, ordenarRespuestas(evento, invitadosDe(evento).filter((j) => !efectivaEn(evento, j.person_id, respDe(evento, j.person_id), defecto).por), filasR.filter((r) => r.evento_id === evento.id).map((r) => ({ ...r, motivo: r.motivo === "horario" ? "otro" : r.motivo })) as never, periodos.filter((p) => p.hasta) as Periodo[]), pistas);
   const alertasL = (alertas ?? []) as { id: string; evento_id: string; person_id: string; antes: Respuesta; despues: Respuesta; en: string }[];
 
   const enFranja = periodos.filter((p) => nombre.has(p.person_id)).sort((a, b) => (nombre.get(a.person_id)! < nombre.get(b.person_id)! ? -1 : 1));
@@ -173,8 +168,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
           <span className="suave">{dia ? dia.map((e) => `${hhmm(e.inicio)} ${tituloEvento(e)}`).join(" · ") : `${diaCorto(evento.fecha)} · ${rangoHoras(evento)} · ${pe.porConfirmar ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}` : pe.texto}`}</span>
         </div>
         <div className="ev-botones">
-          <span className={`pastilla ${encendido ? "pastilla-ok" : "pastilla-info"}`} data-testid="origen-respuestas">{encendido ? "Respuestas en la web" : "Leído de SportEasy"}</span>
-          {!encendido && <Link className="boton boton-contorno" href="/gestion/eventos/importar?t=respuestas">Importar respuestas</Link>}
+          <span className={`pastilla ${encendido ? "pastilla-ok" : "pastilla-info"}`} data-testid="origen-respuestas">{encendido ? "Respuestas en la web" : "Respuestas en la web desactivadas"}</span>
         </div>
       </div>
 
@@ -198,7 +192,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       <p className="pequeno suave">
         {personas.length} invitados.{" "}
         {encendido ? "Los jugadores responden en la web (D99); «no va» siempre con motivo. Solo lo ven los gestores."
-          : <>{ultimaLectura ? <>Última lectura de SportEasy: <b>{fechaHora(ultimaLectura)}</b>.</> : "Todavía no se han leído las respuestas de SportEasy para este evento."} Los jugadores siguen respondiendo en SportEasy (fase puente). Solo lo ven los gestores.</>}
+          : "Las respuestas en la web están desactivadas. Solo lo ven los gestores."}
       </p>
 
       <div className="gs-dos">
@@ -242,20 +236,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
                 {manuales.length > 0 && <li data-enviado="true"><span aria-hidden="true">✓</span><span><b>Enviados a mano</b><small>{manuales.length} avisos</small></span></li>}
               </ul>
             )}
-            {encendido ? <BotonRecordatorio eventoId={evento.id} /> : (
-              <details data-testid="recordatorio">
-                <summary className="boton boton-amarillo" style={{ listStyle: "none", cursor: "pointer" }}>Pedir recordatorio a Claude</summary>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
-                  {rec.faltan.length ? (
-                    <>
-                      <p className="pequeno" style={{ margin: 0 }}><b>Faltan por responder ({rec.faltan.length}):</b> {rec.faltan.join(", ")}.</p>
-                      <CopiarTexto texto={rec.texto} etiqueta="Copiar texto" />
-                    </>
-                  ) : <p className="pequeno suave" style={{ margin: 0 }}>Todos han respondido o están ausentes por periodo: no hace falta recordatorio.</p>}
-                  <p className="pequeno suave" style={{ margin: 0 }}>Esto solo prepara la lista y el texto. El envío lo hace Claude desde SportEasy, con tu OK (mientras «respuestas en la web» esté apagado).</p>
-                </div>
-              </details>
-            )}
+            {encendido && <BotonRecordatorio eventoId={evento.id} />}
           </section>
           <section className="gs-bloque" aria-labelledby="t-sinav" data-testid="sin-avisos">
             <h2 id="t-sinav" style={{ fontSize: 22 }}>Sin avisos activados · {sinAvisos.length}</h2>
@@ -283,7 +264,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
                       <i className={p.hasta ? undefined : "ev-gantt-abierta"} style={{ left: `${pos(p.desde < desde ? desde : p.desde)}%`, width: `${Math.max(1, pos(fin > hasta ? hasta : fin) - pos(p.desde < desde ? desde : p.desde))}%` }} />
                       <b style={{ left: `${pos(evento.fecha)}%` }} />
                     </div>
-                    <span className="pequeno suave">{TEXTO_MOTIVO[p.motivo]} · {p.hasta ? `${ddmm(p.desde)} → ${ddmm(p.hasta)}` : `desde el ${ddmm(p.desde)}, sin fecha de vuelta`}{p.origen === "sporteasy" ? " · SportEasy" : p.origen === "gestor" ? " · puesta por un gestor" : p.origen === "jugador" ? " · en la web" : ""}{cubre ? <b style={{ color: "var(--error)" }}> · cubre este evento ({diaYNumero(evento.fecha)})</b> : ""}</span>
+                    <span className="pequeno suave">{TEXTO_MOTIVO[p.motivo]} · {p.hasta ? `${ddmm(p.desde)} → ${ddmm(p.hasta)}` : `desde el ${ddmm(p.desde)}, sin fecha de vuelta`}{p.origen === "sporteasy" ? " · importada" : p.origen === "gestor" ? " · puesta por un gestor" : p.origen === "jugador" ? " · en la web" : ""}{cubre ? <b style={{ color: "var(--error)" }}> · cubre este evento ({diaYNumero(evento.fecha)})</b> : ""}</span>
                   </div>
                 </div>
               );

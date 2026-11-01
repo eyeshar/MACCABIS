@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { avisarAhora, marcar } from "../acciones";
 
-/** «Ya lo he pegado en el grupo» (WhatsApp) / «Marcar como copiado» (SportEasy), con confirmacion. */
-export function BotonMarcar({ fecha, que, texto }: { fecha: string; que: "whatsapp" | "sporteasy"; texto: string }) {
+/** «Ya lo he pegado en el grupo» (WhatsApp), con confirmacion. */
+export function BotonMarcar({ fecha, que, texto }: { fecha: string; que: "whatsapp"; texto: string }) {
   const router = useRouter();
   const [pend, iniciar] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const pregunta = que === "whatsapp" ? "¿Confirmas que el mensaje ya está en el grupo de WhatsApp?" : "¿Confirmas que la convocatoria ya está copiada en SportEasy (sin notificar)?";
+  const pregunta = "¿Confirmas que el mensaje ya está en el grupo de WhatsApp?";
   return (
     <div>
       <button type="button" className="boton boton-amarillo" disabled={pend} onClick={() => { if (window.confirm(pregunta)) iniciar(async () => { const r = await marcar(fecha, que); if (r.ok) router.refresh(); else setError(r.error); }); }}>{texto}</button>

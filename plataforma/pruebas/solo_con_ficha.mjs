@@ -20,7 +20,7 @@ import { arrancar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { quienResponde, fueraPorFicha, avisoSinFicha } from '../src/lib/respuestas/dominio.ts';
-import { resumenCopia, noSeCopia, pistaEfectiva } from '../src/lib/eventos/dominio.ts';
+import { pistaEfectiva } from '../src/lib/eventos/dominio.ts';
 import { invitados, avisosPasoNoVa } from '../src/lib/avisos/planificador.ts';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -90,10 +90,7 @@ try {
   const copiaDespues = await copia();
   const otros = Object.keys(copiaAntes).filter((k) => !rango.some((r) => r.clave === k) && copiaAntes[k] !== copiaDespues[k]);
   ok(otros.length === 0, 'ningún otro evento cambia su estado de copia a SportEasy (tampoco los pasados)', otros.join(', '));
-  const filas = (await sql`select id, clave, tipo, fecha::text, estado, oficial, origen, serie, sporteasy_estado, sporteasy_cambio from public.eventos`).map((r) => ({ ...r }));
-  const cola = resumenCopia(filas, '2026-10-29');
-  ok(!cola.pendientes.some((e) => rango.some((r) => r.clave === e.clave)), 'no salen en «Copia a SportEasy» ni en el filtro «Pendientes» (resumenCopia)');
-  ok(filas.filter((e) => rango.some((r) => r.clave === e.clave)).every(noSeCopia) && !filas.filter((e) => !rango.some((r) => r.clave === e.clave)).some(noSeCopia), 'la web marca «No se copia» esos y solo esos');
+  // (La web ya no lee las columnas sporteasy_*: SportEasy no se usa. Lo de arriba solo comprueba los datos de la base.)
   ok((await sql`select pista_nombre n from public.v_eventos_publicos where clave = 'entreno-semanal-2026-11-04'`)[0].n === 'Valdebernardo (Faustina Valladolid)', 'lo público: el 04/11 en Valdebernardo, no «pista por confirmar»');
 
   console.log('\n== La regla en la base');

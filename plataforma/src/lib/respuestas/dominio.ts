@@ -108,7 +108,7 @@ export function estadoDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAuse
   const rs = u.eventos.map((e) => respuestas.find((r) => r.evento_id === e.id) ?? null);
   const aus = ausenciaQueCubre(u.fecha, ausencias);
   const valor = (i: number) => rs[i]?.respuesta ?? "sin_responder";
-  // Ausente: la respuesta la puso una ausencia, o no hay respuesta y un periodo cubre el dia (importado de SportEasy).
+  // Ausente: la respuesta la puso una ausencia, o no hay respuesta y un periodo cubre el dia (importado).
   if (aus && rs.every((r, i) => valor(i) === "sin_responder" || (r?.respuesta === "no" && r.ausencia_id))) {
     return { clase: "ausente", texto: `Ausente · ${TEXTO_MOTIVO_TODO[aus.motivo]}`, pendiente: false };
   }
@@ -263,7 +263,7 @@ export function lineaCambio(e: Pick<MiEvento, "cambio_visible" | "cambio_visible
 
 export const ERRORES: Record<string, string> = {
   sin_ficha: "Tu cuenta no tiene ficha de jugador.",
-  respuestas_apagadas: "Por ahora, responde en SportEasy.",
+  respuestas_apagadas: "Las respuestas en la web están desactivadas.",
   no_invitado: "Este evento no es para tu ficha.",
   evento_cerrado: "Este evento ya empezó o se canceló: no se puede cambiar la respuesta.",
   falta_motivo: "Elige un motivo para guardar «no voy».",

@@ -68,7 +68,7 @@ button.boton.rw-btn-no { background: var(--rw-no); color: #2a0b07; border-color:
 .rw-estado-responde { background: var(--amarillo); color: var(--c-sobre-acento); }
 .rw-estado-ausente { background: var(--borde); color: var(--tinta-suave); }
 .rw-estado-cancelado { background: transparent; border: 1px dashed var(--borde-fuerte); color: var(--tinta-tenue); text-decoration: line-through; }
-.rw-sporteasy { color: var(--tinta-suave); font-weight: 600; }
+.rw-apagado { color: var(--tinta-suave); font-weight: 600; }
 
 /* ---------- evento y domingo */
 .rw-volver { margin: 0 0 8px; }
@@ -176,5 +176,5 @@ button.boton.rw-btn-no { background: var(--rw-no); color: #2a0b07; border-color:
 .rw-equipaciones small { display: inline-block; min-width: 72px; }
 .rw-quien-va { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--borde); font-size: 15px; }
 .rw-quien-va p { margin: 4px 0 0; overflow-wrap: anywhere; }
-.rw-sporteasy-estado { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.rw-apagado-estado { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .rw-segun { margin: 0; font-size: 17px; }

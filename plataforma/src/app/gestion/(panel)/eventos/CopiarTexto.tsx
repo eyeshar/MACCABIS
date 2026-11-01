@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-/** Un texto para pegar en WhatsApp o SportEasy, con su boton de copiar. */
+/** Un texto para pegar en WhatsApp, con su boton de copiar. */
 export default function CopiarTexto({ texto, etiqueta = "Copiar mensaje", id }: { texto: string; etiqueta?: string; id?: string }) {
   const [copiado, setCopiado] = useState(false);
   async function copiar() {

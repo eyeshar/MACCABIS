@@ -86,7 +86,7 @@ export function FilaPista({ pista }: { pista: Pista }) {
       </form>
       {pista.es_de_serie && (
         <p className="pequeno suave" style={{ margin: 0 }}>
-          Al cambiar su estado, los entrenos futuros <b>sin pista propia</b> pasan {enObras ? "a esta pista (reabierta)" : "a «Pista por confirmar»"} y quedan pendientes de copiar a SportEasy. Los que tienen pista propia no cambian.
+          Al cambiar su estado, los entrenos futuros <b>sin pista propia</b> pasan {enObras ? "a esta pista (reabierta)" : "a «Pista por confirmar»"}. Los que tienen pista propia no cambian.
         </p>
       )}
     </li>

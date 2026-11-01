@@ -3,13 +3,13 @@
 //   - Datos de los jugadores: las dos casillas, su línea de ayuda (la diferencia con el «solo entreno» del rol) y guardar.
 //   - Panel, «Entreno del miércoles»: «N no van por defecto (no suelen entrenar): nombres», cuentan en «no van» con la nota,
 //     y «Pasar a «sin responder»» solo para ese entreno (y deshacerlo).
-//   - Respuestas del entreno: «No va (por defecto)», fuera de «Pedir recordatorio a Claude»; si responde «voy», va.
+//   - Respuestas del entreno: «No va (por defecto)»; si responde «voy», va. («Pedir recordatorio a Claude» ya no existe, D153.)
 //   - Partido: la marca «no suele entrenar» no cuenta; «nunca a partidos» sin responder no sale como pendiente.
 //   - Tablero de un entreno: las mismas cifras que el Panel (también tras «pasar a sin responder»); de un partido, sin los «nunca a partidos».
 //   - Grupos: no salen en «van» salvo que hayan dicho «voy».
 //   - Convocatoria: un «nunca a partidos» que dice «voy» sale en «Disponibles sin convocar» con su motivo (regla 1.7).
 //   - Ausencias por periodo (D150): sin respuesta y con una ausencia, «no van» en el Panel, el tablero (evento y domingo),
-//     las respuestas y los grupos, con el motivo solo para gestores, y fuera de «Pedir recordatorio a Claude»; si responde,
+//     las respuestas y los grupos, con el motivo solo para gestores, («Pedir recordatorio a Claude» ya no existe, D153); si responde,
 //     gana su respuesta. Panel y tablero, con los mismos datos, dan las mismas cifras con ausencias, con «no suele
 //     entrenar» y con «solo con ficha».
 //   - Panel a 375 px: «Partidos del domingo» en tarjetas, sin desbordar; en escritorio, la tabla.
@@ -118,23 +118,20 @@ try {
   await visto(pg.getByTestId('columna-no'));
   ok(!(await pg.locator('[data-person="sint-ugo"]').count()) && (await pg.getByTestId('columna-duda').locator('[data-person="sint-luz"]').count()) === 1, 'tablero de un partido: Ugo («nunca a partidos», sin responder) no sale; Luz sí, como «sin responder»');
 
-  console.log('\n== Respuestas del entreno y «Pedir recordatorio a Claude» (interruptor apagado)');
+  console.log('\n== Respuestas del entreno y sin «Pedir recordatorio a Claude» (interruptor apagado)');
   await pg.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
   const filaLuz = pg.locator('tr[data-respuesta]').filter({ hasText: 'Luz' });
   ok((await filaLuz.getAttribute('data-respuesta')) === 'no' && /No va \(por defecto\)/.test(await filaLuz.innerText()) && /no suele entrenar/.test(await filaLuz.innerText()), 'Luz: «No va (por defecto)» con su nota', await filaLuz.innerText());
   ok((await pg.locator('tr[data-respuesta]').filter({ hasText: 'Teo' }).getAttribute('data-respuesta')) === 'va', 'Teo: va (manda su respuesta)');
-  await pg.getByTestId('recordatorio').locator('summary').click();
-  const rec = await pg.getByTestId('recordatorio').innerText();
-  ok(/Ana/.test(rec) && !/Luz/.test(rec), 'el recordatorio para Claude lleva a Ana y NO a Luz', rec.slice(0, 300));
+  // D153 ampliada: «Pedir recordatorio a Claude» (se enviaba desde SportEasy) ya no existe. A quién recuerda la web
+  // (sin los «no va (por defecto)») lo prueba pruebas:avisos-logica (D146).
+  ok(!(await pg.getByTestId('recordatorio').count()) && !/SportEasy/.test(await pg.locator('main').innerText()), 'sin «Pedir recordatorio a Claude» ni SportEasy en las respuestas del entreno');
 
   console.log('\n== Partido: la marca «no suele entrenar» no cuenta; «nunca a partidos» no es pendiente');
   await pg.goto(`${APP}/gestion/eventos/${mda.id}/respuestas`);
   const tabla = await pg.getByTestId('tabla-respuestas').innerText();
   ok((await pg.locator('tr[data-respuesta]').filter({ hasText: 'Luz' }).getAttribute('data-respuesta')) === 'sin_responder', 'Luz, en el partido: «sin responder» (como siempre)');
   ok(!/\bUgo\b/.test(tabla), 'Ugo («nunca a partidos») no sale como pendiente del partido');
-  await pg.getByTestId('recordatorio').locator('summary').click();
-  const recP = await pg.getByTestId('recordatorio').innerText();
-  ok(/Luz/.test(recP) && !/Ugo/.test(recP), 'y el recordatorio del partido lleva a Luz y no a Ugo', recP.slice(0, 300));
 
   console.log('\n== Grupos del entreno');
   await pg.goto(`${APP}/gestion/grupos/${ent.id}`);
@@ -206,9 +203,6 @@ try {
   await pg.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
   const filaVic = pg.locator('tr[data-respuesta]').filter({ hasText: 'Vicaus' });
   ok((await filaVic.getAttribute('data-respuesta')) === 'no', 'respuestas del entreno: Vic, «no va» por su ausencia', await filaVic.innerText());
-  await pg.getByTestId('recordatorio').locator('summary').click();
-  const recA = await pg.getByTestId('recordatorio').innerText();
-  ok(/Ana/.test(recA) && !/Vicaus|Luz/.test(recA), '«Pedir recordatorio a Claude»: Ana sí; ni Vic ni Luz (ausencia sin fecha de vuelta)', recA.slice(0, 300));
 
   await pg.goto(`${APP}/gestion/grupos/${ent.id}`);
   const poolA = await pg.locator('.gr-sin').innerText();

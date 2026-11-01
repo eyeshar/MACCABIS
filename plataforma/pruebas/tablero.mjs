@@ -5,7 +5,8 @@
 //     no cambian la convocatoria y se recuerdan); acciones en grupo entre bloques; avisos recalculados; una aprobada que
 //     se toca pasa a «cambiada»; «No van» con motivo; deshacer; registro de cambios;
 //   - evento suelto: Van · Duda o sin responder · No van; cambiar respuestas guarda «puesta por», «No van» pide motivo,
-//     funciona con el interruptor apagado y una importacion posterior de SportEasy NO lo pisa (sale como conflicto);
+//     funciona con el interruptor apagado;
+//   - D153: ni el domingo ni el evento hablan de SportEasy (sin bloque de importacion ni «fase puente»);
 //   - un jugador no accede (ni a la pantalla ni a la base); 375 y 1280 px.
 //   - D159: el selector «Ver» trae TODOS los eventos de la temporada (futuros primero); «Van / Disponible» en la barra
 //     (también el domingo) con motivo opcional; en la ficha del evento y en «Respuestas y motivos», cambiar a mano la
@@ -44,7 +45,7 @@ try {
   await sql`insert into public.jugadores_privado (person_id, posicion, nivel, base_reserva) values
     ('sint-ana', 'base', 'A', false), ('sint-bea', 'pivot', 'B', false), ('sint-carla', 'escolta', 'C', true),
     ('sint-eva', 'alero', 'D', false), ('sint-flor', 'ala_pivot', 'B', false), ('sint-dani', 'alero', 'C', false)`;
-  const conv = async () => (await sql`select estado, equipos, whatsapp_estado, sporteasy_estado from public.convocatorias where fecha = ${J3}`)[0] ?? null;
+  const conv = async () => (await sql`select estado, equipos, whatsapp_estado from public.convocatorias where fecha = ${J3}`)[0] ?? null;
   const enEq = (c, eq, pid) => (c?.equipos?.[eq] ?? []).some((x) => x.person_id === pid);
 
   console.log('\n== Un jugador no accede (pantalla y base)');
@@ -64,6 +65,7 @@ try {
   const pg = await e.sesion('ivan@pruebas.local', 1280);
   await pg.goto(`${APP}/gestion/tablero?domingo=${J3}`);
   ok(await visto(pg.getByTestId('tabla-juegan')), 'tabla «Juegan»');
+  ok(!(await pg.getByTestId('bloque-importacion').count()) && !/SportEasy|[Ff]ase puente/.test(await pg.locator('main').innerText()), 'domingo: sin bloque de importación ni nada de SportEasy (D153)');
   const personasEnPantalla = await pg.locator('[data-vista=domingo] tr[data-person]').evaluateAll((t) => t.map((x) => x.getAttribute('data-person')));
   ok(personasEnPantalla.length > 10 && new Set(personasEnPantalla).size === personasEnPantalla.length, `una línea por jugador (${personasEnPantalla.length}, sin repetidos entre «Juegan» y «No van»)`);
   const fila = (pid) => pg.locator(`tr[data-person="${pid}"]`);
@@ -150,13 +152,13 @@ try {
   await trasAccion(pg, () => celdaDe('sint-ana', 'MdL').click());
   await trasAccion(pg, () => pg.getByTestId('tb-mensaje').getByRole('button', { name: 'Deshacer' }).click());
   ok(!enEq(await conv(), 'MdL', 'sint-ana'), '«Deshacer» devuelve la convocatoria como estaba');
-  await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = now() - interval '1 minute', aprobada_por_nombre = 'Iván', whatsapp_estado = 'al_dia', whatsapp_base = equipos, sporteasy_estado = 'al_dia', sporteasy_base = equipos where fecha = ${J3}`;
+  await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = now() - interval '1 minute', aprobada_por_nombre = 'Iván', whatsapp_estado = 'al_dia', whatsapp_base = equipos where fecha = ${J3}`;
   await pg.reload();
   ok((await pg.getByTestId('estado-convocatoria').innerText()) === 'Aprobada', 'convocatoria «Aprobada»');
   await trasAccion(pg, () => celdaDe('sint-ana', 'MdL').click());
   c = await conv();
   await pg.reload();
-  ok(c.whatsapp_estado === 'pendiente' && c.sporteasy_estado === 'pendiente' && /cambiada/.test(await pg.getByTestId('estado-convocatoria').innerText()), 'tocarla: «Aprobada · cambiada» y sus salidas pendientes (como hoy)');
+  ok(c.whatsapp_estado === 'pendiente' && /cambiada/.test(await pg.getByTestId('estado-convocatoria').innerText()), 'tocarla: «Aprobada · cambiada» y sus salidas pendientes (como hoy)');
 
   console.log('\n== «No van» en el domingo, con un motivo para el grupo');
   await fila('sint-eva').locator('input[type=checkbox]').check();
@@ -201,6 +203,8 @@ try {
   await resp(ent.id, 'sint-ana', 'va');
   await pg.goto(`${APP}/gestion/tablero?evento=${ent.id}`);
   const colVa = pg.getByTestId('columna-va'), colDuda = pg.getByTestId('columna-duda'), colNo = pg.getByTestId('columna-no');
+  await colVa.waitFor({ timeout: 15000 }).catch(() => {});
+  ok(!(await pg.getByTestId('bloque-importacion').count()) && !/SportEasy|[Ff]ase puente/.test(await pg.locator('main').innerText()), 'evento: sin «fase puente» ni nada de SportEasy (D153)');
   ok(await visto(colVa.locator('[data-person="sint-ana"]')) && (await colDuda.locator('[data-person]').count()) > 5, 'tres columnas con su número; Ana en «Van», los sin responder en «Duda o sin responder»');
   await colDuda.locator('[data-person="sint-bea"] input').check();
   await colDuda.locator('[data-person="sint-flor"] input').check();
@@ -226,20 +230,6 @@ try {
   await pe375.getByRole('tab', { name: /No van/ }).click();
   ok(await pe375.getByTestId('columna-no').isVisible() && !(await pe375.getByTestId('columna-va').isVisible()), 'cada pestaña muestra su lista');
   await foto(pe375, 'tablero_entreno_375');
-
-  console.log('\n== Una importación de SportEasy posterior NO pisa el cambio del gestor: sale como conflicto');
-  await sql`insert into public.diccionario_sporteasy (nombre_sporteasy, person_id) values ('Flor Prueba SE', 'sint-flor') on conflict do nothing`;
-  const dma = `${ent.fecha.slice(8, 10)}/${ent.fecha.slice(5, 7)}/${ent.fecha.slice(0, 4)}`;
-  await pg.goto(`${APP}/gestion/eventos/importar?t=respuestas`);
-  await pg.locator('#resp-texto').fill(`evento;jugador;respuesta;motivo;detalle\n${dma} entreno;Flor Prueba SE;no;trabajo;`);
-  await pg.getByRole('button', { name: 'Revisar' }).click();
-  ok(await visto(pg.getByTestId('conflicto')) && /Iván puso «Va»/.test(await pg.getByTestId('conflicto').innerText()), 'Revisar: «Conflicto: Iván puso «Va» …; SportEasy dice «No va»»', await pg.getByTestId('resultado-respuestas').innerText().catch(() => ''));
-  await pg.getByRole('button', { name: 'Guardar las válidas' }).click();
-  await pg.getByText(/se queda como las dejó el gestor|se quedan como las dejó el gestor/).waitFor({ timeout: 15000 });
-  const [al] = await sql`select respuesta, origen, sporteasy_descartado from public.respuestas where evento_id = ${ent.id} and person_id = 'sint-flor'`;
-  ok(al.respuesta === 'va' && al.origen === 'gestor' && al.sporteasy_descartado === 'no', 'guardar sin elegir: se mantiene lo del gestor y se apunta lo que decía SportEasy', JSON.stringify(al));
-  await trasAccion(pg, () => pg.getByRole('button', { name: 'Revisar' }).click());
-  ok(!(await pg.getByTestId('conflicto').count()), 'la misma importación otra vez ya no sale como conflicto');
 
   console.log('\n== Cambiar a mano la respuesta de cada invitado, en un toque (D159)');
   const rDani = async () => (await sql`select respuesta, motivo, origen, puesto_por_nombre from public.respuestas where evento_id = ${ent.id} and person_id = 'sint-dani'`)[0] ?? null;

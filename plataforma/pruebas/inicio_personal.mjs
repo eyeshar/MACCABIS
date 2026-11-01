@@ -4,7 +4,8 @@
 //   - jugador: lo suyo (saludo con posicion, fichas y dorsal; «Te faltan N» con carrusel y contador «1 de N»; proximo
 //     partido con «Convocado», casillas, «Te pones» y el color del rival aparte; avisos de la jornada; agenda con planes
 //     y «Tu grupo»; temporada; el club) y NO la banda de gestion;
-//   - fase puente (apagado): «Responder en SportEasy»; los planes se responden aqui; encendido: Voy / No voy / Duda;
+//   - apagado: «Te faltan N» solo cuenta los planes (se responden aqui); los partidos y entrenos no se piden y no hay
+//     nada de SportEasy («Las respuestas en la web … están desactivadas»); encendido: Voy / No voy / Duda;
 //   - gestor: la banda «Gestión esta semana» (plegable y recordada) y tres columnas en escritorio;
 //   - 375 y 1280 px sin desbordamiento ni errores de consola. Capturas en privado/mockups_liga/inicio-y-planes/.
 //
@@ -27,8 +28,8 @@ try {
     jugadores: [['esteban-jon', 'jon@pruebas.local'], ['galan-domingo-guillermo', 'guille@pruebas.local'], ['gianatti-adriano', 'adri@pruebas.local']],
     gestores: [['Iván', 'ivan@pruebas.local', 'villaescusa-silva-ivan']],
   });
-  // Datos: Jon es base (su posicion, solo para el saludo), convocado al MdA en la J3 aprobada; SportEasy le da
-  // «sin responder» en el proximo entreno; Adriano propone un plan para toda la plantilla; un reparto de grupos
+  // Datos: Jon es base (su posicion, solo para el saludo), convocado al MdA en la J3 aprobada; tiene «sin responder»
+  // en el proximo entreno (importado); Adriano propone dos planes para toda la plantilla; un reparto de grupos
   // publicado en ese entreno.
   // La posicion (dato privado, D39) solo en un jugador SINTETICO: Sara, base de los dos equipos.
   await sinteticos(sql, [['sint-sara', 'Sara', true, true]]);
@@ -39,6 +40,9 @@ try {
   await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${F('2026-10-25')}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'esteban-jon' }], MdL: [{ person_id: 'gianatti-adriano' }] })}, now())`;
   const api = (f, args, token) => fetch(`${e.pila.url}/rest/v1/rpc/${f}`, { method: 'POST', headers: { apikey: e.pila.anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(args) }).then((r) => r.json());
   const plan = await api('crear_plan', { p: { tipo: 'quedada', titulo: 'Cañas del jueves', fecha: ent.fecha, inicio: '22:40', equipo: 'ambos', ubicacion_nombre: 'Bar La Esquina', ubicacion_lat: 40.4, ubicacion_lng: -3.63 } }, P['gianatti-adriano'].token);
+  // Un segundo plan, el mismo dia y mas tarde: con el interruptor apagado, «Te faltan» solo cuenta planes y el carrusel
+  // necesita dos tarjetas.
+  const plan2 = await api('crear_plan', { p: { tipo: 'quedada', titulo: 'Picoteo de después', fecha: ent.fecha, inicio: '23:15', equipo: 'ambos', ubicacion_nombre: 'Bar La Esquina', ubicacion_lat: 40.4, ubicacion_lng: -3.63 } }, P['gianatti-adriano'].token);
   await sql`insert into public.grupos_repartos (evento_id, nombre, grupos, publicado) values (${ent.id}, '5 contra 5', ${sql.json([{ nombre: 'Azules', personas: ['esteban-jon', 'gianatti-adriano'] }, { nombre: 'Rojos', personas: ['galan-domingo-guillermo'] }])}, true)`;
   // Fallo de la J3 (25/10): Ivan (gestor y jugador de los dos equipos), importado «va» al MdA y «no» al MdL; otros
   // jugadores, «va» a los dos. Su inicio decia «Vas a los dos»: tomaba la respuesta de otro (un gestor las lee todas).
@@ -60,7 +64,7 @@ try {
   ok(r.status === 308 && new URL(r.headers.get('location'), APP).pathname === '/', '/mi-zona redirige a «/» (308)', `${r.status} ${r.headers.get('location')}`);
   ok((await fetch(`${APP}/mi-zona/ausencias`, { redirect: 'manual' })).status !== 404, 'sus subpáginas siguen');
 
-  console.log('\n== Jugador en el móvil (375 px), fase puente (interruptor apagado)');
+  console.log('\n== Jugador en el móvil (375 px), interruptor apagado');
   const pj = await e.sesion('jon@pruebas.local', 375);
   ok(new URL(pj.url()).pathname === '/', 'al entrar, el jugador va a su inicio («/»)', pj.url());
   ok(await visto(pj.getByRole('heading', { name: /Hola,\s*Jon/ })), 'saludo «Hola, Jon»');
@@ -72,8 +76,10 @@ try {
   ok(!(await pj.getByTestId('banda-gestion').count()), 'un jugador NO ve la banda de gestión');
   const titulo = (await pj.locator('#t-faltan').textContent()).trim();
   const n = Number(/Te faltan (\d+)/.exec(titulo)?.[1] ?? (/Te falta 1/.test(titulo) ? 1 : 0));
-  ok(n >= 2, `«${titulo}» (el entreno de SportEasy y el plan)`);
-  ok(await visto(pj.getByTestId('responder-sporteasy')) && (await pj.getByTestId('responder-sporteasy').first().getAttribute('href')).startsWith('https://'), 'apagado: «Responder en SportEasy»');
+  ok(n === 2, `«${titulo}» (los dos planes; el entreno «sin responder» no se pide con el interruptor apagado)`);
+  ok(!(await pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/mi-zona/evento/${ent.id}"]`) }).count()), 'apagado: el entreno no sale en «Te faltan»');
+  ok(!(await pj.getByTestId('responder-sporteasy').count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'apagado: sin «Responder en SportEasy» y sin «SportEasy» en el inicio');
+  ok(/desactivadas/.test(await pj.getByTestId('regla-recordatorios').innerText()), 'apagado: «Las respuestas en la web a partidos y entrenos están desactivadas»');
   const tarjetaPlan = pj.getByTestId('tarjeta-pendiente').filter({ hasText: 'Cañas del jueves' });
   ok(await tarjetaPlan.count() === 1 && await visto(tarjetaPlan.getByText('Plan no oficial')) && await visto(tarjetaPlan.getByRole('button', { name: 'Voy', exact: true })), 'el plan se responde aquí aunque esté apagado (Voy / No voy / Duda)');
   ok(await visto(pj.getByTestId('tarjeta-pendiente').first().locator('.in-casilla-quedada')) && /\w+ \d+ \w{3}/.test(await pj.locator('.in-pendiente-fecha').first().innerText()), 'cada tarjeta: fecha en grande («Miércoles 28 oct») y la casilla Quedada');
@@ -139,6 +145,7 @@ try {
 
   console.log('\n== Sin nada pendiente: «Lo tienes todo respondido»');
   await api('responder_plan', { p_evento: plan, p_respuesta: 'no' }, P['galan-domingo-guillermo'].token);
+  await api('responder_plan', { p_evento: plan2, p_respuesta: 'no' }, P['galan-domingo-guillermo'].token);
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;
   const pg = await e.sesion('guille@pruebas.local', 375);
   ok((await pg.locator('#t-faltan').textContent()).trim() === 'Lo tienes todo respondido', '«Lo tienes todo respondido»', await pg.locator('#t-faltan').textContent());

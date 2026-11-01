@@ -3,9 +3,7 @@
 //
 //  - Calendario del Ayuntamiento: "grupo;jornada;local;visitante;fecha;hora;pista" (G1 = MdA, G2 = MdL;
 //    "X descansa" = jornada de descanso). Se compara con los eventos de liga y solo se ensenan los CAMBIOS.
-//  - Respuestas de SportEasy: "evento;jugador;respuesta;motivo;detalle" y "jugador;desde;hasta;motivo".
-//    Un nombre que no esta en el diccionario NUNCA se empareja por parecido: bloquea esa linea.
-import type { EventoFila, Motivo, Respuesta } from "./dominio";
+import type { EventoFila } from "./dominio";
 
 // ---------------------------------------------------------------- utilidades
 // Igual que limpiarRival de dominio.ts (aqui no se importa: este fichero se prueba suelto con node).
@@ -177,87 +175,3 @@ export function compararCalendario(lineas: LineaCalendario[], eventos: EventoLig
   const nuestras = lineas.filter((l) => l.tipo === "partido" || l.tipo === "descanso").length;
   return { lineas: lineas.length, errores, ajenas: lineas.filter((l) => l.tipo === "ajena").length, nuestras, iguales, cambios, senales };
 }
-
-// ================================================================ RESPUESTAS Y AUSENCIAS
-const RESPUESTAS: Record<string, Respuesta> = {
-  va: "va", voy: "va", si: "va", presente: "va", "a tiempo": "va", tarde: "va",
-  duda: "duda", dudo: "duda", quizas: "duda", "tal vez": "duda", "?": "duda",
-  no: "no", "no voy": "no", "no va": "no", ausente: "no",
-  "sin responder": "sin_responder", "sin respuesta": "sin_responder", pendiente: "sin_responder", "": "sin_responder",
-};
-const MOTIVOS_ALIAS: Record<string, Motivo> = {
-  lesion: "lesion", lesionado: "lesion", trabajo: "trabajo", laboral: "trabajo", viaje: "viaje", vacaciones: "viaje",
-  familia: "familia", familiar: "familia", otro: "otro", otros: "otro", otra: "otro",
-};
-
-export type Diccionario = Map<string, string>; // nombre normalizado -> person_id
-export const crearDiccionario = (filas: { nombre_sporteasy: string; person_id: string }[]): Diccionario => new Map(filas.map((f) => [normalizar(f.nombre_sporteasy), f.person_id]));
-
-export type LineaRespuesta =
-  | { n: number; crudo: string; tipo: "respuesta"; estado: "valida"; evento: Pick<EventoFila, "id" | "clave" | "fecha">; person_id: string; nombre: string; respuesta: Respuesta; motivo: Motivo | null; detalle: string | null }
-  | { n: number; crudo: string; tipo: "ausencia"; estado: "valida"; person_id: string; nombre: string; desde: string; hasta: string; motivo: Motivo }
-  | { n: number; crudo: string; tipo: "respuesta" | "ausencia"; estado: "bloqueada"; nombre: string; motivoBloqueo: string }
-  | { n: number; crudo: string; tipo: "error"; estado: "error"; error: string };
-
-type EventoRef = Pick<EventoFila, "id" | "clave" | "fecha" | "tipo" | "equipo" | "estado">;
-
-/** Busca el evento al que se refiere "clave", "2026-10-14 entreno", "18/10/2026 MdA", "entreno 14/10/2026"... */
-export function buscarEvento(texto: string, eventos: EventoRef[]): { evento?: EventoRef; error?: string } {
-  const t = texto.trim();
-  const porClave = eventos.find((e) => e.clave.toLowerCase() === t.toLowerCase());
-  if (porClave) return { evento: porClave };
-  const trozos = t.split(/\s+/);
-  const fechaTxt = trozos.find((x) => leerFecha(x));
-  if (!fechaTxt) return { error: `No sé a qué evento te refieres («${t}»). Usa su fecha (14/10/2026) y, si hace falta, «entreno», «MdA» o «MdL».` };
-  const fecha = leerFecha(fechaTxt)!;
-  const resto = trozos.filter((x) => x !== fechaTxt).map(normalizar).filter(Boolean);
-  let c = eventos.filter((e) => e.fecha === fecha && e.estado === "programado");
-  if (resto.includes("entreno") || resto.includes("entrenamiento")) c = c.filter((e) => e.tipo === "entreno");
-  if (resto.includes("mda")) c = c.filter((e) => e.equipo === "MdA");
-  if (resto.includes("mdl")) c = c.filter((e) => e.equipo === "MdL");
-  if (c.length === 1) return { evento: c[0] };
-  if (!c.length) return { error: `No hay ningún evento el ${fdma(fecha)}${resto.length ? ` que cumpla «${resto.join(" ")}»` : ""}.` };
-  return { error: `Hay ${c.length} eventos el ${fdma(fecha)}: añade «entreno», «MdA» o «MdL».` };
-}
-
-export function leerRespuestas(texto: string, diccionario: Diccionario, eventos: EventoRef[], personas: { person_id: string; nombre: string }[]): LineaRespuesta[] {
-  const nombrePersona = new Map(personas.map((p) => [p.person_id, p.nombre]));
-  const quien = (txt: string): { person_id?: string; nombre: string } => {
-    const k = normalizar(txt);
-    const id = diccionario.get(k) ?? (personas.find((p) => p.person_id === txt.trim()) ? txt.trim() : undefined);
-    return { person_id: id, nombre: id ? nombrePersona.get(id) ?? id : txt.trim() };
-  };
-  const salida: LineaRespuesta[] = [];
-  for (const { n, crudo } of lineasDe(texto)) {
-    const c = campos(crudo);
-    if (/^(evento|jugador)$/i.test(c[0])) continue; // cabecera
-    const error = (e: string): LineaRespuesta => ({ n, crudo, tipo: "error", estado: "error", error: e });
-    const esAusencia = c.length >= 3 && !!leerFecha(c[1]) && !!leerFecha(c[2]);
-    if (esAusencia) {
-      const desde = leerFecha(c[1])!, hasta = leerFecha(c[2])!;
-      if (hasta < desde) { salida.push(error("«Hasta» es anterior a «desde».")); continue; }
-      const motivo = MOTIVOS_ALIAS[normalizar(c[3] ?? "")];
-      if (!motivo) { salida.push(error(`Motivo no válido («${c[3] ?? ""}»): lesión, trabajo, viaje, familia u otro.`)); continue; }
-      const q = quien(c[0]);
-      if (!q.person_id) { salida.push({ n, crudo, tipo: "ausencia", estado: "bloqueada", nombre: q.nombre, motivoBloqueo: "Nombre desconocido: asígnalo a mano una vez." }); continue; }
-      salida.push({ n, crudo, tipo: "ausencia", estado: "valida", person_id: q.person_id, nombre: q.nombre, desde, hasta, motivo });
-      continue;
-    }
-    if (c.length < 3) { salida.push(error("Faltan campos: evento;jugador;respuesta;motivo;detalle.")); continue; }
-    const respuesta = RESPUESTAS[normalizar(c[2])];
-    if (!respuesta) { salida.push(error(`Respuesta no válida («${c[2]}»): va, duda, no o sin responder.`)); continue; }
-    let motivo: Motivo | null = null;
-    if (c[3]) {
-      motivo = MOTIVOS_ALIAS[normalizar(c[3])] ?? null;
-      if (!motivo) { salida.push(error(`Motivo no válido («${c[3]}»): lesión, trabajo, viaje, familia u otro.`)); continue; }
-    }
-    const { evento, error: eEvento } = buscarEvento(c[0], eventos);
-    if (!evento) { salida.push(error(eEvento!)); continue; }
-    const q = quien(c[1]);
-    if (!q.person_id) { salida.push({ n, crudo, tipo: "respuesta", estado: "bloqueada", nombre: q.nombre, motivoBloqueo: "Nombre desconocido: asígnalo a mano una vez." }); continue; }
-    salida.push({ n, crudo, tipo: "respuesta", estado: "valida", evento: { id: evento.id, clave: evento.clave, fecha: evento.fecha }, person_id: q.person_id, nombre: q.nombre, respuesta, motivo, detalle: c.slice(4).join(";").trim() || null });
-  }
-  return salida;
-}
-
-export const nombresBloqueados = (lineas: LineaRespuesta[]) => [...new Set(lineas.filter((l) => l.estado === "bloqueada").map((l) => (l as { nombre: string }).nombre))];

@@ -50,7 +50,7 @@ export function CancelarPlan({ id, cancelado }: { id: string; cancelado: boolean
 export function AccionesGestor({ id }: { id: string }) {
   return (
     <>
-      <ConfirmarEnPagina texto="Hacer oficial" pregunta="Pasa a ser un evento del club: cuenta para todo y entra en la copia a SportEasy." si="Sí, hacerlo oficial" clase="boton boton-amarillo" testid="hacer-oficial"
+      <ConfirmarEnPagina texto="Hacer oficial" pregunta="Pasa a ser un evento del club: cuenta para todo." si="Sí, hacerlo oficial" clase="boton boton-amarillo" testid="hacer-oficial"
         accion={async () => hacerOficial(id)} />
       <ConfirmarEnPagina texto="Borrar" pregunta="¿Borrar el plan? Desaparece de la agenda de todos y se avisa a quien lo organiza." si="Sí, borrar" testid="borrar-plan"
         accion={async () => borrarPlan(id)} />

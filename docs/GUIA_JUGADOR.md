@@ -4,7 +4,7 @@ _Versión del 27/10/2026. Fuente: guía del jugador (Claude Docs). Base de conoc
 
 ## Qué es y qué puedes hacer
 
-Desde el 26 de octubre de 2026, la asistencia a entrenos y partidos se responde en maccabis.vercel.app, no en SportEasy. SportEasy sigue abierto para el chat, pero lo que se conteste allí ya no cuenta.
+Desde el 26 de octubre de 2026, la asistencia a entrenos y partidos se responde en maccabis.vercel.app. SportEasy ya no se usa (desde el 31/10/2026).
 
 Con tu cuenta puedes:
 
@@ -107,7 +107,7 @@ Las estadísticas salen de las actas y hojas oficiales de la FBM y se publican e
 
 | Pregunta | Respuesta |
 |---|---|
-| ¿Sigo respondiendo en SportEasy? | No. Desde el 26/10/2026 solo cuenta lo que respondes en la web. |
+| ¿Sigo respondiendo en SportEasy? | No. SportEasy ya no se usa: solo cuenta lo que respondes en la web. |
 | ¿Quién ve mi motivo de «no voy»? | Solo los tres gestores: Iván, Carlos y Edu. |
 | ¿Y mis compañeros qué ven? | Si vas, dudas o no vas, pero nunca el motivo. |
 | No me llegan los avisos | Actívalos en maccabis.vercel.app/avisos. En iPhone, solo desde el icono de la pantalla de inicio. |

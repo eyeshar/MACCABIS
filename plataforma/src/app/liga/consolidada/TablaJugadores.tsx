@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { bonito, dec, mmss, textoDorsales, type FilaTabla } from "@/lib/jugadoresLiga";
-import { comparadorTabla, pasaMinimo, type Columna, type Minimo } from "@/lib/ordenLideres";
+import { comparadorTabla, pasaMinimo, separarPorMinimo, textoMenos, type Columna, type Minimo } from "@/lib/ordenLideres";
 
 // Tabla "Todos los jugadores" de la liga (G1 + G2, con MdA y MdL). Con sesion de jugador o gestor (D73, D162): son datos de terceros.
 // Solo lo que trae la hoja de la FBM; nada estimado.
@@ -75,23 +75,23 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
   const filas = !soloMaccabis && (grupo !== "todos" || equipo !== "todos") ? fichas : sumadas;
   const filtrosActivos = [grupo !== "todos", equipo !== "todos", soloMaccabis, buscar.trim() !== "", minimo !== "auto"].filter(Boolean).length;
 
-  const lista = useMemo(() => {
+  // D169: con el minimo "Automatico", quien no llega no se oculta: va debajo, tras «Menos de N partidos». Con un minimo
+  // elegido a mano (2, 3, 5), se filtra como antes.
+  const { lista, debajo, ocultosPorMinimo } = useMemo(() => {
     const q = sinTildes(buscar.trim());
-    return filas
+    const base = filas
       .filter((j) => (grupo === "todos" || j.grupos.includes(grupo))
         && (equipo === "todos" || j.equipos.includes(equipo))
         && (!soloMaccabis || j.nuestro)
-        && (!q || sinTildes(j.nombre).includes(q))
-        && pasaMinimo(j, col, min, porPartido))
+        && (!q || sinTildes(j.nombre).includes(q)))
       .sort(comparadorTabla(col, dir, porPartido));
+    const { llegan, debajo } = separarPorMinimo(base, (j) => pasaMinimo(j, col, min, porPartido));
+    return min === "auto"
+      ? { lista: [...llegan, ...debajo], debajo, ocultosPorMinimo: 0 }
+      : { lista: llegan, debajo: [] as FilaTabla[], ocultosPorMinimo: debajo.length };
   }, [filas, grupo, equipo, soloMaccabis, buscar, col, dir, porPartido, min]);
-
-  const ocultosPorMinimo = useMemo(() => {
-    if (min === "todos") return 0;
-    const q = sinTildes(buscar.trim());
-    return filas.filter((j) => (grupo === "todos" || j.grupos.includes(grupo)) && (equipo === "todos" || j.equipos.includes(equipo))
-      && (!soloMaccabis || j.nuestro) && (!q || sinTildes(j.nombre).includes(q)) && !pasaMinimo(j, col, min, porPartido)).length;
-  }, [filas, grupo, equipo, soloMaccabis, buscar, col, min, porPartido]);
+  const corte = lista.length - debajo.length;
+  const separador = textoMenos(debajo.map((j) => j.minPartidos), col);
 
   const visible = lista.slice(0, visibles);
   const nombreCol = COLUMNAS.find((c) => c.k === col)!;
@@ -152,7 +152,8 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
 
       <p className="lg-nota" role="status">
         Mostrando {Math.min(visibles, lista.length)} de {lista.length} · orden: {nombreCol.largo} ({dir === 1 ? "de menor a mayor" : "de mayor a menor"}){porPartido ? ", por partido" : ""}.
-        {ocultosPorMinimo > 0 && ` ${ocultosPorMinimo} ${ocultosPorMinimo === 1 ? "persona oculta" : "personas ocultas"} por el mínimo de partidos${min === "auto" ? " (al ordenar por una media: la mitad de los partidos de su equipo, y 3 TL intentados para el %)" : ""}.`}
+        {ocultosPorMinimo > 0 && ` ${ocultosPorMinimo} ${ocultosPorMinimo === 1 ? "persona oculta" : "personas ocultas"} por el mínimo de partidos.`}
+        {debajo.length > 0 && ` ${debajo.length} debajo, en «${separador}» (al ordenar por una media: la mitad de los partidos de su equipo, redondeando hacia arriba, o 2, lo que sea menor; y 3 TL intentados para el %).`}
       </p>
 
       {/* Escritorio: tabla completa, cabeceras pulsables y cabecera fija al desplazar */}
@@ -168,14 +169,17 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
             </tr>
           </thead>
           <tbody>
-            {visible.map((j) => (
-              <tr key={clave(j)} className={j.nuestro ? "lg-nuestro" : ""}>
+            {visible.map((j, i) => (
+              <Fragment key={clave(j)}>
+              {i === corte && <tr className="lg-separador" data-testid="separador-minimo"><td colSpan={12}>{separador}</td></tr>}
+              <tr className={j.nuestro ? "lg-nuestro" : i >= corte ? "lg-bajo-minimo" : ""}>
                 <td><Link href={urlEquipo(j.equipos[0])} className="lg-enlace"><b>{bonito(j.nombre)}</b></Link> <small>{textoDorsales(j)}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}{j.soloFicha && <small className="lg-solo-ficha"> solo ficha {j.soloFicha}</small>}</td>
                 <td>{enlaceEquipos(j)} <small>{j.grupos.join("+")}</small></td>
                 <td>{j.pj}</td><td>{celda(j, "segundos", porPartido)}</td><td><b>{j.pts}</b></td><td>{celda(j, "media", false)}</td>
                 <td>{celda(j, "p2a", porPartido)}</td><td>{celda(j, "p3a", porPartido)}</td><td>{celda(j, "tla", porPartido)}</td><td>{celda(j, "pctTL", false)}</td>
                 <td>{celda(j, "faltas", porPartido)}</td><td>{celda(j, "fpp", false)}</td>
               </tr>
+              </Fragment>
             ))}
             {visible.length === 0 && <tr><td colSpan={12}>Ningún jugador con estos filtros.</td></tr>}
           </tbody>
@@ -184,12 +188,14 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
 
       {/* Movil: filas compactas; al tocar una se despliega el resto */}
       <ul className="lista-limpia lg-compactas solo-movil" aria-label="Jugadores">
-        {visible.map((j) => {
+        {visible.map((j, i) => {
           const k = clave(j);
           const abierto = abierta === k;
           const otra = col !== "pts" && col !== "nombre" && col !== "equipo";
           return (
-            <li key={k} className={`lg-fila${j.nuestro ? " lg-nuestro" : ""}${abierto ? " abierta" : ""}`}>
+            <Fragment key={k}>
+            {i === corte && <li className="lg-separador" data-testid="separador-minimo">{separador}</li>}
+            <li className={`lg-fila${j.nuestro ? " lg-nuestro" : ""}${i >= corte ? " lg-bajo-minimo" : ""}${abierto ? " abierta" : ""}`}>
               <button type="button" className="lg-fila-cab" aria-expanded={abierto} onClick={() => setAbierta(abierto ? null : k)}>
                 <span className="lg-fila-nom">
                   <b>{bonito(j.nombre)}</b> <small>{textoDorsales(j)}</small>{j.dobla && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}{j.soloFicha && <small className="lg-solo-ficha"> solo ficha {j.soloFicha}</small>}
@@ -209,6 +215,7 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
                 </div>
               )}
             </li>
+            </Fragment>
           );
         })}
         {visible.length === 0 && <li className="lg-fila">Ningún jugador con estos filtros.</li>}

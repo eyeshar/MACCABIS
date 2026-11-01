@@ -13,7 +13,7 @@ export default function BandaAvisos() {
   return (
     <Link href="/avisos" className="rw-banda" data-banda="avisos">
       <span aria-hidden="true" className="rw-banda-icono"><Campana size={24} /></span>
-      <span><strong>Activa los avisos en este móvil</strong><small>Solo si te falta responder, si cambia algo o si se cancela. Nunca de noche.</small></span>
+      <span><strong>Activa los avisos en este móvil</strong><small>Solo si te falta responder, si cambia algo o si se cancela. De noche, solo si el partido es en pocas horas.</small></span>
       <span aria-hidden="true">›</span>
     </Link>
   );

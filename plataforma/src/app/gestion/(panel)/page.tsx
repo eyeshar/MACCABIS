@@ -49,7 +49,7 @@ function scoutingDe(liga: DatosLiga | null, e: Evento) {
 function enlaceRival(liga: DatosLiga | null, e: Evento) {
   const s = scoutingDe(liga, e);
   const n = NOMBRE_EQUIPO[e.equipo!];
-  const rival = s ? <Link href={`/gestion/scouting?e=${encodeURIComponent(s.equipo)}${e.equipo === "MDL" ? "&v=mdl" : ""}`}>{e.rival}</Link> : <>{e.rival}</>;
+  const rival = s ? <Link href={`/liga/scouting?e=${encodeURIComponent(s.equipo)}${e.equipo === "MDL" ? "&v=mdl" : ""}`}>{e.rival}</Link> : <>{e.rival}</>;
   return e.local ? <>{n} – {rival}</> : <>{rival} – {n}</>;
 }
 
@@ -223,7 +223,7 @@ export default async function InicioGestion() {
                 {delDomingo.map((e) => {
                   const s = scoutingDe(liga, e);
                   return (
-                    <Link key={e.id} href={s ? `/gestion/scouting?e=${encodeURIComponent(s.equipo)}${e.equipo === "MDL" ? "&v=mdl" : ""}` : "/gestion/scouting"}>
+                    <Link key={e.id} href={s ? `/liga/scouting?e=${encodeURIComponent(s.equipo)}${e.equipo === "MDL" ? "&v=mdl" : ""}` : "/liga/scouting"}>
                       <small>Scouting · próximo rival {NOMBRE_EQUIPO[e.equipo!]}</small>
                       <strong>{s?.texto ?? e.rival}</strong>
                       <span>{s?.detalle ?? "Sin datos de liga cargados"}</span>

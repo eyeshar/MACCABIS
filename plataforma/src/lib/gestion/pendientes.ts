@@ -33,7 +33,7 @@ export async function cargarPendientesSemana(supabase: Cliente): Promise<Pendien
   const out: Pendiente[] = [];
   if (entreno?.pista.porConfirmar) out.push({ texto: `Fijar la pista del entreno del ${diaSemanaCorto(entreno.evento.fecha)} ${diaMes(entreno.evento.fecha)} (${entreno.pista.motivo ?? "pista por confirmar"}).`, href: `/gestion/eventos/${entreno.evento.id}` });
   if (jornada) out.push({ texto: `Convocatoria de la J${jornada}: reparto MdA / MdL y aviso de equipación (rutina C: martes por la noche, tras el cierre de dudas).`, href: `/gestion/convocatoria?fecha=${fecha}` });
-  if (sinActa.length) out.push({ texto: `J${sinActa[0].jornada ?? "?"} publicada sin acta: completarla cuando la FBM suba las actas (rutina A).`, href: "/gestion/liga" });
+  if (sinActa.length) out.push({ texto: `J${sinActa[0].jornada ?? "?"} publicada sin acta: completarla cuando la FBM suba las actas (rutina A).`, href: "/liga/consolidada" });
   if (/pendiente de contrastar/i.test(estadoClasificacion())) out.push({ texto: "Contrastar la clasificación calculada con la oficial (rutina B, jueves).", href: "/liga" });
   if (sinCorreo > 0) out.push({ texto: `${sinCorreo} ${sinCorreo === 1 ? "jugador sin correo: no puede" : "jugadores sin correo: no pueden"} entrar.`, href: "/gestion/jugadores" });
   if (campana && ropaAbierta) out.push({ texto: `Pedido de ropa abierto${campana.fecha_limite ? ` hasta el ${fechaCorta(campana.fecha_limite)}` : ""}: ${pedidos ?? 0} pedidos.`, href: "/gestion/ropa" });

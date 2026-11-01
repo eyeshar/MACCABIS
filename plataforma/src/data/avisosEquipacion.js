@@ -46,8 +46,32 @@
     return 'camiseta ' + colorConGenero(camiseta, 'f') + ', pantalón ' + colorConGenero(pantalon, 'm');
   }
 
+  /**
+   * Colores que en la pista se confunden (D160). Simétrica: [a, b] vale también como [b, a]. Un color siempre se
+   * parece a sí mismo. Negro con azul oscuro y con azul es decisión de Iván (Nabuco TD); el resto, criterio de árbitro:
+   * tonos vecinos que de lejos o con poca luz no se distinguen. Blanco no se parece a nada de la lista.
+   */
+  var COLORES_PARECIDOS = [
+    ['negro', 'azul oscuro'],
+    ['negro', 'azul'],
+    ['azul oscuro', 'azul'],
+    ['rojo', 'naranja'],
+    ['rojo', 'rosa'],
+    ['naranja', 'amarillo'],
+  ];
+
+  /** ¿Se confunden dos camisetas? (mismo color o pareja de COLORES_PARECIDOS; acepta género: "negra" = "negro"). */
+  function parecidos(a, b) {
+    var x = colorNormalizado(a), y = colorNormalizado(b);
+    if (!x || !y) return false;
+    if (x === y) return true;
+    return COLORES_PARECIDOS.some(function (par) { return (par[0] === x && par[1] === y) || (par[0] === y && par[1] === x); });
+  }
+
+  /** Hay choque si la camiseta del rival se parece a nuestra 1.ª (negro). `camiseta_rival_choca` del fichero es la
+   *  lista que sale de aquí (la prueba exige que coincidan). */
   function chocan(equip, colorRival) {
-    return equip.regla_choque.camiseta_rival_choca.indexOf(colorRival) >= 0;
+    return parecidos(equip.regla_choque.nuestra_primera, colorRival);
   }
 
   function nuestraSegunda(equip) { return equip.regla_choque.nuestra_segunda; }  // "amarilla"
@@ -57,14 +81,14 @@
    * { rival, colorRival, pantalonRival, conocido, hay, quien, etiqueta, texto, convocatoria }
    *  tipo: 'nos_toca' (vamos segundos: cambiamos) | 'cambian_ellos' (vamos primeros) | 'dudoso' (sin regla) | null (sin choque)
    */
-  function avisoPartido(equip, partido) {
+  function avisoSinLinea(equip, partido) {
     if (!partido || partido.descansa || !partido.rival) return null;
     const e = equipoPorNombre(equip, partido.rival);
     const segunda = nuestraSegunda(equip);
-    if (!e) return { rival: partido.rival, colorRival: null, pantalonRival: null, conocido: false, hay: false, tipo: null, quien: null, etiqueta: null, texto: 'Sin color del rival', convocatoria: null };
+    if (!e) return { rival: partido.rival, colorRival: null, pantalonRival: null, conocido: false, hay: false, tipo: null, quien: null, etiqueta: null, texto: 'Sin color del rival' };
     const color = e.camiseta;
     const base = { rival: e.nombre, colorRival: color, pantalonRival: e.pantalon, conocido: true };
-    if (!chocan(equip, color)) return { ...base, hay: false, tipo: null, quien: null, etiqueta: null, texto: null, convocatoria: null };
+    if (!chocan(equip, color)) return { ...base, hay: false, tipo: null, quien: null, etiqueta: null, texto: null };
     const regla = equip.regla_choque.quien_cambia;
     const primera = equip.regla_choque.nuestra_primera;
     // Bases 47 JDM, 5.11: cambia el equipo que figura en SEGUNDO lugar del calendario (el visitante: el calendario
@@ -73,27 +97,50 @@
       if (!partido.local) {
         return {
           ...base, hay: true, tipo: 'nos_toca', quien: 'nosotros', etiqueta: '⚠ Nos toca cambiar: equipación ' + segunda.toUpperCase(),
-          texto: 'Vamos en segundo lugar contra ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + '). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).',
-          convocatoria: 'Llevad la equipación ' + segunda.toUpperCase() + ' (nos toca cambiar).',
+          texto: 'Vamos en segundo lugar contra ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + '). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).'
         };
       }
       return {
         ...base, hay: true, tipo: 'cambian_ellos', quien: 'rival', etiqueta: 'ℹ Coinciden colores: cambia ' + e.nombre,
-        texto: 'Jugamos de ' + primera + '; ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + ') va en segundo lugar y debe cambiar. Llevad la ' + segunda + ' por si acaso.',
-        convocatoria: 'Jugamos de ' + primera + '; cambia ' + e.nombre + '. Llevad la ' + segunda + ' por si acaso.',
+        texto: 'Jugamos de ' + primera + '; ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + ') va en segundo lugar y debe cambiar. Llevad la ' + segunda + ' por si acaso.'
       };
     }
     return {
       ...base, hay: true, tipo: 'dudoso', quien: 'dudoso', etiqueta: '⚠ Equipación ' + segunda,
-      texto: 'Coincidencia de color con ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + '): llevad la ' + segunda + ' por si acaso',
-      convocatoria: 'Llevad la equipación ' + segunda,
+      texto: 'Coincidencia de color con ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + '): llevad la ' + segunda + ' por si acaso'
     };
   }
 
-  /** Línea para la convocatoria / WhatsApp (rutina C): "Llevad la equipación amarilla", o null si no toca. */
+  /**
+   * Línea de equipación de la convocatoria (D160), SIEMPRE que haya rival: la misma en el WhatsApp, el aviso push de
+   * convocatoria, la ficha del evento y Scouting. Termina siempre con «Llevad la amarilla por si acaso.»
+   *  - sin choque:            «Jugamos de negro (ellos de rojo).»
+   *  - choque, vamos segundos: «Coinciden colores: cambiamos nosotros, de amarillo.»
+   *  - choque, van segundos:   «Coinciden colores: cambia Litros de Mahou.»
+   *  - choque sin saber quién es local: «Coinciden colores con X: no consta quién va en segundo lugar.»
+   *  - rival sin color:       «Jugamos de negro (no tenemos el color de X).»
+   * null solo si descansa o no hay rival.
+   */
   function lineaConvocatoria(equip, partido) {
-    const a = avisoPartido(equip, partido);
-    return a ? a.convocatoria : null;
+    return lineaDe(equip, avisoSinLinea(equip, partido));
+  }
+
+  function lineaDe(equip, a) {
+    if (!a) return null;
+    const primera = colorNormalizado(equip.regla_choque.nuestra_primera);
+    const segunda = equip.regla_choque.nuestra_segunda;
+    const fin = ' Llevad la ' + colorConGenero(colorNormalizado(segunda), 'f') + ' por si acaso.';
+    if (!a.conocido) return 'Jugamos de ' + primera + ' (no tenemos el color de ' + a.rival + ').' + fin;
+    if (!a.hay) return 'Jugamos de ' + primera + ' (ellos de ' + a.colorRival + ').' + fin;
+    if (a.tipo === 'nos_toca') return 'Coinciden colores: cambiamos nosotros, de ' + colorNormalizado(segunda) + '.' + fin;
+    if (a.tipo === 'cambian_ellos') return 'Coinciden colores: cambia ' + a.rival + (/\.$/.test(a.rival) ? '' : '.') + fin;
+    return 'Coinciden colores con ' + a.rival + ': no consta quién va en segundo lugar.' + fin;
+  }
+
+  /** El aviso con su línea de convocatoria (`convocatoria`, siempre que haya rival: lineaConvocatoria). */
+  function avisoPartido(equip, partido) {
+    const a = avisoSinLinea(equip, partido);
+    return a ? Object.assign(a, { convocatoria: lineaDe(equip, a) }) : null;
   }
 
   /** Próximo partido (con rival) de `equipo` desde `hoy` ("AAAA-MM-DD", inclusive). */
@@ -119,5 +166,5 @@
     return Object.keys(f);
   }
 
-  return { clave, colorNormalizado, colorConGenero, descripcionColores, equipoPorNombre, chocan, avisoPartido, lineaConvocatoria, proximoPartido, listarAvisos, rivalesSinColor };
+  return { clave, colorNormalizado, colorConGenero, descripcionColores, equipoPorNombre, COLORES_PARECIDOS, parecidos, chocan, avisoPartido, lineaConvocatoria, proximoPartido, listarAvisos, rivalesSinColor };
 });

@@ -2,6 +2,8 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 01/11/2026: **Scouting y Liga consolidada para jugadores, con el calendario de la tabla de eventos** (`feat/scouting-liga-fuente-unica`, D162, PR abierto, sin merge; migración `20261031200000` pendiente del OK de Iván para el real)._
+
 _Última actualización: 31/10/2026, noche: **marca «Reserva»** (`feat/reserva`, D158, PR abierto, sin merge): `jugadores_privado.reserva` (migración `20261031180000`, aditiva, **sin aplicar en el real: espera el OK de Iván**); regla 1.8 del motor (solo entra para cubrir mínimos o el número compensado, antes que doblar; con 20 o más disponibles no va; si no, «Reserva disponible» con «Añadir»); casilla «Reserva» en Gestión → Jugadores. Carga preparada (`plataforma/scripts/cargar_reserva.mjs`): Fernando M. y Guillermo. Fernando M. ya era «jugador» en el real (registrado en D158)._
 _Última actualización: 31/10/2026, noche: **acceso que funciona en cualquier navegador** (`feat/acceso-cualquier-navegador`, D157, apilada sobre `feat/recuadro-respuestas-en-vivo`, PR abierto, sin merge): enlace del correo por `/auth/confirm` (botón «Entrar» por POST; el prefetch de Gmail no lo gasta; `verifyOtp` con `token_hash`, sin PKCE), código de 6 dígitos, mensajes claros si el enlace caducó o se usó, y el recuadro separa «no han pedido acceso» de «lo pidieron y no terminaron». **Pendiente de Iván: pegar la plantilla de correo en Supabase** (texto en el PR y en D157) y comprobar que «Site URL» es `https://maccabis.vercel.app`. Google revisado: activo y funcionando (un solo `invalid_grant` suelto). Sin migraciones._
 _Última actualización: 31/10/2026, noche: **recuadro «Respuestas en la web» en vivo** (`feat/recuadro-respuestas-en-vivo`, D156, PR abierto, sin merge): se actualiza solo cada 60 s con la pestaña visible y al volver a ella (`/api/gestion/activacion`, polling), con «Actualizado hh:mm»; la suscripción caducada (404/410) ya se desactivaba y vuelve a «sin avisos»; textos en singular/plural con «de noche solo si el partido es en pocas horas»; el total dice «jugadores · el entrenador también los tiene». Sin migraciones._
@@ -22,6 +24,13 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+
+## Scouting y Liga consolidada para jugadores; su calendario, de la tabla de eventos (01/11/2026; D162) — `feat/scouting-liga-fuente-unica`, PR abierto
+
+- **Causa del «MdA–Nabuco TD, J5, 15/11 09:00»:** Scouting leía `liga_calendario`, copia que carga `npm run db:liga` y que no cambia al tocar un evento. Ahora lee la tabla de eventos (`cargarFuente()`); sin ella, no enseña próximo partido. Ningún otro lector de ficheros del calendario quedaba en pantallas con sesión (Liga, portada, Panel, convocatoria, `.ics`, página de partido ya leían la tabla; las públicas conservan el respaldo de la copia del repo si Supabase cae, D94). GitHub Pages (`index.html`) sigue leyendo `data/calendario_2026-27.json` hasta que se retire.
+- **Rutas:** `/liga/scouting` y `/liga/consolidada` (pestañas de la Liga, solo con sesión de jugador con ficha o gestor). `/gestion/scouting` y `/gestion/liga` redirigen. Menú de Gestión → Competición apunta a las nuevas.
+- **Pendiente de Iván (no aplicado en el real):** migración `plataforma/supabase/migrations/20261031200000_liga_para_jugadores.sql` (función `puede_ver_liga()` y tres políticas de SELECT; revertir con su `.revertir.sql`). Se aplica con las protecciones de D111 (volcado, permisos antes y después, recuento de `auth.users`). Sin ella, los gestores siguen igual y un jugador ve las páginas vacías.
+- **Pruebas:** `pruebas:scouting-fuente` (nueva), `pruebas:liga`, `pruebas:pantallas` y las de navegación, portada, números, avisos y páginas de partido con las rutas nuevas.
 
 ## Rutina B automática, fin de SportEasy y avisos (31/10/2026; D153, D154, D155) — `feat/rutina-b-auto`, PR abierto
 

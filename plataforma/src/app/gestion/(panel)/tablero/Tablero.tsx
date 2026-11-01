@@ -25,7 +25,7 @@ function Selector({ opciones, actual }: { opciones: OpcionSelector[]; actual: st
     <div className="tb-selector">
       <label htmlFor="tb-ver">Ver</label>
       <select id="tb-ver" value={actual} onChange={(e) => { const [t, v] = e.target.value.split(":"); router.push(`/gestion/tablero?${t}=${v}`); }}>
-        {(["Domingos de partidos", "Eventos sueltos"] as const).map((g) => (
+        {[...new Set(opciones.map((o) => o.grupo))].map((g) => (
           <optgroup key={g} label={g}>{opciones.filter((o) => o.grupo === g).map((o) => <option key={o.valor} value={o.valor}>{o.texto}</option>)}</optgroup>
         ))}
       </select>
@@ -63,7 +63,9 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
   const [filas, setFilas] = useState<FilaTablero[]>(datos.filas);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [motivo, setMotivo] = useState<Motivo | null>(null);
-  const [pidiendoMotivo, setPidiendoMotivo] = useState<string[] | null>(null);
+  // «No van» pide un motivo de la lista; «Van / Disponible», uno opcional en texto libre (D159).
+  const [pidiendo, setPidiendo] = useState<{ tipo: "no" | "va"; ids: string[] } | null>(null);
+  const [motivoVa, setMotivoVa] = useState("");
   const [nota, setNota] = useState("ajuste manual");
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
   const [ultimo, setUltimo] = useState<Ultimo>(null);
@@ -95,18 +97,18 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
     setSel(new Set());
     router.refresh();
   }
-  async function responder(ids: string[], r: "va" | "duda" | "no", m: Motivo | null) {
+  async function responder(ids: string[], r: "va" | "duda" | "no", m: Motivo | null, detalle: string | null = null) {
     const eventos = datos.vista === "domingo"
       ? datos.partidos.map((p) => ({ id: p.evento_id, personas: ids.filter((id) => filas.find((f) => f.person_id === id)?.invitadoA.includes(p.equipo)) }))
       : [{ id: datos.evento.id, personas: ids }];
     const antes = filas;
     setFilas((fs) => fs.map((f) => (ids.includes(f.person_id) ? { ...f, respuesta: Object.fromEntries(f.invitadoA.map((e) => [e, r])) as FilaTablero["respuesta"], motivo: r === "no" && m ? TEXTO_MOTIVO[m] : null } : f)));
-    const res = await responderTablero(eventos, r, m);
+    const res = await responderTablero(eventos, r, m, detalle);
     if (!res.ok) { setFilas(antes); setMensaje({ ok: false, texto: res.error }); return; }
-    const texto = `${r === "va" ? "Van" : r === "duda" ? "Duda" : "No van"}: ${lista(ids)} (puesta por ti).`;
+    const texto = `${r === "va" ? "Van / Disponible" : r === "duda" ? "Duda" : "No van"}: ${lista(ids)}${detalle?.trim() ? ` (${detalle.trim()})` : ""} (puesta por ti).`;
     setUltimo({ tipo: "resp", registros: res.registros ?? [], texto });
     setMensaje({ ok: true, texto });
-    setSel(new Set()); setPidiendoMotivo(null); setMotivo(null);
+    setSel(new Set()); setPidiendo(null); setMotivo(null); setMotivoVa("");
     router.refresh();
   }
   const ejecutar = (a: Accion, ids: string[]) => empezar(async () => {
@@ -114,7 +116,7 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
     if (!ids.length) return;
     if (a === "MdA" || a === "MdL") return convocar(ids, a, "anadir");
     if (a === "quitar") return convocar(ids, null, "quitar");
-    if (a === "no") { setPidiendoMotivo(ids); return; }
+    if (a === "no" || a === "va") { setPidiendo({ tipo: a, ids }); return; }
     return responder(ids, a, null);
   });
   const deshacer = () => empezar(async () => {
@@ -132,17 +134,24 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
   const destino = (a: Accion) => ({
     onDragOver: (e: React.DragEvent) => { e.preventDefault(); e.currentTarget.classList.add("tb-encima"); },
     onDragLeave: (e: React.DragEvent) => e.currentTarget.classList.remove("tb-encima"),
-    onDrop: (e: React.DragEvent) => { e.preventDefault(); e.currentTarget.classList.remove("tb-encima"); try { ejecutar(a, JSON.parse(e.dataTransfer.getData("text/plain"))); } catch { /* nada */ } },
+    onDrop: (e: React.DragEvent) => { e.preventDefault(); e.currentTarget.classList.remove("tb-encima"); try { const ids = JSON.parse(e.dataTransfer.getData("text/plain")); if (a === "va") empezar(() => responder(ids, "va", null)); else ejecutar(a, ids); } catch { /* nada */ } },
   });
 
   const barra = (
-    <div className="tb-barra" role="region" aria-label="Acciones con la selección" data-testid="barra-acciones" hidden={sel.size === 0 && !pidiendoMotivo}>
-      {pidiendoMotivo ? (
+    <div className="tb-barra" role="region" aria-label="Acciones con la selección" data-testid="barra-acciones" hidden={sel.size === 0 && !pidiendo}>
+      {pidiendo?.tipo === "no" ? (
         <div className="tb-motivo" role="group" aria-label="Motivo de «No van»">
-          <span>Motivo para {pidiendoMotivo.length === 1 ? lista(pidiendoMotivo) : `${pidiendoMotivo.length} jugadores`}:</span>
+          <span>Motivo para {pidiendo.ids.length === 1 ? lista(pidiendo.ids) : `${pidiendo.ids.length} jugadores`}:</span>
           {MOTIVOS.map((m) => <label key={m} className={`tb-chip${motivo === m ? " activo" : ""}`}><input type="radio" name="tb-motivo" value={m} checked={motivo === m} onChange={() => setMotivo(m)} />{TEXTO_MOTIVO[m]}</label>)}
-          <button type="button" className="boton boton-peligro" disabled={!motivo || pendiente} onClick={() => empezar(() => responder(pidiendoMotivo, "no", motivo))}>Guardar «No van»</button>
-          <button type="button" className="boton boton-claro" onClick={() => { setPidiendoMotivo(null); setMotivo(null); }}>Cancelar</button>
+          <button type="button" className="boton boton-peligro" disabled={!motivo || pendiente} onClick={() => empezar(() => responder(pidiendo.ids, "no", motivo))}>Guardar «No van»</button>
+          <button type="button" className="boton boton-claro" onClick={() => { setPidiendo(null); setMotivo(null); }}>Cancelar</button>
+        </div>
+      ) : pidiendo?.tipo === "va" ? (
+        <div className="tb-motivo" role="group" aria-label="Van / Disponible">
+          <span>Disponibles {pidiendo.ids.length === 1 ? lista(pidiendo.ids) : `${pidiendo.ids.length} jugadores`}:</span>
+          <label className="tb-nota">Motivo (opcional)<input type="text" value={motivoVa} maxLength={120} placeholder="p. ej. me lo dijo por WhatsApp" onChange={(e) => setMotivoVa(e.target.value)} /></label>
+          <button type="button" className="boton tb-va" disabled={pendiente} onClick={() => empezar(() => responder(pidiendo.ids, "va", null, motivoVa))}>Guardar «Van»</button>
+          <button type="button" className="boton boton-claro" onClick={() => { setPidiendo(null); setMotivoVa(""); }}>Cancelar</button>
         </div>
       ) : (
         <>
@@ -151,11 +160,12 @@ export default function Tablero({ datos, opciones, actual }: { datos: TableroDom
             <>
               {juegan.map((e) => <button key={e} type="button" className={`boton tb-al tb-al-${e}`} disabled={pendiente} onClick={() => ejecutar(e, [...sel])}>Al {e}</button>)}
               <button type="button" className="boton boton-claro" disabled={pendiente} onClick={() => ejecutar("quitar", [...sel])}>Quitar convocatoria</button>
+              <button type="button" className="boton tb-va" disabled={pendiente} onClick={() => ejecutar("va", [...sel])}>Van / Disponible</button>
               <button type="button" className="boton boton-peligro" disabled={pendiente} onClick={() => ejecutar("no", [...sel])}>No van</button>
             </>
           ) : (
             <>
-              <button type="button" className="boton tb-va" disabled={pendiente} onClick={() => ejecutar("va", [...sel])}>Van</button>
+              <button type="button" className="boton tb-va" disabled={pendiente} onClick={() => ejecutar("va", [...sel])}>Van / Disponible</button>
               <button type="button" className="boton boton-claro" disabled={pendiente} onClick={() => ejecutar("duda", [...sel])}>Duda</button>
               <button type="button" className="boton boton-peligro" disabled={pendiente} onClick={() => ejecutar("no", [...sel])}>No van</button>
             </>

@@ -8,12 +8,13 @@ import { MOTIVOS, type Motivo } from "@/lib/eventos/dominio";
 
 // Acciones del tablero (D121). Solo gestores (la base lo vuelve a comprobar). Convocar o quitar guarda en la
 // convocatoria con las funciones de siempre (convocatoria_guardar, D107: un solo motivo por grupo, «ajuste manual» por
-// defecto); cambiar respuestas, con tablero_responder («puesta por <gestor>», tambien con el interruptor apagado).
+// defecto); cambiar respuestas, con gestor_responder (D159: «puesta por <gestor>», motivo opcional, tambien con el interruptor apagado).
 
 export type R = { ok: true; registros?: string[]; aviso?: string } | { ok: false; error: string };
 const refrescar = () => { revalidatePath("/gestion/tablero"); revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/", "layout"); };
 const ERRORES: Record<string, string> = {
   solo_gestores: "Solo los gestores.", falta_motivo: "Elige un motivo para «No van».", no_invitado: "Alguno no está invitado a ese evento.",
+  motivo_no_valido: "Ese motivo no es de la lista.", respuesta_no_valida: "Respuesta no válida.", detalle_largo: "El motivo es demasiado largo (máximo 120 caracteres).",
   limite_dudas: "Ya pasó la hora límite de las dudas: «Voy» o «No van».", evento_cerrado: "Ese evento está cancelado.", nada_que_deshacer: "No hay nada que deshacer.", sin_personas: "No hay nadie seleccionado.",
 };
 const error = (m: string) => ERRORES[Object.keys(ERRORES).find((k) => m.includes(k)) ?? ""] ?? `No se pudo guardar: ${m}`;
@@ -83,16 +84,17 @@ export async function restaurarConvocatoria(fecha: string, equipos: Convocatoria
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
-/** Cambiar la respuesta de varios (Van / Duda / No van) en uno o varios eventos: queda «puesta por <gestor>». «No van»
- *  pide un motivo de la lista de siempre (uno para todo el grupo). En cada evento, solo los invitados a el. */
-export async function responderTablero(eventos: { id: string; personas: string[] }[], respuesta: "va" | "duda" | "no", motivo: Motivo | null): Promise<R> {
-  if (respuesta === "no" && (!motivo || !MOTIVOS.includes(motivo))) return { ok: false, error: ERRORES.falta_motivo };
+/** Cambiar la respuesta de varios (Van / Disponible, Duda, No van o sin responder) en uno o varios eventos: queda
+ *  «puesta por <gestor>» (gestor_responder, D159). El motivo es opcional: de la lista con «No van»; con las demas, un
+ *  texto libre (detalle). En cada evento, solo los invitados a el. */
+export async function responderTablero(eventos: { id: string; personas: string[] }[], respuesta: "va" | "duda" | "no" | "sin_responder", motivo: Motivo | null, detalle: string | null = null): Promise<R> {
+  if (motivo && !MOTIVOS.includes(motivo)) return { ok: false, error: ERRORES.motivo_no_valido };
   try {
     const { supabase } = await exigirGestor();
     const registros: string[] = [];
     for (const e of eventos) {
       if (!e.personas.length) continue;
-      const { data, error: err } = await supabase.rpc("tablero_responder", { p_evento: e.id, p_personas: e.personas, p_respuesta: respuesta, p_motivo: respuesta === "no" ? motivo : null, p_detalle: null });
+      const { data, error: err } = await supabase.rpc("gestor_responder", { p_evento: e.id, p_personas: e.personas, p_respuesta: respuesta, p_motivo: respuesta === "no" ? motivo : null, p_detalle: detalle?.trim() || null });
       if (err) return { ok: false, error: error(err.message) };
       registros.push((data as { registro: string }).registro);
     }

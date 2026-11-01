@@ -1,3 +1,4 @@
+import { mensajeSinAvisos } from "@/lib/gestion/mensajesActivacion";
 import Volver from "@/components/nav/Volver";
 import { notFound } from "next/navigation";
 import { exigirGestor, origenMensajes as origenWeb } from "@/lib/sesion";

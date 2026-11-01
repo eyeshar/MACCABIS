@@ -250,6 +250,25 @@ const idPartido = (grupo, jornada, local, visitante) => `${grupo.toLowerCase()}-
  *  sólo registra los acertados; los tiros libres llevan anotados e intentados. */
 const estEquipo = t => ({ pts: t.pts, t2: t.p2a, t3: t.p3a, tl: t.tla, tl_int: t.tli, faltas: t.fc });
 
+/**
+ * D168: en la web, un jugador de otro equipo es equipo + nombre normalizado (sin tildes, mayúsculas ni puntuación; el
+ * dorsal no cuenta). Si en UN partido el mismo nombre sale con dorsales distintos, son dos personas: la web no las fusiona
+ * y aquí se avisa. Devuelve los avisos de una hoja.
+ */
+const claveJugador = n => String(n ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+function nombresRepetidos(p) {
+  const out = [];
+  for (const e of p.equipos) {
+    const por = new Map();
+    for (const j of e.jugadores) por.set(claveJugador(j.nombre), [...(por.get(claveJugador(j.nombre)) || []), j]);
+    for (const js of por.values()) {
+      const dorsales = [...new Set(js.map(j => String(j.num)))];
+      if (dorsales.length > 1) out.push(`Liga ${p.grupo} J${p.jornada}: «${js[0].nombre}» sale dos veces en ${e.equipo} con dorsales ${dorsales.map(d => '#' + d).join(' y ')} (${p.fichero}); en la web se dejan como dos personas.`);
+    }
+  }
+  return out;
+}
+
 function construir(temporada) {
   const ctx = contexto(temporada);
   const cfgLiga = ctx.cfg.liga;
@@ -322,12 +341,13 @@ function construir(temporada) {
       equipos: Object.fromEntries(tabla.map(x => [x.id, { nombre: x.nombre, nuestro: x.nuestro, ...estadisticasEquipo(x) }])),
     };
   }
+  for (const p of privado) avisos.push(...nombresRepetidos(p));
   // D132: nunca menos jornadas, hojas ni partidos que lo ya publicado (vale para liga.js, npm run jornada y db:liga).
   errores.push(...comprobarNoRetrocede(publico, temporada));
   return { publico, privado, errores, avisos, fuentes: partidos.length };
 }
 
-module.exports = { construir, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
+module.exports = { construir, nombresRepetidos, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
 
 if (require.main === module) {
   const args = process.argv.slice(2);

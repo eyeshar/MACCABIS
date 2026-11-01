@@ -41,7 +41,8 @@ function Tarjeta({ l }: { l: Lista }) {
 }
 
 export default function Lideres({ filas, resumen }: { filas: FilaTabla[]; resumen: string }) {
-  const [porPartidoVista, setPorPartidoVista] = useState(false);
+  // D169: lo que importa es lo que hace por partido; los totales, a un toque.
+  const [porPartidoVista, setPorPartidoVista] = useState(true);
   const top = <T,>(l: T[]) => l.slice(0, 8);
 
   const totales: Lista[] = [
@@ -71,7 +72,7 @@ export default function Lideres({ filas, resumen }: { filas: FilaTabla[]; resume
       </div>
       {porPartidoVista && (
         <p className="lg-nota">
-          Mínimo de partidos «Automático»: la mitad de los partidos jugados por su equipo (al menos 1); en TL%, además, 3 tiros libres
+          Mínimo de partidos «Automático»: la mitad de los partidos jugados por su equipo, redondeando hacia arriba, o 2, lo que sea menor; en TL%, además, 3 tiros libres
           intentados. Quien dobla cuenta con los partidos sumados de sus dos fichas. Una decimal; el orden usa el valor exacto y, si empatan,
           el total, menos partidos jugados, el nombre y el equipo.
         </p>

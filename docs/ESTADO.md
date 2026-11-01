@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 01/11/2026: **Scouting sin jugadores duplicados y con medias** (`feat/scouting-medias`, D168 y D169, PR abierto): el jugador rival es equipo + nombre normalizado (no el dorsal), sin los de 0 PJ; «Más peligrosos» por media con mínimo de partidos; tabla por media (Jugador, PJ, MEDIA y PTS a la vista en el móvil); líderes de la consolidada «Por partido»._
 _Última actualización: 01/11/2026: **asistencia histórica 2018/19–2024/25 de SportEasy** (`feat/asistencia-historica`, D166, PR abierto, **cargada en el real** con D111): identidad por id de perfil; 36 perfiles casados y 40 personas históricas (sin cuenta ni acceso, solo en «Asistencia y motivos»); 475 filas en 7 pestañas; 23 de los 40 con propuesta en `privado/sporteasy/propuestas_para_ivan.md` (pendiente de Iván); 28 cuentas antes y después._
 _Última actualización: 01/11/2026: **ventanas de consola vacías diagnosticadas** (`docs/ventanas-diagnostico`, solo docs): las abre Windows Terminal como terminal por defecto con procesos de consola visibles; nuestro código ya no lo hace (#13); el origen encontrado, la rutina A, se lanza ya con `conhost --headless` (aplicado); la terminal por defecto la cambia Iván._
 _Última actualización: 01/11/2026: **J1 de MdA como diferencia conocida** (`fix/clasificacion-diferencia-conocida`, D165): el 16-62 publicado no coincide con el acta 392895 (14-62); mandan acta y hoja. La pantalla de clasificación oficial la marca «conocida» y la rutina B no la vuelve a avisar; cualquier diferencia nueva sí._
@@ -45,6 +46,11 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+## Scouting y Liga consolidada: jugador rival sin duplicar y medias en vez de totales (01/11/2026; D168 y D169) — `feat/scouting-medias`, PR abierto
+
+- **D168:** un jugador de otro equipo es equipo + nombre normalizado (el dorsal no cuenta): el mismo con #9 y #16 o escrito con y sin tilde sale una vez, con todos sus dorsales y sus números sumados; con dos dorsales en el mismo partido, dos personas y aviso en el informe de la jornada; quien no ha jugado ningún minuto no sale. `cargarLiga` agrupa las filas de las hojas (sin migración).
+- **D169:** Scouting abre con «Más peligrosos» (media de puntos por partido; mínimo: la mitad de los partidos de su equipo, hacia arriba, o 2, lo que sea menor) y una tabla por media con Jugador, PJ, MEDIA y PTS a la vista a 375 px. Liga consolidada: líderes «Por partido» por defecto con el mismo mínimo. Panel: los tres más peligrosos del próximo rival por media.
+- **Pruebas:** `pruebas:jugadores-rivales` (nueva) y `pruebas:pantallas` (375 px y escritorio).
 ## Asistencia histórica 2018/19–2024/25 desde el export de SportEasy (01/11/2026; D166) — `feat/asistencia-historica`, PR abierto; CARGADA en el real
 
 - **Identidad = id de perfil de SportEasy** (`profile.id`), estable entre temporadas; el nombre no une temporadas. 76 perfiles en las 7 temporadas: **36 casados** (28 por `diccionario_sporteasy`/`nombres_sporteasy.json`, 8 por nombre exacto con el diccionario del histórico, 3 de ellos solo sin tildes) y **40 sin casar**.

@@ -89,6 +89,7 @@
     "pruebas:chat-ia": "node pruebas/chat_ia.mjs",
     "pruebas:solo-ficha": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/solo_con_ficha.mjs",
     "pruebas:clasificacion-oficial": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/contraste_clasificacion.mjs",
+    "pruebas:jugadores-rivales": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/jugadores_rivales.mjs",
     "pruebas:solo-ficha-real": "node pruebas/solo_con_ficha_real.mjs",
     "pruebas:rapidas": "node pruebas/infra/corredor.mjs rapidas",
     "pruebas:completas": "node pruebas/infra/corredor.mjs completas",

@@ -223,14 +223,14 @@ try {
 
     await p.goto(`${BASE}/liga/scouting`);
     ok((await p.textContent('.e-sec h2')).includes('Scouting rivales') && (await p.textContent('.lg-cab-equipo h2')).length > 0, 'Scouting rivales carga');
-    ok((await p.locator('.lg-max').count()) === 3 && (await p.locator('.lg-prox').count()) === 1, 'Scouting: 3 maximos anotadores y proximo partido contra nosotros');
+    ok((await p.locator('.lg-max').count()) === 3 && (await p.locator('.lg-prox').count()) === 1, 'Scouting: 3 «más peligrosos» y proximo partido contra nosotros');
     ok((await p.locator('.lg-tarjetas').isVisible()) === movil, movil ? 'Scouting movil: tarjetas' : 'Scouting escritorio: tabla');
     ok(await sinDesbordar(), 'Scouting sin desbordamiento');
 
     await p.goto(`${BASE}/liga/consolidada`);
-    ok((await p.textContent('.e-sec h2')).includes('Liga consolidada') && (await p.locator('#lideres .lg-lider').count()) === 4, 'Liga consolidada carga con sus listas de lideres (Totales)');
-    await p.locator('#lideres').getByRole('button', { name: 'Por partido' }).click();
-    ok((await p.locator('#lideres .lg-lider').count()) === 7, 'lideres Por partido: 7 listas');
+    ok((await p.textContent('.e-sec h2')).includes('Liga consolidada') && (await p.locator('#lideres .lg-lider').count()) === 7, 'Liga consolidada carga con sus listas de lideres (por partido, D169)');
+    await p.locator('#lideres').getByRole('button', { name: 'Totales' }).click();
+    ok((await p.locator('#lideres .lg-lider').count()) === 4, 'lideres Totales: 4 listas');
     ok((await p.locator('nav.lg-indice a').count()) === 3 && (await p.locator('.lg-todos').isVisible()), 'indice de la pagina y tabla Todos los jugadores');
     ok((await p.locator('.lg-todos tbody tr, .lg-todos .lg-compactas .lg-fila').count()) > 0 && await sinDesbordar(), 'tabla Todos los jugadores con filas y sin desbordamiento');
     await p.locator('.lg-todos').getByLabel('Buscar').fill('esteban, jon').catch(async () => { await p.locator('.lg-filtros-btn').click(); await p.locator('.lg-todos').getByLabel('Buscar').fill('esteban, jon'); });

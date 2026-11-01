@@ -108,15 +108,43 @@ try {
     const [primero, segundo] = PROX.MDA.local === false ? [PROX.MDA.rival, 'MdA'] : ['MdA', PROX.MDA.rival];
     ok(prox.includes(`J${PROX.MDA.jornada} ·`) && prox.includes(dm(PROX.MDA.fecha)) && !/en casa|fuera/i.test(prox) && normal(cartel).indexOf(normal(primero)) < normal(cartel).indexOf(normal(segundo)) && cartel.includes(' – '),
       `scouting: proximo partido contra nosotros (J${PROX.MDA.jornada} · ${dm(PROX.MDA.fecha)}), «${primero} – ${segundo}» y sin «casa/fuera»`, prox);
-    ok((await p.locator('.lg-max').count()) === 3, 'scouting: 3 maximos anotadores');
+    // D169: «Más peligrosos» por media, con un minimo de partidos; numero grande = media y debajo el detalle
+    ok((await p.locator('.lg-max').count()) === 3 && (await p.locator('.lg-max-n').first().textContent()).includes('más peligroso'), 'scouting: 3 «más peligrosos»');
+    const tarjetas = await p.$$eval('.lg-max', (ds) => ds.map((d) => ({ p: d.querySelector('.lg-max-p').textContent, x: d.querySelector('.lg-max-x').textContent })));
+    const medias = tarjetas.map((t) => Number(t.p.replace(' pts/partido', '').replace(',', '.')));
+    ok(tarjetas.every((t) => /^\d+,\d pts\/partido$/.test(t.p) && /^\d+ pts en \d+ partidos? · \d+ dobles · \d+ triples · TL \d+\/\d+ · \d+ faltas$/.test(t.x)), 'scouting: tarjeta con la media en grande («8,5 pts/partido») y «17 pts en 2 partidos · … · 6 faltas» debajo', JSON.stringify(tarjetas));
+    ok(medias.every((m, i) => i === 0 || medias[i - 1] >= m), 'scouting: tarjetas de mayor a menor media', medias.join(' '));
+    ok(tarjetas.every((t) => { const [pts, pj] = t.x.match(/^(\d+) pts en (\d+)/).slice(1).map(Number); return Math.abs(pts / pj - Number(t.p.replace(' pts/partido', '').replace(',', '.'))) < 0.051; }), 'scouting: la media de la tarjeta es puntos / partidos');
+    // tabla en movil y escritorio: por media por defecto; en el movil, jugador, PJ, MEDIA y PTS se ven sin desplazar
+    ok(await p.locator('[data-testid=tabla-scouting]').isVisible() && (await p.locator('.lg-tarjetas').count()) === 0, 'scouting: la tabla se ve en movil y escritorio');
+    const cabS = await p.$$eval('[data-testid=tabla-scouting] thead th', (ths) => ths.map((t) => t.textContent.trim()));
+    ok(cabS.slice(0, 4).join('|') === 'Jugador|PJ|MEDIA(pts/partido)|PTS', 'scouting: columnas Jugador, PJ, «MEDIA (pts/partido)» y PTS primero', cabS.join('|'));
+    const mediasT = (await p.$$eval('[data-testid=tabla-scouting] tbody tr:not(.lg-equipo) td:nth-child(3)', (tds) => tds.map((t) => t.textContent))).map((v) => Number(v.replace(',', '.')));
+    ok(mediasT.length > 0 && mediasT.every((m, i) => i === 0 || mediasT[i - 1] >= m), 'scouting: la tabla va por media de mayor a menor', mediasT.join(' '));
+    const visibles4 = await p.evaluate(() => { const w = document.querySelector('[data-testid=tabla-scouting]').closest('.tabla-desplazable').getBoundingClientRect(); return [...document.querySelectorAll('[data-testid=tabla-scouting] thead th')].slice(0, 4).every((th) => { const r = th.getBoundingClientRect(); return r.left >= w.left - 1 && r.right <= w.right + 1; }); });
+    ok(visibles4, 'scouting: jugador, PJ, MEDIA y PTS a la vista sin desplazar');
+    if (movil) ok(await p.evaluate(() => { const d = document.querySelector('[data-testid=tabla-scouting]').closest('.tabla-desplazable'); return d.scrollWidth > d.clientWidth; }), 'scouting movil: el resto de columnas, con desplazamiento lateral');
+    const dorsalesBien = await p.$$eval('[data-testid=tabla-scouting] tbody tr:not(.lg-equipo) td:first-child small', (s) => s.every((x) => /^#\w+( \/ #\w+)*$/.test(x.textContent)));
+    ok(dorsalesBien, 'scouting: cada jugador con sus dorsales («#9 / #16»)');
+    // D168, con las hojas reales: en la consolidada nadie sale dos veces en su equipo, nadie con 0 PJ, y hay quien cambió de dorsal
+    if (!movil) {
+      const { agruparJugadores, claveNombre } = await import('../src/lib/jugadoresLiga.ts');
+      const filas = (await sql`select e.partido_id, p.grupo, p.jornada, e.equipo, e.dorsal, e.nombre, e.segundos, e.pts, e.p2a, e.p3a, e.tla, e.tli, e.faltas
+                               from public.liga_estadisticas_jugador e join public.liga_partidos p on p.id = e.partido_id where p.temporada = '2026-27'`);
+      const { jugadores: agr, conflictos } = agruparJugadores(filas);
+      const claves = agr.map((j) => `${j.grupo}|${j.equipo}|${claveNombre(j.nombre)}`);
+      ok(new Set(claves).size === claves.length - conflictos.length, 'hojas reales: ningún jugador repetido en su equipo por dorsal o por escritura');
+      ok(agr.every((j) => j.pj > 0), 'hojas reales: nadie con 0 PJ (quien figura sin minutos no sale)');
+      ok(agr.some((j) => (j.dorsales ?? []).length > 1), 'hojas reales: al menos un jugador con dos dorsales, en una sola línea');
+    }
+    await p.locator('[data-testid=tabla-scouting] thead a', { hasText: 'PTS' }).click();
+    await p.waitForURL(/o=pts/);
+    const ptsT = (await p.$$eval('[data-testid=tabla-scouting] tbody tr:not(.lg-equipo) td:nth-child(4)', (tds) => tds.map((t) => Number(t.textContent))));
+    ok(ptsT.every((v, i) => i === 0 || ptsT[i - 1] >= v), 'scouting: un encabezado ordena por esa columna y queda en la URL (?o=pts)');
+    await p.goto(`${APP}/liga/scouting`);
     ok(await menuEntero(), 'la navegacion de la Liga no se corta');
     ok(await sinDesbordar(), 'scouting: sin desbordamiento horizontal');
-    ok((await p.locator('.lg-tarjetas').isVisible()) === movil && (await p.locator('.lg-tabla').first().isVisible()) === !movil,
-      movil ? 'scouting movil: tarjetas por jugador, sin tabla' : 'scouting escritorio: tabla, sin tarjetas');
-    if (movil) {
-      const t = await p.locator('.lg-tarjetas .lg-jug').first().textContent();
-      ok(['PJ', 'Pts', 'Media', '2P', '3P', 'TL', 'Faltas'].every((k) => t.includes(k)) && /#?\d/.test(t), 'tarjeta: dorsal, nombre, PJ, puntos, media, 2P, 3P, TL y faltas');
-    }
+
     await p.screenshot({ path: path.join(SALIDA, `real_b_scouting_${etiqueta}.png`), fullPage: true });
     await p.getByRole('link', { name: /^MdL:/ }).click();
     await p.waitForURL(/v=mdl/);
@@ -134,7 +162,7 @@ try {
     const orden = await p.evaluate(() => { const h = document.querySelector('.lg-lideres')?.getBoundingClientRect().top ?? 1e9; const d = document.querySelector('details.lg-ranking')?.getBoundingClientRect().top ?? -1; return h < d; });
     ok(orden, 'liga: primero los lideres individuales, el ranking de equipos mas abajo');
     ok((await p.locator('details.lg-ranking').getAttribute('open')) === null, 'liga: el ranking conjunto viene plegado');
-    ok((await p.locator('.lg-lider').count()) === 4, 'liga: 4 listas en Totales (puntos, triples, tiros libres, faltas)');
+    ok((await p.locator('.lg-lider').count()) === 7, 'liga: por defecto, las 7 listas por partido (D169)');
     ok((await p.locator('.lg-lider .etiqueta', { hasText: 'dobla' }).count()) > 0, 'liga: marca "dobla" en nuestros jugadores que salen con MdA y MdL');
     ok(await menuEntero() && await sinDesbordar(), 'liga: menu entero y sin desbordamiento');
     await p.screenshot({ path: path.join(SALIDA, `real_c_liga_plegado_${etiqueta}.png`), fullPage: true });
@@ -162,19 +190,19 @@ try {
 
     const L = p.locator('#lideres');
     const titulos = () => L.locator('.lg-lider h3').allTextContents();
-    ok(JSON.stringify(await titulos()) === JSON.stringify(['Puntos', 'Triples', 'Tiros libres', 'Faltas']), 'lideres Totales: Puntos, Triples, Tiros libres y Faltas (sin "Media de puntos")', (await titulos()).join(','));
-    await L.getByRole('button', { name: 'Por partido' }).click();
+    ok((await L.locator('.lg-conmutador button.on').textContent()) === 'Por partido', 'lideres: por defecto, Por partido (D169)');
     ok(JSON.stringify(await titulos()) === JSON.stringify(['Puntos por partido', '2P por partido', '3P por partido', 'TL anotados por partido', 'TL%', 'Faltas por partido', 'Minutos por partido']), 'lideres Por partido: las 7 listas', (await titulos()).join(','));
     const valores = await L.locator('.lg-lider li > b:last-child').allTextContents();
     ok(valores.length > 0 && valores.every((v) => /^\d+,\d$|^\d+%$/.test(v)), 'lideres Por partido: valores con una decimal (o %)', valores.slice(0, 6).join(' '));
     const ppp = (await L.locator('.lg-lider').first().locator('li > b:last-child').allTextContents()).map((v) => Number(v.replace(',', '.')));
     ok(ppp.length > 0 && ppp.every((v, i) => i === 0 || ppp[i - 1] >= v), `lideres Por partido: Puntos por partido de mayor a menor (arranca en ${String(ppp[0]).replace('.', ',')})`, ppp.join(' '));
-    ok((await L.locator('.lg-nota').last().textContent()).includes('Mínimo de partidos «Automático»'), 'lideres Por partido: la nota explica el minimo automatico');
+    ok((await L.locator('.lg-nota').last().textContent()).includes('Mínimo de partidos «Automático»') && (await L.locator('.lg-nota').last().textContent()).includes('o 2, lo que sea menor'), 'lideres Por partido: la nota explica el minimo (mitad de los de su equipo o 2, lo que sea menor)');
     ok((await p.locator('.lg-todos .lg-conmutador button.on').textContent()) === 'Totales', 'el interruptor de los lideres es independiente del de la tabla');
     await L.scrollIntoViewIfNeeded();
     await L.screenshot({ path: path.join(SALIDA, `real_c_lideres_por_partido_${etiqueta}.png`) });
     await L.getByRole('button', { name: 'Totales' }).click();
-    ok((await titulos()).length === 4, 'lideres: vuelve a Totales');
+    ok(JSON.stringify(await titulos()) === JSON.stringify(['Puntos', 'Triples', 'Tiros libres', 'Faltas']), 'lideres Totales: Puntos, Triples, Tiros libres y Faltas (sin "Media de puntos")', (await titulos()).join(','));
+    await L.getByRole('button', { name: 'Por partido' }).click();
 
     const T = p.locator('.lg-todos');
     const filasVisibles = () => (movil ? T.locator('.lg-compactas .lg-fila') : T.locator('tbody tr')).count();
@@ -200,6 +228,7 @@ try {
     ok((await T.locator('.lg-nota').last().textContent()).includes('no hay faltas recibidas ni intentos de campo'), 'tabla: la nota al pie dice que no hay faltas recibidas ni intentos de campo');
     ok((await T.locator('.lg-nota').last().textContent()).includes('solo ficha MdA'), 'tabla: la nota al pie explica la «solo ficha» de los dobladores');
     const primerPts = async () => Number(await (movil ? T.locator('.lg-fila-pts b').first() : T.locator('tbody tr').first().locator('td').nth(4)).textContent());
+    await L.getByRole('button', { name: 'Totales' }).click(); // los lideres abren «Por partido» (D169): el maximo anotador esta en Totales
     const maxPts = await p.evaluate(() => Math.max(...[...document.querySelectorAll('.lg-lider')[0].querySelectorAll('li b:last-child')].map((b) => Number(b.textContent))));
     ok((await primerPts()) === maxPts, 'tabla: por defecto ordenada por PTS descendente (el primero es el maximo anotador de la liga)', `${await primerPts()} / ${maxPts}`);
     if (!movil) {
@@ -288,7 +317,7 @@ try {
     await p.goto(`${APP}/liga/scouting`);
     const enlaceTodos = p.getByRole('link', { name: 'Ver todos los jugadores de la liga' });
     ok(await enlaceTodos.isVisible(), 'scouting: boton "Ver todos los jugadores de la liga" junto al selector');
-    ok((await p.textContent('.lg-nota')).includes('Solo aparecen los jugadores que figuran en las hojas de la FBM (han jugado al menos un partido)'), 'scouting: nota "solo aparecen los jugadores que figuran en las hojas de la FBM"');
+    ok((await p.textContent('.lg-nota')).includes('Solo aparecen los jugadores que han jugado algún minuto según las hojas de la FBM'), 'scouting: nota «solo aparecen los jugadores que han jugado algún minuto»');
     await enlaceTodos.click();
     await p.waitForURL(/\/liga\/consolidada#todos/);
     ok(await p.locator('#todos .lg-todos').isVisible(), 'scouting: el boton lleva a Liga consolidada, seccion Todos los jugadores');

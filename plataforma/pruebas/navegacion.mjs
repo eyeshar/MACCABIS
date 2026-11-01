@@ -47,11 +47,13 @@ async function esperar(url, ms = 60000) {
 }
 
 const PUBLICAS = ['/', '/club', '/privacidad'];
-const GESTION = ['/gestion', '/gestion/jugadores', '/gestion/ropa', '/gestion/ropa/nuevo', '/gestion/scouting', '/gestion/liga'];
+const GESTION = ['/gestion', '/gestion/jugadores', '/gestion/ropa', '/gestion/ropa/nuevo'];
+// D162: Scouting rivales y Liga consolidada, dentro de la Liga, para cualquier jugador con sesion (y los gestores).
+const LIGA_SESION = ['/liga/scouting', '/liga/consolidada'];
 const ROLES = {
   anon: { paginas: PUBLICAS },
-  jugador: { email: 'jugador@pruebas.local', paginas: [...PUBLICAS, '/agenda', '/cuenta'] },
-  gestor: { email: 'gestor@pruebas.local', paginas: [...PUBLICAS, '/agenda', '/cuenta', ...GESTION] },
+  jugador: { email: 'jugador@pruebas.local', paginas: [...PUBLICAS, '/agenda', '/cuenta', ...LIGA_SESION] },
+  gestor: { email: 'gestor@pruebas.local', paginas: [...PUBLICAS, '/agenda', '/cuenta', ...LIGA_SESION, ...GESTION] },
 };
 const TAMANOS = [['375', 375, 812, true], ['escritorio', 1440, 900, false]];
 
@@ -258,7 +260,7 @@ try {
         await botonUsuario.click();
         ok(await pg.isHidden() && await p.locator('#nv-menu-usuario').isVisible(), 'abrir un menu cierra el otro (clic fuera)');
         await p.keyboard.press('Escape');
-        await p.goto(`${APP}/gestion/liga`);
+        await p.goto(`${APP}/gestion/jugadores`);
         ok((await botonGestion.getAttribute('data-dentro')) !== null && (await botonGestion.evaluate((b) => getComputedStyle(b).backgroundColor)) === 'rgb(243, 197, 25)', 'dentro de /gestion, el boton GESTIÓN va relleno de amarillo');
         await p.goto(`${APP}/`);
         ok((await botonGestion.evaluate((b) => getComputedStyle(b).backgroundColor)) !== 'rgb(243, 197, 25)', 'fuera de /gestion, el boton GESTIÓN va con borde, sin relleno');
@@ -337,7 +339,7 @@ try {
         ok(Math.abs(await p.locator('nav[aria-label="Gestión"]').evaluate((b) => b.getBoundingClientRect().top)) < 1, 'Gestion: la barra queda fija arriba al hacer scroll');
         await p.evaluate(() => window.scrollTo(0, 0));
         await fotoEstatica(p, `gestion_${etiqueta}`);
-        await p.goto(`${APP}/gestion/liga`);
+        await p.goto(`${APP}/liga/consolidada`);
         await fotoEstatica(p, `gestion_liga_${etiqueta}`);
         await p.goto(`${APP}/gestion/jugadores`);
         await fotoEstatica(p, `gestion_jugadores_${etiqueta}`);

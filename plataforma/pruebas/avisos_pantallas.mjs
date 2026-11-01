@@ -184,9 +184,9 @@ try {
     fs.mkdirSync(DEUDA, { recursive: true });
     await prox.screenshot({ path: path.join(DEUDA, `panel_partidos_domingo_${etiqueta}.png`) });
 
-    await pg.goto(`${APP}/gestion/scouting`);
+    await pg.goto(`${APP}/liga/scouting`);
     const bloque = pg.locator('.lg-prox');
-    ok((await bloque.textContent()).includes('Próximo partido contra nosotros') && (await pg.textContent('h2')).includes(A.equipoPorNombre(equip, aMdA.rival).nombre), 'Scouting: por defecto, el proximo rival de MdA con su tarjeta de proximo partido');
+    ok((await bloque.textContent()).includes('Próximo partido contra nosotros') && (await pg.textContent('.lg-cab-equipo h2')).includes(A.equipoPorNombre(equip, aMdA.rival).nombre), 'Scouting: por defecto, el proximo rival de MdA con su tarjeta de proximo partido');
     ok((await pg.locator('[data-testid="color-equipo"]').textContent()).includes('camiseta'), 'Scouting: se ve el color del rival (camiseta y pantalon)');
     ok((await bloque.locator('.eq-aviso').count()) === (eti(avisoReal('MDA')) ? 1 : 0), 'Scouting (MdA): el aviso sale en la tarjeta del proximo partido si choca');
     await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_scouting_cambian_ellos_${etiqueta}.png`), fullPage: true });

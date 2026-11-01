@@ -24,6 +24,7 @@
     "db:liga": "node scripts/cargar_liga.mjs",
     "pruebas:liga": "node pruebas/rls_liga.mjs",
     "pruebas:pantallas": "node pruebas/pantallas_liga.mjs",
+    "pruebas:scouting-fuente": "node pruebas/scouting_fuente.mjs",
     "pruebas:orden": "node pruebas/orden_lideres.mjs",
     "equipacion:sync": "node scripts/sincronizar_equipacion.mjs",
     "pruebas:equipacion": "node pruebas/avisos_equipacion.mjs",

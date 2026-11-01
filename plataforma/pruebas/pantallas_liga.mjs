@@ -119,8 +119,14 @@ try {
     ok(await p.locator('[data-testid=tabla-scouting]').isVisible() && (await p.locator('.lg-tarjetas').count()) === 0, 'scouting: la tabla se ve en movil y escritorio');
     const cabS = await p.$$eval('[data-testid=tabla-scouting] thead th', (ths) => ths.map((t) => t.textContent.trim()));
     ok(cabS.slice(0, 4).join('|') === 'Jugador|PJ|MEDIA(pts/partido)|PTS', 'scouting: columnas Jugador, PJ, «MEDIA (pts/partido)» y PTS primero', cabS.join('|'));
-    const mediasT = (await p.$$eval('[data-testid=tabla-scouting] tbody tr:not(.lg-equipo) td:nth-child(3)', (tds) => tds.map((t) => t.textContent))).map((v) => Number(v.replace(',', '.')));
-    ok(mediasT.length > 0 && mediasT.every((m, i) => i === 0 || mediasT[i - 1] >= m), 'scouting: la tabla va por media de mayor a menor', mediasT.join(' '));
+    // D169: primero los que llegan al minimo de partidos, por media; debajo, tras «Menos de N partidos», los que no (tambien por media)
+    const bloques = await p.$$eval('[data-testid=tabla-scouting] tbody tr:not(.lg-equipo)', (trs) => {
+      const r = [[]]; for (const tr of trs) { if (tr.classList.contains('lg-separador')) { r.push([]); continue; } r[r.length - 1].push({ pj: Number(tr.children[1].textContent), m: Number(tr.children[2].textContent.replace(',', '.')) }); } return r;
+    });
+    ok(bloques[0].length > 0 && bloques.every((b) => b.every((x, i) => i === 0 || b[i - 1].m >= x.m)), 'scouting: la tabla va por media de mayor a menor (en cada bloque)', JSON.stringify(bloques));
+    ok(bloques.length <= 2 && (bloques.length === 1 || (bloques[1].length > 0 && bloques[1].every((x) => x.pj < bloques[0].reduce((a, y) => Math.min(a, y.pj), 99)))),
+      'scouting: arriba solo los que llegan al minimo; los que no, debajo del separador', JSON.stringify(bloques));
+    if (bloques.length === 2) ok(/^Menos de \d partidos?$/.test(await p.locator('[data-testid=separador-minimo]').textContent()), 'scouting: separador «Menos de N partidos»', await p.locator('[data-testid=separador-minimo]').textContent());
     const visibles4 = await p.evaluate(() => { const w = document.querySelector('[data-testid=tabla-scouting]').closest('.tabla-desplazable').getBoundingClientRect(); return [...document.querySelectorAll('[data-testid=tabla-scouting] thead th')].slice(0, 4).every((th) => { const r = th.getBoundingClientRect(); return r.left >= w.left - 1 && r.right <= w.right + 1; }); });
     ok(visibles4, 'scouting: jugador, PJ, MEDIA y PTS a la vista sin desplazar');
     if (movil) ok(await p.evaluate(() => { const d = document.querySelector('[data-testid=tabla-scouting]').closest('.tabla-desplazable'); return d.scrollWidth > d.clientWidth; }), 'scouting movil: el resto de columnas, con desplazamiento lateral');
@@ -205,7 +211,7 @@ try {
     await L.getByRole('button', { name: 'Por partido' }).click();
 
     const T = p.locator('.lg-todos');
-    const filasVisibles = () => (movil ? T.locator('.lg-compactas .lg-fila') : T.locator('tbody tr')).count();
+    const filasVisibles = () => (movil ? T.locator('.lg-compactas .lg-fila') : T.locator('tbody tr:not(.lg-separador)')).count();
     const panel = T.locator('#lg-filtros-panel');
     const abrirFiltros = async () => { if (movil && !(await panel.isVisible())) await T.locator('.lg-filtros-btn').click(); };
     const eqDe = () => (movil ? T.locator('.lg-fila-eq') : T.locator('tbody tr td:nth-child(2)')).allTextContents();
@@ -237,8 +243,15 @@ try {
       ok((await T.locator('th[aria-sort="descending"]').count()) === 1 && (await T.locator('th[aria-sort="descending"]').textContent()).includes('TL%'), 'tabla escritorio: la cabecera pulsable ordena (TL% descendente)');
       await T.getByRole('button', { name: /^TL%/ }).click();
       ok((await T.locator('th[aria-sort="ascending"]').count()) === 1, 'tabla escritorio: segunda pulsacion, ascendente');
+      // D169: por Media con el minimo «Automatico», nadie oculto: los que no llegan van debajo, tras «Menos de N partidos»
+      await T.getByRole('button', { name: /^Media/ }).click();
+      const bloquesT = await T.locator('tbody tr').evaluateAll((trs) => { const r = [[]]; for (const tr of trs) { if (tr.classList.contains('lg-separador')) { r.push([]); continue; } r[r.length - 1].push(Number(tr.children[5].textContent.replace(',', '.'))); } return r; });
+      ok(bloquesT.length <= 2 && bloquesT.every((b) => b.every((m, i) => i === 0 || b[i - 1] >= m)), 'tabla escritorio: por Media, de mayor a menor en cada bloque', JSON.stringify(bloquesT.map((b) => b.length)));
+      ok(!/personas? ocultas?/.test(await T.locator('.lg-nota').first().textContent()), 'tabla escritorio: con el minimo automatico no se oculta a nadie');
+      if (bloquesT.length === 2) ok(/^Menos de /.test(await T.locator('[data-testid=separador-minimo]').textContent()) && / debajo, en «Menos de /.test(await T.locator('.lg-nota').first().textContent()), 'tabla escritorio: separador «Menos de N partidos» y la nota dice cuántos van debajo');
       await T.getByRole('button', { name: /^PTS/ }).click();
       ok((await T.locator('th[aria-sort="descending"]').textContent()).includes('PTS'), 'tabla escritorio: otra columna empieza en descendente (PTS)');
+      ok((await T.locator('[data-testid=separador-minimo]').count()) === 0, 'tabla escritorio: por PTS (un total), sin separador');
     } else {
       ok(!(await T.locator('table').isVisible()), 'tabla movil: sin tabla, filas compactas');
       await T.getByLabel('Ordenar por').first().selectOption('media');

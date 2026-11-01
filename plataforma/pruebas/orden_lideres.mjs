@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Desempates de los lideres individuales (src/lib/ordenLideres.ts): deterministas y con los casos de control de Iván.
 //   npm run pruebas:orden
-import { porPuntos, porMedia, porTriples, porTirosLibres, porFaltas, comparadorTabla, pasaMinimo, valorColumna, porPartido, valorPP, cumpleMinimoPP } from '../src/lib/ordenLideres.ts';
+import { porPuntos, porMedia, porTriples, porTirosLibres, porFaltas, comparadorTabla, pasaMinimo, valorColumna, porPartido, valorPP, cumpleMinimoPP, separarPorMinimo, textoMenos } from '../src/lib/ordenLideres.ts';
 import { unirDoblan, filasFichas } from '../src/lib/jugadoresLiga.ts';
 
 let fallos = 0;
@@ -67,6 +67,13 @@ ok(!pasaMinimo(sinTL, 'pctTL', 'auto', false) && !pasaMinimo(sinTL, 'pctTL', 2, 
 ok(!pasaMinimo(unPartido, 'pts', 2, false) && pasaMinimo(cuatro, 'pts', 2, false) && pasaMinimo(unPartido, 'media', 'todos', false), 'minimo numerico: filtra siempre; "todos": nadie');
 const lista = [unPartido, cuatro, sinTL, jug('Dos', 2, 9)].filter((j) => pasaMinimo(j, 'media', 'auto', false)).sort(comparadorTabla('media', -1, false));
 ok(!lista.some((j) => j.pj < 3), 'ordenando por media con minimo automatico, nadie con menos partidos que el minimo aparece');
+// D169: en la tabla, los que no llegan no se ocultan: van debajo, en su orden, tras «Menos de N partidos»
+const todos = [unPartido, cuatro, jug('Dos', 2, 9), jug('Cinco', 5, 9)].sort(comparadorTabla('media', -1, false));
+const { llegan, debajo } = separarPorMinimo(todos, (j) => pasaMinimo(j, 'media', 'auto', false));
+ok(llegan.map((j) => j.nombre).join() === 'Cinco,Cuatro' && debajo.map((j) => j.nombre).join() === 'Dos,Uno', 'separar: arriba los que llegan, debajo los que no, cada parte en su orden', [...llegan, '|', ...debajo].map((j) => j.nombre ?? j).join(' '));
+ok(llegan.length + debajo.length === todos.length, 'separar: no se pierde a nadie');
+ok(textoMenos([2, 2]) === 'Menos de 2 partidos' && textoMenos([1]) === 'Menos de 1 partido' && textoMenos([1, 2]) === 'Menos de los partidos mínimos de su equipo', 'separador: «Menos de N partidos» (o el de su equipo si cambia)');
+ok(textoMenos([2], 'pctTL') === 'Menos de 2 partidos o de 3 tiros libres intentados', 'separador: con el % de TL, tambien los 3 intentados');
 
 
 console.log('\n== Lideres "Por partido": cada lista, determinista, con minimo y con su desempate');

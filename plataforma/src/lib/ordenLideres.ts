@@ -83,6 +83,21 @@ export function pasaMinimo(j: FilaOrden, col: Columna, minimo: Minimo, porPartid
   return true;
 }
 
+/**
+ * D169: con el minimo "Automatico", quien no llega no se oculta: va debajo, tras el separador «Menos de N partidos». Mantiene
+ * el orden de la lista dentro de cada parte.
+ */
+export function separarPorMinimo<T>(lista: T[], llega: (j: T) => boolean) {
+  return { llegan: lista.filter(llega), debajo: lista.filter((j) => !llega(j)) };
+}
+
+/** Texto del separador: «Menos de 2 partidos»; si el minimo cambia de un equipo a otro, «Menos de los partidos minimos de su equipo». */
+export function textoMenos(minimos: number[], col?: Columna) {
+  const n = [...new Set(minimos)];
+  const base = n.length === 1 ? `Menos de ${n[0]} ${n[0] === 1 ? "partido" : "partidos"}` : "Menos de los partidos mínimos de su equipo";
+  return col === "pctTL" ? `${base} o de 3 tiros libres intentados` : base;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Lideres "Por partido" de la liga (vista independiente de la tabla). Una decimal en pantalla; el orden usa el valor exacto.
 // ---------------------------------------------------------------------------------------------------------------------

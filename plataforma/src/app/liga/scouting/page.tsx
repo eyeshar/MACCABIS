@@ -1,6 +1,7 @@
 import { SecH } from "@/components/liga/Comunes";
 import Volver from "@/components/nav/Volver";
 import Link from "next/link";
+import { Fragment } from "react";
 import type { Metadata } from "next";
 import { exigirLiga } from "@/lib/sesion";
 import { AvisoCaja, Camiseta } from "@/components/ProximoPartido";
@@ -9,6 +10,7 @@ import {
   bonito, cargarLiga, codigoNuestro, dec, fechaCorta, masPeligrosos, minimoPartidos, mmss, nombreNuestro, porMediaPts, proximoPartido,
   quienDobla, textoDorsales, type JugadorLiga,
 } from "@/lib/liga";
+import { separarPorMinimo, textoMenos } from "@/lib/ordenLideres";
 
 export const dynamic = "force-dynamic";
 // Con sesion (D162): nunca se indexa (ademas, robots.txt y la cabecera X-Robots-Tag de RUTAS_PRIVADAS).
@@ -31,6 +33,8 @@ const COLUMNAS: { k: Col; t: string; sub?: string; largo: string }[] = [
   { k: "faltas", t: "Faltas", largo: "faltas" },
   { k: "fpp", t: "F/P", largo: "faltas por partido" },
 ];
+// Columnas que son una media: ahi va el separador «Menos de N partidos» (D169).
+const TASAS: Col[] = ["media", "pctTL", "fpp"];
 const valor = (j: JugadorLiga, k: Col): number | string | null => {
   switch (k) {
     case "nombre": return j.nombre;
@@ -71,6 +75,8 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
   // D169: las tarjetas, por media y solo con un minimo de partidos (los demas, solo en la tabla).
   const minimo = minimoPartidos(elegido.pj);
   const peligrosos = masPeligrosos(jugadores, elegido.pj);
+  // D169: ordenando por una media, primero los que llegan al minimo y debajo, tras «Menos de N partidos», los que no.
+  const { llegan, debajo } = TASAS.includes(col) ? separarPorMinimo(jugadores, (j) => j.pj >= minimo) : { llegan: jugadores, debajo: [] };
   const urlOrden = (k: Col) => `/liga/scouting?${new URLSearchParams({ ...(e ? { e } : {}), ...(v ? { v } : {}), ...(k === "media" ? {} : { o: k }) })}`;
   const dobla = quienDobla(liga.jugadores);
   const prox = elegido.nuestro ? null : proximoPartido(calendario, hoy, codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo);
@@ -166,13 +172,18 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
                   </tr>
                 </thead>
                 <tbody>
-                  {jugadores.map((j) => (
-                    <tr key={j.nombre + j.dorsal} data-nombre={j.nombre} className={peligrosos.includes(j) ? "lg-top" : ""}>
-                      <td><b>{bonito(j.nombre)}</b> <small>{textoDorsales(j)}</small>{dobla.has(j.nombre) && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}</td>
-                      <td>{j.pj}</td><td><b>{dec(j.pj ? j.pts / j.pj : null)}</b></td><td>{j.pts}</td><td>{mmss(j.segundos)}</td>
-                      <td>{j.p2a}</td><td>{j.p3a}</td><td>{j.tla}/{j.tli}</td><td>{j.tli ? `${Math.round((100 * j.tla) / j.tli)}%` : "–"}</td>
-                      <td>{j.faltas}</td><td>{dec(j.pj ? j.faltas / j.pj : null)}</td>
-                    </tr>
+                  {[...llegan, ...debajo].map((j, i) => (
+                    <Fragment key={j.nombre + j.dorsal}>
+                      {i === llegan.length && (
+                        <tr className="lg-separador" data-testid="separador-minimo"><td colSpan={COLUMNAS.length}>{textoMenos([minimo])}</td></tr>
+                      )}
+                      <tr data-nombre={j.nombre} className={peligrosos.includes(j) ? "lg-top" : i >= llegan.length ? "lg-bajo-minimo" : ""}>
+                        <td><b>{bonito(j.nombre)}</b> <small>{textoDorsales(j)}</small>{dobla.has(j.nombre) && <> <span className="etiqueta etiqueta-abierta">dobla</span></>}</td>
+                        <td>{j.pj}</td><td><b>{dec(j.pj ? j.pts / j.pj : null)}</b></td><td>{j.pts}</td><td>{mmss(j.segundos)}</td>
+                        <td>{j.p2a}</td><td>{j.p3a}</td><td>{j.tla}/{j.tli}</td><td>{j.tli ? `${Math.round((100 * j.tla) / j.tli)}%` : "–"}</td>
+                        <td>{j.faltas}</td><td>{dec(j.pj ? j.faltas / j.pj : null)}</td>
+                      </tr>
+                    </Fragment>
                   ))}
                   <tr className="lg-equipo">
                     <td><b>Equipo</b></td><td>{elegido.pj}</td><td>{dec(elegido.pj ? suma("pts") / elegido.pj : null)}</td><td><b>{suma("pts")}</b></td><td>{mmss(suma("segundos"))}</td>
@@ -185,7 +196,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
               2P y 3P: canastas anotadas (la hoja de la FBM no recoge los intentos de campo). TL: anotados/intentados. Los minutos son los de la
               hoja y pueden no cuadrar con el reloj. MEDIA = puntos por partido jugado; la tabla va por la media (toca un encabezado para ordenar por otra
               columna). «Más peligrosos»: los de más media entre quienes han jugado al menos {minimo} {minimo === 1 ? "partido" : "partidos"} (la mitad de los de su equipo,
-              redondeando hacia arriba, o 2, lo que sea menor). Solo aparecen los jugadores que han jugado algún minuto según las hojas de la FBM; si alguien
+              redondeando hacia arriba, o 2, lo que sea menor); ordenando por una media, los que no llegan van debajo, tras «{textoMenos([minimo])}». Solo aparecen los jugadores que han jugado algún minuto según las hojas de la FBM; si alguien
               cambia de dorsal o su nombre viene escrito distinto, sale una vez, con todos sus dorsales.
             </p>
           </>

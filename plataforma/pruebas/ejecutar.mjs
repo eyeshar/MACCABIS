@@ -134,7 +134,9 @@ try {
   const DISPONIBILIDAD = ['mi_disponibilidad_defecto'];
   // Respuestas a mano (D159): is_gestor dentro (un jugador recibe solo_gestores).
   const A_MANO = ['gestor_responder'];
-  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, ...DISPONIBILIDAD, ...A_MANO, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
+  // Liga con sesion (D162): ¿jugador activo con ficha o gestor? Solo devuelve un booleano de quien consulta.
+  const LIGA = ['puede_ver_liga'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, ...DISPONIBILIDAD, ...LIGA, ...A_MANO, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

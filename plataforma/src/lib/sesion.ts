@@ -38,6 +38,23 @@ export async function exigirGestor() {
   return { supabase, user, nombre: (g?.nombre as string | undefined) ?? user.email ?? "gestor" };
 }
 
+/** ¿La sesion es de un jugador con ficha o de un gestor? (puede_ver_liga(), D162). Sin la migracion de D162 aplicada,
+ *  la funcion no existe: entonces solo los gestores, como antes (D73). */
+export const puedeVerLigaActual = cache(async () => {
+  const { supabase, user } = await sesionActual();
+  if (!supabase || !user) return false;
+  const { data, error } = await supabase.rpc("puede_ver_liga");
+  return error ? esGestorActual() : Boolean(data);
+});
+
+// Exige sesion de jugador o de gestor (Scouting rivales y Liga consolidada, D162). Sin sesion, a /entrar; con una sesion
+// sin ficha ni gestion (no deberia pasar: lista blanca), al aviso de Entrar.
+export async function exigirLiga() {
+  const { supabase, user } = await exigirSesion();
+  if (!(await puedeVerLigaActual())) redirect("/entrar?sin_zona=1");
+  return { supabase, user };
+}
+
 // A donde va cada cual tras entrar (D117): quien tiene ficha de jugador (sea o no gestor) -> su inicio («/», con la
 // banda «Gestión esta semana» si es gestor); gestor sin ficha -> gestion; ninguna (no deberia pasar: lista blanca) -> aviso.
 export async function destinoTrasEntrar(supabase: Awaited<ReturnType<typeof clienteSesion>>) {

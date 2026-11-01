@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { bonito, dec, mmss, type FilaTabla } from "@/lib/jugadoresLiga";
 import { comparadorTabla, pasaMinimo, type Columna, type Minimo } from "@/lib/ordenLideres";
 
-// Tabla "Todos los jugadores" de la liga (G1 + G2, con MdA y MdL). Solo gestores (D73): son datos de terceros.
+// Tabla "Todos los jugadores" de la liga (G1 + G2, con MdA y MdL). Con sesion de jugador o gestor (D73, D162): son datos de terceros.
 // Solo lo que trae la hoja de la FBM; nada estimado.
 
 const POR_PAGINA = 25;
@@ -24,7 +24,7 @@ const COLUMNAS: { k: Columna; t: string; largo: string; texto?: boolean }[] = [
   { k: "fpp", t: "F/P", largo: "Faltas por partido" },
 ];
 
-const urlEquipo = (e: string) => `/gestion/scouting?e=${encodeURIComponent(e)}`;
+const urlEquipo = (e: string) => `/liga/scouting?e=${encodeURIComponent(e)}`;
 
 function celda(j: FilaTabla, k: Columna, pp: boolean): string {
   const por = (v: number) => (j.pj ? v / j.pj : 0);

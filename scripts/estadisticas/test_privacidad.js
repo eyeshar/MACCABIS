@@ -264,6 +264,34 @@ console.log('\n== Página de partido de la liga (D129): por equipo en público; 
   ok(/rival-por-jugador-seccion/.test(pruebaPt) && /anonimo/.test(pruebaPt) && /jugador/.test(pruebaPt), 'la prueba de pantallas de la página de partido comprueba que ni anónimos ni jugadores ven «Rival por jugador» (npm run pruebas:liga-partidos)');
 }
 
+console.log('\n== Corte de SportEasy (D161)');
+{
+  // Export sintético con el formato de SportEasy (una hoja por mes): solo cuenta hasta asistencia.hasta.
+  const XLSX = require('xlsx');
+  const os = require('os');
+  const { leerAsistencia } = require('./asistencia');
+  const MAPA = require('./nombres_sporteasy.json');
+  const [nombre, pid] = Object.entries(MAPA.nombres).find(([, id]) => !Object.values(MAPA.ignorar || {}).flat().includes(id));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'corte-se-'));
+  fs.mkdirSync(path.join(dir, 'asistencia'));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ['', '21/10/26', '28/10/26', '30/10/26'],
+    ['', 'Entrenamiento', 'Entrenamiento', 'Evento'],
+    [nombre, 'A tiempo', 'Con excusa', 'A tiempo'],
+  ]), 'octubre 2026');
+  XLSX.writeFile(wb, path.join(dir, 'asistencia', 'bilan.xlsx'));
+  const avisos = [];
+  const con = leerAsistencia({ formato: 'sporteasy', ultimo_de: 'asistencia', hasta: '2026-10-23' }, dir, avisos, '2026-27');
+  const sin = leerAsistencia({ formato: 'sporteasy', ultimo_de: 'asistencia' }, dir, [], '2026-27');
+  fs.rmSync(dir, { recursive: true, force: true });
+  ok(con.entr[pid] && con.entr[pid].fueron === 1 && con.entr[pid].excusa === 0, 'con «hasta» 23/10 solo cuenta el entreno del 21/10 (el del 28/10 lo pone la plataforma)');
+  ok(sin.entr[pid] && sin.entr[pid].fueron === 1 && sin.entr[pid].excusa === 1, 'sin «hasta» cuenta los dos entrenos (los «Evento» nunca cuentan)');
+  ok(avisos.some(a => /hasta el 2026-10-23/.test(a)), 'avisa del corte');
+  const cfg = require('./temporadas.json')['2026-27'].asistencia;
+  ok(cfg.hasta === '2026-10-23', 'la temporada 2026/27 corta SportEasy el 23/10/2026 (D161)', cfg.hasta);
+}
+
 (async () => {
   // En una tanda (pruebas:rapidas/completas) el HTML lo revisa pruebas:privacidad, que va siempre con esta (D149).
   if (process.env.PRUEBAS_EN_TANDA) console.log('  (el HTML renderizado lo revisa pruebas:privacidad en esta misma tanda)');

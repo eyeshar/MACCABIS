@@ -21,7 +21,10 @@
  *    proceso: una persona nueva la confirma Iván, no el script.
  *  - Columnas que la liga no registra (rebotes, asistencias, robos...) se descartan.
  *
- * USO:  node scripts/estadisticas/generar_temporada.js <temporada> [--dry]
+ * USO:  node scripts/estadisticas/generar_temporada.js <temporada> [--dry] [--solo-asistencia]
+ *       --solo-asistencia: escribe SOLO la asistencia privada (privado/asistencia/, fuera de git) y nunca los JSON
+ *       públicos (norma 12: esos solo los publican la jornada y la rutina A). Para cargar un export nuevo de
+ *       SportEasy (D161) y después `npm run db:asistencia` en plataforma/.
  */
 const fs = require('fs');
 const path = require('path');
@@ -283,7 +286,7 @@ async function leerFuentes(temporada, cfg) {
   return { actas, hojas, asistencia, calendario, avisos, fichas };
 }
 
-async function generar(temporada, { dry = false } = {}) {
+async function generar(temporada, { dry = false, soloAsistencia = false } = {}) {
   const cfg = CONFIG[temporada];
   if (!cfg) throw new Error(`No hay configuración para ${temporada} en scripts/estadisticas/temporadas.json`);
   const fuentes = await leerFuentes(temporada, cfg);
@@ -302,7 +305,9 @@ async function generar(temporada, { dry = false } = {}) {
     if (nb(previo) > nb(r.json))
       r.errores.push(`data/season_${temporada}.json tiene ${nb(previo)} boxscores y con las fuentes de ${cfg.carpeta} salen ${nb(r.json)}: faltan hojas; no se sobrescribe.`);
   }
-  if (!dry && !r.errores.length) {
+  if (!dry && soloAsistencia) {
+    if (r.asistenciaPrivada.length) r.ficheroAsistencia = escribirPrivado(temporada, r.asistenciaPrivada);
+  } else if (!dry && !r.errores.length) {
     fs.writeFileSync(destino, JSON.stringify(r.json) + '\n', 'utf8');
     if (r.asistenciaPrivada.length) r.ficheroAsistencia = escribirPrivado(temporada, r.asistenciaPrivada);
   }
@@ -327,7 +332,13 @@ if (require.main === module && process.argv.includes('--build')) {
 } else if (require.main === module) {
   const [temporada] = process.argv.slice(2).filter(a => !a.startsWith('--'));
   const dry = process.argv.includes('--dry');
-  generar(temporada, { dry }).then(r => {
+  const soloAsistencia = process.argv.includes('--solo-asistencia');
+  generar(temporada, { dry, soloAsistencia }).then(r => {
+    if (soloAsistencia) {
+      r.avisos.filter(a => /^Asistencia/.test(a)).forEach(a => console.log('  ! ' + a));
+      console.log(dry ? `[dry] ${r.asistenciaPrivada.length} personas; no se ha escrito nada` : r.ficheroAsistencia ? `${path.relative(ROOT, r.ficheroAsistencia)} escrito (${r.asistenciaPrivada.length} personas). Los JSON públicos no se tocan. Siguiente: npm run db:asistencia -- ${temporada} en plataforma/.` : 'Sin asistencia: no se ha escrito nada.');
+      return;
+    }
     console.log(`${temporada}: ${r.fuentes.actas} actas, ${r.fuentes.hojas} hojas -> ${r.json.partidos.length} partidos, ${r.json.players.length} jugadores`);
     r.avisos.forEach(a => console.log('  ! ' + a));
     if (r.errores.length) { console.log('\nERRORES (no se ha escrito nada):'); r.errores.forEach(e => console.log('  X ' + e)); process.exitCode = 1; }

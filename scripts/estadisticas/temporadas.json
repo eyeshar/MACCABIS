@@ -63,7 +63,9 @@
   "resultados_manuales": {},
   "asistencia": {
    "formato": "sporteasy",
-   "ultimo_de": "asistencia"
+   "ultimo_de": "asistencia",
+   "hasta": "2026-10-23",
+   "_nota_hasta": "D161: SportEasy cuenta solo hasta el 23/10/2026 (último export, 31/10/2026); desde el 24/10 la asistencia la pone la plataforma (respuestas de la web), sin duplicar."
   },
   "plantilla_fichas": "2026",
   "regenerar_en_build": true,

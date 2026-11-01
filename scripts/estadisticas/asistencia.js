@@ -16,6 +16,9 @@
  *
  * Los nombres de SportEasy se traducen con nombres_sporteasy.json. Un nombre desconocido no se
  * adivina: se ignora y se avisa.
+ *
+ * Corte "hasta" (D161): con `asistencia.hasta` (AAAA-MM-DD) solo cuentan los eventos de SportEasy de
+ * esa fecha o anteriores; lo posterior lo pone la plataforma (respuestas de la web desde el 24/10/2026).
  */
 const fs = require('fs');
 const path = require('path');
@@ -95,8 +98,11 @@ function asignarEquipos(eventos, jugaron, avisos) {
   return res;
 }
 
+/** 'dd/mm/aa' -> 'aaaa-mm-dd' (para comparar con el corte "hasta"). */
+const isoDe = f => `20${f.slice(6, 8)}-${f.slice(3, 5)}-${f.slice(0, 2)}`;
+
 /** Export directo de SportEasy (uno o varios bilan_presence_*.xlsx). */
-function leerSportEasy(ficheros, avisos, ignorar = [], jugaron = null) {
+function leerSportEasy(ficheros, avisos, ignorar = [], jugaron = null, hasta = null) {
   const cuenta = { part: {}, entr: {} };
   const vistos = new Set();                          // un mismo evento puede venir en dos exports
   const camp = new Map();                            // "Campeonato": clave de evento -> { fecha, aTiempo }
@@ -115,6 +121,7 @@ function leerSportEasy(ficheros, avisos, ignorar = [], jugaron = null) {
         for (let c = 1; c < r.length; c++) {
           const tipo = limpia(tipos[c]), fecha = limpia(fechas[c]);
           if (!fecha || !/\d{2}\/\d{2}\/\d{2}/.test(fecha)) continue;
+          if (hasta && isoDe(fecha) > hasta) continue;
           const clase = ['Partido', 'Campeonato'].includes(tipo) ? 'part' : tipo === 'Entrenamiento' ? 'entr' : null;
           if (!clase) continue;
           const estado = limpia(r[c]).toLowerCase();
@@ -182,9 +189,10 @@ function leerAsistencia(cfg, base, avisos, temporada, jugaron = null) {
         .map(f => path.join(dir, f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs).slice(0, 1);
     }
     if (!ficheros.length) { avisos.push('Asistencia: todavía no hay export de SportEasy; la temporada sale sin asistencia.'); return { part: {}, entr: {} }; }
-    return leerSportEasy(ficheros, avisos, (MAPA.ignorar || {})[temporada] || [], jugaron);
+    if (cfg.hasta) avisos.push(`Asistencia: solo eventos de SportEasy hasta el ${cfg.hasta}; lo posterior sale de la plataforma (D161).`);
+    return leerSportEasy(ficheros, avisos, (MAPA.ignorar || {})[temporada] || [], jugaron, cfg.hasta || null);
   }
   throw new Error('Formato de asistencia desconocido: ' + cfg.formato);
 }
 
-module.exports = { leerAsistencia };
+module.exports = { leerAsistencia, isoDe };

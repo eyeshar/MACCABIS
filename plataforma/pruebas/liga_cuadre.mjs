@@ -320,6 +320,11 @@ try {
     await clic(nueva, '.e-segmento button', 'Rejilla');
     const pids = await nueva.locator('[data-testid="historia-rejilla"] tr[data-pid]').evaluateAll((trs) => trs.map((t) => t.dataset.pid));
     ok(pids.length === 90, `historia: ${pids.length} personas en la rejilla (91 identidades menos un «solo entreno» sin temporadas)`);
+    // D166: 386 barras + las 25 temporadas «en el club, sin estadísticas» que salen de la asistencia de SportEasy (OK de Iván)
+    const barras = await nueva.locator('[data-testid="historia-rejilla"] tr[data-pid] td.e-hcell:not(:empty)').count();
+    ok(barras === 411, `historia: ${barras} barras en la rejilla (386 + 25 de SportEasy)`);
+    const castro = await nueva.locator('[data-testid="historia-rejilla"] tr[data-pid="castro-moya-henry-luis"] td.e-hcell').evaluateAll((tds) => tds.map((td) => td.childElementCount > 0));
+    ok(castro[2020 - 2013] === true, 'historia: Henry Luis Castro Moya ya tiene la barra de 20/21 (estaba en SportEasy)');
     let sinEnlace = 0, enlaces = 0; const rotos = [], porPedir = [];
     // las fichas de las 87 personas, repartidas en 6 pestañas (una detras de otra eran 3 minutos)
     const TROZOS = 6;

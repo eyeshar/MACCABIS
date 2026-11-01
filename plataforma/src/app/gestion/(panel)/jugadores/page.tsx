@@ -7,14 +7,19 @@ export const metadata = { title: "Jugadores · Gestión Maccabis" };
 
 export default async function Jugadores() {
   const { supabase } = await exigirGestor();
-  const { data: jugadores, error } = await supabase
-    .from("jugadores")
-    .select("id, person_id, nombre_oficial, nombre_visible, email, ficha_mda, ficha_mdl, entrena, rol, telefono, activo")
-    .order("nombre_visible");
+  const [{ data: jugadores, error }, { data: privados }] = await Promise.all([
+    supabase
+      .from("jugadores")
+      .select("id, person_id, nombre_oficial, nombre_visible, email, ficha_mda, ficha_mdl, entrena, rol, telefono, activo")
+      .order("nombre_visible"),
+    // D158: la marca «Reserva» vive en jugadores_privado (solo gestores, RLS). Sin la migración, la casilla sale apagada.
+    supabase.from("jugadores_privado").select("person_id, reserva").eq("reserva", true),
+  ]);
   if (error) throw new Error(error.message);
+  const reservas = new Set(((privados ?? []) as { person_id: string }[]).map((p) => p.person_id));
   const base = await origenMensajes();
   const urlEntrar = `${base}/entrar`;
-  const lista = (jugadores ?? []) as JugadorGestion[];
+  const lista = ((jugadores ?? []) as Omit<JugadorGestion, "reserva">[]).map((j) => ({ ...j, reserva: reservas.has(j.person_id) }));
   const activos = lista.filter((j) => j.activo);
   const inactivos = lista.filter((j) => !j.activo);
 

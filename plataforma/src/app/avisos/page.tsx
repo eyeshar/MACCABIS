@@ -16,7 +16,7 @@ export default async function Avisos() {
     <main className="pagina av-pagina">
       <Volver defecto="/" etiqueta="Inicio" />
       <h1>Avisos en el móvil</h1>
-      <p className="av-intro">Solo te avisamos si te falta responder, si cambia la hora o la pista y si se cancela algo. <strong>Nunca de noche.</strong></p>
+      <p className="av-intro">Solo te avisamos si te falta responder, si cambia la hora o la pista y si se cancela algo. <strong>De noche, solo si el partido es en pocas horas.</strong></p>
       <ActivarAvisos />
       <details className="tarjeta av-ajustes">
         <summary><h2>Si dijiste «No permitir»</h2></summary>

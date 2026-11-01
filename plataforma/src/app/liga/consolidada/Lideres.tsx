@@ -4,7 +4,7 @@ import { useState } from "react";
 import { bonito, dec, type FilaTabla } from "@/lib/jugadoresLiga";
 import { cumpleMinimoPP, porFaltas, porPartido, porPuntos, porTirosLibres, porTriples, valorPP, type ClavePP } from "@/lib/ordenLideres";
 
-// Lideres individuales de la liga, en Totales o Por partido (interruptor independiente del de la tabla). Solo gestores (D73).
+// Lideres individuales de la liga, en Totales o Por partido (interruptor independiente del de la tabla). Con sesion de jugador o gestor (D73, D162).
 
 type Lista = { titulo: string; nota?: string; filas: { f: FilaTabla; valor: string; extra?: string }[] };
 

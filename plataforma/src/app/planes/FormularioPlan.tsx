@@ -72,7 +72,7 @@ export default function FormularioPlan({ plan, hoy, volver }: { plan?: PlanInici
         <div className="campo"><label htmlFor="pl-plazas">Plazas <span className="suave">(opcional)</span></label><input id="pl-plazas" name="plazas" type="number" min={2} max={60} inputMode="numeric" defaultValue={plan?.plazas ?? ""} /><div className="ayuda">Al llenarse, «Voy» pasa a «Completo».</div></div>
       </div>
       <div className="campo"><label htmlFor="pl-notas">Algo más</label><textarea id="pl-notas" name="notas" rows={3} maxLength={300} defaultValue={plan?.notas ?? ""} placeholder="Trae la camiseta blanca, reservamos mesa a nombre de Jon…" /></div>
-      <label className="pl-recordar"><input type="checkbox" name="recordar" defaultChecked={plan?.recordar ?? false} /> Recordar a los invitados un día antes <span className="suave">(un aviso a quien no haya respondido; nunca de noche)</span></label>
+      <label className="pl-recordar"><input type="checkbox" name="recordar" defaultChecked={plan?.recordar ?? false} /> Recordar a los invitados un día antes <span className="suave">(un aviso a quien no haya respondido; de noche solo si el partido es en pocas horas)</span></label>
 
       <p className="pl-nota" role="note">Se publica al momento como <b>plan no oficial</b>: lo ven solo los de la plantilla a los que invitas, no sale en la web pública y no cuenta para la asistencia, la convocatoria ni las estadísticas. Se responde aquí, en la web.</p>
       <div className="botones" style={{ justifyContent: "flex-end" }}>

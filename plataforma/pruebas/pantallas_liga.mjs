@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Pantallas de liga de la zona de gestion (D73), de extremo a extremo: pila local (Postgres + PostgREST reales con
+// Scouting rivales y Liga consolidada (D73; con sesion de jugador o gestor desde D162), de extremo a extremo: pila local (Postgres + PostgREST reales con
 // nuestras migraciones), carga de la J1 con `db:liga`, la app Next.js compilada de verdad y Chrome.
 //
 //   npm run pruebas:pantallas
 //
-// Comprueba acceso (anonimo y jugador fuera), contenido, movil (<640 px: tarjetas) y escritorio (tabla), que el menu
+// Comprueba acceso (anonimo fuera, jugador dentro), contenido, movil (<640 px: tarjetas) y escritorio (tabla), que el menu
 // no se corte, que no haya desbordamiento horizontal ni errores de JS, y deja capturas en privado/mockups_liga/real_*.png
 // (fuera de git: llevan nombres de jugadores de otros equipos).
 
@@ -13,6 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
+import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 
@@ -35,6 +36,7 @@ let app, nav;
 try {
   const { sql, url, anonKey } = pila;
   await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  await cargarEventos(sql, { log: () => {} }); // el calendario de Scouting sale de la tabla de eventos (D162)
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;
@@ -73,15 +75,16 @@ try {
   console.log('\n== Acceso');
   const ctxA = await nav.newContext({ viewport: { width: 375, height: 800 } });
   const pa = await ctxA.newPage();
-  for (const r of ['/gestion/scouting', '/gestion/liga']) {
+  for (const r of ['/liga/scouting', '/liga/consolidada']) {
     await pa.goto(`${APP}${r}`);
     ok(pa.url().includes('/entrar'), `anonimo en ${r}: manda a Entrar`);
   }
   await entrar(pa, jugadorEmail);
-  for (const r of ['/gestion/scouting', '/gestion/liga']) {
+  for (const r of ['/liga/scouting', '/liga/consolidada']) {
     await pa.goto(`${APP}${r}`);
-    ok(new URL(pa.url()).pathname === '/' && pa.url().includes('no_gestor=1'), `un jugador (no gestor) en ${r}: va a su inicio (D117)`, pa.url());
-    ok(!(await pa.textContent('body')).includes('Hernando'), `un jugador no ve ni un nombre de rival en ${r}`);
+    // D162: cualquier jugador con sesion y ficha ve Scouting rivales y Liga consolidada (antes, solo gestores, D73).
+    ok(new URL(pa.url()).pathname === r, `un jugador (no gestor) entra en ${r} (D162)`, pa.url());
+    ok((await pa.locator(r === '/liga/scouting' ? '.lg-cab-equipo h2' : '#ranking').count()) === 1, `un jugador ve el contenido de ${r}`);
   }
   await ctxA.close();
 
@@ -94,11 +97,11 @@ try {
     await entrar(p, gestorEmail);
     if (p.url().includes('/elegir')) await p.goto(`${APP}/gestion`);
     const sinDesbordar = () => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
-    // D90: la barra de Gestion cabe o, en movil, es una fila con scroll horizontal (lo que no cabe se alcanza desplazandola).
-    const menuEntero = () => p.evaluate(() => { const f = document.querySelector('nav[aria-label="Gestión"] .zb-fila'); return f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === 'auto'; });
+    // D162: dentro de la Liga; su navegacion cabe o, en movil, se desplaza en su fila.
+    const menuEntero = () => p.evaluate(() => { const f = document.querySelector('nav[aria-label="Liga"]'); return f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === 'auto'; });
 
-    await p.goto(`${APP}/gestion/scouting`);
-    ok(normal(await p.textContent('h2')).includes(normal(PROX.MDA.rival)), `scouting: por defecto, el proximo rival del MdA (${PROX.MDA.rival})`, await p.textContent('h2'));
+    await p.goto(`${APP}/liga/scouting`);
+    ok(normal(await p.textContent('.lg-cab-equipo h2')).includes(normal(PROX.MDA.rival)), `scouting: por defecto, el proximo rival del MdA (${PROX.MDA.rival})`, await p.textContent('.lg-cab-equipo h2'));
     const prox = await p.textContent('.lg-prox');
     // D129: sin «en casa / fuera»; el cartel tal cual sale en el calendario oficial (primero el que figura primero).
     const cartel = await p.textContent('.lg-prox-f');
@@ -106,7 +109,7 @@ try {
     ok(prox.includes(`J${PROX.MDA.jornada} ·`) && prox.includes(dm(PROX.MDA.fecha)) && !/en casa|fuera/i.test(prox) && normal(cartel).indexOf(normal(primero)) < normal(cartel).indexOf(normal(segundo)) && cartel.includes(' – '),
       `scouting: proximo partido contra nosotros (J${PROX.MDA.jornada} · ${dm(PROX.MDA.fecha)}), «${primero} – ${segundo}» y sin «casa/fuera»`, prox);
     ok((await p.locator('.lg-max').count()) === 3, 'scouting: 3 maximos anotadores');
-    ok(await menuEntero(), 'el menu de gestion no se corta (cabe o se desplaza en su fila)');
+    ok(await menuEntero(), 'la navegacion de la Liga no se corta');
     ok(await sinDesbordar(), 'scouting: sin desbordamiento horizontal');
     ok((await p.locator('.lg-tarjetas').isVisible()) === movil && (await p.locator('.lg-tabla').first().isVisible()) === !movil,
       movil ? 'scouting movil: tarjetas por jugador, sin tabla' : 'scouting escritorio: tabla, sin tarjetas');
@@ -117,17 +120,17 @@ try {
     await p.screenshot({ path: path.join(SALIDA, `real_b_scouting_${etiqueta}.png`), fullPage: true });
     await p.getByRole('link', { name: /^MdL:/ }).click();
     await p.waitForURL(/v=mdl/);
-    ok(normal(await p.textContent('h2')).includes(normal(PROX.MDL.rival)), `scouting: el selector pasa al proximo rival del MdL (${PROX.MDL.rival})`, await p.textContent('h2'));
+    ok(normal(await p.textContent('.lg-cab-equipo h2')).includes(normal(PROX.MDL.rival)), `scouting: el selector pasa al proximo rival del MdL (${PROX.MDL.rival})`, await p.textContent('.lg-cab-equipo h2'));
     await p.selectOption('select[name="e"]', 'Craps');
     await p.getByRole('button', { name: 'Ver' }).click();
     await p.waitForURL(/e=Craps/);
-    ok((await p.textContent('h2')).includes('Craps'), 'scouting: el desplegable abre cualquier equipo (Craps)');
+    ok((await p.textContent('.lg-cab-equipo h2')).includes('Craps'), 'scouting: el desplegable abre cualquier equipo (Craps)');
     await p.selectOption('select[name="e"]', 'MdA');
     await p.getByRole('button', { name: 'Ver' }).click();
     await p.waitForURL(/e=MdA/);
     ok((await p.textContent('body')).includes('dobla') && (await p.locator('.lg-prox').count()) === 0, 'scouting: en nuestro equipo no hay "proximo partido" y salen las marcas "dobla"');
 
-    await p.goto(`${APP}/gestion/liga`);
+    await p.goto(`${APP}/liga/consolidada`);
     const orden = await p.evaluate(() => { const h = document.querySelector('.lg-lideres')?.getBoundingClientRect().top ?? 1e9; const d = document.querySelector('details.lg-ranking')?.getBoundingClientRect().top ?? -1; return h < d; });
     ok(orden, 'liga: primero los lideres individuales, el ranking de equipos mas abajo');
     ok((await p.locator('details.lg-ranking').getAttribute('open')) === null, 'liga: el ranking conjunto viene plegado');
@@ -150,12 +153,12 @@ try {
     await p.screenshot({ path: path.join(SALIDA, `real_c_liga_desplegado_${etiqueta}.png`), fullPage: true });
 
     // ---- Indice, lideres (totales / por partido) y tabla "Todos los jugadores"
-    await p.goto(`${APP}/gestion/liga`);
+    await p.goto(`${APP}/liga/consolidada`);
     const hrefs = await p.$$eval('nav.lg-indice a', (a) => a.map((x) => x.getAttribute('href') + '|' + x.textContent.trim()));
     ok(JSON.stringify(hrefs) === JSON.stringify(['#lideres|Líderes', '#todos|Todos los jugadores', '#ranking|Ranking de equipos']), 'liga: indice con anclas Lideres, Todos los jugadores y Ranking de equipos', hrefs.join(','));
     await p.locator('nav.lg-indice a', { hasText: 'Todos los jugadores' }).click();
     ok(p.url().endsWith('#todos') && (await p.evaluate(() => { const r = document.querySelector('#todos').getBoundingClientRect(); return r.top < window.innerHeight && r.bottom > 0; })), 'liga: el indice lleva a la tabla (#todos)');
-    await p.goto(`${APP}/gestion/liga`);
+    await p.goto(`${APP}/liga/consolidada`);
 
     const L = p.locator('#lideres');
     const titulos = () => L.locator('.lg-lider h3').allTextContents();
@@ -279,15 +282,15 @@ try {
     const eqHref = await (movil ? T.locator('.lg-fila-det a').first() : T.locator('tbody tr td:nth-child(2) a').first()).getAttribute('href');
     ok(/^\/liga\/2026-27\/equipo\?eq=MD[AL]$/.test(eqHref), 'tabla: el nombre del equipo enlaza a su ficha (MdA/MdL: su pestaña Equipo)', eqHref);
     await (movil ? T.getByRole('link', { name: 'Ver en Scouting' }).first() : T.locator('tbody tr a').first()).click();
-    await p.waitForURL(/\/gestion\/scouting\?e=Md[AL]/);
-    ok((await p.textContent('h2')).includes('Md'), 'tabla: clic en el jugador (o «Ver en Scouting») abre Scouting con ese equipo');
+    await p.waitForURL(/\/liga\/scouting\?e=Md[AL]/);
+    ok((await p.textContent('.lg-cab-equipo h2')).includes('Md'), 'tabla: clic en el jugador (o «Ver en Scouting») abre Scouting con ese equipo');
     // Scouting: enlace a la tabla y nota
-    await p.goto(`${APP}/gestion/scouting`);
+    await p.goto(`${APP}/liga/scouting`);
     const enlaceTodos = p.getByRole('link', { name: 'Ver todos los jugadores de la liga' });
     ok(await enlaceTodos.isVisible(), 'scouting: boton "Ver todos los jugadores de la liga" junto al selector');
     ok((await p.textContent('.lg-nota')).includes('Solo aparecen los jugadores que figuran en las hojas de la FBM (han jugado al menos un partido)'), 'scouting: nota "solo aparecen los jugadores que figuran en las hojas de la FBM"');
     await enlaceTodos.click();
-    await p.waitForURL(/\/gestion\/liga#todos/);
+    await p.waitForURL(/\/liga\/consolidada#todos/);
     ok(await p.locator('#todos .lg-todos').isVisible(), 'scouting: el boton lleva a Liga consolidada, seccion Todos los jugadores');
     ok(errores.length === 0, 'sin errores de JavaScript', errores.join(' | '));
     await ctx.close();

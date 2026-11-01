@@ -98,11 +98,12 @@ try {
   ok(!/create\s+(or\s+replace\s+)?function/i.test(texto), 'no crea funciones (la lista de permisos de authenticated no cambia)');
   ok(await registrada() && await existeTabla(), 'aplicada: registrada y con la tabla de excepciones');
   const cols = await columnas();
-  ok(cols.at(-2) === 'no_suele_entrenar' && cols.at(-1) === 'nunca_partidos', 'jugadores_privado lleva las dos columnas nuevas al final', cols.join());
+  // D158 añade «reserva» detrás: se comprueba que estén, no su posición.
+  ok(cols.includes('no_suele_entrenar') && cols.includes('nunca_partidos'), 'jugadores_privado lleva las dos columnas nuevas', cols.join());
   const [{ rls }] = await sql`select relrowsecurity rls from pg_class where oid = 'public.entreno_defecto_quitado'::regclass`;
   ok(rls === true, 'la tabla nueva tiene RLS');
   ok((await sql`select has_table_privilege('anon', 'public.entreno_defecto_quitado', 'select') a`)[0].a === false, 'anon no tiene ni permiso de lectura sobre la tabla nueva');
-  const colsAntes = cols.slice(0, -2);
+  const colsAntes = cols.filter((c) => c !== 'no_suele_entrenar' && c !== 'nunca_partidos');
   const sinMarcas = await sql`select person_id, dobla from public.jugadores_privado order by 1`;
   // La tarea de avisos (service_role): sin permisos sobre jugadores_privado; solo la función con las dos marcas.
   const permisos = async () => (await sql`select has_table_privilege('service_role', 'public.jugadores_privado', 'select') tabla,
@@ -123,7 +124,7 @@ try {
   ok((await columnas()).join() === colsAntes.join(), 'y jugadores_privado vuelve a sus columnas de antes');
   ok(JSON.stringify(await sql`select person_id, dobla from public.jugadores_privado order by 1`) === JSON.stringify(sinMarcas), 'sin tocar sus filas');
   await migrar(sql, { log: () => {} });
-  ok(await registrada() && await existeTabla() && (await columnas()).at(-1) === 'nunca_partidos', 'se vuelven a aplicar las dos, limpias');
+  ok(await registrada() && await existeTabla() && (await columnas()).includes('nunca_partidos'), 'se vuelven a aplicar las dos, limpias');
   pm = await permisos();
   ok(!pm.tabla && pm.fn && pm.s_fn && !pm.a_fn, 'y service_role vuelve a quedarse sin jugadores_privado, solo con la función', JSON.stringify(pm));
   await sql`notify pgrst, 'reload schema'`;

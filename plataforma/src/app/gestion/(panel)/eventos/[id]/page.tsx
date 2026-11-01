@@ -11,6 +11,10 @@ import BotonConfirmar from "@/components/BotonConfirmar";
 import FormularioEvento from "../FormularioEvento";
 import CopiarTexto from "../CopiarTexto";
 import { cancelarEvento } from "../acciones";
+import CambiarAMano from "../CambiarAMano";
+import NombreJugador from "@/components/numeros/Nombre";
+import { dudaAbierta } from "@/lib/avisos/horario";
+import type { Respuesta } from "@/lib/eventos/dominio";
 
 export const metadata = { title: "Editar evento · Gestión Maccabis" };
 
@@ -18,9 +22,10 @@ export default async function EditarEvento({ params, searchParams }: { params: P
   const { id } = await params;
   const { guardado, alcance, avisados, sale } = await searchParams;
   const { supabase } = await exigirGestor();
-  const [evento, pistas, todos, jugadores, { data: encendido }, { data: subs }] = await Promise.all([
+  const [evento, pistas, todos, jugadores, { data: encendido }, { data: subs }, { data: resp }] = await Promise.all([
     cargarEvento(supabase, id), cargarPistas(supabase), cargarEventos(supabase), cargarJugadores(supabase),
     supabase.rpc("respuestas_web_encendido"), supabase.from("suscripciones_avisos").select("person_id").eq("activa", true),
+    supabase.from("respuestas").select("person_id, respuesta, motivo").eq("evento_id", id),
   ]);
   if (!evento) notFound();
   // Un plan no oficial (D118) se gestiona en su ficha (Editar · Hacer oficial · Borrar).
@@ -33,6 +38,9 @@ export default async function EditarEvento({ params, searchParams }: { params: P
   };
   const conAvisos = new Set(((subs ?? []) as { person_id: string | null }[]).map((s) => s.person_id));
   const sinAvisos = convocadosDe(evento, jugadores).filter((j) => !conAvisos.has(j.person_id));
+  // D159: la respuesta de cada invitado, para cambiarla a mano desde aqui (un toque por persona).
+  const respDe = new Map(((resp ?? []) as { person_id: string; respuesta: Respuesta; motivo: string | null }[]).map((r) => [r.person_id, r]));
+  const invitados = convocadosDe(evento, jugadores);
   const web = await origenMensajes();
   const siguientes = deLaSerieDesde(todos, evento).length;
   const pe = pistaEfectiva(evento, pistas);
@@ -89,6 +97,26 @@ export default async function EditarEvento({ params, searchParams }: { params: P
         alcanceInicial={alcance === "siguientes" ? "siguientes" : "este"} volver="/gestion/eventos"
         encendido={Boolean(encendido)} invitadosPor={invitadosPor}
       />
+
+      {evento.estado === "programado" && (
+        <section className="gs-bloque" style={{ marginTop: 16, maxWidth: 960 }} aria-labelledby="t-mano" data-testid="respuestas-a-mano">
+          <h2 id="t-mano" style={{ fontSize: 22 }}>Respuestas · cambiar a mano</h2>
+          <p className="pequeno suave" style={{ margin: 0 }}>Un toque cambia la respuesta de cada invitado (va, duda, no va o sin responder); con «No va», el motivo es opcional. Queda «puesto por» ti y en el registro del tablero. Motivos y detalle: <Link href={`/gestion/eventos/${evento.id}/respuestas`}>Respuestas y motivos</Link>.</p>
+          {invitados.length ? (
+            <ul className="ev-mano-lista">
+              {invitados.map((j) => {
+                const r = respDe.get(j.person_id);
+                return (
+                  <li key={j.person_id}>
+                    <NombreJugador nombre={j.nombre_visible} personId={j.person_id} negrita />
+                    <CambiarAMano key={`${r?.respuesta}-${r?.motivo}`} eventoId={evento.id} personId={j.person_id} nombre={j.nombre_visible} actual={r?.respuesta ?? "sin_responder"} motivo={r?.motivo ?? null} conDuda={dudaAbierta(evento, new Date())} />
+                  </li>
+                );
+              })}
+            </ul>
+          ) : <p className="suave" style={{ margin: 0 }}>Nadie invitado.</p>}
+        </section>
+      )}
 
       <section className="gs-bloque" style={{ marginTop: 16, maxWidth: 960 }} aria-labelledby="t-cancelar">
         <h2 id="t-cancelar" style={{ fontSize: 22 }}>{evento.estado === "cancelado" ? "Restablecer el evento" : `Cancelar ${evento.tipo === "entreno" ? "este entreno" : "este evento"}`}</h2>

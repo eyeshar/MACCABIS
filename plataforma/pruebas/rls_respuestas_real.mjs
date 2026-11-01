@@ -56,6 +56,15 @@ try {
   for (const t of ['respuestas', 'ausencias_periodo']) ok(!(await sql`select has_table_privilege('authenticated', ${'public.' + t}, 'delete') d`)[0].d, `${t}: nadie borra por la API`);
   const fns = await sql`select proname, has_function_privilege('anon', oid, 'execute') anon from pg_proc where pronamespace = 'public'::regnamespace and proname = any(${FUNCIONES})`;
   ok(fns.length === FUNCIONES.length && fns.every((f) => !f.anon), `las ${FUNCIONES.length} funciones nuevas existen y anónimo no ejecuta ninguna`);
+  // D159 (migración 20261031190000): respuestas a mano por un gestor. Antes de aplicarla, la función no existe.
+  const [mMano] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261031190000'`;
+  const aMano = mMano.n > 0;
+  const [gr] = await sql`select to_regprocedure('public.gestor_responder(uuid, text[], text, text, text)') is not null fn`;
+  if (!aMano) ok(!gr.fn, 'gestor_responder (D159): aún no aplicada y la función no existe');
+  else {
+    const [f] = await sql`select has_function_privilege('authenticated', 'public.gestor_responder(uuid, text[], text, text, text)', 'execute') a, has_function_privilege('anon', 'public.gestor_responder(uuid, text[], text, text, text)', 'execute') n`;
+    ok(f.a && !f.n, 'gestor_responder (D159): la ejecutan los usuarios con sesión (is_gestor dentro), no anónimo');
+  }
   const [cfg] = await sql`select encendido from public.respuestas_web_config where id = 1`;
   const encendido = cfg?.encendido === true;
   ok(cfg && typeof cfg.encendido === 'boolean', `estado del interruptor: ${encendido ? 'ENCENDIDO (respuestas en la web, D136)' : 'APAGADO (fase puente)'}`);
@@ -103,6 +112,10 @@ try {
     ok(!r.ok, 'no escribe en la tabla de respuestas (ni por otro)');
     r = await intenta(tx, `select public.responder_por($1::uuid, 'otra-persona', 'va')`, [ev?.id ?? '00000000-0000-0000-0000-000000000000']);
     ok(!r.ok && /solo_gestores|read-only|solo lectura/i.test(r.error), 'no usa «Responder por él»', r.error);
+    if (aMano) {
+      r = await intenta(tx, `select public.gestor_responder($1::uuid, array['otra-persona'], 'va')`, [ev?.id ?? '00000000-0000-0000-0000-000000000000']);
+      ok(!r.ok && /solo_gestores|read-only|solo lectura/i.test(r.error), 'no cambia respuestas a mano (gestor_responder, D159: solo gestores)', r.error);
+    }
     r = await intenta(tx, 'select public.cambiar_interruptor(true)');
     ok(!r.ok, 'no enciende el interruptor');
     r = await intenta(tx, 'select public.estado_activacion()');

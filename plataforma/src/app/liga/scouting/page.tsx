@@ -1,16 +1,18 @@
-import Link from "next/link";
+import { SecH } from "@/components/liga/Comunes";
 import Volver from "@/components/nav/Volver";
-import { exigirGestor } from "@/lib/sesion";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { exigirLiga } from "@/lib/sesion";
 import { AvisoCaja, Camiseta } from "@/components/ProximoPartido";
 import { avisoContra, coloresDe } from "@/lib/equipacion";
-import { cargarFuente } from "@/lib/eventos/fuente";
-import { partidosCalendario } from "@/lib/publico";
 import {
   bonito, cargarLiga, codigoNuestro, dec, fechaCorta, mmss, nombreNuestro, proximoPartido, quienDobla,
   type JugadorLiga,
 } from "@/lib/liga";
 
-export const metadata = { title: "Scouting rivales · Gestión Maccabis" };
+export const dynamic = "force-dynamic";
+// Con sesion (D162): nunca se indexa (ademas, robots.txt y la cabecera X-Robots-Tag de RUTAS_PRIVADAS).
+export const metadata: Metadata = { title: "Scouting rivales · Maccabis", robots: { index: false, follow: false } };
 
 type Params = { e?: string; v?: string };
 
@@ -36,12 +38,12 @@ function Tarjeta({ j, puesto, dobla }: { j: JugadorLiga; puesto: number; dobla: 
 }
 
 export default async function Scouting({ searchParams }: { searchParams: Promise<Params> }) {
-  const { supabase } = await exigirGestor();
+  const { supabase } = await exigirLiga();
   const { e, v } = await searchParams;
   const liga = await cargarLiga(supabase);
   const { clasificacion, calendario, hoy } = liga;
   if (!clasificacion.length) {
-    return (<><Volver defecto="/gestion" etiqueta="Panel" /><h1>Scouting rivales</h1><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
+    return (<><Volver defecto="/liga" etiqueta="Liga" /><SecH titulo="Scouting rivales" tag="Con sesión" /><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
   }
 
   const proxMdA = proximoPartido(calendario, hoy, "MDA");
@@ -55,30 +57,30 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
     .sort((a, b) => b.pts - a.pts || b.segundos - a.segundos);
   const dobla = quienDobla(liga.jugadores);
   const prox = elegido.nuestro ? null : proximoPartido(calendario, hoy, codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo);
-  // Aviso de equipacion: de la tabla de eventos (D151), como el Panel y la convocatoria.
-  const aviso = prox ? avisoContra(codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo, partidosCalendario(await cargarFuente())) : null;
+  // Aviso de equipacion: con los mismos partidos de la tabla de eventos (D151, D162), como el Panel y la convocatoria.
+  const aviso = prox ? avisoContra(codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo, calendario, hoy) : null;
   const suma = (k: "pts" | "p2a" | "p3a" | "tla" | "tli" | "faltas" | "segundos") => jugadores.reduce((s, j) => s + j[k], 0);
   const grupos = ["G1", "G2"];
 
   return (
     <>
-      <Volver defecto="/gestion" etiqueta="Panel" />
-      <h1>Scouting rivales</h1>
+      <Volver defecto="/liga" etiqueta="Liga" />
+      <SecH titulo="Scouting rivales" tag="Con sesión" />
       <div className="aviso aviso-info">
-        <b>Solo gestores.</b> Datos por jugador de otros equipos: son de terceros y no se publican ni se enseñan a los jugadores (D73).
+        <b>Solo con sesión.</b> Datos por jugador de otros equipos: son de terceros; los ves por ser del equipo, no se publican (D73, D162).
       </div>
 
       <section className="tarjeta">
         <p className="lg-etq">Próximo rival</p>
         <div className="botones" style={{ marginTop: 6 }}>
-          <Link className={`boton ${!e && vista === "mda" ? "boton-amarillo" : "boton-claro"}`} href="/gestion/scouting?v=mda">
+          <Link className={`boton ${!e && vista === "mda" ? "boton-amarillo" : "boton-claro"}`} href="/liga/scouting?v=mda">
             MdA: {proxMdA?.rival ?? "–"}{proxMdA?.fecha ? ` · ${fechaCorta(proxMdA.fecha)}` : ""}
           </Link>
-          <Link className={`boton ${!e && vista === "mdl" ? "boton-amarillo" : "boton-claro"}`} href="/gestion/scouting?v=mdl">
+          <Link className={`boton ${!e && vista === "mdl" ? "boton-amarillo" : "boton-claro"}`} href="/liga/scouting?v=mdl">
             MdL: {proxMdL?.rival ?? "–"}{proxMdL?.fecha ? ` · ${fechaCorta(proxMdL.fecha)}` : ""}
           </Link>
         </div>
-        <form method="get" action="/gestion/scouting" className="lg-form">
+        <form method="get" action="/liga/scouting" className="lg-form">
           <label htmlFor="eq" className="lg-etq">O cualquier equipo de la liga</label>
           <div className="lg-form-fila">
             <select id="eq" name="e" defaultValue={elegido.equipo}>
@@ -89,7 +91,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
               ))}
             </select>
             <button className="boton" type="submit">Ver</button>
-            <Link className="boton boton-claro" href="/gestion/liga#todos">Ver todos los jugadores de la liga</Link>
+            <Link className="boton boton-claro" href="/liga/consolidada#todos">Ver todos los jugadores de la liga</Link>
           </div>
         </form>
       </section>
@@ -111,6 +113,8 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
               <div className="lg-prox-f">{prox.local === false ? `${elegido.equipo} – ${nombreNuestro(grupo)}` : `${nombreNuestro(grupo)} – ${elegido.equipo}`}</div>
               <div className="lg-prox-d">J{prox.jornada} · {prox.fecha ? fechaCorta(prox.fecha) : ""} · {prox.hora} · pista {prox.campo}</div>
               {aviso?.hay && <AvisoCaja a={aviso} />}
+              {/* D160: la misma línea que la convocatoria, el WhatsApp y el aviso al móvil. */}
+              {aviso?.convocatoria && <p className="lg-sub" data-testid="linea-equipacion">{aviso.convocatoria}</p>}
             </div>
           )}
           {elegido.nuestro && <p className="lg-sub">Es uno de los nuestros: así nos ven los rivales.</p>}

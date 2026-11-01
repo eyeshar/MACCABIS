@@ -1,28 +1,54 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import CopiarTexto from "./eventos/CopiarTexto";
-import Numeros, { type GrupoNum } from "@/components/numeros/Numeros";
+import Numeros from "@/components/numeros/Numeros";
+import type { ActivacionViva, EstadoActivacion } from "@/lib/gestion/activacion";
 import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
 import { cambiarInterruptor, marcarJornada } from "./eventos/respuestas-acciones";
 
-export type EstadoActivacion = {
-  encendido: boolean; encendido_desde: string | null; cambiado_en: string | null; cambiado_por: string | null;
-  jornadas_seguidas: number; plantilla: number; entrados: number; con_avisos: number; se_puede_encender: boolean;
-  minimo_entrados: number; faltan_por_entrar: string[]; puede_manejar: boolean;
-  /** Con cuenta de Auth pero sin haber entrado nunca (pidieron un codigo y no lo usaron); ausente si la migracion D140 no esta aplicada. */
-  pidio_codigo?: string[];
-};
+export type { EstadoActivacion };
+
+const REFRESCO_MS = 60_000;
 
 /** «Respuestas en la web: activar» (D99.13, D64): las condiciones, el boton y, al encender, los pasos en orden.
  *  Apagar no pierde nada. Cada cambio queda registrado en la base (quien y cuando).
  *  La antigua condicion 4 (comprobacion de SportEasy) ya no se ensena: la base la sigue exigiendo para encender
  *  (respuestas_web_config.sporteasy_comprobado), pero en el real ya esta cumplida. */
-export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mensajeEntrar, mensajeAvisos, grupos }: {
-  estado: EstadoActivacion; jornadas: number[]; marcas: Record<number, "limpia" | "con_arreglo">; mensaje: string; mensajeEntrar: string; mensajeAvisos: string;
-  grupos: { entrada: GrupoNum[]; avisos: GrupoNum[] };
+export default function TarjetaActivar({ inicial, jornadas, marcas, mensaje, cadaMs = REFRESCO_MS }: {
+  inicial: ActivacionViva; jornadas: number[]; marcas: Record<number, "limpia" | "con_arreglo">; mensaje: string; cadaMs?: number;
 }) {
+  // En vivo (D156): contadores, listas y mensajes se vuelven a pedir cada minuto mientras la pestana esta visible y al volver
+  // a ella. Es el mismo componente (no se recarga la pagina): lo que el gestor tenga desplegado en los contadores sigue abierto.
+  const [viva, setViva] = useState(inicial);
+  useEffect(() => setViva(inicial), [inicial]); // tras una accion de la tarjeta, router.refresh() trae datos nuevos de servidor
+  const enVuelo = useRef(false);
+  const refrescar = useCallback(async () => {
+    if (enVuelo.current) return;
+    enVuelo.current = true;
+    try {
+      const r = await fetch("/api/gestion/activacion", { cache: "no-store" });
+      if (r.ok) setViva((await r.json()) as ActivacionViva);
+    } catch { /* sin red: se queda lo que habia y se reintenta en el siguiente turno */ } finally { enVuelo.current = false; }
+  }, []);
+  useEffect(() => {
+    let reloj: ReturnType<typeof setInterval> | undefined;
+    const parar = () => { if (reloj) clearInterval(reloj); reloj = undefined; };
+    const volver = () => {
+      parar();
+      if (document.visibilityState !== "visible") return; // oculta: en pausa
+      void refrescar();
+      reloj = setInterval(() => void refrescar(), cadaMs);
+    };
+    if (document.visibilityState === "visible") reloj = setInterval(() => void refrescar(), cadaMs);
+    document.addEventListener("visibilitychange", volver);
+    window.addEventListener("focus", volver);
+    return () => { parar(); document.removeEventListener("visibilitychange", volver); window.removeEventListener("focus", volver); };
+  }, [refrescar, cadaMs]);
+  const { estado, grupos, mensajeAvisos, mensajeEntrar, mensajePidieron, entrenadores } = viva;
+  const actualizado = new Date(viva.calculadoEn).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" });
+
   // Solo Iván maneja la tarjeta (D103); los demás gestores la ven en solo lectura. La base lo vuelve a comprobar.
   const solo = !estado.puede_manejar;
   const router = useRouter();
@@ -36,7 +62,9 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
   // Encendido (D139): una franja compacta. Las condiciones, los pasos de activar y el mensaje de lanzamiento ya no hacen falta.
   if (estado.encendido) {
     const desde = estado.encendido_desde ?? estado.cambiado_en;
-    const faltan = grupos.entrada.find((g) => g.k === "faltan");
+    const sinPedir = grupos.entrada.find((g) => g.k === "faltan");
+    const pidieron = grupos.entrada.find((g) => g.k === "pidieron");
+    const faltan = (sinPedir?.n ?? 0) + (pidieron?.n ?? 0);
     return (
       <section className="gs-bloque ev-activar ev-activar-compacta" aria-labelledby="t-activar" data-testid="tarjeta-activar">
         <div className="gs-bloque-cab">
@@ -47,17 +75,20 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
           Respuestas en la web: encendido{desde ? ` desde ${new Date(desde).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}` : ""}{estado.cambiado_por ? ` (${estado.cambiado_por})` : ""}.
         </p>
         <div data-testid="franja-avisos">
-          <b data-testid="con-avisos-cabecera">Con avisos: {grupos.avisos.reduce((t, g) => t + (g.k === "con" ? g.n : 0), 0)}/{grupos.avisos.reduce((t, g) => t + g.n, 0)}</b>
+          <b data-testid="con-avisos-cabecera">Con avisos: {grupos.avisos.reduce((t, g) => t + (g.k === "con" ? g.n : 0), 0)}/{grupos.avisos.reduce((t, g) => t + g.n, 0)} jugadores</b>
+          {entrenadores.total > 0 && <span className="pequeno suave" data-testid="nota-entrenador"> · {entrenadores.conAvisos === entrenadores.total ? (entrenadores.total === 1 ? "el entrenador también los tiene" : "los entrenadores también los tienen") : `sin contar ${entrenadores.total === 1 ? "al entrenador" : "a los entrenadores"}`}</span>}
           <Numeros variante="linea" prueba="avisos-numeros" etiqueta="Jugadores con avisos activados" grupos={grupos.avisos} />
           {grupos.avisos.find((g) => g.k === "sin")!.n > 0 && <div style={{ marginTop: 6 }}><CopiarTexto texto={mensajeAvisos} etiqueta="Copiar mensaje" /></div>}
         </div>
-        {faltan && faltan.n > 0 && (
+        {faltan > 0 && (
           <div data-testid="faltan-entrar">
-            <b>Faltan por entrar: {faltan.n}</b>
-            <Numeros variante="linea" prueba="entrada-numeros" etiqueta="Jugadores que faltan por entrar en la web" grupos={[faltan]} />
-            <div style={{ marginTop: 6 }}><CopiarTexto texto={mensajeEntrar} etiqueta="Copiar mensaje" /></div>
+            <b>Faltan por entrar: {faltan}</b>
+            <Numeros variante="linea" prueba="entrada-numeros" etiqueta="Jugadores que faltan por entrar en la web" grupos={[sinPedir!, pidieron!]} />
+            {sinPedir!.n > 0 && <div style={{ marginTop: 6 }}><CopiarTexto texto={mensajeEntrar} etiqueta="Copiar mensaje a quien no ha pedido acceso" /></div>}
+            {pidieron!.n > 0 && <div style={{ marginTop: 6 }}><CopiarTexto texto={mensajePidieron} etiqueta="Copiar mensaje a quien no terminó" /></div>}
           </div>
         )}
+        <span className="pequeno suave" data-testid="actualizado" aria-live="off">Actualizado {actualizado}</span>
         {error && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{error}</p>}
         <details className="ev-mas-opciones" data-testid="mas-opciones">
           <summary className="boton boton-claro" style={{ listStyle: "none", cursor: "pointer" }}>Más opciones</summary>
@@ -86,7 +117,9 @@ export default function TarjetaActivar({ estado, jornadas, marcas, mensaje, mens
           <div className="ev-jornadas">{jornadas.map((j) => <button key={j} type="button" data-estado={marcas[j] ?? "sin"} disabled={pendiente || solo} aria-label={`J${j}: ${marcas[j] === "limpia" ? "limpia" : marcas[j] === "con_arreglo" ? "con arreglo" : "sin marcar"}`} onClick={() => hacer(() => marcarJornada(j, siguiente(marcas[j])))}>J{j}</button>)}</div></div></li>
         <li><Marca ok={c2} /><div><b>{estado.entrados}/{estado.plantilla} jugadores ya han entrado en la web</b> <span className="pequeno suave">(mínimo {estado.minimo_entrados})</span>
           <Numeros variante="linea" prueba="entrada-numeros" etiqueta="Jugadores que han entrado en la web" grupos={grupos.entrada} />
-          {estado.faltan_por_entrar.length > 0 && (<div className="pequeno" data-testid="faltan-entrar" style={{ marginTop: 4 }}><CopiarTexto texto={mensajeEntrar} etiqueta="Copiar mensaje para quien falta" /></div>)}</div></li>
+          {estado.faltan_por_entrar.length > 0 && (<div className="pequeno" data-testid="faltan-entrar" style={{ marginTop: 4 }}>
+            {grupos.entrada.find((g) => g.k === "faltan")!.n > 0 && <CopiarTexto texto={mensajeEntrar} etiqueta="Copiar mensaje a quien no ha pedido acceso" />}
+            {grupos.entrada.find((g) => g.k === "pidieron")!.n > 0 && <CopiarTexto texto={mensajePidieron} etiqueta="Copiar mensaje a quien no terminó" />}</div>)}</div></li>
         <li><span className="ev-cond-no" aria-hidden="true">i</span><div><b>{estado.con_avisos}/{estado.plantilla} con avisos activados</b> <span className="pequeno suave">(informativo, no bloquea)</span>
           <Numeros variante="linea" prueba="avisos-numeros" etiqueta="Jugadores con avisos activados" grupos={grupos.avisos} /></div></li>
       </ol>

@@ -438,10 +438,19 @@ try {
 
   // ---------------------------------------------------------------- asistencia
   console.log('\n== Asistencia y motivos');
+  // D161: desde el 24/10 suma la plataforma (liga y entrenos YA pasados); lo futuro no cuenta. Un entreno pasado con
+  // «no voy · viaje» y uno futuro con «no voy · familia» para Jon (sin otras respuestas suyas en ese tramo).
+  const [entPasado] = await sql`select id from public.eventos where tipo = 'entreno' and fecha >= '2026-10-24' and fecha < ${hoy} order by fecha limit 1`;
+  const [entFuturo] = await sql`select id from public.eventos where tipo = 'entreno' and fecha > ${hoy} order by fecha limit 1`;
+  await sql`delete from public.respuestas where person_id = 'esteban-jon' and evento_id in (select id from public.eventos where fecha >= '2026-10-24' and fecha < ${hoy})`;
+  for (const [ev, motivo] of [[entPasado, 'viaje'], [entFuturo, 'familia']]) {
+    await sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, fuente, origen) values (${ev.id}, 'esteban-jon', 'no', ${motivo}, 'web', 'gestor')
+              on conflict (evento_id, person_id) do update set respuesta = 'no', motivo = ${motivo}`;
+  }
   await p.goto(`${APP}/gestion/asistencia`);
   const fa = p.locator('[data-person=esteban-jon]');
-  ok((await fa.textContent()).includes('3 / 4') && (await fa.textContent()).includes('75 %') && (await fa.textContent()).includes('2 / 2') && (await fa.textContent()).includes('100 %'), 'resumen: entrenos 3/4 = 75 %, partidos 2/2 = 100 % (de asistencia_motivos, no de la copia vieja de asistencia_resumen; D116)');
-  ok((await fa.textContent()).includes('trabajo ×1') && (await fa.textContent()).includes('con excusa ×1'), 'motivos más frecuentes (históricos + «no voy» de la plataforma)');
+  ok((await fa.textContent()).includes('3 / 5') && (await fa.textContent()).includes('60 %') && (await fa.textContent()).includes('2 / 2') && (await fa.textContent()).includes('100 %'), 'resumen: entrenos 3/4 de SportEasy + 1 ausencia de la plataforma = 3/5 (60 %), partidos 2/2 = 100 % (de asistencia_motivos, no de la copia vieja de asistencia_resumen; D116 y D161)', await fa.textContent());
+  ok((await fa.textContent()).includes('viaje ×1') && (await fa.textContent()).includes('con excusa ×1') && !(await fa.textContent()).includes('familia'), 'motivos más frecuentes: históricos + «no voy» de eventos ya pasados de la plataforma (el del futuro no cuenta)', await fa.textContent());
   await p.goto(`${APP}/gestion/asistencia?t=2025-26`);
   ok((await p.locator('[data-person=esteban-jon]').textContent()).includes('20 / 30') && (await p.locator('[data-person=esteban-jon]').textContent()).includes('67 %'), 'otra temporada: 20/30 = 67 %');
   await p.screenshot({ path: path.join(SALIDA, 'real_asistencia_gestion_escritorio.png'), fullPage: true });

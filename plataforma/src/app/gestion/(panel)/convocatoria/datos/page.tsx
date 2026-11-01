@@ -15,7 +15,7 @@ export default async function DatosConvocatoria() {
   const { supabase } = await exigirGestor();
   const [{ data: jug }, priv] = await Promise.all([
     supabase.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, rol, activo").eq("activo", true).order("nombre_visible"),
-    supabase.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, cambiado_en, cambiado_por_nombre, nota_ataque, nota_defensa, nota_total, minutos, pts_min, no_suele_entrenar, nunca_partidos"),
+    supabase.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, cambiado_en, cambiado_por_nombre, nota_ataque, nota_defensa, nota_total, minutos, pts_min, no_suele_entrenar, nunca_partidos, reserva"),
   ]);
   const sinMigracion = !!priv.error;
   const porId = new Map(((priv.data ?? []) as FilaPrivada[]).map((p) => [p.person_id, p]));

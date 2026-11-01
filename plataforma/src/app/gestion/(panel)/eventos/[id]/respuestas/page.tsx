@@ -19,6 +19,7 @@ import { hrefJugador } from "@/lib/numeros/enlaces";
 import { sinFichaQueVan } from "@/lib/numeros/respuestas";
 import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
+import CambiarAMano from "../../CambiarAMano";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { ausenciaQueCubre, claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
@@ -76,7 +77,9 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const invitadosDe = (e: EventoFila) => convocadosDe(e, jugadores).filter((j) => !fueraDelPartido(e, defecto.marcas.get(j.person_id), respDe(e, j.person_id)));
   const porDefecto = (e: EventoFila, p: string) => noVaPorDefecto(e, defecto.marcas.get(p), respDe(e, p), defecto.quitados.has(claveQuitado(e.id, p)));
   const personas = [...new Map(eventos.flatMap(invitadosDe).map((j) => [j.person_id, j])).values()];
-  type Linea = { person_id: string; nombre: string; clase: "no" | "duda" | "sin_responder" | "va"; texto: string; motivo: string | null; origenTxt: string | null; periodo: PeriodoW | null; avisos: boolean; dos: boolean; solo: string | null; defecto: boolean };
+  type Linea = { person_id: string; nombre: string; clase: "no" | "duda" | "sin_responder" | "va"; texto: string; motivo: string | null; origenTxt: string | null; periodo: PeriodoW | null; avisos: boolean; dos: boolean; solo: string | null; defecto: boolean;
+    /** D159: su respuesta en cada evento de la vista, para cambiarla a mano. */
+    mano: { evento: string; etiqueta?: string; actual: Respuesta; motivo: string | null }[] };
   const lineas: Linea[] = personas.map((j) => {
     const suyos = eventos.filter((e) => invitadosDe(e).some((x) => x.person_id === j.person_id));
     const rs = suyos.map((e) => de(e.id, j.person_id));
@@ -102,7 +105,8 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
     const horario = rs.find((r) => r?.motivo === "horario");
     const motivo = defectoAqui ? NOTA_POR_DEFECTO : rNo ? `${textoMotivo(rNo.motivo)}${rNo.detalle ? ` · ${rNo.detalle}` : ""}` : per && clase === "no" ? `${TEXTO_MOTIVO[per.motivo]} · ${franja(per)}`
       : horario && solo ? `solo puede al de las ${hhmm(eventos.find((e) => e.id === solo)!.inicio)}` : null;
-    return { person_id: j.person_id, nombre: j.nombre_visible, clase, texto, motivo, origenTxt, periodo: per, avisos: conAvisos.has(j.person_id), dos: suyos.length === 2, solo, defecto: defectoAqui };
+    const mano = suyos.map((e, i) => ({ evento: e.id, etiqueta: dia ? `${e.equipo} ${hhmm(e.inicio)}` : undefined, actual: (rs[i]?.respuesta ?? "sin_responder") as Respuesta, motivo: rs[i]?.motivo ?? null }));
+    return { person_id: j.person_id, nombre: j.nombre_visible, clase, texto, motivo, origenTxt, periodo: per, avisos: conAvisos.has(j.person_id), dos: suyos.length === 2, solo, defecto: defectoAqui, mano };
   });
   const ORDEN = { no: 0, duda: 1, sin_responder: 2, va: 3 } as const;
   lineas.sort((a, b) => ORDEN[a.clase] - ORDEN[b.clase] || a.nombre.localeCompare(b.nombre, "es"));
@@ -136,7 +140,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const pe = pistaEfectiva(evento, pistas);
   const sinAvisos = lineas.filter((l) => !l.avisos);
   const web = await origenWeb();
-  const msgSinAvisos = `Hola, ${sinAvisos.map((l) => l.nombre).join(", ")}: aún no tenéis activados los avisos de Maccabis en el móvil. Así os llega cuándo hay que responder y si cambia la hora o la pista (nunca de noche). Es un minuto: ${web}/avisos`;
+  const msgSinAvisos = mensajeSinAvisos(sinAvisos.map((l) => l.nombre), web);
   const opcionesPor = (l: Linea) => (dia && distintas && l.dos
     ? [{ id: "ambos", texto: "A los dos", opcion: "ambos" }, ...dia.map((e) => ({ id: `solo-${e.id}`, texto: `Solo al de las ${hhmm(e.inicio)} (${e.equipo})`, opcion: "solo", evento: e.id })), { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
     : dia ? [{ id: "voy", texto: "Va", opcion: "voy" }, { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
@@ -195,7 +199,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
           <h2 id="t-resp">Respuestas</h2>
           <div className="tabla-desplazable">
             <table className="gs-tabla ev-tabla" data-testid="tabla-respuestas">
-              <thead><tr><th>Jugador</th><th>Respuesta</th><th>Motivo y detalle</th><th>Avisos</th><th><span className="solo-lectores">Responder por él</span></th></tr></thead>
+              <thead><tr><th>Jugador</th><th>Respuesta</th><th>Motivo y detalle</th><th>Avisos</th><th>Cambiar a mano</th><th><span className="solo-lectores">Responder por él</span></th></tr></thead>
               <tbody>
                 {lineas.map((l) => (
                   <tr key={l.person_id} data-respuesta={l.clase}>
@@ -203,6 +207,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
                     <td data-label="Respuesta"><span className={l.clase === "no" ? "ev-no" : l.clase === "va" ? "ev-ok" : l.clase === "duda" ? "ev-duda" : "suave"}>{l.texto}</span>{l.origenTxt && <span className="ev-sub" style={{ color: "var(--tinta-tenue)" }}>{l.origenTxt}</span>}</td>
                     <td data-label="Motivo y detalle">{l.motivo ?? <span className="suave">—</span>}</td>
                     <td data-label="Avisos">{l.avisos ? <span className="ev-ok">Sí</span> : <span className="suave">No</span>}</td>
+                    <td data-label="Cambiar a mano">{evento.estado === "programado" ? <div>{l.mano.map((m) => <CambiarAMano key={`${m.evento}-${m.actual}-${m.motivo}`} eventoId={m.evento} personId={l.person_id} nombre={l.nombre} actual={m.actual} motivo={m.motivo} etiqueta={m.etiqueta} conDuda={conDuda} />)}</div> : <span className="suave">—</span>}</td>
                     <td data-label="">{encendido && (l.clase === "sin_responder" || l.defecto) && <ResponderPor eventoId={evento.id} personId={l.person_id} nombre={l.nombre} fecha={evento.fecha} domingo={!!dia} opciones={opcionesPor(l)} />}</td>
                   </tr>
                 ))}

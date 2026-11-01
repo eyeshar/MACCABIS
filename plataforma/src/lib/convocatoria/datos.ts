@@ -114,7 +114,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
-    sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos"),
+    sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos, reserva"),
     // Columnas explicitas: las de la copia a SportEasy (sporteasy_*) quedan en la base sin uso (D153).
     sb.from("convocatorias").select("id, fecha, jornada, estado, origen, equipos, dificultad, cambiado_en, cambiado_por_nombre, aprobada_en, aprobada_por_nombre, whatsapp_estado, whatsapp_en, whatsapp_base, aviso_estado, aviso_en, aviso_base").eq("fecha", fecha).maybeSingle(),
     sb.rpc("respuestas_web_encendido"),
@@ -188,7 +188,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   const jugadores: JugadorVista[] = activos.map((j) => {
     const p = privados.get(j.person_id) as FilaPrivada | undefined;
     const privado: DatosPrivados | null = p
-      ? { posicion: p.posicion, base_reserva: p.base_reserva, nivel: p.nivel, dobla: p.dobla, regla: p.regla === "fijo" && p.regla_equipo ? { tipo: "fijo", equipo: p.regla_equipo } : p.regla === "comodin" ? { tipo: "comodin" } : null, nunca_partidos: !!p.nunca_partidos }
+      ? { posicion: p.posicion, base_reserva: p.base_reserva, nivel: p.nivel, dobla: p.dobla, regla: p.regla === "fijo" && p.regla_equipo ? { tipo: "fijo", equipo: p.regla_equipo } : p.regla === "comodin" ? { tipo: "comodin" } : null, nunca_partidos: !!p.nunca_partidos, reserva: !!p.reserva }
       : null;
     const respuesta: Partial<Record<Equipo, RespuestaPartido>> = {};
     const motivoNo: Partial<Record<Equipo, string | null>> = {};

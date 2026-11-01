@@ -50,7 +50,7 @@ Sin avisos no te enteras de los recordatorios ni de los cambios de hora o pista.
 
 Si la web instalada se ve mal o no se actualiza, ciérrala del todo; si sigue igual, borra el icono y vuelve a añadirlo desde Safari.
 
-Pulsa Mandarme un aviso de prueba para comprobar que te llega. Los avisos nunca salen de noche. Si cambias de móvil, actívalos otra vez en el nuevo.
+Pulsa Mandarme un aviso de prueba para comprobar que te llega. De noche (de 22:30 a 08:00) los avisos no salen, salvo que el partido sea en pocas horas. Si cambias de móvil, actívalos otra vez en el nuevo.
 
 ## La pantalla de inicio
 

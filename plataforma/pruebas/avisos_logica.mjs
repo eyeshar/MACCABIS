@@ -11,6 +11,7 @@ import * as H from '../src/lib/avisos/horario.ts';
 import * as P from '../src/lib/avisos/planificador.ts';
 import * as T from '../src/lib/avisos/textos.ts';
 import * as CM from '../src/lib/convocatoria/mensajes.ts';
+import * as MA from '../src/lib/gestion/mensajesActivacion.ts';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -193,13 +194,13 @@ ok(!todos.some((x) => /lesi[oó]n|trabajo|viaje|familia|horario|nivel|posici|bas
 console.log('\n== Aviso de convocatoria (D127): sin depender del interruptor, a quien toca y sin dobles');
 {
   const PART = [
-    { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '09:00', encuentro: '08:40', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: null },
-    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '14:00', encuentro: '13:40', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Llevad la equipación amarilla' },
+    { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '09:00', encuentro: '08:40', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: 'Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' },
+    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '14:00', encuentro: '13:40', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.' },
   ];
   const t1 = CM.textoEstasConvocado('2026-10-25', PART, ['MdA']);
-  ok(t1.titulo === 'Estás convocado · domingo 25/10' && t1.cuerpo === 'MdA a las 09:00 (quedada 08:40).', '«Estás convocado · domingo 25/10» / «MdA a las 09:00 (quedada 08:40).»', JSON.stringify(t1));
+  ok(t1.titulo === 'Estás convocado · domingo 25/10' && t1.cuerpo === 'MdA a las 09:00 (quedada 08:40). Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.', '«Estás convocado · domingo 25/10» / «MdA a las 09:00 (quedada 08:40).» + la línea de equipación (D160)', JSON.stringify(t1));
   const t2 = CM.textoEstasConvocado('2026-10-25', PART, ['MdA', 'MdL']);
-  ok(t2.cuerpo === 'MdA a las 09:00 (quedada 08:40) y MdL a las 14:00 (quedada 13:40). Llevad la equipación amarilla.', 'dobla: los dos partidos y el aviso de la jornada (equipación)', t2.cuerpo);
+  ok(t2.cuerpo === 'MdA a las 09:00 (quedada 08:40) y MdL a las 14:00 (quedada 13:40). MdA: Jugamos de negro (ellos de rojo). MdL: Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.', 'dobla: cada equipo con su línea de equipación y «Llevad la amarilla por si acaso.» una vez (D160)', t2.cuerpo);
   const conv = { MdA: [{ person_id: 'jon' }, { person_id: 'guille' }], MdL: [{ person_id: 'jon' }, { person_id: 'ana' }] };
   let d = CM.destinatariosAviso(conv, null);
   ok(!d.cambio && d.personas.map((p) => p.person_id).sort().join() === 'ana,guille,jon' && d.personas.find((p) => p.person_id === 'jon').equipos.join() === 'MdA,MdL', 'primer envío: a todos los convocados (Jon con sus dos equipos)');
@@ -210,7 +211,7 @@ console.log('\n== Aviso de convocatoria (D127): sin depender del interruptor, a 
   const de = (id) => d.personas.find((p) => p.person_id === id);
   ok(d.cambio && d.personas.length === 3 && de('ana').equipos.join() === 'MdA' && de('luis').equipos.join() === 'MdL' && de('guille').equipos.length === 0 && !de('jon'), 'cambio tras enviar: a quien cambia (Ana pasa, Luis entra, Guille sale), no a Jon');
   const tc = CM.textoCambioConvocatoria('2026-10-25', PART, ['MdA']);
-  ok(tc.titulo === 'Cambio en la convocatoria · domingo 25/10' && tc.cuerpo === 'Estás convocado: MdA a las 09:00 (quedada 08:40).', '«Cambio en la convocatoria · domingo 25/10»', JSON.stringify(tc));
+  ok(tc.titulo === 'Cambio en la convocatoria · domingo 25/10' && tc.cuerpo === 'Estás convocado: MdA a las 09:00 (quedada 08:40). Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.', '«Cambio en la convocatoria · domingo 25/10»', JSON.stringify(tc));
   ok(CM.textoCambioConvocatoria('2026-10-25', PART, []).cuerpo === 'Ya no estás convocado este domingo.', 'quien sale: «Ya no estás convocado este domingo.»');
   ok(CM.firmaConvocatoria(conv) === CM.firmaConvocatoria({ MdL: [{ person_id: 'ana' }, { person_id: 'jon' }], MdA: [{ person_id: 'guille' }, { person_id: 'jon' }] }) && CM.firmaConvocatoria(conv) !== CM.firmaConvocatoria(despues), 'la firma de la clave única no depende del orden y cambia si cambia la convocatoria');
   const todos = [t1, t2, tc].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
@@ -386,5 +387,22 @@ console.log('\n== Aviso «no va (por defecto)» al propio jugador (D152)');
   const base = P.planificar(conMarcas(lunes));
   ok(de(base, 'nse').length === 1 && !de(base, 'nse')[0].eventos.includes('e14') && base.every((x) => !x.clave.startsWith('rec:defecto')), 'el «te faltan» del lunes sigue sin el entreno y no lleva el aviso por defecto');
 }
+// ---------------------------------------------------------------- mensajes del recuadro «Respuestas en la web» (D156)
+console.log('\== Mensajes para copiar: singular / plural y la noche según D155');
+{
+  const W = 'https://maccabis.vercel.app';
+  const a1 = MA.mensajeSinAvisos(['Fernando'], W), aN = MA.mensajeSinAvisos(['Fernando', 'Luis'], W);
+  ok(/^Hola, Fernando: aún no has activado los avisos/.test(a1) && /Así te llega/.test(a1) && !/tenéis|os llega/.test(a1), 'sin avisos, una persona: singular («has activado», «te llega»)', a1);
+  ok(/^Hola, Fernando, Luis: aún no tenéis activados/.test(aN) && /Así os llega/.test(aN), 'sin avisos, varias: plural');
+  ok(a1.includes('(de noche solo si el partido es en pocas horas)') && aN.includes('(de noche solo si el partido es en pocas horas)') && !/nunca de noche/.test(a1 + aN), 'sin «nunca de noche»: «de noche solo si el partido es en pocas horas»');
+  ok(a1.endsWith(`${W}/avisos`), 'lleva el enlace a /avisos');
+  const e1 = MA.mensajeFaltanEntrar(['Fernando'], W), eN = MA.mensajeFaltanEntrar(['Fernando', 'Luis'], W);
+  ok(/aún no has entrado/.test(e1) && /Entra una vez con tu correo/.test(e1) && !/habéis|Entrad/.test(e1), 'faltan por entrar, una persona: «aún no has entrado… Entra una vez»');
+  ok(/aún no habéis entrado/.test(eN) && /Entrad una vez/.test(eN), 'faltan por entrar, varias: plural');
+  const p1 = MA.mensajePidieronNoEntraron(['Fernando'], W), pN = MA.mensajePidieronNoEntraron(['Fernando', 'Luis'], W);
+  ok(p1 === `Hola, Fernando: te llegó el correo pero no llegaste a entrar. Pide el código otra vez en ${W}/entrar y escribe los 6 números.`, 'lo pidieron y no terminaron, una persona: singular', p1);
+  ok(/^Hola, Fernando, Luis: os llegó el correo pero no llegasteis a entrar\. Pedid el código otra vez en .+\/entrar y escribid los 6 números\.$/.test(pN), 'lo pidieron y no terminaron, varias: plural', pN);
+}
+
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

@@ -98,7 +98,7 @@ try {
   ok(html.includes('Dos equipos.') && html.includes('Una plantilla.'), 'portada: heroe "Dos equipos. Una plantilla."');
   ok(/<meta name="theme-color" content="#0E0D12"/i.test(html), 'theme-color #0E0D12');
   ok(html.includes('rel="manifest" href="/manifest.webmanifest"'), 'la portada enlaza el manifiesto');
-  for (const ruta of ['/agenda', '/gestion', '/gestion/liga']) {
+  for (const ruta of ['/agenda', '/gestion', '/liga/scouting', '/liga/consolidada']) {
     const x = await fetch(`${APP}${ruta}`, { redirect: 'manual' });
     ok(x.status >= 300 && x.status < 400 && (x.headers.get('location') || '').includes('/entrar'), `${ruta} sin sesion redirige a /entrar`, `${x.status} ${x.headers.get('location')}`);
   }
@@ -172,7 +172,7 @@ try {
     const cuerpo = await x.text();
     ok(!(x.headers.get('x-robots-tag') || '').includes('noindex') && /<meta name="robots" content="index, follow"/.test(cuerpo), `${ruta}: indexable (sin X-Robots-Tag noindex, meta robots index)`);
   }
-  for (const ruta of ['/entrar', '/mi-zona/ausencias', '/agenda', '/planes/nuevo', '/gestion', '/gestion/liga', '/entrar/elegir']) {
+  for (const ruta of ['/entrar', '/mi-zona/ausencias', '/agenda', '/planes/nuevo', '/gestion', '/liga/scouting', '/liga/consolidada', '/entrar/elegir']) {
     const x = await fetch(`${APP}${ruta}`, { redirect: 'manual' });
     ok((x.headers.get('x-robots-tag') || '').includes('noindex'), `${ruta}: X-Robots-Tag noindex`, String(x.headers.get('x-robots-tag')));
   }

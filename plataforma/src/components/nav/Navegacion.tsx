@@ -15,7 +15,7 @@ import { useDesplegable } from "./useDesplegable";
 // Inicio · Agenda · Mis números · Liga · Más; gestor Inicio · Agenda · Mis números · Gestión · Más (Liga pasa a «Más»).
 // La sesion la lee el servidor (Cabecera.tsx) y llega aqui ya resuelta: nada de parpadeos de "Acceso".
 
-type Zona = "inicio" | "agenda" | "numeros" | "club" | "gestion" | "cuenta" | "acceso" | "liga" | "historia" | "plantilla" | null;
+type Zona = "inicio" | "agenda" | "numeros" | "club" | "gestion" | "cuenta" | "acceso" | "liga" | "historia" | "plantilla" | "partidos" | null;
 
 function zonaDe(ruta: string, personId: string | null): Zona {
   if (ruta === "/") return "inicio";
@@ -26,6 +26,9 @@ function zonaDe(ruta: string, personId: string | null): Zona {
   if (ruta.startsWith(RUTA_CUENTA)) return "cuenta";
   if (ruta.startsWith("/entrar")) return "acceso";
   if (ruta.startsWith("/liga")) return "liga";
+  // «Partidos» es hoy un ancla de la portada (/#calendario): sin estado activo. Cuando tenga página propia (/partidos),
+  // basta con cambiar su href en MENU (lib/web.ts): la cabecera y la barra la marcan solas.
+  if (ruta.startsWith("/partidos")) return "partidos";
   if (ruta.startsWith("/historia")) return "historia";
   if (ruta.startsWith("/plantilla") || ruta.startsWith("/jugador")) return "plantilla";
   return null;
@@ -154,6 +157,7 @@ export default function Navegacion({ usuario, escudo }: { usuario: Usuario | nul
   const ruta = usePathname();
   const zona = zonaDe(ruta, usuario?.personId ?? null);
   const liga = MENU.find((s) => s.id === "liga")!;
+  const partidos = MENU.find((s) => s.id === "partidos")!;
   // Con ficha de jugador, el menu de cada persona (D117); sin sesion o gestor sin ficha, el de la web publica.
   const personal = Boolean(usuario?.esJugador);
   const menu = personal ? MENU_SESION : MENU;
@@ -192,7 +196,7 @@ export default function Navegacion({ usuario, escudo }: { usuario: Usuario | nul
           </>
         ) : (
           <>
-            <Link href="/#calendario" className="nv-barra-item"><Calendario />Partidos</Link>
+            <Link href={partidos.href} className="nv-barra-item" aria-current={cur("partidos")}><Calendario />Partidos</Link>
             <a href={liga.href} className="nv-barra-item"><Barras />Liga</a>
             {usuario?.esGestor ? (
               <Link href="/gestion" className="nv-barra-item" aria-current={cur("gestion")}><Panel size={22} />Gestión</Link>

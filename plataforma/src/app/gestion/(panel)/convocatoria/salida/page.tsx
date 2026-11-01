@@ -53,7 +53,7 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
     if (fs.length) ultimoEnvio = { n: fs.length - sin.length, m: fs.length, sinAvisos: sin, programado: pend ? pend.programado_para : null };
   }
   const web = "https://maccabis.vercel.app";
-  const msgSinAvisos = ultimoEnvio?.sinAvisos.length ? `Hola, ${ultimoEnvio.sinAvisos.join(", ")}: estáis convocados y no tenéis activados los avisos de Maccabis en el móvil. Así os llega la convocatoria y si cambia la hora o la pista (nunca de noche). Es un minuto: ${web}/avisos` : "";
+  const msgSinAvisos = ultimoEnvio?.sinAvisos.length ? `Hola, ${ultimoEnvio.sinAvisos.join(", ")}: estáis convocados y no tenéis activados los avisos de Maccabis en el móvil. Así os llega la convocatoria y si cambia la hora o la pista (de noche solo si el partido es en pocas horas). Es un minuto: ${web}/avisos` : "";
   const total = new Set(EQUIPOS.flatMap((e) => (c.equipos[e] ?? []).map((x) => x.person_id))).size;
   const Estado = ({ al, texto }: { al: boolean; texto?: string }) => <span className={`pastilla ${al ? "pastilla-ok" : "pastilla-pendiente"}`}>{texto ?? (al ? "Al día" : "Pendiente")}</span>;
 

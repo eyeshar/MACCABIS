@@ -8,7 +8,7 @@ export type PartidoMensaje = {
   equipo: Equipo; rival: string | null; es_local: boolean | null; inicio: string | null; encuentro: string | null;
   /** "CDM Moratalaz, pista 2" o "pista por confirmar" */
   sitio: string; direccion: string | null;
-  /** "Llevad la equipación amarilla…" (rutina C) o null si no hay choque */
+  /** Línea de equipación (D160: lineaConvocatoria de data/avisos_equipacion.js, siempre que haya rival), o null */
   lineaEquipacion: string | null;
 };
 
@@ -57,10 +57,18 @@ export function firmaConvocatoria(conv: Convocatoria) {
 }
 
 const detallePartidos = (suyos: PartidoMensaje[]) => suyos.map((p) => `${p.equipo} a las ${p.inicio ?? "?"}${p.encuentro ? ` (quedada ${p.encuentro})` : ""}`).join(" y ");
-const lineasJornada = (suyos: PartidoMensaje[]) => [...new Set(suyos.map((p) => p.lineaEquipacion).filter(Boolean) as string[])].map((l) => (/[.!?]$/.test(l) ? l : `${l}.`)).join(" ");
+const FIN_EQUIPACION = / ?Llevad la \S+ por si acaso\.$/;
+/** Equipación de la jornada para el aviso al móvil (D160). Un partido: su línea tal cual. Dos (dobla): cada línea con su
+ *  equipo delante y «Llevad la amarilla por si acaso.» una sola vez, al final. */
+function lineasJornada(suyos: PartidoMensaje[]) {
+  const con = suyos.filter((p) => p.lineaEquipacion).map((p) => ({ equipo: p.equipo, l: /[.!?]$/.test(p.lineaEquipacion!) ? p.lineaEquipacion! : `${p.lineaEquipacion}.` }));
+  if (con.length <= 1) return con[0]?.l ?? "";
+  const fin = con.map((x) => x.l.match(FIN_EQUIPACION)?.[0].trim()).find(Boolean);
+  return [...con.map((x) => `${x.equipo}: ${x.l.replace(FIN_EQUIPACION, "")}`), ...(fin ? [fin] : [])].join(" ");
+}
 
-/** Aviso al móvil «Estás convocado» (D127; pantalla de bloqueo: sin niveles ni motivos). Con la equipación de la jornada
- *  si toca cambiarla. */
+/** Aviso al móvil «Estás convocado» (D127; pantalla de bloqueo: sin niveles ni motivos). Con la línea de equipación de
+ *  la jornada (D160), la misma del WhatsApp. */
 export function textoEstasConvocado(fecha: string, partidos: PartidoMensaje[], equipos: Equipo[]) {
   const suyos = partidos.filter((p) => equipos.includes(p.equipo));
   const extra = lineasJornada(suyos);

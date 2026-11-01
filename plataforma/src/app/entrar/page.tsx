@@ -10,9 +10,9 @@ export const metadata = { title: "Acceso · Maccabis" };
 
 // Acceso (maqueta Acceso, D76). La logica no cambia (D68): Google o codigo por correo, lista blanca, y el reparto
 // jugador -> /mi-zona, gestor -> /gestion, ambos -> /entrar/elegir.
-export default async function Entrar({ searchParams }: { searchParams: Promise<{ salida?: string; sin_zona?: string; error_google?: string }> }) {
-  const { salida, sin_zona, error_google } = await searchParams;
-  if (configurado() && !salida && !sin_zona && !error_google) {
+export default async function Entrar({ searchParams }: { searchParams: Promise<{ salida?: string; sin_zona?: string; error_google?: string; enlace?: string }> }) {
+  const { salida, sin_zona, error_google, enlace } = await searchParams;
+  if (configurado() && !salida && !sin_zona && !error_google && !enlace) {
     const supabase = await clienteSesion();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) redirect(await destinoTrasEntrar(supabase));
@@ -29,6 +29,12 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
           {sin_zona && (
             <div className="aviso aviso-error" role="alert">
               Tu cuenta no tiene ni zona de jugador ni permisos de gestión. Habla con Iván, Carlos o Edu.
+            </div>
+          )}
+          {enlace && (
+            <div className="aviso aviso-error" role="alert" data-testid="aviso-enlace">
+              {enlace === "caducado" ? "Ese enlace ha caducado o ya se había usado (a veces el propio correo lo abre antes que tú)." : "Ese enlace no es válido."}{" "}
+              <a href="#email"><b>Pide otro código aquí</b></a> y escribe los números del correo.
             </div>
           )}
           {error_google && (

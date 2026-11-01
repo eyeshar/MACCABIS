@@ -7,6 +7,7 @@
 // nadie dobla por bases (D115), que el motor es determinista (misma entrada = misma salida, también desordenada) y los
 // avisos de data/avisos.json vigentes ese domingo en el mensaje de WhatsApp y las dudas (D141): no se convocan ni cuentan
 // como disponibles, salen aparte como «posibles»; y «solo entreno: nunca a partidos» (D146, regla 1.7): no se propone nunca.
+// Y la marca «Reserva» (D158, regla 1.8): solo entra para cubrir mínimos o el número compensado; si no, «reserva disponible».
 //
 //   npm run pruebas:convocatoria-motor
 
@@ -27,7 +28,7 @@ function J(pos, nivel, o = {}) {
     person_id: id, nombre: o.nombre ?? `Sintético ${String(n).padStart(2, '0')}`,
     ficha: o.ficha ?? { MdA: true, MdL: true }, solo_entreno: o.solo ?? false,
     respuesta: o.resp ?? { MdA: 'va', MdL: 'va' },
-    privado: o.sinDatos ? null : { posicion: pos, base_reserva: o.reserva ?? false, nivel, dobla: o.dobla ?? true, regla: o.regla ?? null, ...(o.nunca ? { nunca_partidos: true } : {}) },
+    privado: o.sinDatos ? null : { posicion: pos, base_reserva: o.reserva ?? false, nivel, dobla: o.dobla ?? true, regla: o.regla ?? null, ...(o.nunca ? { nunca_partidos: true } : {}), ...(o.esReserva ? { reserva: true } : {}) },
     sancionado: o.sancion ?? false, convocados: o.conv ?? 0, doblajes: o.dobl ?? 0, entrenos4: o.ent ?? 2, domingosFuera: o.fuera ?? 0,
   };
 }
@@ -504,6 +505,70 @@ console.log('\n== Dudas (D141): no se convocan ni cuentan como disponibles; sale
   ok(proponer({ partidos, jugadores: pasado }).posibles.length === 0, 'tras el límite (todas las dudas pasaron a «no va»): sin posibles y la propuesta ya es la definitiva');
   // Determinista, también con las dudas desordenadas.
   ok(JSON.stringify(proponer({ partidos, jugadores: [...conDudas].reverse() }).posibles) === JSON.stringify(r.posibles), 'mismo resultado con los jugadores en otro orden');
+}
+
+// ---------------------------------------------------------------- D158: reservas (regla 1.8)
+console.log('\n== Reservas (D158, regla 1.8): solo entran para cubrir mínimos o el número compensado');
+{
+  const conv = (r) => [...ids(r.convocatoria, 'MdA'), ...ids(r.convocatoria, 'MdL')];
+  const motivo = (r, id) => r.sinConvocar.find((s) => s.person_id === id);
+  // 18 disponibles; dos de ellos son reservas: un escolta D (sint-11) y un ala-pívot E (sint-18). Sin ellos quedan 5
+  // interiores: un equipo se queda con 2 y el reserva interior entra para llegar a 3; el exterior no hace falta.
+  const marcados = dieciocho().map((j) => (j.person_id === 'sint-11' || j.person_id === 'sint-18' ? { ...j, privado: { ...j.privado, reserva: true } } : j));
+  const partidos = [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'baja')];
+  const r = proponer({ partidos, jugadores: marcados });
+  ok(!conv(r).includes('sint-11') && motivo(r, 'sint-11')?.motivo === 'Reserva disponible' && motivo(r, 'sint-11')?.regla === '1.8', 'el reserva exterior no hace falta: sale como «Reserva disponible» (regla 1.8)', JSON.stringify(motivo(r, 'sint-11')));
+  ok(conv(r).includes('sint-18') && avisosDe(r, '1.8').some((a) => a.person_id === 'sint-18' && /entra para tener 3 interiores/.test(a.texto)), 'el reserva interior entra para tener 3 interiores, con su aviso', JSON.stringify(avisosDe(r, '1.8')));
+  ok(r.recuento.MdA.interiores.n >= 3 && r.recuento.MdL.interiores.n >= 3 && !avisosDe(r, '5.1').length && !avisosDe(r, '5.2').length, 'los dos equipos con 3 interiores y nadie dobla (el reserva va antes que doblar)');
+  ok(r.disponibles === 18, 'los reservas que dicen «voy» cuentan como disponibles', String(r.disponibles));
+  ok(JSON.stringify(proponer({ partidos, jugadores: [...marcados].reverse() })) === JSON.stringify(r), 'determinista: mismo resultado con los jugadores en otro orden');
+
+  // Con 20 o más disponibles, ningún reserva va por defecto (ni para cubrir).
+  const veinte = [...dieciocho(), J('pivot', 'A', { id: 'sint-r1', esReserva: true }), J('base', 'A', { id: 'sint-r2', esReserva: true })];
+  const r20 = proponer({ partidos, jugadores: veinte });
+  ok(r20.disponibles === 20 && !conv(r20).includes('sint-r1') && !conv(r20).includes('sint-r2'), 'con 20 disponibles, los reservas no van (aunque sean nivel A)');
+  ok(motivo(r20, 'sint-r1')?.motivo === 'Reserva (20 o más disponibles)' && motivo(r20, 'sint-r2')?.regla === '1.8', 'y salen como «Reserva (20 o más disponibles)»', JSON.stringify(motivo(r20, 'sint-r1')));
+
+  // Un solo partido con 6 disponibles y dos reservas: entra uno, el que cubre la línea que falta.
+  reset();
+  const pocos = [...plantilla([['base', 'B'], ['base', 'C'], ['escolta', 'B'], ['alero', 'C'], ['escolta', 'D'], ['pivot', 'B'], ['ala_pivot', 'C']]).slice(0, 6), J('alero', 'A', { id: 'sint-res', esReserva: true }), J('pivot', 'A', { id: 'sint-res2', esReserva: true })];
+  const r7 = proponer({ partidos: [P('MdA', '10:00')], jugadores: pocos });
+  const a7 = ids(r7.convocatoria, 'MdA');
+  ok(a7.length === 7, 'un solo partido con 6 y dos reservas: entra uno, hasta 7', String(a7.length));
+  ok(a7.includes('sint-res2') && !a7.includes('sint-res') && motivo(r7, 'sint-res')?.motivo === 'Reserva disponible', 'entra el pívot (cubre los 3 interiores además de llegar a 7); el otro queda como «Reserva disponible»', a7.join());
+
+  // Número compensado (rivales parejos): 10 solo del MdA y 8 solo del MdL (los dos con los mínimos cubiertos); un reserva
+  // disponible para el MdL entra y quedan 10 y 9; uno que solo puede con el MdA no entra (el MdA ya tiene más).
+  reset();
+  const soloA = { ficha: { MdA: true, MdL: false }, resp: { MdA: 'va' } }, soloL = { ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } };
+  const comp = [
+    ...plantilla([['base', 'B'], ['base', 'C'], ['escolta', 'B'], ['alero', 'C'], ['escolta', 'D'], ['alero', 'D'], ['pivot', 'B'], ['ala_pivot', 'C'], ['pivot', 'D'], ['ala_pivot', 'D']].map(([p, nv]) => [p, nv, soloA])),
+    ...plantilla([['base', 'B'], ['base', 'C'], ['escolta', 'B'], ['alero', 'C'], ['escolta', 'D'], ['pivot', 'B'], ['ala_pivot', 'C'], ['pivot', 'D']].map(([p, nv]) => [p, nv, soloL])),
+  ];
+  const parejos = [P('MdA', '09:00'), P('MdL', '12:45')];
+  const rc = proponer({ partidos: parejos, jugadores: [...comp, J('alero', 'C', { id: 'sint-comp', esReserva: true, ...soloL })] });
+  const nA = ids(rc.convocatoria, 'MdA').length, nL = ids(rc.convocatoria, 'MdL').length;
+  ok(nA === 10 && nL === 9 && ids(rc.convocatoria, 'MdL').includes('sint-comp'), 'parejos, 10 frente a 8: el reserva del MdL entra y quedan 10 y 9', `${nA} y ${nL}`);
+  ok(avisosDe(rc, '1.8').some((a) => a.person_id === 'sint-comp' && /compensar el número/.test(a.texto)), 'con el aviso «compensar el número de convocados»', JSON.stringify(avisosDe(rc, '1.8')));
+  const rca = proponer({ partidos: parejos, jugadores: [...comp, J('alero', 'C', { id: 'sint-compa', esReserva: true, ...soloA })] });
+  ok(!conv(rca).includes('sint-compa') && motivo(rca, 'sint-compa')?.motivo === 'Reserva disponible', 'el reserva que solo puede con el MdA no entra (el MdA ya tiene más)');
+  const rcd = proponer({ partidos: [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'baja')], jugadores: [...comp, J('alero', 'C', { id: 'sint-comp', esReserva: true, ...soloL })] });
+  ok(!conv(rcd).includes('sint-comp'), 'con dificultades distintas no se compensa el número (como la regla 3.2): no entra');
+
+  // Edición a mano: subir a un reserva no es un error; el que queda fuera sigue como «Reserva disponible».
+  const manual = { MdA: [...r.convocatoria.MdA, { person_id: 'sint-11' }], MdL: r.convocatoria.MdL };
+  const rv = revisar({ partidos, jugadores: marcados }, manual);
+  ok(!rv.avisos.some((a) => a.regla === '1.8' && a.gravedad !== 'info'), 'subirlo a mano no da aviso de la regla 1.8 (menos de 20 disponibles)');
+  const rv2 = revisar({ partidos, jugadores: marcados }, r.convocatoria);
+  ok(rv2.sinConvocar.find((s) => s.person_id === 'sint-11')?.motivo === 'Reserva disponible', 'en la revisión sin propuesta, el reserva fuera dice «Reserva disponible»');
+  const rv20 = revisar({ partidos, jugadores: veinte }, { MdA: [...r20.convocatoria.MdA, { person_id: 'sint-r1' }], MdL: r20.convocatoria.MdL });
+  ok(avisosDe(rv20, '1.8').some((a) => a.person_id === 'sint-r1' && a.gravedad === 'aviso'), 'con 20 o más disponibles, subirlo a mano da un aviso naranja');
+
+  // Privacidad: el mensaje de WhatsApp no dice quién es reserva.
+  const nombre = (id) => marcados.find((j) => j.person_id === id)?.nombre ?? id;
+  const pm = [{ ...partidos[0], rival: 'Rival A', pista: 'Pista 1', hora: '09:00', fecha: '2026-11-15' }, { ...partidos[1], rival: 'Rival B', pista: 'Pista 2', hora: '12:45', fecha: '2026-11-15' }];
+  const msg = mensajeConvocatoria('2026-11-15', 6, pm, r.convocatoria, nombre);
+  ok(!/reserva/i.test(msg), 'el mensaje de WhatsApp no menciona la marca «Reserva»');
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

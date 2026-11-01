@@ -146,7 +146,7 @@ try {
   ok(!/SportEasy/i.test(await pj.locator('main').innerText()), 'evento apagado: sin «SportEasy»');
   ok(await visto(pj.getByText(/encuentro \d\d:\d\d/)), 'evento: «HH:MM–HH:MM · encuentro HH:MM»');
   await pj.goto(`${APP}/avisos`);
-  ok(await visto(pj.getByText('Solo te avisamos si te falta responder')) && await visto(pj.getByText('Nunca de noche.')), '/avisos: el texto de arriba');
+  ok(await visto(pj.getByText('Solo te avisamos si te falta responder')) && await visto(pj.getByText('De noche, solo si el partido es en pocas horas.')), '/avisos: el texto de arriba');
   ok(await visto(pj.getByRole('button', { name: 'Activar avisos en este móvil' })), '/avisos (Chrome, no iPhone): «Activar avisos en este móvil»');
   ok(await visto(pj.getByText('Si dijiste «No permitir»')), '/avisos: bloque «Si dijiste No permitir»');
   ok(await sinDesbordar(pj), '/avisos a 375 px sin desbordamiento');
@@ -349,6 +349,28 @@ try {
   ok(/Respuestas en la web: encendido desde .+\./.test(await pg.getByTestId('franja-encendido').innerText()), 'franja: «Respuestas en la web: encendido desde <fecha, hora>» (y «(quién)» si se sabe)', franja.slice(0, 300));
   { const m = /Con avisos: (\d+)\/(\d+)/.exec(franja); const l = (await pg.getByTestId('avisos-numeros').innerText()).match(/\d+/g) || []; ok(!!m && l.length >= 2 && +m[2] === +l[0] + +l[1] && +m[2] === 27 && +m[1] === +l[0], 'franja: «Con avisos: N/M» cuadra con «con avisos» + «sin avisos»', franja.slice(0, 300) + ' | ' + l.join(',')); }
   ok(!/jornadas seguidas|Al activar, en este orden|mínimo 20|SportEasy|Copiar mensaje para la plantilla/.test(franja), 'sin condiciones 1 y 2, sin los pasos de activar, sin el mensaje de lanzamiento y sin «SportEasy»');
+
+  // D156: el recuadro se actualiza solo (aqui se fuerza la vuelta a la pestaña con visibilitychange; el reloj de 60 s lo prueba la unitaria de abajo).
+  const conAv = async () => +((/Con avisos: (\d+)\//.exec(await pg.getByTestId('con-avisos-cabecera').innerText()) || [])[1] ?? -1);
+  const volver = () => pg.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  ok(await visto(pg.getByTestId('actualizado')) && /^Actualizado \d\d:\d\d$/.test(await pg.getByTestId('actualizado').innerText()), 'franja: «Actualizado hh:mm»');
+  ok(/jugadores/.test(await pg.getByTestId('con-avisos-cabecera').innerText()) && /entrenador/.test(await pg.getByTestId('nota-entrenador').innerText().catch(() => '')), 'franja: «N/M jugadores · … entrenador»: aclara que el entrenador no cuenta en el total');
+  const n0 = await conAv();
+  await pg.getByTestId('avisos-numeros-sin').click(); // lo desplegado no se pierde al actualizar
+  const nueva = clavesMovil();
+  await sql`insert into public.suscripciones_avisos (user_id, person_id, endpoint, p256dh, auth, navegador) select user_id, person_id, ${`https://127.0.0.1:${PUERTO_PUSH}/ok/vivo`}, ${nueva.p256dh}, ${nueva.auth}, 'Android · Chrome' from public.suscripciones_avisos where person_id = 'esteban-jon' limit 1`;
+  await sql`update public.suscripciones_avisos set activa = false, desactivada_en = now(), motivo_baja = 'caducada' where person_id = 'esteban-jon' and endpoint like '%/ok/jon'`;
+  // dos cambios que se compensan (una nueva, una caducada): sigue igual; quitamos ahora la nueva para ver bajar el contador
+  await volver();
+  ok(await hasta(async () => (await conAv()) === n0), 'sin recargar: una suscripción nueva sustituye a la caducada y el recuadro sigue cuadrando');
+  await sql`update public.suscripciones_avisos set activa = false, desactivada_en = now(), motivo_baja = 'caducada' where person_id = 'esteban-jon' and endpoint like '%/ok/vivo'`;
+  await volver();
+  ok(await hasta(async () => (await conAv()) === n0 - 1), 'sin recargar: la suscripción caducada pasa a «sin avisos» (el contador baja)');
+  ok(await visto(pg.getByTestId('avisos-numeros-lista')) && /Jon/i.test(await pg.getByTestId('avisos-numeros-lista').innerText()), '…y lo que el gestor tenía desplegado sigue abierto, con esa persona en «sin avisos»');
+  await sql`update public.suscripciones_avisos set activa = true, desactivada_en = null, motivo_baja = null where person_id = 'esteban-jon' and endpoint like '%/ok/vivo'`;
+  await volver();
+  ok(await hasta(async () => (await conAv()) === n0), 'sin recargar: aparece una suscripción nueva y vuelve a «con avisos»');
+  { const r = await pg.request.get(`${APP}/api/gestion/activacion`); ok(r.ok() && (await r.json()).grupos?.avisos?.length === 2, 'API del recuadro: responde a un gestor'); const a = await fetch(`${APP}/api/gestion/activacion`); ok(a.status === 401 || a.status === 403, `API del recuadro: sin sesión no responde (${a.status})`); }
   ok(!(await pg.getByTestId('desactivar').isVisible()), '«Desactivar» no está a la vista: va dentro de «Más opciones»');
   await pg.getByTestId('mas-opciones').locator('summary').click();
   ok(await visto(pg.getByTestId('desactivar')), 'con «Desactivar» dentro de «Más opciones»');

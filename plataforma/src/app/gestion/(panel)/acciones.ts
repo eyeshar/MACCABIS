@@ -12,7 +12,7 @@ import type { DatosPedido, Resultado } from "@/components/FormularioPedido";
 
 // ---------- Jugadores ----------
 export async function guardarJugador(jugadorId: string, _prev: string | null, form: FormData): Promise<string | null> {
-  const { supabase } = await exigirGestor();
+  const { supabase, nombre: gestor } = await exigirGestor();
   const telefono = String(form.get("telefono") ?? "").trim();
   if (telefono && !/^\+?[0-9 ]{9,16}$/.test(telefono)) return "El teléfono solo puede llevar números, espacios y un + delante.";
   const email = String(form.get("email") ?? "").trim().toLowerCase();
@@ -50,6 +50,20 @@ export async function guardarJugador(jugadorId: string, _prev: string | null, fo
     rol: String(form.get("rol") ?? "jugador"),
   }).eq("id", jugadorId);
   if (error) return `No se pudo guardar: ${error.message}`;
+
+  // D158: «Reserva» vive en jugadores_privado (solo gestores). Solo se escribe si cambia, para no crear fichas privadas
+  // vacías ni pisar «Último cambio» sin motivo.
+  const reserva = form.get("reserva") === "on";
+  const { data: fila, error: errorFila } = await supabase.from("jugadores").select("person_id").eq("id", jugadorId).single();
+  if (errorFila) return `No se pudo guardar la marca «Reserva»: ${errorFila.message}`;
+  const { data: priv } = await supabase.from("jugadores_privado").select("reserva").eq("person_id", fila.person_id).maybeSingle();
+  if (!!priv?.reserva !== reserva) {
+    const { error: errorReserva } = priv
+      ? await supabase.from("jugadores_privado").update({ reserva, cambiado_en: new Date().toISOString(), cambiado_por_nombre: gestor }).eq("person_id", fila.person_id)
+      : await supabase.from("jugadores_privado").insert({ person_id: fila.person_id, reserva, cambiado_por_nombre: gestor });
+    if (errorReserva) return `No se pudo guardar la marca «Reserva»: ${errorReserva.message}`;
+    revalidatePath("/gestion/convocatoria");
+  }
   revalidatePath("/gestion/jugadores");
   return "Guardado.";
 }

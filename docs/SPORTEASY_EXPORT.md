@@ -106,7 +106,7 @@ Cuadre por persona (con nombres, fuera de git): `privado/sporteasy/cuadre_asiste
 
 ## Qué más del histórico podría entrar (propuesta, no construida)
 
-> **Decisión de Iván (01/11/2026):** la asistencia de 2017/18 a 2024/25 **sí** se carga, una pestaña por temporada en «Asistencia y motivos» (solo gestores), casando por nombre exacto; los antiguos que no casen, en una lista para que decida Iván. Lo demás, no por ahora.
+> **Decisión de Iván (01/11/2026, D166, cargada):** la asistencia de 2018/19 a 2024/25 se carga, una pestaña por temporada en «Asistencia y motivos» (solo gestores), con una persona por id de perfil de SportEasy; los que no casan, como personas históricas y con propuestas para Iván (`privado/sporteasy/propuestas_para_ivan.md`). Lo demás, no por ahora.
 
 | Qué | Qué hay en el export | Valor | Coste | Recomendación |
 |---|---|---|---|---|

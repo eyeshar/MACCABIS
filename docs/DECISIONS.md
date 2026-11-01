@@ -1367,6 +1367,36 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - **Cualquier diferencia nueva sí avisa:** la misma en otra cantidad (si la oficial pasara a otro número), en otro campo o en otro equipo sale como «DIFIERE». Si el Ayuntamiento corrige el 16, el desfase desaparece y las conocidas dejan de aparecer solas.
 - **Pruebas:** `pruebas:clasificacion-oficial` (la J1 conocida no avisa; 73 en vez de 71 sí; una diferencia en otro equipo sí; sin la lista, el caso real sigue diciendo «DIFIERE»).
 
+## D166 — Asistencia histórica 2018/19–2024/25 desde el export de SportEasy: una persona por id de perfil (Iván, 01/11/2026, `feat/asistencia-historica`) — COMPLETA D82, D116 y D161
+
+**Contexto:** el export completo de SportEasy (01/11/2026, `docs/SPORTEASY_EXPORT.md`) trae la asistencia evento a evento desde 2017/18. Iván decidió cargar 2018/19–2024/25 (2017/18 solo tiene 3 eventos, ninguno de entreno ni de liga; 2025/26 no se toca, opción 1) en «Asistencia y motivos», una pestaña por temporada, solo gestores.
+
+**Decisión de Iván:**
+- **Identidad = id de perfil de SportEasy** (`detalle.attendees[].results[].profile.id`), estable entre temporadas. El nombre no une temporadas.
+- **Casados:** por `diccionario_sporteasy` (copia del real) y `scripts/estadisticas/nombres_sporteasy.json` (nombre exacto), y por nombre completo igual al del diccionario del histórico (`data/diccionario_nombres.json`) ignorando tildes y mayúsculas → su `person_id`.
+- **El resto, persona histórica** `sporteasy-<id de perfil>` con el nombre de SportEasy: sin cuenta, sin ficha y sin acceso; solo existe como filas de `asistencia_motivos` (que leen solo los gestores). La pantalla la marca «histórico».
+- **Propuestas, no adivinanzas:** temporada a temporada, solo contra las personas que estaban en el club esa temporada según la Historia (`data/historia_club.json`, con o sin estadísticas): nombre + primer apellido, o mote registrado esa temporada + primer apellido, sin tildes ni mayúsculas, con **un solo** candidato; coincidir en varias temporadas suma confianza; candidatos distintos según la temporada o más de uno, sin propuesta. Van a `privado/sporteasy/propuestas_para_ivan.md` (fuera de git) para que Iván marque OK/NO. Las aceptadas se vinculan **sin recargar nada** (`npm run db:asistencia-vincular`): se guardan en `privado/sporteasy/vinculos_historico.json`, se regeneran los JSON de `privado/asistencia/` y en la base solo se reescriben las filas de esas personas (si dos perfiles de la misma persona coinciden en un evento, cuenta una vez, con el mejor estado).
+- **Qué cuenta:** entrenos y partidos de campeonato (liga, 2.ª fase y play-off) jugados y no cancelados; amistosos, torneos, «entre nosotros» y «Evento», no. Presente = asistió; ausente con excusa = con excusa; sin excusa o sin responder = sin excusa; lesionado = lesión. La API no trae «no convocado» (quien no estaba convocado no aparece).
+- **Carga:** `node scripts/estadisticas/asistencia_historica.js` escribe `privado/asistencia/asistencia_<t>.json` y las propuestas; `npm run db:asistencia -- <temporadas>` las carga (reemplaza cada temporada entera, repetible). Con D111 (volcado previo, huella de permisos y cuentas antes y después). Sin migración.
+- **Resultado (01/11/2026):** 76 perfiles; 36 casados (28 + 8); 40 personas históricas; 23 de los 40 con propuesta; 475 filas en el real.
+- **Pruebas:** `pruebas:asistencia-historica` (sintética: qué cuenta, casar, proponer, recuento, vínculos) y `pruebas:eventos-pantallas` (pestaña histórica, nota, marca «histórico»).
+## D167 — Pruebas ligeras en local, completas en Actions (Iván, 01/11/2026, `docs/norma-pruebas-ligera`) — AJUSTA D149
+
+**Problema:** la norma de D149 seguía siendo excesiva en la práctica: con varios PR a la vez se pasaban en local tandas de 30–60 suites (cuatro carriles en paralelo, cada uno con su Postgres, PostgREST y la web), y el 01/11 el sistema cortó la batería del PR #3 por falta de memoria (4,2 GB libres de 32).
+
+**Decisión de Iván:**
+1. **En local, por PR: solo las suites de lo tocado más un humo** (`typecheck` + `pruebas:humo`: compila, arranca contra la pila local y abre lo principal). **Nunca la batería completa en local** salvo que Iván lo pida.
+2. **La batería completa la corre GitHub Actions en cada PR y es la puerta para mergear.**
+3. **Las `-real`, solo cuando el cambio escriba en producción o toque permisos.**
+4. **Varios PR en paralelo: nunca más de una suite pesada a la vez en local.**
+
+**Cómo lo aplica `pruebas:rapidas`** (`plataforma/pruebas/infra/corredor.mjs`; Actions no cambia):
+- En local, las pesadas (web y pila) van **en fila** y con un **cerrojo común a todos los worktrees** (`%TEMP%\maccabis-pruebas-pesada`, con quién lo tiene; si su dueño ya no existe, se quita); las de lógica, de dos en dos.
+- **Pantallas: como mucho 4.** Si un fichero compartido llega a más, en local solo el humo y aviso; las pantallas, en Actions.
+- **Migraciones:** solo las suites de la pila que nombran esa migración (o las tocadas en el PR) y las `-real`; ya no arrastran toda la pila ni las de estadísticas (salvo una migración de la liga).
+- **Humo** si se toca la web y ninguna suite elegida la arranca.
+- Tocar la infraestructura de pruebas ya no obliga a `pruebas:completas` en local.
+
 ## D168 — Jugadores de otros equipos: uno por equipo y nombre normalizado, sin el dorsal (Iván, 01/11/2026, `feat/scouting-medias`) — COMPLETA D73 y D162
 
 **Problema:** en Scouting rivales y Liga consolidada el mismo jugador salía en dos líneas cuando cambiaba de dorsal o su nombre venía escrito distinto en las hojas de la FBM (caso real en Vallekas Basket: el mismo jugador con #9 y #16, con y sin tilde, 1 PJ cada uno; también en Tropicaleros, en mayúsculas y con un espacio ante la coma). La vista `v_liga_jugadores` agrupa por nombre exacto. Y quien figura en las hojas sin haber jugado ningún minuto salía con 0 PJ y 0:00.
@@ -1390,19 +1420,3 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - **Liga consolidada:** los líderes abren en **«Por partido»** y el mínimo «Automático» es el mismo (también el de la tabla «Todos los jugadores» al ordenar por una media). El Panel enseña los tres más peligrosos del próximo rival por media («Apellido 8,5/p»).
 - **Pruebas:** `pruebas:jugadores-rivales` (mínimo de partidos y orden de «Más peligrosos»), `pruebas:pantallas` (a 375 px y en escritorio: tarjetas con media y detalle, tabla por media, las cuatro columnas a la vista, desplazamiento lateral en el móvil, orden por encabezado en la URL, líderes «Por partido» por defecto) y `verificar_produccion`.
 
-## D167 — Pruebas ligeras en local, completas en Actions (Iván, 01/11/2026, `docs/norma-pruebas-ligera`) — AJUSTA D149
-
-**Problema:** la norma de D149 seguía siendo excesiva en la práctica: con varios PR a la vez se pasaban en local tandas de 30–60 suites (cuatro carriles en paralelo, cada uno con su Postgres, PostgREST y la web), y el 01/11 el sistema cortó la batería del PR #3 por falta de memoria (4,2 GB libres de 32).
-
-**Decisión de Iván:**
-1. **En local, por PR: solo las suites de lo tocado más un humo** (`typecheck` + `pruebas:humo`: compila, arranca contra la pila local y abre lo principal). **Nunca la batería completa en local** salvo que Iván lo pida.
-2. **La batería completa la corre GitHub Actions en cada PR y es la puerta para mergear.**
-3. **Las `-real`, solo cuando el cambio escriba en producción o toque permisos.**
-4. **Varios PR en paralelo: nunca más de una suite pesada a la vez en local.**
-
-**Cómo lo aplica `pruebas:rapidas`** (`plataforma/pruebas/infra/corredor.mjs`; Actions no cambia):
-- En local, las pesadas (web y pila) van **en fila** y con un **cerrojo común a todos los worktrees** (`%TEMP%\maccabis-pruebas-pesada`, con quién lo tiene; si su dueño ya no existe, se quita); las de lógica, de dos en dos.
-- **Pantallas: como mucho 4.** Si un fichero compartido llega a más, en local solo el humo y aviso; las pantallas, en Actions.
-- **Migraciones:** solo las suites de la pila que nombran esa migración (o las tocadas en el PR) y las `-real`; ya no arrastran toda la pila ni las de estadísticas (salvo una migración de la liga).
-- **Humo** si se toca la web y ninguna suite elegida la arranca.
-- Tocar la infraestructura de pruebas ya no obliga a `pruebas:completas` en local.

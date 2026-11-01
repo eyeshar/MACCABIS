@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 31/10/2026, noche: **tablero y asistencia a mano** (`feat/tablero-asistencia-mano`, D159, PR abierto, sin merge): el selector «Ver» del Tablero trae todos los eventos de la temporada (antes, solo los programados de los 35 días siguientes), «Van / Disponible» con motivo opcional en la barra (también el domingo) y, en la ficha del evento y en «Respuestas y motivos», cambiar la respuesta de cada invitado en un toque (va, duda, no va, sin responder; motivo opcional), «puesta por» el gestor. **Migración `20261031190000_respuesta_a_mano` (función nueva `gestor_responder`) pendiente de aplicar en el real con D111 y el OK de Iván, antes del merge.**_
+_Última actualización: 31/10/2026, noche: **tablero y asistencia a mano** (`feat/tablero-asistencia-mano`, D159, mergeada el 01/11 con el OK de Iván): el selector «Ver» del Tablero trae todos los eventos de la temporada (antes, solo los programados de los 35 días siguientes), «Van / Disponible» con motivo opcional en la barra (también el domingo) y, en la ficha del evento y en «Respuestas y motivos», cambiar la respuesta de cada invitado en un toque (va, duda, no va, sin responder; motivo opcional), «puesta por» el gestor. **Migración `20261031190000_respuesta_a_mano` (función nueva `gestor_responder`) pendiente de aplicar en el real con D111 y el OK de Iván, antes del merge.**_
 
 _Última actualización: 01/11/2026: **Scouting y Liga consolidada para jugadores, con el calendario de la tabla de eventos** (`feat/scouting-liga-fuente-unica`, D162, PR abierto, sin merge; migración `20261031200000` pendiente del OK de Iván para el real)._
 
@@ -27,12 +27,12 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
-## Tablero y asistencia a mano (31/10/2026; D159) — `feat/tablero-asistencia-mano`, PR abierto, SIN merge
+## Tablero y asistencia a mano (31/10/2026; D159) — `feat/tablero-asistencia-mano`, MERGEADA el 01/11/2026 (OK de Iván); migración APLICADA en el real
 
 - **«Ver» con toda la temporada:** el límite era `fecha <= hoy + 35` y solo programados. Ahora salen todos los eventos oficiales de 2026/27: próximos domingos, próximos eventos, domingos ya jugados y eventos pasados (los futuros primero).
 - **Barra de acciones:** «Van / Disponible» (también en el domingo) con motivo opcional en texto libre; «No van» sigue con motivo de la lista.
 - **Ficha del evento y «Respuestas y motivos»:** Va · Duda · No va · Sin resp. por invitado, en un toque; con «No va», motivo opcional. Queda `origen gestor`, `puesto_por`, `puesto_por_nombre` y el registro del tablero.
-- **Pendiente (Iván):** aplicar en el real la migración `20261031190000_respuesta_a_mano` (solo crea `gestor_responder`) con las protecciones de D111 **antes** de mergear; después, `npm run pruebas:respuestas-real`.
+- **Aplicada en el real (01/11/2026, OK de Iván, D111):** migración `20261031190000_respuesta_a_mano` (solo crea `gestor_responder`). Volcado previo `privado/backups/2026-11-01_pre-respuesta-a-mano.sql` (2.152.925 bytes, 73 `COPY`); huella de permisos: solo la función nueva (para `authenticated`, no anónimo); suites `-real` antes (81, 47, 51, 34) y después (81, 48 —la nueva comprobación de la función—, 51, 34; los 2 fallos de `inicio-real` son de su foto vieja, paso 8); **28 cuentas antes y después**.
 
 ## Scouting y Liga consolidada para jugadores; su calendario, de la tabla de eventos (01/11/2026; D162) — `feat/scouting-liga-fuente-unica`, PR abierto
 

@@ -61,7 +61,7 @@ const SINT = [
 // Servicio de avisos falso (D127): HTTPS con certificado propio; responde 201 y apunta lo que recibe.
 const dirCert = fs.mkdtempSync(path.join(os.tmpdir(), 'maccabis-push-'));
 const openssl = ['C:/Program Files/Git/usr/bin/openssl.exe', 'C:/Program Files/Git/mingw64/bin/openssl.exe', 'openssl'].find((x) => x === 'openssl' || fs.existsSync(x));
-execFileSync(openssl, ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', path.join(dirCert, 'k.pem'), '-out', path.join(dirCert, 'c.pem'), '-days', '1', '-subj', '/CN=127.0.0.1'], { stdio: 'ignore' });
+execFileSync(openssl, ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', path.join(dirCert, 'k.pem'), '-out', path.join(dirCert, 'c.pem'), '-days', '1', '-subj', '/CN=127.0.0.1'], { stdio: 'ignore', windowsHide: true });
 const recibidos = [];
 const push = https.createServer({ key: fs.readFileSync(path.join(dirCert, 'k.pem')), cert: fs.readFileSync(path.join(dirCert, 'c.pem')) }, (req, res) => { recibidos.push(req.url); req.resume(); req.on('end', () => { res.writeHead(201); res.end(); }); });
 await new Promise((r) => push.listen(PUERTO_PUSH, '127.0.0.1', r));

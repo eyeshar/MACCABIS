@@ -105,6 +105,11 @@ siguen siendo manuales.
   del árbol de la prueba, lo limpia). Si aun así queda algo de ESTE worktree: `npm run pruebas:limpiar` (solo toca lo
   suyo: por la carpeta de bases, por los puertos de su bloque y los Postgres de su `node_modules` sin padre; lo ajeno lo
   nombra y no lo toca). No lo lances con una prueba de este worktree en marcha: también la pararía.
+- **Sin ventanas de consola en Windows:** todo `spawn`/`spawnSync`/`exec`/`execSync`/`execFile`/`execFileSync`/`fork` de
+  `plataforma/pruebas`, `plataforma/scripts`, `scripts/` y `chat-worker` lleva `windowsHide: true` (`npm run pruebas:procesos`
+  falla si falta). Una librería que lanza procesos sin esa opción (embedded-postgres) se arranca dentro de
+  `conVentanasOcultas(() => …)` (`infra/procesos.mjs`). El vigía de Windows no va `detached` (con `detached`, su node recibía
+  una consola nueva y visible).
 - **Postgres nunca se para matando el postmaster** (`taskkill /F`, `process.kill`, `pg.stop()` de embedded-postgres): en
   Windows, si está creando un hijo, ese `postgres.exe --forkchild` se queda suspendido para siempre con el puerto y la
   carpeta de la base. Se para con `pararPostgres(dir)` (`pg_ctl stop`) y, si no se pudo, `barrerPostgres()`

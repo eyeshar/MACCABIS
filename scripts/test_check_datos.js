@@ -13,12 +13,12 @@ const RAIZ = path.resolve(__dirname, '..');
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'maccabis-d134-'));
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
-const git = (...a) => execFileSync('git', a, { cwd: DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const git = (...a) => execFileSync('git', a, { cwd: DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }).trim();
 const intenta = (...a) => { try { git(...a); return true; } catch { return false; } };
 const escribe = (f, t) => { fs.mkdirSync(path.dirname(path.join(DIR, f)), { recursive: true }); fs.writeFileSync(path.join(DIR, f), t); };
 const commit = (msg) => intenta('commit', '-q', '-m', msg);
 const env = { ...process.env, CHECK_DATOS_BASE: 'main' };
-const rama = () => { try { execFileSync('node', ['scripts/check_datos_publicados.js'], { cwd: DIR, env, stdio: 'pipe' }); return true; } catch { return false; } };
+const rama = () => { try { execFileSync('node', ['scripts/check_datos_publicados.js'], { cwd: DIR, env, stdio: 'pipe', windowsHide: true }); return true; } catch { return false; } };
 const LIGA = 'data/liga_2026-27.json';
 
 try {

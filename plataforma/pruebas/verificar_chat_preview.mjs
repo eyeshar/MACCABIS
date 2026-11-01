@@ -30,7 +30,7 @@ const sql = conectar();
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'chat-prev-'));
 const env = { ...process.env }; delete env.VERCEL_TOKEN; delete env.VERCEL_TEAM_ID; // el token viejo del entorno tapa el login de la CLI
 function vcurl(ruta, curlArgs) {
-  const r = spawnSync('npx', ['--yes', 'vercel@latest', 'curl', `${BASE}${ruta}`, '--', '-s', ...curlArgs], { cwd: RAIZ, env, shell: true, encoding: 'utf8', maxBuffer: 1 << 24 });
+  const r = spawnSync('npx', ['--yes', 'vercel@latest', 'curl', `${BASE}${ruta}`, '--', '-s', ...curlArgs], { cwd: RAIZ, env, shell: true, encoding: 'utf8', maxBuffer: 1 << 24, windowsHide: true });
   return r.stdout;
 }
 const sufijo = crypto.randomBytes(4).toString('hex');

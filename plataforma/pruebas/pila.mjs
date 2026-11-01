@@ -23,7 +23,7 @@ import postgres from 'postgres';
 import { SignJWT, jwtVerify } from 'jose';
 import { migrar, semilla } from '../scripts/db.mjs';
 import { PUERTOS as P, exigirLibres } from './infra/puertos.mjs';
-import { lanzar, apuntarProceso, apuntarCarpeta, olvidarCarpeta, apuntarPostgres, olvidarPostgres, matarArbol } from './infra/procesos.mjs';
+import { lanzar, apuntarProceso, apuntarCarpeta, olvidarCarpeta, apuntarPostgres, olvidarPostgres, matarArbol, conVentanasOcultas } from './infra/procesos.mjs';
 import { pararPostgres, barrerPostgres } from './infra/matar.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -49,8 +49,8 @@ export function descargarPostgrest() {
   const tmp = fs.mkdtempSync(path.join(BIN, 'descarga-'));
   try {
     const comprimido = path.join(tmp, fichero);
-    execFileSync('curl', ['-sSfL', '-o', comprimido, `https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/${fichero}`]);
-    execFileSync(win ? path.join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : 'tar', [win ? '-xf' : '-xJf', comprimido, '-C', tmp]);
+    execFileSync('curl', ['-sSfL', '-o', comprimido, `https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/${fichero}`], { windowsHide: true });
+    execFileSync(win ? path.join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : 'tar', [win ? '-xf' : '-xJf', comprimido, '-C', tmp], { windowsHide: true });
     try { fs.renameSync(path.join(tmp, path.basename(exe)), exe); } catch (e) { if (!fs.existsSync(exe)) throw e; }
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
   return exe;
@@ -96,8 +96,9 @@ export async function arrancar({ log = () => {} } = {}) {
   // Su stop (tambien el de su async-exit-hook al salir) mata el postmaster con taskkill /F: en Windows puede dejar un
   // hijo suspendido con el puerto y la carpeta (infra/matar.mjs). Lo para siempre infra/procesos.mjs con pg_ctl.
   pg.stop = async () => {};
-  await pg.initialise();
-  await pg.start();
+  // embedded-postgres lanza initdb y postgres sin windowsHide: sin consola delante, cada uno abria una ventana.
+  await conVentanasOcultas(() => pg.initialise());
+  await conVentanasOcultas(() => pg.start());
   apuntarProceso(pg.process);
   const url = `postgres://postgres:postgres@127.0.0.1:${PUERTOS.pg}/postgres`;
   const sql = postgres(url, { onnotice: () => {}, max: 2 });

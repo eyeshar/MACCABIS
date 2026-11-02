@@ -93,6 +93,8 @@
 .in-p-novas { background: var(--error-fondo); color: var(--error); }
 .in-p-duda { background: #2b2933; color: #d8d4e2; }
 .in-p-responde { background: transparent; border: 1px dashed var(--borde-fuerte); color: var(--tinta-suave); }
+.in-p-noconv { background: #2b2933; color: #d8d4e2; border: 1px solid var(--borde-fuerte); }
+.in-p-lesion { background: var(--info-fondo); color: var(--info-tinta); }
 .in-p-cancelado { background: var(--error-fondo); color: var(--error); text-decoration: line-through; }
 .in-p-pendiente { background: transparent; border: 1px dashed var(--borde-fuerte); color: var(--tinta-suave); }
 

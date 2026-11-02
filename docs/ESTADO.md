@@ -2,6 +2,8 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 02/11/2026: **«Tu próximo partido»** (`feat/inicio-proximo-partido`, D171): la tarjeta del inicio enseña el próximo partido al que el jugador va a ir o puede ir (convocado / va, duda o sin responder); la Agenda, todos con su estado exacto (No convocado ≠ No vas). Equipación: línea única de D160, en singular en la tarjeta._
+
 _Última actualización: 01/11/2026, tarde: **25 temporadas nuevas en la Historia** (`feat/historia-temporadas-sporteasy`, D166): barras de «en el club, sin estadísticas» en 20 personas, a partir de la asistencia de SportEasy y con OK de Iván._
 _Última actualización: 01/11/2026, tarde: **vínculos de la asistencia histórica aplicados en el real** (`feat/asistencia-vinculos`, D166 ampliada): 39 perfiles de SportEasy vinculados a su persona del club, 1 descartado, 0 personas históricas; 3 personas nuevas en «Quién ha pasado por el club» (una «de paso» con nombre); temporadas que faltan en la Historia, propuestas a Iván (sin aplicar)._
 _Última actualización: 01/11/2026, tarde: **«Menos de N partidos» en Scouting y Liga consolidada** (`feat/menos-de-n-partidos`, D169 ampliada): ordenando por una media, arriba los que llegan al mínimo de partidos y debajo, separados, los que no; con el mínimo «Automático» ya no se oculta a nadie._

@@ -3,30 +3,18 @@ import Responder from "@/components/respuestas/Responder";
 import SiVoy from "@/components/respuestas/SiVoy";
 import { ResponderPlan } from "@/app/planes/[id]/AccionesPlan";
 import {
-  enlaceLugar, esPlan, estadoDe, fechaAgenda, fechaTarjeta, hhmm, lugarTexto, nombreCorto, restar20, TEXTO_TIPO, tituloDe,
-  type MiAusencia, type MiRespuesta, type MotivoJugador, type Unidad,
+  enlaceLugar, esPlan, fechaAgenda, fechaTarjeta, hhmm, lugarTexto, nombreCorto, pastillaAgenda, restar20, TEXTO_TIPO, tituloDe,
+  type ConvocatoriaMia, type MiAusencia, type MiRespuesta, type MotivoJugador, type Unidad,
 } from "@/lib/respuestas/dominio";
 import { dudaAbierta } from "@/lib/avisos/horario";
 import { TEXTO_POR_DEFECTO_JUGADOR } from "@/lib/disponibilidad/porDefecto";
 
 // Piezas del inicio personal y de la Agenda (D117): la tarjeta de «Te faltan N respuestas» y la fila de «Tu agenda».
 
-export type Convocatorias = { fecha: string; equipos: ("MdA" | "MdL")[] }[];
+export type Convocatorias = ConvocatoriaMia[];
 
-/** Pastilla de estado de una unidad: Convocado, Vas, No vas, Duda, Sin responder (o Cancelado). */
-export function pastillaDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAusencia[], convocatorias: Convocatorias, porDefecto?: ReadonlySet<string>) {
-  const est = estadoDe(u, respuestas, ausencias, porDefecto);
-  if (est.clase === "cancelado") return { clase: "cancelado", texto: "Cancelado" };
-  if (u.tipo === "domingo") {
-    const c = convocatorias.find((x) => x.fecha === u.fecha);
-    if (c?.equipos.length) return { clase: "convocado", texto: `Convocado · ${c.equipos.join(" y ")}` };
-  }
-  if (est.clase === "vas") return { clase: "vas", texto: est.texto };
-  if (est.clase === "duda") return { clase: "duda", texto: "Duda" };
-  if (est.clase === "defecto") return { clase: "novas", texto: est.texto };
-  if (est.clase === "novas" || est.clase === "ausente") return { clase: "novas", texto: est.clase === "ausente" ? est.texto : "No vas" };
-  return { clase: "responde", texto: "Sin responder" };
-}
+/** Pastilla de estado de una unidad en la Agenda (D171): Convocado, No convocado, Vas, No vas, Duda, Sin responder, Lesión (o Cancelado). */
+export const pastillaDe = pastillaAgenda;
 
 /** Horas de una unidad: la de empezar (o las de los dos partidos) y la quedada (siempre 20 min antes, D98). */
 export function horasDe(u: Unidad) {

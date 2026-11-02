@@ -1425,3 +1425,20 @@ Procedimiento: `docs/RUTINAS/B_CALENDARIO.md`.
 - **Ampliación (Iván, 01/11/2026, `feat/menos-de-n-partidos`):** en las tablas de Scouting y de «Todos los jugadores» (Liga consolidada), al ordenar por una media, **primero los que llegan al mínimo** y **debajo, tras un separador «Menos de N partidos»**, los que no (cada parte en su orden). Con el mínimo «Automático» ya no se oculta a nadie; con un mínimo elegido a mano (2, 3, 5) se sigue filtrando. Si el mínimo cambia de un equipo a otro, el separador dice «Menos de los partidos mínimos de su equipo»; ordenando por TL%, también «o de 3 tiros libres intentados». Por un total (PTS, PJ…), sin separador (`separarPorMinimo`, `textoMenos` en `ordenLideres.ts`; `pruebas:orden` y `pruebas:pantallas`).
 - **Pruebas:** `pruebas:jugadores-rivales` (mínimo de partidos y orden de «Más peligrosos»), `pruebas:pantallas` (a 375 px y en escritorio: tarjetas con media y detalle, tabla por media, las cuatro columnas a la vista, desplazamiento lateral en el móvil, orden por encabezado en la URL, líderes «Por partido» por defecto) y `verificar_produccion`.
 
+## D171 — «Tu próximo partido»: el próximo partido al que el jugador VA A IR o PUEDE IR (Iván, 02/11/2026, `feat/inicio-proximo-partido`) — COMPLETA D117 y D160
+
+**Problema:** la tarjeta del inicio enseñaba el próximo domingo con partido aunque el jugador no jugara. Caso real (Víctor Martínez Martínez, MdL del 8/11 contra Trascendedores): la tarjeta decía «No vas», pero no estaba en la convocatoria aprobada. Mirado en el real, en solo lectura (02/11): tenía respuesta «no» con motivo «otro» **puesta por un gestor el 26/10**, y no figuraba en los 8 del MdL de la convocatoria aprobada el 31/10. Las dos cosas eran ciertas; «No vas» tapaba la importante (no convocado).
+
+**Regla (decisión de Iván):** la tarjeta enseña el próximo partido al que el jugador **va a ir o puede ir**:
+- **Con la convocatoria aprobada** de ese domingo: solo si está **convocado** (a ese equipo).
+- **Sin convocatoria aún:** solo si su respuesta es «va», «duda» o «sin responder» (en este último caso, con el botón para responder bien visible).
+- **«No va», no convocado, o de baja/lesión** (ausencia por periodo): ese partido NO sale; se salta al siguiente que cumpla. Si el primer domingo se salta, una línea pequeña arriba: «Este domingo no juegas (no convocado)», «(has dicho que no vas)» o «(estás de baja)»; con la convocatoria aprobada manda ella, también si el jugador respondió «no». Si el domingo saltado queda a más de una semana, la línea lleva su fecha.
+- **Si no queda ninguno:** «No tienes partidos próximos» con enlace a la Agenda.
+
+**Agenda y calendario:** siguen enseñando **todos** los partidos y entrenos con su estado exacto: **Convocado · No convocado · Vas · No vas · Duda · Sin responder · Lesión**. «No convocado» y «No vas» **nunca se confunden**: en un domingo con la convocatoria aprobada manda ella («No convocado», aunque haya dicho que no); la página del domingo igual («No estás convocado este domingo», con su respuesta aparte). «Lesión» sale con una ausencia por lesión o un «no» con motivo lesión.
+
+**Equipación en la tarjeta:** la misma línea única de D160 (`avisoPartido().convocatoria`), **en singular** en la tarjeta personal («Lleva la amarilla por si acaso»); convocatoria, WhatsApp y avisos al grupo siguen en plural («Llevad…»). Sin el cuadro de aviso de choque aparte: la línea ya dice quién cambia.
+
+**Cómo:** funciones puras en `src/lib/respuestas/dominio.ts` (`situacionPartido`, `proximoPartido`, `textoSalto`, `pastillaProximo`, `pastillaAgenda`); `InicioPersonal` y `piezas.tsx` las usan.
+
+**Pruebas:** `pruebas:proximo-partido` (la regla, sintética), `pruebas:inicio-proximo-partido` (convocado, no convocado con «no» —el caso Víctor—, no va, sin convocatoria con botón para responder, de baja, sin partidos próximos, Agenda con cada estado, 375 px); actualizadas `pruebas:inicio-personal`, `pruebas:domingo` y `pruebas:avisos` a la regla nueva.

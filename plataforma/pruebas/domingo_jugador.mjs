@@ -106,10 +106,11 @@ try {
   const imp = await (await api('ultima_importacion_respuestas', {}, P['galan-domingo-guillermo'].token)).json();
   ok(typeof imp === 'string' && !Number.isNaN(Date.parse(imp)), 'la hora de la última importación (solo la hora)');
 
-  console.log('\n== No vas');
+  console.log('\n== No convocado con «no» a los dos (D171)');
   const pn = await e.sesion('noe@pruebas.local', 375);
   await pn.goto(URL_D);
-  ok((await pn.getByTestId('situacion').innerText()) === 'No vas', '«No vas»');
+  // D171: con la convocatoria aprobada sin él manda ella («No convocado» y «No vas» no se confunden); su respuesta sale aparte.
+  ok((await pn.getByTestId('situacion').innerText()) === 'No estás convocado este domingo', 'aprobada sin él y con «no» a los dos: «No estás convocado este domingo», no «No vas»');
   ok((await pn.getByTestId('respuestas-apagadas').innerText()).includes('Tu respuesta: no al MdA · no al MdL') && !/lesi/i.test(await pn.locator('main').innerText()), '«Tu respuesta: no al MdA · no al MdL» (sin su motivo en esta página)');
   await foto(pn, 'domingo_no_vas_375');
 

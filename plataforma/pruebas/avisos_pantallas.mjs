@@ -143,8 +143,9 @@ try {
     const aMdA = proxReal('MDA'), aMdL = proxReal('MDL'), iMdA = proxInicio('MDA'), iMdL = proxInicio('MDL');
     ok((await zona.locator('.in-partido-uno').count()) === 1, 'Mi zona: solo el proximo partido de SU equipo (ficha MdA)');
     ok((await zona.textContent()).includes(bonito(iMdA.rival)) && !(await zona.textContent()).includes(bonito(iMdL.rival)), `Mi zona: el MdA contra ${bonito(iMdA.rival)} y no el de MdL`);
-    ok((await zona.locator('.eq-aviso').count()) === (eti(avisoInicio('MDA')) ? 1 : 0), 'Mi zona: aviso si y solo si el proximo rival de MdA choca', String(await zona.locator('.eq-aviso').count()));
-    if (eti(avisoInicio('MDA'))) ok((await zona.locator('.eq-aviso').textContent()).includes('Coinciden colores: cambia') && (await zona.locator('.eq-aviso').getAttribute('data-tipo')) === 'cambian_ellos', 'Mi zona: aviso informativo "cambian ellos" (somos locales)');
+    // D171/D160: la tarjeta personal lleva la línea única de equipación (en singular), no el cuadro de aviso aparte.
+    const lineaEq = await zona.getByTestId('linea-equipacion').first().textContent();
+    ok((await zona.locator('.eq-aviso').count()) === 0 && /Lleva la amarilla por si acaso.$/.test(lineaEq) && (eti(avisoInicio('MDA')) ? /Coinciden colores: cambia/.test(lineaEq) : /Jugamos de negro/.test(lineaEq)), 'Mi zona: línea única de equipación; «Coinciden colores» si y solo si el próximo rival de MdA choca', lineaEq);
     ok((await zona.locator('[data-testid="color-rival-inicio"]').first().textContent()).includes('camiseta'), 'Mi zona: color del rival visible (aparte de «Te pones»)');
     ok(!/camiseta (negro|blanco|amarillo|rojo)/.test(await pj.locator('main').innerText()) && !/\((negro|blanco|amarillo|rojo)\)/.test(await pj.locator('main').innerText()), 'Mi zona: ningún «camiseta negro» ni color suelto sin concordar');
     ok(await sinDesbordar(pj), 'Mi zona: sin desbordamiento horizontal');

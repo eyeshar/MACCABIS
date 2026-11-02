@@ -10,8 +10,13 @@ export type FilaResumen = {
   fueron: number; total: number; con_excusa: number; sin_excusa: number; no_convocado: number; lesion: number;
 };
 /** Lo que cuenta de un evento pasado de la plataforma para una persona: si fue y, si no, por que. */
-export type AsistenciaEvento = { person_id: string; ambito: "partidos" | "entrenos"; fue: boolean; motivo: string | null };
-export type EventoAsistencia = { id: string; fecha: string; tipo: string; oficial?: boolean };
+export type AsistenciaEvento = {
+  person_id: string; ambito: "partidos" | "entrenos"; fue: boolean; motivo: string | null;
+  /** Para la pantalla rediseñada (D170): el evento, su fecha, equipo y título, y el estado en los cinco de la tabla nueva. */
+  evento_id: string; fecha: string; equipo: "MdA" | "MdL" | null; titulo: string | null;
+  estado: "fue" | "con_excusa" | "sin_excusa" | "lesion";
+};
+export type EventoAsistencia = { id: string; fecha: string; tipo: string; oficial?: boolean; equipo?: string | null; titulo?: string | null };
 export type RespuestaEvento = { evento_id: string; person_id: string; respuesta: "va" | "duda" | "no" | "sin_responder"; motivo: Motivo | null };
 
 /** Primer dia que cuenta la plataforma; lo anterior sale del export de SportEasy (D161). */
@@ -39,12 +44,16 @@ export function asistenciaPlataforma(eventos: EventoAsistencia[], respuestas: Re
     const ef = efectivaEn(e, r.person_id, r.respuesta, defecto);
     if (ef.fuera) continue;
     const ambito = esEntreno(e) ? "entrenos" : "partidos";
-    if (ef.respuesta === "va") { res.push({ person_id: r.person_id, ambito, fue: true, motivo: null }); continue; }
+    const base = { person_id: r.person_id, ambito, evento_id: e.id, fecha: e.fecha, equipo: e.equipo === "MdA" || e.equipo === "MdL" ? e.equipo : null, titulo: e.titulo ?? null } as const;
+    if (ef.respuesta === "va") { res.push({ ...base, fue: true, motivo: null, estado: "fue" }); continue; }
     const motivo = ef.respuesta !== "no" ? "sin responder"
       : r.motivo ? TEXTO_NUEVO[r.motivo]
       : ef.por === "ausencia" ? (TEXTO_NUEVO[ef.ausencia?.motivo as Motivo] ?? "ausencia")
       : ef.por === "defecto" ? "no suele entrenar" : "no va, sin motivo";
-    res.push({ person_id: r.person_id, ambito, fue: false, motivo });
+    // Estado en la tabla nueva: lesión si el motivo (o la ausencia) lo es; «no» con cualquier otro motivo = con excusa
+    // (avisó); «sin responder» o «duda» en un evento ya pasado = sin excusa.
+    const estado = ef.respuesta !== "no" ? "sin_excusa" : motivo === "lesión" ? "lesion" : "con_excusa";
+    res.push({ ...base, fue: false, motivo, estado });
   }
   return res;
 }

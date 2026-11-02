@@ -330,5 +330,5 @@ if (require.main === module) {
   }
 }
 
-module.exports = { TEMPORADAS, PREFIJO, F_VINCULOS, F_DESCARTES, leerDecisiones, norm, claseEvento, estado, leerExport, candidatos, motesDeTemporada, resolver, contar,
+module.exports = { TEMPORADAS, PREFIJO, nombreSE, F_VINCULOS, F_DESCARTES, leerDecisiones, norm, claseEvento, estado, leerExport, candidatos, motesDeTemporada, resolver, contar,
   informe, calcular, cargarEntradas, escribir, leerAceptadas };

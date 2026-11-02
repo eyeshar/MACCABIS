@@ -25,19 +25,22 @@ export type PartidoCalendario = {
 
 export type DatosLiga = {
   jugadores: JugadorLiga[];
+  filas: FilaHoja[];            // las hojas partido a partido (los picos de las claves, D174)
   clasificacion: FilaClasificacion[];
   calendario: PartidoCalendario[];
   hoy: string;
 };
 
 /** Filas de las hojas de la temporada, partido a partido (la API da como mucho 1000 por consulta: se pide por paginas). */
-async function filasHojas(supabase: SupabaseClient): Promise<FilaHoja[]> {
+async function filasHojas(supabase: SupabaseClient, grupos?: string[]): Promise<FilaHoja[]> {
   const PAGINA = 1000;
   const out: FilaHoja[] = [];
   for (let desde = 0; ; desde += PAGINA) {
-    const { data, error } = await supabase.from("liga_estadisticas_jugador")
+    let q = supabase.from("liga_estadisticas_jugador")
       .select("id, partido_id, equipo, dorsal, nombre, segundos, pts, p2a, p3a, tla, tli, faltas, liga_partidos!inner(temporada, grupo, jornada)")
-      .eq("liga_partidos.temporada", TEMPORADA).order("id").range(desde, desde + PAGINA - 1);
+      .eq("liga_partidos.temporada", TEMPORADA);
+    if (grupos) q = q.in("liga_partidos.grupo", grupos);
+    const { data, error } = await q.order("id").range(desde, desde + PAGINA - 1);
     if (error) throw new Error(error.message);
     for (const { liga_partidos: p, id: _id, ...f } of (data ?? []) as unknown as (Omit<FilaHoja, "grupo" | "jornada"> & { id: string; liga_partidos: { grupo: string; jornada: number } })[]) {
       out.push({ ...f, grupo: p.grupo, jornada: p.jornada });
@@ -46,9 +49,10 @@ async function filasHojas(supabase: SupabaseClient): Promise<FilaHoja[]> {
   }
 }
 
-export async function cargarLiga(supabase: SupabaseClient): Promise<DatosLiga> {
+/** `grupos`: solo las hojas de esos grupos (las tarjetas de un solo partido no necesitan los dos). */
+export async function cargarLiga(supabase: SupabaseClient, grupos?: string[]): Promise<DatosLiga> {
   const [filas, c, fuente] = await Promise.all([
-    filasHojas(supabase),
+    filasHojas(supabase, grupos),
     supabase.from("liga_clasificacion").select("grupo, pos, equipo, nuestro, pj, g, p, pf, pc, pts, pts_fuente").eq("temporada", TEMPORADA).order("grupo").order("pos"),
     cargarFuente(),
   ]);
@@ -57,6 +61,7 @@ export async function cargarLiga(supabase: SupabaseClient): Promise<DatosLiga> {
   return {
     // D168: un jugador por equipo y nombre normalizado (el dorsal no es identidad); quien no ha jugado ningun minuto no sale.
     jugadores: agruparJugadores(filas).jugadores,
+    filas,
     clasificacion,
     calendario: calendarioDeEventos(fuente, clasificacion),
     hoy: new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }),

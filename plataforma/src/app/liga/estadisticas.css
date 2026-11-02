@@ -274,7 +274,7 @@ a.e-m-enlace:hover, a.e-m-enlace:focus-visible { color: var(--c-amarillo); text-
 .e-pt-eq.e-gan { font-weight: 800; }
 .e-pt-marcador { font-family: var(--f-cifras); font-size: 28px; font-weight: 700; background: var(--fondo); padding: 6px 14px; border-radius: 10px; white-space: nowrap; }
 .e-pt-h3 { font-family: var(--f-titulos); font-size: 17px; margin: 16px 0 8px; }
-.e-pt-gestores { margin-top: 10px; }
+.e-pt-rival { margin-top: 10px; }
 .e-tabla-pt td:first-child { white-space: normal; }
 @media (max-width: 640px) {
   .e-pt-eq { font-size: 17px; }

@@ -10,13 +10,14 @@ import { LIGA, NUESTRO_DE, TEMPORADA_LIGA, hrefEquipo, partidoPorId, type EstEqu
 import { bonito, mmss } from "@/lib/jugadoresLiga";
 import { partidosCalendario } from "@/lib/publico";
 import { cargarFuente } from "@/lib/eventos/fuente";
-import { esGestorActual, sesionActual } from "@/lib/sesion";
+import { puedeVerLigaActual, sesionActual } from "@/lib/sesion";
 import { diaLargo } from "@/lib/dias";
 
 // Pagina de un partido de la liga (D129): equipos (enlazados a su ficha), fecha, pista, marcador, parciales por cuarto
 // (actas, solo en los partidos de MdA y MdL) y estadisticas POR EQUIPO de la hoja. En los partidos de MdA o MdL, ademas,
 // el boxscore de los nuestros (el mismo de la pestaña Equipo). Los datos POR JUGADOR de los rivales son de terceros (D73):
-// solo los ve un gestor con sesion, leidos de Supabase con su RLS (como Scouting); a nadie mas le llega nada.
+// solo los ve quien tiene sesion de jugador con ficha o de gestor (D162, D174), como Scouting: misma comprobacion
+// (puedeVerLigaActual) y leidos de Supabase con su RLS. Sin sesion no llega nada: ni la seccion ni los datos en el HTML.
 export const dynamic = "force-dynamic";
 
 const nombreGrupo = (g: Grupo) => `Grupo ${g.slice(1)} (${NUESTRO_DE[g]})`;
@@ -36,9 +37,9 @@ export async function generateMetadata({ params }: { params: Promise<{ temporada
 
 type FilaRival = { equipo: string; dorsal: string; nombre: string; segundos: number; pts: number; p2a: number; p3a: number; tla: number; tli: number; faltas: number };
 
-/** Por jugador de los equipos que no son nuestros, SOLO para gestores (RLS de liga_partidos y liga_estadisticas_jugador). */
+/** Por jugador de los equipos que no son nuestros, SOLO con sesion (RLS de liga_partidos y liga_estadisticas_jugador, D162). */
 async function rivalesPorJugador(grupo: Grupo, r: ResultadoLiga): Promise<FilaRival[] | null> {
-  if (!(await esGestorActual())) return null;
+  if (!(await puedeVerLigaActual())) return null;
   const { supabase } = await sesionActual();
   if (!supabase) return null;
   const { data: p } = await supabase.from("liga_partidos").select("id")
@@ -121,6 +122,7 @@ export default async function PaginaPartido({ params }: { params: Promise<{ temp
   const cuartos = conHoja && sp?.q_us?.length && sp.q_them?.length === sp.q_us.length
     ? { local: nosLocal ? sp.q_us : sp.q_them, visitante: nosLocal ? sp.q_them : sp.q_us }
     : null;
+  const conSesion = await puedeVerLigaActual();
   const rivales = conHoja ? await rivalesPorJugador(grupo, r) : null;
   const pista = cal?.campo ? `Moratalaz · pista ${cal.campo}` : sp?.pista ? sp.pista : null;
 
@@ -179,10 +181,9 @@ export default async function PaginaPartido({ params }: { params: Promise<{ temp
           )}
 
           {rivales && (
-            <section className="e-pt-gestores" data-testid="rival-por-jugador-seccion" aria-label="Rival por jugador, solo gestores">
-              <SecH titulo="Rival por jugador · solo gestores" tag="D73" />
-              <div className="e-aviso"><b>Solo gestores.</b> Datos por jugador de otros equipos: son de terceros y no se publican ni se enseñan a los jugadores.</div>
-              {rivales.length === 0 && <Nota>No hay datos por jugador cargados de este partido (<code>npm run db:liga</code>).</Nota>}
+            <section className="e-pt-rival" data-testid="rival-por-jugador-seccion" aria-label="Rival por jugador">
+              <SecH titulo="Rival por jugador" tag="con sesión" />
+              {rivales.length === 0 && <Nota>No hay datos por jugador cargados de este partido.</Nota>}
               {[r.local, r.visitante].filter((n) => n !== NUESTRO_DE[grupo]).map((n) => {
                 const filas = rivales.filter((j) => j.equipo === n);
                 return filas.length ? <TablaRival key={n} equipo={n} filas={filas} /> : null;
@@ -191,7 +192,7 @@ export default async function PaginaPartido({ params }: { params: Promise<{ temp
           )}
         </>
       )}
-      <div className="e-fuente">Fuente: hojas de estadística de la FBM (app Afición FBM){cuartos ? " y acta oficial del partido" : ""}. Solo datos por equipo{box ? " y de los jugadores de Maccabis" : ""}.</div>
+      <div className="e-fuente">Fuente: hojas de estadística de la FBM (app Afición FBM){cuartos ? " y acta oficial del partido" : ""}. {conSesion ? "Datos por equipo y por jugador (solo con sesión)" : `Datos por equipo${box ? " y de los jugadores de Maccabis" : ""}`}.</div>
     </article>
   );
 }

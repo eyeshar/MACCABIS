@@ -241,14 +241,15 @@ console.log('\n== Página de partido de la liga (D129): por equipo en público; 
   const pag = leer(PAG);
   const sinCom = pag.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '');
   ok(!/^\s*["']use client["']/.test(pag), 'la página de partido es de servidor (los datos por jugador de los rivales no viajan a un componente de cliente)');
-  // La unica lectura de datos por jugador de terceros esta dentro de la funcion que antes comprueba que es gestor.
+  // La unica lectura de datos por jugador de terceros esta dentro de la funcion que antes comprueba la sesion de jugador o
+  // de gestor (D162, D174: la misma comprobacion que Scouting).
   const fn = sinCom.slice(sinCom.indexOf('async function rivalesPorJugador'), sinCom.indexOf('const pct ='));
-  ok(fn.length > 100 && /if \(!\(await esGestorActual\(\)\)\) return null;/.test(fn) && fn.indexOf('esGestorActual') < fn.indexOf('liga_estadisticas_jugador'),
-    'rival por jugador: lo primero es comprobar que es gestor (is_gestor de la sesión); sin sesión de gestor no se consulta nada');
+  ok(fn.length > 100 && /if \(!\(await puedeVerLigaActual\(\)\)\) return null;/.test(fn) && fn.indexOf('puedeVerLigaActual') < fn.indexOf('liga_estadisticas_jugador') && !/esGestorActual/.test(sinCom),
+    'rival por jugador: lo primero es comprobar la sesión de jugador con ficha o de gestor (puedeVerLigaActual, como Scouting); sin sesión no se consulta nada');
   const fuera = sinCom.replace(fn, '');
   ok(!/liga_estadisticas_jugador|liga_partidos|v_liga_jugadores/.test(fuera), 'ninguna otra parte de la página lee datos por jugador de la liga');
-  ok(/from\("liga_estadisticas_jugador"\)/.test(fn) && !/SERVICE_ROLE|service_role|clienteServicio/i.test(sinCom), 'se lee con la sesión del gestor (RLS de gestores, como Scouting), nunca con la clave de servicio');
-  ok(/export const dynamic = "force-dynamic"/.test(pag), 'la página se genera en cada petición (lo del gestor nunca queda en una página cacheada para otros)');
+  ok(/from\("liga_estadisticas_jugador"\)/.test(fn) && !/SERVICE_ROLE|service_role|clienteServicio/i.test(sinCom), 'se lee con la sesión de quien mira (RLS de la liga con sesión, D162, como Scouting), nunca con la clave de servicio');
+  ok(/export const dynamic = "force-dynamic"/.test(pag), 'la página se genera en cada petición (lo de la sesión nunca queda en una página cacheada para otros)');
   // El resto de la Liga pública no lee nada por jugador de la liga (solo el JSON por equipo y las temporadas públicas).
   const ligaPub = ['src/app/liga', 'src/components/liga', 'src/lib/estadisticas', 'src/components/inicio', 'src/app/page.tsx', 'src/components/web']
     .flatMap((d) => { const b = path.join(PLAT, d); return !fs.existsSync(b) ? [] : fs.statSync(b).isFile() ? [b] : repoTodo(b); })
@@ -261,6 +262,11 @@ console.log('\n== Página de partido de la liga (D129): por equipo en público; 
   const clavesEst = new Set(res.filter((r) => r.est).flatMap((r) => [r.est.local, r.est.visitante].flatMap((e) => Object.keys(e))));
   ok(res.length > 0 && res.every((r) => r.id) && [...clavesEst].every((k) => ['pts', 't2', 't3', 'tl', 'tl_int', 'faltas'].includes(k)),
     `cada partido del JSON público lleva su id y solo totales por equipo (${[...clavesEst].join(', ')})`);
+  // D174: las «claves del partido» solo las usan las tres pantallas con sesion (Scouting, Panel e inicio personal).
+  const usanClaves = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && /scouting\/(datos|claves)|liga\/Claves/.test(fs.readFileSync(f, 'utf8')))
+    .map((f) => path.relative(PLAT, f).split(path.sep).join('/')).filter((f) => !/^src\/(lib\/scouting|components\/liga\/Claves)/.test(f)).sort();
+  ok(JSON.stringify(usanClaves) === JSON.stringify(['src/app/gestion/(panel)/page.tsx', 'src/app/liga/scouting/page.tsx', 'src/components/inicio/InicioPersonal.tsx']),
+    'las claves del partido solo se calculan en Scouting, el Panel de gestión y el inicio personal (todas con sesión)', usanClaves.join(', '));
   const pruebaPt = leer('pruebas', 'liga_partidos.mjs');
   ok(/rival-por-jugador-seccion/.test(pruebaPt) && /anonimo/.test(pruebaPt) && /jugador/.test(pruebaPt), 'la prueba de pantallas de la página de partido comprueba que ni anónimos ni jugadores ven «Rival por jugador» (npm run pruebas:liga-partidos)');
 }

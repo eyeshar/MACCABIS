@@ -5,7 +5,7 @@
 //   - anónimo, jugador y una cuenta sin ficha NO leen datos privados, convocatorias ni cambios, ni escriben;
 //   - los 3 gestores sí: leen y escriben datos privados; guardan, aprueban y marcan salidas solo con funciones;
 //   - un cambio a mano exige motivo; nadie borra por la API;
-//   - cambiar tras aprobar devuelve WhatsApp y SportEasy a «pendiente»;
+//   - cambiar tras aprobar devuelve WhatsApp a «pendiente» (SportEasy ya no es una salida, D172);
 //   - mi_convocatoria(): el jugador ve SOLO sus equipos y SOLO de convocatorias aprobadas (ni niveles ni otros).
 //
 //   npm run pruebas:convocatoria-rls
@@ -16,6 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
+import { revertirPosteriores } from './revertir_posteriores.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const MIGS = path.join(AQUI, '..', 'supabase', 'migrations');
@@ -55,6 +56,9 @@ try {
   for (const n of NUEVAS) ok(await tablaExiste(n), `existe public.${n}`);
   const [{ rls }] = await sql`select bool_and(relrowsecurity) rls from pg_class where relname = any(${NUEVAS}) and relnamespace = 'public'::regnamespace`;
   ok(rls === true, 'las 3 tablas tienen RLS');
+  // Antes, en orden inverso, las posteriores con su .revertir.sql: la de D172 (fin de SportEasy) reescribe las funciones de
+  // la convocatoria y quita sus columnas sporteasy_*; si no se deshiciera, al volver a aplicar solo esta quedarían las viejas.
+  await revertirPosteriores(sql, MIGS, MIG.slice(0, 14));
   const antesTablas = (await sql`select count(*)::int n from information_schema.tables where table_schema = 'public'`)[0].n;
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${MIG}.revertir.sql`), 'utf8')));
   const quedan = []; for (const n of NUEVAS) if (await tablaExiste(n)) quedan.push(n);
@@ -171,16 +175,19 @@ try {
   ok(r.status === 200, 'un gestor aprueba', `${r.status} ${error(r)}`);
   r = await rpc('convocatoria_marcar', { p_fecha: fecha, p_que: 'whatsapp' }, tG);
   ok(r.status === 200 && r.datos.whatsapp === 'al_dia', 'WhatsApp copiado → al día');
+  ok(r.status === 200 && Object.keys(r.datos ?? {}).sort().join() === 'aviso,whatsapp', 'y devuelve solo WhatsApp y aviso (nada de SportEasy)', JSON.stringify(r.datos));
   r = await rpc('convocatoria_marcar', { p_fecha: fecha, p_que: 'sporteasy' }, tG);
-  ok(r.status === 200 && r.datos.sporteasy === 'al_dia', 'SportEasy copiado → al día');
+  ok(r.status >= 400 && /salida_no_valida/.test(error(r)), '«SportEasy copiado» ya no es una salida (D172)', `${r.status} ${error(r)}`);
   r = await rpc('convocatoria_marcar', { p_fecha: fecha, p_que: 'aviso_en_espera' }, tG);
-  ok(r.status === 200 && r.datos.aviso === 'en_espera', 'aviso de la web → en espera (interruptor apagado)');
+  ok(r.status === 200 && r.datos.aviso === 'en_espera', 'aviso de la web → en espera');
   r = await rpc('convocatoria_guardar', { p_fecha: fecha, p_jornada: 4, p_equipos: { MdA: [{ person_id: 'sint-01' }], MdL: [{ person_id: 'sint-02' }, { person_id: 'sint-01' }] }, p_dificultad: null, p_accion: 'doblar', p_person: 'sint-01', p_equipo: 'MdL', p_motivo: 'equilibrar', p_nota: 'falta un interior' }, tC);
-  ok(r.status === 200 && r.datos.whatsapp === 'pendiente' && r.datos.sporteasy === 'pendiente' && r.datos.estado === 'aprobada', 'cambiar tras aprobar (con motivo): sigue aprobada y WhatsApp y SportEasy vuelven a «pendiente»', JSON.stringify(r.datos));
+  ok(r.status === 200 && r.datos.whatsapp === 'pendiente' && r.datos.estado === 'aprobada' && !('sporteasy' in r.datos), 'cambiar tras aprobar (con motivo): sigue aprobada y WhatsApp vuelve a «pendiente»', JSON.stringify(r.datos));
+  const colsSE = (await sql`select column_name from information_schema.columns where table_schema = 'public' and table_name = 'convocatorias' and column_name like 'sporteasy%'`).map((x) => x.column_name);
+  ok(colsSE.length === 0, 'convocatorias ya no tiene columnas sporteasy_*', colsSE.join(', '));
   const [cv] = await sql`select whatsapp_base, equipos from public.convocatorias where fecha = ${fecha}`;
   ok(JSON.stringify(cv.whatsapp_base) === JSON.stringify(eq1) && cv.equipos.MdL.length === 2, 'se guarda lo último copiado (para decir qué ha cambiado)');
   const cambios = await sql`select accion, por_nombre, motivo, nota from public.convocatoria_cambios c join public.convocatorias v on v.id = c.convocatoria_id where v.fecha = ${fecha} order by en`;
-  ok(cambios.map((c) => c.accion).join() === 'propuesta,aprobar,whatsapp,sporteasy,aviso,doblar', 'cada paso queda en el registro de cambios', cambios.map((c) => c.accion).join());
+  ok(cambios.map((c) => c.accion).join() === 'propuesta,aprobar,whatsapp,aviso,doblar', 'cada paso queda en el registro de cambios', cambios.map((c) => c.accion).join());
   ok(cambios.at(-1).motivo === 'equilibrar' && cambios.at(-1).nota === 'falta un interior' && cambios.at(-1).por_nombre === 'Carlos', 'con su motivo, su nota y quién lo hizo');
   r = await api(`/convocatoria_cambios?select=id`, { metodo: 'DELETE', token: tG });
   ok(r.status >= 400, 'nadie borra cambios por la API');

@@ -112,18 +112,18 @@ try {
   const authFunciones = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
   // Paso 3 (D99): las del jugador (responder, ausencias, suscripcion), las de gestor (comprueban is_gestor dentro) y las
   // tres internas que solo devuelven lo de quien consulta (_mi_person_id, _mis_eventos, _quien_va).
-  const PASO3 = ['_mi_person_id', '_mis_eventos', '_quien_va', 'alta_suscripcion', 'baja_suscripcion', 'borrar_ausencia', 'cambiar_interruptor', 'cerrar_ausencia',
-    'estado_activacion', 'guardar_ausencia', 'marcar_jornada', 'marcar_sporteasy', 'previsualizar_ausencia', 'responder', 'responder_domingo', 'responder_domingo_por',
-    'responder_por', 'respuestas_web_encendido'];
+  const PASO3 = ['_mi_person_id', '_mis_eventos', '_quien_va', 'alta_suscripcion', 'baja_suscripcion', 'borrar_ausencia', 'cerrar_ausencia',
+    'estado_activacion', 'guardar_ausencia', 'previsualizar_ausencia', 'responder', 'responder_domingo', 'responder_domingo_por',
+    'responder_por'];
   // Convocatoria (D107): las tres de gestor (is_gestor dentro) y mi_convocatoria (solo lo del propio jugador).
   const CONVOCATORIA = ['convocatoria_aprobar', 'convocatoria_guardar', 'convocatoria_marcar', 'mi_convocatoria'];
   // Inicio y planes (D117-D122): planes (comprueban organizador o gestor dentro), su agenda y su posicion (solo lo suyo),
   // el calendario personal, el tablero (is_gestor dentro) y sus grupos publicados.
   const INICIO = ['_mi_agenda', 'borrar_plan', 'calendario_personal', 'cancelar_plan', 'crear_plan', 'editar_plan', 'hacer_oficial', 'marcar_aviso_visto',
     'mi_calendario_regenerar', 'mi_calendario_registrar', 'mi_calendario_version', 'mi_posicion', 'mis_grupos', 'responder_plan', 'tablero_deshacer', 'tablero_responder'];
-  // Pagina del domingo (D128): nombres de la convocatoria aprobada y la hora de la ultima importacion (solo plantilla
-  // activa y gestores, dentro de la funcion).
-  const DOMINGO = ['convocados_del_domingo', 'ultima_importacion_respuestas'];
+  // Pagina del domingo (D128): nombres de la convocatoria aprobada (solo plantilla activa y gestores, dentro de la
+  // funcion). La hora de la ultima importacion de SportEasy (ultima_importacion_respuestas) se borro en D172.
+  const DOMINGO = ['convocados_del_domingo'];
   // Alarma de la tarea de avisos (D141, correccion del 28/10; D145): la llama la barra de Gestion con la sesion del gestor;
   // is_gestor dentro (un jugador recibe 42501) y solo devuelve codigos HTTP y horas de pg_net, ningun dato de personas.
   const AVISOS = ['estado_tarea_avisos'];

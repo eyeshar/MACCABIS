@@ -38,7 +38,6 @@ plataforma/
   scripts/db.mjs            migrar, semilla (plantilla 26/27 + campaña), reservar/vincular gestores
   scripts/cargar_liga.mjs   npm run db:liga: liga de todos los equipos (por jugador, calendario, clasificacion) a Supabase (D73)
   scripts/backup_public.mjs npm run db:backup: copia de los datos de public a privado/backups/ (fuera de git)
-  scripts/importar_correos.mjs   npm run db:correos: correos de SportEasy -> jugadores.email
   scripts/cargar_asistencia.mjs  npm run db:asistencia: privado/asistencia/*.json -> asistencia_motivos (motivos de
                             ausencia, solo gestores, D82)
   scripts/extraer_imagenes_ropa.py   imágenes de las prendas desde el PDF de VIVE (privado/)
@@ -108,14 +107,12 @@ npm run db:semilla
 npm run db:gestor -- correo-de-ivan@... Iván
 npm run db:gestor -- correo-de-carlos@... Carlos
 npm run db:gestor -- correo-de-edu@... Edu
-npm run db:correos -- "C:\ruta\al\export-sporteasy.csv"
 npm run db:estado
 ```
 La semilla crea los 25 de la plantilla (24 jugadores + Carlos) y la campaña "Ropa 2026/27" **cerrada**, sin
 correos. `db:gestor` reserva la plaza de cada gestor por correo (se vincula sola la primera vez que entra).
-`db:correos` lee un fichero exportado de SportEasy (CSV o XLSX, con una columna de correo y una de nombre) y
-rellena `jugadores.email` casando por nombre exacto; lo que no case se lista para revisarlo a mano, nunca se
-adivina. **El fichero no entra en git**: pásalo desde Descargas o `privado/`.
+Los correos de los jugadores se ponen en Gestión → «Jugadores y enlaces» o con `npm run db:correo` (uno a uno). (El
+importador desde el export de SportEasy, `db:correos`, se quitó en D172.)
 
 ### 5. Vercel (la web)
 1. Entra en https://vercel.com con tu cuenta de GitHub → **Add New… → Project** → importa `eyeshar/MACCABIS`.
@@ -165,10 +162,8 @@ límite de envíos de tu proyecto: no se puede saber desde fuera del panel, y va
    Gmail SMTP admite **unos 500 correos al día** por cuenta: de sobra para un club de este tamaño (y es el límite real hoy).
 
 ### 8. Avisos al móvil (paso 3, D99–D104): claves en Vercel y tarea programada
-Estado (08/10/2026): las dos migraciones del paso 3 **ya están aplicadas** en el Supabase real (volcado previo en
-`privado/backups/2026-10-08_pre-paso3.sql`) y el interruptor está **apagado**. Lo que sigue es solo para cuando des el
-OK: claves en Vercel, merge a `main` y tarea programada. El interruptor lo enciende solo Iván desde Gestión → Panel
-(D103), y antes hay que preparar SportEasy para que no notifique (D104, `docs/SPORTEASY.md`).
+Estado: el paso 3 está en producción y las respuestas en la web están **siempre encendidas** (D172: el interruptor
+se quitó con SportEasy). Esto queda como referencia de cómo se configuraron las claves y la tarea programada.
 Las claves **nunca** van al repositorio ni al chat. Ya están generadas en tu `plataforma/.env.local` (las creó
 `npm run avisos:claves`, que no las enseña; si borras ese fichero, vuelve a ejecutarlo y genera unas nuevas).
 
@@ -195,8 +190,7 @@ Las claves **nunca** van al repositorio ni al chat. Ya están generadas en tu `p
 
 **c) La tarea cada 15 minutos (pg_cron + pg_net de Supabase, D101)** — solo tras tu OK, y después del redeploy:
 `npm run avisos:programar` enseña lo que haría; `npm run avisos:programar -- --aplicar` lo aplica (activa pg_cron y
-pg_net, guarda el secreto cifrado en Vault y programa el trabajo); `-- --quitar` lo quita. Con el interruptor
-apagado la tarea solo envía avisos de prueba pendientes: no manda ningún recordatorio.
+pg_net, guarda el secreto cifrado en Vault y programa el trabajo); `-- --quitar` lo quita.
 
 ## Pruebas
 

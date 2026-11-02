@@ -27,7 +27,6 @@ try {
   await sinteticos(sql, [['sint-ana', 'Ana', true, true], ['sint-beto', 'Beto', true, true], ['sint-cira', 'Cira', true, true], ['sint-dani', 'Dani', true, true],
     ['sint-eva', 'Eva', true, true], ['sint-fer', 'Fer', true, true], ['sint-gaby', 'Gaby', true, true], ['sint-hugo', 'Hugo', true, true]]);
   const P = await personas(e.pila, { jugadores: ['ana', 'beto', 'cira', 'dani', 'eva', 'fer', 'gaby', 'hugo'].map((n) => [`sint-${n}`, `${n}@pruebas.local`]) });
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
   const resp = (ev, p, r, motivo = null) => sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, origen) values (${ev.id}, ${p}, ${r}, ${motivo}, 'gestor')`;
   const de = (L, eq) => L.find((x) => x.equipo === eq);
 

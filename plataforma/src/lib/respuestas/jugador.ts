@@ -13,14 +13,6 @@ import { porDefectoMio, type MiDefecto } from "@/lib/disponibilidad/porDefecto";
 const COLS = "id, tipo, equipo, titulo, jornada, rival, rival_texto, es_local, fecha, inicio, fin, quedada, notas, estado, cambio_visible, cambio_visible_en, pista_nombre, pista_nombre_corto, pista_direccion, numero_pista, pista_por_confirmar, pista_motivo, oficial, creado_por, organizador, es_mio, plazas, recordar_un_dia_antes, lugar_nombre, lugar_direccion, lugar_lat, lugar_lng, lugar_enlace, secuencia, actualizado_en";
 const VISTA = "v_mi_agenda";
 
-/** ¿Esta encendido «respuestas en la web»? (sin configurar o sin sesion: no) */
-export const respuestasWebEncendido = cache(async () => {
-  if (!configurado()) return false;
-  const sb = await clienteSesion();
-  const { data } = await sb.rpc("respuestas_web_encendido");
-  return data === true;
-});
-
 export const cargarMisEventos = cache(async (desde: string): Promise<MiEvento[]> => {
   const sb = await clienteSesion();
   const { data, error } = await sb.from(VISTA).select(COLS).gte("fecha", desde).eq("temporada", "2026-27").order("fecha").order("inicio", { nullsFirst: false });
@@ -91,10 +83,8 @@ export const cargarMiDefecto = cache(async (): Promise<MiDefecto | null> => {
   return { no_suele_entrenar: !!d.no_suele_entrenar, quitados: d.quitados ?? [] };
 });
 
-/** D152: los entrenos (de `eventos`) que a el le salen como «No vas (puesto por defecto)». Vacio con las respuestas en
- *  la web apagadas: entonces no hay «Sí voy». */
-export async function misEntrenosPorDefecto(eventos: MiEvento[], respuestas: MiRespuesta[], ausencias: MiAusencia[], encendido: boolean): Promise<Set<string>> {
-  if (!encendido) return new Set();
+/** D152: los entrenos (de `eventos`) que a el le salen como «No vas (puesto por defecto)». */
+export async function misEntrenosPorDefecto(eventos: MiEvento[], respuestas: MiRespuesta[], ausencias: MiAusencia[]): Promise<Set<string>> {
   const mio = await cargarMiDefecto();
   if (!mio?.no_suele_entrenar) return new Set();
   return new Set(eventos.filter((e) => e.estado === "programado"

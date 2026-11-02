@@ -58,7 +58,7 @@ const sufijo = crypto.randomBytes(4).toString('hex');
 const temporales = { usuarios: [], campana: null };
 let correosOriginales = [];
 // Jugadores de verdad del club: crece con el tiempo (altas en "Jugadores" o
-// db:correos/db:gestor), así que se compara contra el total real, no un numero fijo.
+// db:correo/db:gestor), así que se compara contra el total real, no un numero fijo.
 let nJugadoresReales = null;
 const sinMarca = (filas) => filas.map(({ actualizado_en, ...r }) => r);   // la prueba cambia y devuelve el correo de 2 jugadores: solo se mueve su marca de actualizacion
 // Huella de TODAS las tablas de public (menos asistencia_motivos, que se carga a proposito en el paso de D88).
@@ -121,7 +121,7 @@ try {
     const [{ permitido }] = await sql`select public.correo_permitido(${jugadorReal.email}) as permitido`;
     ok(permitido === true, 'correo_permitido(): un correo real de la plantilla esta permitido');
   } else {
-    console.log('  AVISO ningun jugador tiene correo todavia (pendiente de npm run db:correos): se omite esta comprobacion');
+    console.log('  AVISO ningun jugador tiene correo todavia (pendiente de ponerlos en Jugadores): se omite esta comprobacion');
   }
   const correoFuera = `prueba-fuera-${sufijo}@maccabis.invalid`;
   const [{ permitido_fuera }] = await sql`select public.correo_permitido(${correoFuera}) as permitido_fuera`;

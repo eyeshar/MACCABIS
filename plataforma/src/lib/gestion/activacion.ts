@@ -4,11 +4,9 @@ import type { JugadorBasico } from "@/lib/eventos/dominio";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 import { mensajeFaltanEntrar, mensajePidieronNoEntraron, mensajeSinAvisos } from "./mensajesActivacion";
 
-/** Lo que muestra el recuadro «Respuestas en la web» y que se vuelve a pedir cada minuto (la pagina y la API lo comparten). */
+/** Lo que muestra el recuadro «Avisos y accesos» y que se vuelve a pedir cada minuto (la pagina y la API lo comparten). */
 export type EstadoActivacion = {
-  encendido: boolean; encendido_desde: string | null; sporteasy_comprobado: boolean; cambiado_en: string | null; cambiado_por: string | null;
-  jornadas_seguidas: number; plantilla: number; entrados: number; con_avisos: number; se_puede_encender: boolean;
-  minimo_entrados: number; faltan_por_entrar: string[]; puede_manejar: boolean;
+  plantilla: number; entrados: number; con_avisos: number; faltan_por_entrar: string[];
   /** Con cuenta de Auth pero sin haber entrado nunca (pidieron un codigo y no lo usaron); ausente si la migracion D140 no esta aplicada. */
   pidio_codigo?: string[];
 };

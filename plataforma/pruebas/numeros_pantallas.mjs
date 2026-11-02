@@ -40,7 +40,6 @@ try {
     const fecha = f.toISOString().slice(0, 10);
     if (f.getUTCDay() === 0 && fecha !== J3) await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos) values (${fecha}, 2, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'esteban-jon' }, { person_id: 'sint-zoe' }], MdL: [{ person_id: 'sint-ari' }] })})`;
   }
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
 
   const abrir = async (p, id) => { await p.getByTestId(id).click(); };
   const estado = (p, id) => p.getByTestId(id).getAttribute('aria-expanded');
@@ -85,7 +84,7 @@ try {
   ok(await visto(pg.getByTestId('entreno-numeros-no')), 'Panel: el entreno del miércoles tiene sus contadores');
   await pg.getByTestId('entreno-numeros-duda').click();
   ok(/Zoe/.test(await pg.getByTestId('entreno-numeros-lista').innerText()), 'Panel: «dudan» lista a Zoe');
-  // Con el interruptor encendido la tarjeta es una franja compacta (D139): «Faltan por entrar» y «Con avisos», desplegables.
+  // La tarjeta «Avisos y accesos» (D172): «Faltan por entrar» y «Con avisos», desplegables.
   ok(await visto(pg.getByTestId('entrada-numeros-faltan')), 'Panel: «faltan por entrar» desplegable');
   await pg.getByTestId('entrada-numeros-faltan').click();
   ok(await visto(pg.getByTestId('entrada-numeros-lista')), '…con quien falta');

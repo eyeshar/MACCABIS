@@ -48,7 +48,7 @@ export async function opcionesSelector(sb: Cliente): Promise<OpcionSelector[]> {
 
 export type TableroDomingo = {
   vista: "domingo"; fecha: string; jornada: number | null; partidos: (PartidoTablero & { evento_id: string })[]; filas: FilaTablero[];
-  conv: Convocatoria; estado: "sin" | "borrador" | "aprobada" | "cambiada"; entrada: Entrada; registro: Registro[]; encendido: boolean;
+  conv: Convocatoria; estado: "sin" | "borrador" | "aprobada" | "cambiada"; entrada: Entrada; registro: Registro[];
   /** Proyeccion de anotacion (D124). Solo gestores. */
   proyeccion: DatosProyeccion;
 };
@@ -80,14 +80,14 @@ export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise
   return {
     vista: "domingo", fecha: ctx.fecha, jornada: ctx.jornada,
     partidos: ctx.partidos.map((p) => ({ evento_id: p.evento_id, equipo: p.equipo, rival: p.rival ?? "rival por confirmar", inicio: p.inicio, dificultad: p.dificultad.valor })),
-    filas, conv: c?.equipos ?? {}, estado, entrada: entradaDe(ctx), registro, encendido: ctx.encendido,
+    filas, conv: c?.equipos ?? {}, estado, entrada: entradaDe(ctx), registro,
     proyeccion: ctx.proyeccion,
   };
 }
 
 export type TableroEvento = {
   vista: "evento"; evento: { id: string; titulo: string; fecha: string; inicio: string | null; tipo: string; equipo: string };
-  filas: FilaTablero[]; registro: Registro[]; encendido: boolean;
+  filas: FilaTablero[]; registro: Registro[];
   /** D148: quien dijo «voy» sin ficha a un entreno en una pista «solo con ficha» (no está en el tablero). */
   sinFicha?: { pista: string; personas: PersonaNum[] } | null;
 };
@@ -95,10 +95,10 @@ export type TableroEvento = {
 export async function cargarTableroEvento(sb: Cliente, id: string): Promise<TableroEvento | null> {
   const e = await cargarEvento(sb, id);
   if (!e || e.oficial === false) return null;
-  const [jugadores, privados, resp, enc, defecto] = await Promise.all([
+  const [jugadores, privados, resp, defecto] = await Promise.all([
     cargarJugadores(sb), sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel"),
     sb.from("respuestas").select("person_id, respuesta, motivo, origen, puesto_por_nombre").eq("evento_id", id),
-    sb.rpc("respuestas_web_encendido"), cargarDefecto(sb, [id]),
+    cargarDefecto(sb, [id]),
   ]);
   const priv = new Map(((privados.data ?? []) as Privado[]).map((p) => [p.person_id, p]));
   const rs = new Map(((resp.data ?? []) as { person_id: string; respuesta: RespuestaPartido; motivo: string | null; origen: string; puesto_por_nombre: string | null }[]).map((r) => [r.person_id, r]));
@@ -120,7 +120,7 @@ export async function cargarTableroEvento(sb: Cliente, id: string): Promise<Tabl
   });
   const registro = await registroDe(sb, null, [id], new Map(jugadores.map((j) => [j.person_id, j.nombre_visible])));
   const sinFicha = e.solo_con_ficha_en ? { pista: e.solo_con_ficha_en, personas: sinFichaQueVan(e, jugadores, [...rs.values()]) } : null;
-  return { vista: "evento", evento: { id: e.id, titulo: tituloEvento(e), fecha: e.fecha, inicio: e.inicio, tipo: e.tipo, equipo: e.equipo }, filas, registro, encendido: enc.data === true, sinFicha };
+  return { vista: "evento", evento: { id: e.id, titulo: tituloEvento(e), fecha: e.fecha, inicio: e.inicio, tipo: e.tipo, equipo: e.equipo }, filas, registro, sinFicha };
 }
 
 const TEXTO_RESP: Record<string, string> = { va: "Van", duda: "Duda", no: "No van", sin_responder: "Sin responder" };

@@ -7,7 +7,7 @@ import Responder from "@/components/respuestas/Responder";
 import SiVoy from "@/components/respuestas/SiVoy";
 import QuienVaJugador from "@/components/numeros/QuienVa";
 import { dudaAbierta, limiteDudas, madrid, textoLimite } from "@/lib/avisos/horario";
-import { cargarMiEvento, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, misEntrenosPorDefecto, respuestasWebEncendido } from "@/lib/respuestas/jugador";
+import { cargarMiEvento, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, misEntrenosPorDefecto } from "@/lib/respuestas/jugador";
 import {
   ausenciaQueCubre, enlaceLugar, enlaceMapa, fechaLarga, horario, lineaCambio, nombreCorto, pistaTexto, TEXTO_MOTIVO_TODO, TEXTO_TIPO, tituloDe,
   type MotivoJugador,
@@ -20,7 +20,7 @@ export const metadata: Metadata = { title: "Evento · Maccabis", robots: { index
 const TIPO = TEXTO_TIPO;
 
 // Evento del jugador (D99, 3.3): se abre al tocar un aviso. Tipo, fecha, horas y encuentro, pista con mapa, linea
-// amarilla si cambio algo, «¿Vas?» y «Quién va» (solo nombres, D46). Apagado: solo la informacion (3.7).
+// amarilla si cambio algo, «¿Vas?» y «Quién va» (solo nombres, D46).
 export default async function MiEvento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await exigirSesion();
@@ -32,17 +32,17 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
     const delDia = (await cargarMisEventosDelDia(e.fecha)).filter((x) => x.tipo === "liga" && x.estado === "programado");
     if (delDia.length === 2 && String(delDia[0].inicio) !== String(delDia[1].inicio)) redirect(`/mi-zona/domingo/${e.fecha}`);
   }
-  const [encendido, respuestas, ausencias] = await Promise.all([respuestasWebEncendido(), cargarMisRespuestas(), cargarMisAusencias()]);
+  const [respuestas, ausencias] = await Promise.all([cargarMisRespuestas(), cargarMisAusencias()]);
   const r = respuestas.find((x) => x.evento_id === e.id) ?? null;
   const aus = ausenciaQueCubre(e.fecha, ausencias);
   const abierto = e.estado === "programado" && madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00") > new Date();
   const ahora = new Date();
   const conDuda = dudaAbierta(e, ahora);
-  const quien = encendido ? (await cargarQuienVa([e.id])).get(e.id)! : null;
+  const quien = (await cargarQuienVa([e.id])).get(e.id)!;
   const cambio = lineaCambio(e);
   const actual = r && r.respuesta !== "sin_responder" ? r.respuesta : null;
   // D152: «No vas (puesto por defecto)» con «Sí voy» (solo lo suyo, con respuestaEfectiva; nunca se nombra la marca).
-  const porDefecto = abierto && (await misEntrenosPorDefecto([e], respuestas, ausencias, encendido).catch(() => new Set<string>())).has(e.id);
+  const porDefecto = abierto && (await misEntrenosPorDefecto([e], respuestas, ausencias).catch(() => new Set<string>())).has(e.id);
   const etiqueta = e.estado === "cancelado" ? "Cancelado"
     : porDefecto ? TEXTO_POR_DEFECTO_JUGADOR
     : !actual && aus ? `Ausente · ${TEXTO_MOTIVO_TODO[aus.motivo]}`
@@ -71,8 +71,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
 
       <section className="tarjeta rw-vas" aria-labelledby="t-vas">
         <div className="mz-sec-cab"><h2 id="t-vas">¿Vas?</h2><span className={`rw-etiqueta${actual || porDefecto ? "" : " sin"}`}>{etiqueta}</span></div>
-        {encendido ? (
-          abierto && porDefecto ? (
+        {abierto && porDefecto ? (
             <>
               <p style={{ margin: 0 }} data-testid="por-defecto">Te hemos puesto que no vas. Si vienes, cámbialo aquí:</p>
               <SiVoy eventoId={e.id} nombre={nombreCorto(e)} grande />
@@ -85,8 +84,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
               {r?.motivo === "no_confirmo" && <p className="suave pequeno" style={{ margin: 0 }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Si al final puedes, pon «Voy».</p>}
               {r?.origen === "gestor" && r.puesto_por_nombre && <p className="tenue pequeno" style={{ margin: 0 }}>Respuesta puesta por {r.puesto_por_nombre}.</p>}
             </>
-          ) : <p className="suave" style={{ margin: 0 }}>{e.estado === "cancelado" ? "No hace falta que hagas nada." : "El evento ya empezó: no se puede cambiar la respuesta."}</p>
-        ) : <p className="rw-apagado" style={{ margin: 0 }}>Las respuestas en la web están desactivadas.</p>}
+          ) : <p className="suave" style={{ margin: 0 }}>{e.estado === "cancelado" ? "No hace falta que hagas nada." : "El evento ya empezó: no se puede cambiar la respuesta."}</p>}
       </section>
 
       {quien && (
@@ -95,7 +93,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
           <QuienVaJugador quien={quien} />
         </section>
       )}
-      {encendido && <p><Link href="/mi-zona/ausencias/nueva" className="rw-enlace">¿Vas a faltar varios días? Marca una ausencia</Link></p>}
+      <p><Link href="/mi-zona/ausencias/nueva" className="rw-enlace">¿Vas a faltar varios días? Marca una ausencia</Link></p>
     </main>
   );
 }

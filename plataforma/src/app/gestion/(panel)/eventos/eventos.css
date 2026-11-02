@@ -110,14 +110,6 @@ input:disabled, select:disabled { opacity: 0.6; }
 .ev-aviso-cambio .ev-preview img { border-radius: 8px; flex: none; }
 .ev-encuentro { min-height: 44px; display: flex; align-items: center; padding: 0 12px; border: 1px dashed var(--borde-fuerte); border-radius: var(--radio); color: var(--tinta-suave); font-family: var(--f-cifras); }
 .ev-activar { display: flex; flex-direction: column; gap: 12px; }
-.ev-cond { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.ev-cond > li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; }
-.ev-cond-ok { color: var(--c-verde); font-weight: 800; }
-.ev-cond-no { color: var(--tinta-tenue); font-weight: 800; }
-.ev-jornadas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.ev-jornadas button { min-width: 44px; min-height: 44px; border-radius: 8px; border: 1px solid var(--borde-fuerte); background: var(--tarjeta); color: var(--tinta); font: inherit; font-weight: 700; cursor: pointer; }
-.ev-jornadas button[data-estado="limpia"] { background: var(--ok-fondo); color: var(--ok); border-color: var(--ok); }
-.ev-jornadas button[data-estado="con_arreglo"] { background: var(--error-fondo); color: var(--error); border-color: var(--error); }
 .ev-pasos-activar { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .ev-resp-ver { margin-top: 4px; }
 .ev-resp-ver .pequeno { font-weight: 600; text-decoration: underline; }

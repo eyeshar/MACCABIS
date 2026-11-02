@@ -1,15 +1,14 @@
 # RUTINA C — Disponibilidad y convocatoria (procedimiento, v2, 31/10/2026; v1 del 08/10/2026)
 
-> **31/10/2026, D153: SportEasy ya no se usa para nada.** Esta rutina no lee ni escribe en SportEasy. Las respuestas, los
-> motivos y las ausencias se dan y se leen **solo en la web** («respuestas en la web» encendido desde el 26/10, D136). Lo de
-> la fase puente (Importar → Respuestas, la tarea «Maccabis · respuestas de SportEasy», la cola «Copia a SportEasy», el
-> procedimiento de activación) queda abajo, en **«Histórico»**: no son pasos vigentes.
+> **SportEasy no se usa (D153, 31/10/2026; D172, 02/11/2026).** Esta rutina no lee ni escribe en SportEasy. Las respuestas,
+> los motivos y las ausencias se dan y se leen **solo en la web**, que está **siempre encendida** (D172: ya no hay
+> interruptor). Lo de la fase puente (Importar → Respuestas, la tarea «Maccabis · respuestas de SportEasy», la cola «Copia a
+> SportEasy», el procedimiento de activación) queda abajo, en **«Histórico»**: no son pasos vigentes.
 
 Cuándo: lunes y martes (la jornada es el domingo); **la convocatoria del partido se propone el martes por la noche, después de las 20:00, cuando se cierran las dudas (D141)**. Fuente de las respuestas: **la web** (Gestión → Eventos → Respuestas, el tablero y la pantalla de Convocatoria). Reglas: `docs/REGLAS_CONVOCATORIA.md`. Datos privados de plantilla (posición, nivel A–E, dobla): solo en `privado/plantilla_2026-27.csv` y `privado/criterios_convocatoria.md` (nunca a git ni a docs).
 
-## 0. Tarea programada «Maccabis · respuestas de SportEasy»: retirada (D153)
-- **Tiene que estar pausada o borrada.** Lo hace **Iván en su Chrome** (Code no tiene acceso a las tareas programadas). Si sigue activa, no debe ejecutarse: ya no hay nada que importar de SportEasy.
-- Lo que hacía, en «Histórico» (apartado H0).
+## 0. Tarea programada «Maccabis · respuestas de SportEasy»: borrada (D153, D172)
+- **Ya no existe:** la borró Claude el 02/11/2026. Lo que hacía, en «Histórico» (apartado H0).
 
 ## 1. Ver las respuestas (en la web)
 1. Entrar con la sesión de gestor de Iván en `https://maccabis.vercel.app/gestion/eventos` y abrir los eventos de la semana (entreno del miércoles y partidos del domingo de MdA y MdL).
@@ -23,7 +22,7 @@ Cuándo: lunes y martes (la jornada es el domingo); **la convocatoria del partid
 
 ## 3. Recordatorios (salen solos)
 7. Los recordatorios salen solos (lunes 19:00 agrupado; martes 10:00 del partido, solo a quien no ha respondido; **a las 12:00 del día del límite, aviso a quien siga en «duda» (martes 20:00 para el entreno del miércoles y el partido; 24 h antes en los demás eventos), juntado con otro recordatorio de ese día si lo hay**; miércoles 10:00 del entreno). **Al llegar el límite, la «duda» pasa a «no va» (motivo interno «no confirmó», origen «sistema») y el jugador recibe un aviso; puede volver a decir «voy».** Si hace falta uno extra, **«Enviar un recordatorio ahora»** en la pantalla del evento. Horario de los avisos: D155 (nunca de 22:30 a 08:00, hora de Madrid).
-8. **Ya no se marcan jornadas limpias con el interruptor encendido** (D139): la tarjeta del Panel es una franja compacta («encendido desde …», «Con avisos: N/27», «Faltan por entrar» si falta alguien y «Desactivar» dentro de «Más opciones»).
+8. **Ya no se marcan jornadas limpias** (D139; el interruptor se quitó en D172): el Panel tiene la tarjeta «Avisos y accesos» («Con avisos: N/27» y «Faltan por entrar» si falta alguien, con los mensajes para copiar).
 
 Notas: Claude no inventa respuestas ni motivos. Nunca se pide a los jugadores que respondan fuera de la web.
 

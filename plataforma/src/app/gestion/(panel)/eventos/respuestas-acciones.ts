@@ -7,7 +7,7 @@ import { recordatorioManual } from "@/lib/avisos/servidor";
 import { textoSale } from "@/lib/avisos/horario";
 
 // Gestion de las respuestas en la web (D99): «Responder por él», «Visto» de la banda roja, «Enviar un recordatorio
-// ahora» y el interruptor con sus condiciones. Todo con la sesion del gestor: la base (is_gestor) decide.
+// ahora». Todo con la sesion del gestor: la base (is_gestor) decide.
 
 export type R = { ok: true; texto?: string } | { ok: false; error: string };
 const refrescar = (id?: string) => { revalidatePath("/gestion"); if (id) revalidatePath(`/gestion/eventos/${id}/respuestas`); revalidatePath("/", "layout"); };
@@ -58,25 +58,4 @@ export async function recordatorioAhora(eventoId: string): Promise<R> {
   if (!r.avisados) return { ok: true, texto: "No hay nadie a quien recordar (o los avisos no están configurados)." };
   const mas = r.programado && r.programado > new Date() ? ` ${textoSale(r.programado).replace(/^d/, "D")}.` : "";
   return { ok: true, texto: `Recordatorio para ${r.avisados} ${r.avisados === 1 ? "jugador" : "jugadores"}.${mas}` };
-}
-
-// ---------------------------------------------------------------- interruptor (D99.13)
-const ERR: Record<string, string> = { condiciones_sin_cumplir: "Aún no se cumplen las condiciones 1, 2 y 4.", solo_gestores: "Solo los gestores.", solo_responsable: "Solo Iván puede cambiar esto." };
-const err = (m: string) => ERR[Object.keys(ERR).find((k) => m.includes(k)) ?? ""] ?? m;
-
-export async function cambiarInterruptor(encender: boolean): Promise<R> {
-  const { supabase } = await exigirGestor();
-  const { error } = await supabase.rpc("cambiar_interruptor", { p_encender: encender });
-  if (error) return { ok: false, error: err(error.message) };
-  refrescar();
-  revalidatePath("/", "layout");
-  return { ok: true };
-}
-
-export async function marcarJornada(jornada: number, estado: "limpia" | "con_arreglo"): Promise<R> {
-  const { supabase } = await exigirGestor();
-  const { error } = await supabase.rpc("marcar_jornada", { p_jornada: jornada, p_estado: estado });
-  if (error) return { ok: false, error: err(error.message) };
-  refrescar();
-  return { ok: true };
 }

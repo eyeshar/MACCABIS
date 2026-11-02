@@ -1,8 +1,7 @@
 # Prueba en móviles de verdad: instalar la web, entrar y recibir avisos (paso 3, D99)
 
-> Para Iván, en un **iPhone** y un **Android** reales, **con «respuestas en la web» apagado** (no hace falta encenderlo:
-> instalar, activar y el aviso de prueba funcionan apagado, D99.12). Antes: claves en Vercel y redeploy
-> (`plataforma/LEEME.md`, apartado 8). Marca cada casilla; si algo falla, anota el paso y una captura.
+> Para Iván, en un **iPhone** y un **Android** reales (las respuestas en la web están siempre encendidas desde D172; el
+> aviso de prueba no depende de nada más, D99.12). Las claves ya están en Vercel (`plataforma/LEEME.md`, apartado 8). Marca cada casilla; si algo falla, anota el paso y una captura.
 
 ## iPhone (iOS 16.4 o posterior; Safari)
 - [ ] 1. Ajustes → General → Información: la versión de iOS es **16.4 o más** (antes no hay avisos web).

@@ -75,10 +75,10 @@ if (fs.existsSync(dirEst)) {
 console.log('\n== Eventos, respuestas y asistencia (paso 2, D94)');
 const leer = (...r) => fs.readFileSync(path.join(PLAT, ...r), 'utf8');
 const sinComentarios = (t) => t.replace(/--.*$/gm, '');
-const PRIVADAS = ['respuestas', 'ausencias_periodo', 'diccionario_sporteasy', 'importaciones', 'asistencia_resumen', 'asistencia_motivos'];
+const PRIVADAS = ['respuestas', 'ausencias_periodo', 'importaciones', 'asistencia_resumen', 'asistencia_motivos', 'asistencia_eventos'];
 const publicas = ['src/lib/eventos/fuente.ts', 'src/lib/ical.ts', 'src/app/calendario.ics/route.ts', 'src/app/page.tsx', 'src/app/club/page.tsx', 'src/app/privacidad/page.tsx', 'src/components/web/CalendarioPublico.tsx'];
 const lee = publicas.filter((f) => fs.existsSync(path.join(PLAT, f)) && PRIVADAS.some((t) => new RegExp('(from|rpc)\\(["\']' + t + '["\']').test(leer(f))));
-ok(lee.length === 0, `el código público (${publicas.length} ficheros) no toca respuestas, ausencias, diccionario, importaciones ni asistencia`, lee.join(', '));
+ok(lee.length === 0, `el código público (${publicas.length} ficheros) no toca respuestas, ausencias, importaciones ni asistencia`, lee.join(', '));
 const fuente = leer('src/lib/eventos/fuente.ts');
 ok(/v_eventos_publicos/.test(fuente) && !/\.from\("(eventos|pistas|respuestas)"\)/.test(fuente), 'la fuente pública lee solo las vistas públicas, nunca las tablas');
 const mig1 = leer('supabase/migrations/20261007230000_eventos_pistas.sql');

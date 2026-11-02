@@ -8,7 +8,7 @@ import { MOTIVOS, type Motivo } from "@/lib/eventos/dominio";
 
 // Acciones del tablero (D121). Solo gestores (la base lo vuelve a comprobar). Convocar o quitar guarda en la
 // convocatoria con las funciones de siempre (convocatoria_guardar, D107: un solo motivo por grupo, «ajuste manual» por
-// defecto); cambiar respuestas, con gestor_responder (D159: «puesta por <gestor>», motivo opcional, tambien con el interruptor apagado).
+// defecto); cambiar respuestas, con gestor_responder (D159: «puesta por <gestor>», motivo opcional).
 
 export type R = { ok: true; registros?: string[]; aviso?: string } | { ok: false; error: string };
 const refrescar = () => { revalidatePath("/gestion/tablero"); revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/", "layout"); };

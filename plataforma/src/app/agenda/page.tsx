@@ -10,7 +10,7 @@ import { madrid } from "@/lib/avisos/horario";
 import { miEnlace } from "@/lib/calendario/enlace";
 import { hoyMadrid } from "@/lib/dias";
 import {
-  cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas, misEntrenosPorDefecto, respuestasWebEncendido,
+  cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas, misEntrenosPorDefecto,
 } from "@/lib/respuestas/jugador";
 import { hhmm, unidades, type Unidad } from "@/lib/respuestas/dominio";
 import "@/components/inicio/inicio.css";
@@ -22,18 +22,18 @@ export const metadata: Metadata = { title: "Agenda · Maccabis", robots: { index
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
 // Agenda (D117): toda su agenda, oficiales y planes no oficiales (D118), por meses; «Proponer un plan», «Marcar días que
-// no estoy» (con respuestas en la web) y «Tu calendario en el móvil» (D120).
+// no estoy» y «Tu calendario en el móvil» (D120).
 export default async function Agenda() {
   const { supabase } = await exigirSesion();
   const zona = await cargarMiZona();
   if (!zona) return <SinZona />;
   const hoy = hoyMadrid();
   const ahora = new Date();
-  const [encendido, eventos, respuestas, ausencias, convocatorias, grupos, base] = await Promise.all([
-    respuestasWebEncendido(), cargarMisEventos(hoy).catch(() => []), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
+  const [eventos, respuestas, ausencias, convocatorias, grupos, base] = await Promise.all([
+    cargarMisEventos(hoy).catch(() => []), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
     cargarMiConvocatoria().catch(() => []), cargarMisGrupos(), origen(),
   ]);
-  const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias, encendido).catch(() => new Set<string>());
+  const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias).catch(() => new Set<string>());
   const enlace = await miEnlace(supabase, zona.jugador.person_id, base).catch(() => null);
   const abierta = (u: Unidad) => u.eventos.some((e) => e.estado === "programado" && madrid(e.fecha, hhmm(e.inicio) ?? "00:00") > ahora);
   const lista = unidades(eventos).filter((u) => abierta(u) || u.eventos.every((e) => e.estado === "cancelado"));
@@ -46,16 +46,15 @@ export default async function Agenda() {
       <div className="in-sec-cab"><h1>Agenda</h1></div>
       <div className="botones" style={{ marginTop: 0 }}>
         <Link href="/planes/nuevo" className="boton boton-amarillo">Proponer un plan</Link>
-        {encendido && <Link href="/mi-zona/ausencias" className="boton boton-claro"><Calendario size={20} />Marcar días que no estoy</Link>}
+        <Link href="/mi-zona/ausencias" className="boton boton-claro"><Calendario size={20} />Marcar días que no estoy</Link>
       </div>
-      {!encendido && <p className="in-nota">Las respuestas en la web a partidos y entrenos están desactivadas. Los planes no oficiales se responden aquí.</p>}
       <div className="in-cols in-cols-agenda">
         <div className="in-col">
           {[...porMes.entries()].map(([mes, us]) => (
             <section key={mes} className="in-sec" aria-label={`${MESES[+mes.slice(5) - 1]} ${mes.slice(0, 4)}`}>
               <h2>{MESES[+mes.slice(5) - 1]}</h2>
               <div className="in-lista">
-                {us.map((u) => <FilaAgenda key={u.clave} u={u} respuestas={respuestas} ausencias={ausencias} convocatorias={convocatorias} grupo={grupoDe(u)} encendido={encendido} porDefecto={porDefecto} />)}
+                {us.map((u) => <FilaAgenda key={u.clave} u={u} respuestas={respuestas} ausencias={ausencias} convocatorias={convocatorias} grupo={grupoDe(u)} porDefecto={porDefecto} />)}
               </div>
             </section>
           ))}

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Carga INICIAL de los eventos de 2026/27 en Supabase (paso 2, pista E, D94): los 40 partidos de liga que hoy alimentan
 // el calendario publico (data/calendario_2026-27.json), las 4 jornadas de descanso, la serie de entrenos de los
-// miercoles (data/entrenos_2026-27.json) y el diccionario de nombres de SportEasy.
+// miercoles (data/entrenos_2026-27.json).
 //
 //   npm run db:eventos            carga (conexion de .env.local)
 //   npm run db:eventos -- --dry   solo cuenta, sin escribir
@@ -59,8 +59,6 @@ export function entrenosIniciales(ent = leer('data', 'entrenos_2026-27.json'), c
   return filas;
 }
 
-export const diccionarioInicial = () => Object.entries(leer('scripts', 'estadisticas', 'nombres_sporteasy.json').nombres);
-
 export async function cargarEventos(sql, { log = console.log } = {}) {
   const { partidos, descansos } = partidosIniciales();
   const entrenos = entrenosIniciales();
@@ -70,31 +68,23 @@ export async function cargarEventos(sql, { log = console.log } = {}) {
   const antes = await contar();
   await sql.begin(async (tx) => {
     for (const p of partidos) {
-      await tx`insert into public.eventos (clave, tipo, equipo, jornada, rival, es_local, fecha, inicio, fin, pista_id, numero_pista, origen,
-                                           sporteasy_estado, sporteasy_cambio, sporteasy_copiado_en)
+      await tx`insert into public.eventos (clave, tipo, equipo, jornada, rival, es_local, fecha, inicio, fin, pista_id, numero_pista, origen)
                values (${p.clave}, ${p.tipo}, ${p.equipo}, ${p.jornada}, ${p.rival}, ${p.es_local}, ${p.fecha}, ${p.inicio}, ${p.fin},
-                       ${pistas['cdm-moratalaz']}, ${p.numero_pista}, ${p.origen}, 'copiado',
-                       ${p.clave === 'mda-j1' ? 'En SportEasy figura como local; el Ayuntamiento lo da como visitante. Se decidió no tocarlo (02/10/2026).' : null},
-                       '2026-10-02T12:00:00+02:00')
+                       ${pistas['cdm-moratalaz']}, ${p.numero_pista}, ${p.origen})
                on conflict (clave) do nothing`;
     }
     for (const e of entrenos) {
-      await tx`insert into public.eventos (clave, tipo, equipo, titulo, fecha, inicio, fin, pista_id, notas, serie, origen,
-                                           sporteasy_estado, sporteasy_cambio)
+      await tx`insert into public.eventos (clave, tipo, equipo, titulo, fecha, inicio, fin, pista_id, notas, serie, origen)
                values (${e.clave}, ${e.tipo}, ${e.equipo}, ${e.titulo}, ${e.fecha}, ${e.inicio}, ${e.fin},
-                       ${e.pista_slug ? pistas[e.pista_slug] : null}, ${e.notas}, ${e.serie}, ${e.origen},
-                       'pendiente', 'Carga inicial de la serie: comprobar en SportEasy y copiar si falta')
+                       ${e.pista_slug ? pistas[e.pista_slug] : null}, ${e.notas}, ${e.serie}, ${e.origen})
                on conflict (clave) do nothing`;
     }
     for (const d of descansos) {
       await tx`insert into public.descansos (equipo, jornada, fecha) values (${d.equipo}, ${d.jornada}, ${d.fecha}) on conflict do nothing`;
     }
-    for (const [nombre, person] of diccionarioInicial()) {
-      await tx`insert into public.diccionario_sporteasy (nombre_sporteasy, person_id, creado_por) values (${nombre}, ${person}, 'carga inicial') on conflict do nothing`;
-    }
   });
   const despues = await contar();
-  log(`Eventos: ${despues - antes} nuevos (${partidos.length} partidos y ${entrenos.length} entrenos previstos; ${descansos.length} descansos; ${diccionarioInicial().length} nombres de SportEasy). Ya había ${antes}.`);
+  log(`Eventos: ${despues - antes} nuevos (${partidos.length} partidos y ${entrenos.length} entrenos previstos; ${descansos.length} descansos). Ya había ${antes}.`);
   return { partidos: partidos.length, entrenos: entrenos.length, descansos: descansos.length, nuevos: despues - antes };
 }
 

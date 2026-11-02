@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Volver from "@/components/nav/Volver";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import FormAusencia from "@/components/respuestas/FormAusencia";
-import { cargarMisAusencias, cargarMisEventos, respuestasWebEncendido } from "@/lib/respuestas/jugador";
+import { cargarMisAusencias, cargarMisEventos } from "@/lib/respuestas/jugador";
 import { hoyMadrid } from "@/lib/dias";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,6 @@ export const metadata: Metadata = { title: "Editar ausencia · Maccabis", robots
 export default async function EditarAusencia({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   await exigirSesion();
-  if (!(await respuestasWebEncendido())) redirect("/agenda");
   const a = (await cargarMisAusencias()).find((x) => x.id === id);
   if (!a) notFound();
   const hoy = hoyMadrid();

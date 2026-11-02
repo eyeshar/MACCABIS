@@ -14,7 +14,7 @@ import { clasificaciones, temporadaDe } from "@/lib/publico";
 import { fichaPorNombre, hrefPartido, partidoNuestro } from "@/lib/estadisticas/liga";
 import {
   cargarAvisosPersonales, cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas,
-  cargarQuienVa, misEntrenosPorDefecto, respuestasWebEncendido,
+  cargarQuienVa, misEntrenosPorDefecto,
 } from "@/lib/respuestas/jugador";
 import {
   enlaceLugar, esPlan, estadoDe, fechaTitular, hhmm, lugarTexto, pastillaProximo, proximoPartido, restar20, textoSalto, unidades, type MiEvento, type Unidad,
@@ -80,25 +80,23 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const { jugador, campana, pedidos } = zona;
   const equipos = (["MdA", "MdL"] as const).filter((e) => (e === "MdA" ? jugador.ficha_mda : jugador.ficha_mdl));
   const sb = await clienteSesion();
-  const [encendido, eventos, respuestas, ausencias, convocatorias, misGrupos, avisosPersonales, { data: posicion }] = await Promise.all([
-    respuestasWebEncendido(), cargarMisEventos(hoy).catch(() => [] as MiEvento[]), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
+  const [eventos, respuestas, ausencias, convocatorias, misGrupos, avisosPersonales, { data: posicion }] = await Promise.all([
+    cargarMisEventos(hoy).catch(() => [] as MiEvento[]), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
     cargarMiConvocatoria().catch(() => []), cargarMisGrupos(), cargarAvisosPersonales(), sb.rpc("mi_posicion"),
   ]);
   // D152: entrenos que le salen como «No vas (puesto por defecto)» (solo lo suyo; nunca se nombra la marca).
-  const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias, encendido).catch(() => new Set<string>());
+  const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias).catch(() => new Set<string>());
   const abierta = (u: Unidad) => u.eventos.some((e) => e.estado === "programado" && madrid(e.fecha, hhmm(e.inicio) ?? "00:00") > ahora);
   const todas = unidades(eventos);
   const limite = sumarDias(hoy, 14);
 
-  // «Te faltan N respuestas»: encendido, lo que la web pide (14 dias, D102); apagado, la web no pide respuesta a los
-  // eventos oficiales. Los planes no oficiales, siempre (D118).
+  // «Te faltan N respuestas»: lo que la web pide (14 dias, D102); los planes no oficiales, siempre (D118).
   const pendientes = todas.filter((u) => {
     if (!abierta(u)) return false;
     const est = estadoDe(u, respuestas, ausencias, porDefecto);
     if (!est.pendiente) return false;
     if (esPlan(u.eventos[0])) return true;
-    if (u.fecha > limite) return false;
-    return encendido;
+    return u.fecha <= limite;
   });
   const puestosPorDefecto = todas.filter((u) => abierta(u) && u.fecha <= limite && estadoDe(u, respuestas, ausencias, porDefecto).clase === "defecto");
   const conPlazas = pendientes.filter((u) => esPlan(u.eventos[0]) && u.eventos[0].plazas).map((u) => u.eventos[0].id);
@@ -146,7 +144,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
         </div>
         {pendientes.length > 0 && (
           <Carrusel etiqueta="Respuestas que te faltan">
-            {pendientes.map((u) => <TarjetaPendiente key={u.clave} u={u} encendido={encendido} respuestas={respuestas} plazasLlenas={lleno(u.eventos[0])} />)}
+            {pendientes.map((u) => <TarjetaPendiente key={u.clave} u={u} respuestas={respuestas} plazasLlenas={lleno(u.eventos[0])} />)}
           </Carrusel>
         )}
         {puestosPorDefecto.length > 0 && (
@@ -155,9 +153,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
           </div>
         )}
         <p className="in-nota" data-testid="regla-recordatorios">
-          {encendido
-            ? "Si no respondes, te lo recordamos: el lunes a las 19:00 (todo lo de la semana en un aviso), los entrenos también el mismo día a las 10:00 y los partidos el martes a las 10:00. Nunca de 22:30 a 8:00."
-            : "Las respuestas en la web a partidos y entrenos están desactivadas: no se piden ni hay recordatorios. Los planes no oficiales se responden aquí."}
+          Si no respondes, te lo recordamos: el lunes a las 19:00 (todo lo de la semana en un aviso), los entrenos también el mismo día a las 10:00 y los partidos el martes a las 10:00. Nunca de 22:30 a 8:00.
           {" "}Los planes, solo si quien lo organiza lo pide: un aviso un día antes.
         </p>
       </section>
@@ -176,10 +172,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
                 {proximo.convocatoriaPendiente && <p className="suave pequeno" data-testid="convocatoria-pendiente">Convocatoria pendiente: aún no está publicada.</p>}
                 {estadoPartido?.texto === "Sin responder" && (
                   <div className="in-responder-proximo" data-testid="responder-proximo">
-                    {encendido ? (
-                      <Responder eventoId={domingo.eventos[0].id} fecha={domingo.fecha} domingo actual={null} nombre={`partido del domingo ${+domingo.fecha.slice(8)}`}
+                    <Responder eventoId={domingo.eventos[0].id} fecha={domingo.fecha} domingo actual={null} nombre={`partido del domingo ${+domingo.fecha.slice(8)}`}
                         sinDuda={!domingo.eventos.every((x) => dudaAbierta(x, new Date()))} urlDomingo={domingo.modo === "distintas" ? domingo.url : undefined} grande />
-                    ) : <p className="suave pequeno">Las respuestas en la web están desactivadas.</p>}
                   </div>
                 )}
                 {partidosVer.map((e) => {
@@ -229,7 +223,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
           <section className="in-sec in-agenda" id="agenda" aria-labelledby="t-agenda">
             <div className="in-sec-cab"><h2 id="t-agenda">Tu agenda</h2></div>
             <div className="in-lista">
-              {agenda.map((u) => <FilaAgenda key={u.clave} u={u} respuestas={respuestas} ausencias={ausencias} convocatorias={convocatorias} grupo={grupoDe(u)} encendido={encendido} porDefecto={porDefecto} />)}
+              {agenda.map((u) => <FilaAgenda key={u.clave} u={u} respuestas={respuestas} ausencias={ausencias} convocatorias={convocatorias} grupo={grupoDe(u)} porDefecto={porDefecto} />)}
               {!agenda.length && <p className="suave" style={{ margin: 0 }}>No tienes nada en la agenda.</p>}
             </div>
             <div className="botones">

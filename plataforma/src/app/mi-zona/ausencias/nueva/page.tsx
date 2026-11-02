@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Volver from "@/components/nav/Volver";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import FormAusencia from "@/components/respuestas/FormAusencia";
-import { cargarMisEventos, respuestasWebEncendido } from "@/lib/respuestas/jugador";
+import { cargarMisEventos } from "@/lib/respuestas/jugador";
 import { hoyMadrid } from "@/lib/dias";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +11,6 @@ export const metadata: Metadata = { title: "Nueva ausencia · Maccabis", robots:
 
 export default async function NuevaAusencia() {
   await exigirSesion();
-  if (!(await respuestasWebEncendido())) redirect("/agenda");
   const hoy = hoyMadrid();
   const dias = [...new Set((await cargarMisEventos(hoy)).filter((e) => e.estado === "programado").map((e) => e.fecha))];
   return (

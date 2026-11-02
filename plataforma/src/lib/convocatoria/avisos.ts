@@ -4,8 +4,7 @@ import { horaDeEnvio, madrid } from "@/lib/avisos/horario";
 import type { Convocatoria } from "./motor";
 import { destinatariosAviso, firmaConvocatoria, textoCambioConvocatoria, textoEstasConvocado, type PartidoMensaje } from "./mensajes";
 
-// Aviso «Estás convocado» en la web (D107, D127). Desde D127 NO depende del interruptor de «respuestas en la web»:
-// avisar de la convocatoria no pide respuestas (no choca con D64). Sale SOLO al pulsar «Enviar ahora» con la
+// Aviso «Estás convocado» en la web (D107, D127). Sale SOLO al pulsar «Enviar ahora» con la
 // convocatoria aprobada. Va a los convocados (la primera vez) o a quien entra, cambia de equipo o sale respecto a lo ya
 // avisado (aviso_base, «Cambio en la convocatoria»). Pasa por las horas de silencio. La clave de cada aviso lleva la
 // firma de la convocatoria: pulsar dos veces o repetir con la misma convocatoria no manda nada doble.

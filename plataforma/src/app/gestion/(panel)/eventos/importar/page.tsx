@@ -9,10 +9,7 @@ export const metadata = { title: "Importar · Gestión Maccabis" };
  *  `?t=respuestas` cae aqui igual). */
 export default async function Importar() {
   const { supabase } = await exigirGestor();
-  const [{ data: registro }, { data: encendido }] = await Promise.all([
-    supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, validas, aceptadas, ignoradas, bloqueadas").order("en", { ascending: false }).limit(10),
-    supabase.rpc("respuestas_web_encendido"),
-  ]);
+  const { data: registro } = await supabase.from("importaciones").select("id, tipo, por_nombre, en, lineas, validas, aceptadas, ignoradas, bloqueadas").order("en", { ascending: false }).limit(10);
   return (
     <>
       <div className="gs-titulo">
@@ -21,7 +18,7 @@ export default async function Importar() {
           <h1>Importar</h1>
         </div>
       </div>
-      <ImportarCalendario encendido={Boolean(encendido)} />
+      <ImportarCalendario />
 
       <section className="gs-bloque" style={{ marginTop: 20 }} aria-labelledby="t-registro" data-testid="registro-importaciones">
         <h2 id="t-registro" style={{ fontSize: 22 }}>Importaciones registradas</h2>
@@ -34,7 +31,7 @@ export default async function Importar() {
                   <tr key={r.id}>
                     <td data-label="Cuándo">{fechaHora(r.en)}</td>
                     <td data-label="Quién">{r.por_nombre}</td>
-                    <td data-label="Qué">{r.tipo === "calendario" ? "Calendario" : "Respuestas"}</td>
+                    <td data-label="Qué">{r.tipo === "calendario" ? "Calendario" : "Respuestas (SportEasy)"}</td>
                     <td data-label="Líneas" className="cifra">{r.lineas} ({r.validas} válidas{r.bloqueadas ? `, ${r.bloqueadas} bloqueadas` : ""})</td>
                     <td data-label="Aceptadas" className="cifra">{r.aceptadas}{r.ignoradas ? ` · ${r.ignoradas} ignoradas` : ""}</td>
                   </tr>

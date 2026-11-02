@@ -177,8 +177,7 @@ export async function cancelarEvento(id: string, alcance: "este" | "siguientes",
     const { error } = await supabase.from("eventos").update({ estado: restablecer ? "programado" : "cancelado" }).eq("id", o.id);
     if (error) throw new Error(error.message);
   }
-  // Cancelar avisa a los invitados (D99.9) con «respuestas en la web» encendido. En una serie, solo los de las dos
-  // proximas semanas.
+  // Cancelar avisa a los invitados (D99.9). En una serie, solo los de las dos proximas semanas.
   if (!restablecer) {
     const limite = sumarDias(hoyMadrid(), AVISAR_DIAS);
     for (const o of objetivos) if (o.fecha >= hoyMadrid() && o.fecha <= limite) await avisarCambioEvento(o.id, "cancelacion", false);
@@ -326,7 +325,7 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
   for (const a of porAvisar) {
     const r = await avisarCambioEvento(a.id, "cambio", a.cambiaDia);
     avisados += r.avisados;
-    if (r.motivo === "sin_configurar" || r.motivo === "apagado") sinAviso.push(r.motivo === "apagado" ? "«respuestas en la web» apagado" : "avisos sin configurar en el servidor");
+    if (r.motivo === "sin_configurar") sinAviso.push("avisos sin configurar en el servidor");
     if (r.avisados && "programado" in r && r.programado && r.programado > new Date()) sale = r.programado;
   }
   await supabase.from("importaciones").insert({

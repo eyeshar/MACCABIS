@@ -1,16 +1,17 @@
 #!/usr/bin/env node
-// Paso 3 (D99): respuestas en la web, ausencias, interruptor y suscripciones de avisos, contra la pila LOCAL
-// (Postgres + PostgREST reales con NUESTRAS migraciones):
+// Paso 3 (D99): respuestas en la web, ausencias y suscripciones de avisos, contra la pila LOCAL
+// (Postgres + PostgREST reales con NUESTRAS migraciones). Desde D172 las respuestas en la web están SIEMPRE encendidas:
+// ya no hay interruptor (la fila vieja de respuestas_web_config se queda en «apagado» y no cuenta).
 //   - las dos migraciones nuevas son reversibles (su .revertir.sql las deshace y se pueden volver a aplicar);
-//   - un jugador NO lee motivos ajenos, NO responde por otro, NO responde a un evento al que no esta invitado, NO
-//     responde con el interruptor apagado y NO ve niveles ni posiciones en nada de lo que le llega;
+//   - un jugador NO lee motivos ajenos, NO responde por otro, NO responde a un evento al que no esta invitado y NO ve
+//     niveles ni posiciones en nada de lo que le llega;
 //   - "no va" exige motivo; evento cancelado o empezado, cerrado;
 //   - domingo: horas distintas, misma hora, una sola ficha, descanso, y "solo uno" = "no · horario" en el otro;
 //   - ausencias: aplicadas a eventos existentes y a los creados despues, sin fecha de vuelta y "Ya puedo volver",
 //     borrado que deja "sin responder", aviso de "tenias voy";
 //   - cambio de dia que reinicia las respuestas; cambio de hora que las mantiene;
 //   - alerta a los gestores despues del martes a las 20:00; "Responder por el" con quien la puso;
-//   - interruptor: condiciones, registro; suscripciones: alta, baja y solo las propias.
+//   - estado_activacion (solo los contadores, solo gestores); suscripciones: alta, baja y solo las propias.
 //
 //   npm run pruebas:respuestas-web
 
@@ -77,7 +78,7 @@ try {
   // tener aun una cache intermedia (de cuando se revirtio) y dar 404 en `responder` (29/10/2026, D149). Como anonimo y
   // con un evento que no existe, `responder` no escribe nada: solo se mira que no de 404.
   const presente = async (f, args) => (await rpc(f, args)).status !== 404;
-  const enCache = async () => (await presente('respuestas_web_encendido', {})) && (await presente('responder', { p_evento: '00000000-0000-0000-0000-000000000000', p_respuesta: 'va' }));
+  const enCache = async () => (await presente('estado_activacion', {})) && (await presente('responder',{ p_evento: '00000000-0000-0000-0000-000000000000', p_respuesta: 'va' }));
   for (let i = 0, seguidas = 0; i < 80 && seguidas < 3; i++) { seguidas = (await enCache()) ? seguidas + 1 : 0; await new Promise((ok) => setTimeout(ok, 250)); }
 
   console.log('\n== Carga de eventos y cuentas de prueba');
@@ -103,7 +104,7 @@ try {
   const edimil = await jugador('feliz-gomez-edimil', 'edimil@pruebas.local');      // solo entrena
   const gestorUid = await pila.crearUsuario('gestor@pruebas.local', 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gestorUid}, 'Iván', 'gestor@pruebas.local')`;
-  // Ivan es gestor y jugador (su ficha, villaescusa-silva-ivan, con el mismo correo): solo el maneja el interruptor (D103).
+  // Ivan es gestor y jugador (su ficha, villaescusa-silva-ivan, con el mismo correo): cuenta como «ha entrado».
   await sql`update public.jugadores set email = 'gestor@pruebas.local' where person_id = 'villaescusa-silva-ivan'`;
   const carlosUid = await pila.crearUsuario('carlos-gestor@pruebas.local', 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${carlosUid}, 'Carlos', 'carlos-gestor@pruebas.local')`;
@@ -112,68 +113,29 @@ try {
   const intrusoUid = await pila.crearUsuario('intruso@pruebas.local', 'no-se-usa');
   const tI = await pila.firmar({ sub: intrusoUid, role: 'authenticated', email: 'intruso@pruebas.local' });
 
-  console.log('\n== Interruptor APAGADO: nadie responde en la web (también en la base, no solo en la pantalla)');
-  let r = await rpc('responder', { p_evento: E.e14, p_respuesta: 'va' }, jon.token);
-  ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'con el interruptor apagado un jugador NO responde', `${r.status} ${error(r)}`);
-  r = await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'ambos' }, jon.token);
-  ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'ni al domingo');
-  r = await rpc('guardar_ausencia', { p_id: null, p_desde: F('2026-11-01'), p_hasta: F('2026-11-10'), p_motivo: 'viaje' }, jon.token);
-  ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'ni marca ausencias');
-  r = await rpc('alta_suscripcion', { p_endpoint: 'https://push.example/jon-1', p_p256dh: 'clave', p_auth: 'auth', p_navegador: 'Safari iPhone' }, jon.token);
-  ok(r.status === 200, 'pero SÍ activa los avisos en su móvil (D99.12)', `${r.status} ${error(r)}`);
-  ok((await rpc('respuestas_web_encendido', {}, jon.token)).datos === false, 'la web sabe que está apagado');
-  // D105: en la fase puente las respuestas vienen solo de Importar; «Responder por él» tampoco vale (ni de un evento ni del domingo).
-  r = await rpc('responder_por', { p_evento: E.e14, p_person: 'esteban-jon', p_respuesta: 'va' }, tG);
-  ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'con el interruptor apagado ni un gestor usa «Responder por él» (evento)', `${r.status} ${error(r)}`);
-  r = await rpc('responder_domingo_por', { p_fecha: F('2026-10-25'), p_person: 'esteban-jon', p_opcion: 'ambos' }, tG);
-  ok(r.status >= 400 && /respuestas_apagadas/.test(error(r)), 'ni el de la vista de domingo', `${r.status} ${error(r)}`);
-  ok((await sql`select count(*)::int n from public.respuestas where person_id = 'esteban-jon'`)[0].n === 0, 'y no ha quedado ninguna respuesta escrita');
+  console.log('\n== Sin interruptor (D172): la fila vieja de respuestas_web_config dice «apagado» y no cuenta');
+  // Se deja apagada a propósito: todo lo que sigue (responder, domingo, ausencias, «Responder por él») funciona igual.
+  await sql`update public.respuestas_web_config set encendido = false where id = 1`;
+  let r = await rpc('alta_suscripcion', { p_endpoint: 'https://push.example/jon-1', p_p256dh: 'clave', p_auth: 'auth', p_navegador: 'Safari iPhone' }, jon.token);
+  ok(r.status === 200, 'un jugador activa los avisos en su móvil (D99.12)', `${r.status} ${error(r)}`);
+  const DEL_INTERRUPTOR = ['cambiar_interruptor', 'marcar_sporteasy', 'marcar_jornada', 'respuestas_web_encendido', '_exigir_encendido', '_respuestas_web_encendido',
+    '_exigir_responsable', '_es_responsable', '_jornadas_limpias_seguidas', 'ultima_importacion_respuestas'];
+  const quedan = (await sql`select proname from pg_proc where pronamespace = 'public'::regnamespace and proname = any(${DEL_INTERRUPTOR})`).map((x) => x.proname);
+  ok(quedan.length === 0, 'no quedan las funciones del interruptor (encender, condiciones, jornadas, SportEasy)', quedan.join(', '));
+  for (const f of ['cambiar_interruptor', 'respuestas_web_encendido', 'marcar_jornada']) ok((await rpc(f, {}, tG)).status === 404, `${f}: ya no existe en la API`);
+  ok((await api('/respuestas_web_config?id=eq.1', { metodo: 'PATCH', cuerpo: { encendido: true }, token: tG })).status >= 400 || !(await sql`select encendido from public.respuestas_web_config`)[0].encendido, 'nadie cambia la fila histórica de respuestas_web_config por la API');
 
-  console.log('\n== Encender: condiciones 1, 2 y 4 (la 3 es informativa); solo gestores; queda registrado');
-  ok((await rpc('cambiar_interruptor', { p_encender: true }, jon.token)).status >= 400, 'un jugador NO enciende el interruptor');
-  ok((await api('/respuestas_web_config?id=eq.1', { metodo: 'PATCH', cuerpo: { encendido: true }, token: tG })).status >= 400 || !(await sql`select encendido from public.respuestas_web_config`)[0].encendido, 'ni el gestor lo enciende a mano por la API (solo con la función que comprueba)');
-  r = await rpc('cambiar_interruptor', { p_encender: true }, tG);
-  ok(r.status >= 400 && /condiciones_sin_cumplir/.test(error(r)), 'sin las condiciones no se enciende');
-  let est = (await rpc('estado_activacion', {}, tG)).datos;
-  ok(est.plantilla === 27 && est.entrados === 4 && est.minimo_entrados === 20 && est.con_avisos === 1 && est.jornadas_seguidas === 0 && est.puede_manejar === true, `estado: ${est.entrados}/${est.plantilla} han entrado (mínimo ${est.minimo_entrados}), ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`, JSON.stringify(est));
-  ok(Array.isArray(est.faltan_por_entrar) && est.faltan_por_entrar.length === 23 && !est.faltan_por_entrar.includes('Jon') && est.faltan_por_entrar.includes('Adriano') && !est.faltan_por_entrar.some((n) => /entrenador/.test(n)), 'condición 2: la lista de quién falta por entrar (23 de los 27; Carlos, el entrenador, no cuenta)');
-
-  console.log('\n== Solo Iván maneja el interruptor, las jornadas y SportEasy (D103); otro gestor, solo lectura');
+  console.log('\n== estado_activacion: solo los contadores del recuadro «Avisos y accesos»; solo gestores');
+  const est = (await rpc('estado_activacion', {}, tG)).datos;
+  ok(est && Object.keys(est).sort().join() === 'con_avisos,entrados,faltan_por_entrar,pidio_codigo,plantilla', 'gestor: plantilla, entrados, faltan, pidió código y con avisos (nada del interruptor)', Object.keys(est ?? {}).join());
+  ok(est.plantilla === 27 && est.entrados === 4 && est.con_avisos === 1, `estado: ${est.entrados}/${est.plantilla} han entrado, ${est.con_avisos} con avisos`, JSON.stringify({ plantilla: est.plantilla, entrados: est.entrados, con_avisos: est.con_avisos }));
+  ok(Array.isArray(est.faltan_por_entrar) && est.faltan_por_entrar.length === 23 && !est.faltan_por_entrar.includes('Jon') && est.faltan_por_entrar.includes('Adriano') && !est.faltan_por_entrar.some((n) => /entrenador/.test(n)), 'la lista de quién falta por entrar (23 de los 27; Carlos, el entrenador, no cuenta)');
   const estC = (await rpc('estado_activacion', {}, tC)).datos;
-  ok(estC && estC.plantilla === 27 && estC.puede_manejar === false, 'otro gestor (Carlos) ve el estado, sin poder manejarlo');
-  ok(/solo_responsable/.test(error(await rpc('marcar_jornada', { p_jornada: 1, p_estado: 'limpia' }, tC))), 'Carlos NO marca jornadas (lo para la base)');
-  ok(/solo_responsable/.test(error(await rpc('marcar_sporteasy', { p_comprobado: true }, tC))), 'Carlos NO marca la casilla de SportEasy');
-  ok(/solo_responsable/.test(error(await rpc('cambiar_interruptor', { p_encender: false }, tC))), 'Carlos NO enciende ni apaga');
-  ok((await sql`select count(*)::int n from public.jornadas_control`)[0].n === 0, 'y no ha quedado nada escrito');
-  for (const j of [1, 2, 3]) await rpc('marcar_jornada', { p_jornada: j, p_estado: 'limpia' }, tG);
-  ok((await rpc('estado_activacion', {}, tG)).datos.jornadas_seguidas === 3, '3 jornadas limpias seguidas = 3/3');
-  await rpc('marcar_jornada', { p_jornada: 4, p_estado: 'con_arreglo' }, tG);
-  ok((await rpc('estado_activacion', {}, tG)).datos.jornadas_seguidas === 0, 'una «con arreglo» devuelve la cuenta a 0');
-  for (const j of [5, 6, 7]) await rpc('marcar_jornada', { p_jornada: j, p_estado: 'limpia' }, tG);
-  ok((await rpc('estado_activacion', {}, tG)).datos.jornadas_seguidas === 3, 'y vuelve a contar desde ahí (J5–J7 = 3/3)');
-  ok((await rpc('marcar_jornada', { p_jornada: 8, p_estado: 'limpia' }, jon.token)).status >= 400, 'un jugador NO marca jornadas');
-  await rpc('marcar_sporteasy', { p_comprobado: true }, tG);
-  ok((await rpc('cambiar_interruptor', { p_encender: true }, tG)).status >= 400, 'con 1 y 4 pero solo 4 de 27 dentro de la web (condición 2, mínimo 20), no se enciende');
-  // Para la prueba: entran 15 más (19 de 27: aún no basta) y luego 1 más (20 de 27: basta el mínimo, no hace falta que entren todos).
-  const entran = async (n) => {
-  for (const j of await sql`select person_id from public.jugadores where activo and rol <> 'entrenador' and (email is null or email not like '%@pruebas.local') order by person_id limit ${n}`) {
-    const em = `${j.person_id}@pruebas.local`;
-    await sql`update public.jugadores set email = ${em} where person_id = ${j.person_id}`;
-    await pila.crearUsuario(em, 'x');
-  }
-  };
-  await entran(15);
-  est = (await rpc('estado_activacion', {}, tG)).datos;
-  ok(est.entrados === 19 && est.se_puede_encender === false, '19 de 27: todavía no se cumple la condición 2 (mínimo 20)', JSON.stringify(est));
-  await entran(1);
-  est = (await rpc('estado_activacion', {}, tG)).datos;
-  ok(est.entrados === 20 && est.plantilla === 27 && est.faltan_por_entrar.length === 7 && est.se_puede_encender === true, '20 de 27 han entrado: se cumple la condición 2 (faltan 7)', JSON.stringify(est));
-  ok(/solo_responsable/.test(error(await rpc('cambiar_interruptor', { p_encender: true }, tC))), 'aun con las condiciones, Carlos no puede encender');  r = await rpc('cambiar_interruptor', { p_encender: true }, tG);
-  ok(r.status === 200 && r.datos.encendido === true, 'con las tres condiciones, se enciende', `${r.status} ${error(r)}`);
-  const reg = await sql`select que, por_nombre from public.respuestas_web_registro order by en`;
-  ok(reg.some((x) => x.que === 'encender' && x.por_nombre === 'Iván') && reg.filter((x) => x.que.startsWith('jornada')).length === 7 && reg.some((x) => x.que === 'sporteasy_comprobado'), 'cada cambio queda registrado (quién y cuándo)');
+  ok(estC && estC.plantilla === 27 && estC.entrados === 4, 'otro gestor (Carlos) ve lo mismo');
+  ok((await rpc('estado_activacion', {}, jon.token)).status >= 400, 'un jugador NO la usa');
+  ok((await rpc('estado_activacion', {})).status >= 400, 'anónimo tampoco');
 
-  console.log('\n== Responder a un evento');
+  console.log('\n== Responder a un evento (siempre: la fila vieja sigue «apagado»)');
   r = await rpc('responder', { p_evento: E.e14, p_respuesta: 'no' }, jon.token);
   ok(r.status >= 400 && /falta_motivo/.test(error(r)), '«no va» sin motivo NO se guarda');
   r = await rpc('responder', { p_evento: E.e14, p_respuesta: 'no', p_motivo: 'aburrimiento' }, jon.token);
@@ -275,14 +237,14 @@ try {
   r = await rpc('responder_domingo', { p_fecha: F('2026-11-08'), p_opcion: 'voy' }, guille.token);
   ok(/no_invitado/.test(error(r)), 'su equipo descansa (08/11, MdA): no hay nada que responder');
   ok((await dom('esteban-jon', F('2026-10-18')))?.opcion === 'voy' && (await dom()).opcion === 'duda', 'la respuesta del domingo sigue a la última (J2 «voy», J3 «duda»)');
-  // Si un partido cambia por otro camino (Importar, «Responder por él» de un partido, una ausencia...), la del domingo deja de valer.
-  await sql`select public._escribir_respuesta(${E.mdlJ3}, 'esteban-jon', 'va', null, null, 'sporteasy', null, null, null)`;
+  // Si un partido cambia por otro camino («Responder por él» de un partido, una ausencia...), la del domingo deja de valer.
+  await sql`select public._escribir_respuesta(${E.mdlJ3}, 'esteban-jon', 'va', null, null, 'gestor', ${gestorUid}, 'Iván', null)`;
   d0 = await dom();
-  ok(d0.vigente === false, 'si un partido cambia por otro camino (p. ej. Importar de SportEasy), la respuesta del domingo deja de valer y manda lo de cada partido');
+  ok(d0.vigente === false, 'si un partido cambia por otro camino (p. ej. «Responder por él» de un solo partido), la respuesta del domingo deja de valer y manda lo de cada partido');
   await rpc('responder_domingo', { p_fecha: F('2026-10-25'), p_opcion: 'duda' }, jon.token);
   ok((await dom()).vigente === true, 'y vuelve a valer en cuanto el jugador responde al domingo otra vez');
   const asis = await sql`select e.equipo, r.respuesta from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and e.tipo = 'liga' and r.person_id = 'esteban-jon' order by e.equipo`;
-  ok(asis.length === 2 && asis.every((x) => x.respuesta === 'duda'), 'Importar, Asistencia y la convocatoria siguen leyendo una respuesta por partido (derivada)');
+  ok(asis.length === 2 && asis.every((x) => x.respuesta === 'duda'), 'Asistencia y la convocatoria siguen leyendo una respuesta por partido (derivada)');
 
   console.log('\n== Periodos de no disponibilidad');
   await rpc('responder', { p_evento: E.e21, p_respuesta: 'va' }, jon.token);
@@ -388,7 +350,7 @@ try {
   await sql`update public.jugadores set activo = false where person_id = 'vallesi-daniele'`;
   ok(!(await inv('vallesi-daniele', E.e14)), 'quien está de baja no está invitado');
   await sql`update public.jugadores set activo = true where person_id = 'vallesi-daniele'`;
-  // Con el interruptor encendido, las funciones de responder rechazan a quien no está invitado.
+  // Las funciones de responder rechazan a quien no está invitado.
   ok((await rpc('responder', { p_evento: E.e14, p_respuesta: 'va' }, edimil.token)).status === 200, 'Edimil responde a un entreno');
   r = await rpc('responder', { p_evento: E.mdaJ3, p_respuesta: 'va' }, edimil.token);
   ok(r.status >= 400 && /no_invitado/.test(error(r)), '«solo entreno» no responde a un partido (lo para la base)', `${r.status} ${error(r)}`);
@@ -399,7 +361,7 @@ try {
   r = await rpc('responder_por', { p_evento: E.mdaJ3, p_person: FERNANDO_M, p_respuesta: 'va' }, tG);
   ok(r.status >= 400 && /no_invitado/.test(error(r)), 'ni por un «solo entreno» a un partido', `${r.status} ${error(r)}`);
   r = await rpc('responder_por', { p_evento: E.e14, p_person: 'esteban-jon', p_respuesta: 'va' }, tG);
-  ok(r.status === 200, 'con el interruptor encendido, «Responder por él» sí funciona', `${r.status} ${error(r)}`);
+  ok(r.status === 200, '«Responder por él» funciona (sin interruptor que lo pare)', `${r.status} ${error(r)}`);
   await sql`delete from public.respuestas where person_id in ('esteban-jon', 'feliz-gomez-edimil') and evento_id = ${E.e14}`;
 
   console.log('\n== «Responder por él» (gestores)');
@@ -437,17 +399,13 @@ try {
     ok(!p.a_sel && !p.u_del && p.rls, `${t}: RLS activa, anon sin permisos, nadie borra`);
   }
   for (const t of ['respuestas', 'ausencias_periodo']) ok(!(await sql`select has_table_privilege('authenticated', ${'public.' + t}, 'delete') d`)[0].d, `${t}: nadie borra por la API`);
-  const fns = await sql`select p.proname, has_function_privilege('anon', p.oid, 'execute') anon from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = any(${['responder', 'responder_domingo', 'guardar_ausencia', 'cerrar_ausencia', 'borrar_ausencia', 'alta_suscripcion', 'baja_suscripcion', 'previsualizar_ausencia', 'responder_por', 'responder_domingo_por', 'cambiar_interruptor', 'estado_activacion', 'marcar_jornada', 'marcar_sporteasy']})`;
-  ok(fns.length === 14 && fns.every((f) => !f.anon), 'anónimo no ejecuta ninguna de las funciones nuevas');
+  const fns = await sql`select p.proname, has_function_privilege('anon', p.oid, 'execute') anon from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = any(${['responder', 'responder_domingo', 'guardar_ausencia', 'cerrar_ausencia', 'borrar_ausencia', 'alta_suscripcion', 'baja_suscripcion', 'previsualizar_ausencia', 'responder_por', 'responder_domingo_por', 'estado_activacion']})`;
+  ok(fns.length === 11 && fns.every((f) => !f.anon), 'anónimo no ejecuta ninguna de las funciones nuevas');
 
-  console.log('\n== Apagar: se vuelve a la fase puente sin perder nada');
-  await rpc('responder', { p_evento: E.e21, p_respuesta: 'va' }, jon.token);
-  const antesN = (await sql`select count(*)::int n from public.respuestas`)[0].n;
-  r = await rpc('cambiar_interruptor', { p_encender: false }, tG);
-  ok(r.status === 200 && r.datos.encendido === false && (await sql`select count(*)::int n from public.respuestas`)[0].n === antesN, 'apagado: las respuestas siguen ahí');
-  ok(/respuestas_apagadas/.test(error(await rpc('responder', { p_evento: E.e14, p_respuesta: 'va' }, jon.token))), 'y la web vuelve a no aceptar respuestas');
-  await sql`update public.eventos set fecha = ${F('2026-10-29')} where id = ${E.e21}`;
-  ok((await sql`select count(*)::int n from public.respuestas where evento_id = ${E.e21} and respuesta <> 'sin_responder'`)[0].n > 0, 'con el interruptor apagado, cambiar el día no toca las respuestas (vienen de SportEasy)');
+  console.log('\n== Lo de SportEasy, fuera (D172)');
+  ok((await api('/diccionario_sporteasy?select=*', { token: tG })).status === 404, 'diccionario_sporteasy ya no existe (ni para un gestor)');
+  const colsSE = (await sql`select table_name || '.' || column_name c from information_schema.columns where table_schema = 'public' and table_name in ('respuestas', 'respuestas_web_config') and column_name like 'sporteasy%'`).map((x) => x.c);
+  ok(colsSE.length === 0, 'ni respuestas.sporteasy_descartado ni respuestas_web_config.sporteasy_comprobado', colsSE.join(', '));
 } finally {
   await pila.parar();
 }

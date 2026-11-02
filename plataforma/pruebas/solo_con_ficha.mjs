@@ -8,7 +8,9 @@
 //   - permisos: ningún jugador lee la marca, la columna calculada ni la ficha de otros (igual que antes);
 //   - los datos del 29/10/2026 (supabase/datos/20261029_valdebernardo_reabre.sql): los entrenos del 04/11 al 05/05
 //     quedan cerrados con la nota «no se copia», fuera de la cola de SportEasy, y ningún otro evento cambia su copia;
-//     y su vuelta atrás;
+//     y su vuelta atrás. Esos dos ficheros escriben en las columnas sporteasy_* que borra 20261102200000_fin_sporteasy
+//     (D172): se aplican y se deshacen con esa migración revertida (como estaba la base el 29/10) y luego se vuelve a
+//     aplicar (`migrar`), para que el resto de la prueba vaya contra la base de ahora;
 //   - nada retroactivo (20261029120000 y 20261029_valdebernardo_desde.sql): un entreno pasado en Valdebernardo, uno sin
 //     pista y uno con ubicación libre no excluyen a nadie ni cambian de pista (base, vistas, agenda y web).
 //
@@ -28,6 +30,7 @@ const MIG = path.join(RAIZ, 'supabase', 'migrations', '20261029100000_pista_solo
 const DATOS = path.join(RAIZ, 'supabase', 'datos', '20261029_valdebernardo_reabre');
 const MIG2 = path.join(RAIZ, 'supabase', 'migrations', '20261029120000_pista_desde');
 const DATOS2 = path.join(RAIZ, 'supabase', 'datos', '20261029_valdebernardo_desde');
+const FIN = path.join(RAIZ, 'supabase', 'migrations', '20261102200000_fin_sporteasy');
 const P = { valde: 'entreno-semanal-2026-10-14', sin: 'entreno-semanal-2026-10-21', libre: 'entreno-semanal-2026-10-28' };
 const NOTA = 'Iván: no se copia a SportEasy (29/10/2026)';
 let fallos = 0;
@@ -54,6 +57,17 @@ try {
   const hayFuncion = async () => (await sql`select to_regprocedure('public.solo_con_ficha_en(public.eventos)') is not null as f`)[0].f;
   const matriz = async () => (await sql`select e.clave, j.person_id, public._invitado(j.person_id, e.id) as inv from public.eventos e cross join public.jugadores j order by 1, 2`)
     .map((r) => `${r.clave}|${r.person_id}|${r.inv}`);
+  // D172: deshace 20261102200000_fin_sporteasy (vuelven las columnas sporteasy_* que usan los datos del 29/10).
+  const sinFinSportEasy = async () => {
+    await sql.begin((tx) => tx.unsafe(fs.readFileSync(`${FIN}.revertir.sql`, 'utf8')));
+    ok((await sql`select 1 from supabase_migrations.schema_migrations where version = '20261102200000'`).length === 0
+      && (await sql`select 1 from information_schema.columns where table_schema = 'public' and table_name = 'eventos' and column_name = 'sporteasy_estado'`).length === 1, '20261102200000_fin_sporteasy revertida (vuelven las columnas sporteasy_*)');
+  };
+  const conFinSportEasy = async () => {
+    await migrar(sql, { log: () => {} });
+    ok((await sql`select 1 from supabase_migrations.schema_migrations where version = '20261102200000'`).length === 1
+      && (await sql`select 1 from information_schema.columns where table_schema = 'public' and table_name = 'eventos' and column_name like 'sporteasy%'`).length === 0, 'y aplicada de nuevo (sin columnas sporteasy_*)');
+  };
 
   console.log('\n== Migración reversible');
   ok(await registrada() && await hayColumna() && await hayFuncion(), 'aplicada: columna pistas.solo_con_ficha y función solo_con_ficha_en');
@@ -73,6 +87,7 @@ try {
   ok(await registrada() && await hayColumna() && await hayFuncion() && (await sql`select 1 from supabase_migrations.schema_migrations where version = '20261029120000'`).length === 1, 'aplicadas de nuevo (las dos)');
 
   console.log('\n== Los datos del 29/10/2026 (Valdebernardo reabierta y solo con ficha)');
+  await sinFinSportEasy();
   const copia = async () => Object.fromEntries((await sql`select clave, sporteasy_estado, sporteasy_cambio, sporteasy_copiado_en from public.eventos`).map((r) => [r.clave, JSON.stringify([r.sporteasy_estado, r.sporteasy_cambio, r.sporteasy_copiado_en])]));
   // Un entreno del rango con pista propia y otro horario, ya copiado (en el real no hay ninguno): debe pasar a
   // Valdebernardo 20:30–22:30 y quedar cerrado con la nota, aunque el disparador lo deje antes «pendiente».
@@ -92,6 +107,7 @@ try {
   ok(otros.length === 0, 'ningún otro evento cambia su estado de copia a SportEasy (tampoco los pasados)', otros.join(', '));
   // (La web ya no lee las columnas sporteasy_*: SportEasy no se usa. Lo de arriba solo comprueba los datos de la base.)
   ok((await sql`select pista_nombre n from public.v_eventos_publicos where clave = 'entreno-semanal-2026-11-04'`)[0].n === 'Valdebernardo (Faustina Valladolid)', 'lo público: el 04/11 en Valdebernardo, no «pista por confirmar»');
+  await conFinSportEasy();
 
   console.log('\n== La regla en la base');
   const id = async (clave) => (await sql`select id from public.eventos where clave = ${clave}`)[0].id;
@@ -175,7 +191,6 @@ try {
     ok(j.status >= 400 || otros.length === 0, `${quien} no lee la ficha de otros jugadores (igual que antes)`, JSON.stringify(j).slice(0, 200));
   }
   ok(!(await sql`select has_function_privilege('anon', 'public.solo_con_ficha_en(public.eventos)', 'execute') p`)[0].p, 'anon no puede ejecutar solo_con_ficha_en');
-  await sql`update public.respuestas_web_config set encendido = true where id = 1`;
   const r = await api('/rpc/responder', { metodo: 'POST', cuerpo: { p_evento: valdeId, p_respuesta: 'va' }, token: tIgnacio });
   ok(r.status >= 400 && JSON.stringify(r.datos).includes('no_invitado'), 'Ignacio no puede responder al entreno de Valdebernardo (no_invitado)', JSON.stringify(r.datos));
   const r2 = await api('/rpc/responder', { metodo: 'POST', cuerpo: { p_evento: cajaId, p_respuesta: 'va' }, token: tIgnacio });
@@ -192,6 +207,7 @@ try {
   ok(pg[0]?.solo_con_ficha === true, 'y la marca de la pista');
 
   console.log('\n== Vuelta atrás de los datos');
+  await sinFinSportEasy();
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(`${DATOS2}.revertir.sql`, 'utf8')));
   ok((await sql`select habitual_desde, solo_con_ficha_desde from public.pistas where slug = 'valdebernardo'`).every((r) => r.habitual_desde === null && r.solo_con_ficha_desde === null), 'sin las fechas «desde»');
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(`${DATOS}.revertir.sql`, 'utf8')));
@@ -199,6 +215,7 @@ try {
   ok(v2.estado === 'en_obras' && v2.solo_con_ficha === false, 'Valdebernardo vuelve a «en obras» sin la marca');
   ok((await sql`select count(*)::int n from public.eventos where sporteasy_cambio = ${NOTA}`)[0].n === 0, 'y sin la nota «no se copia»');
   ok(await inv('mateos-aparicio-ignacio', E.valde), 'y los sin ficha vuelven a estar invitados');
+  await conFinSportEasy();
 } catch (err) {
   console.log(`  FALLO ${err.stack}`); fallos++;
 } finally {

@@ -18,7 +18,7 @@ Mucha gente tiene **doble ficha** (juega en los dos equipos); algunos solo en un
   - **Partidos** (Liga Municipal de Moratalaz, JDM; domingos por la mañana): **Centro Deportivo Municipal Moratalaz**, calle de Valdebernardo, 2, 28030 Madrid. Metro: Pavones (L9).
   - **Entrenos** (miércoles 20:30–22:30): **Valdebernardo (Faustina Valladolid)**, reabierta desde el 04/11/2026 (estuvo en obras en octubre). **Solo pueden entrenar allí los jugadores con ficha en MdA o MdL** (D148).
   - «Calle de Valdebernardo» (donde se juega) y «Valdebernardo (Faustina Valladolid)» (donde se entrena) son sitios diferentes; los textos de la web lo aclaran.
-- **SportEasy:** sale de la operativa desde la J2 (11/10/2026, D44); respaldo dormido hasta noviembre. Disponibilidad y convocatoria, por la plataforma propia.
+- **SportEasy:** no se usa desde el 31/10/2026 (D153) y se quitó de la plataforma y de la base el 02/11/2026 (D172). Respuestas, disponibilidad y convocatoria, solo en la plataforma propia. De SportEasy solo queda la asistencia histórica.
 - **Plataforma propia** (`plataforma/`, D55): cada jugador entra con su **enlace personal secreto** (`/j/<enlace>`); los 3 gestores con login real (D45). Los jugadores nunca ven niveles, posiciones ni motivos (D46).
 - **Federación / plataforma de actas:** Afición FBM / Gesdeportiva (Indalweb). Cambió en 25/26; antes (24/25) usaban SWISH.
 
@@ -32,7 +32,7 @@ Mucha gente tiene **doble ficha** (juega en los dos equipos); algunos solo en un
 
 Tres herramientas + mucho trabajo manual de Iván como "pegamento":
 1. **WhatsApp** — día a día, convocatorias, confirmaciones. Insustituible. NO se toca.
-2. **SportEasy** — registro oficial (calendario, asistencia, plantel). Suscripción de equipo de pago. Rígido: no permite dividir un equipo en dos, por eso Iván crea **dos campeonatos cada año** (uno por ficha), lo que complica la gestión.
+2. **SportEasy** — registro oficial (calendario, asistencia, plantel). Suscripción de equipo de pago. Rígido: no permite dividir un equipo en dos, por eso Iván crea **dos campeonatos cada año** (uno por ficha), lo que complica la gestión. _(Así era al empezar el proyecto. Desde D153/D172 ya no se usa: lo sustituye la plataforma.)_
 3. **Excel** — el pegamento manual de Iván: convocatorias, control de asistencia, cuentas. Donde se le va el tiempo.
 
 **El dolor real:** Iván es el pegamento humano entre las tres cosas. Todo manual.
@@ -42,11 +42,11 @@ Tres herramientas + mucho trabajo manual de Iván como "pegamento":
 Una plataforma que **profesionalice y reduzca la manualidad**, con dos zonas de público distinto:
 
 - **Zona pública** (todo el equipo, sin login): estadísticas + histórico del club. Información para consultar.
-- **Zona de gestión** (solo los 3 gestores, con login real): convocatorias con doble ficha, tesorería/cuentas, herramientas para trabajar con SportEasy.
+- **Zona de gestión** (solo los 3 gestores, con login real): convocatorias con doble ficha, tesorería/cuentas.
 
-**Filosofía acordada (Opción A "realista"):** la plataforma es el **centro de mando** que sustituye los Excel. WhatsApp y SportEasy siguen en su sitio. El puente con SportEasy es por **exportación/importación de Excel** (no en tiempo real, porque SportEasy no tiene API pública — ver SPORTEASY.md). La plataforma genera mensajes de WhatsApp listos para copiar/pegar y archivos listos para importar a SportEasy. NO envía sola, NO sincroniza sola. Objetivo: que Iván pase de "ser el ordenador que cruza datos a mano" a "tomar decisiones y dar un clic".
+**Filosofía acordada al empezar (Opción A "realista"; lo de SportEasy quedó superado por D153/D172):** la plataforma es el **centro de mando** que sustituye los Excel. WhatsApp y SportEasy siguen en su sitio. El puente con SportEasy es por **exportación/importación de Excel** (no en tiempo real, porque SportEasy no tiene API pública — ver SPORTEASY.md). La plataforma genera mensajes de WhatsApp listos para copiar/pegar y archivos listos para importar a SportEasy. NO envía sola, NO sincroniza sola. Objetivo: que Iván pase de "ser el ordenador que cruza datos a mano" a "tomar decisiones y dar un clic".
 
-> Pendiente de explorar: presionar por vías de sacar/subir datos de SportEasy más allá del Excel. Si no sale nada, Excel es el plan B confirmado.
+> _(Histórico: el puente con SportEasy ya no existe; la plataforma hace todo, D153/D172.)_
 
 ## Stack técnico (decidido)
 
@@ -56,7 +56,7 @@ Igual que TCPC (ahora justificado por la necesidad de login real):
 - **Vercel** (hosting)
 - **GitHub** (repositorio + control de versiones)
 
-**Coste:** CERO adicional sobre lo que Iván ya paga (suscripción Max de Claude + suscripción SportEasy). Supabase y Vercel en plan gratuito.
+**Coste:** CERO adicional sobre lo que Iván ya paga (suscripción Max de Claude). Supabase y Vercel en plan gratuito.
 
 ### Diferencias clave con el stack TCPC
 - **NO hay menores.** Todos los jugadores son adultos. Se elimina toda la capa de privacidad de menores que en TCPC es criterio de primer orden.

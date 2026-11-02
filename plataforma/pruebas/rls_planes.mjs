@@ -3,9 +3,10 @@
 //   - la migracion conjunta (20261024200000) es solo aditiva y reversible (su .revertir.sql la deshace limpia);
 //   - RLS y funciones: un jugador crea y edita lo suyo y NO lo ajeno; NO borra ni hace oficial; un gestor edita, borra
 //     y hace oficial cualquier plan (y al organizador le queda un aviso en su inicio);
-//   - exclusiones (punto 4): fuera de la vista publica y del .ics publico, de la cola «Copia a SportEasy», de los
-//     recordatorios del club, de la asistencia y de la convocatoria; anon no ve nada;
-//   - se responden en la web con el interruptor APAGADO y «No voy» sin motivo; con plazas, «completo»;
+//   - exclusiones (punto 4): fuera de la vista publica y del .ics publico, de los recordatorios del club, de la
+//     asistencia y de la convocatoria; anon no ve nada;
+//   - se responden en la web con «No voy» sin motivo; con plazas, «completo» (desde D172 ya no hay interruptor: los
+//     oficiales también se responden siempre);
 //   - recordatorio: solo con «recordar un dia antes», un aviso 24 h antes a quien no ha respondido, con silencio.
 //
 //   npm run pruebas:planes
@@ -87,7 +88,7 @@ try {
   const P = r.datos;
   // Al publicarlo desde la web, quien lo propone queda en «Voy» (la accion de la pagina lo hace).
   await rpc('responder_plan', { p_evento: P, p_respuesta: 'va' }, jon.token);
-  const [fp] = await sql`select oficial, creado_por, tipo, quedada::text, sporteasy_estado, recordar_un_dia_antes, ubicacion_nombre from public.eventos where id = ${P}`;
+  const [fp] = await sql`select oficial, creado_por, tipo, quedada::text, recordar_un_dia_antes, ubicacion_nombre from public.eventos where id = ${P}`;
   ok(fp.oficial === false && fp.creado_por === 'esteban-jon' && fp.tipo === 'quedada' && fp.quedada.startsWith('22:25') && fp.recordar_un_dia_antes && fp.ubicacion_nombre === 'Bar La Esquina', 'queda no oficial, con su organizador, la quedada 20 min antes y su sitio', JSON.stringify(fp));
   ok((await rpc('crear_plan', { p: { ...plan, tipo: 'liga' } }, jon.token)).status >= 400, 'un jugador NO crea un partido de liga (solo quedada, pachanga, amistoso u otro)');
   ok((await rpc('crear_plan', { p: { ...plan, fecha: sumar(hoy, -2) } }, jon.token)).status >= 400, 'ni un plan en un día pasado');
@@ -108,13 +109,17 @@ try {
   ok(avisos.some((a) => /ha cambiado tu plan/.test(a.texto)), 'al organizador le queda el aviso en su inicio', JSON.stringify(avisos));
   ok(((await api('/avisos_personales?select=texto', { token: adri.token })).datos ?? []).length === 0, 'y nadie más lo ve');
 
-  console.log('\n== Se responde en la web con el interruptor APAGADO (excepción a D64)');
-  ok((await sql`select encendido from public.respuestas_web_config`)[0].encendido === false, 'el interruptor está apagado');
+  console.log('\n== Se responde en la web (sin interruptor, D172)');
   r = await rpc('responder_plan', { p_evento: P, p_respuesta: 'no' }, adri.token);
   ok(r.status === 200, '«No voy» sin motivo', `${r.status} ${error(r)}`);
   r = await rpc('responder_plan', { p_evento: P, p_respuesta: 'va' }, guille.token);
   ok(r.status === 200, 'Guille responde «Voy»');
-  ok((await rpc('responder', { p_evento: P, p_respuesta: 'va' }, jon.token)).status >= 400, 'un evento oficial sigue sin poder responderse apagado (responder)');
+  // Antes, con el interruptor apagado, un evento oficial no se podía responder: ahora sí, siempre.
+  const [oficial] = await sql`select e.id from public.eventos e where e.oficial and e.estado = 'programado' and e.borrado_en is null and e.fecha > ${hoy}::date and public._invitado('esteban-jon', e.id) order by e.fecha limit 1`;
+  if (oficial) {
+    r = await rpc('responder', { p_evento: oficial.id, p_respuesta: 'va' }, jon.token);
+    ok(r.status === 200, 'un evento oficial también se responde (responder), sin interruptor', `${r.status} ${error(r)}`);
+  } else ok(true, '(no hay evento oficial futuro al que Jon esté invitado: lo cubre pruebas:respuestas-web)');
   const qv = (await api(`/v_quien_va?evento_id=eq.${P}&select=nombre,estado`, { token: jon.token })).datos ?? [];
   ok(qv.some((x) => x.nombre === 'Guillermo' && x.estado === 'va') && qv.some((x) => x.nombre === 'Adriano' && x.estado === 'no') && !JSON.stringify(qv).match(/motivo|nivel/), '«Quién va» lo ven los invitados: nombres y estado, nada más');
 
@@ -137,17 +142,17 @@ try {
   ok((await rpc('responder_plan', { p_evento: PL, p_respuesta: 'duda' }, v3.token)).status === 200, 'pero puede decir «Duda»');
   ok((await rpc('responder_plan', { p_evento: PL, p_respuesta: 'va' }, jon.token)).status === 200, 'y quien ya iba puede repetir «Voy» sin que cuente dos veces');
 
-  console.log('\n== Exclusiones: nada público, ni SportEasy, ni asistencia, ni convocatoria, ni recordatorios del club');
+  console.log('\n== Exclusiones: nada público, ni asistencia, ni convocatoria, ni recordatorios del club');
   ok(((await api(`/v_eventos_publicos?clave=like.plan-*&select=clave`)).datos ?? []).length === 0, 'la vista pública (portada, calendario y .ics público) no tiene planes');
   ok(((await api(`/v_eventos_publicos?select=clave`)).datos ?? []).length === 67, 'y sigue teniendo los 67 eventos oficiales');
   const vacio = (r) => r.status === 401 || r.status === 403 || r.status === 404 || (Array.isArray(r.datos) && r.datos.length === 0);
   ok(vacio(await api(`/eventos?select=id`)) && vacio(await api(`/v_mi_agenda?select=id`)) && vacio(await api(`/avisos_personales?select=id`)), 'anon no lee eventos, ninguna agenda ni avisos');
-  const eventosGestor = (await api(`/eventos?select=id,tipo,equipo,fecha,oficial,sporteasy_estado,estado,serie,origen,sporteasy_cambio,inicio,fin,quedada,titulo,creado_en,sin_recordatorios,recordar_un_dia_antes,borrado_en&temporada=eq.2026-27`, { token: tG })).datos ?? [];
+  const eventosGestor = (await api(`/eventos?select=id,tipo,equipo,fecha,oficial,estado,serie,origen,inicio,fin,quedada,titulo,creado_en,sin_recordatorios,recordar_un_dia_antes,borrado_en&temporada=eq.2026-27`, { token: tG })).datos ?? [];
   const planes = eventosGestor.filter((e) => e.oficial === false);
-  ok(planes.length === 2 && planes.every((e) => e.sporteasy_estado === 'pendiente'), 'los planes existen (los ve un gestor)');
+  ok(planes.length === 2, 'los planes existen (los ve un gestor)');
   const jug = (await api('/jugadores?select=person_id,nombre_visible,ficha_mda,ficha_mdl,entrena,activo,rol', { token: tG })).datos;
   const ahoraRec = new Date(Date.now());
-  const recClub = planificar({ ahora: ahoraRec, encendidoDesde: new Date(Date.now() - 30 * 86400000), eventos: eventosGestor.map((e) => ({ ...e, sitio: 'x' })), jugadores: jug, respuestas: [], ausencias: [] });
+  const recClub = planificar({ ahora: ahoraRec, eventos: eventosGestor.map((e) => ({ ...e, sitio: 'x' })), jugadores: jug, respuestas: [], ausencias: [] });
   ok(!recClub.some((a) => a.eventos.some((id) => planes.some((p) => p.id === id))), 'los recordatorios del club no incluyen ningún plan (aunque estén «al crearlo»)');
   ok(convocadosDe({ tipo: 'quedada', equipo: 'MdL', oficial: false }, jug).every((j) => j.ficha_mdl) && quienResponde({ tipo: 'quedada', equipo: 'ambos', oficial: false }, jug.find((j) => j.person_id === 'feliz-gomez-edimil')), 'la definición de invitados de la web coincide con la base (MdL: solo fichas del MdL; toda la plantilla: también quien solo entrena)');
   // Asistencia, convocatoria y estadísticas leen solo lo oficial: cargarEventos (lib/eventos/datos.ts) filtra oficial = true.
@@ -156,7 +161,7 @@ try {
   const ctxConv = fs.readFileSync(path.join(AQUI, '..', 'src', 'lib', 'convocatoria', 'datos.ts'), 'utf8');
   ok(/cargarEventos\(sb\)/.test(ctxConv), 'la convocatoria usa cargarEventos sin planes');
   const [{ n: nAct }] = await sql`select count(*)::int n from public.jugadores where activo and rol <> 'entrenador'`;
-  ok(nAct === 27, 'la condición «N/27» del interruptor no cambia con los planes (cuenta personas, no eventos)');
+  ok(nAct === 27, 'el «N/27» de «Avisos y accesos» no cambia con los planes (cuenta personas, no eventos)');
 
   console.log('\n== Recordatorio «un día antes» (solo si el organizador lo marcó), con silencio');
   const ev = (id) => { const e = eventosGestor.find((x) => x.id === id); return { ...e, sitio: 'Bar La Esquina', fecha: e.fecha, inicio: e.inicio }; };
@@ -173,8 +178,8 @@ try {
 
   console.log('\n== Un gestor borra y hace oficial');
   r = await rpc('hacer_oficial', { p_id: PL }, tG);
-  const [of] = await sql`select oficial, sporteasy_estado, sporteasy_cambio from public.eventos where id = ${PL}`;
-  ok(r.status === 200 && of.oficial === true && of.sporteasy_estado === 'pendiente' && /Evento nuevo/.test(of.sporteasy_cambio), '«Hacer oficial»: pasa a oficial y entra en la cola de SportEasy', JSON.stringify(of));
+  const [of] = await sql`select oficial from public.eventos where id = ${PL}`;
+  ok(r.status === 200 && of.oficial === true, '«Hacer oficial»: pasa a oficial (ya sin cola de SportEasy)', `${r.status} ${error(r)} ${JSON.stringify(of)}`);
   ok(((await api(`/v_eventos_publicos?select=clave&clave=like.plan-*`)).datos ?? []).length === 1, 'y ya sale en lo público como cualquier evento del club');
   r = await rpc('borrar_plan', { p_id: P }, tG);
   const [bo] = await sql`select borrado_en, estado, oficial from public.eventos where id = ${P}`;

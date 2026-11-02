@@ -7,15 +7,16 @@
 //   - Cambiar a mano con motivo: pasar al otro equipo (vista previa de las líneas antes de guardar), queda en el historial.
 //   - Añadir a uno que dijo «no voy»: lo encuentra en toda la plantilla, avisa antes de guardar, entra con su aviso.
 //   - Aprobar y copiar el mensaje: WhatsApp con encuentro, pista, dirección y dorsal, sin niveles; «al día»; el aviso de
-//     la web «en espera» (interruptor apagado); sin bloque de SportEasy (D153); cambiar tras aprobar → pendiente y «qué cambia».
+//     la web pendiente con «Enviar ahora»; sin bloque de SportEasy (D153); cambiar tras aprobar → pendiente y «qué cambia».
 //   - Un domingo con un solo equipo (J4): una sola tarjeta.
 //   - Privacidad: el jugador no entra en Gestión; en Mi zona solo «Convocado» con equipo, hora y encuentro.
 //   - D124: proyección de anotación en cada tarjeta («Quién aporta», el rival, el acierto) y en el tablero.
 //   - D125: modo rápido. Arrastrar en escritorio (1280 px) con zonas de destino, zona no válida sin ficha, aviso de
 //     «no voy», «Deshacer»; en el móvil y con teclado, selección múltiple y «Mover a…».
 //   - D153: ni la salida, ni la convocatoria ni el tablero hablan de SportEasy (sin bloque de copia ni de importación).
-//   - D127: «Enviar ahora» con el interruptor APAGADO, solo a quien toca, «a N de M», sin dobles y «Cambio en la
-//     convocatoria» tras cambiarla (servicio de avisos falso).
+//   - D127: «Enviar ahora», solo a quien toca, «a N de M», sin dobles y «Cambio en la convocatoria» tras cambiarla
+//     (servicio de avisos falso).
+//   - D172: sin el aviso «Las respuestas en la web están desactivadas» (el interruptor ya no existe).
 //
 //   npm run pruebas:convocatoria-pantallas
 
@@ -319,13 +320,12 @@ try {
   ok(await visto(pg.getByTestId('cv-salida-whatsapp').getByText('Pendiente')), 'WhatsApp: pendiente');
   await pg.getByRole('button', { name: 'Ya lo he pegado en el grupo' }).click();
   ok(await visto(pg.getByTestId('cv-salida-whatsapp').getByText('Al día')), 'tras pegarlo: al día');
-  const [{ encendido }] = await sql`select encendido from public.respuestas_web_config where id = 1`;
-  ok(!encendido && await visto(pg.getByTestId('cv-salida-aviso').getByText('Pendiente')) && await visto(pg.getByRole('button', { name: 'Enviar ahora' })), 'aviso «Estás convocado»: pendiente y con «Enviar ahora» aunque el interruptor esté APAGADO (D127)');
+  ok(await visto(pg.getByTestId('cv-salida-aviso').getByText('Pendiente')) && await visto(pg.getByRole('button', { name: 'Enviar ahora' })), 'aviso «Estás convocado»: pendiente y con «Enviar ahora» (D127)');
   ok(!(await pg.getByTestId('cv-salida-sporteasy').count()) && !/SportEasy/.test(await pg.locator('main').innerText()) && !(await pg.getByRole('button', { name: 'Marcar como copiado' }).count()), 'sin bloque «SportEasy» ni «Marcar como copiado» en la salida (D153)');
   ok(await sinDesbordar(pg), 'salida a 375 px sin desbordar');
   await foto(pg, 'convocatoria_salida_375');
 
-  console.log('\n== D127: «Enviar ahora» con el interruptor apagado, solo a convocados con avisos, «a N de M», sin dobles');
+  console.log('\n== D127: «Enviar ahora», solo a convocados con avisos, «a N de M», sin dobles');
   const ecdh = crypto.createECDH('prime256v1'); ecdh.generateKeys();
   const claves = { p256dh: ecdh.getPublicKey().toString('base64url'), auth: crypto.randomBytes(16).toString('base64url') };
   await sql`insert into public.suscripciones_avisos (user_id, person_id, endpoint, p256dh, auth, navegador) values (${jUid}, 'sint-01', ${`https://127.0.0.1:${PUERTO_PUSH}/ok/sint-01`}, ${claves.p256dh}, ${claves.auth}, 'Android · Chrome')`;
@@ -373,12 +373,12 @@ try {
   ok(await sinDesbordar(pg), 'a 375 px sin desbordar');
   await foto(pg, 'convocatoria_un_equipo_375');
 
-  console.log('\n== Domingo sin respuestas (interruptor apagado)');
+  console.log('\n== Domingo sin respuestas');
   const F0 = fechas.find((f) => ![F2, F1, proximo].includes(f));
   await pg.goto(`${APP}/gestion/convocatoria?fecha=${F0}`);
   const cont0 = await pg.getByTestId('cv-contadores').innerText();
   ok(/0\s*van/.test(cont0) && /0\s*no van/.test(cont0), `${F0}: 0 van y 0 no van`, cont0.replace(/\s+/g, ' '));
-  ok(await visto(pg.getByTestId('cv-respuestas-apagadas').getByText(/Las respuestas en la web están desactivadas\. Para este domingo todavía no hay ninguna respuesta\./)), '«Las respuestas en la web están desactivadas. Para este domingo todavía no hay ninguna respuesta.»');
+  ok(!(await pg.getByTestId('cv-respuestas-apagadas').count()) && !/desactivadas/.test(await pg.locator('main').innerText()), 'sin «Las respuestas en la web están desactivadas» (ya no existe, D172)');
   ok(!(await pg.getByTestId('bloque-importacion').count()) && !(await pg.getByTestId('cv-importacion').count()) && !/SportEasy|[Ff]ase puente/.test(await pg.locator('main').innerText()), 'sin bloque de importación, sin «fase puente» y sin «SportEasy» en la convocatoria (D153)');
   const cajas0 = await pg.locator('.cv-aviso').allInnerTexts();
   ok(cajas0.length === porFecha.get(F0).length && cajas0.every((t) => t.startsWith('Todavía no hay disponibles para este domingo.')), `un solo mensaje por equipo (${cajas0.length}), ninguna caja por regla`, cajas0.join(' | ').slice(0, 200));

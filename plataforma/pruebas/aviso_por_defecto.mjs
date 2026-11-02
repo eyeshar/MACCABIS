@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 // «No vas (puesto por defecto)» en la zona del propio jugador (D152, completa D146): pila local, web compilada y Chrome a
-// 375 px, con jugadores SINTÉTICOS (D39) y el interruptor «respuestas en la web» ENCENDIDO.
+// 375 px, con jugadores SINTÉTICOS (D39).
 //   - Quien «no suele entrenar» y no ha respondido: en su inicio, su agenda y el entreno, «No vas (puesto por defecto)»
 //     con «Sí voy»; «Sí voy» guarda «voy» (en la base y en la pantalla) desde el inicio y desde el entreno.
 //   - No sale si ya respondió, si tiene una ausencia que cubre el día, si un gestor se lo quitó para ese entreno (vuelve a
 //     «Te falta…») ni si no está invitado (entreno «solo con ficha» y sin ficha); ni a quien no tiene la marca.
 //   - Nunca se nombra la marca ni nada privado: ni en la página ni en el HTML (tampoco a los demás, que lo siguen viendo
 //     como «sin responder», D146).
-//   - Con el interruptor apagado, nada (las respuestas en la web están desactivadas).
 //
 //   npm run pruebas:aviso-defecto
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos, hasta, trasAccion } from './comun_e2e.mjs';
@@ -53,14 +52,8 @@ try {
   r = await rpc();
   ok(r.status >= 400, 'anónimo: no la puede ejecutar', String(r.status));
 
-  console.log('\n== Interruptor apagado: nada (respuestas en la web desactivadas)');
-  await sql`update public.respuestas_web_config set encendido = false where id = 1`;
-  const luz = await e.sesion('luz@pruebas.local', 375);
-  await luz.goto(`${APP}/`);
-  ok(!(await luz.getByTestId('por-defecto').count()) && !/puesto por defecto/.test(await luz.content()), 'inicio: ni la tarjeta ni el texto');
-
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
   console.log('\n== Luz (no suele entrenar, sin responder): «No vas (puesto por defecto)» y «Sí voy»');
+  const luz = await e.sesion('luz@pruebas.local', 375);
   await luz.goto(`${APP}/`);
   ok(await visto(luz.getByTestId('por-defecto')), 'inicio: sale el bloque de entrenos puestos por defecto');
   const tarjeta = (p, ev) => p.getByTestId('tarjeta-por-defecto').filter({ has: p.locator(`a[href="/mi-zona/evento/${ev.id}"]`) });

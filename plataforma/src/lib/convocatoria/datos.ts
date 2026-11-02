@@ -110,14 +110,12 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   // Domingos ya jugados (regla 4.2, D109): para saber quien estuvo disponible y se quedo fuera.
   const pasados = liga.filter((e) => e.fecha < fecha && e.fecha < hoy);
 
-  const [jug, resp, respEnt, priv, conv, enc, respPas, convPas, ausencias] = await Promise.all([
+  const [jug, resp, respEnt, priv, conv, respPas, convPas, ausencias] = await Promise.all([
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos, reserva"),
-    // Columnas explicitas: las de la copia a SportEasy (sporteasy_*) quedan en la base sin uso (D153).
     sb.from("convocatorias").select("id, fecha, jornada, estado, origen, equipos, dificultad, cambiado_en, cambiado_por_nombre, aprobada_en, aprobada_por_nombre, whatsapp_estado, whatsapp_en, whatsapp_base, aviso_estado, aviso_en, aviso_base").eq("fecha", fecha).maybeSingle(),
-    sb.rpc("respuestas_web_encendido"),
     pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D133).
     sb.from("convocatorias").select("fecha, equipos, dificultad").eq("estado", "aprobada"),
@@ -226,10 +224,9 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   return {
     fecha, jornada, partidos, jugadores, convocatoria: fila, cambios, contadores,
     limiteDudas: limiteDe?.toISOString() ?? null, dudasAbiertas: limiteDe ? Date.now() < limiteDe.getTime() : false,
-    eventoRespuestas: delDia[0]?.id ?? null, encendido: enc.data === true, sinMigracion,
+    eventoRespuestas: delDia[0]?.id ?? null, sinMigracion,
     proyeccion: datosProyeccion(jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre })), new Map(jugadores.map((j) => [j.person_id, ((privados.get(j.person_id) as FilaPrivada | undefined)?.nota_ataque ?? null) as Letra | null])),
       delDia.map((e) => ({ equipo: e.equipo as Equipo, rival: e.rival, jornada: e.jornada })), dificultades),
-    respuestasDelDomingo: ((resp.data ?? []) as { respuesta: string }[]).filter((r) => r.respuesta !== "sin_responder").length,
     sinDatosPrivados: jugadores.filter((j) => j.invitado && (!j.privado || !j.privado.posicion || !j.privado.nivel)).length,
     domingos: domingos.slice(0, 6),
   };

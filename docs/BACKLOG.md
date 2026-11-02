@@ -43,9 +43,7 @@
 15. [ ] **Clasificaciones**: no se han tocado en el sondeo. Criterio ya acordado: la clasificación **de la fase donde acabó Maccabi** cada año. Los recursos de clasificaciones del dataset son los n impares (1, 5, 9, 13, 16, 20, 24, 28, 32).
 16. [ ] **Cruzar la fuente JDM con el histórico propio** (`season_*.json`, `personas.json`, la matriz): bloque futuro, sólo cuando la fuente JDM esté cerrada.
 17. [ ] **Tapar 2013/14, 2019/20 y 2025/26 desde las actas propias**: no están en el histórico del portal (2025/26 vive en el dataset 211549 de temporada en curso).
-18. [x] ~~**Decidir con Iván qué hacer con el código que aún depende de SportEasy**~~ **Hecho (31/10/2026, `feat/cierre-sporteasy`, D153 ampliada):** Iván decidió quitarlo todo de la plataforma; columnas `sporteasy_*`, `diccionario_sporteasy`, `respuestas.sporteasy_descartado` y `respuestas_web_config.sporteasy_comprobado` quedan huérfanas en la base (sin leer ni escribir).
-19. [ ] **Migración que borra lo huérfano de SportEasy** (columnas `sporteasy_*` de `eventos` y de la convocatoria, `diccionario_sporteasy`, `respuestas.sporteasy_descartado`, `respuestas_web_config.sporteasy_comprobado` y la condición 4 de la función del interruptor): **solo cuando Iván lo diga**, con D111 (volcado, `.revertir.sql`, permisos y cuentas antes y después). D153.
-20. [ ] **¿Quitar el interruptor «respuestas en la web»?** Sin SportEasy, apagado deja a los jugadores sin sitio donde responder. Propuesta de Code (D153 ampliada): quitar la tarjeta y dar por encendido para siempre; lo decide Iván.
+_(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 
 21. [ ] **`pruebas:planes` intermitente en Actions** (01/11/2026, 2 veces): «404 Could not find the function public.crear_plan in the schema cache»; pasa al relanzar. Esperar a que PostgREST vea la función (reintento con `hasta()` o `notify pgrst` tras migrar) antes de la primera llamada.
 
@@ -53,12 +51,11 @@
 
 **Operativa de ahora**
 - [x] **Hecho (01/11/2026, OK de Iván, con D111; 28 cuentas antes y después):** **OK a la marca «Reserva» (D158, `feat/reserva`):** aplicar en el real la migración `20261031180000_reserva` (con D111) y la carga `node plataforma/scripts/cargar_reserva.mjs --aplicar` (reserva para Fernando M. y Guillermo), **antes** de mergear la rama (la convocatoria lee la columna). Lo hace Code cuando Iván dé el OK.
-- [ ] **Pausar o borrar la tarea programada «Maccabis · respuestas de SportEasy»** en el Chrome de Iván, si sigue activa (D153; Code no tiene acceso a las tareas programadas).
 - [ ] **Cuando Carlos entre por primera vez:** comprobar que su plaza se vinculó sola (`npm run db:estado`: 3 gestores vinculados) y que ve Gestión, el tablero y la banda del inicio. Aún no tiene cuenta (simulado en una transacción deshecha: se vincula y ve los niveles).
    - **26/10/2026:** Iván dice que Carlos ya ha entrado, pero `npm run db:estado` da **3 gestores y 2 vinculados** (Iván y Eduardo) y en `auth.users` **no hay ninguna cuenta con el correo de su ficha** (el mismo de su plaza de gestor; no es de Gmail). Hay que ver con Carlos con qué correo entró: con ese correo, «Entrar con Google» no sirve; la vía es «Recibir código por correo» a esa dirección.
 - [ ] **Prueba de los avisos en iPhone y Android reales** (`docs/PRUEBA_AVISOS_MOVILES.md`; venía del paso 3, D99).
 - [ ] Sanciones, si las hay (las pone un gestor en «Datos de los jugadores»).
-- [ ] **En espera, sin fecha (decisión de Iván, 26/10/2026).** **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27; **a 24/10/2026 sigue fuera de la plantilla 26/27** (`nombres_sporteasy.json` sin cambios). **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `nombres_sporteasy.json` (quitarlo de `ignorar["2026-27"]`), `personas` y plataforma. _(D153: el paso de `nombres_sporteasy.json` depende de qué se haga con el código de SportEasy, «Pendiente de Code» 18.)_
+- [ ] **En espera, sin fecha (decisión de Iván, 26/10/2026).** **Decidir el alta de Iván Canario** (`rodriguez-perez-ivan`, ya en `personas.json`; responde en SportEasy como «Iván Rodríguez Pérez»): posible incorporación a la plantilla 26/27; **a 24/10/2026 sigue fuera de la plantilla 26/27** (`nombres_sporteasy.json` sin cambios). **Plazo de la FBM para un alta: antes de las 20:00 del jueves previo al partido** (para la J4 del 08/11, el jueves 05/11). Al darle de alta: ficha, plantilla, `personas` y plataforma. _(D172: con SportEasy fuera, `nombres_sporteasy.json` solo sirve para la asistencia histórica hasta el 23/10/2026; para el alta no hace falta tocarlo, salvo que Iván quiera contar lo que respondió en SportEasy antes.)_
 - [ ] **Explorar una tablet Android siempre encendida, vinculada a Enlace Móvil**, para automatizar también la descarga de las hojas de Afición FBM (hoy las baja Iván desde el móvil; D69/D70: la app no se instala en emuladores).
 - [ ] **Una única consulta a Indalweb** (soporte@gesdeportiva.es) sobre una exportación oficial de actas y estadísticas; si dicen que no, se cierra (D49).
 - [ ] **Corregir el delegado del MdA** en la organización (Varas → Barreiro; Barreiro también en el MdL).
@@ -127,6 +124,13 @@
 ---
 
 ## Histórico
+
+### Cerrado con el fin de SportEasy (02/11/2026, `feat/fin-sporteasy`, D172)
+
+- [x] **Code 18.** ~~**Decidir con Iván qué hacer con el código que aún depende de SportEasy**~~ Hecho en dos pasos: el 31/10/2026 (`feat/cierre-sporteasy`, D153 ampliada) se quitó de la plataforma y lo de la base quedó huérfano; el 02/11/2026 (D172) se quitó todo lo que quedaba (código, base y docs vigentes). Lo que se queda, y por qué, en `ESTADO.md` («Fin de SportEasy»).
+- [x] **Code 19.** ~~**Migración que borra lo huérfano de SportEasy**~~ (columnas `sporteasy_*` de `eventos` y de la convocatoria, `diccionario_sporteasy`, `respuestas.sporteasy_descartado`, `respuestas_web_config.sporteasy_comprobado` y la condición 4 de la función del interruptor). Hecho: migración `20261102200000_fin_sporteasy` con D111 (volcado, `.revertir.sql` probado en la pila, permisos y cuentas antes y después). Borra también las funciones del interruptor y `ultima_importacion_respuestas`.
+- [x] **Code 20.** ~~**¿Quitar el interruptor «respuestas en la web»?**~~ Iván decidió quitarlo: las respuestas en la web están siempre encendidas; fuera la tarjeta del Panel y todo el modo «apagado» (pantallas, avisos, funciones de la base). Los contadores de avisos y accesos siguen en la tarjeta «Avisos y accesos».
+- [x] **Pendiente de Iván.** ~~**Pausar o borrar la tarea programada «Maccabis · respuestas de SportEasy»**~~ La borró Claude el 02/11/2026. La tarea «Maccabis · actas del lunes» sigue desactivada y no se ha tocado.
 
 ### Cerrado en la limpieza del 31/10/2026 (`docs/orden-vigente-31-10`)
 

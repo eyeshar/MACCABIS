@@ -5,7 +5,6 @@
 //   npm run db:migrar                  aplica las migraciones pendientes de supabase/migrations
 //   npm run db:semilla                 carga la plantilla 26/27 y la campana de ropa
 //   npm run db:gestor -- <email> <nombre>   reserva o vincula una plaza de gestor por correo (D68)
-//   npm run db:correos -- <fichero>    importa los correos de SportEasy a jugadores.email (scripts/importar_correos.mjs)
 //   npm run db:correo -- <person_id> <correo_nuevo>   cambia el correo de UN jugador, sincronizando
 //                                       su cuenta de auth (si ya existe) y la de gestores (si lo es)
 //   npm run db:estado                  resumen (sin mostrar telefonos)

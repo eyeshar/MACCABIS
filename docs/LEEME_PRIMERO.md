@@ -8,7 +8,7 @@ Estos son los documentos de memoria del proyecto, generados al cerrar la convers
 - **ESTADO.md** — qué está hecho hoy. Se actualiza cada sesión.
 - **DECISIONS.md** — decisiones tomadas y su porqué. Para no re-discutir.
 - **BACKLOG.md** — lo pendiente, por prioridad.
-- **SPORTEASY.md** — todo sobre SportEasy y cómo nos relacionamos con ella.
+- **SPORTEASY.md** — histórico: cómo era SportEasy y cómo se trabajaba con él (no se usa desde D153; quitado del todo en D172).
 - **PRIMER_PROMPT_CLAUDE_CODE.md** — el bloque listo para pegar en Claude Code al arrancar.
 
 ## Cómo seguir (pasos para Iván)

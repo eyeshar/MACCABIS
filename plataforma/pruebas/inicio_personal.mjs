@@ -4,8 +4,8 @@
 //   - jugador: lo suyo (saludo con posicion, fichas y dorsal; «Te faltan N» con carrusel y contador «1 de N»; proximo
 //     partido con «Convocado», casillas, «Te pones» y el color del rival aparte; avisos de la jornada; agenda con planes
 //     y «Tu grupo»; temporada; el club) y NO la banda de gestion;
-//   - apagado: «Te faltan N» solo cuenta los planes (se responden aqui); los partidos y entrenos no se piden y no hay
-//     nada de SportEasy («Las respuestas en la web … están desactivadas»); encendido: Voy / No voy / Duda;
+//   - «Te faltan N» cuenta los planes y los eventos oficiales de los proximos 14 dias sin responder (D172: las respuestas
+//     en la web, siempre encendidas), con Voy / No voy / Duda en cada tarjeta; nada de SportEasy;
 //   - gestor: la banda «Gestión esta semana» (plegable y recordada) y tres columnas en escritorio;
 //   - 375 y 1280 px sin desbordamiento ni errores de consola. Capturas en privado/mockups_liga/inicio-y-planes/.
 //
@@ -40,8 +40,7 @@ try {
   await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${F('2026-10-25')}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'esteban-jon' }], MdL: [{ person_id: 'gianatti-adriano' }] })}, now())`;
   const api = (f, args, token) => fetch(`${e.pila.url}/rest/v1/rpc/${f}`, { method: 'POST', headers: { apikey: e.pila.anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(args) }).then((r) => r.json());
   const plan = await api('crear_plan', { p: { tipo: 'quedada', titulo: 'Cañas del jueves', fecha: ent.fecha, inicio: '22:40', equipo: 'ambos', ubicacion_nombre: 'Bar La Esquina', ubicacion_lat: 40.4, ubicacion_lng: -3.63 } }, P['gianatti-adriano'].token);
-  // Un segundo plan, el mismo dia y mas tarde: con el interruptor apagado, «Te faltan» solo cuenta planes y el carrusel
-  // necesita dos tarjetas.
+  // Un segundo plan, el mismo dia y mas tarde: dos tarjetas de plan en el carrusel.
   const plan2 = await api('crear_plan', { p: { tipo: 'quedada', titulo: 'Picoteo de después', fecha: ent.fecha, inicio: '23:15', equipo: 'ambos', ubicacion_nombre: 'Bar La Esquina', ubicacion_lat: 40.4, ubicacion_lng: -3.63 } }, P['gianatti-adriano'].token);
   await sql`insert into public.grupos_repartos (evento_id, nombre, grupos, publicado) values (${ent.id}, '5 contra 5', ${sql.json([{ nombre: 'Azules', personas: ['esteban-jon', 'gianatti-adriano'] }, { nombre: 'Rojos', personas: ['galan-domingo-guillermo'] }])}, true)`;
   // Fallo de la J3 (25/10): Ivan (gestor y jugador de los dos equipos), importado «va» al MdA y «no» al MdL; otros
@@ -64,7 +63,7 @@ try {
   ok(r.status === 308 && new URL(r.headers.get('location'), APP).pathname === '/', '/mi-zona redirige a «/» (308)', `${r.status} ${r.headers.get('location')}`);
   ok((await fetch(`${APP}/mi-zona/ausencias`, { redirect: 'manual' })).status !== 404, 'sus subpáginas siguen');
 
-  console.log('\n== Jugador en el móvil (375 px), interruptor apagado');
+  console.log('\n== Jugador en el móvil (375 px)');
   const pj = await e.sesion('jon@pruebas.local', 375);
   ok(new URL(pj.url()).pathname === '/', 'al entrar, el jugador va a su inicio («/»)', pj.url());
   ok(await visto(pj.getByRole('heading', { name: /Hola,\s*Jon/ })), 'saludo «Hola, Jon»');
@@ -76,12 +75,14 @@ try {
   ok(!(await pj.getByTestId('banda-gestion').count()), 'un jugador NO ve la banda de gestión');
   const titulo = (await pj.locator('#t-faltan').textContent()).trim();
   const n = Number(/Te faltan (\d+)/.exec(titulo)?.[1] ?? (/Te falta 1/.test(titulo) ? 1 : 0));
-  ok(n === 2, `«${titulo}» (los dos planes; el entreno «sin responder» no se pide con el interruptor apagado)`);
-  ok(!(await pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/mi-zona/evento/${ent.id}"]`) }).count()), 'apagado: el entreno no sale en «Te faltan»');
-  ok(!(await pj.getByTestId('responder-sporteasy').count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'apagado: sin «Responder en SportEasy» y sin «SportEasy» en el inicio');
-  ok(/desactivadas/.test(await pj.getByTestId('regla-recordatorios').innerText()), 'apagado: «Las respuestas en la web a partidos y entrenos están desactivadas»');
+  // Los dos planes, el entreno «sin responder» y la J3 (sin respuesta suya), como poco: lo oficial de 14 días también se pide.
+  ok(n >= 4 && n === await pj.getByTestId('tarjeta-pendiente').count(), `«${titulo}» (los dos planes y los eventos oficiales sin responder de los próximos 14 días)`, `${n} / ${await pj.getByTestId('tarjeta-pendiente').count()} tarjetas`);
+  const tarjetaEnt = pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/mi-zona/evento/${ent.id}"]`) });
+  ok(await tarjetaEnt.count() === 1, 'el entreno «sin responder» sale en «Te faltan»');
+  ok(!(await pj.getByTestId('respuestas-apagadas').count()) && !(await pj.getByTestId('responder-sporteasy').count()) && !/SportEasy|desactivadas/i.test(await pj.locator('main').innerText()), 'sin «desactivadas» (ya no existe, D172), sin «Responder en SportEasy» y sin «SportEasy» en el inicio');
+  ok(/^Si no respondes, te lo recordamos:/.test(await pj.getByTestId('regla-recordatorios').innerText()), '«Si no respondes, te lo recordamos: …»', await pj.getByTestId('regla-recordatorios').innerText().catch(() => ''));
   const tarjetaPlan = pj.getByTestId('tarjeta-pendiente').filter({ hasText: 'Cañas del jueves' });
-  ok(await tarjetaPlan.count() === 1 && await visto(tarjetaPlan.getByText('Plan no oficial')) && await visto(tarjetaPlan.getByRole('button', { name: 'Voy', exact: true })), 'el plan se responde aquí aunque esté apagado (Voy / No voy / Duda)');
+  ok(await tarjetaPlan.count() === 1 && await visto(tarjetaPlan.getByText('Plan no oficial')) && await visto(tarjetaPlan.getByRole('button', { name: 'Voy', exact: true })), 'el plan se responde aquí (Voy / No voy / Duda)');
   ok(await visto(pj.getByTestId('tarjeta-pendiente').first().locator('.in-casilla-quedada')) && /\w+ \d+ \w{3}/.test(await pj.locator('.in-pendiente-fecha').first().innerText()), 'cada tarjeta: fecha en grande («Miércoles 28 oct») y la casilla Quedada');
   ok((await pj.getByTestId('contador').innerText()) === `1 de ${n}`, `contador «1 de ${n}»`, await pj.getByTestId('contador').innerText().catch(() => ''));
   await pj.locator('.in-tarjetas').evaluate((c) => c.scrollTo({ left: c.scrollWidth, behavior: 'instant' }));
@@ -120,7 +121,8 @@ try {
   await pj.evaluate(() => window.scrollTo(0, 0));
   await foto(pj, 'inicio_jugador_375');
   const html375 = await pj.content();
-  ok(!/nivel|motivo/i.test(html375.replace(/<script[\s\S]*?<\/script>/g, '')), 'sin niveles ni motivos en la pantalla');
+  // Sin las hojas «No voy» (<dialog> cerrado con la lista de motivos para elegir el suyo, no datos de nadie).
+  ok(!/nivel|motivo/i.test(html375.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<dialog[\s\S]*?<\/dialog>/g, '')), 'sin niveles ni motivos en la pantalla');
   // Fallo de produccion (25/10): el inicio de un jugador enlazaba /mi-zona/manifest.webmanifest, que leia mi_zona y daba
   // «permission denied». Un solo manifiesto, el de toda la web.
   const manifiestos = await pj.locator('link[rel="manifest"]').evaluateAll((l) => l.map((x) => x.getAttribute('href')));
@@ -133,20 +135,21 @@ try {
   ok(!(await pj.getByTestId('tarjeta-pendiente').filter({ hasText: 'Cañas del jueves' }).count()) && titulo2 !== titulo, `respondido: la tarjeta sale (${titulo} → ${titulo2})`);
   ok((await sql`select respuesta from public.respuestas where evento_id = ${plan} and person_id = 'esteban-jon'`)[0]?.respuesta === 'va', 'y queda guardado «va»');
 
-  console.log('\n== Encendido: Voy / No voy / Duda en la tarjeta (No voy con su hoja de motivo)');
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
-  await pj.reload();
-  const tarjetaEnt = pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/mi-zona/evento/${ent.id}"]`) });
-  ok(!(await pj.getByTestId('responder-sporteasy').count()) && await visto(tarjetaEnt.getByRole('button', { name: 'No voy', exact: true })), 'encendido: sin SportEasy; botones en las tarjetas');
+  console.log('\n== Voy / No voy / Duda en la tarjeta del entreno (No voy con su hoja de motivo)');
+  ok(!(await pj.getByTestId('responder-sporteasy').count()) && await visto(tarjetaEnt.getByRole('button', { name: 'No voy', exact: true })), 'sin SportEasy; botones en las tarjetas');
   await tarjetaEnt.getByRole('button', { name: 'No voy', exact: true }).click();
   ok(await visto(pj.getByRole('dialog')) && await pj.getByRole('dialog').getByRole('button', { name: 'Guardar «no voy»' }).isDisabled(), '«No voy» abre el diálogo de motivo obligatorio');
   await pj.keyboard.press('Escape');
-  await foto(pj, 'inicio_jugador_encendido_375');
+  await foto(pj, 'inicio_jugador_no_voy_375');
 
   console.log('\n== Sin nada pendiente: «Lo tienes todo respondido»');
   await api('responder_plan', { p_evento: plan, p_respuesta: 'no' }, P['galan-domingo-guillermo'].token);
   await api('responder_plan', { p_evento: plan2, p_respuesta: 'no' }, P['galan-domingo-guillermo'].token);
-  await sql`update public.respuestas_web_config set encendido = false where id = 1`;
+  // Lo oficial de los próximos 14 días también se pide (D172): Guille lo tiene todo respondido («va»; lo que ya tuviera, se queda).
+  await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen)
+    select id, 'galan-domingo-guillermo', 'va', 'jugador' from public.eventos
+    where estado = 'programado' and borrado_en is null and fecha between ${hoy}::date and ${hoy}::date + 14
+    on conflict (evento_id, person_id) do nothing`;
   const pg = await e.sesion('guille@pruebas.local', 375);
   ok((await pg.locator('#t-faltan').textContent()).trim() === 'Lo tienes todo respondido', '«Lo tienes todo respondido»', await pg.locator('#t-faltan').textContent());
   // D171: con la convocatoria aprobada y sin estar en ella, ese partido NO sale en la tarjeta: se salta y lo dice una línea arriba.

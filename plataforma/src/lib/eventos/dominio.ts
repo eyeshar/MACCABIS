@@ -217,7 +217,7 @@ export function mensajeWhatsApp(e: EventoFila, pistas: Pista[], accion: AccionMe
   if (mapa) lineas.push(`Cómo llegar: ${mapa}`);
   if (notas) lineas.push(notas.replace(/\.$/, "") + ".");
   if (opciones.lineaEquipacion) lineas.push(opciones.lineaEquipacion);
-  // Con «respuestas en la web» encendido (D99) se termina con el enlace a la web; apagado, sin linea de respuesta.
+  // Se termina con el enlace a la web para responder (D99).
   if (opciones.respondeEnLaWeb) lineas.push(`Responde en la web: ${opciones.respondeEnLaWeb}`);
   return lineas.join("\n");
 }

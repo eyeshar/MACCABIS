@@ -4,7 +4,7 @@ import { cargarJugadores } from "@/lib/eventos/datos";
 import { type Respuesta } from "@/lib/eventos/dominio";
 import "./eventos/eventos.css";
 import { exigirGestor, origenMensajes } from "@/lib/sesion";
-import TarjetaActivar from "./TarjetaActivar";
+import TarjetaAvisos from "./TarjetaAvisos";
 import { cargarActivacionViva } from "@/lib/gestion/activacion";
 import { AvisoCaja } from "@/components/ProximoPartido";
 import { bonito, cargarLiga, dec, masPeligrosos, type DatosLiga } from "@/lib/liga";
@@ -129,17 +129,8 @@ export default async function InicioGestion() {
   const porDefecto = conMarca.filter((j) => !quitado(j.person_id)).map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
   const quitadosEntreno = conMarca.filter((j) => quitado(j.person_id)).map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible }));
 
-  // «Respuestas en la web: activar» (D99.13): estado, condiciones y jornadas jugadas para marcarlas. Lo en vivo (D156) sale de cargarActivacionViva.
-  const web = await origenMensajes();
-  const [viva, { data: marcasDB }, { data: jugadas }] = await Promise.all([
-    cargarActivacionViva(supabase, js, web),
-    supabase.from("jornadas_control").select("jornada, estado").eq("temporada", "2026-27"),
-    supabase.from("eventos").select("jornada").eq("tipo", "liga").lt("fecha", hoy).not("jornada", "is", null),
-  ]);
-  const ultimaJugada = Math.max(0, ...((jugadas ?? []) as { jornada: number }[]).map((x) => x.jornada));
-  const jornadasJugadas = Array.from({ length: ultimaJugada }, (_, i) => i + 1);
-  const marcas = Object.fromEntries(((marcasDB ?? []) as { jornada: number; estado: "limpia" | "con_arreglo" }[]).map((m) => [m.jornada, m.estado]));
-  const mensajeActivar = `¡Novedad! Desde hoy las respuestas (Voy / No voy / Duda) se dan en la web de Maccabis: ${web}/mi-zona\nInstálala en el móvil y activa los avisos (te avisa si te falta responder o si cambia algo; de noche solo si el partido es en pocas horas): ${web}/avisos\nEn iPhone, ábrela con Safari → Compartir → «Añadir a pantalla de inicio», y entra desde el icono con tu correo.`;
+  // «Avisos y accesos» (D156, D157): quién tiene avisos y quién falta por entrar; lo en vivo sale de cargarActivacionViva.
+  const viva = await cargarActivacionViva(supabase, js, await origenMensajes());
 
   // «Pendiente esta semana»: la misma lista (con enlaces) que la banda «Gestión esta semana» del inicio (D117).
   const pendientes = await cargarPendientesSemana(supabase);
@@ -176,7 +167,7 @@ export default async function InicioGestion() {
         </div>
       </section>
 
-      {viva && <div style={{ marginBottom: 20 }}><TarjetaActivar inicial={viva} jornadas={jornadasJugadas} marcas={marcas} mensaje={mensajeActivar} /></div>}
+      {viva && <div style={{ marginBottom: 20 }}><TarjetaAvisos inicial={viva} /></div>}
 
       <div className="gs-dos">
         <div className="gs-izq">

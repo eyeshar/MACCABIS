@@ -343,9 +343,10 @@ try {
     ok(new URL(p.url()).pathname === '/', 'un jugador entra en su inicio («/»)', p.url());
     ok(await p.getByRole('heading', { name: /Hola,\s*Jon/ }).isVisible(), 'inicio: "Hola, <nombre>"');
     const agenda = p.locator('#agenda');
-    // Con «respuestas en la web» apagado: la agenda con sus entrenos; las respuestas a partidos y entrenos, desactivadas
-    // (sin SportEasy).
-    ok((await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').count()) >= 1 && /desactivadas/.test(await p.getByTestId('regla-recordatorios').innerText()), 'Tu agenda: entrenos; y «Las respuestas en la web … están desactivadas» (interruptor apagado)');
+    // D172: las respuestas en la web, siempre encendidas: la agenda con sus entrenos y la regla de los recordatorios
+    // (nunca «desactivadas»; sin SportEasy).
+    ok((await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').count()) >= 1 && /^Si no respondes, te lo recordamos:/.test(await p.getByTestId('regla-recordatorios').innerText()), 'Tu agenda: entrenos; y «Si no respondes, te lo recordamos: …»', await p.getByTestId('regla-recordatorios').innerText().catch(() => ''));
+    ok(!/desactivadas/.test(await p.locator('main').innerText()) && !(await p.getByTestId('respuestas-apagadas').count()), 'inicio: sin «Las respuestas en la web están desactivadas» (ya no existe)');
     ok(!/SportEasy/i.test(await p.textContent('main')) && !(await p.getByTestId('responder-sporteasy').count()), 'inicio: sin «SportEasy» ni «Responder en SportEasy»');
     const filasLibre = await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').allTextContents();
     ok(filasLibre.some((t) => t.includes('Ciudad de los Periodistas')), 'Tu agenda: el entreno con ubicación libre sale en «Ciudad de los Periodistas»', filasLibre.slice(0, 2).join(' | '));
@@ -373,7 +374,10 @@ try {
     ok((await g.locator('section[aria-label="Rutinas semanales"] .gs-caja').count()) === 3, 'panel: rutinas A, B y C');
     ok((await g.locator('[aria-labelledby="t-prox"] .eq-partido').count()) >= 1, 'panel: partidos del domingo');
     ok(!(await g.locator('[data-testid="hueco-sporteasy"]').count()) && ((await g.locator('[data-testid="entreno-sin-respuestas"]').isVisible()) || (await g.locator('[data-testid="respuestas-entreno"]').isVisible())), 'panel: el entreno con sus respuestas o «Aún nadie ha respondido», sin el hueco de SportEasy');
-    ok(!/SportEasy/i.test(await g.textContent('main')), 'panel: sin «SportEasy» en ninguna parte (tampoco la casilla de la tarjeta del interruptor)');
+    ok(!/SportEasy/i.test(await g.textContent('main')), 'panel: sin «SportEasy» en ninguna parte');
+    // D172: la tarjeta «Respuestas en la web» (con su interruptor) es ahora «Avisos y accesos», sin interruptor.
+    const tAvisos = g.getByTestId('tarjeta-avisos');
+    ok(await tAvisos.isVisible() && await g.getByTestId('franja-avisos').isVisible() && !(await tAvisos.locator('input[type="checkbox"], [role="switch"]').count()) && !(await g.locator('[data-testid^="tarjeta-activar"]').count()), 'panel: la tarjeta «Avisos y accesos», sin interruptor (ni la vieja «Respuestas en la web»)');
     ok((await g.locator('.gs-pendientes li').count()) >= 1, 'panel: pendientes de la semana');
     // D90: en movil la barra de Gestion es una fila con scroll horizontal; lo que no cabe se alcanza desplazandola.
     const menuEntero = await g.evaluate(() => { const f = document.querySelector('nav[aria-label="Gestión"] .zb-fila'); return f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === 'auto'; });

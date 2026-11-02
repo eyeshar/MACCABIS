@@ -118,7 +118,7 @@ try {
   await visto(pg.getByTestId('columna-no'));
   ok(!(await pg.locator('[data-person="sint-ugo"]').count()) && (await pg.getByTestId('columna-duda').locator('[data-person="sint-luz"]').count()) === 1, 'tablero de un partido: Ugo («nunca a partidos», sin responder) no sale; Luz sí, como «sin responder»');
 
-  console.log('\n== Respuestas del entreno y sin «Pedir recordatorio a Claude» (interruptor apagado)');
+  console.log('\n== Respuestas del entreno y sin «Pedir recordatorio a Claude»');
   await pg.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
   const filaLuz = pg.locator('tr[data-respuesta]').filter({ hasText: 'Luz' });
   ok((await filaLuz.getAttribute('data-respuesta')) === 'no' && /No va \(por defecto\)/.test(await filaLuz.innerText()) && /no suele entrenar/.test(await filaLuz.innerText()), 'Luz: «No va (por defecto)» con su nota', await filaLuz.innerText());

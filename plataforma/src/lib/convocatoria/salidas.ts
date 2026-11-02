@@ -4,7 +4,7 @@ import { avisarConvocados } from "./avisos";
 import { cargarContexto } from "./datos";
 
 /** «Enviar ahora» (D127): con la convocatoria aprobada, manda el aviso «Estás convocado» (o «Cambio en la convocatoria»)
- *  a quien toca, con o sin el interruptor de respuestas en la web, y deja la salida «enviado». Ya no se manda solo al
+ *  a quien toca y deja la salida «enviado». Ya no se manda solo al
  *  aprobar ni al cambiar: tras un cambio la salida vuelve a pendiente hasta que un gestor la envie. */
 export async function enviarAvisoConvocatoria(sb: Cliente, fecha: string) {
   const ctx = await cargarContexto(sb, fecha);

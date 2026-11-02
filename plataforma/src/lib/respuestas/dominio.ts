@@ -263,7 +263,6 @@ export function lineaCambio(e: Pick<MiEvento, "cambio_visible" | "cambio_visible
 
 export const ERRORES: Record<string, string> = {
   sin_ficha: "Tu cuenta no tiene ficha de jugador.",
-  respuestas_apagadas: "Las respuestas en la web están desactivadas.",
   no_invitado: "Este evento no es para tu ficha.",
   evento_cerrado: "Este evento ya empezó o se canceló: no se puede cambiar la respuesta.",
   falta_motivo: "Elige un motivo para guardar «no voy».",

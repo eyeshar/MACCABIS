@@ -248,11 +248,6 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
 
       <section className="gs-bloque cv-cab" aria-label="Respuestas del domingo">
         <Numeros prueba="cv-contadores" etiqueta="Respuestas del domingo" contenedor="gs-cifras cv-contadores num-cajas" grupos={gruposCabecera} />
-        {!ctx.encendido && (
-          <div className="cv-apagado" data-testid="cv-respuestas-apagadas">
-            <p className="pequeno" style={{ margin: 0 }}>Las respuestas en la web están desactivadas.{ctx.respuestasDelDomingo === 0 && " Para este domingo todavía no hay ninguna respuesta."}</p>
-          </div>
-        )}
         {ctx.proyeccion.calibracion && <p className="pequeno suave" style={{ margin: 0 }} data-testid="cv-acierto" title={ctx.proyeccion.calibracion.puntos.map((x) => `J${x.jornada} ${x.equipo}: ${x.proyeccion} (real ${x.real})`).join(" · ")}>{ctx.proyeccion.calibracion.texto}.</p>}
         {ctx.eventoRespuestas && <Link href={`/gestion/eventos/${ctx.eventoRespuestas}/respuestas#t-rec`} className="cv-enlace">Recordar a los que no han respondido →</Link>}
         {!empezada ? (

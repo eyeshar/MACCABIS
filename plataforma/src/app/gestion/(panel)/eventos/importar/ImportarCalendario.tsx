@@ -9,7 +9,7 @@ G1;4;Maccabi de Acostar descansa;;08/11/2026;;
 G2;2;Quinto Tiempo;Maccabi de Levantar;18/10/2026;10:15;1`;
 
 /** Importar el calendario del Ayuntamiento: pegar, comparar y aceptar/ignorar cada cambio. Nada se aplica sin OK. */
-export default function ImportarCalendario({ encendido = false }: { encendido?: boolean }) {
+export default function ImportarCalendario() {
   const [texto, setTexto] = useState("");
   const [res, setRes] = useState<ResultadoCalendario | null>(null);
   const [decisiones, setDecisiones] = useState<Record<string, "acepta" | "ignora">>({});
@@ -21,8 +21,7 @@ export default function ImportarCalendario({ encendido = false }: { encendido?: 
     try { setRes(await analizarCalendario(texto)); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo comparar."); }
   });
   const aceptados = Object.entries(decisiones).filter(([, v]) => v === "acepta").map(([k]) => k);
-  // Con «respuestas en la web» encendido (D103): «Aplicar y avisar» (por defecto) o «Aplicar sin avisar», con las reglas
-  // de Editar evento.
+  // «Aplicar y avisar» (por defecto) o «Aplicar sin avisar» (D103), con las reglas de Editar evento.
   const aplicar = (avisar = false) => empezar(async () => {
     setError(null);
     try { setRes(await aplicarCalendario(texto, aceptados, avisar)); setDecisiones({}); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo aplicar."); }
@@ -93,16 +92,10 @@ export default function ImportarCalendario({ encendido = false }: { encendido?: 
               </div>
               <div className="botones" style={{ margin: 0 }}>
                 <button className="boton boton-claro" type="button" onClick={() => setDecisiones(Object.fromEntries(res.cambios.map((c) => [c.id, "acepta" as const])))} disabled={pendiente}>Aceptar todos</button>
-                {encendido ? (
-                  <>
-                    <button className="boton boton-amarillo" type="button" onClick={() => aplicar(true)} disabled={pendiente || aceptados.length === 0}>{pendiente ? "Aplicando…" : `Aplicar y avisar (${aceptados.length})`}</button>
-                    <button className="boton boton-claro" type="button" onClick={() => aplicar(false)} disabled={pendiente || aceptados.length === 0}>Aplicar sin avisar</button>
-                  </>
-                ) : (
-                  <button className="boton boton-amarillo" type="button" onClick={() => aplicar(false)} disabled={pendiente || aceptados.length === 0}>{pendiente ? "Aplicando…" : `Aplicar lo aceptado (${aceptados.length})`}</button>
-                )}
+                <button className="boton boton-amarillo" type="button" onClick={() => aplicar(true)} disabled={pendiente || aceptados.length === 0}>{pendiente ? "Aplicando…" : `Aplicar y avisar (${aceptados.length})`}</button>
+                <button className="boton boton-claro" type="button" onClick={() => aplicar(false)} disabled={pendiente || aceptados.length === 0}>Aplicar sin avisar</button>
               </div>
-              <p className="pequeno suave" style={{ margin: 0 }}>Lo que no aceptes se queda como está. Lo aceptado cambia el evento.{encendido ? " «Aplicar y avisar» manda el aviso de cambio a los invitados de cada partido que no se ha jugado: en el momento, salvo de 22:30 a 8:00 (hora de Madrid), que sale a las 8:00; si cambia el día, sus respuestas vuelven a «sin responder»." : " Con «respuestas en la web» apagado no sale ningún aviso a los móviles."}</p>
+              <p className="pequeno suave" style={{ margin: 0 }}>Lo que no aceptes se queda como está. Lo aceptado cambia el evento. «Aplicar y avisar» manda el aviso de cambio a los invitados de cada partido que no se ha jugado: en el momento, salvo de 22:30 a 8:00 (hora de Madrid), que sale a las 8:00; si cambia el día, sus respuestas vuelven a «sin responder».</p>
             </>
           )}
 

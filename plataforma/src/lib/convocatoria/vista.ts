@@ -44,9 +44,7 @@ export type Contexto = {
   /** D141: hora limite de las dudas de este domingo (ISO) y si aun no ha llegado. Antes, el motor propone con los «va» y las
    *  dudas salen aparte como «posibles»; la propuesta definitiva se hace despues del limite. null = no hay partidos. */
   limiteDudas: string | null; dudasAbiertas: boolean;
-  eventoRespuestas: string | null; encendido: boolean;
-  /** Cuantas respuestas hay de este domingo (para avisar si no hay ninguna con el interruptor apagado). */
-  respuestasDelDomingo: number;
+  eventoRespuestas: string | null;
   /** Proyeccion de anotacion (D124): solo gestores. */
   proyeccion: DatosProyeccion;
   /** La migracion de la convocatoria aun no esta aplicada en esta base: se ve la propuesta, no se guarda nada. */

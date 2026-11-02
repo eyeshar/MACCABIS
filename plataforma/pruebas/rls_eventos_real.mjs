@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// RLS de eventos, pistas, respuestas, ausencias, diccionario, importaciones y asistencia CONTRA EL SUPABASE
+// RLS de eventos, pistas, respuestas, ausencias, importaciones y asistencia CONTRA EL SUPABASE
 // REAL, en SOLO LECTURA (D94, mitigacion 5). Desde el paso 3 (D99) cada jugador lee sus propias respuestas y ausencias,
 // nunca las de otro. No crea ni borra cuentas ni escribe nada:
 //   - anonimo: por HTTPS con la clave publica, como cualquiera en internet;
@@ -7,6 +7,9 @@
 //     `authenticated` y los claims de esa cuenta (lo mismo que hace PostgREST), y se deshace al final.
 // Para comprobar la ESCRITURA sin escribir, se intenta cada insert/update/delete dentro de la transaccion de solo
 // lectura: Postgres lo rechaza siempre; ademas se comprueban los permisos (has_table_privilege) y las politicas.
+//
+// Desde D172 (migración 20261102200000, se pasa después de aplicarla) ya no existen diccionario_sporteasy ni las
+// columnas sporteasy_* de los eventos.
 //
 //   npm run pruebas:eventos-real
 
@@ -23,7 +26,7 @@ const sql = conectar();
 const [{ n: N0 }] = await sql`select count(*)::int n from public.eventos`;
 let fallos = 0;
 const ok = (c, que, det = '') => { if (c) console.log(`  OK    ${que}`); else { fallos++; console.log(`  FALLO ${que}${det ? ` -> ${det}` : ''}`); } };
-const PRIVADAS = ['eventos', 'pistas', 'descansos', 'respuestas', 'ausencias_periodo', 'diccionario_sporteasy', 'importaciones', 'asistencia_resumen', 'asistencia_motivos'];
+const PRIVADAS = ['eventos', 'pistas', 'descansos', 'respuestas', 'ausencias_periodo', 'importaciones', 'asistencia_resumen', 'asistencia_motivos'];
 // Paso 3 (D99): de estas, el jugador lee SOLO las suyas; del resto, nada.
 const SUYAS = ['respuestas', 'ausencias_periodo'];
 const COLUMNAS_PRIVADAS = ['id', 'origen', 'serie', 'sporteasy_estado', 'sporteasy_cambio', 'sporteasy_copiado_en', 'creado_en', 'actualizado_en', 'pista_id', 'person_id', 'respuesta', 'motivo', 'detalle'];
@@ -75,10 +78,13 @@ try {
   const pol = await sql`select tablename, cmd, qual, with_check from pg_policies where schemaname = 'public' and tablename = any(${PRIVADAS})`;
   // Paso 3 (D99): además, el jugador LEE sus propias respuestas y ausencias (solo SELECT y solo las suyas).
   const deJugador = (p) => p.cmd === 'SELECT' && ['respuestas', 'ausencias_periodo'].includes(p.tablename) && /_mi_person_id\(\)/.test(p.qual ?? '');
-  ok(pol.every((p) => /is_gestor\(\)/.test(`${p.qual ?? ''}${p.with_check ?? ''}`) || deJugador(p)), `las ${pol.length} políticas de las 8 tablas exigen is_gestor() (salvo «el jugador lee lo suyo», solo lectura, D99)`);
+  ok(pol.every((p) => /is_gestor\(\)/.test(`${p.qual ?? ''}${p.with_check ?? ''}`) || deJugador(p)), `las ${pol.length} políticas de las ${PRIVADAS.length} tablas exigen is_gestor() (salvo «el jugador lee lo suyo», solo lectura, D99)`);
   ok(!pol.some((p) => p.cmd === 'DELETE' || p.cmd === 'ALL'), 'ninguna política permite DELETE ni ALL');
   const [v] = await sql`select has_table_privilege('anon', 'public.v_eventos_publicos', 'select') a, has_table_privilege('anon', 'public.v_eventos_publicos', 'insert') i`;
   ok(v.a && !v.i, 'anon puede leer la vista pública y no escribirla');
+  ok((await sql`select to_regclass('public.diccionario_sporteasy') is null n`)[0].n, 'diccionario_sporteasy ya no existe (D172)');
+  const colsSE = (await sql`select column_name from information_schema.columns where table_schema = 'public' and table_name = 'eventos' and column_name like 'sporteasy%'`).map((x) => x.column_name);
+  ok(colsSE.length === 0, 'eventos ya no tiene columnas sporteasy_* (D172)', colsSE.join(', '));
 
   console.log('\n== Gestor (cuenta real existente, transacción de solo lectura)');
   const [gestor] = await sql`select user_id from public.gestores where user_id is not null limit 1`;
@@ -96,7 +102,6 @@ try {
     const [{ n: nMot }] = await tx`select count(*)::int n from public.asistencia_motivos`;
     ok(nMot > 0 && nMot === totalMotivos, `el gestor lee toda asistencia_motivos, la fuente de Gestión → Asistencia (${nMot} filas; D116)`);
     ok((await intenta(tx, `delete from public.eventos`)).startsWith('rechazado'), 'el gestor NO puede borrar eventos');
-    ok((await intenta(tx, `delete from public.diccionario_sporteasy`)).startsWith('rechazado'), 'el gestor NO puede borrar el diccionario');
     ok((await intenta(tx, `update public.asistencia_resumen set fueron = 0`)).startsWith('rechazado'), 'el gestor NO puede cambiar el resumen de asistencia');
   });
 

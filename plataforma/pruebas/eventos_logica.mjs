@@ -126,8 +126,8 @@ ok(D.describirCambios(miercoles, miercoles, pistas).length === 0, 'sin cambios n
 const msg = D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: cs });
 ok(/^Entreno del miércoles 14\/10: /.test(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: [] })) && !/Cambio en el/.test(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio')), '«Cambio en el entreno…» solo si hay un cambio real');
 ok(/Cambio en el entreno del miércoles 14\/10/.test(msg) && /Caja Mágica/.test(msg), 'mensaje de cambio de entreno', msg);
-ok(!/SportEasy|Responded/.test(msg) && !/Responde en la web/.test(msg), 'apagado: sin línea de respuesta ni SportEasy', msg);
-ok(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: cs, respondeEnLaWeb: 'https://x/mi-zona' }).endsWith('\nResponde en la web: https://x/mi-zona'), 'encendido: termina con el enlace a la web');
+ok(!/SportEasy|Responded/.test(msg) && !/Responde en la web/.test(msg), 'sin la opción, sin línea de respuesta (y nunca SportEasy)', msg);
+ok(D.mensajeWhatsApp(nuevoEv, pistas, 'cambio', { cambios: cs, respondeEnLaWeb: 'https://x/mi-zona' }).endsWith('\nResponde en la web: https://x/mi-zona'), 'con la web, termina con el enlace para responder');
 // El mensaje de la ficha sale de los datos propios del evento: estado, recién creado y la línea amarilla (cambio_visible).
 const cv = { campos: ['pista', 'hora'], antes: 'Pista por confirmar, 20:30–22:30' };
 ok(D.cambiosDeVisible(cv).join() === 'pista, hora (antes: Pista por confirmar, 20:30–22:30)', 'cambios desde cambio_visible', D.cambiosDeVisible(cv).join());

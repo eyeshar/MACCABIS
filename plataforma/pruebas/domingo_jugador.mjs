@@ -5,8 +5,9 @@
 //     rival por separado;
 //   - «Quién va»: con la convocatoria APROBADA, los convocados de cada equipo (solo nombres, «tú» en el suyo); sin
 //     aprobar, «Convocatoria pendiente: la verás aquí cuando esté hecha.»;
-//   - interruptor apagado: «Tu respuesta: vas al MdA · no al MdL» (lo que tenga guardado) y «Las respuestas en la web
-//     están desactivadas»; sin respuesta, solo eso; nada de SportEasy; encendido: los botones de siempre;
+//   - «¿Puedes jugar?» siempre con los botones (D172: las respuestas en la web, siempre encendidas): su respuesta en la
+//     etiqueta («Vas al MdA · no al MdL») y la opción marcada; sin respuesta, «Aún no has respondido»; nada de SportEasy;
+//   - «Respuestas al partido» (D141): solo cifras desplegables con nombres, sin motivos;
 //   - privacidad: nada de niveles, posiciones, motivos ni respuestas de otros; la función de la base solo da nombres de
 //     convocatorias aprobadas, y nada a un anónimo.
 //
@@ -17,6 +18,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { REPO, RAIZ } from './comun_e2e.mjs';
 import { migrar } from '../scripts/db.mjs';
+import { revertirPosteriores } from './revertir_posteriores.mjs';
 
 const { ok, fallos, sumar } = contador();
 const CAPT = path.join(REPO, 'privado', 'mockups_liga', 'convocatoria-proyeccion');
@@ -43,7 +45,6 @@ try {
     (${de('MdA').id}, 'esteban-jon', 'va', null, 'sporteasy'), (${de('MdL').id}, 'esteban-jon', 'no', 'trabajo', 'sporteasy'),
     (${de('MdA').id}, 'sint-noe', 'no', 'lesion', 'sporteasy'), (${de('MdL').id}, 'sint-noe', 'no', 'lesion', 'sporteasy'),
     (${de('MdA').id}, 'sint-zoe', 'va', null, 'sporteasy'), (${de('MdL').id}, 'sint-zoe', 'va', null, 'sporteasy')`;
-  await sql`insert into public.importaciones (tipo, por_nombre, en) values ('respuestas', 'Claude', now() - interval '2 hours')`;
   const URL_D = `${APP}/mi-zona/domingo/${J3}`;
   const api = (f, args, token) => fetch(`${e.pila.url}/rest/v1/rpc/${f}`, { method: 'POST', headers: { apikey: e.pila.anonKey, authorization: `Bearer ${token ?? e.pila.anonKey}`, 'content-type': 'application/json' }, body: JSON.stringify(args) });
 
@@ -72,14 +73,19 @@ try {
   const qa = await pj.getByTestId('quien-va-MdA').innerText(), ql = await pj.getByTestId('quien-va-MdL').innerText();
   ok(/Quién va\s+2\s+convocados\s+Jon\s+tú\s+Zoe$/.test(qa.trim()), '«Quién va» del MdA: 2 convocados, en orden alfabético, «tú» en el suyo', qa);
   ok(/Quién va\s+1\s+convocados\s+Adriano$/.test(ql.trim()) && !/\btú\b/.test(ql), 'y los del MdL, solo nombres', ql);
-  const se = await pj.getByTestId('respuestas-apagadas').innerText();
-  ok(se.includes('Tu respuesta: vas al MdA · no al MdL') && se.includes('Las respuestas en la web están desactivadas.'), '«Tu respuesta: vas al MdA · no al MdL» y «Las respuestas en la web están desactivadas»', se);
+  const se = await pj.locator('.rw-vas .rw-etiqueta').innerText();
+  ok(se === 'Vas al MdA · no al MdL', '«¿Puedes jugar?»: su respuesta, «Vas al MdA · no al MdL»', se);
+  const marcada = await pj.locator('.rw-vas button[aria-pressed="true"]').allInnerTexts();
+  ok(marcada.length === 1 && /\(MdA\)$/.test(marcada[0]) && (await pj.locator('.rw-vas button').count()) >= 3, 'con los botones para cambiarla y «Solo al … (MdA)» marcado', marcada.join(' | '));
+  ok(!(await pj.getByTestId('respuestas-apagadas').count()) && !(await pj.getByText('Las respuestas en la web están desactivadas').count()), 'sin el aviso de «desactivadas» (ya no existe, D172)');
+  ok(await visto(pj.getByTestId('respuestas-MdA')) && await visto(pj.getByTestId('respuestas-MdL')), '«Respuestas al partido» en cada tarjeta (D141)');
   ok(!(await pj.getByTestId('segun-sporteasy').count()) && !(await pj.locator('a[href*="sporteasy"]').count()), 'sin «Según SportEasy» ni enlace a SportEasy');
   ok(await visto(pj.getByText('Estar disponible no es estar convocado')), 'mantiene la nota «Estar disponible no es estar convocado»');
   const texto = await pj.locator('main').innerText();
   ok(!/nivel|Nivel [A-E]|Base de reserva|posici|lesi[oó]n|trabajo|Noe|en casa|fuera\b|\(local\)|\(visitante\)/i.test(texto), 'sin niveles, posiciones ni motivos (ni el suyo ni el de Noe), sin «Noe» (no convocada) y sin «casa/fuera»', texto.match(/nivel|lesi[oó]n|trabajo|Noe|en casa|fuera/i)?.[0]);
   ok(!/SportEasy/i.test(texto), 'la página del domingo no menciona SportEasy');
-  ok(!(await pj.getByText(/Dudan|No van ·/).count()), 'ni respuestas de otros (quién no va o duda)');
+  // D141: las respuestas de otros salen solo como cifras que se despliegan con nombres (nunca motivos): cerradas, sin nombres.
+  ok(!(await pj.getByTestId('respuestas-numeros-MdA-lista').count()) && !(await pj.getByText(/Dudan|No van ·/).count()), 'las respuestas de otros, solo como cifras (cerradas, sin nombres ni motivos)');
   ok(await sinDesbordar(pj), '375 px sin desbordar');
   await foto(pj, 'domingo_convocado_375');
   const ctx1280 = await e.contexto(1280);
@@ -90,35 +96,27 @@ try {
   await foto(pw, 'domingo_convocado_1280');
   await ctx1280.close();
 
-  console.log('\n== No convocado (aprobada) y sin respuesta importada');
+  console.log('\n== No convocado (aprobada) y sin respuesta');
   const pg = await e.sesion('guille@pruebas.local', 375);
   await pg.goto(URL_D);
   ok((await pg.getByTestId('situacion').innerText()) === 'No estás convocado este domingo', '«No estás convocado este domingo»');
   ok(!(await pg.locator('.rw-partido-mio, .rw-partido-otro').count()), 'ninguna tarjeta marcada ni apagada');
-  { const ap = await pg.getByTestId('respuestas-apagadas').innerText();
-    ok(ap.trim() === 'Las respuestas en la web están desactivadas.' && !/SportEasy/i.test(await pg.locator('main').innerText()), 'sin respuesta guardada: solo «Las respuestas en la web están desactivadas», sin «SportEasy»', ap); }
+  ok((await pg.locator('.rw-vas .rw-etiqueta').innerText()) === 'Aún no has respondido' && !(await pg.locator('.rw-vas button[aria-pressed="true"]').count()) && (await pg.locator('.rw-vas button').count()) >= 2 && !(await pg.getByTestId('respuestas-apagadas').count()), 'sin respuesta guardada: «Aún no has respondido», con los botones para responder y ninguno marcado');
+  ok(await visto(pg.getByRole('link', { name: '¿Vas a faltar varios días? Marca una ausencia' })) && !/SportEasy/i.test(await pg.locator('main').innerText()), '«¿Vas a faltar varios días? Marca una ausencia», sin «SportEasy»');
   ok(!/dorsal/.test(await pg.getByTestId('equipacion-MdA').innerText()), 'sin convocar, sin «tu dorsal»');
   await foto(pg, 'domingo_no_convocado_375');
   const conv = await (await api('convocados_del_domingo', { p_fecha: J3 }, P['galan-domingo-guillermo'].token)).json();
   ok(JSON.stringify(conv) === JSON.stringify({ MdA: ['Jon', 'Zoe'], MdL: ['Adriano'] }), 'la base le da a cualquier jugador solo los nombres de la aprobada', JSON.stringify(conv));
   const anon = await api('convocados_del_domingo', { p_fecha: J3 });
   ok(anon.status >= 400 || (await anon.json()) === null, 'a un anónimo, nada', String(anon.status));
-  const imp = await (await api('ultima_importacion_respuestas', {}, P['galan-domingo-guillermo'].token)).json();
-  ok(typeof imp === 'string' && !Number.isNaN(Date.parse(imp)), 'la hora de la última importación (solo la hora)');
 
   console.log('\n== No convocado con «no» a los dos (D171)');
   const pn = await e.sesion('noe@pruebas.local', 375);
   await pn.goto(URL_D);
   // D171: con la convocatoria aprobada sin él manda ella («No convocado» y «No vas» no se confunden); su respuesta sale aparte.
   ok((await pn.getByTestId('situacion').innerText()) === 'No estás convocado este domingo', 'aprobada sin él y con «no» a los dos: «No estás convocado este domingo», no «No vas»');
-  ok((await pn.getByTestId('respuestas-apagadas').innerText()).includes('Tu respuesta: no al MdA · no al MdL') && !/lesi/i.test(await pn.locator('main').innerText()), '«Tu respuesta: no al MdA · no al MdL» (sin su motivo en esta página)');
+  ok(/^No vas\b/.test(await pn.locator('.rw-vas .rw-etiqueta').innerText()) && /^No voy$/.test(await pn.locator('.rw-vas button[aria-pressed="true"]').innerText()), 'su respuesta: «No vas» y «No voy» marcado');
   await foto(pn, 'domingo_no_vas_375');
-
-  console.log('\n== Interruptor encendido: los botones de respuesta de siempre');
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
-  await pg.goto(URL_D);
-  ok(!(await pg.getByTestId('respuestas-apagadas').count()) && !(await pg.getByTestId('segun-sporteasy').count()) && (await pg.locator('.rw-vas button').count()) >= 2, 'encendido: sin «desactivadas» ni «Según SportEasy», con los botones para responder');
-  await sql`update public.respuestas_web_config set encendido = false where id = 1`;
 
   console.log('\n== Un jugador inactivo no lee nada');
   await sql`update public.jugadores set activo = false where person_id = 'galan-domingo-guillermo'`;
@@ -127,12 +125,16 @@ try {
   await sql`update public.jugadores set activo = true where person_id = 'galan-domingo-guillermo'`;
 
   console.log('\n== Migración 20261025100000 reversible (D111): se deshace limpia y se vuelve a aplicar');
-  const funcs = async () => (await sql`select count(*)::int n from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname in ('convocados_del_domingo', 'ultima_importacion_respuestas')`)[0].n;
-  ok(await funcs() === 2, 'aplicada: las dos funciones');
-  await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261025100000_convocados_domingo.revertir.sql'), 'utf8'));
-  ok(await funcs() === 0 && !(await sql`select 1 from supabase_migrations.schema_migrations where version = '20261025100000'`).length, 'revertir.sql las quita y borra su registro');
+  // Su segunda función, ultima_importacion_respuestas(), la borra 20261102200000_fin_sporteasy (D172): se revierten antes
+  // las posteriores (en orden inverso) y `migrar` las vuelve a aplicar todas, así que al final tampoco queda.
+  const func = async (nombre) => (await sql`select count(*)::int n from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname = ${nombre}`)[0].n;
+  const MIGS = path.join(RAIZ, 'supabase', 'migrations');
+  ok(await func('convocados_del_domingo') === 1 && await func('ultima_importacion_respuestas') === 0, 'aplicada: convocados_del_domingo (ultima_importacion_respuestas ya no existe, D172)');
+  await revertirPosteriores(sql, MIGS, '20261025100000');
+  await sql.unsafe(fs.readFileSync(path.join(MIGS, '20261025100000_convocados_domingo.revertir.sql'), 'utf8'));
+  ok(await func('convocados_del_domingo') === 0 && await func('ultima_importacion_respuestas') === 0 && !(await sql`select 1 from supabase_migrations.schema_migrations where version = '20261025100000'`).length, 'revertir.sql las quita y borra su registro');
   await migrar(sql, { log: () => {} });
-  ok(await funcs() === 2, 'y se vuelve a aplicar');
+  ok(await func('convocados_del_domingo') === 1 && await func('ultima_importacion_respuestas') === 0, 'y se vuelve a aplicar (con las posteriores: sin ultima_importacion_respuestas)');
   ok(JSON.stringify(await (await api('convocados_del_domingo', { p_fecha: J3 }, P['esteban-jon'].token)).json()) === JSON.stringify({ MdA: ['Jon', 'Zoe'], MdL: ['Adriano'] }), 'y sigue dando lo mismo');
 
   ok(!e.errores.length, 'sin errores en la consola', e.errores.slice(0, 3).join(' | '));

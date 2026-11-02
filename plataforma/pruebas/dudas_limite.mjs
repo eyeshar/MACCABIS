@@ -5,11 +5,13 @@
 //   - HORA LÍMITE: `_limite_dudas` (base) y `limiteDudas` (web) dan la misma hora en más de 600 eventos, con el cambio de hora de
 //     octubre y el de marzo; desde el límite la base rechaza «duda» (jugador, «responder por él», tablero, plan);
 //   - CIERRE: `cerrar_dudas` pasa a «no va · no confirmó» (origen sistema) con hora simulada, es idempotente, no toca lo que no
-//     toca (antes del límite, empezado, cancelado, interruptor apagado) y solo la ejecuta el rol de servicio;
+//     toca (antes del límite, empezado, cancelado), cierra también los planes y solo la ejecuta el rol de servicio;
 //   - TAREA DE AVISOS de extremo a extremo (cada 15 minutos): cierra, avisa una sola vez, y volver a «voy» no avisa;
 //   - PANTALLAS: «Si dudas, tienes hasta…», sin botón «Duda» pasado el límite, «Dudas: N · límite…» y «pasaron a no va» en
 //     Gestión, «posibles» en la convocatoria, y ningún motivo en el HTML del jugador;
-//   - la migración 20261028100000 se revierte limpia (D111) y se vuelve a aplicar.
+//   - la migración 20261028100000 se revierte limpia (D111) y se vuelve a aplicar (antes se deshacen las posteriores a
+//     20261028220000, revertir_posteriores.mjs: el .revertir de 20261028200000 recrea un cerrar_dudas que mira el interruptor,
+//     que D172 borra).
 //
 //   npm run pruebas:dudas
 import crypto from 'node:crypto';
@@ -19,6 +21,7 @@ import webpush from 'web-push';
 import { preparar, sinteticos, personas, contador, visto, RAIZ } from './comun_e2e.mjs';
 import { firmar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
+import { revertirPosteriores } from './revertir_posteriores.mjs';
 import * as H from '../src/lib/avisos/horario.ts';
 import { trasAccion, hasta } from './infra/esperas.mjs';
 
@@ -50,7 +53,7 @@ try {
     gestores: [['Iván', 'gestor@pruebas.local', 'villaescusa-silva-ivan']],
   });
   const uno = P['sint-uno'].token, dos = P['sint-dos'].token, tres = P['sint-tres'].token, cuatro = P['sint-cuatro'].token, gestor = P['gestor@pruebas.local'].token;
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() - interval '1 day', dudas_desde = now() - interval '30 days' where id = 1`;
+  await sql`update public.respuestas_web_config set dudas_desde = now() - interval '30 days' where id = 1`;
 
   // Eventos de prueba: uno lejano (límite en el futuro), uno que empieza dentro de 20 h (su límite pasó hace 4 h), un
   // partido solo del MdA y un plan que empieza dentro de 12 h.
@@ -160,14 +163,10 @@ try {
   rows = await cerrar(lim + 60000);
   ok(rows.filter((x) => x.r_evento === E.fut).length === 0, 'cancelado, no se toca');
   await sql`update public.eventos set estado = 'programado' where id = ${E.fut}`;
-  await sql`update public.respuestas_web_config set encendido = false where id = 1`;
-  rows = await cerrar(lim + 60000);
-  ok(rows.filter((x) => x.r_evento === E.fut).length === 0, 'con el interruptor apagado, los eventos oficiales no se tocan (siguen las respuestas que ya tenían)');
   await poner(E.plan, 'sint-dos', 'duda');
   const plan = await limiteBase(E.plan);
   rows = await cerrar(plan.l.getTime() + 60000);
-  ok(rows.some((x) => x.r_evento === E.plan && x.r_person === 'sint-dos'), 'pero los planes sí (solo existen en la web), también con el interruptor apagado');
-  await sql`update public.respuestas_web_config set encendido = true where id = 1`;
+  ok(rows.some((x) => x.r_evento === E.plan && x.r_person === 'sint-dos'), 'los planes también se cierran pasado su límite');
   await sql`delete from public.respuestas where evento_id = ${E.plan}`;
   // ---------------------------------------------------------------------------------------------- sin retroactividad
   console.log('\n== Sin retroactividad: solo se cierran dudas cuyo límite es POSTERIOR a la activación (dudas_desde)');
@@ -340,6 +339,9 @@ try {
   console.log('\n== Migración 20261028100000 reversible (D111)');
   const texto = fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028100000_dudas_limite.sql'), 'utf8').replace(/--.*$/gm, '');
   ok(!/\bdrop table\b|\btruncate\b|\bdelete\b|\bcreate table\b|\bdrop column\b/i.test(texto), 'sin tablas nuevas ni borrados: solo relaja dos CHECK, cambia una función y añade dos');
+  // Deshacer D172 vuelve a las funciones que exigen el interruptor encendido: se enciende para que «responder» funcione como antes.
+  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = coalesce(encendido_desde, now() - interval '1 day') where id = 1`;
+  await revertirPosteriores(sql, path.join(RAIZ, 'supabase', 'migrations'), '20261028220000');
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028220000_ultima_pasada_avisos.revertir.sql'), 'utf8'));
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028210000_estado_tarea_avisos.revertir.sql'), 'utf8'));
   ok(!(await sql`select 1 from pg_proc where proname = 'estado_tarea_avisos'`).length, 'revertida la alarma (20261028210000): se va estado_tarea_avisos');

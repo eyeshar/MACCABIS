@@ -10,7 +10,7 @@
 //   - Solo a quien no ha respondido; una ausencia que cubre el dia cuenta como respondido.
 //   - D146: tampoco a quien «no suele entrenar» en un entreno (cuenta como «no va (por defecto)», salvo que un gestor se lo
 //     quitara para ese entreno) ni a quien es «nunca a partidos» en un partido.
-//   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo, ni con el interruptor apagado.
+//   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo.
 //   - Horas de silencio (22:30–8:00, D155): sale a las 8:00 salvo que el evento empiece en menos de 12 h.
 //   - D152: el lunes a las 19:00, a quien le sale un entreno como «no va (por defecto)», UN aviso por entreno
 //     («Te hemos puesto que no vas…»; avisosPorDefecto). Nunca se repite (clave por entreno y persona).
@@ -38,8 +38,6 @@ export type AusenciaPlan = { person_id: string; desde: string; hasta: string | n
 
 export type DatosPlan = {
   ahora: Date;
-  /** Cuando se encendio «respuestas en la web»; null = apagado (no sale ningun recordatorio). */
-  encendidoDesde: Date | null;
   eventos: EventoPlan[];
   jugadores: JugadorPlan[];
   respuestas: RespuestaPlan[];
@@ -97,20 +95,18 @@ export function huecos(e: EventoPlan): Hueco[] {
   return [{ tipo: "creado", toca: new Date(e.creado_en) }, { tipo: "24h", toca: new Date(ini.getTime() - 24 * 3600 * 1000) }];
 }
 
-/** Un hueco vale si ya toca (con el silencio aplicado), aun no ha pasado el margen, el evento no ha empezado y el momento
- *  es posterior al encendido del interruptor. Devuelve la hora de envio, o null. */
-function valeHueco(e: EventoPlan, h: Hueco, d: Pick<DatosPlan, "ahora" | "encendidoDesde">) {
-  if (!d.encendidoDesde) return null;
+/** Un hueco vale si ya toca (con el silencio aplicado), aun no ha pasado el margen y el evento no ha empezado. Devuelve
+ *  la hora de envio, o null. */
+function valeHueco(e: EventoPlan, h: Hueco, d: Pick<DatosPlan, "ahora">) {
   const ahora = d.ahora.getTime();
   const ini = inicioDe(e);
   const envio = horaDeEnvio(h.toca, ini);
-  const ok = e.estado === "programado" && !e.sin_recordatorios && h.toca.getTime() >= d.encendidoDesde.getTime()
+  const ok = e.estado === "programado" && !e.sin_recordatorios
     && envio.getTime() <= ahora && ahora < envio.getTime() + MARGEN_MS && ahora < ini.getTime() && h.toca.getTime() < ini.getTime();
   return ok ? envio : null;
 }
 
 export function planificar(datos: DatosPlan): AvisoPlan[] {
-  if (!datos.encendidoDesde) return [];
   // Los planes no oficiales no cuentan para nada del club (D118): fuera de estos recordatorios.
   const d = { ...datos, eventos: datos.eventos.filter((e) => e.oficial !== false) };
   const salida: AvisoPlan[] = [];
@@ -187,9 +183,8 @@ export function planificar(datos: DatosPlan): AvisoPlan[] {
  *  entreno a cada invitado al que le sale como «no va (por defecto)» (`respuestaEfectiva`, `por: "defecto"`): no si ya
  *  respondio, si tiene una ausencia que cubre el dia, si un gestor se lo quito para ese entreno ni si no esta invitado
  *  (D148, solo con ficha). Va aparte del aviso de «te faltan» (no se junta con nada) y su clave es por entreno y persona:
- *  la tarea nunca lo repite, aunque el entreno cambie de dia. Solo con el interruptor encendido. */
+ *  la tarea nunca lo repite, aunque el entreno cambie de dia. */
 export function avisosPorDefecto(datos: DatosPlan): AvisoPlan[] {
-  if (!datos.encendidoDesde) return [];
   const salida: AvisoPlan[] = [];
   for (const e of datos.eventos) {
     if (!esEntreno(e) || e.borrado_en) continue;
@@ -205,9 +200,8 @@ export function avisosPorDefecto(datos: DatosPlan): AvisoPlan[] {
 }
 
 /** Planes no oficiales (D118): si el organizador marco «recordar un dia antes», UN aviso 24 h antes a los invitados que
- *  no han respondido (una ausencia cuenta como respondido), con las horas de silencio. Ningun otro aviso automatico. No
- *  depende del interruptor de respuestas en la web: los planes solo se responden aqui. */
-export function planificarPlanes(d: Omit<DatosPlan, "encendidoDesde">): AvisoPlan[] {
+ *  no han respondido (una ausencia cuenta como respondido), con las horas de silencio. Ningun otro aviso automatico. */
+export function planificarPlanes(d: DatosPlan): AvisoPlan[] {
   const ahora = d.ahora.getTime();
   const salida: AvisoPlan[] = [];
   for (const e of d.eventos) {
@@ -240,17 +234,15 @@ export const TEXTO_HUECO: Record<Hueco["tipo"], string> = {
   "24h": "24 horas antes",
 };
 
-/** «Duda» con hora limite (D141). Tres cosas, todas puras:
+/** «Duda» con hora limite (D141). Dos cosas, todas puras:
  *   - a las 12:00 del dia del limite (o una hora antes si el limite es temprano; horas de silencio), UN aviso por persona
  *     a quien siga en «duda»: «Te quedan hasta las 20:00 para confirmar; si no, contarás como "no va"»;
  *   - si ese dia a esa persona ya sale otro recordatorio (`base`), se JUNTAN en uno: sale a la hora del primero, con la
  *     clave del aviso de dudas (repetir la tarea no duplica nada);
- *   - eventos oficiales solo con el interruptor encendido (`encendidoDesde`); los planes, siempre.
  *  Devuelve los avisos de `base` (sin los que se han juntado) mas los de dudas; la tarea solo encola lo que ya toca. */
 export function conAvisosDeDudas(base: AvisoPlan[], datos: DatosPlan): AvisoPlan[] {
   const ahora = datos.ahora.getTime();
-  const eventos = datos.eventos.filter((e) => e.estado === "programado" && !e.borrado_en && !e.sin_recordatorios
-    && (e.oficial === false || datos.encendidoDesde != null));
+  const eventos = datos.eventos.filter((e) => e.estado === "programado" && !e.borrado_en && !e.sin_recordatorios);
   // (persona, dia del aviso) -> lo que tiene en duda
   type Item = { e: EventoPlan; limite: Date; toca: Date };
   const grupos = new Map<string, { p: string; dia: string; items: Item[] }>();

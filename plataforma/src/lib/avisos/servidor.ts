@@ -57,11 +57,6 @@ async function leer<T>(p: PromiseLike<{ data: T | null; error: { message: string
   return data as T;
 }
 
-export async function estadoInterruptor(sb: SupabaseClient) {
-  const c = (await leer(sb.from("respuestas_web_config").select("encendido, encendido_desde").eq("id", 1).maybeSingle(), "config")) as { encendido: boolean; encendido_desde: string | null } | null;
-  return { encendido: Boolean(c?.encendido), desde: c?.encendido_desde ? new Date(c.encendido_desde as string) : null };
-}
-
 /** Escribe en el registro; las claves que ya estaban se ignoran (no se duplica nada). */
 export async function encolar(sb: SupabaseClient, filas: FilaAviso[]) {
   if (!filas.length) return 0;
@@ -185,33 +180,28 @@ async function cerrarDudas(sb: SupabaseClient, ahora: Date) {
  *  de «no va (por defecto)»), alertas a los gestores y envio de lo pendiente. */
 export async function ejecutarTarea(ahora = new Date()) {
   const sb = clienteServicio();
-  const { encendido, desde } = await estadoInterruptor(sb);
   let encolados = 0;
   const cerradas = await cerrarDudas(sb, ahora);
   const base = await cargarBase(sb);
   const eventos = base.eventos.map((e) => aPlan(e, base.pistas));
   const datos = { ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias, quitados: base.quitados };
-  // Recordatorios: los del club (con el interruptor encendido) y los planes con «recordar un dia antes» (D118: siempre);
-  // el aviso de las «duda» (D141) se junta con el que ya salga ese dia a esa persona.
-  const recordatorios = conAvisosDeDudas(
-    [...(encendido ? planificar({ ...datos, encendidoDesde: desde }) : []), ...planificarPlanes(datos)],
-    { ...datos, encendidoDesde: encendido ? desde : null },
-  );
+  // Recordatorios: los del club y los planes con «recordar un dia antes» (D118); el aviso de las «duda» (D141) se junta
+  // con el que ya salga ese dia a esa persona.
+  const recordatorios = conAvisosDeDudas([...planificar(datos), ...planificarPlanes(datos)], datos);
   encolados += await encolar(sb, recordatorios.map((p) => ({ ...p, person_id: p.person_id })));
   // D152: «Te hemos puesto que no vas al entreno…», uno por entreno (aparte: no se junta con el de las dudas).
-  if (encendido) encolados += await encolar(sb, avisosPorDefecto({ ...datos, encendidoDesde: desde }));
+  encolados += await encolar(sb, avisosPorDefecto(datos));
   encolados += await encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas, jugadores: base.jugadores }, ahora));
-  if (encendido) encolados += await encolarAlertasGestores(sb, base, ahora);
+  encolados += await encolarAlertasGestores(sb, base, ahora);
   const envio = await enviarPendientes(sb, ahora);
-  return { encendido, cerradas, encolados, ...envio };
+  return { cerradas, encolados, ...envio };
 }
 
-/** (b) y (c): al guardar un cambio de fecha, hora, pista o encuentro, o al cancelar, con «Guardar y avisar». Solo con el
- *  interruptor encendido. Pasa por el silencio. */
+/** (b) y (c): al guardar un cambio de fecha, hora, pista o encuentro, o al cancelar, con «Guardar y avisar». Pasa por el
+ *  silencio. */
 export async function avisarCambioEvento(eventoId: string, tipo: "cambio" | "cancelacion", cambiaElDia: boolean) {
   if (!configuradoEnvio()) return { avisados: 0, motivo: "sin_configurar" as const };
   const sb = clienteServicio();
-  if (!(await estadoInterruptor(sb)).encendido) return { avisados: 0, motivo: "apagado" as const };
   const base = await cargarBase(sb);
   const e = base.eventos.find((x) => x.id === eventoId);
   if (!e) return { avisados: 0, motivo: "sin_evento" as const };
@@ -233,7 +223,6 @@ export async function avisarCambioEvento(eventoId: string, tipo: "cambio" | "can
 export async function recordatorioManual(eventoId: string) {
   if (!configuradoEnvio()) return { avisados: 0 };
   const sb = clienteServicio();
-  if (!(await estadoInterruptor(sb)).encendido) return { avisados: 0 };
   const base = await cargarBase(sb);
   const e = base.eventos.find((x) => x.id === eventoId);
   if (!e) return { avisados: 0 };
@@ -252,8 +241,7 @@ export async function recordatorioManual(eventoId: string) {
 }
 
 /** Plan no oficial (D118): si un gestor cambia, cancela, borra o hace oficial el plan de otro, al organizador le llega un
- *  push (si tiene los avisos activados; si no, le queda en su inicio, avisos_personales). No depende del interruptor:
- *  los planes solo existen en la web. Pasa por las horas de silencio. */
+ *  push (si tiene los avisos activados; si no, le queda en su inicio, avisos_personales). Pasa por las horas de silencio. */
 export async function avisarOrganizador(personId: string, eventoId: string, titulo: string, cuerpo: string, url: string) {
   if (!configuradoEnvio()) return { avisados: 0 };
   const sb = clienteServicio();
@@ -265,7 +253,7 @@ export async function avisarOrganizador(personId: string, eventoId: string, titu
   return { avisados: 1 };
 }
 
-/** (d) El aviso de prueba, a los moviles de quien lo pide. Funciona con el interruptor apagado (D99.12). */
+/** (d) El aviso de prueba, a los moviles de quien lo pide (D99.12). */
 export async function avisoDePrueba(userId: string) {
   if (!configuradoEnvio()) return { enviados: 0, moviles: 0, configurado: false };
   const sb = clienteServicio();

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// Eventos, pistas, respuestas, ausencias, diccionario e importaciones (paso 2, pista E, D94), contra la pila LOCAL
+// Eventos, pistas, respuestas, ausencias e importaciones (paso 2, pista E, D94), contra la pila LOCAL
 // (Postgres + PostgREST reales con NUESTRAS migraciones):
 //   - las migraciones son reversibles (su .revertir.sql las deshace limpias y se pueden volver a aplicar);
 //   - la copia de asistencia_motivos a asistencia_resumen cuadra y no toca el origen;
 //   - la carga inicial deja 40 partidos, 4 descansos y 27 entrenos, cuadra 1:1 con la fuente y es repetible;
 //   - RLS: anonimo y jugador no leen ni escriben nada de lo privado; el gestor lee y escribe; NADIE borra;
-//   - lo publico lee una vista sin respuestas, motivos, estado de SportEasy ni datos personales;
-//   - la pista efectiva (en obras -> "por confirmar", reabierta -> Valdebernardo) y el aviso de "pendiente de copiar".
+//   - lo publico lee una vista sin respuestas, motivos ni datos personales;
+//   - la pista efectiva (en obras -> "por confirmar", reabierta -> Valdebernardo);
+//   - sin nada de SportEasy (D172): ni diccionario_sporteasy ni columnas sporteasy_* en los eventos.
 //
 //   npm run pruebas:eventos
 
@@ -15,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
-import { cargarEventos, diccionarioInicial } from '../scripts/cargar_eventos.mjs';
+import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { cuadrar } from '../scripts/cuadre_eventos.mjs';
 import { revertirPosteriores } from './revertir_posteriores.mjs';
 
@@ -27,7 +28,7 @@ const ok = (cond, que, detalle = '') => {
   if (cond) console.log(`  OK    ${que}`);
   else { fallos++; console.log(`  FALLO ${que}${detalle ? ` -> ${detalle}` : ''}`); }
 };
-const TABLAS_PRIVADAS = ['eventos', 'pistas', 'descansos', 'respuestas', 'ausencias_periodo', 'diccionario_sporteasy', 'importaciones', 'asistencia_resumen'];
+const TABLAS_PRIVADAS = ['eventos', 'pistas', 'descansos', 'respuestas', 'ausencias_periodo', 'importaciones', 'asistencia_resumen'];
 
 const pila = await arrancar();
 try {
@@ -70,6 +71,7 @@ try {
   for (const n of TABLAS_PRIVADAS) ok(await tablaExiste(n), `tras volver a aplicar existe public.${n}`);
   const versiones = (await sql`select version from supabase_migrations.schema_migrations`).map((x) => x.version);
   ok(versiones.includes('20261007230000') && versiones.includes('20261007231000'), 'las dos migraciones quedan registradas');
+  ok(!(await tablaExiste('diccionario_sporteasy')), 'y, aplicadas todas, sin diccionario_sporteasy (lo quita la de D172)');
 
   console.log('\n== Copia de asistencia_motivos -> asistencia_resumen (recuento verificado)');
   const [{ n: nRes }] = await sql`select count(*)::int n from public.asistencia_resumen`;
@@ -98,10 +100,6 @@ try {
   const lineas = [];
   const q = await cuadrar(sql, { log: (l) => lineas.push(l) });
   ok(q.fallos === 0 && q.partidos === 40 && q.descansos === 4 && q.entrenos === 27, `el cuadre sale OK (${q.comprobaciones} comprobaciones)`, lineas.filter((l) => l.includes('FALLO')).slice(0, 3).join(' | '));
-  // Cuantos nombres hay en el diccionario sale del propio fichero (crece cuando se resuelven nombres nuevos, D106).
-  const NOMBRES = diccionarioInicial().length;
-  const [{ n: nDic }] = await sql`select count(*)::int n from public.diccionario_sporteasy`;
-  ok(nDic === NOMBRES, `diccionario de SportEasy: ${NOMBRES} nombres (los de nombres_sporteasy.json)`, String(nDic));
   const [{ n: nPistas }] = await sql`select count(*)::int n from public.pistas`;
   ok(nPistas === 3, 'catálogo de pistas: 3');
   const pst = Object.fromEntries((await sql`select slug, estado, uso, num_pistas, direccion, es_de_serie from public.pistas`).map((p) => [p.slug, p]));
@@ -137,27 +135,26 @@ try {
   ok((await api('/eventos', { metodo: 'POST', cuerpo: nuevoEvento('x-anon') })).status >= 400, 'anónimo NO crea eventos');
   ok((await api('/eventos', { metodo: 'POST', cuerpo: nuevoEvento('x-jug'), token: tJ })).status >= 400, 'un jugador NO crea eventos');
   const creado = await api('/eventos', { metodo: 'POST', cuerpo: nuevoEvento('x-gestor'), token: tG });
-  ok(creado.status === 201 && creado.datos[0].sporteasy_estado === 'pendiente', 'el gestor crea un evento (nace pendiente de copiar)');
+  ok(creado.status === 201, 'el gestor crea un evento', `${creado.status}`);
+  ok(creado.status === 201 && !Object.keys(creado.datos[0]).some((c) => c.startsWith('sporteasy')), 'y no lleva nada de SportEasy (D172)', Object.keys(creado.datos?.[0] ?? {}).filter((c) => c.startsWith('sporteasy')).join(', '));
   const idNuevo = creado.datos?.[0]?.id;
   ok(String(creado.datos?.[0]?.quedada).slice(0, 5) === '09:40', 'la quedada del nuevo evento sale 20 min antes (09:40)');
   for (const [quien, token] of [['anónimo', undefined], ['jugador', tJ], ['gestor', tG]]) {
     await api(`/eventos?clave=eq.mda-j2`, { metodo: 'DELETE', token });
     await api(`/pistas?slug=eq.caja-magica`, { metodo: 'DELETE', token });
-    await api(`/diccionario_sporteasy?person_id=neq.zzz`, { metodo: 'DELETE', token });
     await api(`/importaciones?id=not.is.null`, { metodo: 'DELETE', token });
     void quien;
   }
-  ok((await sql`select count(*)::int n from public.eventos`)[0].n === 68 && (await sql`select count(*)::int n from public.pistas`)[0].n === 3 && (await sql`select count(*)::int n from public.diccionario_sporteasy`)[0].n === NOMBRES, 'ni el gestor puede BORRAR eventos, pistas ni diccionario por la API');
+  ok((await sql`select count(*)::int n from public.eventos`)[0].n === 68 && (await sql`select count(*)::int n from public.pistas`)[0].n === 3, 'ni el gestor puede BORRAR eventos ni pistas por la API');
   for (const t of TABLAS_PRIVADAS) {
     const [{ d, ins_anon }] = await sql`select has_table_privilege('authenticated', ${'public.' + t}, 'delete') d, has_table_privilege('anon', ${'public.' + t}, 'select') ins_anon`;
     ok(!d && !ins_anon, `${t}: authenticated sin DELETE y anon sin SELECT`);
   }
   const [{ rls_ok }] = await sql`select bool_and(relrowsecurity) rls_ok from pg_class where relname = any(${TABLAS_PRIVADAS}) and relnamespace = 'public'::regnamespace`;
-  ok(rls_ok === true, 'RLS activada en las 8 tablas');
+  ok(rls_ok === true, `RLS activada en las ${TABLAS_PRIVADAS.length} tablas`);
   ok((await api('/pistas', { metodo: 'POST', cuerpo: { slug: 'x', nombre: 'X', uso: 'entreno', estado: 'habitual' }, token: tJ })).status >= 400, 'un jugador NO crea pistas');
   ok((await api('/pistas', { metodo: 'POST', cuerpo: { slug: 'pista-nueva', nombre: 'Pista nueva', uso: 'entreno', estado: 'provisional' }, token: tG })).status === 201, 'el gestor crea una pista');
-  ok((await api('/diccionario_sporteasy', { metodo: 'POST', cuerpo: { nombre_sporteasy: 'Nombre nuevo', person_id: 'esteban-jon' }, token: tJ })).status >= 400, 'un jugador NO toca el diccionario');
-  ok((await api('/diccionario_sporteasy', { metodo: 'POST', cuerpo: { nombre_sporteasy: 'Nombre nuevo', person_id: 'esteban-jon', creado_por: 'prueba' }, token: tG })).status === 201, 'el gestor añade un nombre al diccionario');
+  ok((await api('/diccionario_sporteasy?select=*', { token: tG })).status === 404, 'diccionario_sporteasy ya no existe (ni para el gestor, D172)');
   const resp = { evento_id: idNuevo, person_id: 'esteban-jon', respuesta: 'no', motivo: 'viaje', detalle: 'En Londres' };
   ok((await api('/respuestas', { metodo: 'POST', cuerpo: resp, token: tJ })).status >= 400, 'un jugador NO escribe respuestas (ni las suyas, hasta el paso 3)');
   ok((await api('/respuestas', { metodo: 'POST', cuerpo: resp })).status >= 400, 'anónimo NO escribe respuestas');
@@ -173,15 +170,13 @@ try {
   ok((await api('/importaciones', { metodo: 'POST', cuerpo: { tipo: 'calendario', por_nombre: 'Intruso' }, token: tJ })).status >= 400, 'un jugador NO registra importaciones');
   ok((await api('/asistencia_resumen', { metodo: 'POST', cuerpo: { temporada: '2099-00', person_id: 'x', nombre: 'X', ambito: 'partidos' }, token: tG })).status >= 400, 'el resumen de asistencia no se escribe por la API (ni los gestores)');
 
-  console.log('\n== Cambios: "pendiente de copiar" y "marcar como copiado"');
+  console.log('\n== Cambios del gestor (ya sin «pendiente de copiar» a SportEasy)');
   const upd = (cuerpo, clave = 'x-gestor') => api(`/eventos?clave=eq.${clave}`, { metodo: 'PATCH', cuerpo, token: tG });
-  let r = await upd({ sporteasy_estado: 'copiado', sporteasy_copiado_en: new Date().toISOString(), sporteasy_cambio: null });
-  ok(r.datos[0].sporteasy_estado === 'copiado' && r.datos[0].sporteasy_cambio === null, 'marcar como copiado lo deja al día');
-  r = await upd({ notas: 'Traed agua' });
-  ok(r.datos[0].sporteasy_estado === 'pendiente' && r.datos[0].sporteasy_cambio, 'cambiar un dato lo devuelve a pendiente (aunque la app no lo diga)');
-  r = await upd({ sporteasy_estado: 'copiado', sporteasy_cambio: null });
-  r = await upd({ estado: 'cancelado', sporteasy_cambio: 'Cancelado' });
-  ok(r.datos[0].sporteasy_estado === 'pendiente' && r.datos[0].sporteasy_cambio === 'Cancelado', 'cancelar también queda pendiente de copiar');
+  let r = await upd({ notas: 'Traed agua' });
+  ok(r.status === 200 && r.datos?.[0]?.notas === 'Traed agua', 'el gestor cambia un dato', `${r.status}`);
+  r = await upd({ estado: 'cancelado' });
+  ok(r.status === 200 && r.datos?.[0]?.estado === 'cancelado', 'y lo cancela', `${r.status}`);
+  ok((await upd({ sporteasy_estado: 'copiado' })).status >= 400, 'marcar «copiado en SportEasy» ya no existe (sin la columna)');
   ok((await api('/eventos?clave=eq.x-gestor', { metodo: 'PATCH', cuerpo: { notas: 'hack' }, token: tJ })).datos?.length !== 1, 'un jugador NO modifica eventos');
 
   console.log('\n== Lo público: una vista sin nada privado');
@@ -192,7 +187,7 @@ try {
   ok(!cols.some((c) => prohibidas.includes(c)), `la vista no lleva columnas privadas (${cols.join(', ')})`, cols.filter((c) => prohibidas.includes(c)).join(', '));
   const descPub = await api('/v_descansos_publicos?select=*');
   ok(descPub.status === 200 && descPub.datos.length === 4, 'anónimo lee v_descansos_publicos (4)');
-  for (const t of ['eventos', 'respuestas', 'ausencias_periodo', 'diccionario_sporteasy', 'importaciones', 'asistencia_resumen']) {
+  for (const t of ['eventos', 'respuestas', 'ausencias_periodo', 'importaciones', 'asistencia_resumen']) {
     ok(!JSON.stringify(pub.datos).includes('"respuesta"') && !JSON.stringify(pub.datos).includes('Londres'), `ningún dato de ${t} se cuela en la vista`);
   }
   ok((await api('/v_eventos_publicos', { metodo: 'POST', cuerpo: {} })).status >= 400, 'la vista no admite escritura');

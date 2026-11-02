@@ -4,8 +4,8 @@
 //     «Juegan (N) · M sin convocar»; convocar y quitar desde la casilla; doblaje marcado; los cuatro «Agrupar por» (que
 //     no cambian la convocatoria y se recuerdan); acciones en grupo entre bloques; avisos recalculados; una aprobada que
 //     se toca pasa a «cambiada»; «No van» con motivo; deshacer; registro de cambios;
-//   - evento suelto: Van · Duda o sin responder · No van; cambiar respuestas guarda «puesta por», «No van» pide motivo,
-//     funciona con el interruptor apagado;
+//   - evento suelto: Van · Duda o sin responder · No van; cambiar respuestas guarda «puesta por», «No van» pide motivo
+//     (D172: sin interruptor, las respuestas en la web siempre funcionan);
 //   - D153: ni el domingo ni el evento hablan de SportEasy (sin bloque de importacion ni «fase puente»);
 //   - un jugador no accede (ni a la pantalla ni a la base); 375 y 1280 px.
 //   - D159: el selector «Ver» trae TODOS los eventos de la temporada (futuros primero); «Van / Disponible» en la barra
@@ -167,7 +167,7 @@ try {
   await pg.getByTestId('barra-acciones').locator('label', { hasText: 'Familia' }).click();
   await trasAccion(pg, () => pg.getByRole('button', { name: 'Guardar «No van»' }).click());
   const edu = await sql`select e.equipo, r.respuesta, r.motivo, r.origen, r.puesto_por_nombre from public.respuestas r join public.eventos e on e.id = r.evento_id where r.person_id = 'sint-eva' and e.fecha = ${J3}`;
-  ok(edu.length === 2 && edu.every((x) => x.respuesta === 'no' && x.motivo === 'familia' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván'), 'Eva: «no · familia» en los dos partidos, puesta por Iván (con el interruptor apagado)', JSON.stringify(edu));
+  ok(edu.length === 2 && edu.every((x) => x.respuesta === 'no' && x.motivo === 'familia' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván'), 'Eva: «no · familia» en los dos partidos, puesta por Iván', JSON.stringify(edu));
   await pg.reload();
   ok(await visto(pg.getByTestId('tabla-novan').locator('tr[data-person="sint-eva"]')), 'y pasa al bloque «No van»');
 
@@ -211,7 +211,7 @@ try {
   await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Van / Disponible' }).click();
   await trasAccion(pg, () => pg.getByRole('button', { name: 'Guardar «Van»' }).click());
   const rv = await sql`select person_id, respuesta, origen, puesto_por_nombre, cambiado_en from public.respuestas where evento_id = ${ent.id} and person_id in ('sint-bea', 'sint-flor')`;
-  ok(rv.length === 2 && rv.every((x) => x.respuesta === 'va' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván' && x.cambiado_en), '«Van»: guardado como «puesta por Iván», con fecha y hora (interruptor apagado)');
+  ok(rv.length === 2 && rv.every((x) => x.respuesta === 'va' && x.origen === 'gestor' && x.puesto_por_nombre === 'Iván' && x.cambiado_en), '«Van»: guardado como «puesta por Iván», con fecha y hora');
   await pg.reload();
   ok(await visto(colVa.locator('[data-person="sint-bea"]').getByText('puesta por Iván')), 'y se ve «puesta por Iván»');
   await colVa.locator('[data-person="sint-bea"] input').check();
@@ -238,7 +238,7 @@ try {
   ok(await visto(manoDani) && (await manoDani.getAttribute('data-valor')) === ((await rDani())?.respuesta ?? 'sin_responder'), '«Respuestas y motivos»: cada invitado con sus cuatro botones (va, duda, no va, sin responder) y el actual marcado');
   await trasAccion(pg, () => manoDani.getByRole('button', { name: /^No va ·/ }).click());
   let d = await rDani();
-  ok(d?.respuesta === 'no' && d.motivo === null && d.origen === 'gestor' && d.puesto_por_nombre === 'Iván', 'un toque en «No va»: guardado sin motivo (opcional), puesto por Iván (interruptor apagado)', JSON.stringify(d));
+  ok(d?.respuesta === 'no' && d.motivo === null && d.origen === 'gestor' && d.puesto_por_nombre === 'Iván', 'un toque en «No va»: guardado sin motivo (opcional), puesto por Iván', JSON.stringify(d));
   await trasAccion(pg, () => manoDani.getByLabel(/^Por qué no va \(opcional\)/).selectOption('lesion'));
   d = await rDani();
   ok(d?.respuesta === 'no' && d.motivo === 'lesion', 'el motivo opcional se guarda al elegirlo (lesión)', JSON.stringify(d));

@@ -4,9 +4,9 @@
 //   - anónimo por HTTPS con la clave pública;
 //   - un jugador y un gestor con cuentas que YA existen, dentro de una transacción READ ONLY que adopta su rol y claims.
 // Demuestra que un jugador: no lee motivos ajenos, no responde por otro, no responde a un evento al que no está
-// invitado, no responde con el interruptor apagado (encendido, la base solo le deja responder a lo suyo), y no ve
-// niveles ni posiciones en nada de lo que le llega. Vale con el interruptor en cualquier estado: desde la activación
-// (D136) está ENCENDIDO en el real.
+// invitado (la base solo le deja responder a lo suyo), y no ve niveles ni posiciones en nada de lo que le llega.
+// Desde D172 (migración 20261102200000) no hay interruptor: las respuestas en la web están siempre encendidas, y se
+// comprueba que lo del interruptor y lo huérfano de SportEasy ya no están. Se pasa DESPUÉS de aplicarla.
 //
 //   npm run pruebas:respuestas-real
 
@@ -23,7 +23,10 @@ const sql = conectar();
 let fallos = 0;
 const ok = (c, que, det = '') => { if (c) console.log(`  OK    ${que}`); else { fallos++; console.log(`  FALLO ${que}${det ? ` -> ${det}` : ''}`); } };
 const NUEVAS = ['respuestas_domingo', 'respuestas_web_config', 'respuestas_web_registro', 'jornadas_control', 'alertas_gestores', 'suscripciones_avisos', 'avisos_registro'];
-const FUNCIONES = ['responder', 'responder_domingo', 'guardar_ausencia', 'cerrar_ausencia', 'borrar_ausencia', 'alta_suscripcion', 'baja_suscripcion', 'previsualizar_ausencia', 'responder_por', 'responder_domingo_por', 'cambiar_interruptor', 'estado_activacion', 'marcar_jornada', 'marcar_sporteasy'];
+const FUNCIONES = ['responder', 'responder_domingo', 'guardar_ausencia', 'cerrar_ausencia', 'borrar_ausencia', 'alta_suscripcion', 'baja_suscripcion', 'previsualizar_ausencia', 'responder_por', 'responder_domingo_por', 'estado_activacion'];
+// D172: lo que la migración 20261102200000 quita (funciones del interruptor y ultima_importacion_respuestas).
+const BORRADAS = ['cambiar_interruptor', 'marcar_sporteasy', 'marcar_jornada', 'respuestas_web_encendido', '_exigir_encendido', '_respuestas_web_encendido',
+  '_exigir_responsable', '_es_responsable', '_jornadas_limpias_seguidas', 'ultima_importacion_respuestas'];
 
 async function api(ruta, { metodo = 'GET', cuerpo } = {}) {
   const r = await fetch(`${URL}/rest/v1${ruta}`, { method: metodo, headers: { apikey: ANON, authorization: `Bearer ${ANON}`, 'content-type': 'application/json' }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
@@ -65,9 +68,15 @@ try {
     const [f] = await sql`select has_function_privilege('authenticated', 'public.gestor_responder(uuid, text[], text, text, text)', 'execute') a, has_function_privilege('anon', 'public.gestor_responder(uuid, text[], text, text, text)', 'execute') n`;
     ok(f.a && !f.n, 'gestor_responder (D159): la ejecutan los usuarios con sesión (is_gestor dentro), no anónimo');
   }
-  const [cfg] = await sql`select encendido from public.respuestas_web_config where id = 1`;
-  const encendido = cfg?.encendido === true;
-  ok(cfg && typeof cfg.encendido === 'boolean', `estado del interruptor: ${encendido ? 'ENCENDIDO (respuestas en la web, D136)' : 'APAGADO (fase puente)'}`);
+
+  console.log('\n== Sin interruptor ni SportEasy (D172)');
+  ok((await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261102200000'`)[0].n === 1, 'la migración 20261102200000 (fin de SportEasy) está aplicada');
+  const quedan = (await sql`select proname from pg_proc where pronamespace = 'public'::regnamespace and proname = any(${BORRADAS})`).map((x) => x.proname);
+  ok(quedan.length === 0, 'no quedan las funciones del interruptor ni ultima_importacion_respuestas', quedan.join(', '));
+  ok((await sql`select to_regclass('public.diccionario_sporteasy') is null n`)[0].n, 'diccionario_sporteasy ya no existe');
+  const colsSE = (await sql`select table_name || '.' || column_name c from information_schema.columns where table_schema = 'public' and column_name like 'sporteasy%'`).map((x) => x.c);
+  ok(colsSE.length === 0, 'ninguna tabla tiene columnas sporteasy_*', colsSE.join(', '));
+  ok(bloqueado(await api('/diccionario_sporteasy?select=*')) && bloqueado(await api('/rpc/respuestas_web_encendido', { metodo: 'POST', cuerpo: {} })), 'y por la API tampoco están');
 
   console.log('\n== Anónimo (HTTPS)');
   for (const t of [...NUEVAS, 'v_mis_eventos', 'v_quien_va']) ok(bloqueado(await api(`/${t}?select=*`)), `anónimo NO lee ${t}`);
@@ -99,11 +108,10 @@ try {
     const ev = mis.find((e) => e.estado === 'programado' && new Date(e.fecha).toISOString().slice(0, 10) > new Date().toISOString().slice(0, 10));
     ok(!!ev, `tiene un evento suyo abierto para probar (${ev ? new Date(ev.fecha).toISOString().slice(0, 10) : 'ninguno'})`);
     let r = await intenta(tx, `select public.responder($1::uuid, 'va')`, [ev?.id ?? '00000000-0000-0000-0000-000000000000']);
-    if (!encendido) ok(!r.ok && /respuestas_apagadas/.test(r.error), 'con el interruptor apagado NO responde (lo para la base)', r.error);
-    else ok(!r.ok && !/respuestas_apagadas|no_invitado/.test(r.error), 'encendido: la base le deja responder a un evento suyo (solo lo para esta transacción de solo lectura)', r.error);
-    if (encendido && ajeno && !(jug.ficha_mda && jug.ficha_mdl)) {
+    ok(!r.ok && !/respuestas_apagadas|no_invitado/.test(r.error), 'la base le deja responder a un evento suyo, siempre (solo lo para esta transacción de solo lectura)', r.error);
+    if (ajeno && !(jug.ficha_mda && jug.ficha_mdl)) {
       r = await intenta(tx, `select public.responder($1::uuid, 'va')`, [ajeno.id]);
-      ok(!r.ok && /no_invitado/.test(r.error), 'encendido: NO responde a un partido del otro equipo (no_invitado, lo para la base)', r.error);
+      ok(!r.ok && /no_invitado/.test(r.error), 'NO responde a un partido del otro equipo (no_invitado, lo para la base)', r.error);
     }
     if (ajeno && !(jug.ficha_mda && jug.ficha_mdl)) {
       ok(!(await tx`select 1 from public.v_mis_eventos where id = ${ajeno.id}`).length, 'no ve el partido del otro equipo (no está invitado)');
@@ -116,26 +124,22 @@ try {
       r = await intenta(tx, `select public.gestor_responder($1::uuid, array['otra-persona'], 'va')`, [ev?.id ?? '00000000-0000-0000-0000-000000000000']);
       ok(!r.ok && /solo_gestores|read-only|solo lectura/i.test(r.error), 'no cambia respuestas a mano (gestor_responder, D159: solo gestores)', r.error);
     }
-    r = await intenta(tx, 'select public.cambiar_interruptor(true)');
-    ok(!r.ok, 'no enciende el interruptor');
     r = await intenta(tx, 'select public.estado_activacion()');
     ok(!r.ok && /solo_gestores/.test(r.error), 'no ve el estado de activación (solo gestores)');
   });
 
   console.log('\n== Un gestor real (solo lectura)');
-  // El responsable (D103): el gestor con el mismo correo que una ficha de jugador (Iván). Los demás, solo lectura.
-  const gestores = await sql`select g.user_id, exists (select 1 from public.jugadores j where lower(j.email) = lower(g.email)) as con_ficha
-                             from public.gestores g where g.user_id is not null order by con_ficha desc`;
-  const ges = gestores.find((g) => g.con_ficha), otroGes = gestores.find((g) => !g.con_ficha);
-  if (!ges) ok(false, 'hay un gestor responsable (con ficha de jugador) vinculado');
-  else await como(ges.user_id, async (tx) => {
+  // estado_activacion (D172): solo los contadores del recuadro «Avisos y accesos», igual para todos los gestores.
+  const CLAVES = 'con_avisos,entrados,faltan_por_entrar,pidio_codigo,plantilla';
+  const gestores = await sql`select g.user_id from public.gestores g where g.user_id is not null order by g.nombre`;
+  if (!gestores.length) ok(false, 'hay al menos un gestor vinculado');
+  let est0 = null;
+  for (const g of gestores.slice(0, 2)) await como(g.user_id, async (tx) => {
     const est = (await tx`select public.estado_activacion() e`)[0].e;
-    ok(typeof est.plantilla === 'number' && est.encendido === encendido && est.minimo_entrados === 20 && est.puede_manejar === true, `Iván (gestor responsable) ve el estado y puede manejarlo: ${est.entrados}/${est.plantilla} han entrado (mínimo 20), ${est.con_avisos} con avisos, ${est.jornadas_seguidas}/3 jornadas`);
+    ok(Object.keys(est).sort().join() === CLAVES && typeof est.plantilla === 'number', `un gestor ve los contadores (nada del interruptor): ${est.entrados}/${est.plantilla} han entrado, ${est.con_avisos} con avisos`, Object.keys(est).sort().join());
+    if (est0) ok(est.plantilla === est0.plantilla && est.entrados === est0.entrados, 'otro gestor ve lo mismo');
+    est0 ??= est;
     ok((await tx`select count(*)::int n from public.respuestas`)[0].n >= 0, 'el gestor lee las respuestas');
-  });
-  if (otroGes) await como(otroGes.user_id, async (tx) => {
-    const est = (await tx`select public.estado_activacion() e`)[0].e;
-    ok(est.encendido === encendido && est.puede_manejar === false, 'otro gestor ve el mismo estado, pero no puede manejar el interruptor (D103)');
   });
   ok((await sql`select count(*)::int n from auth.users`)[0].n === cuentas0, `cuentas de auth antes y después: ${cuentas0}`);
 } finally {

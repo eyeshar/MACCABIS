@@ -3,7 +3,7 @@
 // ni borra cuentas ni escribe nada en la base. Nunca imprime niveles ni datos personales: solo recuentos y, de quien queda
 // fuera por no tener ficha, el nombre visible (lo que ya ve un gestor).
 //
-//   npm run pruebas:solo-ficha-real -- --antes   guarda la foto de invitados y de la copia a SportEasy en privado/backups/
+//   npm run pruebas:solo-ficha-real -- --antes   guarda la foto de invitados en privado/backups/
 //                                                 (fuera de git; no pisa una foto que ya exista)
 //   npm run pruebas:solo-ficha-real              la migración y los datos aplicados, y que solo cambia lo debido
 //
@@ -12,6 +12,8 @@
 // a jugador con ficha (es invitado a los partidos). Con D148 ya aplicada, la foto nueva es el estado bueno: la suite
 // comprueba que la regla sigue igual y que nadie más cambia. Si cambia la plantilla o un evento de verdad, se rehace la foto
 // (borrar el fichero y `-- --antes`) y se dice en ESTADO por qué.
+// D172 (migración 20261102200000): sin las columnas sporteasy_* ya no se compara el «estado de copia a SportEasy» de la
+// foto (la foto lo conserva, pero no se lee); solo los invitados.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +23,6 @@ import { conectar } from '../scripts/db.mjs';
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(RAIZ, '.env.local') });
 const FOTO = path.join(RAIZ, '..', 'privado', 'backups', '2026-11-01_solo_ficha_foto.json');
-const NOTA = 'Iván: no se copia a SportEasy (29/10/2026)';
 const ANTES = process.argv.includes('--antes');
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -36,10 +37,9 @@ try {
     const auth = (await tx`select count(*)::int n from auth.users`)[0].n;
     console.log(`  cuentas de auth.users: ${auth}`);
     const invitados = async () => (await tx`select e.clave, j.person_id, public._invitado(j.person_id, e.id) as inv from public.eventos e cross join public.jugadores j where e.borrado_en is null order by 1, 2`).map((r) => `${r.clave}|${r.person_id}|${r.inv}`);
-    const copia = async () => Object.fromEntries((await tx`select clave, sporteasy_estado, sporteasy_cambio from public.eventos`).map((r) => [r.clave, `${r.sporteasy_estado}|${r.sporteasy_cambio ?? ''}`]));
     if (ANTES) {
       fs.mkdirSync(path.dirname(FOTO), { recursive: true });
-      fs.writeFileSync(FOTO, JSON.stringify({ en: new Date().toISOString(), auth, invitados: await invitados(), copia: await copia() }), { flag: 'wx' });
+      fs.writeFileSync(FOTO, JSON.stringify({ en: new Date().toISOString(), auth, invitados: await invitados() }), { flag: 'wx' });
       console.log(`  foto guardada: ${FOTO}`);
       return;
     }
@@ -55,14 +55,12 @@ try {
     const [v] = await tx`select estado, solo_con_ficha, nota, habitual_desde::text hd, solo_con_ficha_desde::text sd from public.pistas where slug = 'valdebernardo'`;
     ok(v.estado === 'habitual' && v.solo_con_ficha && !/obras/i.test(v.nota ?? ''), 'Valdebernardo: habitual, solo con ficha, sin la nota de obras');
     ok(v.hd === '2026-11-04' && v.sd === '2026-11-04', 'Valdebernardo: habitual y «solo con ficha» desde el 04/11/2026');
-    const rango = await tx`select e.clave, e.fecha::text f, e.inicio::text i, e.fin::text fi, e.pista_id, e.ubicacion_nombre, e.sporteasy_estado, e.sporteasy_cambio, public.solo_con_ficha_en(e) s
+    const rango = await tx`select e.clave, e.fecha::text f, e.inicio::text i, e.fin::text fi, e.pista_id, e.ubicacion_nombre, public.solo_con_ficha_en(e) s
                            from public.eventos e where e.tipo = 'entreno' and e.oficial and e.borrado_en is null and e.estado = 'programado' and e.fecha between '2026-11-04' and '2027-05-05' order by e.fecha`;
     ok(rango.length === 23, `entrenos cambiados: ${rango.length} (${rango[0]?.f} … ${rango.at(-1)?.f})`);
     ok(rango.every((r) => r.i === '20:30:00' && r.fi === '22:30:00' && !r.pista_id && !r.ubicacion_nombre && r.s === 'Valdebernardo'), 'todos de 20:30 a 22:30 en Valdebernardo, «solo con ficha»');
-    ok(rango.every((r) => r.sporteasy_estado === 'copiado' && r.sporteasy_cambio === NOTA), `todos cerrados con «${NOTA}»`);
-    const ahora = await copia();
-    const otros = Object.keys(foto.copia).filter((k) => !rango.some((r) => r.clave === k) && foto.copia[k] !== ahora[k]);
-    ok(otros.length === 0, 'ningún otro evento cambia su estado de copia a SportEasy', otros.join(', '));
+    const colsSE = (await tx`select column_name from information_schema.columns where table_schema = 'public' and table_name = 'eventos' and column_name like 'sporteasy%'`).map((r) => r.column_name);
+    ok(colsSE.length === 0, 'los eventos ya no llevan el estado de copia a SportEasy (D172)', colsSE.join(', '));
     console.log('\n== Invitados');
     const despues = await invitados();
     const antes = new Map(foto.invitados.map((x) => { const [c, p, i] = x.split('|'); return [`${c}|${p}`, i]; }));

@@ -14,7 +14,7 @@ import { avisoDeEvento } from "@/lib/eventos/datos";
 import { temporadaDe } from "@/lib/publico";
 import { cargarMiZona } from "@/app/mi-zona/datos";
 import {
-  cargarConvocadosDomingo, cargarMiConvocatoria, cargarMiDomingo, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, respuestasWebEncendido,
+  cargarConvocadosDomingo, cargarMiConvocatoria, cargarMiDomingo, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa,
 } from "@/lib/respuestas/jugador";
 import {
   enlaceMapa, estadoDe, fechaLarga, hhmm, lineaCambio, opcionActual, opcionesDomingo, pistaTexto, restar20, unidades,
@@ -30,9 +30,7 @@ type Eq = "MdA" | "MdL";
 
 // Domingo del jugador (D99, 3.5; D128): arriba su situacion en una frase; las dos tarjetas de partido (la suya marcada
 // si esta convocado), cada una con la equipacion nuestra y la del rival por separado y «Quién va» (los convocados de la
-// convocatoria APROBADA, solo nombres); «¿Puedes jugar?» con la respuesta en la web (interruptor encendido) o, apagado,
-// el aviso de que las respuestas en la web estan desactivadas (con la respuesta que ya tenga guardada, si la hay). Estar
-// disponible no es estar convocado (D46). Nada de niveles, posiciones, motivos ni respuestas de otros.
+// convocatoria APROBADA, solo nombres) y «¿Puedes jugar?» con la respuesta en la web. Estar disponible no es estar convocado (D46). Nada de niveles, posiciones, motivos ni respuestas de otros.
 export default async function Domingo({ params }: { params: Promise<{ fecha: string }> }) {
   const { fecha } = await params;
   await exigirSesion();
@@ -40,13 +38,13 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
   const partidos = (await cargarMisEventosDelDia(fecha)).filter((e) => e.tipo === "liga");
   if (!partidos.length) notFound();
   const u = unidades(partidos).find((x) => x.tipo === "domingo");
-  const [encendido, respuestas, ausencias, miDomingo, zona, convocados, misConv] = await Promise.all([
-    respuestasWebEncendido(), cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha), cargarMiZona(), cargarConvocadosDomingo(fecha), cargarMiConvocatoria(),
+  const [respuestas, ausencias, miDomingo, zona, convocados, misConv] = await Promise.all([
+    cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha), cargarMiZona(), cargarConvocadosDomingo(fecha), cargarMiConvocatoria(),
   ]);
   const ahora = new Date();
   const conDuda = partidos.every((e) => dudaAbierta(e, ahora));
   // D141: quien va, quien duda, quien no va y quien no ha contestado, partido a partido (solo nombres; la base no da motivos).
-  const quienVa = encendido ? await cargarQuienVa(partidos.map((e) => e.id)) : null;
+  const quienVa = await cargarQuienVa(partidos.map((e) => e.id));
   const abierto = !!u && u.eventos.every((e) => madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00") > new Date());
   const est = u ? estadoDe(u, respuestas, ausencias) : null;
   const rNo = respuestas.find((r) => partidos.some((e) => e.id === r.evento_id) && r.respuesta === "no" && r.motivo !== "horario" && r.motivo !== "no_confirmo");
@@ -75,13 +73,6 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
     const eqs = (["MdA", "MdL"] as const).filter((x) => (x === "MdA" ? zona?.jugador.ficha_mda : zona?.jugador.ficha_mdl));
     if (dorsales.length > 1 && dorsales.length === eqs.length) return dorsales[eqs.indexOf(eq as Eq)] ?? dorsales[0];
     return dorsales[0] ?? null;
-  };
-
-  // Apagado: la respuesta que ya tenga guardada, partido a partido.
-  const guardadas = partidos.filter((e) => respuestas.some((r) => r.evento_id === e.id && r.respuesta !== "sin_responder"));
-  const textoResp = (e: MiEvento) => {
-    const r = resp(e);
-    return r === "va" ? `vas al ${e.equipo}` : r === "no" ? `no al ${e.equipo}` : r === "duda" ? `duda al ${e.equipo}` : `sin responder al ${e.equipo}`;
   };
 
   return (
@@ -141,23 +132,16 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
       </section>
 
       <section className="tarjeta rw-vas" aria-labelledby="t-puedes">
-        <div className="mz-sec-cab"><h2 id="t-puedes">¿Puedes jugar?</h2>{encendido && est && <span className={`rw-etiqueta${est.pendiente ? " sin" : ""}`}>{est.pendiente ? "Aún no has respondido" : est.texto}</span>}</div>
-        {encendido && u ? (
-          abierto ? (
+        <div className="mz-sec-cab"><h2 id="t-puedes">¿Puedes jugar?</h2>{est && <span className={`rw-etiqueta${est.pendiente ? " sin" : ""}`}>{est.pendiente ? "Aún no has respondido" : est.texto}</span>}</div>
+        {u && (abierto ? (
             <ElegirDomingo fecha={fecha} opciones={opcionesDomingo(u, conDuda)} actual={opcionActual(u, respuestas, miDomingo)} nombre={`partido del domingo ${+fecha.slice(8)}`}
               motivo={(rNo?.motivo as MotivoJugador) ?? null} detalle={rNo?.detalle ?? null} />
-          ) : <p className="suave" style={{ margin: 0 }}>Los partidos ya empezaron: no se puede cambiar la respuesta.</p>
-        ) : (
-          <div className="rw-apagado-estado" data-testid="respuestas-apagadas">
-            {guardadas.length > 0 && <p className="rw-segun"><b>Tu respuesta: {partidos.map(textoResp).join(" · ")}</b></p>}
-            <p className="suave" style={{ margin: 0 }}>Las respuestas en la web están desactivadas.</p>
-          </div>
-        )}
-        {encendido && u && abierto && conDuda && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(partidos[0]), ahora)} para confirmar; si no, contarás como «no va».</p>}
+          ) : <p className="suave" style={{ margin: 0 }}>Los partidos ya empezaron: no se puede cambiar la respuesta.</p>)}
+        {u && abierto && conDuda && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(partidos[0]), ahora)} para confirmar; si no, contarás como «no va».</p>}
         {pasoNoVa && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Si al final puedes, pon «Voy».</p>}
         <p className="rw-nota-conv">Estar disponible no es estar convocado: en la convocatoria te decimos en qué equipo juegas.</p>
       </section>
-      {encendido && <p><Link href="/mi-zona/ausencias/nueva" className="rw-enlace">¿Vas a faltar varios días? Marca una ausencia</Link></p>}
+      <p><Link href="/mi-zona/ausencias/nueva" className="rw-enlace">¿Vas a faltar varios días? Marca una ausencia</Link></p>
     </main>
   );
 }

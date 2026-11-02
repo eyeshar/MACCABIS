@@ -148,11 +148,11 @@ try {
   ok(!(await p.locator('.ayuda', { hasText: 'sigue en obras' }).textContent()).includes('no se piden respuestas'), 'el aviso ya no dice que no se piden respuestas');
   ok(await p.locator('input[name=alcance][value=este]').isChecked(), 'alcance por defecto: solo este miércoles');
   await p.locator('#pista').selectOption({ label: 'Caja Mágica · provisional' });
-  await p.getByRole('button', { name: 'Guardar y preparar mensaje' }).click();
+  await p.getByRole('button', { name: 'Guardar sin avisar' }).click();
   await guardado(p);
   ok((await p.getByTestId('aviso-guardado').textContent()).includes('Cambios guardados') && !(await p.getByTestId('aviso-guardado').textContent()).includes('SportEasy'), 'guardado, sin «pendiente de copiar a SportEasy» (D153)');
   const msg = await p.getByTestId('mensaje-whatsapp').textContent();
-  ok(msg.includes('Caja Mágica') && /Entreno del /.test(msg) && !/SportEasy|Responded/.test(msg), 'mensaje de WhatsApp con la pista nueva, sin «Responded en SportEasy» (interruptor apagado: sin línea de respuesta)', msg);
+  ok(msg.includes('Caja Mágica') && /Entreno del /.test(msg) && msg.includes('Responde en la web:') && !/SportEasy|Responded/.test(msg), 'mensaje de WhatsApp con la pista nueva y «Responde en la web: …» (siempre, D172), sin «Responded en SportEasy»', msg);
   ok(!(await p.locator('main').textContent()).includes('SportEasy'), 'la ficha del evento no menciona SportEasy');
   const e1 = (await sql`select e.*, p.slug from public.eventos e left join public.pistas p on p.id = e.pista_id where e.clave = ${'entreno-semanal-' + f0}`)[0];
   ok(e1.slug === 'caja-magica', 'en la base: Caja Mágica', e1.slug);
@@ -169,7 +169,7 @@ try {
   await p.locator('input[name=alcance][value=siguientes]').check({ force: true });
   await p.locator('#inicio').fill('21:00');
   await p.locator('#fin').fill('23:00');
-  await p.getByRole('button', { name: 'Guardar y preparar mensaje' }).click();
+  await p.getByRole('button', { name: 'Guardar sin avisar' }).click();
   await guardado(p);
   ok((await p.getByTestId('aviso-guardado').textContent()).includes('este y en los siguientes'), 'guardado en la serie');
   const antes = await sql`select clave, fecha, inicio, fin, quedada from public.eventos where tipo = 'entreno' and fecha < ${f1} order by fecha`;
@@ -207,7 +207,7 @@ try {
   ok((await p.locator('input[name=tipo]:disabled').count()) === 8 && (await p.locator('#fecha').isDisabled()) && (await p.locator('#inicio').isDisabled()) && (await p.locator('#pista').isDisabled()), 'tipo, fecha, hora y pista bloqueados');
   ok(!(await p.locator('#quedada').count()) && (await p.getByTestId('encuentro').textContent()) === '09:55' && !(await p.locator('#notas').isDisabled()), 'encuentro calculado (09:55, no editable) y notas editables');
   await p.locator('#notas').fill('Calentamiento a las 9:50');
-  await p.getByRole('button', { name: 'Guardar y preparar mensaje' }).click();
+  await p.getByRole('button', { name: 'Guardar sin avisar' }).click();
   await guardado(p);
   const j2b = (await sql`select fecha, inicio, rival, quedada, notas from public.eventos where clave = 'mda-j2'`)[0];
   ok(String(j2b.quedada).startsWith('09:55') && j2b.notas === 'Calentamiento a las 9:50' && j2b.fecha.toISOString() === j2.fecha.toISOString() && String(j2b.inicio) === String(j2.inicio) && j2b.rival === j2.rival, 'se guardan las notas; fecha, hora, encuentro y rival intactos');
@@ -295,7 +295,8 @@ try {
   ok((await fila.count()) === 1 && (await fila.textContent()).includes('Hora') && (await fila.textContent()).includes('10:15') && (await fila.textContent()).includes('11:30'), 'una línea cambiada a mano -> 1 cambio (hora 10:15 → 11:30)');
   ok((await sql`select inicio from public.eventos where clave = 'mda-j2'`)[0].inicio.startsWith('10:15'), 'comparar no cambia nada');
   await fila.getByRole('button', { name: 'Aceptar' }).click();
-  await p.getByRole('button', { name: /Aplicar lo aceptado \(1\)/ }).click();
+  ok((await p.getByRole('button', { name: /^Aplicar y avisar \(1\)/ }).count()) === 1 && (await p.getByRole('button', { name: 'Aplicar sin avisar' }).count()) === 1, '«Aplicar y avisar (1)» y «Aplicar sin avisar», siempre (D172)');
+  await p.getByRole('button', { name: 'Aplicar sin avisar' }).click();
   await p.getByText('Aplicado: 1 cambio aceptado').waitFor();
   const j2c = (await sql`select inicio, quedada from public.eventos where clave = 'mda-j2'`)[0];
   ok(j2c.inicio.startsWith('11:30') && String(j2c.quedada).startsWith('11:10'), 'aceptado: hora 11:30 (encuentro 11:10)', JSON.stringify(j2c));
@@ -310,9 +311,10 @@ try {
   ok((await p.locator('[data-testid=tabla-cambios] tbody tr').count()) === 3, '3 cambios en 3 partidos');
   await p.locator('[data-testid=tabla-cambios] tbody tr').nth(0).getByRole('button', { name: 'Ignorar' }).click();
   await p.getByRole('button', { name: 'Aceptar todos' }).click();
-  ok((await p.getByRole('button', { name: /Aplicar lo aceptado \(3\)/ }).count()) === 1, '«Aceptar todos» marca los 3');
+  ok((await p.getByRole('button', { name: /^Aplicar y avisar \(3\)/ }).count()) === 1, '«Aceptar todos» marca los 3');
   await p.locator('[data-testid=tabla-cambios] tbody tr').nth(1).getByRole('button', { name: 'Ignorar' }).click();
-  await p.getByRole('button', { name: /Aplicar lo aceptado \(2\)/ }).click();
+  ok((await p.getByRole('button', { name: /^Aplicar y avisar \(2\)/ }).count()) === 1, 'ignorar uno deja 2');
+  await p.getByRole('button', { name: 'Aplicar sin avisar' }).click();
   await p.getByText('Aplicado: 2 cambios aceptados').waitFor();
   ok((await p.getByTestId('titulo-resultado').textContent()) === '1 cambio', 'el cambio ignorado sigue sin aplicar');
   const imp2 = await sql`select aceptadas, ignoradas from public.importaciones where tipo = 'calendario' order by en desc limit 1`;
@@ -356,7 +358,7 @@ try {
   ok((await p.getByTestId('franja-ausencias').textContent()).includes('Viaje') && (await p.getByTestId('franja-ausencias').textContent()).includes('20/12'), 'franja visual de ausencias por periodo');
   ok((await p.getByTestId('recordatorio').count()) === 0 && (await p.getByTestId('recordatorios-automaticos').count()) === 1, 'sin «Pedir recordatorio a Claude» (texto para SportEasy); quedan los recordatorios automáticos');
   ok(!(await p.locator('main').textContent()).includes('SportEasy') && !(await p.locator('main').textContent()).includes('fase puente'), 'la página de respuestas no menciona SportEasy ni la fase puente');
-  ok((await p.getByTestId('origen-respuestas').textContent()) === 'Respuestas en la web desactivadas', 'interruptor apagado: «Respuestas en la web desactivadas»', await p.getByTestId('origen-respuestas').textContent());
+  ok((await p.getByTestId('origen-respuestas').textContent()) === 'Respuestas en la web', '«Respuestas en la web» (siempre, D172)', await p.getByTestId('origen-respuestas').textContent());
   await p.screenshot({ path: path.join(SALIDA, 'real_eventos_respuestas_escritorio.png'), fullPage: true });
   await p.goto(`${APP}/gestion/eventos`);
   ok((await p.getByTestId('ultimas-importaciones').locator('li').count()) >= 1 && (await p.getByTestId('ultimas-importaciones').textContent()).includes('Gestor de pruebas') && !(await p.getByTestId('ultimas-importaciones').textContent()).includes('SportEasy'), '«Calendario importado» muestra las importaciones del calendario');
@@ -401,10 +403,9 @@ try {
   const fijar = p.locator('.gs-pendientes a', { hasText: 'Fijar la pista del entreno' });
   ok(await fijar.count() === 1 && (await fijar.getAttribute('href')) === `/gestion/eventos/${entP.id}`, '«Pendiente esta semana»: «Fijar la pista del entreno…» con enlace a ese evento');
 
-  // ---------------------------------------------------------------- WhatsApp desde los datos del evento (interruptor encendido)
+  // ---------------------------------------------------------------- WhatsApp desde los datos del evento
   console.log('\n== Mensaje de WhatsApp tras «Guardar y avisar» y tras cancelar');
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
-  try {
+  {
     const idW = entrenosFuturos[5].id;
     await p.goto(`${APP}/gestion/eventos/${idW}`);
     await p.locator('#inicio').fill('21:15');
@@ -414,7 +415,7 @@ try {
     ok(cvW && cvW.campos.join() === 'hora' && cvW.antes === '21:00–23:00', 'la línea amarilla guarda qué cambió y cómo era', JSON.stringify(cvW));
     const wa = await p.getByTestId('mensaje-whatsapp').textContent();
     ok(wa.includes('Cambio en el entreno del') && wa.includes('Qué cambia: hora (antes: 21:00–23:00)') && wa.includes('de 21:15 a 23:00') && wa.includes('Responde en la web:') && !/SportEasy|Responded/.test(wa), 'WhatsApp tras «Guardar y avisar»: «Cambio en…» y «Qué cambia» desde cambio_visible, con el enlace a la web', wa);
-    ok(!(await p.locator('main').textContent()).includes('SportEasy'), 'la ficha (interruptor encendido) no menciona SportEasy');
+    ok(!(await p.locator('main').textContent()).includes('SportEasy'), 'la ficha no menciona SportEasy');
     p.once('dialog', (d) => d.accept());
     await p.getByRole('button', { name: 'Cancelar solo este entreno' }).click();
     // El aviso «guardado» ya estaba en pantalla (del guardado anterior): se espera al mensaje de la cancelacion.
@@ -424,8 +425,6 @@ try {
     p.once('dialog', (d) => d.accept());
     await p.getByRole('button', { name: 'Restablecer solo este' }).click();
     await guardado(p);
-  } finally {
-    await sql`update public.respuestas_web_config set encendido = false where id = 1`;
   }
 
   // ---------------------------------------------------------------- asistencia

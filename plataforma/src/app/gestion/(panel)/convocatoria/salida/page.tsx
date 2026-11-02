@@ -13,8 +13,8 @@ export const metadata = { title: "Salida de la convocatoria · Gestión Maccabis
 const fechaHora = (t: string | null) => (t ? new Date(t).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
 
 // Salida de una convocatoria aprobada (D107): (1) mensaje de WhatsApp listo para copiar (formato de D98), (2) aviso
-// «Estás convocado» en la web, con «Enviar ahora» y SIN depender del interruptor (D127). Si la convocatoria cambia tras
-// aprobarla, 1 vuelve a pendiente y el mensaje dice qué ha cambiado. (La copia a SportEasy se quito en D153.)
+// «Estás convocado» en la web, con «Enviar ahora» (D127). Si la convocatoria cambia tras aprobarla, 1 vuelve a pendiente
+// y el mensaje dice qué ha cambiado.
 export default async function SalidaConvocatoria({ searchParams }: { searchParams: Promise<{ fecha?: string }> }) {
   const { fecha } = await searchParams;
   const { supabase } = await exigirGestor();

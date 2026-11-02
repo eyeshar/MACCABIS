@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Avisos en el móvil · Maccabis", robots: { index: false, follow: false } };
 
 // Activar avisos (D99, 3.1): enlazada desde el menu de usuario («Instalar en el móvil»), Mi cuenta y la banda de Mi
-// zona. Funciona con «respuestas en la web» apagado: instalar, activar y recibir el aviso de prueba (D99.12).
+// zona: instalar, activar y recibir el aviso de prueba (D99.12).
 export default async function Avisos() {
   await exigirSesion();
   return (

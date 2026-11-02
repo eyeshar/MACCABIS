@@ -49,7 +49,7 @@
 Prompts para Code en un único bloque · los docs del repo son la fuente de verdad · nunca dar algo por hecho sin verificar (git, pruebas) · mockup aprobado antes de construir · cambios de esquema directamente en el Supabase real, siempre con las protecciones de §10 (D111; ya no hay «staging antes de producción») · una sesión, un worktree (§11, D114) · cierre exhaustivo de bloque · no inventar datos deportivos · privacidad de adultos de primer orden · niveles de jugador confidenciales (D39) · ninguna clave privada en el chat ni en el repositorio.
 
 ## 8. SportEasy
-- **Derogada por D153 (31/10/2026):** SportEasy ya no se usa para nada; ninguna rutina lee ni escribe en él. _(Decía: respaldo completo hasta septiembre de 2027, D64, y sustitución función a función.)_
+- **SportEasy no se usa (D153, 31/10/2026; D172, 02/11/2026).** Ni las rutinas ni la plataforma leen ni escriben en él, y no hay tareas programadas que lo usen. Lo único que queda es **histórico**: la asistencia ya cargada (`asistencia_eventos`, `asistencia_motivos`, el valor `origen = 'sporteasy'` de respuestas y ausencias antiguas) y los export de `privado/sporteasy/`. Contexto: `docs/SPORTEASY.md` (histórico). _(Esta norma decía: respaldo completo hasta septiembre de 2027, D64, y sustitución función a función.)_
 
 ## 9. Publicación automática de estadísticas
 - La rutina A (actas y estadísticas) **publica sola** cuando todo cuadra (puntos del boxscore = marcador del acta), y avisa a Iván de lo publicado. **Si algo no cuadra, no publica y avisa** del motivo para que Iván decida. Ver D66.

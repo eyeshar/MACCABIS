@@ -127,7 +127,7 @@ export async function marcar(fecha: string, que: "whatsapp"): Promise<R> {
   return { ok: true };
 }
 
-/** «Enviar ahora» el aviso «Estás convocado» (D127): con el interruptor de respuestas en la web encendido o apagado. */
+/** «Enviar ahora» el aviso «Estás convocado» (D127). */
 export async function avisarAhora(fecha: string): Promise<R> {
   const { supabase } = await exigirGestor();
   const r = await enviarAvisoConvocatoria(supabase, fecha);

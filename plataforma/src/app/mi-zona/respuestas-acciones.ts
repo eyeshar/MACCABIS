@@ -6,7 +6,7 @@ import { textoError } from "@/lib/respuestas/dominio";
 import { avisoDePrueba, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/servidor";
 
 // Acciones del jugador (D99): todas pasan por funciones de la base (responder, responder_domingo, guardar_ausencia...),
-// que vuelven a comprobar el interruptor, la invitacion, que el evento siga abierto y el motivo. La pantalla solo pinta.
+// que vuelven a comprobar la invitacion, que el evento siga abierto y el motivo. La pantalla solo pinta.
 
 export type Resultado = { ok: true; aviso?: string } | { ok: false; error: string };
 
@@ -71,7 +71,7 @@ export async function borrarAusencia(id: string): Promise<Resultado> {
   return { ok: true };
 }
 
-// ---------------------------------------------------------------- avisos en este movil (funcionan con el interruptor apagado)
+// ---------------------------------------------------------------- avisos en este movil
 export async function altaSuscripcion(s: { endpoint: string; p256dh: string; auth: string; navegador: string }): Promise<Resultado> {
   const { supabase } = await exigirSesion();
   const { error } = await supabase.rpc("alta_suscripcion", { p_endpoint: s.endpoint, p_p256dh: s.p256dh, p_auth: s.auth, p_navegador: s.navegador.slice(0, 200) });

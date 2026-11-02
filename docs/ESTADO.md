@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 02/11/2026: **fin de SportEasy: limpieza total** (`feat/fin-sporteasy`, D172, PR abierto): fuera el interruptor «respuestas en la web» (siempre encendidas; el Panel queda con «Avisos y accesos»), lo huérfano de SportEasy en la base (migración `20261102200000_fin_sporteasy`, se aplica en el real tras el merge, con D111) y SportEasy de los docs vigentes. Ver la primera sección._
 _Última actualización: 02/11/2026: **«Tu próximo partido»** (`feat/inicio-proximo-partido`, D171): la tarjeta del inicio enseña el próximo partido al que el jugador va a ir o puede ir (convocado / va, duda o sin responder); la Agenda, todos con su estado exacto (No convocado ≠ No vas). Equipación: línea única de D160, en singular en la tarjeta._
 _Última actualización: 02/11/2026: **«Asistencia y motivos» rediseñada** (`feat/asistencia-rediseno`, D170): asistencia guardada evento a evento (tabla `asistencia_eventos`, migración `20261102100000` y carga **ya aplicadas en el real** con D111, 28 cuentas antes y después; cuadre con OK de Iván), cómo se cuenta (sin «no convocado» ni lesión; faltas = con + sin excusa; TOTAL sumado; mínimo 5 eventos), filtros, tabla ordenable con tendencia y ficha del jugador. 2025/26 manda lo corregido (D72)._
 
@@ -51,6 +52,23 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
+
+## Fin de SportEasy: limpieza total (02/11/2026; D172) — `feat/fin-sporteasy`, PR abierto (sin merge: espera el OK de Iván)
+
+**Qué se ha quitado:** el interruptor «respuestas en la web» (las respuestas están **siempre encendidas**): su tarjeta del Panel, el modo «apagado» de todas las pantallas y sus textos, y todas sus comprobaciones en la web, en la tarea de avisos y en las funciones de la base. Los contadores de la tarjeta siguen en **«Avisos y accesos»** (`TarjetaAvisos`, en vivo cada minuto). En la base (migración `20261102200000_fin_sporteasy`, con su `.revertir.sql`): columnas `sporteasy_*` de `eventos` y `convocatorias`, `respuestas.sporteasy_descartado`, `respuestas_web_config.sporteasy_comprobado`, la tabla `diccionario_sporteasy`, las funciones del interruptor y `ultima_importacion_respuestas()`. Código: `scripts/importar_correos.mjs` (`npm run db:correos`). Docs vigentes sin SportEasy (SPORTEASY.md pasa a «Histórico»).
+
+**Orden en producción:** (1) merge y despliegue del código, que ya no lee nada de lo que borra la migración (funciona igual con la base de antes); (2) migración en el real con D111. Estado de la migración en el real: **PENDIENTE (se aplica tras el merge)**.
+
+**Lo que se queda con «SportEasy» y por qué:**
+- **Asistencia histórica (dato histórico):** `asistencia_eventos` (`origen = 'sporteasy'`), `asistencia_motivos`, la pantalla «Asistencia y motivos» con sus notas «aprox.» y «según SportEasy» (`src/app/gestion/(panel)/asistencia/…`, `src/lib/eventos/asistencia.ts`, `asistenciaPantalla.ts`) y su carga: `scripts/estadisticas/asistencia_historica.js` (lee la copia `privado/sporteasy/diccionario_sporteasy_2026-10-31.json`, ya no la tabla), `asistencia_eventos.js`, `plataforma/scripts/cargar_asistencia_eventos.mjs`, `vincular_asistencia_historica.mjs`, `scripts/estadisticas/nombres_sporteasy.json` y los export de `privado/sporteasy/`.
+- **Pipeline de la jornada (rutina A):** `scripts/estadisticas/asistencia.js`, `generar_temporada.js`, `asistencia_privacidad.js`, `temporadas.json` (corte del 23/10/2026, D161), `scripts/separar_asistencia.js` y `scripts/generar_temporada.py` siguen leyendo el último export de asistencia de 2026/27 guardado en `fuentes_fbm/`; `procesar_jornada.js` todavía sabe copiar un export `bilan_presence*.xlsx` si apareciera en Descargas (ya no aparecerá; no se ha tocado para no tocar la rutina A).
+- **Valores históricos en la base:** `origen/fuente = 'sporteasy'` de respuestas y ausencias antiguas (las pantallas los enseñan como «importada»), las acciones «sporteasy» antiguas de `convocatoria_cambios` (el historial de la convocatoria y el tablero las ocultan), las filas `tipo = 'respuestas'` de `importaciones` («Respuestas (SportEasy)» en el registro de Importar) y `tablero_deshacer` (si una foto vieja no trae `origen`, vuelve a `'sporteasy'`).
+- **Registro histórico de la activación:** tablas `respuestas_web_config` (sigue en uso `dudas_desde`), `respuestas_web_registro` y `jornadas_control`; ya no deciden nada.
+- **Migraciones y datos ya aplicados** (`supabase/migrations/2026100…`, `supabase/datos/20261029_valdebernardo_reabre.sql`): son historia; no se reescriben.
+- **Textos para los jugadores:** la guía (`GUIA_JUGADOR.md` / `guiaJugador.json`) dice que SportEasy ya no se usa («¿Sigo respondiendo en SportEasy? No»).
+- **Datos públicos de la Historia:** `historia_club.json` cita SportEasy como fuente de las temporadas «en el club, sin estadísticas» (D166).
+
+**Pruebas:** `pruebas:fin-sporteasy` (nueva) y las suites que daban por hecho el modo «apagado», adaptadas (lo quitado, en el PR).
 
 ## Scouting y Liga consolidada: jugador rival sin duplicar y medias en vez de totales (01/11/2026; D168 y D169) — `feat/scouting-medias`, PR abierto
 

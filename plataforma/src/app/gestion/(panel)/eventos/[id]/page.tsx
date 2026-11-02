@@ -22,9 +22,9 @@ export default async function EditarEvento({ params, searchParams }: { params: P
   const { id } = await params;
   const { guardado, alcance, avisados, sale } = await searchParams;
   const { supabase } = await exigirGestor();
-  const [evento, pistas, todos, jugadores, { data: encendido }, { data: subs }, { data: resp }] = await Promise.all([
+  const [evento, pistas, todos, jugadores, { data: subs }, { data: resp }] = await Promise.all([
     cargarEvento(supabase, id), cargarPistas(supabase), cargarEventos(supabase), cargarJugadores(supabase),
-    supabase.rpc("respuestas_web_encendido"), supabase.from("suscripciones_avisos").select("person_id").eq("activa", true),
+    supabase.from("suscripciones_avisos").select("person_id").eq("activa", true),
     supabase.from("respuestas").select("person_id, respuesta, motivo").eq("evento_id", id),
   ]);
   if (!evento) notFound();
@@ -50,7 +50,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
   const cambios = accionMensaje === "cambio" ? cambiosDeVisible(evento.cambio_visible) : [];
   const mensaje = mensajeWhatsApp(evento, pistas, accionMensaje, {
     cambios, lineaEquipacion: evento.tipo === "liga" ? lineaEquipacion(avisoPartidoDe(evento)) : null,
-    respondeEnLaWeb: encendido ? `${web}/mi-zona` : null,
+    respondeEnLaWeb: `${web}/mi-zona`,
   });
   const titulo = evento.tipo === "entreno" ? `Entreno · ${diaCorto(evento.fecha)}` : `${textoTipo(evento.tipo)} · ${diaCorto(evento.fecha)}`;
   const g = guardado ?? "";
@@ -80,8 +80,8 @@ export default async function EditarEvento({ params, searchParams }: { params: P
       )}
 
       <section className="gs-bloque" style={{ marginBottom: 16, maxWidth: 960 }} aria-labelledby="t-whatsapp" data-testid="mensaje-whatsapp">
-        <h2 id="t-whatsapp" style={{ fontSize: 22 }}>{encendido ? `Mensaje de WhatsApp para quien no tiene avisos · ${sinAvisos.length}` : "Mensaje para WhatsApp"}</h2>
-        {encendido && sinAvisos.length > 0 && <p className="pequeno" style={{ margin: 0 }}>Sin avisos: {sinAvisos.map((j) => j.nombre_visible).join(", ")}.</p>}
+        <h2 id="t-whatsapp" style={{ fontSize: 22 }}>{`Mensaje de WhatsApp para quien no tiene avisos · ${sinAvisos.length}`}</h2>
+        {sinAvisos.length > 0 && <p className="pequeno" style={{ margin: 0 }}>Sin avisos: {sinAvisos.map((j) => j.nombre_visible).join(", ")}.</p>}
         <p className="pequeno suave" style={{ margin: 0 }}>
           {accionMensaje === "cancelado" ? "Cancelación" : accionMensaje === "nuevo" ? "Evento nuevo" : "Cambio"}{cambios.length ? `: ${cambios.join("; ")}` : ""}. Copia este texto al grupo de WhatsApp si quieres avisar también por ahí.
         </p>
@@ -94,7 +94,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
         key={[evento.id, evento.tipo, evento.equipo, evento.titulo, evento.rival, evento.es_local, evento.jornada, evento.fecha, evento.inicio, evento.fin, evento.quedada, evento.pista_id, evento.numero_pista, evento.notas, evento.ubicacion_nombre, evento.estado, evento.sin_recordatorios, evento.cambio_visible_en].join("|")}
         evento={evento} pistas={pistas} nSiguientes={siguientes}
         alcanceInicial={alcance === "siguientes" ? "siguientes" : "este"} volver="/gestion/eventos"
-        encendido={Boolean(encendido)} invitadosPor={invitadosPor}
+        invitadosPor={invitadosPor}
       />
 
       {evento.estado === "programado" && (

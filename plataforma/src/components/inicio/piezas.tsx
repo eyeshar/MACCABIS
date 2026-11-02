@@ -30,17 +30,15 @@ export const tituloUnidad = (u: Unidad) => (u.tipo === "domingo" && u.eventos.le
 
 /** Una fila de «Tu agenda»: a la izquierda el dia y la hora en grande y la quedada en amarillo; a la derecha el titulo,
  *  la pastilla de estado y el sitio. Los planes llevan «Plan no oficial»; un entreno con grupos publicados, «Tu grupo». */
-export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, encendido, porDefecto }: {
-  u: Unidad; respuestas: MiRespuesta[]; ausencias: MiAusencia[]; convocatorias: Convocatorias; grupo?: { grupo: string; companeros: string[] } | null; encendido: boolean;
+export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, porDefecto }: {
+  u: Unidad; respuestas: MiRespuesta[]; ausencias: MiAusencia[]; convocatorias: Convocatorias; grupo?: { grupo: string; companeros: string[] } | null;
   /** D152: entrenos que le salen como «No vas (puesto por defecto)». */
   porDefecto?: ReadonlySet<string>;
 }) {
   const e = u.eventos[0];
   const h = horasDe(u);
-  const p = pastillaDe(u, respuestas, ausencias, convocatorias, porDefecto);
+  const pastilla = pastillaDe(u, respuestas, ausencias, convocatorias, porDefecto);
   const plan = esPlan(e);
-  // Apagado y sin respuesta: un evento oficial sale como «Sin responder» (no se le pide respuesta en la web).
-  const pastilla = !encendido && !plan && p.clase === "responde" ? { clase: "responde", texto: "Sin responder" } : p;
   return (
     <Link href={u.url} className={`in-fila${plan ? " es-plan" : ""}`} data-tipo={e.tipo} data-testid="fila-agenda">
       <div className="in-fila-cuando">
@@ -60,9 +58,9 @@ export function FilaAgenda({ u, respuestas, ausencias, convocatorias, grupo, enc
 }
 
 /** Tarjeta de «Te faltan N respuestas»: tipo, fecha en grande, casillas Quedada / Empieza (o Partido), titulo y sitio.
- *  Encendido: Voy / No voy / Duda (No voy con su hoja de motivo). Apagado: solo el aviso de que las respuestas en la web estan desactivadas.
+ *  Voy / No voy / Duda (No voy con su hoja de motivo).
  *  Los planes se responden aqui siempre (D118). */
-export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u: Unidad; encendido: boolean; respuestas: MiRespuesta[]; plazasLlenas?: boolean }) {
+export function TarjetaPendiente({ u, respuestas, plazasLlenas }: { u: Unidad; respuestas: MiRespuesta[]; plazasLlenas?: boolean }) {
   const e = u.eventos[0];
   const h = horasDe(u);
   const plan = esPlan(e);
@@ -85,11 +83,9 @@ export function TarjetaPendiente({ u, encendido, respuestas, plazasLlenas }: { u
       {mapa && <a className="in-mas in-llegar-mini" href={mapa} target="_blank" rel="noopener noreferrer">Cómo llegar</a>}
       {plan ? (
         <ResponderPlan id={e.id} actual={null} completo={Boolean(plazasLlenas)} nombre={e.titulo ?? "el plan"} sinDuda={!dudaAbierta(e, new Date())} />
-      ) : encendido ? (
+      ) : (
         <Responder eventoId={e.id} fecha={u.fecha} domingo={u.tipo === "domingo"} actual={null} nombre={u.tipo === "domingo" ? `partido del domingo ${+u.fecha.slice(8)}` : nombreCorto(e)}
           sinDuda={!u.eventos.every((x) => dudaAbierta(x, new Date()))} urlDomingo={u.modo === "distintas" ? u.url : undefined} motivo={r?.motivo === "no_confirmo" ? null : ((r?.motivo as MotivoJugador) ?? null)} detalle={r?.detalle ?? null} />
-      ) : (
-        <p className="suave in-apagado" data-testid="respuestas-apagadas">Las respuestas en la web están desactivadas.</p>
       )}
     </article>
   );

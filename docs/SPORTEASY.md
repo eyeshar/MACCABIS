@@ -1,4 +1,11 @@
-# SPORTEASY — Conocimiento sobre la plataforma
+# SPORTEASY — Conocimiento sobre la plataforma (HISTÓRICO)
+
+> **HISTÓRICO — no es un documento vigente.** SportEasy no se usa desde el 31/10/2026 (D153) y el 02/11/2026 se quitó de la
+> plataforma, de la base y de los docs vigentes todo lo que dependía de él (D172): sin interruptor «respuestas en la web»
+> (siempre encendidas), sin columnas `sporteasy_*`, sin `diccionario_sporteasy` y sin tareas programadas. Lo único que queda
+> es dato histórico: la asistencia ya cargada (`asistencia_eventos`, `asistencia_motivos`), el valor `origen = 'sporteasy'`
+> de respuestas y ausencias antiguas y los export de `privado/sporteasy/` (estructura en `SPORTEASY_EXPORT.md`). Todo lo de
+> abajo describe cómo era y cómo se trabajaba con SportEasy hasta entonces.
 
 > Todo lo que sabemos de SportEasy y cómo nos relacionamos con ella. Equivale a FEDERACION.md de TCPC.
 > _Última actualización: 25/09/2026 (bloque "Cierre del sondeo y cimientos 26/27"): cláusula literal de acceso automatizado, Premium y prueba de exportación._

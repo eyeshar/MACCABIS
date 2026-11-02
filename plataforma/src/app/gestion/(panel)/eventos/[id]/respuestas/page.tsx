@@ -53,8 +53,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
 
   const hoy = hoyMadrid();
   const desde = evento.fecha < hoy ? evento.fecha : hoy, hasta = sumarDias(desde, SEMANAS * 7);
-  const [{ data: encendido }, { data: resp }, { data: periodosDB }, { data: subs }, { data: alertas }, { data: registro }, defecto] = await Promise.all([
-    supabase.rpc("respuestas_web_encendido"),
+  const [{ data: resp }, { data: periodosDB }, { data: subs }, { data: alertas }, { data: registro }, defecto] = await Promise.all([
     supabase.from("respuestas").select("evento_id, person_id, respuesta, motivo, detalle, leido_en, origen, puesto_por_nombre, cambiado_en, ausencia_id").in("evento_id", ids),
     supabase.from("ausencias_periodo").select("id, person_id, desde, hasta, motivo, origen").is("borrada_en", null).lte("desde", hasta).or(`hasta.is.null,hasta.gte.${desde}`),
     supabase.from("suscripciones_avisos").select("person_id").eq("activa", true),
@@ -168,7 +167,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
           <span className="suave">{dia ? dia.map((e) => `${hhmm(e.inicio)} ${tituloEvento(e)}`).join(" · ") : `${diaCorto(evento.fecha)} · ${rangoHoras(evento)} · ${pe.porConfirmar ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}` : pe.texto}`}</span>
         </div>
         <div className="ev-botones">
-          <span className={`pastilla ${encendido ? "pastilla-ok" : "pastilla-info"}`} data-testid="origen-respuestas">{encendido ? "Respuestas en la web" : "Respuestas en la web desactivadas"}</span>
+          <span className="pastilla pastilla-ok" data-testid="origen-respuestas">Respuestas en la web</span>
         </div>
       </div>
 
@@ -191,8 +190,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       </p>
       <p className="pequeno suave">
         {personas.length} invitados.{" "}
-        {encendido ? "Los jugadores responden en la web (D99); «no va» siempre con motivo. Solo lo ven los gestores."
-          : "Las respuestas en la web están desactivadas. Solo lo ven los gestores."}
+        Los jugadores responden en la web (D99); «no va» siempre con motivo. Solo lo ven los gestores.
       </p>
 
       <div className="gs-dos">
@@ -209,7 +207,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
                     <td data-label="Motivo y detalle">{l.motivo ?? <span className="suave">—</span>}</td>
                     <td data-label="Avisos">{l.avisos ? <span className="ev-ok">Sí</span> : <span className="suave">No</span>}</td>
                     <td data-label="Cambiar a mano">{evento.estado === "programado" ? <div>{l.mano.map((m) => <CambiarAMano key={`${m.evento}-${m.actual}-${m.motivo}`} eventoId={m.evento} personId={l.person_id} nombre={l.nombre} actual={m.actual} motivo={m.motivo} etiqueta={m.etiqueta} conDuda={conDuda} />)}</div> : <span className="suave">—</span>}</td>
-                    <td data-label="">{encendido && (l.clase === "sin_responder" || l.defecto) && <ResponderPor eventoId={evento.id} personId={l.person_id} nombre={l.nombre} fecha={evento.fecha} domingo={!!dia} opciones={opcionesPor(l)} />}</td>
+                    <td data-label="">{(l.clase === "sin_responder" || l.defecto) && <ResponderPor eventoId={evento.id} personId={l.person_id} nombre={l.nombre} fecha={evento.fecha} domingo={!!dia} opciones={opcionesPor(l)} />}</td>
                   </tr>
                 ))}
               </tbody>
@@ -229,14 +227,14 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
                   return (
                     <li key={h.tipo} data-enviado={env.length > 0}>
                       <span aria-hidden="true">{env.length ? "✓" : "·"}</span>
-                      <span><b>{TEXTO_HUECO[h.tipo]}</b><small>{env.length ? `Enviado el ${ddmm(hora.fecha)} a las ${hora.hora} · a ${env.length}` : `${h.envio < new Date() ? (encendido ? "No salió (todos habían respondido o estaba apagado)" : "Interruptor apagado") : `Falta: ${ddmm(hora.fecha)} a las ${hora.hora}`}`}</small></span>
+                      <span><b>{TEXTO_HUECO[h.tipo]}</b><small>{env.length ? `Enviado el ${ddmm(hora.fecha)} a las ${hora.hora} · a ${env.length}` : `${h.envio < new Date() ? "No salió (todos habían respondido)" : `Falta: ${ddmm(hora.fecha)} a las ${hora.hora}`}`}</small></span>
                     </li>
                   );
                 })}
                 {manuales.length > 0 && <li data-enviado="true"><span aria-hidden="true">✓</span><span><b>Enviados a mano</b><small>{manuales.length} avisos</small></span></li>}
               </ul>
             )}
-            {encendido && <BotonRecordatorio eventoId={evento.id} />}
+            <BotonRecordatorio eventoId={evento.id} />
           </section>
           <section className="gs-bloque" aria-labelledby="t-sinav" data-testid="sin-avisos">
             <h2 id="t-sinav" style={{ fontSize: 22 }}>Sin avisos activados · {sinAvisos.length}</h2>

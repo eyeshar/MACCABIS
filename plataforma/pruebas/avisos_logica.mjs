@@ -2,7 +2,7 @@
 // Recordatorios y horas de silencio (D99.6, D99.7, D155: 22:30–08:00) con la HORA FIJA SIMULADA, sin base de datos:
 //   lunes agrupado · martes a sin responder y a «duda» · miércoles del entreno · amistoso al crearlo y 24 h antes ·
 //   silencio y excepción de menos de 12 h · cambio de hora del 25/10/2026 · ausencia que cuenta como respondido ·
-//   «sin recordatorios» · nada con el interruptor apagado · textos de los avisos (sin motivos, niveles ni posiciones) ·
+//   «sin recordatorios» · textos de los avisos (sin motivos, niveles ni posiciones) ·
 //   el aviso «no va (por defecto)» al propio jugador (D152): único, y nunca si respondió, está ausente o no está invitado.
 //
 //   npm run pruebas:avisos-logica
@@ -34,7 +34,7 @@ const entreno28 = ev('e28', 'entreno', 'ambos', '2026-10-28', '20:30', '22:30');
 const BASE = [entreno14, mdaJ2, mdlJ2, entreno21, mdaJ3, mdlJ3, entreno28];
 const jug = (person_id, ficha_mda, ficha_mdl, entrena = true) => ({ person_id, ficha_mda, ficha_mdl, entrena, activo: true });
 const JUG = [jug('jon', true, true), jug('guille', true, false), jug('edimil', false, false), { ...jug('baja', true, true), activo: false }];
-const datos = (ahora, extra = {}) => ({ ahora, encendidoDesde: new Date('2026-10-10T08:00:00Z'), eventos: BASE, jugadores: JUG, respuestas: [], ausencias: [], ...extra });
+const datos = (ahora, extra = {}) => ({ ahora, eventos: BASE, jugadores: JUG, respuestas: [], ausencias: [], ...extra });
 const de = (avisos, p) => avisos.filter((a) => a.person_id === p);
 
 console.log('\n== Horas de Madrid y cambio de hora del domingo 25/10/2026');
@@ -124,8 +124,8 @@ a = P.planificar(datos(M('2026-10-16', '11:00'), { eventos: [amistoso] }));
 ok(a.length === 2 && a.every((x) => x.titulo.startsWith('Mañana: amistoso') && x.clave.startsWith('rec:24h:am:')), '24 h antes: «Mañana: amistoso…»');
 const delMdA = { ...amistoso, id: 'am2', equipo: 'MdA', tipo: 'torneo' };
 ok(P.planificar(datos(M('2026-10-16', '11:00'), { eventos: [delMdA] })).map((x) => x.person_id).sort().join() === 'guille,jon', 'un torneo solo del MdA, solo a las fichas del MdA');
-const antesDeEncender = { ...amistoso, creado_en: '2026-10-09T10:00:00Z' };
-ok(!P.planificar(datos(new Date('2026-10-10T08:05:00Z'), { eventos: [antesDeEncender] })).some((x) => x.clave.startsWith('rec:creado')), 'un evento creado antes de encender el interruptor no manda el «al crearlo» atrasado');
+const atrasado = { ...amistoso, creado_en: '2026-10-09T10:00:00Z' };
+ok(!P.planificar(datos(new Date('2026-10-10T08:05:00Z'), { eventos: [atrasado] })).some((x) => x.clave.startsWith('rec:creado')), 'un «al crearlo» que no salió en su margen (3 h) no se manda atrasado al día siguiente');
 
 console.log('\n== Horas de silencio (22:30–8:00) y la excepción de menos de 12 horas');
 const tarde = { ...amistoso, id: 'am3', creado_en: M('2026-10-15', '22:45').toISOString() };
@@ -142,7 +142,7 @@ ok(a.filter((x) => x.clave.startsWith('rec:creado')).length === 2 && H.enMadrid(
 a = P.planificar(datos(M('2026-10-26', '19:02')));
 ok(de(a, 'jon').some((x) => x.clave === 'rec:lunes:2026-10-26:jon' && iso(x.programado_para) === '2026-10-26T18:00:00.000Z'), 'el lunes después del cambio, a las 19:00 de invierno (18:00 UTC)');
 
-console.log('\n== Ausencias, «sin recordatorios», cancelados e interruptor');
+console.log('\n== Ausencias, «sin recordatorios» y cancelados');
 const aus = [{ person_id: 'jon', desde: '2026-10-13', hasta: '2026-10-19', borrada_en: null }];
 a = P.planificar(datos(M('2026-10-12', '19:05'), { ausencias: aus }));
 ok(!de(a, 'jon').length, 'una ausencia que cubre los dos eventos cuenta como respondido: a Jon no le llega nada');
@@ -154,7 +154,6 @@ a = P.planificar(datos(M('2026-10-14', '10:00'), { eventos: BASE.map((e) => (e.i
 ok(!a.length, '«Sin recordatorios para este evento»: nada');
 a = P.planificar(datos(M('2026-10-14', '10:00'), { eventos: BASE.map((e) => (e.id === 'e14' ? { ...e, estado: 'cancelado' } : e)) }));
 ok(!a.length, 'evento cancelado: nada');
-ok(!P.planificar(datos(M('2026-10-12', '19:05'), { encendidoDesde: null })).length && !P.planificar(datos(M('2026-10-14', '10:00'), { encendidoDesde: null })).length, 'interruptor apagado: ningún recordatorio');
 const claves = P.planificar(datos(M('2026-10-12', '19:05'))).map((x) => x.clave);
 ok(new Set(claves).size === claves.length && JSON.stringify(claves) === JSON.stringify(P.planificar(datos(M('2026-10-12', '19:10'))).map((x) => x.clave)), 'las claves son únicas y repetir la tarea a los 5 minutos da las mismas (el registro no duplica)');
 
@@ -191,7 +190,7 @@ ok(!todos.some((x) => /lesi[oó]n|trabajo|viaje|familia|horario|nivel|posici|bas
   ok(lunes && !lunes.eventos.some((id) => ['mda2', 'mdl2', 'mda3', 'mdl3'].includes(id)), 'a un «solo entreno» el recordatorio del lunes solo le habla de entrenos');
 }
 
-console.log('\n== Aviso de convocatoria (D127): sin depender del interruptor, a quien toca y sin dobles');
+console.log('\n== Aviso de convocatoria (D127): a quien toca y sin dobles');
 {
   const PART = [
     { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '09:00', encuentro: '08:40', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: 'Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' },
@@ -257,7 +256,6 @@ ok(claveD(dd(M('2026-10-13', '14:55'), { respuestas: rd }), 'jon') && !claveD(dd
 ok(!de(dd(M('2026-10-13', '20:00'), { respuestas: rd }), 'jon').length, 'a las 20:00 ya no hay aviso: pasan a «no va»');
 ok(claveD(dd(M('2026-10-13', '12:20'), { respuestas: rd }), 'jon').clave === d1.clave && claveD(dd(M('2026-10-13', '14:00'), { respuestas: rd }), 'jon').clave === d1.clave, 'la clave es la misma en cada pasada de la tarea (no se duplica)');
 ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: [{ evento_id: 'e14', person_id: 'jon', respuesta: 'va' }, { evento_id: 'mda2', person_id: 'jon', respuesta: 'no' }, { evento_id: 'mdl2', person_id: 'jon', respuesta: 'sin_responder' }] }), 'jon'), 'quien ya dijo «voy» o «no voy» (o no ha respondido) no recibe el de las dudas');
-ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: rd, encendidoDesde: null }), 'jon'), 'con el interruptor apagado, ningún aviso de dudas de eventos oficiales');
 ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: rd, eventos: BASE.map((e) => ({ ...e, sin_recordatorios: true })) }), 'jon'), '«Sin recordatorios»: nada');
 ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: rd, eventos: BASE.map((e) => ({ ...e, estado: 'cancelado' })) }), 'jon'), 'cancelado: nada');
 ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: [duda('mda2', 'edimil')] }), 'edimil'), 'quien no está invitado a ese evento no recibe nada');
@@ -265,13 +263,13 @@ a = dd(M('2026-10-20', '12:02'), { respuestas: [duda('mda3', 'jon'), duda('mdl3'
 ok(iso(claveD(a, 'jon').programado_para) === '2026-10-20T10:00:00.000Z', 'semana del cambio de hora: 12:00 de verano (10:00 UTC)');
 a = dd(M('2026-10-27', '12:02'), { respuestas: [duda('e28', 'jon')] });
 ok(iso(claveD(a, 'jon').programado_para) === '2026-10-27T11:00:00.000Z', 'y la del 28/10 a las 12:00 de invierno (11:00 UTC)');
-// Otros eventos: 24 h antes; un plan sale aunque el interruptor esté apagado.
+// Otros eventos: 24 h antes; los planes no oficiales, también.
 const amis2 = ev('a3', 'amistoso', 'ambos', '2026-10-17', '10:00', '12:00', { titulo: 'Amistoso con Vallecas', creado_en: '2026-10-01T10:00:00Z' });
 a = dd(M('2026-10-16', '09:05'), { eventos: [...BASE, amis2], respuestas: [duda('a3', 'jon')] });
 ok(iso(claveD(a, 'jon').programado_para) === iso(M('2026-10-16', '09:00')) && claveD(a, 'jon').titulo === 'Tienes «duda»: confirma hasta hoy a las 10:00', 'amistoso del sábado a las 10:00: límite el viernes a las 10:00, aviso a las 09:00');
 const plan = ev('p1', 'quedada', 'ambos', '2026-10-17', '19:00', '21:00', { titulo: 'Cena', oficial: false, creado_en: '2026-10-01T10:00:00Z' });
-a = dd(M('2026-10-16', '12:05'), { eventos: [...BASE, plan], respuestas: [duda('p1', 'jon')], encendidoDesde: null });
-ok(claveD(a, 'jon') && a.filter((x) => x.person_id === 'jon').length === 1, 'un plan en «duda» recibe su aviso (viernes 12:00) aunque el interruptor esté apagado');
+a = dd(M('2026-10-16', '12:05'), { eventos: [...BASE, plan], respuestas: [duda('p1', 'jon')] });
+ok(claveD(a, 'jon') && a.filter((x) => x.person_id === 'jon').length === 1, 'un plan en «duda» recibe su aviso (viernes 12:00)');
 // Si ya sale otro recordatorio ese día, se juntan en uno.
 const rj = [duda('e14', 'guille')];
 a = dd(M('2026-10-13', '10:05'), { respuestas: rj });
@@ -381,13 +379,12 @@ console.log('\n== Aviso «no va (por defecto)» al propio jugador (D152)');
   ok(de(pd(conMarcas(lunes)), 'nsesf').length === 1, 'en un entreno sin esa regla, el que no tiene ficha sí lo recibe');
   r = pd(conMarcas(lunes, { quitados: [{ evento_id: 'e14', person_id: 'nse' }] }));
   ok(de(r, 'nse').length === 0 && de(P.planificar(conMarcas(lunes, { quitados: [{ evento_id: 'e14', person_id: 'nse' }] })), 'nse')[0]?.eventos.includes('e14'), 'si un gestor se lo quitó para ese entreno, no: le llega el «te falta» de siempre');
-  ok(pd({ ...conMarcas(lunes), encendidoDesde: null }).length === 0, 'con el interruptor apagado, nada');
   ok(pd(conMarcas(lunes, { eventos: [{ ...entreno14, sin_recordatorios: true }, { ...mdaJ2 }] })).length === 0, 'ni en un entreno «sin recordatorios», ni en un partido');
   ok(pd(conMarcas(lunes, { eventos: [{ ...entreno14, estado: 'cancelado' }, { ...entreno14, id: 'eplan', oficial: false }] })).length === 0, 'ni cancelado, ni en un plan no oficial');
   const base = P.planificar(conMarcas(lunes));
   ok(de(base, 'nse').length === 1 && !de(base, 'nse')[0].eventos.includes('e14') && base.every((x) => !x.clave.startsWith('rec:defecto')), 'el «te faltan» del lunes sigue sin el entreno y no lleva el aviso por defecto');
 }
-// ---------------------------------------------------------------- mensajes del recuadro «Respuestas en la web» (D156)
+// ---------------------------------------------------------------- mensajes de la tarjeta «Avisos y accesos» (D156)
 console.log('\== Mensajes para copiar: singular / plural y la noche según D155');
 {
   const W = 'https://maccabis.vercel.app';

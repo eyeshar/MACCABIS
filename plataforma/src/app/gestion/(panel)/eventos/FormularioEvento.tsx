@@ -16,8 +16,7 @@ type Props = {
   alcanceInicial: "este" | "siguientes";
   tipoInicial?: TipoEvento;
   volver: string;
-  /** Paso 3 (D99): «respuestas en la web» encendido y cuántos invitados hay según el tipo y el equipo. */
-  encendido?: boolean;
+  /** Paso 3 (D99): cuántos invitados hay según el tipo y el equipo. */
   invitadosPor?: { entreno: number; MdA: number; MdL: number; ambos: number };
 };
 
@@ -25,9 +24,9 @@ const LIBRE = "__libre";
 const HUECOS: Record<TipoEvento, (keyof typeof TEXTO_HUECO)[]> = { entreno: ["lunes", "dia"], liga: ["lunes", "martes"], amistoso: ["creado", "24h"], torneo: ["creado", "24h"], interno: ["creado", "24h"], quedada: ["creado", "24h"], pachanga: ["creado", "24h"], otro: ["creado", "24h"] };
 
 /** Crear y editar un evento (maqueta EventoEditar, D99 4.3). Un partido del Ayuntamiento solo cambia las notas (el
- *  encuentro es siempre 20 minutos antes, D98). Con «respuestas en la web» encendido: recordatorios, vista previa del
- *  aviso de cambio y «Guardar sin avisar» / «Guardar y avisar». */
-export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceInicial, tipoInicial, volver, encendido = false, invitadosPor }: Props) {
+ *  encuentro es siempre 20 minutos antes, D98). Recordatorios, vista previa del aviso de cambio y «Guardar sin avisar» /
+ *  «Guardar y avisar». */
+export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceInicial, tipoInicial, volver, invitadosPor }: Props) {
   const [error, accion, enviando] = useActionState(evento ? guardarEvento.bind(null, evento.id) : crearEvento, null);
   const delAyuntamiento = evento?.tipo === "liga" && evento.origen === "ayuntamiento";
   const [tipo, setTipo] = useState<TipoEvento>(evento?.tipo ?? tipoInicial ?? "amistoso");
@@ -176,11 +175,11 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
         <ul className="ev-pasos-activar">
           {HUECOS[tipo].map((h) => <li key={h}>{TEXTO_HUECO[h]}</li>)}
         </ul>
-        <p className="pequeno suave" style={{ margin: 0 }}>Solo a quien no ha respondido (una ausencia cuenta como respondido) y nunca de 22:30 a 8:00.{encendido ? "" : " Se activan cuando se encienda «respuestas en la web»."}</p>
+        <p className="pequeno suave" style={{ margin: 0 }}>Solo a quien no ha respondido (una ausencia cuenta como respondido) y nunca de 22:30 a 8:00.</p>
         <label className="ev-radios" style={{ margin: 0 }}><input type="checkbox" name="sin_recordatorios" checked={sinRec} onChange={(e) => setSinRec(e.target.checked)} />Sin recordatorios para este evento</label>
       </section>
 
-      {encendido && evento && avisable && preview && (
+      {evento && avisable && preview && (
         <section className="ev-aviso-cambio" aria-labelledby="t-aviso" data-testid="vista-previa-aviso">
           <h2 id="t-aviso" style={{ fontSize: 20, margin: 0 }}>Este cambio avisa a {nInvitados ?? "los"} invitados</h2>
           <div className="ev-preview">
@@ -195,18 +194,15 @@ export default function FormularioEvento({ evento, pistas, nSiguientes, alcanceI
 
       <div className="botones" style={{ justifyContent: "flex-end" }}>
         <Link className="boton boton-claro" href={volver}>Volver</Link>
-        {encendido && evento ? (
+        {evento ? (
           <>
             <button className={`boton ${avisable ? "boton-claro" : "boton-amarillo"}`} type="submit" name="avisar" value="0" disabled={enviando}>Guardar sin avisar</button>
             <button className={`boton ${avisable ? "boton-amarillo" : "boton-claro"}`} type="submit" name="avisar" value="1" disabled={enviando || !avisable}>Guardar y avisar</button>
           </>
         ) : (
-          <button className="boton boton-amarillo" type="submit" disabled={enviando}>{enviando ? "Guardando…" : evento ? "Guardar y preparar mensaje" : "Crear evento"}</button>
+          <button className="boton boton-amarillo" type="submit" disabled={enviando}>{enviando ? "Guardando…" : "Crear evento"}</button>
         )}
       </div>
-      {!encendido && (
-        <p className="pequeno suave" style={{ margin: 0 }}>Las respuestas en la web están desactivadas: al guardar se prepara el mensaje de WhatsApp, pero no sale ningún aviso a los móviles.</p>
-      )}
     </form>
   );
 }

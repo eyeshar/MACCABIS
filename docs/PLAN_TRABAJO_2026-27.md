@@ -3,14 +3,14 @@
 > Acordado con Iván el 02/10/2026. Se revisa al cerrar cada fase.
 
 ## Principio
-~~SportEasy queda completo como respaldo hasta septiembre de 2027.~~ _(D153, 31/10/2026: SportEasy ya no se usa para nada; ninguna rutina lee ni escribe en él.)_ Claude automatiza las tareas semanales **navegando el Chrome de Iván** (calendario y convocatoria) y **por Enlace Móvil de Windows con el móvil de Iván** (actas, D70, matiza D69), y la plataforma crece función a función. Normas en `NORMAS_DE_TRABAJO.md`.
+Todo vive en la plataforma (SportEasy no se usa desde el 31/10/2026, D153; quitado de la plataforma y de la base en D172). Claude automatiza las tareas semanales **navegando el Chrome de Iván** (calendario y convocatoria) y **por Enlace Móvil de Windows con el móvil de Iván** (actas, D70, matiza D69), y la plataforma crece función a función. Normas en `NORMAS_DE_TRABAJO.md`.
 
 ## Las tres rutinas semanales
 | Rutina | Cuándo | Qué hace Claude | Qué hace Iván | Fuente |
 |---|---|---|---|---|
 | **A. Actas y estadísticas** | Lunes por la mañana | Descarga las actas (PDF) y hojas de estadística (XLSX) de MdA y MdL desde Afición FBM, reflejada en el PC con **Enlace Móvil de Windows** desde el Samsung S22 Ultra de Iván, con **control del ordenador** (D70, matiza D69). Las procesa con el pipeline (`npm run jornada`), comprueba que los puntos suman el marcador y publica. Si algo no cuadra, para y avisa. | Tiene el móvil encendido, con wifi y cerca del PC (puede estar bloqueado). Decide la regla de publicación. | Afición FBM / acta digital Indalweb — **solo app de móvil: se usa vía Enlace Móvil, no es una web que navegar** |
-| **B. Calendario del jueves** | Jueves a las 20:20, tarea programada «Maccabis · calendario del jueves» (D154) | Lee la programación oficial de los dos equipos (fecha, hora, pista), la clasificación oficial y las sanciones, la pega en **Importar → Calendario** y **aplica sola y avisa** a los jugadores. **Freno:** si hay líneas con error, partidos que no aparecen, partidos nuevos o más de 4 cambios, no aplica nada y avisa a Iván. ~~La compara con SportEasy y propone cambios. Con el OK de Iván, los aplica en SportEasy.~~ _(D153/D154, 31/10/2026.)_ | Decidir solo cuando salta el freno. | Deportes/web (deportesweb.madrid.es) o Madrid Móvil; datos abiertos 211549 como segunda fuente |
-| **C. Disponibilidad y convocatoria** | Lunes y martes | Lee en la web quién va (~~en SportEasy~~, D153, 31/10/2026), aplica las reglas de convocatoria (`REGLAS_CONVOCATORIA.md`), propone el reparto MdA/MdL y redacta el mensaje de WhatsApp. | Ajustar y aprobar el reparto. | La web (Gestión → Eventos → Respuestas, tablero y Convocatoria); ~~SportEasy~~ (D153) |
+| **B. Calendario del jueves** | Jueves a las 20:20, tarea programada «Maccabis · calendario del jueves» (D154) | Lee la programación oficial de los dos equipos (fecha, hora, pista), la clasificación oficial y las sanciones, la pega en **Importar → Calendario** y **aplica sola y avisa** a los jugadores. **Freno:** si hay líneas con error, partidos que no aparecen, partidos nuevos o más de 4 cambios, no aplica nada y avisa a Iván (D154). | Decidir solo cuando salta el freno. | Deportes/web (deportesweb.madrid.es) o Madrid Móvil; datos abiertos 211549 como segunda fuente |
+| **C. Disponibilidad y convocatoria** | Lunes y martes | Lee en la web quién va, aplica las reglas de convocatoria (`REGLAS_CONVOCATORIA.md`), propone el reparto MdA/MdL y redacta el mensaje de WhatsApp. | Ajustar y aprobar el reparto. | La web (Gestión → Eventos → Respuestas, tablero y Convocatoria) |
 
 Cada rutina pasa por: aprendizaje con Iván → procedimiento escrito en `docs/RUTINAS/` → 2 ejecuciones supervisadas → tarea programada.
 **Riesgo asumido (igual que D62):** Afición FBM (vía Enlace Móvil, D70) y Deportes/web prohíben en sus condiciones la extracción automatizada. Se mitiga actuando con la sesión de Iván (su propio móvil o su Chrome), a ritmo humano, una vez por semana y solo con documentos del club. Decisión de Iván; D70 matiza D69, D69 matiza D35, D63 matiza D47.
@@ -33,7 +33,7 @@ Cada rutina pasa por: aprendizaje con Iván → procedimiento escrito en `docs/R
 
 ## Pendientes de Iván (mínimos)
 - Tener el móvil encendido, con wifi y cerca del PC, con Enlace Móvil configurado y la sesión de Afición FBM iniciada (D70).
-- Tener iniciada en su Chrome la sesión de Deportes/web ~~y SportEasy~~ (D153, 31/10/2026) y de maccabis.vercel.app (rutina B, D154).
+- Tener iniciada en su Chrome la sesión de Deportes/web y de maccabis.vercel.app (rutina B, D154).
 - Revisar en el móvil la vista previa del pedido de ropa.
 - Registrar el hook "Before User Created" en Supabase (función `public.antes_de_crear_usuario`), para el login (D68, `plataforma/LEEME.md`).
 - Revisar la vista previa de `feat/plataforma-v0` en Vercel y dar el "OK vista previa".

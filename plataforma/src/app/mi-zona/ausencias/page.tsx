@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Volver from "@/components/nav/Volver";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import AccionesAusencia from "@/components/respuestas/AccionesAusencia";
-import { cargarMisAusencias, respuestasWebEncendido } from "@/lib/respuestas/jugador";
+import { cargarMisAusencias } from "@/lib/respuestas/jugador";
 import { diaCorto, TEXTO_MOTIVO_TODO } from "@/lib/respuestas/dominio";
 import { hoyMadrid } from "@/lib/dias";
 
@@ -14,10 +13,9 @@ export const metadata: Metadata = { title: "Mis ausencias · Maccabis", robots: 
 const mes = (f: string) => ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"][+f.slice(5, 7) - 1];
 const dia = (f: string) => `${diaCorto(f)} ${mes(f)}`;
 
-// Mis ausencias (D99, 3.6). Con «respuestas en la web» apagado no aparece (3.7).
+// Mis ausencias (D99, 3.6).
 export default async function MisAusencias({ searchParams }: { searchParams: Promise<{ guardada?: string }> }) {
   await exigirSesion();
-  if (!(await respuestasWebEncendido())) redirect("/agenda");
   const { guardada } = await searchParams;
   const hoy = hoyMadrid();
   const lista = (await cargarMisAusencias()).filter((a) => a.hasta == null || a.hasta >= hoy);

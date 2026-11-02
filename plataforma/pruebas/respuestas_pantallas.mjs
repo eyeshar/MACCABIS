@@ -3,14 +3,13 @@
 // claves VAPID de prueba, un servicio de avisos FALSO por HTTPS (para ver lo que se envia y simular una suscripcion
 // caducada, 410) y Chrome con sesion de jugador y de gestor.
 //
-//   - Interruptor APAGADO: Mi zona y el evento informan sin botones («Las respuestas en la web están desactivadas»), sin
-//     Ausencias y sin ninguna mención de SportEasy;
-//     la banda y /avisos sí; el aviso de prueba sale.
-//   - ENCENDIDO: «Te faltan N respuestas», Voy / No voy (hoja con motivo obligatorio, Esc) / Duda, domingo con «Solo al
+//   - Las respuestas en la web están siempre encendidas (D172): ni «desactivadas» ni ninguna mención de SportEasy;
+//     la banda, /avisos y Mis ausencias; el aviso de prueba sale.
+//   - El jugador responde: «Te faltan N respuestas», Voy / No voy (hoja con motivo obligatorio, Esc) / Duda, domingo con «Solo al
 //     de las 09:00», ausencia con calendario y aviso de «tenías voy», «Quién va» sin motivos.
 //   - Gestión: respuestas en la web, «Responder por él», banda roja y «Visto», vista de domingo, editar evento con
-//     encuentro calculado y aviso de cambio, tarjeta del interruptor (sin la casilla ni los pasos de SportEasy); tarea
-//     protegida con secreto.
+//     encuentro calculado y aviso de cambio, tarjeta «Avisos y accesos» del Panel (sin interruptor); tarea protegida con
+//     secreto.
 //   - Suscripción caducada (410): se desactiva sola. 375 px sin desbordamiento y botones de al menos 44 px.
 //
 //   npm run pruebas:respuestas-pantallas
@@ -79,7 +78,7 @@ try {
   const jUid = await pila.crearUsuario(jugadorEmail, 'x');
   const gUid = await pila.crearUsuario(gestorEmail, 'x');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gUid}, 'Iván', ${gestorEmail})`;
-  // Iván es gestor y jugador (su ficha): solo él maneja el interruptor (D103). Carlos, otro gestor: solo lectura.
+  // Iván es gestor y jugador (su ficha). Carlos, otro gestor.
   await sql`update public.jugadores set email = ${gestorEmail} where person_id = 'villaescusa-silva-ivan'`;
   const cUid = await pila.crearUsuario('carlos-gestor@pruebas.local', 'x');
   await sql`insert into public.gestores (user_id, nombre, email) values (${cUid}, 'Carlos', 'carlos-gestor@pruebas.local')`;
@@ -121,29 +120,24 @@ try {
   ok((await fetch(`${APP}/api/avisos/tarea`, { method: 'POST', headers: { authorization: 'Bearer otro-secreto-que-no-es-el-bueno-0000000000' } })).status === 401, 'con un secreto equivocado: 401');
   let t = await fetch(`${APP}/api/avisos/tarea`, { method: 'POST', headers: { authorization: `Bearer ${secreto}` } });
   let tj = await t.json();
-  ok(t.status === 200 && tj.encendido === false && tj.encolados === 0, 'con el secreto: 200; interruptor apagado → ningún recordatorio', JSON.stringify(tj));
+  ok(t.status === 200 && typeof tj.encolados === 'number' && !('encendido' in tj), 'con el secreto: 200 (y ya no responde con el interruptor)', JSON.stringify(tj));
 
-  console.log('\n== Jugador con el interruptor APAGADO (móvil, 375 px)');
+  console.log('\n== Jugador (móvil, 375 px)');
   const ctxJ = await nav.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
   const pj = await nuevaPagina(ctxJ);
   await entrar(pj, jugadorEmail);
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.getByText('Activa los avisos en este móvil')), 'banda amarilla «Activa los avisos en este móvil»');
-  ok(/desactivadas/.test(await pj.getByTestId('regla-recordatorios').innerText()), 'inicio: «Las respuestas en la web a partidos y entrenos están desactivadas»');
-  ok(!/SportEasy/i.test(await pj.locator('main').innerText()) && !(await pj.getByTestId('responder-sporteasy').count()), 'inicio apagado: ni «SportEasy» ni «Responder en SportEasy»');
+  ok(/Si no respondes, te lo recordamos/.test(await pj.getByTestId('regla-recordatorios').innerText()) && !(await pj.getByText(/desactivadas/).count()), 'inicio: la regla de los recordatorios, sin «desactivadas»');
+  ok(!/SportEasy/i.test(await pj.locator('main').innerText()) && !(await pj.getByTestId('responder-sporteasy').count()), 'inicio: ni «SportEasy» ni «Responder en SportEasy»');
   ok((await pj.locator('.rw-banda svg').count()) === 1 && !(await pj.locator('.rw-banda').innerText()).includes('🔔'), 'la banda lleva la campana dibujada (icono), no el emoji 🔔');
-  ok(!(await pj.locator('.rw-btn').count()) && !(await pj.getByText(/Te faltan|Te falta 1/).count()), 'sin botones para responder ni «Te faltan…»');
   await pj.goto(`${APP}/agenda`);
-  ok(!(await pj.getByText('Marcar días que no estoy').count()), 'agenda: sin «Marcar días que no estoy»');
-  ok(await visto(pj.getByText(/Las respuestas en la web a partidos y entrenos están desactivadas/)) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'agenda apagada: «Las respuestas en la web … están desactivadas», sin «SportEasy»');
-  await pj.goto(`${APP}/`);
-  ok(await sinDesbordar(pj), 'Mi zona a 375 px sin desbordamiento');
-  await foto(pj, 'mizona_apagado_375');
+  ok(!(await pj.getByText(/desactivadas/).count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'agenda: sin «desactivadas» y sin «SportEasy»');
   await pj.goto(`${APP}/mi-zona/ausencias`);
-  ok(new URL(pj.url()).pathname === '/agenda', '/mi-zona/ausencias apagado → vuelve a la Agenda');
+  ok(new URL(pj.url()).pathname === '/mi-zona/ausencias' && await visto(pj.getByRole('heading', { name: 'Mis ausencias' })), '/mi-zona/ausencias se abre siempre (ya no manda a la Agenda)', pj.url());
   await pj.goto(`${APP}/mi-zona/evento/${E.entreno}`);
-  ok(await visto(pj.getByRole('heading', { name: '¿Vas?' })) && await visto(pj.getByText('Las respuestas en la web están desactivadas.')) && !(await pj.locator('.rw-btn').count()), 'evento: la información, sin botones, con «Las respuestas en la web están desactivadas»');
-  ok(!/SportEasy/i.test(await pj.locator('main').innerText()), 'evento apagado: sin «SportEasy»');
+  ok(await visto(pj.getByRole('heading', { name: '¿Vas?' })) && await visto(pj.locator('.rw-btn')) && !(await pj.getByText(/desactivadas/).count()), 'evento: la información con los botones para responder, sin «desactivadas»');
+  ok(!/SportEasy/i.test(await pj.locator('main').innerText()), 'evento: sin «SportEasy»');
   ok(await visto(pj.getByText(/encuentro \d\d:\d\d/)), 'evento: «HH:MM–HH:MM · encuentro HH:MM»');
   await pj.goto(`${APP}/avisos`);
   ok(await visto(pj.getByText('Solo te avisamos si te falta responder')) && await visto(pj.getByText('De noche, solo si el partido es en pocas horas.')), '/avisos: el texto de arriba');
@@ -165,7 +159,7 @@ try {
   ok(await visto(pc.getByText('Abre esta página en Safari')), 'iPhone con Chrome: «Abre esta página en Safari»');
   await ctxI.close(); await ctxC.close();
 
-  console.log('\n== Aviso de prueba (funciona apagado) y suscripción caducada (410)');
+  console.log('\n== Aviso de prueba y suscripción caducada (410)');
   const k1 = clavesMovil(), k2 = clavesMovil();
   await sql`insert into public.suscripciones_avisos (user_id, person_id, endpoint, p256dh, auth, navegador) values
     (${jUid}, 'esteban-jon', ${`https://127.0.0.1:${PUERTO_PUSH}/ok/jon`}, ${k1.p256dh}, ${k1.auth}, 'Android · Chrome'),
@@ -176,7 +170,7 @@ try {
   await sql`insert into public.avisos_registro (clave, tipo, user_id, titulo, cuerpo, url, programado_para) values ('prueba:test', 'prueba', ${jUid}, 'Aviso de prueba', 'Así te llegarán los avisos de Maccabis.', '/avisos', now())`;
   t = await fetch(`${APP}/api/avisos/tarea`, { method: 'POST', headers: { authorization: `Bearer ${secreto}` } });
   tj = await t.json();
-  ok(t.status === 200 && tj.enviados === 1 && recibidos.length - antesPush === 2, `el aviso de prueba sale con el interruptor apagado (llega a los 2 móviles: ${recibidos.slice(antesPush).join(', ')})`, JSON.stringify(tj));
+  ok(t.status === 200 && tj.enviados === 1 && recibidos.length - antesPush === 2, `el aviso de prueba sale (llega a los 2 móviles: ${recibidos.slice(antesPush).join(', ')})`, JSON.stringify(tj));
   const subs = await sql`select endpoint, activa, motivo_baja, ultimo_envio_ok from public.suscripciones_avisos where person_id = 'esteban-jon' order by endpoint`;
   ok(subs.find((s) => s.endpoint.includes('/caducada/'))?.activa === false && subs.find((s) => s.endpoint.includes('/caducada/'))?.motivo_baja === 'caducada', 'la suscripción que responde 410 se desactiva sola');
   ok(subs.find((s) => s.endpoint.includes('/ok/'))?.activa === true && subs.find((s) => s.endpoint.includes('/ok/'))?.ultimo_envio_ok, 'la buena sigue activa y guarda el último envío correcto');
@@ -185,24 +179,23 @@ try {
   t = await fetch(`${APP}/api/avisos/tarea`, { method: 'POST', headers: { authorization: `Bearer ${secreto}` } });
   ok((await t.json()).enviados === 0 && recibidos.length - antesPush === 2, 'repetir la tarea no reenvía nada');
 
-  console.log('\n== ENCENDIDO: el jugador responde');
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
+  console.log('\n== El jugador responde');
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.getByText(/Te faltan \d+ respuestas|Te falta 1 respuesta/).first()), '«Te faltan N respuestas»');
-  ok(!(await pj.getByText('Las respuestas en la web están desactivadas').count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'encendido: ni «desactivadas» ni «SportEasy»');
+  ok(!(await pj.getByText('Las respuestas en la web están desactivadas').count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'ni «desactivadas» ni «SportEasy»');
   const tarjeta = pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/mi-zona/evento/${E.entreno}"]`) });
   ok(await tarjeta.count() === 1, 'el próximo entreno tiene su tarjeta con los botones');
   const pequenos = await tactiles(pj, '.rw-btn, .rw-banda, .rw-marcar, .zb a');
   ok(!pequenos.length, 'botones y enlaces de Mi zona de al menos 44 px', JSON.stringify(pequenos));
-  ok(await sinDesbordar(pj), 'Mi zona encendido a 375 px sin desbordamiento');
+  ok(await sinDesbordar(pj), 'Mi zona a 375 px sin desbordamiento');
   // D117 (inicio personal, antes Mi zona): saludo, banda «Activa los avisos», «Te faltan N», próximo partido, agenda y temporada.
   const om = await pj.evaluate(() => { const y = (sel) => { const e = document.querySelector(sel); return e ? Math.round(e.getBoundingClientRect().top + scrollY) : null; }; return { hola: y('.in-hola'), banda: y('.rw-banda'), faltan: y('#pendientes'), partido: y('#proximo-partido'), agenda: y('#agenda'), temporada: y('#temporada') }; });
   const crece = (...xs) => xs.every((x) => x != null) && xs.every((x, i) => i === 0 || x > xs[i - 1]);
   ok(crece(om.hola, om.banda, om.faltan, om.partido, om.agenda, om.temporada), 'inicio en el móvil: saludo → banda → «Te faltan» → próximo partido → «Tu agenda» → temporada', JSON.stringify(om));
   await pj.goto(`${APP}/agenda`);
-  ok(await visto(pj.getByRole('link', { name: 'Marcar días que no estoy' })), 'encendido: «Marcar días que no estoy» en la Agenda');
+  ok(await visto(pj.getByRole('link', { name: 'Marcar días que no estoy' })), '«Marcar días que no estoy» en la Agenda');
   await pj.goto(`${APP}/`);
-  await foto(pj, 'mizona_encendido_375');
+  await foto(pj, 'mizona_375');
   await trasAccion(pj, () => tarjeta.getByRole('button', { name: 'Voy', exact: true }).click());
   ok((await sql`select respuesta from public.respuestas where evento_id = ${E.entreno} and person_id = 'esteban-jon'`)[0]?.respuesta === 'va', '«Voy» en la tarjeta: guardado');
 
@@ -296,7 +289,7 @@ try {
   ok(await visto(pg.getByTestId('sin-avisos').getByText(/Sin avisos activados · \d+/)) && await visto(pg.getByTestId('sin-avisos').getByRole('button', { name: /Copiar mensaje/ })), 'tarjeta «Sin avisos activados · N» con «Copiar mensaje»');
   const fila = pg.locator('tr', { hasText: 'Daniele' });
   if (!(await visto(fila.getByRole('button', { name: /^Responder por / })))) console.log('   tabla:', (await pg.locator('main').innerText()).slice(0, 1500));
-  ok(await visto(pg.locator('tr', { hasText: 'Daniele' }).getByRole('button', { name: /^Responder por / })) && !(await pg.locator('tr', { hasText: 'Carlos (entrenador)' }).count()), 'encendido: «Responder por él» aparece; Carlos (entrenador) no está en la lista de quien responde');
+  ok(await visto(pg.locator('tr', { hasText: 'Daniele' }).getByRole('button', { name: /^Responder por / })) && !(await pg.locator('tr', { hasText: 'Carlos (entrenador)' }).count()), '«Responder por él» aparece; Carlos (entrenador) no está en la lista de quien responde');
   await fila.getByRole('button', { name: /^Responder por / }).click();
   await fila.getByLabel('Respuesta').selectOption('duda');
   await trasAccion(pg, () => fila.getByRole('button', { name: 'Guardar' }).click());
@@ -343,12 +336,11 @@ try {
   const linea = (await visto(pj.locator('.rw-cambio'))) ? await pj.locator('.rw-cambio').first().innerText() : '';
   ok(/^Cambió la hora el \d\d\/\d\d \(antes: 20:30–22:30\)$/.test(linea), 'el jugador ve la línea amarilla «Cambió la hora el DD/MM (antes: …)»', linea);
   await pg.goto(`${APP}/gestion`);
-  ok(await visto(pg.getByTestId('tarjeta-activar')) && (await pg.getByTestId('estado-interruptor').innerText()) === 'Encendido', 'Panel: tarjeta «Respuestas en la web: activar» (Encendido)');
-  // D139: con el interruptor ENCENDIDO la tarjeta es una franja compacta.
-  const franja = await pg.getByTestId('tarjeta-activar').innerText();
-  ok(/Respuestas en la web: encendido desde .+\./.test(await pg.getByTestId('franja-encendido').innerText()), 'franja: «Respuestas en la web: encendido desde <fecha, hora>» (y «(quién)» si se sabe)', franja.slice(0, 300));
+  ok(await visto(pg.getByTestId('tarjeta-avisos')) && /Avisos y accesos/i.test(await pg.getByTestId('tarjeta-avisos').innerText()), 'Panel: tarjeta «Avisos y accesos» (D172)');
+  const franja = await pg.getByTestId('tarjeta-avisos').innerText();
+  ok(!(await pg.getByTestId('estado-interruptor').count()) && !(await pg.getByTestId('tarjeta-avisos').getByRole('button', { name: /Activar|Desactivar/ }).count()) && !/Encendido|Apagado|encendido desde/i.test(franja), 'sin interruptor: ni «Encendido/Apagado» ni botón de activar o desactivar', franja.slice(0, 300));
   { const m = /Con avisos: (\d+)\/(\d+)/.exec(franja); const l = (await pg.getByTestId('avisos-numeros').innerText()).match(/\d+/g) || []; ok(!!m && l.length >= 2 && +m[2] === +l[0] + +l[1] && +m[2] === 27 && +m[1] === +l[0], 'franja: «Con avisos: N/M» cuadra con «con avisos» + «sin avisos»', franja.slice(0, 300) + ' | ' + l.join(',')); }
-  ok(!/jornadas seguidas|Al activar, en este orden|mínimo 20|SportEasy|Copiar mensaje para la plantilla/.test(franja), 'sin condiciones 1 y 2, sin los pasos de activar, sin el mensaje de lanzamiento y sin «SportEasy»');
+  ok(!/jornadas seguidas|Al activar, en este orden|mínimo 20|SportEasy|Copiar mensaje para la plantilla/.test(franja) && !(await pg.getByTestId('tarjeta-avisos').locator('input[type=checkbox]').count()), 'sin condiciones, sin jornadas, sin los pasos de activar, sin el mensaje de lanzamiento, sin casilla y sin «SportEasy»');
 
   // D156: el recuadro se actualiza solo (aqui se fuerza la vuelta a la pestaña con visibilitychange; el reloj de 60 s lo prueba la unitaria de abajo).
   const conAv = async () => +((/Con avisos: (\d+)\//.exec(await pg.getByTestId('con-avisos-cabecera').innerText()) || [])[1] ?? -1);
@@ -371,13 +363,8 @@ try {
   await volver();
   ok(await hasta(async () => (await conAv()) === n0), 'sin recargar: aparece una suscripción nueva y vuelve a «con avisos»');
   { const r = await pg.request.get(`${APP}/api/gestion/activacion`); ok(r.ok() && (await r.json()).grupos?.avisos?.length === 2, 'API del recuadro: responde a un gestor'); const a = await fetch(`${APP}/api/gestion/activacion`); ok(a.status === 401 || a.status === 403, `API del recuadro: sin sesión no responde (${a.status})`); }
-  ok(!(await pg.getByTestId('desactivar').isVisible()), '«Desactivar» no está a la vista: va dentro de «Más opciones»');
-  await pg.getByTestId('mas-opciones').locator('summary').click();
-  ok(await visto(pg.getByTestId('desactivar')), 'con «Desactivar» dentro de «Más opciones»');
-  await pg.getByTestId('desactivar').click();
-  ok(await visto(pg.getByTestId('desactivar-confirmar')) && /dejan de poder responder/.test(await pg.getByTestId('desactivar-confirmar').innerText()) && !/SportEasy/i.test(await pg.getByTestId('mas-opciones').innerText()), 'confirmación en la página (sin diálogo del navegador): los jugadores dejan de poder responder; sin «SportEasy»');
-  await pg.getByTestId('desactivar-confirmar').getByRole('button', { name: 'No' }).click();
-  ok((await sql`select encendido from public.respuestas_web_config where id = 1`)[0].encendido === true, '«No» deja el interruptor encendido');
+  ok(!(await pg.getByTestId('mas-opciones').count()) && !(await pg.getByTestId('desactivar').count()), 'sin «Más opciones» ni «Desactivar»');
+  ok(!(await pg.getByTestId('hueco-sporteasy').count()) && !/SportEasy/i.test(await pg.locator('main').innerText()), 'Panel: sin el hueco de SportEasy y sin «SportEasy» en ninguna parte');
   ok(!/Preparar convocatoria|llega en el paso 2/.test(await pg.locator('main').innerText()), 'el panel ya no dice «Preparar convocatoria: llega en el paso 2»');
   const enlacesPanel = urlsMensajes(await mensajes(pg));
   ok(enlacesPanel.length > 0 && enlacesPanel.every((u) => u.startsWith('https://maccabis.vercel.app')), 'los mensajes de WhatsApp del panel llevan siempre https://maccabis.vercel.app', enlacesPanel.join(' '));
@@ -408,7 +395,7 @@ try {
     await pg.getByRole('button', { name: 'Comparar' }).click();
     await pg.waitForFunction(() => document.querySelector('[data-testid=titulo-resultado]')?.textContent === '1 cambio');
     await pg.locator('[data-testid=tabla-cambios] tbody tr').getByRole('button', { name: 'Aceptar' }).click();
-    ok(await visto(pg.getByRole('button', { name: /^Aplicar y avisar \(1\)/ })) && await visto(pg.getByRole('button', { name: 'Aplicar sin avisar' })), 'encendido: «Aplicar y avisar» (por defecto) y «Aplicar sin avisar»');
+    ok(await visto(pg.getByRole('button', { name: /^Aplicar y avisar \(1\)/ })) && await visto(pg.getByRole('button', { name: 'Aplicar sin avisar' })), '«Aplicar y avisar» (por defecto) y «Aplicar sin avisar»');
     await pg.getByRole('button', { name: boton }).click();
     await pg.getByText(/Aplicado: 1 cambio aceptado/).waitFor({ timeout: 20000 });
   };
@@ -433,33 +420,18 @@ try {
   const [vj2] = await sql`select cambio_visible, inicio::text from public.eventos where id = ${E.mdaJ2}`;
   ok(vj2.inicio.startsWith('11:30') && vj2.cambio_visible?.campos?.includes('hora') && /10:15/.test(vj2.cambio_visible.antes), 'y la línea amarilla «Cambió la hora … (antes: 10:15)»', JSON.stringify(vj2.cambio_visible));
 
-  console.log('\n== Otro gestor (Carlos): la tarjeta del interruptor en solo lectura; sin tarjeta de copia a SportEasy (D153)');
+  console.log('\n== Otro gestor (Carlos): la misma tarjeta «Avisos y accesos»; sin tarjeta de copia a SportEasy (D153)');
   const ctxCg = await nav.newContext({ viewport: { width: 1280, height: 900 } });
   const pcg = await nuevaPagina(ctxCg);
   await entrar(pcg, 'carlos-gestor@pruebas.local');
   await pcg.goto(`${APP}/gestion`);
-  await pcg.getByTestId('mas-opciones').locator('summary').click();
-  ok(await visto(pcg.getByTestId('solo-lectura')) && await pcg.getByRole('button', { name: 'Desactivar' }).isDisabled() && !(await pcg.locator('.ev-jornadas').count()), 'Carlos ve la tarjeta en solo lectura («Desactivar» desactivado)');
-  await pg.goto(`${APP}/gestion`);
-  await pg.getByTestId('mas-opciones').locator('summary').click();
-  ok(await visto(pg.getByTestId('tarjeta-activar')) && !(await pg.getByTestId('solo-lectura').count()) && await pg.getByRole('button', { name: 'Desactivar' }).isEnabled(), 'Iván sí la maneja');
+  ok(await visto(pcg.getByTestId('tarjeta-avisos')) && !(await pcg.getByTestId('solo-lectura').count()) && !(await pcg.getByTestId('mas-opciones').count()), 'Carlos ve «Avisos y accesos» como Iván (ya no hay nada en solo lectura)');
   await pcg.goto(`${APP}/gestion/eventos`);
   ok(await visto(pcg.getByTestId('tabla-eventos')) && !(await pcg.getByTestId('copia-sin-notificar').count()) && !(await pcg.getByTestId('copia-sporteasy').count()), 'Eventos ya no tiene la tarjeta «Copia a SportEasy» (D153)');
   await ctxCg.close();
 
-  console.log('\n== Apagar: sin perder nada y sin SportEasy');
-  await sql`update public.respuestas_web_config set encendido = false where id = 1`;
-  await pj.goto(`${APP}/mi-zona/evento/${E.entreno}`);
-  ok(await visto(pj.getByText('Las respuestas en la web están desactivadas.')) && !(await pj.locator('.rw-btn').count()), 'apagado otra vez: sin botones');
   await pg.goto(`${APP}/gestion/eventos/${E.entreno}/respuestas`);
-  ok((await pg.getByTestId('origen-respuestas').innerText()) !== 'Respuestas en la web' && !/SportEasy/i.test(await pg.locator('main').innerText()), 'Gestión: ya no dice «Respuestas en la web» y no menciona SportEasy');
-  await pg.goto(`${APP}/gestion`);
-  ok((await pg.getByTestId('estado-interruptor').innerText()) === 'Apagado' && await visto(pg.getByTestId('boton-activar')), 'Panel apagado: tarjeta «Respuestas en la web: activar» («Apagado») con su botón');
-  ok(!(await pg.getByTestId('tarjeta-activar').locator('input[type=checkbox]').count()) && !/SportEasy|Importar → Respuestas|fase puente/i.test(await pg.getByTestId('tarjeta-activar').innerText()), 'la tarjeta ya no tiene la casilla de SportEasy, ni «Importar → Respuestas», ni «fase puente»');
-  ok(!(await pg.getByTestId('hueco-sporteasy').count()) && !/SportEasy/i.test(await pg.locator('main').innerText()), 'Panel: sin el hueco de SportEasy y sin «SportEasy» en ninguna parte');
-
-  await pg.goto(`${APP}/gestion/eventos/${E.entreno}/respuestas`);
-  ok(!(await pg.getByRole('button', { name: /^Responder por / }).count()), 'apagado: «Responder por él» no aparece en la lista de respuestas');
+  ok((await pg.getByTestId('origen-respuestas').innerText()) === 'Respuestas en la web' && !/SportEasy/i.test(await pg.locator('main').innerText()), 'Gestión: «Respuestas en la web» y ninguna mención de SportEasy');
 
   ok(!errores.length, 'sin errores de JS en ninguna página', errores.slice(0, 5).join(' | '));
 } finally {

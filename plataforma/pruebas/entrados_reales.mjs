@@ -2,14 +2,16 @@
 // «Han entrado» = ha entrado de verdad (D140), en la pila local y en el Panel:
 //   - estado_activacion cuenta como «entrado» solo a quien tiene auth.users.last_sign_in_at; quien tiene cuenta sin acceso (pidió un
 //     código y no lo usó) sale en «faltan_por_entrar» y en «pidio_codigo»;
-//   - el Panel lo enseña en «Faltan por entrar» con la nota «pidió código pero no llegó a entrar» (interruptor apagado y encendido);
-//   - la migración 20261027110000 es solo una función, se revierte limpia (D111) y se vuelve a aplicar.
+//   - el Panel lo enseña en «Avisos y accesos» → «Faltan por entrar» con la nota «pidió código pero no llegó a entrar»;
+//   - la migración 20261027110000 es solo una función, se revierte limpia (D111) y se vuelve a aplicar (antes se deshacen las
+//     posteriores, revertir_posteriores.mjs: su estado_activacion vieja lee columnas que D172 borra).
 //
 //   npm run pruebas:entrados
 import fs from 'node:fs';
 import path from 'node:path';
 import { preparar, personas, contador, RAIZ } from './comun_e2e.mjs';
 import { migrar } from '../scripts/db.mjs';
+import { revertirPosteriores } from './revertir_posteriores.mjs';
 
 const { ok, fallos, sumar } = contador();
 const e = await preparar();
@@ -33,31 +35,24 @@ try {
   ok(est.entrados === 3 && !est.faltan_por_entrar.includes('Fernando T.') && est.pidio_codigo.length === 0, 'cuando entra de verdad, pasa a «entrado»');
   await sql`update auth.users set last_sign_in_at = null where email = 'fernando.t@pruebas.local'`;
 
-  console.log('\n== Panel (interruptor apagado)');
+  console.log('\n== Panel: «Avisos y accesos»');
   const pg = await e.sesion('gestor@pruebas.local', 1280);
   await pg.goto(`${APP}/gestion`);
-  const tarjeta = await pg.getByTestId('tarjeta-activar').innerText();
-  ok(/2\/\d+ jugadores ya han entrado en la web/.test(tarjeta), 'la tarjeta dice «2/N jugadores ya han entrado»', tarjeta.slice(0, 300));
+  const tarjeta = await pg.getByTestId('faltan-entrar').innerText();
+  ok(/Faltan por entrar: \d+/.test(tarjeta) && /^1\b/.test((await pg.getByTestId('entrada-numeros-pidieron').innerText()).trim()), 'la tarjeta «Avisos y accesos» enseña «Faltan por entrar» con 1 en «lo pidieron y no terminaron»', tarjeta.slice(0, 300));
   await pg.getByTestId('entrada-numeros-pidieron').click();
   const lista = await pg.getByTestId('entrada-numeros-lista').innerText();
   ok(/Fernando T\.\s*pidió código pero no llegó a entrar/.test(lista), '«Lo pidieron y no terminaron» lista a Fernando T. con «pidió código pero no llegó a entrar»', lista.slice(0, 200));
   await pg.getByTestId('entrada-numeros-faltan').click();
   ok(!/Fernando T./.test(await pg.getByTestId('entrada-numeros-lista').innerText()), '…y no sale en «no han pedido acceso» (D157)');
   { const m = await pg.locator('.ev-mensaje', { hasText: 'llegó el correo' }).innerText(); ok(/^Hola, Fernando T\.: te llegó el correo pero no llegaste a entrar\. Pide el código otra vez en .+\/entrar y escribe los 6 números\.$/.test(m), 'mensaje a quien no terminó: singular, con «escribe los 6 números»', m); ok(!/Fernando T/.test(await pg.locator('.ev-mensaje', { hasText: 'aún no habéis entrado' }).innerText().catch(() => '')) && !/Fernando T/.test(await pg.locator('.ev-mensaje', { hasText: 'aún no has entrado' }).innerText().catch(() => '')), 'y Fernando T. no está en el mensaje de quien no ha pedido acceso'); }
-  await pg.getByTestId('entrada-numeros-entrados').click();
-  ok(!/Fernando T\./.test(await pg.getByTestId('entrada-numeros-lista').innerText()), 'y no sale en «han entrado»');
-
-  console.log('\n== Panel (interruptor encendido, franja compacta)');
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = now() where id = 1`;
-  await pg.goto(`${APP}/gestion`);
-  await pg.getByTestId('entrada-numeros-pidieron').click();
-  ok(/Fernando T\.\s*pidió código pero no llegó a entrar/.test(await pg.getByTestId('entrada-numeros-lista').innerText()), 'la franja también lo dice');
-  await sql`update public.respuestas_web_config set encendido = false where id = 1`;
 
   console.log('\n== Migración 20261027110000 reversible (D111)');
   const texto = fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261027110000_entrados_reales.sql'), 'utf8');
   ok(!/\bdrop\b|\btruncate\b|\bdelete\b|\balter table\b|\bcreate table\b/i.test(texto.replace(/--.*$/gm, '')) && /create or replace function public\.estado_activacion/.test(texto), 'solo sustituye la función (sin tablas, columnas ni borrados)');
-  await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261027110000_entrados_reales.revertir.sql'), 'utf8'));
+  const MIGS = path.join(RAIZ, 'supabase', 'migrations');
+  await revertirPosteriores(sql, MIGS, '20261027110000');
+  await sql.unsafe(fs.readFileSync(path.join(MIGS, '20261027110000_entrados_reales.revertir.sql'), 'utf8'));
   est = await dato();
   ok(est.entrados === 3 && est.pidio_codigo === undefined && !(await sql`select 1 from supabase_migrations.schema_migrations where version = '20261027110000'`).length, 'revertida: vuelve a contar las cuentas (3) y se borra su registro');
   await migrar(sql, { log: () => {} });

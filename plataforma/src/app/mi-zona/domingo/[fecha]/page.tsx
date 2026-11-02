@@ -63,8 +63,9 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
   const noVa = partidos.every((e) => resp(e) === "no");
   const situacion = misEquipos.length
     ? { clase: "convocado", texto: `Estás convocado ${misEquipos.map((eq) => { const e = partidos.find((x) => x.equipo === eq)!; const ini = hhmm(e.inicio); return `con el ${eq} · ${hora(ini)}, quedada ${ini ? hora(hhmm(e.quedada) ?? restar20(ini)) : "—"}`; }).join(" y ")}` }
-    : noVa ? { clase: "novas", texto: "No vas" }
+    // D171: con la convocatoria aprobada manda ella: «No convocado» y «No vas» nunca se confunden (tu respuesta sale aparte).
     : aprobada ? { clase: "fuera", texto: "No estás convocado este domingo" }
+    : noVa ? { clase: "novas", texto: "No vas" }
     : { clase: "pendiente", texto: "Convocatoria pendiente" };
 
   // Su dorsal de cada equipo (como en el inicio).

@@ -286,3 +286,88 @@ export const ERRORES: Record<string, string> = {
   solo_gestores: "Solo los gestores.",
 };
 export const textoError = (m: string | undefined) => ERRORES[Object.keys(ERRORES).find((k) => m?.includes(k)) ?? ""] ?? "No se pudo guardar. Inténtalo otra vez.";
+
+// ---------------------------------------------------------------- «Tu próximo partido» (D171)
+/** Lo que `mi_convocatoria` da de un domingo con la convocatoria APROBADA: los equipos a los que está convocado (vacío = no
+ *  convocado). Sin fila de ese día, la convocatoria aún no está aprobada. */
+export type ConvocatoriaMia = { fecha: string; equipos: ("MdA" | "MdL")[] };
+export type MotivoSalto = "no_convocado" | "no_va" | "baja";
+
+/** ¿Va a ir, o puede ir, a este partido? Convocatoria aprobada: solo si está CONVOCADO. Sin convocatoria: solo si su respuesta
+ *  es «va», «duda» o «sin responder». «No va», no convocado o de baja/lesión (ausencia por periodo): no, y por qué. */
+export function situacionPartido(e: Pick<MiEvento, "id" | "equipo" | "fecha">, convocatorias: ConvocatoriaMia[], respuestas: MiRespuesta[], ausencias: MiAusencia[]): { va: boolean; motivo: MotivoSalto | null } {
+  const conv = convocatorias.find((c) => c.fecha === e.fecha);
+  if (conv) return conv.equipos.includes(e.equipo as "MdA" | "MdL") ? { va: true, motivo: null } : { va: false, motivo: "no_convocado" };
+  const r = respuestas.find((x) => x.evento_id === e.id) ?? null;
+  const aus = ausenciaQueCubre(e.fecha, ausencias);
+  if (r?.respuesta === "no") return { va: false, motivo: r.ausencia_id ? "baja" : "no_va" };
+  if (aus && (!r || r.respuesta === "sin_responder")) return { va: false, motivo: "baja" };
+  return { va: true, motivo: null };
+}
+
+export type ProximoPartido = {
+  /** El domingo que se enseña, con solo los partidos a los que va o puede ir; null si no queda ninguno. */
+  unidad: Unidad | null; partidos: MiEvento[];
+  /** Convocatoria aprobada de ese domingo (y, por tanto, convocado). */
+  convocado: boolean; convocatoriaPendiente: boolean;
+  /** El primer domingo que se salta (si lo hay): una línea pequeña arriba. */
+  saltado: { fecha: string; motivo: MotivoSalto } | null;
+};
+
+/** El próximo partido que va a jugar o puede jugar. `domingos`: las unidades de tipo «domingo» aún abiertas, por fecha. Los
+ *  domingos que no cumplen se saltan; si no queda ninguno, `unidad` es null. */
+export function proximoPartido(domingos: Unidad[], convocatorias: ConvocatoriaMia[], respuestas: MiRespuesta[], ausencias: MiAusencia[]): ProximoPartido {
+  let saltado: ProximoPartido["saltado"] = null;
+  for (const u of domingos) {
+    const sit = u.eventos.map((e) => ({ e, ...situacionPartido(e, convocatorias, respuestas, ausencias) }));
+    const ok = sit.filter((s) => s.va);
+    if (ok.length) {
+      const conv = convocatorias.find((c) => c.fecha === u.fecha);
+      return { unidad: u, partidos: ok.map((s) => s.e), convocado: Boolean(conv?.equipos.length), convocatoriaPendiente: !conv, saltado };
+    }
+    if (!saltado) {
+      const m = sit.map((s) => s.motivo);
+      saltado = { fecha: u.fecha, motivo: m.includes("no_convocado") ? "no_convocado" : m.includes("no_va") ? "no_va" : "baja" };
+    }
+  }
+  return { unidad: null, partidos: [], convocado: false, convocatoriaPendiente: false, saltado };
+}
+
+/** «Este domingo no juegas (no convocado)». Si el domingo saltado queda a más de una semana, con su fecha. */
+export function textoSalto(s: { fecha: string; motivo: MotivoSalto }, hoy: string) {
+  const porque = s.motivo === "no_convocado" ? "no convocado" : s.motivo === "no_va" ? "has dicho que no vas" : "estás de baja";
+  const dias = Math.round((new Date(`${s.fecha}T12:00:00Z`).getTime() - new Date(`${hoy}T12:00:00Z`).getTime()) / 86400000);
+  return `${dias <= 7 ? "Este domingo" : `El ${fechaLarga(s.fecha)}`} no juegas (${porque})`;
+}
+
+/** Pastilla de «Tu próximo partido»: «Convocado · MdA y MdL» con la convocatoria aprobada; si no, lo que ha respondido (Vas,
+ *  Vas al MdA · no al MdL, Duda o Sin responder). */
+export function pastillaProximo(p: ProximoPartido, convocatorias: ConvocatoriaMia[], respuestas: MiRespuesta[], ausencias: MiAusencia[], porDefecto?: ReadonlySet<string>): { clase: string; texto: string } | null {
+  if (!p.unidad) return null;
+  if (p.convocado) return { clase: "convocado", texto: `Convocado · ${convocatorias.find((c) => c.fecha === p.unidad!.fecha)!.equipos.join(" y ")}` };
+  const est = estadoDe({ ...p.unidad, eventos: p.partidos }, respuestas, ausencias, porDefecto);
+  if (est.clase === "vas") return { clase: "vas", texto: est.texto };
+  if (est.clase === "duda") return { clase: "duda", texto: "Duda" };
+  return { clase: "responde", texto: "Sin responder" };
+}
+
+/** Pastilla de un evento en la Agenda: el estado EXACTO. En un domingo con la convocatoria aprobada manda ella: «Convocado ·
+ *  MdA» o «No convocado» (nunca «No vas»: es otra cosa). Si no, Vas · No vas · Duda · Sin responder · Lesión · Cancelado. */
+export function pastillaAgenda(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAusencia[], convocatorias: ConvocatoriaMia[], porDefecto?: ReadonlySet<string>): { clase: string; texto: string } {
+  const est = estadoDe(u, respuestas, ausencias, porDefecto);
+  if (est.clase === "cancelado") return { clase: "cancelado", texto: "Cancelado" };
+  if (u.tipo === "domingo") {
+    const c = convocatorias.find((x) => x.fecha === u.fecha);
+    if (c) return c.equipos.length ? { clase: "convocado", texto: `Convocado · ${c.equipos.join(" y ")}` } : { clase: "noconv", texto: "No convocado" };
+  }
+  if (est.clase === "vas") return { clase: "vas", texto: est.texto };
+  if (est.clase === "duda") return { clase: "duda", texto: "Duda" };
+  if (est.clase === "defecto") return { clase: "novas", texto: est.texto };
+  const aus = ausenciaQueCubre(u.fecha, ausencias);
+  const lesion = est.clase === "ausente" ? aus?.motivo === "lesion"
+    : est.clase === "novas" && u.eventos.every((e) => { const r = respuestas.find((x) => x.evento_id === e.id); return r?.respuesta === "no" && r.motivo === "lesion"; });
+  if (lesion) return { clase: "lesion", texto: "Lesión" };
+  if (est.clase === "ausente") return { clase: "novas", texto: est.texto };
+  if (est.clase === "novas") return { clase: "novas", texto: "No vas" };
+  return { clase: "responde", texto: "Sin responder" };
+}

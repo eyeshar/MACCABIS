@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { cargarMiZona } from "@/app/mi-zona/datos";
 import BandaAvisos from "@/components/avisos/BandaAvisos";
-import { AvisoCaja } from "@/components/ProximoPartido";
 import { Flecha } from "@/components/Iconos";
-import { madrid } from "@/lib/avisos/horario";
+import { dudaAbierta, madrid } from "@/lib/avisos/horario";
 import { textoColores } from "@/lib/colores";
 import { TEXTO_POSICION, type Posicion } from "@/lib/convocatoria/motor";
 import { avisoDeEvento } from "@/lib/eventos/datos";
@@ -18,10 +17,11 @@ import {
   cargarQuienVa, misEntrenosPorDefecto, respuestasWebEncendido,
 } from "@/lib/respuestas/jugador";
 import {
-  enlaceLugar, esPlan, estadoDe, fechaTitular, hhmm, lugarTexto, partidosQueVa, restar20, unidades, type MiEvento, type Unidad,
+  enlaceLugar, esPlan, estadoDe, fechaTitular, hhmm, lugarTexto, pastillaProximo, proximoPartido, restar20, textoSalto, unidades, type MiEvento, type Unidad,
 } from "@/lib/respuestas/dominio";
 import { sumarDias, hoyMadrid } from "@/lib/dias";
 import { clienteSesion } from "@/lib/supabase";
+import Responder from "@/components/respuestas/Responder";
 import type { Usuario } from "@/lib/usuario";
 import AvisoPersonal from "./AvisoPersonal";
 import RopaInicio from "./RopaInicio";
@@ -29,6 +29,10 @@ import BandaGestion from "./BandaGestion";
 import Carrusel from "./Carrusel";
 import { FilaAgenda, TarjetaPendiente, TarjetaPorDefecto } from "./piezas";
 
+/** Sin rival o sin jornada en la tabla de eventos no hay aviso; la línea de equipación no falta nunca (D160). */
+const LINEA_SIN_AVISO = "Jugamos de negro. Lleva la amarilla por si acaso.";
+/** La línea de D160 es del grupo («Llevad…»); en la tarjeta personal va en singular (Iván, 02/11/2026). */
+const enSingular = (l: string) => l.replace(/Llevad/g, "Lleva");
 const NOMBRE_GRUPO = { MDA: "grupo 1", MDL: "grupo 2" } as const;
 const dec1 = (x: number) => x.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const conSigno = (x: number) => (x > 0 ? `+${x}` : String(x));
@@ -101,18 +105,13 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const ocupacion = conPlazas.length ? await cargarQuienVa(conPlazas) : new Map();
   const lleno = (e: MiEvento) => Boolean(e.plazas && (ocupacion.get(e.id)?.va.length ?? 0) >= e.plazas);
 
-  // Tu proximo partido: el proximo domingo con partido suyo.
-  const domingo = todas.find((u) => u.tipo === "domingo" && abierta(u));
-  const conv = domingo ? convocatorias.find((c) => c.fecha === domingo.fecha) ?? null : null;
-  const resp = (e: MiEvento) => respuestas.find((r) => r.evento_id === e.id)?.respuesta ?? "sin_responder";
-  const noVa = domingo ? domingo.eventos.every((e) => resp(e) === "no") : false;
-  const estadoPartido = !domingo ? null
-    : conv?.equipos.length ? { clase: "convocado", texto: `Convocado · ${conv.equipos.join(" y ")}` }
-    : noVa ? { clase: "novas", texto: "No vas" }
-    : conv ? { clase: "pendiente", texto: "No convocado esta vez" }
-    : { clase: "pendiente", texto: "Convocatoria pendiente" };
-  // Convocado: sus partidos. Sin convocatoria: los que no ha dicho que no (con «no» al MdL, solo el MdA).
-  const partidosVer = domingo ? (conv?.equipos.length ? domingo.eventos.filter((e) => conv.equipos.includes(e.equipo as "MdA" | "MdL")) : partidosQueVa(domingo, respuestas)) : [];
+  // Tu próximo partido (D171): el próximo domingo al que VA A IR o PUEDE IR. Con la convocatoria aprobada, solo si está
+  // convocado; sin ella, si su respuesta es va, duda o sin responder. Los demás se saltan (línea pequeña arriba).
+  const proximo = proximoPartido(todas.filter((u) => u.tipo === "domingo" && abierta(u)), convocatorias, respuestas, ausencias);
+  const domingo = proximo.unidad;
+  const partidosVer = proximo.partidos;
+  const estadoPartido = pastillaProximo(proximo, convocatorias, respuestas, ausencias, porDefecto);
+  const saltoTexto = proximo.saltado ? textoSalto(proximo.saltado, hoy) : null;
   const temporada = temporadaDe(jugador.person_id);
   const dorsales = temporada?.dorsales ?? [];
   const dorsalDe = (eq: string) => {
@@ -170,9 +169,19 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
               <h2 id="t-partido">Tu próximo partido</h2>
               {estadoPartido && <span className={`in-pastilla in-p-${estadoPartido.clase}`} data-testid="estado-partido">{estadoPartido.texto}</span>}
             </div>
+            {saltoTexto && <p className="in-salto pequeno suave" data-testid="salto-partido">{saltoTexto}</p>}
             {domingo ? (
               <>
                 <p className="in-titular">{fechaTitular(domingo.fecha, hoy)}</p>
+                {proximo.convocatoriaPendiente && <p className="suave pequeno" data-testid="convocatoria-pendiente">Convocatoria pendiente: aún no está publicada.</p>}
+                {estadoPartido?.texto === "Sin responder" && (
+                  <div className="in-responder-proximo" data-testid="responder-proximo">
+                    {encendido ? (
+                      <Responder eventoId={domingo.eventos[0].id} fecha={domingo.fecha} domingo actual={null} nombre={`partido del domingo ${+domingo.fecha.slice(8)}`}
+                        sinDuda={!domingo.eventos.every((x) => dudaAbierta(x, new Date()))} urlDomingo={domingo.modo === "distintas" ? domingo.url : undefined} grande />
+                    ) : <p className="suave pequeno">Las respuestas en la web están desactivadas.</p>}
+                  </div>
+                )}
                 {partidosVer.map((e) => {
                   const a = avisoDeEvento(e);
                   const rival = e.rival ? coloresDe(e.rival) : null;
@@ -195,9 +204,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
                       <div className="in-tepones" data-testid="te-pones">
                         <span className="mono tenue">Te pones</span>
                         <b>{a?.tipo === "nos_toca" ? "Equipación amarilla" : "Equipación negra"}{dorsal ? ` con tu dorsal ${dorsal}` : ""}</b>
-                        {a?.hay && a.tipo !== "nos_toca" && <span className="pequeno">Lleva también la amarilla, por si acaso.</span>}
-                        {/* El aviso de choque de equipacion de siempre (D79), el mismo que en la portada y en Gestion. */}
-                        {a?.hay && <AvisoCaja a={a} />}
+                        {/* D160: la misma línea única de equipación que la convocatoria (siempre con «Llevad la amarilla por si acaso»). */}
+                        <span className="pequeno" data-testid="linea-equipacion">{a?.convocatoria ? enSingular(a.convocatoria) : LINEA_SIN_AVISO}</span>
                       </div>
                       {rival && <p className="in-rival pequeno" data-testid="color-rival-inicio"><i className="eq-punto" style={{ background: rival.css }} aria-hidden="true" /> El rival: {textoColores(rival)}</p>}
                     </article>
@@ -206,7 +214,9 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
                 {domingo.eventos.length === 2 && hhmm(domingo.eventos[0].inicio) === hhmm(domingo.eventos[1].inicio) && <p className="suave pequeno">MdA y MdL juegan a la misma hora: esta jornada no se puede doblar.</p>}
                 <Link href={domingo.url} className="in-mas">Ver el partido y quién va <Flecha size={16} /></Link>
               </>
-            ) : <p className="suave" style={{ margin: 0 }}>No tienes partidos de liga en el calendario.</p>}
+            ) : (
+              <p className="suave" style={{ margin: 0 }} data-testid="sin-partidos">No tienes partidos próximos. <Link href="/agenda" className="in-mas">Ver la agenda <Flecha size={16} /></Link></p>
+            )}
             {avisos.length > 0 && (
               <div className="in-avisos" data-testid="avisos-jornada" aria-label="Avisos de la jornada">
                 {avisos.map((x) => <p key={x.id} className={`in-aviso in-aviso-${x.tipo}`}>{x.texto}</p>)}

@@ -2,6 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+_Última actualización: 02/11/2026: **«Tu próximo partido»** (`feat/inicio-proximo-partido`, D171): la tarjeta del inicio enseña el próximo partido al que el jugador va a ir o puede ir (convocado / va, duda o sin responder); la Agenda, todos con su estado exacto (No convocado ≠ No vas). Equipación: línea única de D160, en singular en la tarjeta._
 _Última actualización: 02/11/2026: **«Asistencia y motivos» rediseñada** (`feat/asistencia-rediseno`, D170): asistencia guardada evento a evento (tabla `asistencia_eventos`, migración `20261102100000` y carga **ya aplicadas en el real** con D111, 28 cuentas antes y después; cuadre con OK de Iván), cómo se cuenta (sin «no convocado» ni lesión; faltas = con + sin excusa; TOTAL sumado; mínimo 5 eventos), filtros, tabla ordenable con tendencia y ficha del jugador. 2025/26 manda lo corregido (D72)._
 
 _Última actualización: 01/11/2026, tarde: **25 temporadas nuevas en la Historia** (`feat/historia-temporadas-sporteasy`, D166): barras de «en el club, sin estadísticas» en 20 personas, a partir de la asistencia de SportEasy y con OK de Iván._

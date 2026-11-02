@@ -149,7 +149,8 @@ try {
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;
   const pg = await e.sesion('guille@pruebas.local', 375);
   ok((await pg.locator('#t-faltan').textContent()).trim() === 'Lo tienes todo respondido', '«Lo tienes todo respondido»', await pg.locator('#t-faltan').textContent());
-  ok((await pg.getByTestId('estado-partido').innerText()) === 'No convocado esta vez', 'con la convocatoria aprobada y sin estar en ella: «No convocado esta vez»');
+  // D171: con la convocatoria aprobada y sin estar en ella, ese partido NO sale en la tarjeta: se salta y lo dice una línea arriba.
+  ok((await pg.getByTestId('salto-partido').innerText()) === 'Este domingo no juegas (no convocado)' && !(await pg.getByTestId('estado-partido').innerText().catch(() => '')).includes('No convocado esta vez'), 'con la convocatoria aprobada y sin estar en ella: «Este domingo no juegas (no convocado)»', await pg.getByTestId('salto-partido').innerText().catch(() => ''));
   ok(!(await pg.getByTestId('tu-grupo').count()) || /Rojos/.test(await pg.getByTestId('tu-grupo').first().innerText()), 'cada uno ve SOLO su grupo');
 
   console.log('\n== Gestor (y jugador) en escritorio (1280 px): banda «Gestión esta semana» y tres columnas');
@@ -166,6 +167,9 @@ try {
   ok(await sinDesbordar(pi), '1280 px sin desbordamiento');
   await foto(pi, 'inicio_gestor_1280');
   console.log('\n== Respuestas distintas por partido del domingo (J3: «va» al MdA, «no» al MdL), siendo gestor');
+  // Sin convocatoria aprobada manda lo que respondió (con la aprobada, Iván no está en ella: D171, otra prueba).
+  await sql`delete from public.convocatorias where fecha = ${F('2026-10-25')}`;
+  await pi.goto(`${APP}/`);
   const pIvan = pi.getByTestId('proximo-partido');
   const partidosIvan = await pIvan.locator('.in-partido-uno').evaluateAll((xs) => xs.map((x) => x.dataset.equipo));
   ok(partidosIvan.join(',') === 'MDA', '«Tu próximo partido»: solo el MdA (no el MdL al que dijo que no)', partidosIvan.join(','));

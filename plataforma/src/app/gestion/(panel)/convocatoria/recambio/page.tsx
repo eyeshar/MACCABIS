@@ -28,8 +28,11 @@ export default async function PaginaRecambio({ searchParams }: { searchParams: P
     </>
   );
   if (!ctx || !fecha || ctx.fecha !== fecha || !c || c.estado !== "aprobada") return sinNada("La convocatoria de ese domingo no está aprobada: ajústala en la pantalla de la convocatoria.");
-  if (!eq || !sale || !(c.equipos[eq] ?? []).some((x) => x.person_id === sale)) return sinNada("Ese jugador ya no está en ese equipo: el cambio ya está hecho.");
-  const r = sugerirRecambio(entradaDe(ctx), c.equipos, sale, eq);
+  if (!eq || !sale) return sinNada("Falta el jugador o el equipo.");
+  // Si ya no está en ese equipo (el cambio ya se hizo, también justo ahora desde esta hoja: guardar recarga la página), la
+  // hoja se queda montada igual para no perder el resultado (el WhatsApp del cambio) y dice que ya está hecho.
+  const yaHecho = !(c.equipos[eq] ?? []).some((x) => x.person_id === sale);
+  const r = yaHecho ? null : sugerirRecambio(entradaDe(ctx), c.equipos, sale, eq);
   const porId = new Map(ctx.jugadores.map((j) => [j.person_id, j]));
   const j = porId.get(sale);
   const resp = j?.respuesta[eq] ?? "sin_responder";
@@ -42,8 +45,8 @@ export default async function PaginaRecambio({ searchParams }: { searchParams: P
           <span className="suave" data-testid="rc-sale">{eq} · {diaTexto(fecha)} · {TEXTO_RESP[resp]}</span>
         </div>
       </div>
-      <HojaRecambio fecha={fecha} sale={sale} equipo={eq} sugerido={r.sugerido} porque={r.porque} bajoMinimo={r.bajoMinimo}
-        candidatos={r.candidatos.map((x) => ({ ...x, nombre: porId.get(x.person_id)?.nombre ?? x.person_id }))} />
+      <HojaRecambio fecha={fecha} sale={sale} equipo={eq} sugerido={r?.sugerido ?? null} porque={r?.porque ?? ""} bajoMinimo={r?.bajoMinimo ?? false} yaHecho={yaHecho}
+        candidatos={(r?.candidatos ?? []).map((x) => ({ ...x, nombre: porId.get(x.person_id)?.nombre ?? x.person_id }))} />
     </>
   );
 }

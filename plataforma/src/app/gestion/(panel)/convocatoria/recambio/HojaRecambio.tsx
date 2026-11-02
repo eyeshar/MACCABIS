@@ -9,8 +9,8 @@ import { aplicarRecambio } from "../acciones";
 const TIPO = { libre: "Sin convocar", reserva: "Reserva", dobla: "Doblaría" } as const;
 
 /** Elegir el recambio (preseleccionado el del motor) o ninguno, y «Aplicar y avisar» (D173). Móvil primero (375 px). */
-export default function HojaRecambio({ fecha, sale, equipo, sugerido, porque, bajoMinimo, candidatos }: {
-  fecha: string; sale: string; equipo: Equipo; sugerido: string | null; porque: string; bajoMinimo: boolean;
+export default function HojaRecambio({ fecha, sale, equipo, sugerido, porque, bajoMinimo, candidatos, yaHecho = false }: {
+  fecha: string; sale: string; equipo: Equipo; sugerido: string | null; porque: string; bajoMinimo: boolean; yaHecho?: boolean;
   candidatos: (Candidato & { nombre: string })[];
 }) {
   const [elegido, setElegido] = useState<string>(sugerido ?? "");
@@ -25,6 +25,7 @@ export default function HojaRecambio({ fecha, sale, equipo, sugerido, porque, ba
       </section>
     );
   }
+  if (yaHecho) return <p className="suave" data-testid="rc-nada">Ese jugador ya no está en ese equipo: el cambio ya está hecho.</p>;
   return (
     <section className="gs-bloque" aria-labelledby="t-rc" data-testid="rc-hoja">
       <h2 id="t-rc" style={{ fontSize: 20 }}>¿Quién entra en el {equipo}?</h2>

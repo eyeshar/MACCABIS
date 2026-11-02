@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 02/11/2026, noche: **«Claves del partido»** (`feat/scouting-claves`, D174, PR abierto, sin merge): Scouting dice qué hay que saber de cada rival en dos vías —«Del equipo» (hasta 3) y «Jugadores a vigilar» (hasta 3)— con reglas fijas sobre las hojas y el historial, sin IA, y la primera de cada vía en el Panel y en «Tu próximo partido»; y la página de partido de la liga enseña «Rival por jugador» a cualquier jugador con sesión (cumple D162). Sin migraciones._
+_Última actualización: 02/11/2026, noche: **«Claves del partido»** (`feat/scouting-claves`, D174, PR #34 MERGEADO el 02/11 con el OK de Iván; producción comprobada: sin sesión, ni claves ni «Rival por jugador» y Scouting redirige a /entrar): Scouting dice qué hay que saber de cada rival en dos vías —«Del equipo» (hasta 3) y «Jugadores a vigilar» (hasta 3)— con reglas fijas sobre las hojas y el historial, sin IA, y la primera de cada vía en el Panel y en «Tu próximo partido»; y la página de partido de la liga enseña «Rival por jugador» a cualquier jugador con sesión (cumple D162). Sin migraciones._
 _Última actualización: 02/11/2026, noche: **rutina C automática** (`feat/rutina-c-automatica`, D173, PR #32 MERGEADO con el OK de Iván; migración `20261103100000` APLICADA en el real con D111, 28 cuentas antes y después): plazo el martes a las 12:00 (el entreno, el miércoles a las 12:00), aviso único a las 09:00 del día del plazo, aviso del cierre a quien no ha respondido, propuesta automática tras el cierre con push a Iván, «Aprobar y avisar» desde el móvil, recambio tras aprobar y revisión tras un cambio de calendario. Ver la primera sección._
 _Última actualización: 02/11/2026: **fin de SportEasy: limpieza total** (`feat/fin-sporteasy`, D172, PR #29 y #30 mergeados; migración aplicada en el real con D111): fuera el interruptor «respuestas en la web» (siempre encendidas; el Panel queda con «Avisos y accesos»), lo huérfano de SportEasy en la base (migración `20261102200000_fin_sporteasy`, aplicada en el real el 02/11 con D111, al segundo intento) y SportEasy de los docs vigentes. Ver la primera sección._
 _Última actualización: 02/11/2026: **«Tu próximo partido»** (`feat/inicio-proximo-partido`, D171): la tarjeta del inicio enseña el próximo partido al que el jugador va a ir o puede ir (convocado / va, duda o sin responder); la Agenda, todos con su estado exacto (No convocado ≠ No vas). Equipación: línea única de D160, en singular en la tarjeta._
@@ -55,14 +55,14 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
-## «Claves del partido» en Scouting, el Panel y «Tu próximo partido»; página de partido para cualquier jugador con sesión (02/11/2026; D174) — `feat/scouting-claves`, PR abierto, sin merge
+## «Claves del partido» en Scouting, el Panel y «Tu próximo partido»; página de partido para cualquier jugador con sesión (02/11/2026; D174) — `feat/scouting-claves`, PR #34 MERGEADO (OK de Iván)
 
 - **Hecho:** `clavesRival()` (`plataforma/src/lib/scouting/claves.ts`), función pura con todos los umbrales en `AJUSTES`, en dos vías: **A «Del equipo»** (frente a la media de los equipos del grupo sin contarlo a él, ≥ 20 %, una clave por tema, lo que no cambia el partido al final, máximo 3) y **B «Jugadores a vigilar»** (cada jugador frente a los jugadores del grupo, con el mínimo de D169: 5 primeros del grupo por partido, pico de 4 triples o 20 puntos, libres; una línea por jugador con su puesto, máximo 3). Con menos de 3 partidos, «Pocos datos: N partidos jugados». Catálogo y umbrales en D174.
 - **Dónde:** caja arriba de la página de cada rival en Scouting rivales, con los dos bloques, y la primera de cada bloque en la tarjeta de scouting del Panel y en «Tu próximo partido» (con «Ver el scouting»). Solo con sesión (D162): nada en páginas públicas, JSON públicos ni el repo; nunca niveles ni datos internos.
 - **Página de partido de la liga:** «Rival por jugador» (sin «· solo gestores», sin el recuadro amarillo) la ve cualquier jugador con sesión o gestor, con la misma comprobación que Scouting (`puedeVerLigaActual`); sin sesión, ni la sección ni un nombre de jugador rival en el HTML; el pie de «Fuente» dice «Datos por equipo» o «Datos por equipo y por jugador (solo con sesión)».
 - **Sin migraciones.** `cargarLiga(supabase, grupos?)` acepta los grupos que hacen falta.
 - **Pruebas:** `pruebas:claves` (nueva, sintética), `pruebas:claves-pantallas` (nueva, 375 px en las tres ubicaciones y sin sesión), `pruebas:liga-partidos`, `pruebas:privacidad` y `test:privacidad` ampliadas. Ver D174 y el resumen del PR para las claves que salen hoy en cada rival.
-- **Pendiente de Iván:** revisar el catálogo y los umbrales (D174, «Detalles decididos por Claude»: sin clave de casa/fuera por D129, umbrales de paliza/apretado/rival común) y el OK para mergear.
+- **Pendiente:** revisar los umbrales de picos y de la vía B tras la J6 (BACKLOG).
 
 ## Rutina C automática (02/11/2026; D173) — `feat/rutina-c-automatica`, PR #32 MERGEADO (OK de Iván); migración `20261103100000_rutina_c_automatica` APLICADA en el real con D111
 

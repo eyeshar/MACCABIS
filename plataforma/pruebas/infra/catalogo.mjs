@@ -20,6 +20,7 @@ export const SOLO_LOCAL = {
   'pruebas:respuestas-real': 'Supabase real: claves de plataforma/.env.local',
   'pruebas:convocatoria-real': 'Supabase real: claves de plataforma/.env.local',
   'pruebas:inicio-real': 'Supabase real: claves de plataforma/.env.local',
+  'pruebas:asistencia-eventos-real': 'Supabase real: claves de plataforma/.env.local',
   'pruebas:solo-ficha-real': 'Supabase real: claves de plataforma/.env.local y la foto de privado/backups/',
 };
 

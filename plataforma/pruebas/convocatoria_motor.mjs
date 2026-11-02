@@ -452,7 +452,7 @@ console.log('\n== Qué ha cambiado tras aprobar');
 {
   const nombre = (id) => id.replace('sint-', 'S');
   const d = diferencias({ MdA: [{ person_id: 'sint-01' }, { person_id: 'sint-02' }], MdL: [{ person_id: 'sint-03' }] }, { MdA: [{ person_id: 'sint-01' }], MdL: [{ person_id: 'sint-03' }, { person_id: 'sint-02' }, { person_id: 'sint-04' }, { person_id: 'sint-01' }] }, nombre);
-  ok(d.join(' | ') === 'S01 dobla (también en el MdL) | S02 pasa del MdA al MdL | entra S04 en el MdL', d.join(' | '));
+  ok(d.join(' | ') === 'S01 juega también con el MdL | S02 pasa del MdA al MdL | entra S04 en el MdL', d.join(' | '));
   ok(diferencias(null, { MdA: [] }, nombre).length === 0, 'sin aprobar antes: nada que contar');
   const rc = recuentoDe([], new Map());
   ok(rc.total === 0 && rc.bases.estado === 'mal' && rc.nivelMedio === null, 'equipo vacío: recuento a cero');

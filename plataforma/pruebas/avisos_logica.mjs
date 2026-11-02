@@ -447,5 +447,44 @@ console.log('\n== Aviso al aprobar (D173): un solo aviso por jugador, según su 
   ok(CM.textoAvisados(14, 16) === 'Avisados 14 de 16 (los otros 2 no tienen avisos)' && CM.textoAvisados(1, 2) === 'Avisados 1 de 2 (el otro no tiene avisos)' && CM.textoAvisados(3, 3) === 'Avisados 3 de 3', '«Avisados N de M (los otros M−N no tienen avisos)»');
 }
 
+
+console.log('\n== Domingo con la convocatoria YA APROBADA (D173): sin aviso de las 09:00 ni del cierre para sus partidos; el entreno, sí');
+{
+  const ap = (ahora, extra = {}) => ({ ...datos(ahora, extra), aprobadas: ['2026-10-18'] });
+  const dda = (d) => P.conAvisosDeDudas(P.planificar(d), d);
+  let a = dda(ap(M('2026-10-13', '09:05')));
+  ok(!a.some((x) => x.eventos.some((id) => id === 'mda2' || id === 'mdl2')), 'martes 09:05, domingo 18 aprobado: nadie recibe «Tienes hasta hoy a las 12:00… te quedas fuera de la convocatoria»', JSON.stringify(a.map((x) => x.clave)));
+  a = dda(ap(M('2026-10-13', '09:05'), { respuestas: [{ evento_id: 'mda2', person_id: 'jon', respuesta: 'duda' }] }));
+  ok(!a.some((x) => x.eventos.includes('mda2')), 'tampoco a quien está en «duda» a ese partido');
+  ok(!P.avisosCierre(ap(M('2026-10-13', '12:05'))).length, 'martes 12:05: nadie recibe «No has respondido: no entras en la propuesta»');
+  a = dda(ap(M('2026-10-14', '09:05')));
+  ok(a.some((x) => x.person_id === 'jon' && x.eventos.includes('e14') && /Entreno del miércoles 14: responde hasta hoy a las 12:00/.test(x.titulo)), 'el entreno del miércoles sigue con su regla nueva (miércoles 09:00, plazo a las 12:00)');
+  ok(dda({ ...datos(M('2026-10-13', '09:05')), aprobadas: ['2026-10-25'] }).some((x) => x.eventos.includes('mda2')), 'aprobada OTRA fecha: el domingo 18 sí tiene su aviso');
+}
+
+console.log('\n== Riesgo por equipo (D173): solo gestores; nivel con dos partidos de dificultad distinta, proyección siempre');
+{
+  const R = await import('../src/lib/convocatoria/riesgo.ts');
+  const dos = [{ equipo: 'MdA', dificultad: 'alta' }, { equipo: 'MdL', dificultad: 'media' }];
+  const pr = (a, l) => ({ MdA: a == null ? null : { puntos: a }, MdL: l == null ? null : { puntos: l } });
+  let r = R.riesgos(dos, { MdA: 3, MdL: 3.2 }, pr(60, 60));
+  ok(r.length === 1 && r[0].gravedad === 'alto' && r[0].equipo === 'MdA' && r[0].texto === 'Riesgo alto: el MdA (rival más difícil) lleva igual o menos nivel medio que el MdL.', 'el MdA (más difícil) con menos nivel medio: rojo', JSON.stringify(r));
+  ok(R.riesgos(dos, { MdA: 3, MdL: 3 }, pr(60, 60))[0]?.gravedad === 'alto', 'con el mismo nivel medio: rojo');
+  r = R.riesgos(dos, { MdA: 3.2, MdL: 3 }, pr(60, 60));
+  ok(r.length === 1 && r[0].gravedad === 'medio' && /^Riesgo medio/.test(r[0].texto), 'más nivel pero por menos de un cuarto de letra (0,2): ámbar');
+  ok(!R.riesgos(dos, { MdA: 3.3, MdL: 3 }, pr(60, 60)).length, 'con 0,3 de diferencia o más: sin riesgo');
+  ok(!R.riesgos([{ equipo: 'MdA', dificultad: 'media' }, { equipo: 'MdL', dificultad: 'media' }], { MdA: 2, MdL: 4 }, pr(60, 60)).length, 'rivales parejos: no hay riesgo de nivel (se equilibra)');
+  r = R.riesgos(dos, { MdA: 4, MdL: 3 }, pr(44, 47));
+  ok(r.find((x) => x.equipo === 'MdA')?.texto === 'Riesgo alto: proyección por debajo de la anotación mínima (44 de 45).' && r.find((x) => x.equipo === 'MdL')?.gravedad === 'medio', 'proyección 44: rojo; 47 (a menos de 5 de la mínima): ámbar');
+  ok(!R.riesgos(dos, { MdA: 4, MdL: 3 }, pr(50, 50)).length, 'proyección 50: sin riesgo');
+  const uno = R.riesgos([{ equipo: 'MdL', dificultad: 'alta' }], { MdL: 1 }, { MdL: { puntos: 40 } });
+  ok(uno.length === 1 && uno[0].motivo === 'proyeccion', 'un solo partido: solo cuenta la proyección');
+  ok(R.riesgos([{ equipo: 'MdL', dificultad: 'alta' }], { MdL: 1 }, { MdL: { puntos: 40 } }, { MdL: 0 }).length === 0, 'sin convocados: nada');
+  ok(R.textoRiesgoPush(uno) === '1 aviso de riesgo' && R.textoRiesgoPush(R.riesgos(dos, { MdA: 3.2, MdL: 3 }, pr(60, 60))) === null, 'en el push del martes: «1 aviso de riesgo» solo si es rojo, sin niveles');
+  const pl = CM.textoPropuestaLista('2026-11-15', [{ equipo: 'MdL', recuento: { total: 9, bases: { puros: 2, reserva: 0, estado: 'ok' }, exteriores: { n: 4, estado: 'ok' }, interiores: { n: 4, estado: 'ok' } } }], '1 aviso de riesgo');
+  ok(pl.cuerpo === 'MdL 9 · sin avisos · 1 aviso de riesgo. Revísala y apruébala.', 'push: «MdL 9 · sin avisos · 1 aviso de riesgo»', pl.cuerpo);
+  ok(R.RIESGO.margenNivel === 0.25 && R.RIESGO.margenProyeccion === 5, 'umbrales ajustables en RIESGO (0,25 de nivel; 5 puntos)');
+}
+
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

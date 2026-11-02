@@ -23,6 +23,7 @@ import { firmar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
 import * as H from '../src/lib/avisos/horario.ts';
+import { prohibidoEn } from './prohibido.mjs';
 
 const { ok, fallos, sumar } = contador();
 const vapid = webpush.generateVAPIDKeys();
@@ -124,7 +125,11 @@ try {
   const [{ id: c3 }] = await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos) values (${D3}, 40, 'borrador', 'propuesta', ${sql.json({ MdL: [{ person_id: 'sint-r02' }] })}) returning id`;
   await sql`insert into public.convocatoria_cambios (convocatoria_id, por_nombre, accion, en) values (${c3}, 'Iván', 'propuesta', now() - interval '2 hours')`;
   await sql`insert into public.convocatoria_cambios (convocatoria_id, por_nombre, accion, person_id, motivo, nota, en) values (${c3}, 'Iván', 'anadir', 'sint-r02', 'otro', 'ajuste manual', now() - interval '1 hour')`;
+  t = await tarea(M(martes(D2), '09:05'));
+  const [{ n: d2plazo }] = await sql`select count(*)::int n from public.avisos_registro where clave like 'rec:dudas:%' and ${E2}::text = any(eventos::text[])`;
+  ok(t.status === 200 && d2plazo === 0, `domingo ${D2} ya aprobado: a las 09:00 nadie recibe «Tienes hasta hoy a las 12:00… te quedas fuera de la convocatoria» (aunque haya quien no ha respondido)`, JSON.stringify(t.json));
   t = await tarea(M(martes(D2), '12:05'));
+  ok(!(await avisos(`rec:cierre:${D2}:%`)).length, `ni a las 12:00 «No has respondido: no entras en la propuesta»`);
   ok(t.status === 200 && !t.json.propuestas.includes(D2) && (await sql`select equipos from public.convocatorias where fecha = ${D2}`)[0].equipos.MdL.length === 1, `la del ${D2}, ya aprobada: no se toca`);
   t = await tarea(M(martes(D3), '12:05'));
   const [c3b] = await sql`select equipos, automatica_en from public.convocatorias where fecha = ${D3}`;
@@ -160,6 +165,8 @@ try {
   ok(/Bases/.test(rev) && /Exteriores/.test(rev) && /Interiores/.test(rev) && /Rival de Prueba/.test(rev) && /Dificultad/.test(rev), 'por equipo: convocados por línea, rival y dificultad', rev.slice(0, 300));
   const fueraTxt = await pg.getByTestId('cv-rev-fuera').innerText();
   ok(/Se quedan fuera \(1\)/.test(fueraTxt) && /Tope de 10/.test(fueraTxt), 'quién se queda fuera y por qué', fueraTxt);
+  const riesgosD1 = await pg.locator('[data-testid^="cv-riesgo-"]').allInnerTexts();
+  ok(riesgosD1.every((x) => /^Riesgo (alto|medio): proyección/.test(x)), 'riesgo por equipo (solo gestores): con un solo partido, solo por la proyección', riesgosD1.join(' | '));
   ok(await sinDesbordar(pg), 'sin desbordar a 375 px');
   const btn = pg.getByTestId('cv-aprobar');
   ok(await btn.evaluate((b) => b.getBoundingClientRect().height >= 44), 'el botón «Aprobar y avisar» es grande (al menos 44 px)');
@@ -239,6 +246,16 @@ try {
   ok(cal.length === 2 && cal.every((x) => /Rc01 dobla y ahora los dos partidos son a la misma hora\. Propuesta: sale del MdL/.test(x.cuerpo) && x.url.includes('/gestion/convocatoria/recambio?')), 'push a los gestores: «Rc01 dobla y ahora los dos partidos son a la misma hora. Propuesta: sale del MdL…», con la hoja de recambio', JSON.stringify(cal));
   await pe.close();
 
+  console.log('\n== Privacidad (D173.F): nada de niveles, «riesgo», «reserva», «dobla» ni proyección en lo que recibe o ve un jugador');
+  const aJugadores = await sql`select clave, titulo, cuerpo from public.avisos_registro where person_id is not null`;
+  const malosAv = aJugadores.filter((x) => prohibidoEn(`${x.titulo} ${x.cuerpo}`));
+  ok(aJugadores.length > 20 && malosAv.length === 0, `el texto exacto de los ${aJugadores.length} avisos a jugadores de esta prueba, limpio`, malosAv.slice(0, 3).map((x) => `${x.clave}: ${x.cuerpo}`).join(' | '));
+  const pj = await e.sesion('r12@pruebas.local', 375);
+  for (const ruta of ['/', `/mi-zona/domingo/${D1}`, `/mi-zona/evento/${E1}`, '/agenda', `/mi-zona/domingo/${D4}`]) {
+    await pj.goto(`${APP}${ruta}`);
+    const txt = await pj.locator('body').innerText();
+    ok(!prohibidoEn(txt) && !/nota_ataque|"nivel"/.test(await pj.content()), `pantalla de jugador ${ruta}: limpia (ni en el texto ni en el HTML)`, prohibidoEn(txt) ?? '');
+  }
   ok(e.errores.length === 0, 'sin errores de JavaScript en ninguna pantalla', e.errores.slice(0, 3).join(' | '));
 
   // ---------------------------------------------------------------------------------------------- migración reversible

@@ -12,7 +12,7 @@
 --   4. gestores.recibe_propuesta: a quién llega el push «Convocatoria del domingo … lista» y el recordatorio de las 19:00
 --      (Iván); a las 21:00, a los tres.
 --   5. convocatoria_privados_tarea(): los datos privados que necesita el motor (posición, base de reserva, nivel, dobla,
---      regla, sanción y marcas), para la tarea de avisos (service_role), que desde D146 no lee jugadores_privado. Solo la
+--      regla, sanción, marcas y la letra de ataque de la proyección), para la tarea de avisos (service_role), que desde D146 no lee jugadores_privado. Solo la
 --      ejecuta service_role; la tarea no los imprime ni los manda en ningún aviso (D39, D173.F).
 --   6. convocatoria_propuesta_auto(): guarda la propuesta automática como BORRADOR, solo si la convocatoria de ese domingo no
 --      está aprobada ni tiene cambios a mano posteriores a su última propuesta. Solo service_role. Nunca aprueba.
@@ -66,11 +66,11 @@ update public.gestores set recibe_propuesta = true where nombre = 'Iván';
 -- ---------------------------------------------------------------- 5. datos del motor para la tarea
 create or replace function public.convocatoria_privados_tarea()
 returns table (person_id text, posicion text, base_reserva boolean, nivel text, dobla boolean, regla text, regla_equipo text,
-               sancionado_hasta_jornada int, no_suele_entrenar boolean, nunca_partidos boolean, reserva boolean)
+               sancionado_hasta_jornada int, no_suele_entrenar boolean, nunca_partidos boolean, reserva boolean, nota_ataque text)
 language sql stable security definer set search_path = ''
 as $$
   select p.person_id, p.posicion, p.base_reserva, p.nivel, p.dobla, p.regla, p.regla_equipo, p.sancionado_hasta_jornada,
-         p.no_suele_entrenar, p.nunca_partidos, p.reserva
+         p.no_suele_entrenar, p.nunca_partidos, p.reserva, p.nota_ataque
   from public.jugadores_privado p
 $$;
 comment on function public.convocatoria_privados_tarea() is 'D173: lo que necesita el motor de convocatoria para la propuesta automática y los recambios (service_role). Nunca sale en un aviso.';

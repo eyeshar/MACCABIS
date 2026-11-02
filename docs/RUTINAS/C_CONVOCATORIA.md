@@ -10,7 +10,7 @@
 | Cuándo | Qué |
 |---|---|
 | **Lunes 19:00** | A cada jugador, un aviso con todo lo que le falta de la semana (entreno y partido). |
-| **Martes 09:00** | A quien no ha respondido al partido o sigue en «duda»: «Tienes hasta hoy a las 12:00 para decir si vas; si no, te quedas fuera de la convocatoria» (uno solo, junto con lo demás de ese día). |
+| **Martes 09:00** | (Si la convocatoria de ese domingo ya está aprobada, no sale.) A quien no ha respondido al partido o sigue en «duda»: «Tienes hasta hoy a las 12:00 para decir si vas; si no, te quedas fuera de la convocatoria» (uno solo, junto con lo demás de ese día). |
 | **Martes 12:00 — cierre del partido** | Las «duda» pasan a «no va · no confirmó» (con su aviso). A quien sigue sin responder: «No has respondido: no entras en la propuesta…» (su respuesta no se toca). **Propuesta automática** como borrador (si no hay una aprobada ni un borrador tocado a mano) y **push a Iván**: «Convocatoria del domingo DD/MM lista: MdA 9 · MdL 9 · 1 aviso…» o «MdL: 6 de 7, faltan interiores». También se ve en el Panel. |
 | **Martes 19:00** | Si sigue sin aprobar: recordatorio a Iván. |
 | **Martes 21:00** | Si sigue sin aprobar: aviso a los tres gestores (puede aprobar cualquiera). |
@@ -23,7 +23,7 @@
 ## Lo que hace Iván (el martes, desde el móvil)
 
 1. Abrir el push o Gestión → Panel → **«Revisar y aprobar»** (`/gestion/convocatoria?fecha=…`).
-2. Mirar arriba, por equipo: convocados por línea, avisos (rojo / ámbar), proyección, rival y dificultad (se puede cambiar ahí), y quién se queda fuera y por qué. Si alguien dijo «voy» después de la propuesta, sale en «Respondió después de la propuesta» con **«Rehacer propuesta»**. Si no se llega a un mínimo, la lista de quién falta por responder con un **WhatsApp para copiar**.
+2. Mirar arriba, por equipo: convocados por línea, avisos (rojo / ámbar), **riesgo** (rojo / ámbar: nivel del partido más difícil y proyección; cambiar la dificultad no rehace la propuesta), proyección, rival y dificultad (se puede cambiar ahí), y quién se queda fuera y por qué. Si alguien dijo «voy» después de la propuesta, sale en «Respondió después de la propuesta» con **«Rehacer propuesta»**. Si no se llega a un mínimo, la lista de quién falta por responder con un **WhatsApp para copiar**.
 3. Ajustar si hace falta con lo de siempre, debajo («Mover a…», «Deshacer», «Cambiar», o el tablero).
 4. **«Aprobar y avisar»**: aprueba y avisa ya a cada jugador (convocado; convocado con un equipo y no con el otro; o «esta vez no entras»).
 5. En la salida: «Avisados N de M (los otros no tienen avisos)» y **«Copiar mensaje»** para pegar el WhatsApp en el grupo. «Reenviar» solo si algún aviso falló.

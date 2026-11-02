@@ -704,8 +704,9 @@ export function diferencias(antes: Convocatoria | null, despues: Convocatoria, n
     if (!antesEn.length) out.push(ahoraEn.length === 2 ? `entra ${n} (MdA y MdL)` : `entra ${n} en el ${ahoraEn[0]}`);
     else if (!ahoraEn.length) out.push(`sale ${n}${antesEn.length === 1 ? ` del ${antesEn[0]}` : ""}`);
     else if (antesEn.length === 1 && ahoraEn.length === 1) out.push(`${n} pasa del ${antesEn[0]} al ${ahoraEn[0]}`);
-    else if (ahoraEn.length === 2) out.push(`${n} dobla (también en el ${ahoraEn.find((e) => !antesEn.includes(e))})`);
-    else out.push(`${n} ya no dobla: solo en el ${ahoraEn[0]}`);
+    // Sin «dobla»: este texto va al WhatsApp del grupo (D173.F).
+    else if (ahoraEn.length === 2) out.push(`${n} juega también con el ${ahoraEn.find((e) => !antesEn.includes(e))}`);
+    else out.push(`${n} ya solo juega con el ${ahoraEn[0]}`);
   }
   return out;
 }

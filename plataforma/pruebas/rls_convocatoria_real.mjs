@@ -137,6 +137,20 @@ try {
     }
   }
 
+  console.log('\n== Rutina C automática (D173, migración 20261103100000): la función que lee los niveles para la tarea');
+  const [m173] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261103100000'`;
+  const f173 = await sql`select proname, has_function_privilege('anon', oid, 'execute') anon, has_function_privilege('authenticated', oid, 'execute') aut, has_function_privilege('service_role', oid, 'execute') serv from pg_proc where pronamespace = 'public'::regnamespace and proname in ('convocatoria_privados_tarea', 'convocatoria_propuesta_auto')`;
+  if (!m173.n) ok(f173.length === 0, 'antes de aplicarla: las dos funciones no existen');
+  else {
+    ok(f173.length === 2 && f173.every((f) => !f.anon && !f.aut && f.serv), 'convocatoria_privados_tarea y convocatoria_propuesta_auto: ni anon ni authenticated pueden ejecutarlas; solo service_role', JSON.stringify(f173));
+    const rN = await api('/rpc/convocatoria_privados_tarea', { metodo: 'POST', cuerpo: {} });
+    ok(rN.status >= 400, 'anónimo (HTTPS) NO lee los niveles con convocatoria_privados_tarea()', String(rN.status));
+    if (jug) await como(jug.id, async (tx) => {
+      const r = await intenta(tx, 'select count(*)::int n from public.convocatoria_privados_tarea()');
+      ok(!r.ok, 'un jugador con sesión (authenticated) NO la ejecuta', r.ok ? 'la ejecutó' : '');
+    });
+  }
+
   console.log('\n== Disponibilidad por defecto (D146, migración 20261028230000)');
   const [m146] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261028230000'`;
   if (!m146.n) console.log('  (aún no aplicada: nada que comprobar)');

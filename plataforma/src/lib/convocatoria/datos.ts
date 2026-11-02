@@ -98,7 +98,11 @@ export function sitioDe(e: EventoFila, pistas: Pista[]) {
   return { sitio: `${pe.pista.nombre_corto ?? pe.pista.nombre}${e.numero_pista ? `, pista ${e.numero_pista}` : ""}`, direccion: pe.pista.direccion };
 }
 
-export type OpcionesContexto = { servicio?: boolean; ahora?: Date };
+export type OpcionesContexto = {
+  servicio?: boolean; ahora?: Date;
+  /** Datos privados ya leídos (el simulacro en solo lectura contra el real los trae por su conexión). */
+  privados?: FilaPrivada[];
+};
 
 export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones: OpcionesContexto = {}): Promise<Contexto | null> {
   const ahora = opciones.ahora ?? new Date();
@@ -119,7 +123,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo, cambiado_en").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
-    opciones.servicio ? sb.rpc("convocatoria_privados_tarea")
+    opciones.privados ? Promise.resolve({ data: opciones.privados, error: null })
+      : opciones.servicio ? sb.rpc("convocatoria_privados_tarea")
       : sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos, reserva"),
     // «*»: así vale antes y después de la migración de D173 (automatica_en), también en la vista previa contra el real.
     sb.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle(),

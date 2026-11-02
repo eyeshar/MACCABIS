@@ -46,6 +46,9 @@ export type DatosPlan = {
   ausencias: AusenciaPlan[];
   /** D146: entrenos en los que un gestor quito el «no va (por defecto)» a alguien (vuelve a recibir recordatorios). */
   quitados?: { evento_id: string; person_id: string }[];
+  /** D173: domingos (fechas) con la convocatoria ya APROBADA: sus partidos no llevan el aviso de las 09:00 («te quedas fuera
+   *  de la convocatoria») ni el del cierre («no entras en la propuesta»). */
+  aprobadas?: string[];
 };
 
 export type AvisoPlan = Texto & {
@@ -242,6 +245,7 @@ export function conAvisosDeDudas(base: AvisoPlan[], datos: DatosPlan): AvisoPlan
   for (const e of eventos) {
     const limite = limiteDudas(e);
     const semanal = plazoSemanal(e);
+    if (semanal === "partido" && datos.aprobadas?.includes(e.fecha)) continue;
     const toca = semanal ? avisoDePlazo(limite) : avisoDeDudas(limite);
     if (!toca || toca.getTime() >= limite.getTime() || ahora >= limite.getTime() || ahora >= inicioDe(e).getTime()) continue;
     for (const j of invitados(e, datos.jugadores)) {
@@ -295,6 +299,7 @@ export function avisosCierre(datos: DatosPlan): AvisoPlan[] {
   }
   const salida: AvisoPlan[] = [];
   for (const [fecha, partidos] of domingos) {
+    if (datos.aprobadas?.includes(fecha)) continue;
     const limite = limiteDudas(partidos[0]);
     const ini = Math.min(...partidos.map((e) => inicioDe(e).getTime()));
     const envio = horaDeEnvio(limite, new Date(ini));

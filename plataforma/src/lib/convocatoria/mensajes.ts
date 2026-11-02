@@ -171,13 +171,13 @@ export function problemasEquipo(e: Equipo, r: RecuentoCorto) {
 
 /** Push a Iván cuando la plataforma deja la propuesta lista (D173): «Convocatoria del domingo 15/11 lista» · «MdA 9 · MdL 9 ·
  *  1 aviso (MdL con 3 interiores)», o con lo que falta: «MdL: 6 de 7, faltan interiores». */
-export function textoPropuestaLista(fecha: string, equipos: { equipo: Equipo; recuento: RecuentoCorto }[]) {
+export function textoPropuestaLista(fecha: string, equipos: { equipo: Equipo; recuento: RecuentoCorto }[], riesgo: string | null = null) {
   const cifras = equipos.map((x) => `${x.equipo} ${x.recuento.total}`).join(" · ");
   const ps = equipos.map((x) => problemasEquipo(x.equipo, x.recuento)).filter((p): p is { grave: boolean; texto: string } => !!p);
   const graves = ps.filter((p) => p.grave);
   const cola = graves.length ? ` · ${graves.map((p) => p.texto).join(" · ")}`
     : ps.length ? ` · ${ps.length === 1 ? "1 aviso" : `${ps.length} avisos`} (${ps.map((p) => p.texto).join("; ")})` : " · sin avisos";
-  return { titulo: `Convocatoria del domingo ${ddmm(fecha)} lista`, cuerpo: `${cifras}${cola}. Revísala y apruébala.` };
+  return { titulo: `Convocatoria del domingo ${ddmm(fecha)} lista`, cuerpo: `${cifras}${cola}${riesgo ? ` · ${riesgo}` : ""}. Revísala y apruébala.` };
 }
 
 /** Recordatorio a los gestores si el martes sigue sin aprobar (D173): a las 19:00 a Iván, a las 21:00 a los tres. */

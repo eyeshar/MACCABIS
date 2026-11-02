@@ -7,6 +7,8 @@ import { cargarContexto } from "./datos";
 import { faltasMinimo, ordenPartidos, proponer, revisar, roturas, sugerirRecambio, type Convocatoria, type Equipo } from "./motor";
 import { firmaConvocatoria, problemasEquipo, textoBaja, textoCalendarioRompe, textoPropuestaLista, textoSinAprobar, textoVoyTardio } from "./mensajes";
 import { entradaDe, type Contexto } from "./vista";
+import { proyeccionDe } from "./proyeccion";
+import { riesgos, textoRiesgoPush } from "./riesgo";
 
 // La rutina C la hace la plataforma sola (D173), dentro de la tarea de avisos de cada 15 minutos (pg_cron -> /api/avisos/tarea):
 //   - tras el cierre del martes a las 12:00, la PROPUESTA AUTOMATICA como borrador (nunca aprueba; no pisa una aprobada ni un
@@ -77,7 +79,7 @@ export async function tareaConvocatoria(sb: SupabaseClient, ahora: Date, eventos
       const r = await proponerAuto(sb, d.fecha, ahora);
       if (r?.estado === "guardada") {
         propuestas.push(d.fecha);
-        const txt = textoPropuestaLista(d.fecha, r.recuentos);
+        const txt = textoPropuestaLista(d.fecha, r.recuentos, r.riesgo);
         filas.push(...aGestores(responsables, { ...txt, tipo: "gestores", eventos: d.partidos.map((e) => e.id), url: URL_CONV(d.fecha), programado_para: horaDeEnvio(ahora, d.inicio) },
           (u) => `conv-auto:${d.fecha}:${u}`));
         c = { ...(c ?? { id: "", fecha: d.fecha, estado: "borrador", origen: "propuesta", equipos: r.conv, aprobada_en: null }), automatica_en: ahora.toISOString() };
@@ -118,7 +120,17 @@ async function proponerAuto(sb: SupabaseClient, fecha: string, ahora: Date) {
     if (faltaFuncion(error)) { console.warn("convocatoria_propuesta_auto: migracion 20261103100000 sin aplicar; sin propuesta automatica"); return null; }
     throw new Error(`propuesta automatica: ${error.message}`);
   }
-  return { estado: data as "guardada" | "aprobada" | "tocada", conv: prop.convocatoria, recuentos: recuentos(ctx, prop.convocatoria) };
+  return { estado: data as "guardada" | "aprobada" | "tocada", conv: prop.convocatoria, recuentos: recuentos(ctx, prop.convocatoria), riesgo: textoRiesgoPush(riesgosDe(ctx, prop.convocatoria)) };
+}
+
+/** Riesgo por equipo de una convocatoria (D173), como en la pantalla. */
+export function riesgosDe(ctx: Contexto, conv: Convocatoria) {
+  const rev = revisar(entradaDe(ctx), conv);
+  const nombre = (id: string) => ctx.jugadores.find((j) => j.person_id === id)?.nombre ?? id;
+  return riesgos(ctx.partidos.map((p) => ({ equipo: p.equipo, dificultad: p.dificultad.valor })),
+    Object.fromEntries(ctx.partidos.map((p) => [p.equipo, rev.recuento[p.equipo]?.nivelMedio ?? null])),
+    Object.fromEntries(ctx.partidos.map((p) => [p.equipo, proyeccionDe(ctx.proyeccion, p.equipo, (conv[p.equipo] ?? []).map((c) => ({ person_id: c.person_id, nombre: nombre(c.person_id) })), p.dificultad.valor)])),
+    Object.fromEntries(ctx.partidos.map((p) => [p.equipo, conv[p.equipo]?.length ?? 0])));
 }
 
 /** Con la convocatoria aprobada (D173): bajas de convocados y «voy» tardios. */

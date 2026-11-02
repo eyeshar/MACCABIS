@@ -45,7 +45,7 @@ type EventoBase = Pick<EventoFila, "id" | "tipo" | "equipo" | "fecha" | "inicio"
   /** D148: columna calculada de la base (pista «solo con ficha» del entreno, o null). */
   solo_con_ficha_en?: string | null;
 };
-const aPlan = (e: EventoBase, pistas: Pista[]): EventoPlan => ({
+export const aPlan = (e: EventoBase, pistas: Pista[]): EventoPlan => ({
   id: e.id, tipo: e.tipo, equipo: e.equipo, fecha: e.fecha, inicio: e.inicio, fin: e.fin, quedada: e.quedada, titulo: e.titulo,
   sitio: !e.pista_id && e.ubicacion_nombre ? e.ubicacion_nombre : sitioAviso(e, pistas), estado: e.estado, sin_recordatorios: e.sin_recordatorios, creado_en: e.creado_en,
   oficial: e.oficial, recordar_un_dia_antes: e.recordar_un_dia_antes, borrado_en: e.borrado_en, solo_con_ficha_en: e.solo_con_ficha_en ?? null,
@@ -128,7 +128,7 @@ async function leerDefecto(sb: SupabaseClient) {
   return { marcas: new Map(filas.map((f) => [f.person_id, { no_suele_entrenar: f.no_suele_entrenar, nunca_partidos: f.nunca_partidos }])), quitados: (q.data ?? []) as { evento_id: string; person_id: string }[] };
 }
 
-async function cargarBase(sb: SupabaseClient) {
+export async function cargarBase(sb: SupabaseClient) {
   const [eventos, pistas, jugadoresSinMarcas, respuestas, ausencias, defecto] = await Promise.all([
     leer(sb.from("eventos").select(COLUMNAS).eq("temporada", "2026-27"), "eventos") as Promise<EventoBase[]>,
     leer(sb.from("pistas").select("id, slug, nombre, nombre_corto, direccion, uso, estado, es_de_serie, num_pistas, nota"), "pistas") as Promise<Pista[]>,
@@ -190,7 +190,11 @@ export async function ejecutarTarea(ahora = new Date()) {
   const cerradas = await cerrarDudas(sb, ahora);
   const base = await cargarBase(sb);
   const eventos = base.eventos.map((e) => aPlan(e, base.pistas));
-  const datos = { ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias, quitados: base.quitados };
+  // D173: domingos con la convocatoria ya aprobada (sin aviso de las 09:00 ni del cierre para sus partidos).
+  const { fechasAprobadas } = await import("@/lib/convocatoria/tarea");
+  const hoy = ahora.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+  const aprobadas = [...(await fechasAprobadas(sb, [...new Set(eventos.filter((e) => e.tipo === "liga" && e.fecha >= hoy).map((e) => e.fecha))]))];
+  const datos = { ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias, quitados: base.quitados, aprobadas };
   // Recordatorios: los del club y los planes con «recordar un dia antes» (D118); el aviso de las «duda» (D141) se junta
   // con el que ya salga ese dia a esa persona.
   const recordatorios = conAvisosDeDudas([...planificar(datos), ...planificarPlanes(datos)], datos);

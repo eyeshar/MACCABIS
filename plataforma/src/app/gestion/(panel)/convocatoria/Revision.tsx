@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LINEA_DE, TEXTO_DIFICULTAD, faltasMinimo, type Aviso, type Convocatoria as Conv, type Dificultad, type Equipo, type Recuento, type SinConvocar } from "@/lib/convocatoria/motor";
 import { mensajeFaltan } from "@/lib/convocatoria/mensajes";
 import { textoProyeccion, type Proyeccion } from "@/lib/convocatoria/proyeccion";
+import { riesgos } from "@/lib/convocatoria/riesgo";
 import type { Contexto, JugadorVista } from "@/lib/convocatoria/vista";
 import { enMadrid } from "@/lib/avisos/horario";
 import CopiarTexto from "../eventos/CopiarTexto";
@@ -38,6 +39,11 @@ export default function Revision(p: Props) {
   const faltan: JugadorVista[] = ctx.jugadores.filter((j) => j.invitado && !dentro.has(j.person_id) && !j.sancionado
     && bajos.some((b) => j.invitadoA.includes(b.equipo) && j.ficha[b.equipo] && ["sin_responder", "duda"].includes(j.respuesta[b.equipo] ?? "sin_responder")))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  // D173: riesgo por equipo (solo gestores), recalculado con cada cambio; cambiar la dificultad no rehace la propuesta.
+  const listaRiesgos = riesgos(ctx.partidos.map((x) => ({ equipo: x.equipo, dificultad: x.dificultad.valor })),
+    Object.fromEntries(ctx.partidos.map((x) => [x.equipo, p.recuento[x.equipo]?.nivelMedio ?? null])),
+    Object.fromEntries(ctx.partidos.map((x) => [x.equipo, p.proyecciones[x.equipo] ?? null])),
+    Object.fromEntries(ctx.partidos.map((x) => [x.equipo, conv[x.equipo]?.length ?? 0])));
   const tardios = ctx.jugadores.filter((j) => j.respondioTarde && !dentro.has(j.person_id)).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 
   return (
@@ -86,6 +92,9 @@ export default function Revision(p: Props) {
                 </details>
               ) : <p className="pequeno suave" style={{ margin: 0 }}>Sin avisos.</p>}
               {pr && <p className="pequeno" style={{ margin: 0 }}>{textoProyeccion(pr)}</p>}
+              {listaRiesgos.filter((r) => r.equipo === x.equipo).map((r, i) => (
+                <p key={i} className={`cv-riesgo cv-riesgo-${r.gravedad}`} data-testid={`cv-riesgo-${x.equipo}`} data-gravedad={r.gravedad}>{r.texto}</p>
+              ))}
             </div>
           );
         })}

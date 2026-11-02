@@ -132,4 +132,7 @@
 .cv-rev-tarde, .cv-rev-faltan { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--borde-fuerte); }
 .cv-rev-faltan { border-color: color-mix(in srgb, var(--error) 50%, transparent); background: var(--error-fondo); }
 .cv-rev-accion { display: flex; flex-direction: column; gap: 8px; }
+.cv-riesgo { margin: 0; padding: 8px 10px; border-radius: 8px; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.cv-riesgo-alto { background: var(--error-fondo); color: var(--error); border-left: 4px solid var(--error); }
+.cv-riesgo-medio { background: var(--amarillo-claro); color: var(--amarillo-tinta); border-left: 4px solid var(--c-amarillo); }
 .cv-aprobar-grande { min-height: 56px; font-size: 18px; }

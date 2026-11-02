@@ -11,6 +11,8 @@ import {
   quienDobla, textoDorsales, type JugadorLiga,
 } from "@/lib/liga";
 import { separarPorMinimo, textoMenos } from "@/lib/ordenLideres";
+import { CajaClaves } from "@/components/liga/Claves";
+import { clavesDeEquipo } from "@/lib/scouting/datos";
 
 export const dynamic = "force-dynamic";
 // Con sesion (D162): nunca se indexa (ademas, robots.txt y la cabecera X-Robots-Tag de RUTAS_PRIVADAS).
@@ -82,6 +84,8 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
   const prox = elegido.nuestro ? null : proximoPartido(calendario, hoy, codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo);
   // Aviso de equipacion: con los mismos partidos de la tabla de eventos (D151, D162), como el Panel y la convocatoria.
   const aviso = prox ? avisoContra(codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo, calendario, hoy) : null;
+  // D174: las claves del partido (reglas fijas sobre las hojas y el historial); de los nuestros no.
+  const claves = elegido.nuestro ? null : clavesDeEquipo(liga, grupo as "G1" | "G2", elegido.equipo);
   const suma = (k: "pts" | "p2a" | "p3a" | "tla" | "tli" | "faltas" | "segundos") => jugadores.reduce((s, j) => s + j[k], 0);
   const grupos = ["G1", "G2"];
 
@@ -142,6 +146,8 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
           )}
           {elegido.nuestro && <p className="lg-sub">Es uno de los nuestros: así nos ven los rivales.</p>}
         </div>
+
+        {claves && <CajaClaves res={claves} equipo={elegido.equipo} />}
 
         {jugadores.length === 0 ? <p>Sin hojas de este equipo todavía.</p> : (
           <>

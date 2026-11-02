@@ -98,6 +98,8 @@
     "pruebas:chat-ia": "node pruebas/chat_ia.mjs",
     "pruebas:solo-ficha": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/solo_con_ficha.mjs",
     "pruebas:clasificacion-oficial": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/contraste_clasificacion.mjs",
+    "pruebas:claves-pantallas": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/claves_pantallas.mjs",
+    "pruebas:claves": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/claves_rival.mjs",
     "pruebas:jugadores-rivales": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/jugadores_rivales.mjs",
     "pruebas:solo-ficha-real": "node pruebas/solo_con_ficha_real.mjs",
     "pruebas:rapidas": "node pruebas/infra/corredor.mjs rapidas",

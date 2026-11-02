@@ -8,6 +8,8 @@ import TarjetaAvisos from "./TarjetaAvisos";
 import { cargarActivacionViva } from "@/lib/gestion/activacion";
 import { AvisoCaja } from "@/components/ProximoPartido";
 import { bonito, cargarLiga, dec, masPeligrosos, type DatosLiga } from "@/lib/liga";
+import { ClavesTarjeta } from "@/components/liga/Claves";
+import { clavesDeEquipo } from "@/lib/scouting/datos";
 import { clave } from "@/data/avisosEquipacion";
 import {
   chipEquipacion, entrenoHabitual, estadoClasificacion, proximosPartidos, ultimosResultados, type Evento,
@@ -41,6 +43,7 @@ function scoutingDe(liga: DatosLiga | null, e: Evento) {
   return {
     equipo: fila.equipo,
     texto: `${fila.equipo} · ${fila.pos}.º ${fila.grupo}`,
+    claves: clavesDeEquipo(liga, fila.grupo as "G1" | "G2", fila.equipo),   // D174: las 2 primeras en la tarjeta
     detalle: top.length ? top.map((j) => `${apellido(j.nombre)} ${dec(j.pts / j.pj)}/p`).join(" · ") : "Aún sin partidos en las hojas de esta temporada",
   };
 }
@@ -240,6 +243,7 @@ export default async function InicioGestion() {
                       <small>Scouting · próximo rival {NOMBRE_EQUIPO[e.equipo!]}</small>
                       <strong>{s?.texto ?? e.rival}</strong>
                       <span>{s?.detalle ?? "Sin datos de liga cargados"}</span>
+                      {s && <ClavesTarjeta res={s.claves} />}
                     </Link>
                   );
                 })}

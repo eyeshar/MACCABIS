@@ -61,6 +61,26 @@ const PATRONES = [
   [/\b(0?[1-9]|[12]\d|3[01])[/-](0?[1-9]|1[0-2])[/-](19[4-9]\d|200\d)\b/, 'una fecha de nacimiento (dd/mm/aaaa de 1940 a 2009)'],
 ];
 
+/** Lo que delata una «clave del partido» (D174): la caja, la tarjeta, sus clases y las frases que solo ellas dicen. */
+const CLAVES_PARTIDO = /claves-partido|claves-tarjeta|claves-lista|cl-clave|Pocos datos: \d|nosotros encajamos|nosotros concedemos|ha venido a \d+ de \d+ partidos|Banquillo corto/;
+
+/** D174: ni un JSON ni un fichero de la web publica (data/, plataforma/src/data/, plataforma/public/) lleva claves del partido. */
+function jsonPublicosConClaves() {
+  const malos = [];
+  for (const dir of [path.join(REPO, 'data'), path.join(RAIZ, 'src', 'data'), path.join(RAIZ, 'public')]) {
+    const recorre = (d) => {
+      for (const f of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
+        const ruta = path.join(d, f.name);
+        if (f.isDirectory()) { if (f.name !== 'raw') recorre(ruta); continue; }
+        if (!/\.(json|js)$/.test(f.name)) continue;
+        if (CLAVES_PARTIDO.test(fs.readFileSync(ruta, 'utf8')) || /"regla"\s*:\s*"(cruce_|dependencia|tl_jugadores|peligroso_ausente)/.test(fs.readFileSync(ruta, 'utf8'))) malos.push(path.relative(REPO, ruta));
+      }
+    };
+    recorre(dir);
+  }
+  return malos;
+}
+
 export async function revisar({ log = console.log } = {}) {
   const app = await arrancarApp({ puerto: PUERTO, env: await entornoPila() });
   let fallos = 0;
@@ -74,8 +94,10 @@ export async function revisar({ log = console.log } = {}) {
         const norm = (t) => t.toUpperCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ');
         const sube = norm(html);
         const fuga = (terceros ?? []).find((n) => n.length > 6 && sube.includes(norm(n)));
-        if (fuga || /rival-por-jugador|Rival por jugador/.test(html)) { fallos++; log(`  FALLO ${ruta} -> ${fuga ? `sale un jugador de otro equipo${dato(fuga)}` : 'sale la sección «Rival por jugador» sin sesión de gestor'}`); }
+        if (fuga || /rival-por-jugador|Rival por jugador/.test(html)) { fallos++; log(`  FALLO ${ruta} -> ${fuga ? `sale un jugador de otro equipo${dato(fuga)}` : 'sale la sección «Rival por jugador» sin sesión'}`); }
       }
+      // D174: sin sesion no sale ninguna «clave del partido» (ni la caja, ni la tarjeta, ni su texto) en ninguna pagina.
+      if (CLAVES_PARTIDO.test(html)) { fallos++; log(`  FALLO ${ruta} -> sale una «clave del partido» sin sesión`); }
       // El .ics lleva fechas como 19700329T020000 (no son DNI): se quitan las lineas de fecha y UID antes de buscar.
       if (ruta.endsWith('.ics')) html = html.replace(/^(DTSTART|DTEND|DTSTAMP|UID)[^\r\n]*/gm, '');
       const malos = [];
@@ -85,6 +107,9 @@ export async function revisar({ log = console.log } = {}) {
     }
     log(`  ${fallos ? 'FALLO' : 'OK   '} ${RUTAS.length} paginas publicas migradas: sin motivos de ausencia, niveles, DNI, telefonos, correos ni fechas de nacimiento`);
     log(`  ${fallos ? 'FALLO' : 'OK   '} ${PARTIDOS.length} paginas de partido (D129) y el resto de la Liga, sin sesion: ni un jugador de otro equipo ${terceros ? `(${terceros.length} nombres de las hojas)` : '(sin fuentes_fbm/: solo se comprueba la seccion de gestores)'} ni la seccion «Rival por jugador»`);
+    const conClaves = jsonPublicosConClaves();
+    if (conClaves.length) { fallos++; log(`  FALLO ficheros públicos con «claves del partido»: ${conClaves.join(', ')}`); }
+    log(`  ${conClaves.length ? 'FALLO' : 'OK   '} D174: ni el HTML sin sesión de ${RUTAS.length} páginas ni los JSON públicos (data/, src/data, public/) llevan «claves del partido»`);
   } finally { app.parar(); }
   return fallos;
 }

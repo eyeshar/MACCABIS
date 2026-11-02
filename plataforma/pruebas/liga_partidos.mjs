@@ -7,7 +7,8 @@
 // Comprueba, en los dos grupos: que cada equipo de la clasificacion y de los resultados enlaza a su ficha (la de Rivales
 // 26/27 o la de MdA/MdL) y que la ficha se abre; que cada partido enlaza a su pagina; la pagina de partido con hoja
 // (parciales del acta, estadisticas por equipo, boxscore de los nuestros) y sin hoja (incomparecencia o sin descargar:
-// solo el marcador); que «Rival por jugador · solo gestores» solo lo ve un gestor (ni anonimos ni jugadores); que no
+// solo el marcador); que «Rival por jugador» lo ve cualquier jugador con sesion o gestor (D162, D174) y sin sesion no llega nada (ni la
+// seccion ni un solo nombre de jugador rival en el HTML), y el pie de «Fuente» dice lo que hay; que no
 // queda «en casa / fuera» a la vista; y el color de la racha (G verde, P rojo; el numero, del ultimo resultado).
 //
 // Para la pagina «sin hoja» se añaden a la copia de la liga (src/data/liga.json) dos partidos de prueba en la J22 (que
@@ -205,6 +206,15 @@ try {
     const box = await p.locator('[data-testid="boxscore"] tbody tr').count();
     ok(box === season.box[`${sp.pn}_MDA`].length, `boxscore de los nuestros (${box} filas), igual que el de la pestaña Equipo`);
     ok((await p.locator('[data-testid="rival-por-jugador-seccion"]').count()) === 0 && !(await textoVisible(p)).includes('Rival por jugador'), 'sin sesion: NO sale «Rival por jugador»');
+    {
+      const html = await p.content();
+      const [{ id: pidAnon }] = await sql`select id from public.liga_partidos where temporada = '2026-27' and grupo = 'G1' and jornada = ${r.jornada} and local = ${r.local} and visitante = ${r.visitante}`;
+      const nombresRival = (await sql`select nombre from public.liga_estadisticas_jugador where partido_id = ${pidAnon} and equipo <> 'MdA'`).map((x) => x.nombre);
+      const fuga = nombresRival.filter((n) => html.toLowerCase().includes(n.toLowerCase()));
+      ok(nombresRival.length > 0 && fuga.length === 0, `sin sesion: ninguno de los ${nombresRival.length} jugadores rivales del partido aparece en el HTML`, `${fuga.length} filtrados`);
+      const fuente = await p.locator('.e-fuente').innerText();
+      ok(fuente.includes('Datos por equipo') && !fuente.includes('por jugador (solo con sesión)') && !/solo gestores/i.test(html), 'sin sesion: el pie dice «Datos por equipo» y la pagina no habla de «solo gestores»', fuente);
+    }
     ok(!CASA_FUERA.test(await textoVisible(p)) && await sinDesbordar(), 'sin «casa/fuera» y sin desbordamiento horizontal');
     ok((await p.locator('nav.e-nav a[aria-current="page"]').textContent()) === 'Liga 26/27' && (await p.locator('.e-temporada').count()) === 0, 'navegacion: «Liga 26/27» marcada, sin selector de temporada ni pestañas');
     await p.screenshot({ path: path.join(SALIDA, `partido_con_hoja_${etiqueta}.png`), fullPage: true });
@@ -235,8 +245,13 @@ try {
     const p = await ctx.newPage();
     await entrar(p, jugadorEmail);
     await p.goto(`${APP}/liga/2026-27/partido/${conHojaNuestro.id}`);
-    ok(await p.locator('[data-testid="pagina-partido"]').isVisible() && (await p.locator('[data-testid="rival-por-jugador-seccion"]').count()) === 0 && !(await p.content()).includes('Rival por jugador'),
-      'un jugador ve la pagina de partido, pero NO «Rival por jugador» (ni en el HTML)');
+    const sj = p.locator('[data-testid="rival-por-jugador-seccion"]');
+    ok(await p.locator('[data-testid="pagina-partido"]').isVisible() && await sj.isVisible() && (await sj.locator('h2').textContent()).trim() === 'Rival por jugador'
+      && (await sj.getAttribute('aria-label')) === 'Rival por jugador', 'un jugador con sesion ve «Rival por jugador» (sin «solo gestores»)');
+    const htmlJ = await p.content();
+    ok(!/solo gestores/i.test(htmlJ) && (await sj.locator('.e-aviso').count()) === 0, 'sin el recuadro amarillo «Solo gestores…» ni la frase en la pagina');
+    ok((await sj.locator('[data-testid="rival-por-jugador"] tbody tr').count()) > 0, 'el jugador ve los jugadores del rival, leidos de Supabase con su sesion');
+    ok((await p.locator('.e-fuente').innerText()).includes('Datos por equipo y por jugador (solo con sesión)'), 'el pie dice «Datos por equipo y por jugador (solo con sesión)»');
     await ctx.close();
   }
 
@@ -250,7 +265,7 @@ try {
     await entrar(p, gestorEmail);
     await p.goto(`${APP}/liga/2026-27/partido/${conHojaNuestro.id}`);
     const s = p.locator('[data-testid="rival-por-jugador-seccion"]');
-    ok(await s.isVisible() && (await s.locator('h2').textContent()).includes('Rival por jugador · solo gestores'), 'un gestor ve «Rival por jugador · solo gestores»');
+    ok(await s.isVisible() && (await s.locator('h2').textContent()).trim() === 'Rival por jugador', 'un gestor ve «Rival por jugador», igual que antes');
     const tablas = await s.locator('[data-testid="rival-por-jugador"]').count();
     const filas = await s.locator('[data-testid="rival-por-jugador"] tbody tr').count();
     ok(tablas === 1 && filas === filasRival.length && filas > 0, `solo el rival (${rivalNombre}): ${filasRival.length} jugadores, leidos de Supabase`, `${tablas} tablas, ${filas} filas`);

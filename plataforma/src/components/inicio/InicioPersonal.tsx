@@ -21,6 +21,10 @@ import {
 } from "@/lib/respuestas/dominio";
 import { sumarDias, hoyMadrid } from "@/lib/dias";
 import { clienteSesion } from "@/lib/supabase";
+import { cargarLiga } from "@/lib/liga";
+import { puedeVerLigaActual } from "@/lib/sesion";
+import { clavesPorNombre } from "@/lib/scouting/datos";
+import { ClavesTarjeta } from "@/components/liga/Claves";
 import Responder from "@/components/respuestas/Responder";
 import type { Usuario } from "@/lib/usuario";
 import AvisoPersonal from "./AvisoPersonal";
@@ -109,6 +113,10 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const domingo = proximo.unidad;
   const partidosVer = proximo.partidos;
   const estadoPartido = pastillaProximo(proximo, convocatorias, respuestas, ausencias, porDefecto);
+  // Claves del partido (D174): las 2 primeras de cada rival, con enlace a su scouting. Mismo acceso que Scouting (D162):
+  // solo con sesion de jugador con ficha o de gestor; si la liga no responde, la tarjeta sale sin ellas.
+  const ligaClaves = domingo && partidosVer.length && (await puedeVerLigaActual())
+    ? await cargarLiga(sb, [...new Set(partidosVer.map((e) => (e.equipo === "MdA" ? "G1" : "G2")))]).catch(() => null) : null;
   const saltoTexto = proximo.saltado ? textoSalto(proximo.saltado, hoy) : null;
   const temporada = temporadaDe(jugador.person_id);
   const dorsales = temporada?.dorsales ?? [];
@@ -201,6 +209,10 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
                         {/* D160: la misma línea única de equipación que la convocatoria (siempre con «Llevad la amarilla por si acaso»). */}
                         <span className="pequeno" data-testid="linea-equipacion">{a?.convocatoria ? enSingular(a.convocatoria) : LINEA_SIN_AVISO}</span>
                       </div>
+                      {ligaClaves && e.rival && (() => {
+                        const c = clavesPorNombre(ligaClaves, e.equipo === "MdA" ? "G1" : "G2", a?.rival ?? e.rival);
+                        return c ? <ClavesTarjeta res={c} href={`/liga/scouting?e=${encodeURIComponent(c.equipo)}${e.equipo === "MdL" ? "&v=mdl" : ""}`} /> : null;
+                      })()}
                       {rival && <p className="in-rival pequeno" data-testid="color-rival-inicio"><i className="eq-punto" style={{ background: rival.css }} aria-hidden="true" /> El rival: {textoColores(rival)}</p>}
                     </article>
                   );

@@ -57,7 +57,7 @@ Pulsa Mandarme un aviso de prueba para comprobar que te llega. De noche (de 22:3
 Al entrar ves lo tuyo, de arriba abajo:
 
 - Te faltan N respuestas: lo que aún no has contestado, para responder ahí mismo.
-- Tu próximo partido: rival, quedada, hora, pista, Cómo llegar y qué equipación llevar.
+- Tu próximo partido: rival, quedada, hora, pista, Cómo llegar y qué equipación llevar, y las dos primeras claves del partido (ver «Scouting rivales y claves del partido»).
 - Tu agenda: los próximos entrenos, partidos y planes con tu respuesta.
 - Tu temporada: tus números de este año.
 - Avisos del club: por ejemplo, el dorsal obligatorio o cortes de calles.
@@ -107,11 +107,23 @@ Planes. Con Proponer un plan publicas una pachanga, una quedada o un amistoso pa
 
 Las estadísticas salen de las actas y hojas oficiales de la FBM y se publican el lunes o el jueves después de cada jornada.
 
+## Scouting rivales y claves del partido
+
+Con tu cuenta, en Liga → Scouting rivales, ves cada rival del grupo: su puesto, sus jugadores más peligrosos (por puntos por partido) y, arriba, las claves del partido: hasta cinco frases con lo que conviene saber de ese equipo. Las dos primeras salen también en «Tu próximo partido», con un enlace al scouting. Cada clave lleva una etiqueta:
+
+- Cuidado: algo que ese equipo hace por encima de lo normal de su grupo.
+- Aprovechar: algo que hace por debajo de lo normal, o un punto flojo de su juego.
+- Ojo: un detalle a vigilar (por ejemplo, una rotación corta o un jugador clave que no suele venir).
+- Contexto: su racha, sus resultados contra rivales comunes con nosotros o lo que pasó contra ellos otras temporadas.
+
+De dónde salen: no las escribe una persona ni una inteligencia artificial. Se calculan con reglas fijas a partir de las hojas de estadística de la FBM de esta temporada (las de los dos grupos) y del historial del club contra ese rival. Cada dato se compara con la media de su grupo, sin contarlo a él, y solo sale si se aparta un 20 % o más; las de un jugador, solo si ha jugado el mínimo de partidos de su equipo. Con menos de tres partidos jugados el equipo sale como «Pocos datos» y no hay claves. Las hojas no traen rebotes, asistencias, pérdidas ni tiros de campo fallados, así que nada de eso aparece. Son datos de otros equipos: solo los ves con tu sesión y no se publican.
+
 ## Preguntas frecuentes
 
 | Pregunta | Respuesta |
 |---|---|
 | ¿Sigo respondiendo en SportEasy? | No. SportEasy ya no se usa: solo cuenta lo que respondes en la web. |
+| ¿De dónde salen las claves del partido? | De reglas fijas sobre las hojas de la FBM de esta temporada, comparadas con la media del grupo; no las escribe nadie ni una IA. Solo con sesión. |
 | ¿Quién ve mi motivo de «no voy»? | Solo los tres gestores: Iván, Carlos y Edu. |
 | ¿Y mis compañeros qué ven? | Si vas, dudas o no vas, pero nunca el motivo. |
 | No me llegan los avisos | Actívalos en maccabis.vercel.app/avisos. En iPhone, solo desde el icono de la pantalla de inicio. |

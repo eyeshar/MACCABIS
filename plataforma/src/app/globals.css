@@ -814,3 +814,15 @@ a.nv-entrada[aria-current="page"] { background: var(--panel-3); box-shadow: inse
 .lg-tabla tr.lg-separador td { text-align: left; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-suave); background: var(--tarjeta); border-top: 2px solid var(--borde); padding-top: 10px; }
 .lg-tabla tr.lg-bajo-minimo td { color: var(--tinta-suave); }
 .lg-compactas li.lg-separador { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-suave); border-top: 2px solid var(--borde); padding: 10px 4px 4px; }
+
+/* Claves del partido (D174): Scouting rivales, Panel y «Tu próximo partido». Solo con sesión. */
+.cl-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cl-clave { padding: 8px 10px; border-radius: 10px; background: var(--panel-3); border: 1px solid var(--borde); border-left-width: 4px; line-height: 1.4; overflow-wrap: anywhere; }
+.cl-etq { font-family: var(--f-cifras); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 4px; }
+.cl-cuidado { border-left-color: var(--error); }
+.cl-aprovechar { border-left-color: var(--ok); }
+.cl-ojo { border-left-color: var(--c-amarillo); }
+.cl-contexto { border-left-color: var(--tinta-tenue); }
+.cl-tarjeta { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.cl-linea { margin: 0; font-size: 0.85rem; line-height: 1.35; color: var(--tinta-suave); overflow-wrap: anywhere; }
+.cl-mas { font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; min-height: var(--toque); }

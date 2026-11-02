@@ -56,15 +56,6 @@ try {
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;
   await sql`update public.jugadores set email = ${jugadorEmail}, ficha_mda = true, ficha_mdl = true, entrena = true where person_id = 'esteban-jon'`;
   await sql`update public.jugadores set entrena = true, ficha_mda = true where person_id in ('gianatti-adriano', 'romero-barrueco-alonso', 'calahorro-sanchez-manuel')`;
-  // Datos de asistencia de ejemplo (la pila arranca vacia), en asistencia_motivos: lo que carga db:asistencia y lee
-  // la pantalla (D116). En asistencia_resumen (la copia del paso 2, ya sin uso) una fila vieja y distinta, para
-  // comprobar que la pantalla no la lee.
-  await sql`insert into public.asistencia_motivos (temporada, person_id, nombre, ambito, fueron, total, excusa, lesion) values
-    ('2026-27', 'esteban-jon', 'Jon Esteban', 'entrenos', 3, 4, 1, 0), ('2026-27', 'esteban-jon', 'Jon Esteban', 'partidos', 2, 2, 0, 0),
-    ('2025-26', 'esteban-jon', 'Jon Esteban', 'entrenos', 20, 30, 5, 4),
-    ('2019-20', 'esteban-jon', 'Jon Esteban', 'partidos', 7, 9, 2, 0), ('2019-20', 'sporteasy-424242', 'Sint Histórico', 'entrenos', 5, 10, 5, 0)`;
-  await sql`insert into public.asistencia_resumen (temporada, person_id, nombre, ambito, fueron, total, con_excusa, lesion) values
-    ('2026-27', 'esteban-jon', 'Jon Esteban', 'entrenos', 1, 9, 0, 0)`;
   const codigoDe = async (email) => (await sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
 
   console.log('\n== Compilacion');
@@ -438,29 +429,8 @@ try {
   }
 
   // ---------------------------------------------------------------- asistencia
-  console.log('\n== Asistencia y motivos');
-  // D161: desde el 24/10 suma la plataforma (liga y entrenos YA pasados); lo futuro no cuenta. Un entreno pasado con
-  // «no voy · viaje» y uno futuro con «no voy · familia» para Jon (sin otras respuestas suyas en ese tramo).
-  const [entPasado] = await sql`select id from public.eventos where tipo = 'entreno' and fecha >= '2026-10-24' and fecha < ${hoy} order by fecha limit 1`;
-  const [entFuturo] = await sql`select id from public.eventos where tipo = 'entreno' and fecha > ${hoy} order by fecha limit 1`;
-  await sql`delete from public.respuestas where person_id = 'esteban-jon' and evento_id in (select id from public.eventos where fecha >= '2026-10-24' and fecha < ${hoy})`;
-  for (const [ev, motivo] of [[entPasado, 'viaje'], [entFuturo, 'familia']]) {
-    await sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, fuente, origen) values (${ev.id}, 'esteban-jon', 'no', ${motivo}, 'web', 'gestor')
-              on conflict (evento_id, person_id) do update set respuesta = 'no', motivo = ${motivo}`;
-  }
-  await p.goto(`${APP}/gestion/asistencia`);
-  const fa = p.locator('[data-person=esteban-jon]');
-  ok((await fa.textContent()).includes('3 / 5') && (await fa.textContent()).includes('60 %') && (await fa.textContent()).includes('2 / 2') && (await fa.textContent()).includes('100 %'), 'resumen: entrenos 3/4 de SportEasy + 1 ausencia de la plataforma = 3/5 (60 %), partidos 2/2 = 100 % (de asistencia_motivos, no de la copia vieja de asistencia_resumen; D116 y D161)', await fa.textContent());
-  ok((await fa.textContent()).includes('viaje ×1') && (await fa.textContent()).includes('con excusa ×1') && !(await fa.textContent()).includes('familia'), 'motivos más frecuentes: históricos + «no voy» de eventos ya pasados de la plataforma (el del futuro no cuenta)', await fa.textContent());
-  await p.goto(`${APP}/gestion/asistencia?t=2025-26`);
-  ok((await p.locator('[data-person=esteban-jon]').textContent()).includes('20 / 30') && (await p.locator('[data-person=esteban-jon]').textContent()).includes('67 %'), 'otra temporada: 20/30 = 67 %');
-  ok(await p.locator('[data-testid=nota-historico]').count() === 0, '2025/26 no lleva la nota del histórico');
-  await p.goto(`${APP}/gestion/asistencia?t=2019-20`);
-  ok(await p.locator('nav[aria-label=Temporada] a[aria-current=true]').textContent() === '2019/20', 'histórico de SportEasy (D166): pestaña propia de la temporada');
-  ok(await p.locator('[data-testid=nota-historico]').count() === 1, 'histórico: nota de que es de SportEasy y menos completo');
-  ok((await p.locator('[data-person=esteban-jon]').textContent()).includes('7 / 9') && await p.locator('[data-person=esteban-jon] [data-testid=marca-historico]').count() === 0, 'histórico: persona del club con su ficha, sin marca');
-  ok((await p.locator('[data-person="sporteasy-424242"]').textContent()).includes('5 / 10') && await p.locator('[data-person="sporteasy-424242"] [data-testid=marca-historico]').count() === 1, 'histórico: persona sin ficha con su nombre de SportEasy y la marca «histórico»');
-  await p.screenshot({ path: path.join(SALIDA, 'real_asistencia_gestion_escritorio.png'), fullPage: true });
+  // «Asistencia y motivos» (D170) tiene su propia suite: pruebas:asistencia-pantalla (tabla, filtros, ficha y 375 px) y
+  // pruebas:asistencia-calculo (el cálculo). Aquí solo se comprueba el acceso (arriba: sin sesión y un jugador, fuera).
 
   // ---------------------------------------------------------------- movil
   console.log('\n== Movil 375 px');

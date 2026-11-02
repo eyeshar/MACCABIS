@@ -1186,18 +1186,6 @@
    "es_entrenador": false
   },
   {
-   "person_id": "guerrero-de-la-riva-miguel",
-   "formal": "Guerrero de la Riva, Miguel",
-   "display": "Miguel Guerrero de la Riva",
-   "temporadas_jugadas": [
-    "2013",
-    "2025"
-   ],
-   "n_temporadas": 2,
-   "solo_mote": false,
-   "es_entrenador": false
-  },
-  {
    "person_id": "rogaia-samuele",
    "formal": "Rogaia, Samuele",
    "display": "Samuele Rogaia",
@@ -1376,6 +1364,17 @@
    "display": "José Ignacio Díaz Hernández",
    "temporadas_jugadas": [
     "2021"
+   ],
+   "n_temporadas": 1,
+   "solo_mote": false,
+   "es_entrenador": false
+  },
+  {
+   "person_id": "guerrero-de-la-riva-miguel",
+   "formal": "Guerrero de la Riva, Miguel",
+   "display": "Miguel Guerrero de la Riva",
+   "temporadas_jugadas": [
+    "2013"
    ],
    "n_temporadas": 1,
    "solo_mote": false,

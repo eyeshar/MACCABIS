@@ -10,6 +10,7 @@
 3. **Filas fundidas a separar** (una fila del Excel = dos personas):
    - `Santi` → Calvo González (fundador, años viejos) + Pazo Pascual ('Santiaguiño', desde 2017).
    - `Miguelo` → Guerrero de la Riva (2013) + Campos Hernández (2025).
+     **Corregido 02/11/2026 (Iván):** el 2025 de «Miguelo» era un error y no es de nadie (Guerrero solo 2013; Campos 2021 y 2022).
 4. **Alias que apuntan a la misma persona** (unificar): Aram=Luiggi; Jorge Hernández=Nane; Iván Rodríguez=Ivan Canario; Wall=Wallace=V.Perez; Alex=Suarez; Manu C=Manu; Nacho Argentino=Mileo.
 
 ## Resolución completa (mote de matriz → persona)

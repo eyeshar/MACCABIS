@@ -20,7 +20,7 @@
 - **H. Limpieza de docs** (`docs/orden-vigente-31-10`, #6): este orden, SMTP y ESTADO.
 - **I. Sin ventanas de consola en Windows** (`fix/ventanas-consola`, #13, pedido por Iván el 31/10): `windowsHide: true` en todos los procesos hijos de pruebas y utilidades, y que se cierren al terminar cada suite, también si falla. Sin cambios de comportamiento.
 
-**2. [x] Rutina C automática** (`feat/rutina-c-automatica`, D173, 02/11/2026; PR con OK de Iván pendiente): plazo el martes a las 12:00, propuesta automática tras el cierre con push a Iván, «Aprobar y avisar», recambios tras aprobar; `RUTINAS/C_CONVOCATORIA.md` v3 (la plataforma lo hace sola; Iván revisa y aprueba).
+**2. [x] Rutina C automática** (`feat/rutina-c-automatica`, D173, 02/11/2026; PR #32 mergeado y migración aplicada): plazo el martes a las 12:00, propuesta automática tras el cierre con push a Iván, «Aprobar y avisar», recambios tras aprobar; `RUTINAS/C_CONVOCATORIA.md` v3 (la plataforma lo hace sola; Iván revisa y aprueba).
 
 **3. Tesorería / cuentas** (Eduardo; datos sensibles → zona protegida; D52).
 
@@ -52,7 +52,7 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ## Pendiente de Iván
 
 **Operativa de ahora**
-- [ ] **D173 (rutina C automática):** dar el OK al PR tras mirar la vista previa en el móvil; con el OK, Code aplica la migración `20261103100000_rutina_c_automatica` en el real con D111 y mergea (no un martes ni un miércoles). **Antes del martes 10/11 a las 09:00.**
+- [x] **D173 (rutina C automática):** OK de Iván («todo hoy»); migración aplicada en el real con D111 y PR #32 mergeado el 02/11/2026 a las 20:12.
 - [ ] **Edu: activar los avisos en su móvil** (`/avisos`): hoy no tiene ninguna suscripción y no le llegarían los avisos de la convocatoria (el Panel lo dice).
 - [x] **Hecho (01/11/2026, OK de Iván, con D111; 28 cuentas antes y después):** **OK a la marca «Reserva» (D158, `feat/reserva`):** aplicar en el real la migración `20261031180000_reserva` (con D111) y la carga `node plataforma/scripts/cargar_reserva.mjs --aplicar` (reserva para Fernando M. y Guillermo), **antes** de mergear la rama (la convocatoria lee la columna). Lo hace Code cuando Iván dé el OK.
 - [ ] **Cuando Carlos entre por primera vez:** comprobar que su plaza se vinculó sola (`npm run db:estado`: 3 gestores vinculados) y que ve Gestión, el tablero y la banda del inicio. Aún no tiene cuenta (simulado en una transacción deshecha: se vincula y ve los niveles).

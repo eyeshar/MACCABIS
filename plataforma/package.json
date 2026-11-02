@@ -42,6 +42,8 @@
     "db:asistencia-vincular": "node scripts/vincular_asistencia_historica.mjs",
     "db:asistencia-eventos": "node scripts/cargar_asistencia_eventos.mjs",
     "pruebas:asistencia": "node pruebas/rls_asistencia.mjs",
+    "pruebas:asistencia-calculo": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/asistencia_calculo.mjs",
+    "pruebas:asistencia-pantalla": "node pruebas/asistencia_pantalla.mjs",
     "pruebas:asistencia-eventos": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/asistencia_eventos.mjs",
     "pruebas:asistencia-historica": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/asistencia_historica.mjs",
     "db:eventos": "node scripts/cargar_eventos.mjs",

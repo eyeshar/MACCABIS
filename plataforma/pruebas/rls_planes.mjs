@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
+import { hasta } from './infra/esperas.mjs';
 import { migrar } from '../scripts/db.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { planificar, planificarPlanes } from '../src/lib/avisos/planificador.ts';
@@ -62,7 +63,21 @@ try {
   await migrar(sql, { log: () => {} });
   ok(await tabla('grupos_repartos') && (await sql`select count(*)::int n from public.pistas where lat is not null`)[0].n === 3, 'y se vuelve a aplicar (las tres pistas con coordenadas)');
   await sql`notify pgrst, 'reload schema'`;
-  for (let i = 0; i < 40 && (await rpc('crear_plan', { p: {} }, anonKey)).status === 404; i++) await new Promise((ok2) => setTimeout(ok2, 250));
+  // PostgREST relee el esquema en segundo plano y, si la lectura coincide con la migración, puede quedarse con una caché a medias
+  // (vista: crear_plan sí, editar_plan o responder_plan no -> «404 Could not find the function ... in the schema cache», que
+  // luego se ve como un TypeError lejos de la causa). Se espera, con límite, a que anon reciba un rechazo de PERMISOS (no 404 ni
+  // 503) de CADA función que usa la prueba, con los nombres de argumentos reales, y se vuelve a avisar si tarda; si no llega, se dice aquí.
+  const U = '00000000-0000-0000-0000-000000000000';
+  const llamadas = { crear_plan: { p: {} }, editar_plan: { p_id: U, p: {} }, cancelar_plan: { p_id: U }, borrar_plan: { p_id: U }, hacer_oficial: { p_id: U }, responder_plan: { p_evento: U, p_respuesta: 'va' }, responder: { p_evento: U, p_respuesta: 'va' } };
+  let faltan = Object.keys(llamadas), avisado = Date.now(), seguidas = 0;
+  const vista = await hasta(async () => {
+    faltan = [];
+    for (const f of Object.keys(llamadas)) { const s = (await rpc(f, llamadas[f], anonKey)).status; if (s === 404 || s === 503 || s === 0) faltan.push(f); }
+    seguidas = faltan.length ? 0 : seguidas + 1;
+    if (faltan.length && Date.now() - avisado > 3000) { avisado = Date.now(); await sql`notify pgrst, 'reload schema'`; }
+    return seguidas >= 4; // varias rondas seguidas: una recarga vieja que termine tarde puede pisar la nueva
+  }, 60000);
+  ok(vista, 'PostgREST ve las funciones de planes tras volver a migrar', faltan.join(', '));
 
   console.log('\n== Cuentas de prueba');
   await cargarEventos(sql, { log: () => {} });

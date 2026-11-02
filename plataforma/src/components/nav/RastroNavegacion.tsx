@@ -1,11 +1,12 @@
 "use client";
 import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRuta } from "@/components/nav/useRuta";
 import { anotar, CLAVE_RASTRO } from "@/lib/rastro";
 
 /** Anota cada pantalla visitada en esta pestaña (sessionStorage) para que «← volver» sepa cual es el origen (D139). No pinta nada. */
 export default function RastroNavegacion() {
-  const pathname = usePathname();
+  const pathname = useRuta();
   const busqueda = useSearchParams().toString();
   useEffect(() => {
     try {

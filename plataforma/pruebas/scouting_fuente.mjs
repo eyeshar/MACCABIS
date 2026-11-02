@@ -18,6 +18,7 @@ import { arrancar } from './pila.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS } from './infra/puertos.mjs';
+import { gotoConSesion } from './infra/esperas.mjs';
 import { ligaParaPruebas } from './infra/liga.mjs';
 import { cargarLiga } from '../scripts/cargar_liga.mjs';
 import { diaLargo, diaMes, sumarDias } from '../src/lib/dias.ts';
@@ -58,7 +59,7 @@ try {
   const APP = app.APP;
   navegador = await abrirNavegador();
   const contexto = (ancho) => navegador.newContext({ viewport: { width: ancho, height: 812 }, isMobile: true, hasTouch: true, locale: 'es-ES' });
-  const nuevaPagina = async (ctx) => { const p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(`${p.url()} ${e.message}`)); return p; };
+  const nuevaPagina = async (ctx) => { const p = gotoConSesion(await ctx.newPage()); p.on('pageerror', (e) => errores.push(`${p.url()} ${e.message}`)); return p; };
   const codigoDe = async (email) => (await sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
   async function sesion(email, ancho) {
     const p = await nuevaPagina(await contexto(ancho));

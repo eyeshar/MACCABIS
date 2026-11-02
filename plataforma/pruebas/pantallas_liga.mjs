@@ -16,6 +16,7 @@ import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { gotoConSesion } from './infra/esperas.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = path.join(RAIZ, '..', 'privado', 'mockups_liga');
@@ -74,7 +75,7 @@ try {
 
   console.log('\n== Acceso');
   const ctxA = await nav.newContext({ viewport: { width: 375, height: 800 } });
-  const pa = await ctxA.newPage();
+  const pa = gotoConSesion(await ctxA.newPage());
   for (const r of ['/liga/scouting', '/liga/consolidada']) {
     await pa.goto(`${APP}${r}`);
     ok(pa.url().includes('/entrar'), `anonimo en ${r}: manda a Entrar`);
@@ -91,7 +92,7 @@ try {
   for (const [etiqueta, ancho, alto, movil] of [['375', 375, 800, true], ['escritorio', 1280, 900, false]]) {
     console.log(`\n== Gestor, ${etiqueta}`);
     const ctx = await nav.newContext({ viewport: { width: ancho, height: alto }, deviceScaleFactor: movil ? 2 : 1, isMobile: movil, hasTouch: movil, locale: 'es-ES' });
-    const p = await ctx.newPage();
+    const p = gotoConSesion(await ctx.newPage());
     const errores = [];
     p.on('pageerror', (e) => errores.push(String(e)));
     await entrar(p, gestorEmail);
@@ -330,7 +331,7 @@ try {
     await p.goto(`${APP}/liga/scouting`);
     const enlaceTodos = p.getByRole('link', { name: 'Ver todos los jugadores de la liga' });
     ok(await enlaceTodos.isVisible(), 'scouting: boton "Ver todos los jugadores de la liga" junto al selector');
-    ok((await p.textContent('.lg-nota')).includes('Solo aparecen los jugadores que han jugado algún minuto según las hojas de la FBM'), 'scouting: nota «solo aparecen los jugadores que han jugado algún minuto»');
+    ok((await p.locator('.lg-nota', { hasText: 'Solo aparecen' }).first().textContent()).includes('Solo aparecen los jugadores que han jugado algún minuto según las hojas de la FBM'), 'scouting: nota «solo aparecen los jugadores que han jugado algún minuto»');
     await enlaceTodos.click();
     await p.waitForURL(/\/liga\/consolidada#todos/);
     ok(await p.locator('#todos .lg-todos').isVisible(), 'scouting: el boton lleva a Liga consolidada, seccion Todos los jugadores');

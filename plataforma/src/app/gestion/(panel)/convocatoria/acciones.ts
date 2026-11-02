@@ -28,7 +28,7 @@ const ERRORES: Record<string, string> = {
   equipos_no_validos: "Esa convocatoria no es válida.",
 };
 const error = (m: string) => ERRORES[Object.keys(ERRORES).find((k) => m.includes(k)) ?? ""] ?? `No se pudo guardar: ${m}`;
-const refrescar = () => { revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/", "layout"); };
+const refrescar = () => { revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/inicio"); };
 
 /** Limpia lo que llega del navegador: solo los equipos que juegan, sin repetidos, posiciones validas. */
 function limpiar(conv: Convocatoria, juegan: Equipo[], plantilla: Set<string>): Convocatoria {

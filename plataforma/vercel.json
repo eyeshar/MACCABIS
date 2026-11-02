@@ -1,4 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "sh scripts/vercel_construir.sh"
+  "ignoreCommand": "sh scripts/vercel_construir.sh",
+  "regions": ["dub1"]
 }

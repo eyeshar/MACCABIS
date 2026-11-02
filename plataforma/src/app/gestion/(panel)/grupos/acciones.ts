@@ -10,7 +10,7 @@ import { siguientePartido, type Siguiente } from "@/lib/grupos/siguiente";
 // con los datos de la base; lo que se guarda se valida contra los invitados al entreno.
 
 export type R<T = undefined> = { ok: true; dato?: T } | { ok: false; error: string };
-const refrescar = (evento: string) => { revalidatePath(`/gestion/grupos/${evento}`); revalidatePath("/gestion/grupos"); revalidatePath("/", "layout"); };
+const refrescar = (evento: string) => { revalidatePath(`/gestion/grupos/${evento}`); revalidatePath("/gestion/grupos"); revalidatePath("/inicio"); };
 
 /** Posicion, base de reserva y nivel de los invitados al entreno: la pantalla los pide aparte para que no viajen en el
  *  HTML de la pagina (D143) y los tiene solo en memoria. */

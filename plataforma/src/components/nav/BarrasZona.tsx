@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRuta } from "@/components/nav/useRuta";
 import { MENU_GESTION } from "@/lib/web";
 
 /** Barra de Gestion (D90): fondo #2A2410, etiqueta GESTIÓN y los submenus en tres grupos; lo que aun no existe, en gris
  *  con "paso 2". En movil, una fila con scroll horizontal. */
 export function BarraGestion() {
-  const ruta = usePathname();
+  const ruta = useRuta();
   const actual = (href: string) => (href === "/gestion" ? ruta === href : ruta.startsWith(href));
   return (
     <nav aria-label="Gestión" className="zb zb-gestion">

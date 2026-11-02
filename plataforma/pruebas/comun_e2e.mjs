@@ -8,7 +8,8 @@ import { arrancar } from './pila.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { arrancarApp, abrirNavegador, conCapturas, esperar as esperarUrl } from './infra/app.mjs';
 import { PUERTOS } from './infra/puertos.mjs';
-export { trasAccion, hasta } from './infra/esperas.mjs';
+import { gotoConSesion } from './infra/esperas.mjs';
+export { trasAccion, hasta, sesionLista, gotoConSesion } from './infra/esperas.mjs';
 export { PUERTOS };
 
 export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -36,7 +37,7 @@ export async function preparar({ envExtra = {}, compilar = true } = {}) {
   const codigoDe = async (email) => (await pila.sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;
   const errores = [];
   const nuevaPagina = async (ctx) => {
-    const p = await ctx.newPage();
+    const p = gotoConSesion(await ctx.newPage()); // D175: la sesion llega al navegador despues del HTML
     p.on('pageerror', (e) => errores.push(`${p.url()} ${e.message}`));
     p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|favicon/.test(m.text())) errores.push(`${p.url()} ${m.text()}`); });
     return p;

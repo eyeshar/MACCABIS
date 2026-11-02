@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRuta } from "@/components/nav/useRuta";
 import { salir } from "@/app/entrar/acciones";
 import { MENU, MENU_GESTION, MENU_SESION, RUTA_CUENTA, type GrupoGestion, type Seccion } from "@/lib/web";
 import type { Usuario } from "@/lib/usuario";
+import { useSesion } from "./Sesion";
 import { Barras, Calendario, Candado, Casa, Mas, Panel, Tendencia } from "@/components/Iconos";
 import { borrarConversacion } from "@/components/asistente/conversacion";
 import { useDesplegable } from "./useDesplegable";
@@ -13,7 +14,8 @@ import { useDesplegable } from "./useDesplegable";
 // (Inicio · Partidos · Liga · Plantilla · Historia · El club). Con sesion, lo de cada persona primero: en escritorio
 // Inicio · Agenda · Mis números · Liga · Historia (y el menu GESTIÓN de los gestores); en el movil, barra de 5: jugador
 // Inicio · Agenda · Mis números · Liga · Más; gestor Inicio · Agenda · Mis números · Gestión · Más (Liga pasa a «Más»).
-// La sesion la lee el servidor (Cabecera.tsx) y llega aqui ya resuelta: nada de parpadeos de "Acceso".
+// La sesion llega del navegador (Sesion.tsx, D175): con cookie de sesion la cabecera se esconde hasta saber quien es,
+// asi que tampoco hay parpadeos de "Acceso".
 
 type Zona = "inicio" | "agenda" | "numeros" | "club" | "gestion" | "cuenta" | "acceso" | "liga" | "historia" | "plantilla" | "partidos" | null;
 
@@ -153,8 +155,9 @@ function HojaMas({ usuario, ruta, zona }: { usuario: Usuario | null; ruta: strin
   );
 }
 
-export default function Navegacion({ usuario, escudo }: { usuario: Usuario | null; escudo: React.ReactNode }) {
-  const ruta = usePathname();
+export default function Navegacion({ escudo }: { escudo: React.ReactNode }) {
+  const { usuario } = useSesion();
+  const ruta = useRuta();
   const zona = zonaDe(ruta, usuario?.personId ?? null);
   const liga = MENU.find((s) => s.id === "liga")!;
   const partidos = MENU.find((s) => s.id === "partidos")!;

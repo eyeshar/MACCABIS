@@ -39,10 +39,26 @@ const nextConfig: NextConfig = {
       { source: "/gestion/liga", destination: "/liga/consolidada", permanent: true },
     ];
   },
+  // D175: las paginas publicas se sirven ya hechas (cache), asi que no leen la consulta. Con una consulta que cambia lo que
+  // se ve (?hoy= en «/» y /liga, ?g= en /liga, ?persona= en /historia, ?t= en /plantilla), se reescriben a su pagina
+  // gemela, dinamica; la direccion que se ve no cambia. Es la misma regla de siempre, solo que ahora el caso normal es el rapido.
+  async rewrites() {
+    const conConsulta = (source: string, claves: string[], destination: string) => claves.map((key) => ({ source, has: [{ type: "query" as const, key }], destination }));
+    return {
+      beforeFiles: [
+        ...conConsulta("/", ["hoy"], "/inicio"),
+        ...conConsulta("/liga", ["g", "hoy"], "/liga/con-parametros"),
+        ...conConsulta("/historia", ["persona"], "/historia/con-parametros"),
+        ...conConsulta("/plantilla", ["t"], "/plantilla/con-parametros"),
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   async headers() {
     const NOINDEX = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
     const vistaPrevia = Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";
-    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal", "/asistente", "/liga/scouting", "/liga/consolidada"];
+    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal", "/asistente", "/liga/scouting", "/liga/consolidada", "/inicio", "/liga/con-parametros", "/historia/con-parametros", "/plantilla/con-parametros"];
     return [
       ...(vistaPrevia
         ? [{ source: "/:path*", headers: NOINDEX }]

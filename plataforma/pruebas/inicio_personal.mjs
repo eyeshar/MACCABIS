@@ -187,7 +187,7 @@ try {
   await banda.getByRole('button', { name: 'Ocultar' }).click();
   ok(await banda.locator('#in-gestion-lista').isHidden(), 'la banda se pliega');
   await pi.reload();
-  ok(await pi.getByTestId('banda-gestion').locator('#in-gestion-lista').isHidden() && await visto(pi.getByTestId('banda-gestion').getByRole('button', { name: 'Mostrar' })), 'y lo recuerda en este navegador');
+  ok(await visto(pi.getByTestId('banda-gestion').getByRole('button', { name: 'Mostrar' })) && await pi.getByTestId('banda-gestion').locator('#in-gestion-lista').isHidden(), 'y lo recuerda en este navegador');
   await pi.getByTestId('banda-gestion').getByRole('button', { name: 'Mostrar' }).click();
   const pi375 = await e.nuevaPagina(await e.contexto(375));
   await pi375.context().addCookies(await pi.context().cookies());

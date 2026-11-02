@@ -23,7 +23,7 @@ const num = (v: string) => { const n = v === "" ? NaN : Number(v.replace(",", ".
 const EQUIPOS: EquipoEvento[] = ["MdA", "MdL", "ambos"];
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const hora = (v: string) => (/^\d{1,2}:\d{2}$/.test(v) ? v.padStart(5, "0") : null);
-const refrescar = () => { revalidatePath("/gestion/eventos"); revalidatePath("/gestion"); revalidatePath("/"); revalidatePath("/calendario.ics"); revalidateTag("calendario", "max"); };
+const refrescar = () => { revalidatePath("/gestion/eventos"); revalidatePath("/gestion"); revalidatePath("/"); revalidatePath("/liga"); revalidatePath("/club"); revalidatePath("/calendario.ics"); revalidateTag("calendario", "max"); };
 
 type Campos = CamposEditables;
 

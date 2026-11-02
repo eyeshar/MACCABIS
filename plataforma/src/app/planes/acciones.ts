@@ -13,7 +13,7 @@ import { avisarOrganizador } from "@/lib/avisos/servidor";
 export type Estado = { error?: string } | null;
 export type Resultado = { ok: true; texto?: string } | { ok: false; error: string };
 
-const refrescar = () => { revalidatePath("/", "layout"); };
+const refrescar = () => { revalidatePath("/inicio"); };
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const hora = (v: string) => (/^\d{1,2}:\d{2}$/.test(v) ? v.padStart(5, "0") : null);
 const numero = (v: string) => (v === "" ? null : Number(v.replace(",", ".")));

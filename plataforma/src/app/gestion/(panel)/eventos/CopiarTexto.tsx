@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 /** Un texto para pegar en WhatsApp, con su boton de copiar. */
-export default function CopiarTexto({ texto, etiqueta = "Copiar mensaje", id }: { texto: string; etiqueta?: string; id?: string }) {
+export default function CopiarTexto({ texto, etiqueta = "Copiar mensaje", id, alCopiar }: { texto: string; etiqueta?: string; id?: string; alCopiar?: () => void }) {
   const [copiado, setCopiado] = useState(false);
   async function copiar() {
     try {
@@ -12,6 +12,7 @@ export default function CopiarTexto({ texto, etiqueta = "Copiar mensaje", id }: 
       window.prompt("Copia el texto:", texto);
     }
     setCopiado(true);
+    alCopiar?.();
     setTimeout(() => setCopiado(false), 2500);
   }
   return (

@@ -95,3 +95,7 @@ La norma anterior era excesiva y agotaba la memoria del equipo. Desde el 01/11/2
 3. **Las suites `-real` contra producción, solo cuando el cambio escriba en producción o toque permisos.**
 4. **Varios PR en paralelo: nunca más de una suite pesada a la vez en local** (cerrojo común de `pruebas:rapidas`).
 `npm run pruebas:rapidas` ya lo aplica solo. Detalle, tabla «si tocas X, pasa Y», puertos y lo que solo va en local: `CLAUDE.md` en la raíz.
+
+## 16. PR de solo documentación (Iván, 02/11/2026, D173)
+- Un PR que **solo toca `docs/`** se puede mergear **sin el OK de Iván** si GitHub Actions está en verde (`npm run ci:estado`).
+- **Cualquier PR con código, datos o migraciones sigue necesitando su OK** expreso, como siempre.

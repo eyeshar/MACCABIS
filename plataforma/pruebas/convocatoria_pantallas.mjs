@@ -6,16 +6,17 @@
 //   - Proponer: cabecera, contadores, una tarjeta por equipo, dificultad con su porqué, casillas por línea, sin desbordar.
 //   - Cambiar a mano con motivo: pasar al otro equipo (vista previa de las líneas antes de guardar), queda en el historial.
 //   - Añadir a uno que dijo «no voy»: lo encuentra en toda la plantilla, avisa antes de guardar, entra con su aviso.
-//   - Aprobar y copiar el mensaje: WhatsApp con encuentro, pista, dirección y dorsal, sin niveles; «al día»; el aviso de
-//     la web pendiente con «Enviar ahora»; sin bloque de SportEasy (D153); cambiar tras aprobar → pendiente y «qué cambia».
+//   - «Aprobar y avisar» (D173): aprueba y avisa ya (un aviso por jugador según su caso); WhatsApp con encuentro, pista,
+//     dirección y dorsal, sin niveles, con «Copiar mensaje» y sin estados «pendiente / al día»; sin bloque de SportEasy
+//     (D153); cambiar tras aprobar → «Avisar del cambio» y el WhatsApp dice qué cambia.
 //   - Un domingo con un solo equipo (J4): una sola tarjeta.
 //   - Privacidad: el jugador no entra en Gestión; en Mi zona solo «Convocado» con equipo, hora y encuentro.
 //   - D124: proyección de anotación en cada tarjeta («Quién aporta», el rival, el acierto) y en el tablero.
 //   - D125: modo rápido. Arrastrar en escritorio (1280 px) con zonas de destino, zona no válida sin ficha, aviso de
 //     «no voy», «Deshacer»; en el móvil y con teclado, selección múltiple y «Mover a…».
 //   - D153: ni la salida, ni la convocatoria ni el tablero hablan de SportEasy (sin bloque de copia ni de importación).
-//   - D127: «Enviar ahora», solo a quien toca, «a N de M», sin dobles y «Cambio en la convocatoria» tras cambiarla
-//     (servicio de avisos falso).
+//   - D173 (antes D127, «Enviar ahora»): «Avisados N de M», solo a quien toca, sin dobles y «Cambio en la convocatoria»
+//     tras cambiarla (servicio de avisos falso).
 //   - D172: sin el aviso «Las respuestas en la web están desactivadas» (el interruptor ya no existe).
 //
 //   npm run pruebas:convocatoria-pantallas
@@ -305,63 +306,61 @@ try {
   ok(!(await pd.getByTestId('bloque-importacion').count()) && !/SportEasy/.test(await pd.locator('main').innerText()), 'sin bloque de importación ni nada de SportEasy en el tablero (D153)');
   await foto(pd, 'tablero_proyeccion_1280');
 
-  console.log('\n== Aprobar y copiar el mensaje');
-  await pg.getByRole('button', { name: 'Aprobar convocatoria' }).click();
-  try { await pg.waitForURL(/\/gestion\/convocatoria\/salida/, { timeout: 15000, waitUntil: 'commit' }); }
+  console.log('\n== «Aprobar y avisar» (D173): aprueba y avisa ya; la salida, simplificada');
+  const ecdh = crypto.createECDH('prime256v1'); ecdh.generateKeys();
+  const claves = { p256dh: ecdh.getPublicKey().toString('base64url'), auth: crypto.randomBytes(16).toString('base64url') };
+  await sql`insert into public.suscripciones_avisos (user_id, person_id, endpoint, p256dh, auth, navegador) values (${jUid}, 'sint-01', ${`https://127.0.0.1:${PUERTO_PUSH}/ok/sint-01`}, ${claves.p256dh}, ${claves.auth}, 'Android · Chrome')`;
+  ok(!(await pg.getByRole('button', { name: 'Aprobar convocatoria' }).count()) && !(await pg.getByRole('button', { name: 'Enviar ahora' }).count()), 'ya no hay «Aprobar convocatoria» ni «Enviar ahora» aparte');
+  await pg.getByTestId('cv-aprobar').click();
+  try { await pg.waitForURL(/\/gestion\/convocatoria\/salida/, { timeout: 20000, waitUntil: 'commit' }); }
   catch { throw new Error(`Aprobar no llega a la salida: ${pg.url()} ${(await pg.locator('[role=alert], [role=status]').allInnerTexts()).join(' | ')} ${errores.join(' | ')}`); }
   const msg = await pg.locator('#cv-mensaje').innerText();
   ok(/^Convocatoria del domingo \d\d\/\d\d \(J\d+\)/.test(msg), 'mensaje: «Convocatoria del domingo DD/MM (Jn)»', msg.slice(0, 60));
   ok(/encuentro \d\d:\d\d/.test(msg) && /Valdebernardo/.test(msg) && !/\(local\)|\(visitante\)|en casa|fuera/.test(msg) && /Md[AL] · \S/.test(msg), 'con hora, encuentro, pista y dirección; el cartel «A – B», sin «local/visitante» (D129)');
   ok(/Convocados \(\d+\): .*Sint 18/.test(msg) && /Recordad: el dorsal es obligatorio\./.test(msg), 'con la lista de convocados y el dorsal obligatorio');
-  ok(!/nivel|\b[A-E]\)|Escolta|Pívot|Base de reserva|Dobla/.test(msg), 'sin niveles, posiciones ni «Dobla»');
-  await pg.getByRole('button', { name: 'Copiar mensaje' }).click();
+  ok(!/nivel|\b[A-E]\)|Escolta|Pívot|Base de reserva|Dobla|reserva/.test(msg), 'sin niveles, posiciones, «Dobla» ni «reserva»');
+  await pg.getByRole('button', { name: 'Copiar mensaje', exact: true }).click();
   const copiado = await pg.evaluate(() => navigator.clipboard.readText());
   ok(copiado.replace(/\r\n/g, '\n') === (await pg.locator('#cv-mensaje').textContent()) && copiado.startsWith('Convocatoria del domingo'), '«Copiar mensaje» lo deja en el portapapeles, tal cual', JSON.stringify(copiado.slice(0, 80)));
-  ok(await visto(pg.getByTestId('cv-salida-whatsapp').getByText('Pendiente')), 'WhatsApp: pendiente');
-  await pg.getByRole('button', { name: 'Ya lo he pegado en el grupo' }).click();
-  ok(await visto(pg.getByTestId('cv-salida-whatsapp').getByText('Al día')), 'tras pegarlo: al día');
-  ok(await visto(pg.getByTestId('cv-salida-aviso').getByText('Pendiente')) && await visto(pg.getByRole('button', { name: 'Enviar ahora' })), 'aviso «Estás convocado»: pendiente y con «Enviar ahora» (D127)');
+  ok(!(await pg.getByRole('button', { name: 'Ya lo he pegado en el grupo' }).count()) && !(await pg.locator('main .pastilla', { hasText: /^(Pendiente|Al día)$/ }).count()), 'sin «Ya lo he pegado» ni estados «pendiente / al día»');
+  ok(await hasta(async () => !!(await sql`select whatsapp_base from public.convocatorias where fecha = ${F2}`)[0].whatsapp_base), 'al copiar se apunta lo copiado (para que el siguiente mensaje diga qué cambia)');
   ok(!(await pg.getByTestId('cv-salida-sporteasy').count()) && !/SportEasy/.test(await pg.locator('main').innerText()) && !(await pg.getByRole('button', { name: 'Marcar como copiado' }).count()), 'sin bloque «SportEasy» ni «Marcar como copiado» en la salida (D153)');
   ok(await sinDesbordar(pg), 'salida a 375 px sin desbordar');
   await foto(pg, 'convocatoria_salida_375');
 
-  console.log('\n== D127: «Enviar ahora», solo a convocados con avisos, «a N de M», sin dobles');
-  const ecdh = crypto.createECDH('prime256v1'); ecdh.generateKeys();
-  const claves = { p256dh: ecdh.getPublicKey().toString('base64url'), auth: crypto.randomBytes(16).toString('base64url') };
-  await sql`insert into public.suscripciones_avisos (user_id, person_id, endpoint, p256dh, auth, navegador) values (${jUid}, 'sint-01', ${`https://127.0.0.1:${PUERTO_PUSH}/ok/sint-01`}, ${claves.p256dh}, ${claves.auth}, 'Android · Chrome')`;
+  console.log('\n== El aviso salió al aprobar: un aviso por jugador según su caso, «Avisados N de M», sin dobles');
   const convF2 = (await sql`select equipos from public.convocatorias where fecha = ${F2}`)[0].equipos;
-  const M = new Set(Object.values(convF2).flat().map((c) => c.person_id)).size;
-  const dentro01 = Object.values(convF2).flat().some((c) => c.person_id === 'sint-01');
-  await pg.getByRole('button', { name: 'Enviar ahora' }).click();
+  const convocadosF2 = new Set(Object.values(convF2).flat().map((c) => c.person_id));
+  const dentro01 = convocadosF2.has('sint-01');
   const silencio = HOR.horaDeEnvio(new Date(), HOR.madrid(F2, '08:00')) > new Date();
-  ok(await visto(pg.getByTestId('cv-aviso-resultado').getByText(new RegExp(`a ${dentro01 ? 1 : 0} de ${M} \\(los otros ${M - (dentro01 ? 1 : 0)} no tienen avisos activados\\)`))), `«Enviado …: a ${dentro01 ? 1 : 0} de ${M} (los otros ${M - (dentro01 ? 1 : 0)} no tienen avisos activados)»`, await pg.getByTestId('cv-salida-aviso').innerText());
   const regs = await sql`select person_id, titulo, cuerpo, enviado_en, resultado from public.avisos_registro where clave like ${`convocatoria:${F2}:%`}`;
-  ok(regs.length === M && regs.every((r) => r.titulo.startsWith('Estás convocado · ')), `un aviso por convocado en el registro (${regs.length}), «Estás convocado · …»`);
-  ok(regs.every((r) => /^Md[AL] a las \d\d:\d\d \(quedada \d\d:\d\d\)/.test(r.cuerpo) && !/nivel|posici|motivo/i.test(r.cuerpo)), '«MdA a las HH:MM (quedada HH:MM)», sin niveles ni motivos', regs[0]?.cuerpo);
+  const M = regs.length;
+  ok(regs.filter((r) => convocadosF2.has(r.person_id)).length === convocadosF2.size && regs.filter((r) => convocadosF2.has(r.person_id)).every((r) => r.titulo.startsWith('Estás convocado · ')), `un aviso por convocado (${convocadosF2.size}), «Estás convocado · …»`);
+  ok(regs.filter((r) => convocadosF2.has(r.person_id)).every((r) => (/^Md[AL] a las \d\d:\d\d \(quedada \d\d:\d\d\)/.test(r.cuerpo) || /^Estás convocado con el Md[AL] \(no con el Md[AL]\) · \d\d:\d\d, quedada \d\d:\d\d\./.test(r.cuerpo)) && !/nivel|posici|motivo|reserva/i.test(r.cuerpo)), '«MdA a las HH:MM (quedada HH:MM)» o «Estás convocado con el MdL (no con el MdA) · …», sin niveles ni motivos', regs[0]?.cuerpo);
+  ok(regs.filter((r) => !convocadosF2.has(r.person_id)).every((r) => /^Esta vez no entras en la convocatoria: somos muchos este domingo\./.test(r.cuerpo)), 'a quien dijo «voy» y no entra: «Esta vez no entras…»');
   if (!silencio) {
     ok(recibidos.length === (dentro01 ? 1 : 0) && regs.filter((r) => r.resultado === 'enviado').length === (dentro01 ? 1 : 0) && regs.filter((r) => r.resultado === 'sin_avisos').length === M - (dentro01 ? 1 : 0), 'al móvil solo le llega a quien tiene los avisos activados; al resto le queda en su inicio', `${recibidos.length} recibidos`);
-  } else ok(regs.every((r) => !r.enviado_en), 'de noche (silencio) quedan en el registro para las 8:30');
-  ok(await visto(pg.getByTestId('cv-salida-aviso').getByText('Enviado', { exact: true })) && await visto(pg.getByTestId('cv-sin-avisos')), 'la tarjeta queda «Enviado» con la lista de quién no tiene avisos');
-  ok(await visto(pg.getByTestId('cv-salida-aviso').getByRole('link', { name: '/avisos' })) && await visto(pg.getByRole('button', { name: 'Copiar mensaje para ellos' })), 'con el enlace a /avisos y el mensaje de WhatsApp para ellos');
-  ok(!(await pg.getByRole('button', { name: 'Enviar ahora' }).count()), 'ya no hay «Enviar ahora»: nada que mandar dos veces');
+  } else ok(regs.every((r) => !r.enviado_en), 'de noche (silencio) quedan en el registro para las 08:00');
+  ok(await visto(pg.getByTestId('cv-aviso-resultado').getByText(new RegExp(`^Avisados ${dentro01 ? 1 : 0} de ${M}`))), `«Avisados ${dentro01 ? 1 : 0} de ${M} (los otros … no tienen avisos)»`, await pg.getByTestId('cv-salida-aviso').innerText());
+  ok(await visto(pg.getByTestId('cv-sin-avisos')) && await visto(pg.getByTestId('cv-salida-aviso').getByRole('link', { name: '/avisos' })) && await visto(pg.getByRole('button', { name: 'Copiar mensaje para ellos' })), 'con la lista de quién no tiene avisos, el enlace a /avisos y el mensaje para ellos');
+  ok(!(await pg.getByRole('button', { name: /Avisar ahora|Avisar del cambio/ }).count()) && !(await pg.getByRole('button', { name: 'Reenviar' }).count()), 'nada que mandar otra vez (ni «Reenviar»: no ha fallado nada)');
   await foto(pg, 'convocatoria_aviso_enviado_375');
 
-  console.log('\n== Cambiar tras aprobar: WhatsApp vuelve a pendiente y dice qué cambia');
+  console.log('\n== Cambiar tras aprobar: «Avisar del cambio» y el WhatsApp dice qué cambia');
   await pg.goto(`${APP}/gestion/convocatoria?fecha=${F2}`);
   await pg.locator('[data-testid="cv-equipo-MdL"] li[data-person="sint-18"]').getByRole('button', { name: /Cambiar/ }).click();
   await hoja.getByText('Quitar de la convocatoria').click();
   await hoja.getByText('Otro', { exact: true }).click();
   await hoja.getByRole('button', { name: 'Guardar cambio' }).click();
   await hoja.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+  ok(await visto(pg.getByTestId('cv-avisar-cambio')), 'la convocatoria ofrece «Avisar del cambio»');
   await pg.goto(`${APP}/gestion/convocatoria/salida?fecha=${F2}`);
   const msg2 = await pg.locator('#cv-mensaje').innerText();
   ok(/^Cambio en la convocatoria del domingo .*: sale Sint 18 del MdL\./.test(msg2), '«Cambio en la convocatoria…: sale Sint 18 del MdL»', msg2.slice(0, 90));
-  ok(await visto(pg.getByTestId('cv-salida-whatsapp').getByText('Pendiente')), 'WhatsApp vuelve a pendiente');
-  ok(await visto(pg.getByTestId('cv-salida-aviso').getByText('Pendiente')) && await visto(pg.getByTestId('cv-aviso-a').getByText(/a 1 persona: Sint 18/)), 'el aviso de la web vuelve a pendiente, solo para quien cambia (Sint 18)');
-  ok(await visto(pg.getByTestId('cv-salida-aviso').getByText(/«Cambio en la convocatoria · domingo/)), 'y lo que le llegará: «Cambio en la convocatoria · …»');
+  ok(await visto(pg.getByTestId('cv-aviso-cambio').getByText(/Se avisaría a Sint 18\./)), 'se avisaría solo a quien cambia (Sint 18)');
   const antesDeCambio = (await sql`select count(*)::int n from public.avisos_registro where clave like ${`convocatoria:${F2}:%`}`)[0].n;
-  await pg.getByRole('button', { name: 'Enviar ahora' }).click();
-  ok(await visto(pg.getByTestId('cv-aviso-resultado').getByText(/a 0 de 1 \(el otro no tiene avisos activados\)/)), 'tras el cambio: «Enviado …: a 0 de 1 (el otro no tiene avisos activados)»');
+  await pg.getByRole('button', { name: 'Avisar del cambio' }).click();
+  ok(await visto(pg.getByText(/Avisados 0 de 1 \(el otro no tiene avisos\)/).first()), 'tras el cambio: «Avisados 0 de 1 (el otro no tiene avisos)»');
   const nuevos = await sql`select person_id, titulo, cuerpo from public.avisos_registro where clave like ${`convocatoria:${F2}:%`} order by creado_en desc nulls last, programado_para desc limit 1`;
   const total = (await sql`select count(*)::int n from public.avisos_registro where clave like ${`convocatoria:${F2}:%`}`)[0].n;
   ok(total === antesDeCambio + 1 && nuevos[0]?.person_id === 'sint-18' && nuevos[0]?.titulo.startsWith('Cambio en la convocatoria · ') && nuevos[0]?.cuerpo === 'Ya no estás convocado este domingo.', 'un solo aviso nuevo, a Sint 18: «Ya no estás convocado este domingo.» (los demás no reciben nada otra vez)', JSON.stringify(nuevos[0]));

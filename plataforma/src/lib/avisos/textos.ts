@@ -38,13 +38,42 @@ export function textoLunes(unidades: string[]): Texto {
   return { titulo: n === 1 ? "Te falta 1 respuesta" : `Te faltan ${n} respuestas`, cuerpo: `${mayus(listaY(unidades))}. Toca para responder.` };
 }
 
-/** (a) Martes 10:00 de un domingo de partido: a quien no ha respondido (las «duda» tienen su aviso de las 12:00, D141). */
-export function textoMartes(fecha: string, horasPartidos: string[]): Texto {
+/** «Enviar un recordatorio ahora» de un partido (Gestión): a quien no ha respondido, con el plazo (D173: martes a las 12:00). */
+export function textoMartes(fecha: string, horasPartidos: string[], plazo?: string): Texto {
   const dia = `Domingo ${+fecha.slice(8, 10)}`;
   const a = listaY([...new Set(horasPartidos)].map((h) => `a las ${h}`));
   return {
     titulo: `${dia}: aún no has respondido`,
-    cuerpo: `Hoy se hace la convocatoria. ¿Puedes jugar el domingo${a ? ` ${a}` : ""}?`,
+    cuerpo: `¿Puedes jugar el domingo${a ? ` ${a}` : ""}? ${plazo ? `Tienes hasta ${plazo} para decir si vas; si no, te quedas fuera de la convocatoria.` : "Toca para responder."}`,
+  };
+}
+
+/** (a) D173, a las 09:00 del día del plazo: UN aviso a quien no ha respondido o sigue en «duda» a un evento con plazo
+ *  semanal (partido del domingo o entreno del miércoles). `ademas` junta lo demás que le tocaba ese día. */
+export function textoPlazo(items: { tipo: "partido" | "entreno"; fecha: string; inicio?: string | null; duda: boolean; limite: Date }[], ademas: string[] = [], cuando: Date = new Date()): Texto {
+  const resto = listaY(ademas);
+  const cola = ademas.length ? ` Además: ${resto}${/[.?!]$/.test(resto) ? "" : "."}` : "";
+  const hasta = textoLimite(items[0].limite, cuando);
+  const partido = items.find((i) => i.tipo === "partido");
+  if (partido) {
+    return {
+      titulo: `Domingo ${+partido.fecha.slice(8, 10)}: responde hasta ${hasta}`,
+      cuerpo: `Tienes hasta ${hasta} para decir si vas; si no, te quedas fuera de la convocatoria.${cola}`,
+    };
+  }
+  const e = items[0];
+  const duda = items.some((i) => i.duda);
+  return {
+    titulo: `Entreno del ${nombreDia(e.fecha)}: responde hasta ${hasta}`,
+    cuerpo: `Tienes hasta ${hasta} para decir si vas al entreno${e.inicio ? ` (${hh(e.inicio)})` : ""}${duda ? "; si sigues en «duda», contarás como «no va»" : ""}.${cola}`,
+  };
+}
+
+/** (a) D173, al cierre del partido (martes 12:00): a quien sigue sin responder. */
+export function textoCierre(fecha: string): Texto {
+  return {
+    titulo: `Domingo ${+fecha.slice(8, 10)}: no has respondido`,
+    cuerpo: "No has respondido: no entras en la propuesta de convocatoria. Si puedes jugar, di «voy» cuanto antes.",
   };
 }
 
@@ -129,10 +158,11 @@ export const textoCancelacion = (e: EventoTexto): Texto => ({ titulo: `Se cancel
 export const TEXTO_PRUEBA: Texto = { titulo: "Aviso de prueba", cuerpo: "Así te llegarán los avisos de Maccabis. Solo si te falta responder, si cambia algo o si se cancela; de noche solo si el partido es en pocas horas." };
 
 const TEXTO_ESTADO: Record<RespuestaTexto, string> = { va: "Voy", duda: "Duda", no: "No voy", sin_responder: "Sin responder" };
-/** (e) A los gestores: un jugador cambia un partido despues del martes a las 20:00. Solo nombre y respuesta. */
+/** (e) A los gestores: un jugador cambia un partido despues del cierre (martes a las 12:00, D173) y antes de aprobar la
+ *  convocatoria. Solo nombre y respuesta. (Tras aprobar, los cambios que importan salen con su propio aviso: lib/convocatoria.) */
 export function textoGestores(nombre: string, e: EventoTexto, antes: RespuestaTexto, despues: RespuestaTexto): Texto {
   return {
     titulo: `${nombre} cambia el ${queEs(e)}${e.equipo !== "ambos" ? ` (${e.equipo})` : ""}`,
-    cuerpo: `De «${TEXTO_ESTADO[antes]}» a «${TEXTO_ESTADO[despues]}», con la convocatoria ya hecha. Toca para ver las respuestas.`,
+    cuerpo: `De «${TEXTO_ESTADO[antes]}» a «${TEXTO_ESTADO[despues]}», después del cierre del martes. Toca para ver las respuestas.`,
   };
 }

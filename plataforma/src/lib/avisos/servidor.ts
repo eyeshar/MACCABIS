@@ -2,8 +2,8 @@ import "server-only";
 import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pistaEfectiva, type EventoFila, type Pista } from "@/lib/eventos/dominio";
-import { horaDeEnvio } from "./horario";
-import { avisosPasoNoVa, avisosPorDefecto, conAvisosDeDudas, inicioDe, invitados, pendienteDe, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
+import { horaDeEnvio, limiteDudas, textoLimite } from "./horario";
+import { avisosCierre, avisosPasoNoVa, avisosPorDefecto, conAvisosDeDudas, inicioDe, invitados, pendienteDe, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
 import { TEXTO_PRUEBA, textoCambio, textoCancelacion, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
 
 // Envio de avisos al movil (D99.5): Web Push estandar con claves VAPID. Corre SOLO en el servidor con la clave de
@@ -141,17 +141,22 @@ async function cargarBase(sb: SupabaseClient) {
   return { eventos, pistas, jugadores, respuestas, ausencias, quitados: defecto.quitados };
 }
 
-/** Alertas de cambios despues del martes (D99.8) -> un aviso a cada gestor, con las horas de silencio. */
+/** Alertas de cambios despues del cierre (D99.8; D173: martes 12:00) -> un aviso a cada gestor, con las horas de silencio.
+ *  Con la convocatoria de ese domingo ya APROBADA no se manda este aviso generico: la baja de un convocado y el «voy» tardio
+ *  que importa salen con su propio aviso (lib/convocatoria/tarea.ts, con el recambio propuesto). */
 async function encolarAlertasGestores(sb: SupabaseClient, base: Awaited<ReturnType<typeof cargarBase>>, ahora: Date) {
   const alertas = await leer(sb.from("alertas_gestores").select("id, evento_id, person_id, antes, despues, en").eq("aviso_encolado", false), "alertas") as
     { id: string; evento_id: string; person_id: string; antes: RespuestaTexto; despues: RespuestaTexto; en: string }[];
   if (!alertas.length) return 0;
   const gestores = (await leer(sb.from("gestores").select("user_id").not("user_id", "is", null), "gestores")) as { user_id: string }[];
+  const fechas = [...new Set(alertas.map((a) => base.eventos.find((x) => x.id === a.evento_id)?.fecha).filter((f): f is string => !!f))];
+  const { fechasAprobadas } = await import("@/lib/convocatoria/tarea");
+  const aprobadas = await fechasAprobadas(sb, fechas);
   const filas: FilaAviso[] = [];
   for (const a of alertas) {
     const e = base.eventos.find((x) => x.id === a.evento_id);
     const j = base.jugadores.find((x) => x.person_id === a.person_id);
-    if (!e || !j) continue;
+    if (!e || !j || aprobadas.has(e.fecha)) continue;
     const t = textoGestores(j.nombre_visible, aPlan(e, base.pistas), a.antes, a.despues);
     const envio = horaDeEnvio(new Date(Math.max(new Date(a.en).getTime(), ahora.getTime() - 60_000)), inicioDe(e));
     for (const g of gestores) filas.push({ ...t, clave: `gestores:${a.id}:${g.user_id}`, tipo: "gestores", user_id: g.user_id, eventos: [e.id], url: `/gestion/eventos/${e.id}/respuestas`, programado_para: envio });
@@ -176,8 +181,9 @@ async function cerrarDudas(sb: SupabaseClient, ahora: Date) {
   return Array.isArray(data) ? data.length : 0;
 }
 
-/** La tarea de cada 15 minutos: cierra las dudas que llegan al limite, recordatorios que tocan (con el aviso de las dudas y el
- *  de «no va (por defecto)»), alertas a los gestores y envio de lo pendiente. */
+/** La tarea de cada 15 minutos: cierra las dudas que llegan al limite, recordatorios que tocan (con el aviso del dia del plazo
+ *  y el de «no va (por defecto)»), el aviso del cierre a quien no ha respondido (D173), la rutina C (propuesta automatica,
+ *  recordatorios a gestores, bajas tras aprobar; D173), alertas a los gestores y envio de lo pendiente. */
 export async function ejecutarTarea(ahora = new Date()) {
   const sb = clienteServicio();
   let encolados = 0;
@@ -192,9 +198,21 @@ export async function ejecutarTarea(ahora = new Date()) {
   // D152: «Te hemos puesto que no vas al entreno…», uno por entreno (aparte: no se junta con el de las dudas).
   encolados += await encolar(sb, avisosPorDefecto(datos));
   encolados += await encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas, jugadores: base.jugadores }, ahora));
+  // D173: al cierre del partido, a quien sigue sin responder (su respuesta no se toca).
+  encolados += await encolar(sb, avisosCierre(datos));
+  // D173: la rutina C. Un fallo aqui no frena los avisos a los jugadores: se envia lo pendiente y despues se da el error.
+  let fallo: Error | null = null;
+  let convocatoria: { propuestas: string[] } = { propuestas: [] };
+  try {
+    const { tareaConvocatoria } = await import("@/lib/convocatoria/tarea");
+    const r = await tareaConvocatoria(sb, ahora, base.eventos);
+    encolados += r.encolados;
+    convocatoria = { propuestas: r.propuestas };
+  } catch (e) { fallo = e as Error; }
   encolados += await encolarAlertasGestores(sb, base, ahora);
   const envio = await enviarPendientes(sb, ahora);
-  return { cerradas, encolados, ...envio };
+  if (fallo) throw new Error(`convocatoria: ${fallo.message}`);
+  return { cerradas, encolados, ...envio, propuestas: convocatoria.propuestas };
 }
 
 /** (b) y (c): al guardar un cambio de fecha, hora, pista o encuentro, o al cancelar, con «Guardar y avisar». Pasa por el
@@ -232,7 +250,9 @@ export async function recordatorioManual(eventoId: string) {
   const filas: FilaAviso[] = invitados(plan, base.jugadores)
     .filter((j) => pendienteDe(j, plan, base))
     .map((j) => {
-      const t = e.tipo === "entreno" ? { ...textoEntrenoHoy(plan), titulo: "Entreno: ¿vas?" } : e.tipo === "liga" ? textoMartes(e.fecha, [String(e.inicio ?? "").slice(0, 5)].filter(Boolean)) : textoOtro(plan, "24h");
+      const limite = limiteDudas(plan);
+      const t = e.tipo === "entreno" ? { ...textoEntrenoHoy(plan), titulo: "Entreno: ¿vas?" }
+        : e.tipo === "liga" ? textoMartes(e.fecha, [String(e.inicio ?? "").slice(0, 5)].filter(Boolean), ahora < limite ? textoLimite(limite, ahora) : undefined) : textoOtro(plan, "24h");
       return { ...t, clave: `rec:manual:${e.id}:${ahora.getTime()}:${j.person_id}`, tipo: "recordatorio" as const, person_id: j.person_id, eventos: [e.id], url: e.tipo === "liga" ? urlDomingo(e.fecha) : urlEvento(e), programado_para: envio };
     });
   await encolar(sb, filas);

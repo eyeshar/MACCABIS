@@ -6,7 +6,7 @@ import { exigirSesion } from "@/lib/sesion";
 import Responder from "@/components/respuestas/Responder";
 import SiVoy from "@/components/respuestas/SiVoy";
 import QuienVaJugador from "@/components/numeros/QuienVa";
-import { dudaAbierta, limiteDudas, madrid, textoLimite } from "@/lib/avisos/horario";
+import { dudaAbierta, limiteDudas, madrid, plazoSemanal, textoLimite } from "@/lib/avisos/horario";
 import { cargarMiEvento, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, misEntrenosPorDefecto } from "@/lib/respuestas/jugador";
 import {
   ausenciaQueCubre, enlaceLugar, enlaceMapa, fechaLarga, horario, lineaCambio, nombreCorto, pistaTexto, TEXTO_MOTIVO_TODO, TEXTO_TIPO, tituloDe,
@@ -80,6 +80,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
             <>
               <Responder eventoId={e.id} fecha={e.fecha} domingo={e.tipo === "liga"} actual={actual} nombre={nombreCorto(e)} grande sinDuda={!conDuda} motivo={r?.motivo === "no_confirmo" ? null : ((r?.motivo as MotivoJugador) ?? null)} detalle={r?.detalle ?? null} />
               <p className="suave pequeno" style={{ margin: 0 }}>Si no vas, te pedimos el motivo. Puedes cambiar tu respuesta cuando quieras.</p>
+              {!actual && plazoSemanal(e) && ahora < limiteDudas(e) && <p className="suave pequeno" style={{ margin: 0 }} data-testid="plazo-respuesta">Tienes hasta {textoLimite(limiteDudas(e), ahora)} para decir si vas{plazoSemanal(e) === "partido" ? "; si no, te quedas fuera de la convocatoria" : ""}.</p>}
               {conDuda && <p className="suave pequeno" style={{ margin: 0 }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(e), ahora)} para confirmar; si no, contarás como «no va».</p>}
               {r?.motivo === "no_confirmo" && <p className="suave pequeno" style={{ margin: 0 }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Si al final puedes, pon «Voy».</p>}
               {r?.origen === "gestor" && r.puesto_por_nombre && <p className="tenue pequeno" style={{ margin: 0 }}>Respuesta puesta por {r.puesto_por_nombre}.</p>}

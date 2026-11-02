@@ -149,7 +149,8 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   // Recordatorios automaticos de este evento (o del domingo): los que tocan segun el tipo y lo que ya salio.
   const plan = calendarioRecordatorios({ ...evento, sitio: sitioAviso(evento, pistas), sin_recordatorios: (evento as EventoFila & { sin_recordatorios?: boolean }).sin_recordatorios ?? false, creado_en: (evento as EventoFila & { creado_en?: string }).creado_en ?? new Date().toISOString() });
   const reg = (registro ?? []) as { clave: string; enviado_en: string | null; resultado: string | null }[];
-  const enviadosDe = (tipo: string) => reg.filter((x) => x.clave.startsWith(`rec:${tipo}:`) && x.enviado_en && x.resultado === "enviado");
+  // El aviso del dia del plazo (D173) lleva la clave del de las dudas (rec:dudas:…).
+  const enviadosDe = (tipo: string) => reg.filter((x) => x.clave.startsWith(`rec:${tipo === "plazo" ? "dudas" : tipo}:`) && x.enviado_en && x.resultado === "enviado");
   const manuales = reg.filter((x) => x.clave.startsWith("rec:manual:") && x.enviado_en);
   const sinRecordatorios = (evento as EventoFila & { sin_recordatorios?: boolean }).sin_recordatorios;
   const alertasL = (alertas ?? []) as { id: string; evento_id: string; person_id: string; antes: Respuesta; despues: Respuesta; en: string }[];
@@ -174,7 +175,7 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
       {alertasL.length > 0 && (
         <div className="ev-banda-roja" role="alert" data-testid="banda-roja">
           <div>
-            <b>Cambios después de la convocatoria (martes 20:00):</b>{" "}
+            <b>Cambios después del cierre (martes 12:00):</b>{" "}
             {alertasL.map((a, i) => <span key={a.id}>{i > 0 && " · "}<NombreJugador nombre={nombre.get(a.person_id) ?? a.person_id} personId={a.person_id} />{`: ${TEXTO_R[a.antes]} → ${TEXTO_R[a.despues]}${dia ? ` (${eventos.find((e) => e.id === a.evento_id)?.equipo})` : ""} · ${fechaHora(a.en)}`}</span>)}
           </div>
           <BotonVisto eventoId={evento.id} ids={alertasL.map((a) => a.id)} />

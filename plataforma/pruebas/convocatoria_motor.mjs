@@ -8,13 +8,15 @@
 // avisos de data/avisos.json vigentes ese domingo en el mensaje de WhatsApp y las dudas (D141): no se convocan ni cuentan
 // como disponibles, salen aparte como «posibles»; y «solo entreno: nunca a partidos» (D146, regla 1.7): no se propone nunca.
 // Y la marca «Reserva» (D158, regla 1.8): solo entra para cubrir mínimos o el número compensado; si no, «reserva disponible».
+// Y el recambio tras aprobar (D173, sugerirRecambio): reserva antes que doblar, nada de doblar a la misma hora, solo se dobla
+// para cubrir mínimos, y la lista completa de disponibles; las roturas de una aprobada tras un cambio de calendario.
 //
 //   npm run pruebas:convocatoria-motor
 
 import fs from 'node:fs';
 import { mensajeConvocatoria } from '../src/lib/convocatoria/mensajes.ts';
 import { vigentes } from '../src/lib/inicio/avisosFichero.ts';
-import { proponer, revisar, proponerDificultad, diferencias, recuentoDe, maximoPorEquipo, domingosFueraDe, LINEA_DE } from '../src/lib/convocatoria/motor.ts';
+import { proponer, revisar, proponerDificultad, diferencias, recuentoDe, maximoPorEquipo, domingosFueraDe, LINEA_DE, sugerirRecambio, roturas, faltasMinimo } from '../src/lib/convocatoria/motor.ts';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -569,6 +571,84 @@ console.log('\n== Reservas (D158, regla 1.8): solo entran para cubrir mínimos o
   const pm = [{ ...partidos[0], rival: 'Rival A', pista: 'Pista 1', hora: '09:00', fecha: '2026-11-15' }, { ...partidos[1], rival: 'Rival B', pista: 'Pista 2', hora: '12:45', fecha: '2026-11-15' }];
   const msg = mensajeConvocatoria('2026-11-15', 6, pm, r.convocatoria, nombre);
   ok(!/reserva/i.test(msg), 'el mensaje de WhatsApp no menciona la marca «Reserva»');
+}
+
+
+// ---------------------------------------------------------------- D173: recambio tras aprobar (sugerirRecambio) y roturas
+console.log('\n== Recambio tras aprobar (D173): sugerirRecambio sigue las reglas; lista a todos los disponibles');
+{
+  // Un solo partido (MdL) con 12 disponibles: la propuesta deja 2 fuera por el tope.
+  reset();
+  const js = plantilla([
+    ['base', 'A'], ['base', 'B'], ['escolta', 'A'], ['alero', 'B'], ['escolta', 'C'], ['alero', 'C'], ['escolta', 'E'],
+    ['pivot', 'A'], ['ala_pivot', 'B'], ['pivot', 'C'], ['ala_pivot', 'D'], ['pivot', 'E'],
+  ].map(([p, nv]) => [p, nv, { ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }]));
+  const entrada = { partidos: [P('MdL', '11:30')], jugadores: js };
+  const prop = proponer(entrada);
+  const fuera = prop.sinConvocar.map((s) => s.person_id);
+  ok(ids(prop.convocatoria, 'MdL').length === 10 && fuera.length === 2, 'un solo partido con 12 disponibles: 10 convocados y 2 fuera por el tope', `${ids(prop.convocatoria, 'MdL').length} / ${fuera.length}`);
+  const interiorDentro = ids(prop.convocatoria, 'MdL').find((id) => LINEA_DE[js.find((j) => j.person_id === id).privado.posicion] === 'interior');
+  const r = sugerirRecambio(entrada, prop.convocatoria, interiorDentro, 'MdL');
+  const linea = (id) => LINEA_DE[js.find((j) => j.person_id === id).privado.posicion];
+  ok(r.sugerido && fuera.includes(r.sugerido), 'sale un convocado: entra uno de los que se quedaron fuera', JSON.stringify(r));
+  ok(r.candidatos.map((c) => c.person_id).sort().join() === fuera.sort().join() && r.candidatos.every((c) => c.tipo === 'libre'), 'la lista trae a TODOS los disponibles sin convocar (para elegir otro)');
+  ok(!ids(r.sinEl, 'MdL').includes(interiorDentro) && ids(r.sinEl, 'MdL').length === 9, 'sinEl: la convocatoria sin quien sale');
+  if (fuera.some((id) => linea(id) === 'interior')) ok(linea(r.sugerido) === 'interior', 'si sale un interior y hay un interior libre, entra el de su línea', `${linea(r.sugerido)}`);
+}
+{
+  // Dos partidos a distinta hora. MdL justo en el mínimo de interiores; se va uno: un reserva antes que doblar (D158).
+  reset();
+  const ambos = { MdA: 'va', MdL: 'va' };
+  const js = plantilla([
+    ['base', 'A', { id: 'a-b1', ficha: { MdA: true, MdL: false }, resp: { MdA: 'va' } }], ['base', 'B', { id: 'a-b2', ficha: { MdA: true, MdL: false }, resp: { MdA: 'va' } }],
+    ['escolta', 'A', { id: 'a-e1', ficha: { MdA: true, MdL: false }, resp: { MdA: 'va' } }], ['alero', 'B', { id: 'a-e2', ficha: { MdA: true, MdL: false }, resp: { MdA: 'va' } }], ['alero', 'C', { id: 'a-e3', ficha: { MdA: true, MdL: false }, resp: { MdA: 'va' } }],
+    ['pivot', 'A', { id: 'a-i1', resp: ambos, dobla: true, dobl: 0 }], ['ala_pivot', 'B', { id: 'a-i2', resp: ambos, dobla: false }], ['pivot', 'C', { id: 'a-i3', ficha: { MdA: true, MdL: false }, resp: { MdA: 'va' } }],
+    ['base', 'B', { id: 'l-b1', ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }], ['base', 'C', { id: 'l-b2', ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }],
+    ['escolta', 'B', { id: 'l-e1', ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }], ['alero', 'C', { id: 'l-e2', ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }], ['escolta', 'D', { id: 'l-e3', ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }],
+    ['pivot', 'C', { id: 'l-i1', ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }], ['ala_pivot', 'D', { id: 'l-i2', ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }], ['pivot', 'D', { id: 'l-i3', ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }],
+    ['pivot', 'C', { id: 'l-res', esReserva: true, ficha: { MdA: false, MdL: true }, resp: { MdL: 'va' } }],
+  ]);
+  const conv = {
+    MdA: ['a-b1', 'a-b2', 'a-e1', 'a-e2', 'a-e3', 'a-i1', 'a-i2', 'a-i3'].map((person_id) => ({ person_id })),
+    MdL: ['l-b1', 'l-b2', 'l-e1', 'l-e2', 'l-e3', 'l-i1', 'l-i2', 'l-i3'].map((person_id) => ({ person_id })),
+  };
+  const entrada = { partidos: [P('MdA', '10:15', 'alta'), P('MdL', '12:45', 'media')], jugadores: js };
+  let r = sugerirRecambio(entrada, conv, 'l-i1', 'MdL');
+  ok(r.bajoMinimo && r.sugerido === 'l-res' && /antes que doblar/.test(r.porque), 'el MdL se queda con 2 interiores: entra el RESERVA (antes que doblar, D158)', JSON.stringify({ s: r.sugerido, p: r.porque }));
+  ok(r.candidatos.map((c) => c.tipo).join() === 'reserva,dobla,dobla' && r.candidatos.filter((c) => c.tipo === 'dobla').every((c) => c.valido), 'la lista: el reserva y los dos del MdA que podrían doblar (todos elegibles)', JSON.stringify(r.candidatos));
+  const sinReserva = { ...entrada, jugadores: js.filter((j) => j.person_id !== 'l-res') };
+  r = sugerirRecambio(sinReserva, conv, 'l-i1', 'MdL');
+  ok(r.sugerido === 'a-i1' && /Dobla para tener 3 interiores/.test(r.porque), 'sin reserva: dobla un interior del MdA, primero el «Dobla»', JSON.stringify({ s: r.sugerido, p: r.porque }));
+  r = sugerirRecambio({ ...sinReserva, partidos: [P('MdA', '12:45', 'alta'), P('MdL', '12:45', 'media')] }, conv, 'l-i1', 'MdL');
+  ok(r.sugerido === null && r.candidatos.every((c) => c.tipo === 'dobla' && !c.valido) && /misma hora/.test(r.porque), 'a la misma hora nadie dobla: sin recambio, y los del otro equipo salen como no elegibles', JSON.stringify(r));
+  r = sugerirRecambio(entrada, conv, 'l-e1', 'MdL');
+  ok(r.bajoMinimo && r.sugerido === null && /Nadie cumple/.test(r.porque) && r.candidatos.some((c) => c.tipo === 'reserva'), 'sale un exterior (quedan 2): el reserva es interior y no cubre esa línea, y por exteriores no se dobla: ninguno (decide el gestor)', JSON.stringify({ s: r.sugerido, p: r.porque, b: r.bajoMinimo }));
+  const conv9 = { ...conv, MdL: [...conv.MdL, { person_id: 'l-res' }] };
+  r = sugerirRecambio(sinReserva, { ...conv9, MdL: conv9.MdL.filter((x) => x.person_id !== 'l-res') }, 'l-b1', 'MdL');
+  ok(r.bajoMinimo && r.sugerido === null, 'sale un base (queda 1): nadie dobla por bases (D115)', JSON.stringify(r));
+  r = sugerirRecambio(entrada, conv9, 'l-i1', 'MdL');
+  ok(!r.bajoMinimo && r.sugerido === null && /sigue en el mínimo/.test(r.porque), 'con 9 y 4 interiores, sale un interior y sigue en los mínimos: nadie dobla', JSON.stringify({ s: r.sugerido, p: r.porque }));
+  const conSancion = { ...entrada, jugadores: js.map((j) => (j.person_id === 'l-res' ? { ...j, sancionado: true } : j)) };
+  ok(!sugerirRecambio(conSancion, conv, 'l-i1', 'MdL').candidatos.some((c) => c.person_id === 'l-res'), 'un sancionado no sale en la lista');
+  const conNo = { ...entrada, jugadores: js.map((j) => (j.person_id === 'l-res' ? { ...j, respuesta: { MdL: 'no' } } : j)) };
+  ok(!sugerirRecambio(conNo, conv, 'l-i1', 'MdL').candidatos.some((c) => c.person_id === 'l-res'), 'quien dijo «no voy» tampoco');
+  // Roturas por un cambio de calendario.
+  const doble = { ...conv, MdL: [...conv.MdL, { person_id: 'a-i1' }] };
+  ok(!roturas(entrada, doble).rota, 'aprobada con un doblaje a distinta hora: nada roto');
+  const misma = roturas({ ...entrada, partidos: [P('MdA', '12:45', 'alta'), P('MdL', '12:45', 'media')] }, doble);
+  ok(misma.rota && misma.errores.some((a) => a.regla === '1.4' && a.person_id === 'a-i1'), 'el calendario pone los dos a la misma hora: se rompe la regla 1.4 con quien dobla');
+  const sinMdA = roturas({ ...entrada, partidos: [P('MdL', '12:45', 'media')] }, conv);
+  ok(sinMdA.rota && sinMdA.errores.some((a) => a.regla === '1.5' && a.equipo === 'MdA'), 'se cancela el partido del MdA: el MdA tiene convocados y no juega (1.5)');
+  ok(faltasMinimo(recuentoDe(conv.MdL.slice(0, 6), new Map(js.map((j) => [j.person_id, j])))).total, 'faltasMinimo: con 6, por debajo de 7');
+}
+{
+  console.log('\n== D173: domingos con un solo partido, con un equipo que descansa o con los dos a la misma hora (los cubre el motor)');
+  const jugs = dieciocho();
+  const solo = proponer({ partidos: [P('MdL', '11:30')], jugadores: jugs });
+  ok(ids(solo.convocatoria, 'MdL').length === 10 && !solo.convocatoria.MdA && solo.sinConvocar.length === 8, 'un solo partido (el MdA descansa): una sola convocatoria, hasta 10, y el resto «sin convocar»');
+  const mismaH = proponer({ partidos: [P('MdA', '12:45'), P('MdL', '12:45')], jugadores: dieciocho() });
+  const a = ids(mismaH.convocatoria, 'MdA'), l = ids(mismaH.convocatoria, 'MdL');
+  ok(!a.some((x) => l.includes(x)) && a.length + l.length === 18, 'los dos a la misma hora: nadie dobla y se reparten los 18');
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

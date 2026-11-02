@@ -13,7 +13,7 @@
 //     gana su respuesta. Panel y tablero, con los mismos datos, dan las mismas cifras con ausencias, con «no suele
 //     entrenar» y con «solo con ficha».
 //   - Panel a 375 px: «Partidos del domingo» en tarjetas, sin desbordar; en escritorio, la tabla.
-//   - El jugador marcado, en su zona (375 px): nada de las marcas.
+//   - El jugador marcado, en su zona (375 px): ve su «no vas (por defecto)» (D152) y nunca la marca (D146).
 //
 //   npm run pruebas:disponibilidad-pantallas
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos } from './comun_e2e.mjs';
@@ -220,12 +220,20 @@ try {
   await pg.goto(`${APP}/gestion`);
   ok((await pg.locator('.gs-partidos tr.eq-partido').first().evaluate((el) => getComputedStyle(el).display)) === 'table-row', 'en escritorio, la tabla de siempre');
 
-  console.log('\n== El jugador marcado, en su zona (375 px): nada de las marcas');
+  console.log('\n== El jugador marcado, en su zona (375 px): ve su «no vas (por defecto)», nunca la marca');
+  // Desde D150 Luz llegaba aquí con una ausencia (lesión, sin fecha de vuelta): su entreno salía como «no va» por la ausencia
+  // y este bloque ya no comprobaba nada de la marca (lo dejó vacío el bloque D172). Se le quita la ausencia y la respuesta
+  // para que el entreno vuelva a ser «no va (por defecto)», y se comprueba que lo ve (D152) sin que salga la marca (D146).
+  await sql`update public.ausencias_periodo set borrada_en = now() where person_id = 'sint-luz' and borrada_en is null`;
+  await sql`delete from public.respuestas where evento_id = ${ent.id} and person_id = 'sint-luz'`;
+  await sql`delete from public.entreno_defecto_quitado where evento_id = ${ent.id} and person_id = 'sint-luz'`;
   const pj = await e.sesion('luz@pruebas.local', 375);
-  for (const ruta of ['/', `/mi-zona/evento/${ent.id}`, '/mi-zona']) {
+  await pj.goto(`${APP}/mi-zona/evento/${ent.id}`);
+  ok(await visto(pj.getByTestId('por-defecto')) && /Te hemos puesto que no vas/.test(await pj.getByTestId('por-defecto').innerText()), 'Luz («no suele entrenar», sin responder ni ausencia) ve en su entreno «Te hemos puesto que no vas» (D152): el estado por defecto está activo');
+  for (const ruta of ['/', `/mi-zona/evento/${ent.id}`, '/mi-zona', '/agenda']) {
     await pj.goto(`${APP}${ruta}`);
     const html = await pj.content();
-    ok(!/por defecto|suele entrenar|nunca a partidos|nunca_partidos|no_suele/i.test(html), `${ruta}: ni en la página ni en el HTML`);
+    ok(!/suele entrenar|nunca a partidos|nunca_partidos|no_suele|solo entreno: nunca/i.test(html), `${ruta}: la marca («no suele entrenar», «nunca a partidos») ni en la página ni en el HTML`);
     ok(!/Ausente del/.test(html), `${ruta}: tampoco la nota de una ausencia (solo gestores)`);
     ok(await sinDesbordar(pj), `${ruta}: sin desbordar a 375 px`);
   }

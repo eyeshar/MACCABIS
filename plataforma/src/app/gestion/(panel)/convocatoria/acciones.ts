@@ -5,8 +5,10 @@ import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { entradaDe } from "@/lib/convocatoria/vista";
 import { enviarAvisoConvocatoria } from "@/lib/convocatoria/salidas";
-import { sinAvisosTexto } from "@/lib/convocatoria/mensajes";
-import { EQUIPOS, NIVELES, POSICIONES, proponer, vacia, type Convocatoria, type Dificultad, type Equipo } from "@/lib/convocatoria/motor";
+import { reenviarFallidos } from "@/lib/convocatoria/avisos";
+import { mensajeConvocatoria, textoAvisados } from "@/lib/convocatoria/mensajes";
+import { avisosDelFichero } from "@/lib/inicio/avisos";
+import { diferencias, EQUIPOS, NIVELES, POSICIONES, proponer, sugerirRecambio, vacia, type Convocatoria, type Dificultad, type Equipo } from "@/lib/convocatoria/motor";
 
 // Acciones de la convocatoria (D107). Todo con la sesion del gestor: la base (is_gestor) decide. Las convocatorias se
 // escriben SOLO con las funciones de la base (convocatoria_guardar / _aprobar / _marcar), que apuntan cada cambio.
@@ -107,37 +109,87 @@ export async function cambiarDificultad(fecha: string, equipo: Equipo, valor: Di
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
-/** «Aprobar convocatoria»: aprobada y sus salidas (WhatsApp y aviso) pendientes. El aviso de la web sale con «Enviar ahora» (D127). */
-export async function aprobar(fecha: string): Promise<R> {
+/** El resultado de un envío, en llano: «Avisados 14 de 16 (los otros 2 no tienen avisos). Sale a las 08:00…». */
+function textoEnvio(r: NonNullable<Awaited<ReturnType<typeof enviarAvisoConvocatoria>>>) {
+  if (r.estado !== "enviado") return "El envío de avisos no está configurado en este servidor.";
+  const n = r.destinatarios.length;
+  if (!n) return "No había nadie a quien avisar: la convocatoria no ha cambiado desde el último aviso.";
+  const cuando = r.programado ? ` Sale a las ${r.programado.toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })} (horas de silencio).` : "";
+  return `${textoAvisados(r.conAvisos.length, n)}.${cuando}`;
+}
+
+/** «Aprobar y avisar» (D173): aprueba y ENVÍA ya el aviso a cada jugador según su caso (convocado, convocado con un equipo
+ *  pudiendo ir a los dos, o «esta vez no entras»). Ya no hay «Enviar ahora» aparte (D127). Un fallo al enviar nunca deshace
+ *  la aprobación: la salida dice qué pasó y deja «Reenviar». */
+export async function aprobarYAvisar(fecha: string): Promise<R> {
   try {
     const { supabase } = await contexto(fecha);
     const { error: e } = await supabase.rpc("convocatoria_aprobar", { p_fecha: fecha });
     if (e) return { ok: false, error: error(e.message) };
+    const r = await enviarAvisoConvocatoria(supabase, fecha).catch((x: Error) => ({ fallo: x.message }));
     refrescar();
-    return { ok: true };
+    if (r && "fallo" in r) return { ok: true, texto: `Aprobada, pero el aviso no salió: ${r.fallo}` };
+    return { ok: true, texto: r ? `Aprobada. ${textoEnvio(r)}` : "Aprobada." };
   } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
-/** WhatsApp copiado al grupo. */
-export async function marcar(fecha: string, que: "whatsapp"): Promise<R> {
-  const { supabase } = await exigirGestor();
-  const { error: e } = await supabase.rpc("convocatoria_marcar", { p_fecha: fecha, p_que: que });
-  if (e) return { ok: false, error: error(e.message) };
-  refrescar();
-  return { ok: true };
-}
-
-/** «Enviar ahora» el aviso «Estás convocado» (D127). */
+/** Ya aprobada y cambiada después (D173): avisa a quien entra, cambia de equipo o sale («Avisar del cambio»). */
 export async function avisarAhora(fecha: string): Promise<R> {
   const { supabase } = await exigirGestor();
   const r = await enviarAvisoConvocatoria(supabase, fecha);
   refrescar();
   if (!r) return { ok: false, error: ERRORES.sin_aprobar };
-  if (r.estado !== "enviado") return { ok: false, error: "El envío de avisos no está configurado en este servidor." };
-  const n = r.destinatarios.length, m = r.conAvisos.length;
-  if (!n) return { ok: true, texto: "No había nadie a quien avisar: la convocatoria no ha cambiado desde el último aviso." };
-  const cuando = r.programado ? ` Sale a las ${r.programado.toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })} (horas de silencio).` : "";
-  return { ok: true, texto: `${r.cambio ? "Cambio en la convocatoria" : "Estás convocado"}: enviado a ${m} de ${n}${n - m ? ` (${sinAvisosTexto(n - m)})` : ""}.${cuando}` };
+  if (r.estado !== "enviado") return { ok: false, error: textoEnvio(r) };
+  return { ok: true, texto: textoEnvio(r) };
+}
+
+/** «Reenviar» (D173): solo los avisos de esta convocatoria que fallaron. */
+export async function reenviar(fecha: string): Promise<R> {
+  const { supabase } = await exigirGestor();
+  const { data } = await supabase.from("convocatorias").select("equipos, aviso_base, estado").eq("fecha", fecha).maybeSingle();
+  if (!data || data.estado !== "aprobada") return { ok: false, error: ERRORES.sin_aprobar };
+  const r = await reenviarFallidos(fecha, (data.aviso_base ?? data.equipos) as Convocatoria);
+  refrescar();
+  return { ok: true, texto: r.reenviados ? `Reenviados ${r.reenviados}.` : "No había avisos fallidos." };
+}
+
+/** Al copiar el WhatsApp (D173: sin «Ya lo he pegado» ni estados): se apunta lo copiado, para que el siguiente mensaje empiece
+ *  por lo que ha cambiado desde entonces. */
+export async function copiado(fecha: string): Promise<R> {
+  const { supabase } = await exigirGestor();
+  const { error: e } = await supabase.rpc("convocatoria_marcar", { p_fecha: fecha, p_que: "whatsapp" });
+  if (e) return { ok: false, error: error(e.message) };
+  refrescar();
+  return { ok: true };
+}
+
+/** Hoja de recambio (D173): sale `sale` del `equipo` y entra `entra` (o nadie). Se guarda con su motivo, se avisa a quien
+ *  entra y a quien sale (respecto a lo ya avisado) y se devuelve el WhatsApp del cambio para copiar. */
+export async function aplicarRecambio(fecha: string, sale: string, equipo: Equipo, entra: string | null): Promise<R & { whatsapp?: string }> {
+  if (!EQUIPOS.includes(equipo)) return { ok: false, error: "Equipo no válido." };
+  try {
+    const { supabase, ctx } = await contexto(fecha);
+    const c = ctx.convocatoria;
+    if (!c || c.estado !== "aprobada") return { ok: false, error: ERRORES.sin_aprobar };
+    if (!(c.equipos[equipo] ?? []).some((x) => x.person_id === sale)) return { ok: false, error: "Ese jugador ya no está en ese equipo (alguien lo ha cambiado antes): vuelve a la convocatoria." };
+    const r = sugerirRecambio(entradaDe(ctx), c.equipos, sale, equipo);
+    const cand = entra ? r.candidatos.find((x) => x.person_id === entra) : null;
+    if (entra && (!cand || !cand.valido)) return { ok: false, error: "Ese recambio no puede entrar (misma hora, sin ficha o ya convocado)." };
+    const nombre = (id: string) => ctx.jugadores.find((j) => j.person_id === id)?.nombre ?? id;
+    const final: Convocatoria = { ...r.sinEl, [equipo]: [...(r.sinEl[equipo] ?? []), ...(entra ? [{ person_id: entra }] : [])] };
+    const nota = `recambio: sale ${nombre(sale)}${entra ? `, entra ${nombre(entra)}` : ", sin recambio"}`;
+    const g1 = await supabase.rpc("convocatoria_guardar", { p_fecha: fecha, p_jornada: ctx.jornada, p_equipos: r.sinEl, p_dificultad: null, p_accion: "quitar", p_person: sale, p_equipo: equipo, p_motivo: "otro", p_nota: nota, p_detalle: { origen: "recambio" } });
+    if (g1.error) return { ok: false, error: error(g1.error.message) };
+    if (entra) {
+      const g2 = await supabase.rpc("convocatoria_guardar", { p_fecha: fecha, p_jornada: ctx.jornada, p_equipos: final, p_dificultad: null, p_accion: cand?.tipo === "dobla" ? "doblar" : "anadir", p_person: entra, p_equipo: equipo, p_motivo: "otro", p_nota: nota, p_detalle: { origen: "recambio" } });
+      if (g2.error) return { ok: false, error: error(g2.error.message) };
+    }
+    const env = await enviarAvisoConvocatoria(supabase, fecha);
+    const cambios = diferencias(c.aviso_base ?? c.equipos, final, nombre);
+    const whatsapp = mensajeConvocatoria(fecha, ctx.jornada, ctx.partidos, final, nombre, cambios, avisosDelFichero(fecha, ctx.partidos.map((p) => p.equipo)));
+    refrescar();
+    return { ok: true, texto: `Guardado: ${nota}. ${env ? textoEnvio(env) : ""}`.trim(), whatsapp };
+  } catch (e) { return { ok: false, error: (e as Error).message }; }
 }
 
 /** Modo rapido (D125): mover a uno o a varios (arrastrar o «Mover a…»), sin preguntar, con el motivo «ajuste manual».

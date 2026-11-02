@@ -120,7 +120,7 @@ export type Recuento = {
 };
 export type SinConvocar = { person_id: string; motivo: string; regla: CodigoRegla };
 /** D141: quien tiene «duda» a un partido que juega. NO se convoca ni cuenta como disponible: sale aparte como «posible»
- *  hasta la hora limite de las dudas (martes 20:00), cuando pasa a «no va» si no ha confirmado. */
+ *  hasta la hora limite de las dudas (martes 12:00, D173), cuando pasa a «no va» si no ha confirmado. */
 export type Posible = { person_id: string; equipos: Equipo[] };
 export type Revision = {
   maximo: number;
@@ -560,6 +560,111 @@ export function proponer(entrada: Entrada): Propuesta {
   const orden: Record<Gravedad, number> = { error: 0, aviso: 1, info: 2 };
   avisos.sort((x, y) => orden[x.gravedad] - orden[y.gravedad]);
   return { ...rev, avisos, convocatoria };
+}
+
+// ---------------------------------------------------------------- recambio tras aprobar (D173)
+/** Los minimos de un equipo (D108, D115, D158): 7 en total, 2 bases contando los de reserva, 3 exteriores y 3 interiores.
+ *  Devuelve lo que falta, en palabras de gestor («faltan interiores»); vacio si esta en el minimo o por encima. */
+export function faltasMinimo(r: Recuento) {
+  const faltan: Linea[] = [];
+  if (r.bases.puros + r.bases.reserva < LIMITES.minimoLinea.base) faltan.push("base");
+  if (r.exteriores.n < LIMITES.minimoLinea.exterior) faltan.push("exterior");
+  if (r.interiores.n < LIMITES.minimoLinea.interior) faltan.push("interior");
+  return { total: r.total < LIMITES.minimo, lineas: faltan, alguno: r.total < LIMITES.minimo || faltan.length > 0 };
+}
+
+export type Candidato = {
+  person_id: string;
+  /** libre: disponible y sin convocar; reserva: marca D158; dobla: ya va con el otro equipo. */
+  tipo: "libre" | "reserva" | "dobla";
+  /** false = no puede entrar (misma hora, fijo del otro equipo); sale en la lista, sin poder elegirse. */
+  valido: boolean;
+  nota: string;
+};
+export type Recambio = {
+  /** El recambio que propone el motor, o null («ninguno»). */
+  sugerido: string | null;
+  porque: string;
+  /** TODOS los disponibles para ese equipo, por orden de preferencia, para elegir otro. */
+  candidatos: Candidato[];
+  /** La convocatoria sin quien sale (sobre ella se aplica el recambio elegido). */
+  sinEl: Convocatoria;
+  /** El equipo, sin quien sale, queda por debajo de un minimo. */
+  bajoMinimo: boolean;
+};
+
+/** Recambio de un convocado que sale de `equipo` (dice «no voy», un gestor lo cambia o un cambio de calendario lo deja
+ *  fuera). PURA. Sigue las reglas de la propuesta: (1) un disponible sin convocar (por prioridad, primero quien cubre la
+ *  linea que se queda por debajo del minimo y despues la de quien sale; los «solo entreno» al final y, con 20 o mas
+ *  disponibles, ni ellos ni los reservas); (2) si el equipo queda por debajo de un minimo (o descompensado con rivales
+ *  parejos), un RESERVA antes que doblar (D158); (3) solo para cubrir un minimo (7 o 3 interiores, D108/D115), alguien
+ *  que DOBLA: nunca a la misma hora (1.4), primero los «Dobla» y quien menos ha doblado. Si nada cumple, ninguno. */
+export function sugerirRecambio(entrada: Entrada, convocatoria: Convocatoria, sale: string, equipo: Equipo): Recambio {
+  const jugadores = new Map(entrada.jugadores.map((j) => [j.person_id, j]));
+  const partidos = ordenPartidos(entrada.partidos);
+  const mismaHora = esMismaHora(partidos);
+  const disponibles = contarDisponibles(entrada);
+  const muchos = disponibles >= LIMITES.umbralAmpliar;
+  const sinEl: Convocatoria = { ...convocatoria, [equipo]: (convocatoria[equipo] ?? []).filter((c) => c.person_id !== sale) };
+  const dentro = new Set((sinEl[equipo] ?? []).map((c) => c.person_id));
+  const delOtro = new Set((sinEl[otro(equipo)] ?? []).map((c) => c.person_id));
+  const r = recuentoDe(sinEl[equipo] ?? [], jugadores);
+  const f = faltasMinimo(r);
+  const parejos = partidos.length === 2 && partidos[0].dificultad === partidos[1].dificultad;
+  const descompensado = parejos && (sinEl[otro(equipo)] ?? []).length - (sinEl[equipo] ?? []).length > 1;
+  const lineaSale = jugadores.get(sale) ? lineaDe(jugadores.get(sale)!) : null;
+  const cubre = (j: JugadorEntrada) => f.lineas.includes(lineaDe(j)) || (f.lineas.includes("base") && lineaDe(j) === "exterior" && datos(j).base_reserva);
+  const preferencia = (a: JugadorEntrada, b: JugadorEntrada) => Number(cubre(b)) - Number(cubre(a))
+    || Number(lineaDe(b) === lineaSale) - Number(lineaDe(a) === lineaSale) || compararPrioridad(a, b);
+
+  const posibles = entrada.jugadores.filter((j) => j.person_id !== sale && !dentro.has(j.person_id) && disponibleEn(j, equipo) && j.ficha[equipo] && !j.sancionado && !nuncaPartidos(j));
+  const candidatos: (Candidato & { j: JugadorEntrada })[] = posibles.map((j) => {
+    const fijoOtro = datos(j).regla?.tipo === "fijo" && (datos(j).regla as { equipo: Equipo }).equipo !== equipo;
+    if (delOtro.has(j.person_id)) {
+      const valido = !mismaHora && !fijoOtro;
+      return { j, person_id: j.person_id, tipo: "dobla", valido, nota: mismaHora ? "Juega con el otro equipo a la misma hora: no puede doblar" : fijoOtro ? `Fijo del ${otro(equipo)}` : `Doblaría${datos(j).dobla ? "" : " (es «No dobla»)"}` };
+    }
+    if (esReserva(j)) return { j, person_id: j.person_id, tipo: "reserva", valido: !fijoOtro, nota: muchos ? "Reserva (20 o más disponibles)" : "Reserva disponible" };
+    return { j, person_id: j.person_id, tipo: "libre", valido: !fijoOtro, nota: fijoOtro ? `Fijo del ${otro(equipo)}` : j.solo_entreno ? "Solo entreno: entra para cubrir un hueco" : "Disponible sin convocar" };
+  });
+  const orden: Record<Candidato["tipo"], number> = { libre: 0, reserva: 1, dobla: 2 };
+  candidatos.sort((a, b) => orden[a.tipo] - orden[b.tipo] || preferencia(a.j, b.j));
+
+  const linea = (j: JugadorEntrada) => (cubre(j) ? `cubre ${TEXTO_LINEA[lineaDe(j)]}` : lineaDe(j) === lineaSale ? `misma línea (${TEXTO_LINEA[lineaDe(j)]})` : "por prioridad");
+  const para = f.total ? `llegar a ${LIMITES.minimo}` : f.lineas.length ? `tener ${f.lineas.map((l) => `${LIMITES.minimoLinea[l]} ${TEXTO_LINEA[l]}`).join(" y ")}` : "compensar el número de convocados";
+  const elegir = (): { j: JugadorEntrada; porque: string } | null => {
+    const libre = candidatos.find((c) => c.tipo === "libre" && c.valido && !(c.j.solo_entreno && muchos));
+    if (libre) return { j: libre.j, porque: `Disponible sin convocar: ${linea(libre.j)}.` };
+    if ((f.alguno || descompensado) && !muchos) {
+      // Como en la propuesta (regla 1.8): para un hueco de línea, un reserva de esa línea; para llegar a 7 o compensar, cualquiera.
+      const res = candidatos.find((c) => c.tipo === "reserva" && c.valido && (f.total || descompensado || cubre(c.j)));
+      if (res) return { j: res.j, porque: `Reserva: entra para ${para} (antes que doblar).` };
+    }
+    const cubreDoblando = f.total || f.lineas.includes("interior");
+    if (cubreDoblando && !mismaHora) {
+      const dob = candidatos.filter((c) => c.tipo === "dobla" && c.valido && (f.total || lineaDe(c.j) === "interior"))
+        .sort((a, b) => Number(datos(b.j).dobla) - Number(datos(a.j).dobla) || a.j.doblajes - b.j.doblajes || preferencia(a.j, b.j))[0];
+      if (dob) return { j: dob.j, porque: `Dobla para ${f.total ? `llegar a ${LIMITES.minimo}` : `tener ${LIMITES.minimoLinea.interior} interiores`}${datos(dob.j).dobla ? "" : " (es «No dobla»: no hay ningún «Dobla» que lo cubra)"}.` };
+    }
+    return null;
+  };
+  const e = elegir();
+  const sinRecambio = !candidatos.length ? `Nadie más disponible para el ${equipo}.`
+    : f.alguno ? `Nadie cumple las reglas para cubrirlo${mismaHora ? " (misma hora: nadie dobla)" : ""}.`
+    : `El ${equipo} sigue en el mínimo sin él: solo se dobla o entra un reserva para cubrir mínimos.`;
+  return {
+    sugerido: e?.j.person_id ?? null, porque: e?.porque ?? sinRecambio, bajoMinimo: f.alguno, sinEl,
+    candidatos: candidatos.map(({ j: _j, ...c }) => c),
+  };
+}
+
+/** Lo que rompe una convocatoria ya aprobada tras un cambio de calendario (D173): los avisos en rojo de `revisar` que puede
+ *  causar el calendario (1.4: alguien dobla y ahora los dos partidos son a la misma hora; 1.5: un equipo con convocados que
+ *  ya no juega ese domingo, porque el partido se cancela o cambia de dia). Lo demas ya estaba al aprobar y lo decidio un gestor. */
+export function roturas(entrada: Entrada, convocatoria: Convocatoria) {
+  const rev = revisar(entrada, convocatoria);
+  const errores = rev.avisos.filter((a) => a.gravedad === "error" && (a.regla === "1.4" || a.regla === "1.5"));
+  return { rev, errores, rota: errores.length > 0 };
 }
 
 // ---------------------------------------------------------------- dificultad del rival (la propone la web, la corrige Ivan)

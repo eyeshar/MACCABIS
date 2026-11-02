@@ -9,11 +9,12 @@ import {
 } from "@/lib/convocatoria/motor";
 import { entradaDe, moverRapido, validarDestino, type Contexto, type JugadorVista, type PartidoVista, type Zona } from "@/lib/convocatoria/vista";
 import { proyeccionDe, textoBajoMinimo, textoCorreccion, textoFactor, textoProyeccion, textoRival, type Proyeccion } from "@/lib/convocatoria/proyeccion";
-import { cruce, diaTexto } from "@/lib/convocatoria/mensajes";
+import { cruce, diaTexto, firmaConvocatoria } from "@/lib/convocatoria/mensajes";
 import { enMadrid } from "@/lib/avisos/horario";
 import { diaCorto } from "@/lib/eventos/dominio";
 import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
-import { ajusteRapido, aprobar, cambiarDificultad, deshacerRapido, empezar, guardarCambio, type Accion, type Motivo } from "./acciones";
+import { ajusteRapido, aprobarYAvisar, avisarAhora, cambiarDificultad, deshacerRapido, empezar, guardarCambio, type Accion, type Motivo } from "./acciones";
+import Revision from "./Revision";
 
 // Convocatoria del domingo (D107): cabecera con contadores, una tarjeta por equipo que juega, disponibles sin convocar y
 // las hojas «Cambiar a mano» y «Añadir jugador». El recuento y los avisos se recalculan al momento con el motor
@@ -26,7 +27,7 @@ const MOTIVOS: { id: Motivo; texto: string }[] = [
 const TEXTO_RESP = { va: "Va", duda: "Duda", no: "No va", sin_responder: "Sin responder" } as const;
 const TEXTO_MOTIVO_NO: Record<string, string> = { lesion: "lesión", trabajo: "trabajo", viaje: "viaje", familia: "familia", otro: "otro", horario: "solo puede al otro" };
 const otro = (e: Equipo): Equipo => (e === "MdA" ? "MdL" : "MdA");
-/** "martes 27/10 a las 20:00" */
+/** "martes 10/11 a las 12:00" */
 const textoLimiteGestor = (iso: string) => { const l = enMadrid(new Date(iso)); return `${diaCorto(l.fecha)} a las ${l.hora}`; };
 const ids = (c: Conv, e: Equipo) => new Set((c[e] ?? []).map((x) => x.person_id));
 
@@ -133,6 +134,8 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
   });
 
   const generales = rev.avisos.filter((a) => !a.equipo);
+  // D173: aprobada y cambiada después del último aviso (o aún sin avisar): «Avisar del cambio».
+  const cambiadaTrasAviso = fila?.estado === "aprobada" && (fila.aviso_estado !== "enviado" || !fila.aviso_base || firmaConvocatoria(fila.aviso_base) !== firmaConvocatoria(fila.equipos));
   // Contadores de la cabecera (D139): quien va a alguno, quien no ha respondido (o duda) y quien no va a ninguno, con su motivo (solo gestores).
   const gruposCabecera = useMemo(() => gruposDomingo(ctx.jugadores, enlaces, ctx.contadores.dudan), [ctx.jugadores, enlaces, ctx.contadores.dudan]);
   const juegan = ctx.partidos.map((p) => p.equipo);
@@ -246,6 +249,13 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
         </div>
       )}
 
+      <Revision ctx={ctx} conv={conv} recuento={rev.recuento} avisosDe={avisosDe} proyecciones={proyecciones} sinConvocar={sinConvocar} nombre={nombre} enlaces={enlaces}
+        empezada={empezada} bloqueado={bloqueado} cambiadaTrasAviso={cambiadaTrasAviso}
+        onAprobar={() => correr(async () => { if (!empezada) { const r = await empezar(ctx.fecha, "propuesta"); if (!r.ok) return r; } return aprobarYAvisar(ctx.fecha); }, { ir: `/gestion/convocatoria/salida?fecha=${ctx.fecha}` })}
+        onAvisarCambio={() => correr(() => avisarAhora(ctx.fecha))}
+        onRehacer={() => { if (window.confirm("¿Rehacer la propuesta con las respuestas de ahora? Se pierden los cambios a mano (quedan en el historial).")) correr(() => empezar(ctx.fecha, "recalcular")); }}
+        onDificultad={(e, v) => correr(() => cambiarDificultad(ctx.fecha, e, v))} />
+
       <section className="gs-bloque cv-cab" aria-label="Respuestas del domingo">
         <Numeros prueba="cv-contadores" etiqueta="Respuestas del domingo" contenedor="gs-cifras cv-contadores num-cajas" grupos={gruposCabecera} />
         {ctx.proyeccion.calibracion && <p className="pequeno suave" style={{ margin: 0 }} data-testid="cv-acierto" title={ctx.proyeccion.calibracion.puntos.map((x) => `J${x.jornada} ${x.equipo}: ${x.proyeccion} (real ${x.real})`).join(" · ")}>{ctx.proyeccion.calibracion.texto}.</p>}
@@ -324,24 +334,6 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
         </section>
       )}
 
-      {empezada && (
-        <section className="gs-bloque cv-aprobar" aria-label="Aprobar">
-          {fila!.estado === "aprobada" ? (
-            <>
-              <p style={{ margin: 0 }}>Aprobada{fila!.aprobada_por_nombre ? ` por ${fila!.aprobada_por_nombre}` : ""}. {fila!.whatsapp_estado === "pendiente" ? "WhatsApp pendiente." : "WhatsApp al día."}</p>
-              <div className="botones" style={{ margin: 0 }}>
-                <Link className="boton boton-amarillo" href={`/gestion/convocatoria/salida?fecha=${ctx.fecha}`}>Ver salida (WhatsApp y aviso)</Link>
-              </div>
-            </>
-          ) : (
-            <>
-              {rev.avisos.some((a) => a.gravedad === "error") && <p className="pequeno ev-no" style={{ margin: 0 }}>Hay avisos en rojo: puedes aprobar igual, decides tú.</p>}
-              <button type="button" className="boton boton-amarillo boton-bloque" disabled={bloqueado} onClick={() => correr(() => aprobar(ctx.fecha), { ir: `/gestion/convocatoria/salida?fecha=${ctx.fecha}` })}>Aprobar convocatoria</button>
-            </>
-          )}
-        </section>
-      )}
-
       {ctx.cambios.length > 0 && (
         <details className="gs-bloque cv-historial" style={{ marginTop: 16 }}>
           <summary><b>Historial de cambios · {ctx.cambios.length}</b></summary>
@@ -370,7 +362,7 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
 const TEXTO_ACCION: Record<string, string> = {
   propuesta: "usa la propuesta", blanco: "empieza en blanco", recalcular: "recalcula la propuesta", mover: "cambia de equipo a", doblar: "hace doblar a",
   quitar: "quita a", anadir: "añade a", posicion: "cambia la posición de", dificultad: "cambia la dificultad", aprobar: "aprueba la convocatoria",
-  whatsapp: "copia el mensaje a WhatsApp", aviso: "aviso de la web",
+  whatsapp: "copia el mensaje a WhatsApp", aviso: "avisa en el móvil",
 };
 function textoCambio(c: Contexto["cambios"][number], nombre: (id: string) => string) {
   const motivo = MOTIVOS.find((m) => m.id === c.motivo)?.texto;

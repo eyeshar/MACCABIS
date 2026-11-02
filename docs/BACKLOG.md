@@ -20,7 +20,7 @@
 - **H. Limpieza de docs** (`docs/orden-vigente-31-10`, #6): este orden, SMTP y ESTADO.
 - **I. Sin ventanas de consola en Windows** (`fix/ventanas-consola`, #13, pedido por Iván el 31/10): `windowsHide: true` en todos los procesos hijos de pruebas y utilidades, y que se cierren al terminar cada suite, también si falla. Sin cambios de comportamiento.
 
-**2. Rediseño de la rutina C sin SportEasy** (lo diseña Iván con Claude en el chat; D153 deja sin objeto la parte de SportEasy de `docs/RUTINAS/C_CONVOCATORIA.md`).
+**2. [x] Rutina C automática** (`feat/rutina-c-automatica`, D173, 02/11/2026; PR con OK de Iván pendiente): plazo el martes a las 12:00, propuesta automática tras el cierre con push a Iván, «Aprobar y avisar», recambios tras aprobar; `RUTINAS/C_CONVOCATORIA.md` v3 (la plataforma lo hace sola; Iván revisa y aprueba).
 
 **3. Tesorería / cuentas** (Eduardo; datos sensibles → zona protegida; D52).
 
@@ -47,9 +47,13 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 
 21. [ ] **`pruebas:planes` intermitente en Actions** (01/11/2026, 2 veces): «404 Could not find the function public.crear_plan in the schema cache»; pasa al relanzar. Esperar a que PostgREST vea la función (reintento con `hasta()` o `notify pgrst` tras migrar) antes de la primera llamada.
 
+22. [ ] **D173, comprobar en el real la primera propuesta automática** (martes 10/11/2026, 12:00, J5 del 15/11; Lección del 28/10: «funciona» solo con un aviso automático REAL): en `avisos_registro`, `conv-auto:2026-11-15:<Iván>` y los `rec:dudas`/`rec:cierre` de esa mañana; en `convocatorias`, el borrador con `automatica_en`. Si no sale, mirar `/api/avisos/tarea` (500 con «convocatoria: …»).
+
 ## Pendiente de Iván
 
 **Operativa de ahora**
+- [ ] **D173 (rutina C automática):** dar el OK al PR tras mirar la vista previa en el móvil; con el OK, Code aplica la migración `20261103100000_rutina_c_automatica` en el real con D111 y mergea (no un martes ni un miércoles). **Antes del martes 10/11 a las 09:00.**
+- [ ] **Edu: activar los avisos en su móvil** (`/avisos`): hoy no tiene ninguna suscripción y no le llegarían los avisos de la convocatoria (el Panel lo dice).
 - [x] **Hecho (01/11/2026, OK de Iván, con D111; 28 cuentas antes y después):** **OK a la marca «Reserva» (D158, `feat/reserva`):** aplicar en el real la migración `20261031180000_reserva` (con D111) y la carga `node plataforma/scripts/cargar_reserva.mjs --aplicar` (reserva para Fernando M. y Guillermo), **antes** de mergear la rama (la convocatoria lee la columna). Lo hace Code cuando Iván dé el OK.
 - [ ] **Cuando Carlos entre por primera vez:** comprobar que su plaza se vinculó sola (`npm run db:estado`: 3 gestores vinculados) y que ve Gestión, el tablero y la banda del inicio. Aún no tiene cuenta (simulado en una transacción deshecha: se vincula y ve los niveles).
    - **26/10/2026:** Iván dice que Carlos ya ha entrado, pero `npm run db:estado` da **3 gestores y 2 vinculados** (Iván y Eduardo) y en `auth.users` **no hay ninguna cuenta con el correo de su ficha** (el mismo de su plaza de gestor; no es de Gmail). Hay que ver con Carlos con qué correo entró: con ese correo, «Entrar con Google» no sirve; la vía es «Recibir código por correo» a esa dirección.

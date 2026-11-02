@@ -3,18 +3,20 @@ import Volver from "@/components/nav/Volver";
 import { exigirGestor } from "@/lib/sesion";
 import { cargarContexto } from "@/lib/convocatoria/datos";
 import { diferencias, EQUIPOS } from "@/lib/convocatoria/motor";
-import { destinatariosAviso, diaTexto, firmaConvocatoria, sinAvisosTexto, mensajeConvocatoria, textoCambioConvocatoria, textoEstasConvocado } from "@/lib/convocatoria/mensajes";
+import { destinatariosAviso, diaTexto, firmaConvocatoria, mensajeConvocatoria, textoAvisados } from "@/lib/convocatoria/mensajes";
 import { avisosDelFichero } from "@/lib/inicio/avisos";
 import CopiarTexto from "../../eventos/CopiarTexto";
-import { BotonAvisar, BotonMarcar } from "./Botones";
+import { BotonAviso, CopiarWhatsapp } from "./Botones";
 
 export const metadata = { title: "Salida de la convocatoria · Gestión Maccabis" };
 
 const fechaHora = (t: string | null) => (t ? new Date(t).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
+const orden = (a: string, b: string) => a.localeCompare(b, "es");
 
-// Salida de una convocatoria aprobada (D107): (1) mensaje de WhatsApp listo para copiar (formato de D98), (2) aviso
-// «Estás convocado» en la web, con «Enviar ahora» (D127). Si la convocatoria cambia tras aprobarla, 1 vuelve a pendiente
-// y el mensaje dice qué ha cambiado.
+// Salida de una convocatoria aprobada (D107, simplificada en D173): quién ha recibido el aviso en el móvil («Avisados N de
+// M»; el aviso sale al pulsar «Aprobar y avisar») y el mensaje de WhatsApp del grupo con «Copiar mensaje». Sin estados
+// «pendiente / al día». «Avisar del cambio» si la convocatoria cambió después del último aviso; «Reenviar», solo para los
+// avisos que fallaron.
 export default async function SalidaConvocatoria({ searchParams }: { searchParams: Promise<{ fecha?: string }> }) {
   const { fecha } = await searchParams;
   const { supabase } = await exigirGestor();
@@ -29,33 +31,34 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
     );
   }
   const nombre = (id: string) => ctx.jugadores.find((j) => j.person_id === id)?.nombre ?? id;
-  const cambiosWa = c.whatsapp_estado === "pendiente" ? diferencias(c.whatsapp_base, c.equipos, nombre) : [];
-  // Avisos de data/avisos.json vigentes ese domingo para los equipos que juegan (corte de calles, cambio de hora...).
+  // El WhatsApp empieza por lo que ha cambiado desde la última vez que se copió.
+  const cambiosWa = c.whatsapp_base ? diferencias(c.whatsapp_base, c.equipos, nombre) : [];
   const avisosDomingo = avisosDelFichero(ctx.fecha, ctx.partidos.map((p) => p.equipo));
   const wa = mensajeConvocatoria(ctx.fecha, ctx.jornada, ctx.partidos, c.equipos, nombre, cambiosWa, avisosDomingo);
-  // Aviso de la web (D127): a quien toca ahora y como fue el ultimo envio (registro de avisos con la firma de lo avisado).
-  const porAvisar = destinatariosAviso(c.equipos, c.aviso_estado === "enviado" ? c.aviso_base : null);
-  const avisoAlDia = c.aviso_estado === "enviado" && porAvisar.personas.length === 0;
-  const primero = porAvisar.personas[0];
-  const ejemplo = porAvisar.cambio
-    ? textoCambioConvocatoria(ctx.fecha, ctx.partidos, primero?.equipos ?? ctx.partidos.map((p) => p.equipo).slice(0, 1))
-    : textoEstasConvocado(ctx.fecha, ctx.partidos, primero?.equipos ?? ctx.partidos.map((p) => p.equipo).slice(0, 1));
-  let ultimoEnvio: { n: number; m: number; sinAvisos: string[]; programado: string | null } | null = null;
+  // Cambió después del último aviso: a quién avisaría «Avisar del cambio».
+  const porAvisar = c.aviso_estado === "enviado" ? destinatariosAviso(c.equipos, c.aviso_base).personas : [];
+  // Lo que salió en el último envío (registro de avisos con la firma de lo avisado).
+  let envio: { avisados: string[]; sin: string[]; fallidos: string[]; pendientes: { nombre: string; cuando: string }[] } | null = null;
   if (c.aviso_estado === "enviado" && c.aviso_base) {
-    const [{ data: filas }, { data: subs }] = await Promise.all([
+    const [{ data }, { data: subs }] = await Promise.all([
       supabase.from("avisos_registro").select("person_id, enviado_en, programado_para, resultado").like("clave", `convocatoria:${ctx.fecha}:${firmaConvocatoria(c.aviso_base)}:%`),
       supabase.from("suscripciones_avisos").select("person_id").eq("activa", true),
     ]);
-    const con = new Set(((subs ?? []) as { person_id: string | null }[]).map((x) => x.person_id));
-    const fs = (filas ?? []) as { person_id: string; enviado_en: string | null; programado_para: string; resultado: string | null }[];
-    const sin = fs.filter((f) => !con.has(f.person_id)).map((f) => nombre(f.person_id)).sort((a, b) => a.localeCompare(b, "es"));
-    const pend = fs.find((f) => !f.enviado_en);
-    if (fs.length) ultimoEnvio = { n: fs.length - sin.length, m: fs.length, sinAvisos: sin, programado: pend ? pend.programado_para : null };
+    const conAvisos = new Set(((subs ?? []) as { person_id: string | null }[]).map((x) => x.person_id));
+    const fs = (data ?? []) as { person_id: string; enviado_en: string | null; programado_para: string; resultado: string | null }[];
+    // Lo que aún espera a las 08:00 (horas de silencio) cuenta como avisado si esa persona tiene avisos; si no, como «sin avisos».
+    const espera = fs.filter((f) => !f.enviado_en);
+    envio = {
+      avisados: fs.filter((f) => f.resultado === "enviado").map((f) => nombre(f.person_id)).sort(orden),
+      sin: [...fs.filter((f) => f.resultado === "sin_avisos"), ...espera.filter((f) => !conAvisos.has(f.person_id))].map((f) => nombre(f.person_id)).sort(orden),
+      fallidos: fs.filter((f) => f.resultado === "fallido").map((f) => nombre(f.person_id)).sort(orden),
+      pendientes: espera.filter((f) => conAvisos.has(f.person_id)).map((f) => ({ nombre: nombre(f.person_id), cuando: fechaHora(f.programado_para) })),
+    };
   }
+  const m = envio ? envio.avisados.length + envio.sin.length + envio.fallidos.length + envio.pendientes.length : 0;
   const web = "https://maccabis.vercel.app";
-  const msgSinAvisos = ultimoEnvio?.sinAvisos.length ? `Hola, ${ultimoEnvio.sinAvisos.join(", ")}: estáis convocados y no tenéis activados los avisos de Maccabis en el móvil. Así os llega la convocatoria y si cambia la hora o la pista (de noche solo si el partido es en pocas horas). Es un minuto: ${web}/avisos` : "";
+  const msgSinAvisos = envio?.sin.length ? `Hola, ${envio.sin.join(", ")}: no tenéis activados los avisos de Maccabis en el móvil y os perdéis la convocatoria y los cambios de hora o pista (de noche solo si el partido es en pocas horas). Es un minuto: ${web}/avisos` : "";
   const total = new Set(EQUIPOS.flatMap((e) => (c.equipos[e] ?? []).map((x) => x.person_id))).size;
-  const Estado = ({ al, texto }: { al: boolean; texto?: string }) => <span className={`pastilla ${al ? "pastilla-ok" : "pastilla-pendiente"}`}>{texto ?? (al ? "Al día" : "Pendiente")}</span>;
 
   return (
     <>
@@ -68,35 +71,41 @@ export default async function SalidaConvocatoria({ searchParams }: { searchParam
       </div>
 
       <div className="cv-salidas">
-        <section className="gs-bloque" aria-labelledby="t-wa" data-testid="cv-salida-whatsapp">
-          <div className="cv-salida-cab"><h2 id="t-wa">1 · WhatsApp</h2><Estado al={c.whatsapp_estado === "al_dia"} /></div>
-          {cambiosWa.length > 0 && <p className="pequeno" style={{ margin: 0 }}><b>Cambió tras aprobarla:</b> {cambiosWa.join("; ")}.</p>}
-          <CopiarTexto texto={wa} etiqueta="Copiar mensaje" id="cv-mensaje" />
-          {c.whatsapp_estado === "pendiente"
-            ? <BotonMarcar fecha={ctx.fecha} que="whatsapp" texto="Ya lo he pegado en el grupo" />
-            : <p className="pequeno suave" style={{ margin: 0 }}>Copiado el {fechaHora(c.whatsapp_en)}.</p>}
-        </section>
-
         <section className="gs-bloque" aria-labelledby="t-aviso" data-testid="cv-salida-aviso">
-          <div className="cv-salida-cab"><h2 id="t-aviso">2 · Aviso en la web</h2>
-            <Estado al={avisoAlDia} texto={avisoAlDia ? "Enviado" : "Pendiente"} /></div>
-          {!avisoAlDia && <p className="pequeno" style={{ margin: 0 }}>{porAvisar.cambio ? "A quien entra, cambia de equipo o sale" : "Cada convocado"} recibe en el móvil: <b>«{ejemplo.titulo}»</b> — {ejemplo.cuerpo}</p>}
-          {!avisoAlDia && <p className="pequeno" style={{ margin: 0 }} data-testid="cv-aviso-a">Al pulsar, a {porAvisar.personas.length} {porAvisar.personas.length === 1 ? "persona" : "personas"}: {porAvisar.personas.map((x) => nombre(x.person_id)).sort((a, b) => a.localeCompare(b, "es")).join(", ") || "nadie"}.</p>}
-          {!avisoAlDia && <BotonAvisar fecha={ctx.fecha} />}
-          {ultimoEnvio && (
+          <h2 id="t-aviso">Aviso en el móvil</h2>
+          {envio ? (
             <div data-testid="cv-aviso-resultado">
-              <p className="pequeno" style={{ margin: 0 }}><b>{avisoAlDia ? "Enviado" : "Último envío"}{c.aviso_en ? ` el ${fechaHora(c.aviso_en)}` : ""}: a {ultimoEnvio.n} de {ultimoEnvio.m}</b>{ultimoEnvio.m - ultimoEnvio.n ? ` (${sinAvisosTexto(ultimoEnvio.m - ultimoEnvio.n)})` : ""}.{ultimoEnvio.programado ? ` Sale a las ${fechaHora(ultimoEnvio.programado)} (horas de silencio).` : ""}</p>
-              {ultimoEnvio.sinAvisos.length > 0 && (
+              <p style={{ margin: 0 }}><b>{textoAvisados(envio.avisados.length + envio.pendientes.length, m)}</b>{c.aviso_en ? <span className="suave"> · {fechaHora(c.aviso_en)}</span> : null}.</p>
+              {envio.pendientes.length > 0 && <p className="pequeno" style={{ margin: 0 }}>De noche: sale el {envio.pendientes[0].cuando} (horas de silencio, 22:30–08:00).</p>}
+              {envio.avisados.length > 0 && <p className="pequeno suave" style={{ margin: "6px 0 0" }} data-testid="cv-avisados">Avisados: {envio.avisados.join(", ")}.</p>}
+              {envio.sin.length > 0 && (
                 <>
-                  <p className="pequeno" style={{ margin: "6px 0 0" }} data-testid="cv-sin-avisos">Sin avisos: {ultimoEnvio.sinAvisos.join(", ")}. Lo ven en su inicio; mándales por WhatsApp el enlace a <Link href="/avisos">/avisos</Link> para que los activen:</p>
+                  <p className="pequeno" style={{ margin: "6px 0 0" }} data-testid="cv-sin-avisos">Sin avisos: {envio.sin.join(", ")}. Lo ven en su inicio; mándales el enlace a <Link href="/avisos">/avisos</Link>:</p>
                   <CopiarTexto texto={msgSinAvisos} etiqueta="Copiar mensaje para ellos" />
                 </>
               )}
+              {envio.fallidos.length > 0 && (
+                <>
+                  <p className="pequeno ev-no" style={{ margin: "6px 0 0" }} data-testid="cv-fallidos">No llegó (error al enviar): {envio.fallidos.join(", ")}.</p>
+                  <BotonAviso fecha={ctx.fecha} que="reenviar" />
+                </>
+              )}
+            </div>
+          ) : <p className="pequeno" style={{ margin: 0 }}>Aún no ha salido ningún aviso de esta convocatoria.</p>}
+          {(porAvisar.length > 0 || !envio) && (
+            <div data-testid="cv-aviso-cambio">
+              {porAvisar.length > 0 && <p className="pequeno" style={{ margin: "6px 0 0" }}>Ha cambiado después del aviso. Se avisaría a {porAvisar.map((x) => nombre(x.person_id)).sort(orden).join(", ")}.</p>}
+              <BotonAviso fecha={ctx.fecha} que="cambio" etiqueta={envio ? "Avisar del cambio" : "Avisar ahora"} />
             </div>
           )}
-          <p className="pequeno suave" style={{ margin: 0 }}>No depende de «respuestas en la web»: avisar de la convocatoria no pide respuestas (D127). Respeta las horas de silencio (22:30–8:00) y nunca manda dos veces lo mismo. En su inicio y en la página del domingo, cada convocado ve con quién juega; nadie ve niveles.</p>
+          <p className="pequeno suave" style={{ margin: 0 }}>Cada jugador recibe un solo aviso según su caso: convocado, convocado con un equipo (y no con el otro) o «esta vez no entras». Nunca de 22:30 a 08:00 y nunca dos veces lo mismo. Nadie ve niveles.</p>
         </section>
 
+        <section className="gs-bloque" aria-labelledby="t-wa" data-testid="cv-salida-whatsapp">
+          <h2 id="t-wa">WhatsApp del grupo</h2>
+          {cambiosWa.length > 0 && <p className="pequeno" style={{ margin: 0 }}><b>Cambió desde la última vez que lo copiaste:</b> {cambiosWa.join("; ")}.</p>}
+          <CopiarWhatsapp fecha={ctx.fecha} texto={wa} />
+        </section>
       </div>
     </>
   );

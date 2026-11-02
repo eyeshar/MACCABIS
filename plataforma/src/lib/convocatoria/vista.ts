@@ -21,8 +21,10 @@ export type FilaConvocatoria = {
   cambiado_en: string; cambiado_por_nombre: string | null; aprobada_en: string | null; aprobada_por_nombre: string | null;
   whatsapp_estado: "pendiente" | "al_dia"; whatsapp_en: string | null; whatsapp_base: Convocatoria | null;
   aviso_estado: "sin_preparar" | "en_espera" | "enviado"; aviso_en: string | null; aviso_base: Convocatoria | null;
+  /** D173: cuándo dejó la plataforma la propuesta automática del martes (null: no la hay; sin la migración, undefined). */
+  automatica_en?: string | null;
 };
-export type Cambio = { id: string; en: string; por_nombre: string; accion: string; person_id: string | null; equipo: Equipo | null; motivo: string | null; nota: string | null };
+export type Cambio = { id: string; en: string; por_nombre: string; por_user_id?: string | null; accion: string; person_id: string | null; equipo: Equipo | null; motivo: string | null; nota: string | null };
 
 export type PartidoVista = PartidoMensaje & {
   evento_id: string; jornada: number | null;
@@ -36,6 +38,8 @@ export type JugadorVista = JugadorEntrada & {
   /** Por que dijo «no voy» (solo gestores, D82). */
   motivoNo: Partial<Record<Equipo, string | null>>;
   sancionHasta: number | null;
+  /** D173: dijo «voy» después de la última propuesta (sale en «Respondió después de la propuesta»). */
+  respondioTarde?: boolean;
 };
 export type Contexto = {
   fecha: string; jornada: number | null; partidos: PartidoVista[]; jugadores: JugadorVista[];
@@ -44,6 +48,8 @@ export type Contexto = {
   /** D141: hora limite de las dudas de este domingo (ISO) y si aun no ha llegado. Antes, el motor propone con los «va» y las
    *  dudas salen aparte como «posibles»; la propuesta definitiva se hace despues del limite. null = no hay partidos. */
   limiteDudas: string | null; dudasAbiertas: boolean;
+  /** D173: hora de la última propuesta (automática, «Usar propuesta» o «Recalcular»), o null. */
+  ultimaPropuesta?: string | null;
   eventoRespuestas: string | null;
   /** Proyeccion de anotacion (D124): solo gestores. */
   proyeccion: DatosProyeccion;
@@ -57,7 +63,7 @@ export type Contexto = {
 /** La entrada del motor para este domingo. */
 export const entradaDe = (ctx: Pick<Contexto, "partidos" | "jugadores">): Entrada => ({
   partidos: ctx.partidos.map((p) => ({ evento_id: p.evento_id, equipo: p.equipo, inicio: p.inicio, dificultad: p.dificultad.valor })),
-  jugadores: ctx.jugadores.map(({ invitado: _i, invitadoA: _a, motivoNo: _m, sancionHasta: _s, ...j }) => j),
+  jugadores: ctx.jugadores.map(({ invitado: _i, invitadoA: _a, motivoNo: _m, sancionHasta: _s, respondioTarde: _t, ...j }) => j),
 });
 
 // ---------------------------------------------------------------- modo rapido (D125): arrastrar o «Mover a…»

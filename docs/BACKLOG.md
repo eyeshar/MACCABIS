@@ -28,6 +28,8 @@
 
 > Ordenado por lo que más trabajo manual le quita a Iván. Lo que necesita su OK (esquema, datos del real) lo dice.
 
+0. [ ] **`pruebas:planes` es intermitente — investigarlo en el próximo bloque (Iván, 02/11/2026).** Falló dos veces en GitHub Actions el 31/10 y una el 02/11 en local (`TypeError: Cannot read properties of undefined (reading 'fecha')` en `rls_planes.mjs:162`, en «Recordatorio un día antes»: `eventosGestor.find(...)` no encuentra el plan creado); repetida sola, en la misma tanda y en `main`, pasó. Hipótesis (sin confirmar): la prueba no espera a que la base de pruebas tenga cargadas las funciones/filas nuevas antes de leer (`eventosGestor`), o depende de la hora/fecha. **No silenciarla ni desactivarla** (norma: sin esperas fijas; usar `hasta(() => …)` de `infra/esperas.mjs`). Cerrar con la causa, el arreglo y varias pasadas seguidas en verde.
+
 2. [ ] _(El contraste automático de la clasificación calculada con la oficial va en el apartado G del «Orden vigente».)_ **Evaluar los CSV de gesdeportiva.fbm.es/clubes** (clasificación y listado completo de partidos, D106) para la **rutina B**: contraste de la clasificación calculada con la oficial (D74) y posible calendario de los dos grupos sin Deportes/web.
    - Junto con: **Contrastar la clasificación calculada con la oficial** de Deportes/web (jueves 20:00) y, si hay incomparecencias, anotar sus puntos oficiales (D74).
 6. [ ] Más adelante: «partidos convocado» con las convocatorias aprobadas (hoy sale solo de las hojas cargadas); entrenos de 4 semanas con el pase de lista real cuando exista.

@@ -31,6 +31,7 @@ export const AJUSTES = {
   tlMinJugador: 6,           // libres: al menos 6 intentos...
   tlDifJugador: 0.15,        // ...y 15 puntos o más por debajo del TL% medio del grupo
   tlMinutosJugador: 600,     // ...solo entre quienes juegan minutos (10 min por partido o más, en segundos)
+  importantes: 3,            // faltas: solo si es de los 3 de su equipo con más minutos o con más puntos por partido (y una línea por rival)
 } as const;
 
 /** Tema de cada regla de la vía A: de cada tema solo se queda la clave de más peso. */
@@ -187,7 +188,7 @@ export function clavesRival(e: EntradaClaves, opciones: { topEquipo?: number; to
     const refPf = medG((m) => m.pf);
     comparar("puntos", M.pf, refPf, "cuidado", "aprovechar", () => `Anotan ${dec(M.pf)} puntos por partido (media del grupo: ${dec(refPf)})`);
     const refPc = medG((m) => m.pc);
-    comparar("encajados", M.pc, refPc, "aprovechar", "cuidado", () => `Encajan ${dec(M.pc)} puntos por partido (media del grupo: ${dec(refPc)})`);
+    comparar("encajados", M.pc, refPc, "aprovechar", "cuidado", (l) => `Encajan ${l === "bajo" ? "solo " : ""}${dec(M.pc)} puntos por partido (media del grupo: ${dec(refPc)})`);
     const refT3 = medG((m) => m.t3);
     comparar("triples", M.t3, refT3, "cuidado", "aprovechar", () => `Meten ${dec(M.t3)} triples por partido (media del grupo: ${dec(refT3)})`);
     const refT3p = medG((m) => m.t3Parte);
@@ -336,7 +337,9 @@ export function clavesRival(e: EntradaClaves, opciones: { topEquipo?: number; to
     .sort((a, b) => b.peso - a.peso || a.regla.localeCompare(b.regla));
   const porTema = new Map<string, Clave & { alFinal: boolean }>();
   for (const c of candidatas) if (!porTema.has(c.tema)) porTema.set(c.tema, c);
-  const ordenadas = [...porTema.values()].sort((a, b) => Number(a.alFinal) - Number(b.alFinal) || b.peso - a.peso || a.regla.localeCompare(b.regla));
+  // Primero lo que cambia el partido, luego los «Contexto» (racha, comunes, historial…) y, al final, lo que no lo cambia.
+  const escalon = (c: Clave & { alFinal: boolean }) => (c.alFinal ? 2 : c.tipo === "contexto" ? 1 : 0);
+  const ordenadas = [...porTema.values()].sort((a, b) => escalon(a) - escalon(b) || b.peso - a.peso || a.regla.localeCompare(b.regla));
   const quitar = ({ alFinal: _f, ...c }: Clave & { alFinal: boolean }): Clave => c;
   const jugadores = vigilar(e, n, nombreDe);
   return {
@@ -375,9 +378,19 @@ function vigilar(e: EntradaClaves, n: number, nombreDe: (j: JugadorLiga) => stri
   };
   const filasDe = (j: JugadorLiga) => (e.filas ?? []).filter((f) => mismo(f.equipo, e.equipo) && f.grupo === j.grupo && claveNombre(f.nombre) === claveNombre(j.nombre) && f.segundos > 0);
 
+  // Faltas: solo de un jugador importante (de los 3 de su equipo con más minutos o con más puntos por partido) y como mucho una línea
+  // de faltas por rival: la del mejor puesto.
+  const importantes = new Set([
+    ...[...suyos].sort((a, b) => b.segundos / b.pj - a.segundos / a.pj || a.nombre.localeCompare(b.nombre, "es")).slice(0, AJUSTES.importantes),
+    ...[...suyos].sort((a, b) => b.pts / b.pj - a.pts / a.pj || a.nombre.localeCompare(b.nombre, "es")).slice(0, AJUSTES.importantes),
+  ]);
+  const fFaltas = STATS[3].valor;
+  const conFaltas = [...importantes].filter((j) => fFaltas(j) > 0 && puesto(j, fFaltas) <= AJUSTES.puestoGrupo)
+    .sort((a, b) => puesto(a, fFaltas) - puesto(b, fFaltas) || fFaltas(b) - fFaltas(a) || a.nombre.localeCompare(b.nombre, "es"))[0];
+
   const lineas: (Clave & { mejor: number; criterios: number })[] = [];
   for (const j of suyos) {
-    const rank = STATS.map((s) => ({ s, v: s.valor(j), p: puesto(j, s.valor) })).filter((x) => x.v > 0 && x.p <= AJUSTES.puestoGrupo).sort((a, b) => a.p - b.p || STATS.indexOf(a.s) - STATS.indexOf(b.s));
+    const rank = STATS.map((s) => ({ s, v: s.valor(j), p: puesto(j, s.valor) })).filter((x) => x.v > 0 && x.p <= AJUSTES.puestoGrupo && (x.s.k !== "faltas" || j === conFaltas)).sort((a, b) => a.p - b.p || STATS.indexOf(a.s) - STATS.indexOf(b.s));
     const partes = rank.map((x, i) => `${x.s.texto(x.v, i === 0)} (${x.p}.º${i === 0 ? " del grupo" : ""})`);
     const segmentos: string[] = [];
     if (partes.length) segmentos.push(partes.length > 1 ? `${partes.slice(0, -1).join(", ")} y ${partes[partes.length - 1]}` : partes[0]);

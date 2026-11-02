@@ -288,8 +288,17 @@ console.log('\n== Vía A «Del equipo»: una clave por tema, orden por lo que se
   const pag = clavesRival(entrada(o));
   ok(pag.equipo.length === AJUSTES.topEquipo && AJUSTES.topEquipo === 3 && pag.disponiblesEquipo === todoA.equipo.length && todoA.equipo.length > 3, `la página enseña como mucho 3 (hay ${pag.disponiblesEquipo})`);
   ok(JSON.stringify(pag.equipo) === JSON.stringify(todoA.equipo.slice(0, 3)), 'enseña las 3 primeras, por lo que se apartan');
-  ok(todoA.equipo.every((c, i, a) => i === 0 || a[i - 1].peso >= c.peso), 'orden por cuánto se aparta de lo normal');
+  const nivel = (c) => (c.regla === 'faltas_equipo' && c.tipo === 'contexto') || (c.regla === 'rotacion' && c.tipo === 'contexto') ? 2 : c.tipo === 'contexto' ? 1 : 0;
+  ok(todoA.equipo.every((c, i, a) => i === 0 || nivel(a[i - 1]) < nivel(c) || (nivel(a[i - 1]) === nivel(c) && a[i - 1].peso >= c.peso)), 'orden por cuánto se aparta de lo normal, con los «Contexto» detrás de lo que cambia el partido');
   ok(todoA.equipo.every((c) => c.bloque === 'equipo' && c.regla && c.texto && ['cuidado', 'aprovechar', 'ojo', 'contexto'].includes(c.tipo) && typeof c.peso === 'number' && 'valor' in c && 'referencia' in c), 'cada clave lleva tipo, texto, valor, referencia y peso');
+  // Encajados por los dos lados; con los «Contexto» (paliza, racha) detrás aunque pesen más
+  const enc = (pc) => claves({ r: [conEst(50, {}, pc), conEst(50, {}, pc), conEst(50, {}, pc)] });
+  const alto = hay(enc(60), 'encajados'), bajo = hay(enc(40), 'encajados');
+  ok(alto?.tipo === 'aprovechar' && alto.texto === 'Encajan 60,0 puntos por partido (media del grupo: 50,0)', 'encajan mucho: «Aprovechar: encajan 60,0…»', JSON.stringify(alto));
+  ok(bajo?.tipo === 'cuidado' && bajo.texto === 'Encajan solo 40,0 puntos por partido (media del grupo: 50,0)', 'encajan poco: «Cuidado: encajan solo 40,0…»', JSON.stringify(bajo));
+  const conCtx = claves({ r: [conEst(80, {}, 40), conEst(80, {}, 40), conEst(80, {}, 40)] });
+  const iE = conCtx.equipo.findIndex((c) => c.regla === 'encajados'), iC = conCtx.equipo.findIndex((c) => c.tipo === 'contexto');
+  ok(iE >= 0 && iC > iE, 'encajados va por delante de los «Contexto»', JSON.stringify(conCtx.equipo.map((c) => [c.regla, c.tipo])));
   // Al final y como «Contexto»: hacen POCAS faltas (−60 %) frente a un exceso de puntos (+20 %): aun pesando más, va detrás
   const fin = claves({ r: [conEst(60, { faltas: 6 }), conEst(60, { faltas: 6 }), conEst(60, { faltas: 6 })] });
   const iF = fin.equipo.findIndex((c) => c.regla === 'faltas_equipo'), iP = fin.equipo.findIndex((c) => c.regla === 'puntos');
@@ -346,6 +355,11 @@ console.log('\n== Vía B «Jugadores a vigilar»: cada jugador frente a los juga
   ok(fa?.texto === `${nombre(0)}: 10,0 faltas por partido (1.º del grupo)` && fa.tipo === 'aprovechar', 'faltas entre las 5 primeras del grupo: «10,0 faltas por partido (1.º del grupo)»', JSON.stringify(fa));
   ok(claves({ rival: { 0: { tli: 40, tla: 24 } } }).jugadores[0]?.texto === `${nombre(0)}: 13,3 tiros libres intentados por partido (1.º del grupo)`, 'tiros libres intentados: «13,3 tiros libres intentados por partido (1.º del grupo)»');
   ok(claves({ rival: { 0: { p3a: 12 } } }).jugadores[0]?.texto === `${nombre(0)}: 4,0 triples por partido (1.º del grupo)`, 'triples por partido');
+  // faltas: solo de un jugador importante (3 de su equipo con más minutos o puntos) y una línea por rival
+  const noImp = claves({ rival: { 7: { faltas: 30, pts: 1, segundos: 3 * 300 } } }).jugadores;
+  ok(noImp.length === 0, 'faltas: un jugador que ni anota ni juega de los 3 primeros de su equipo no sale');
+  const dosF = claves({ rival: { 0: { faltas: 30, pts: 60 }, 1: { faltas: 24, pts: 59 } } }).jugadores.filter((c) => /faltas/.test(c.texto));
+  ok(dosF.length === 1 && dosF[0].texto.includes('(1.º del grupo)') || (dosF.length === 1 && /10,0 faltas/.test(dosF[0].texto)), 'como mucho una línea de faltas por rival: la de mejor puesto', dosF.map((c) => c.texto).join(' | '));
   // orden: por el mejor puesto; sin puesto (solo pico o libres), detrás
   const mezcla = clavesRival({ ...entrada({ rival: { 0: { pts: 60 }, 1: { tla: 0, tli: 6 }, 2: { pts: 90 } } }), filas: [] }, { topEquipo: 0, topJugadores: 0 }).jugadores;
   ok(mezcla.map((c) => c.texto.split(':')[0]).join('|') === `${nombre(2)}|${nombre(0)}|${nombre(1)}`, 'orden por el mejor puesto; el que solo tira mal los libres, detrás', mezcla.map((c) => c.texto).join(' | '));

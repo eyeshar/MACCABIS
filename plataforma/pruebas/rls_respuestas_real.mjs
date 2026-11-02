@@ -70,13 +70,23 @@ try {
   }
 
   console.log('\n== Sin interruptor ni SportEasy (D172)');
-  ok((await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261102200000'`)[0].n === 1, 'la migración 20261102200000 (fin de SportEasy) está aplicada');
+  const d172 = (await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261102200000'`)[0].n === 1;
   const quedan = (await sql`select proname from pg_proc where pronamespace = 'public'::regnamespace and proname = any(${BORRADAS})`).map((x) => x.proname);
-  ok(quedan.length === 0, 'no quedan las funciones del interruptor ni ultima_importacion_respuestas', quedan.join(', '));
-  ok((await sql`select to_regclass('public.diccionario_sporteasy') is null n`)[0].n, 'diccionario_sporteasy ya no existe');
-  const colsSE = (await sql`select table_name || '.' || column_name c from information_schema.columns where table_schema = 'public' and column_name like 'sporteasy%'`).map((x) => x.c);
-  ok(colsSE.length === 0, 'ninguna tabla tiene columnas sporteasy_*', colsSE.join(', '));
-  ok(bloqueado(await api('/diccionario_sporteasy?select=*')) && bloqueado(await api('/rpc/respuestas_web_encendido', { metodo: 'POST', cuerpo: {} })), 'y por la API tampoco están');
+  const colsSE = (await sql`select table_name || '.' || column_name c from information_schema.columns where table_schema = 'public' and column_name like 'sporteasy%' and table_name <> 'diccionario_sporteasy'`).map((x) => x.c);
+  const sinDic = (await sql`select to_regclass('public.diccionario_sporteasy') is null n`)[0].n;
+  if (d172) {
+    console.log('  (migración 20261102200000 aplicada: se comprueba que lo borrado ya no está)');
+    ok(quedan.length === 0, 'no quedan las funciones del interruptor ni ultima_importacion_respuestas', quedan.join(', '));
+    ok(sinDic, 'diccionario_sporteasy ya no existe');
+    ok(colsSE.length === 0, 'ninguna tabla tiene columnas sporteasy_*', colsSE.join(', '));
+  } else {
+    console.log('  (migración 20261102200000 aún sin aplicar: se comprueba que lo que borrará sigue ahí, sin permisos para anon)');
+    ok(quedan.length === BORRADAS.length, `siguen las ${BORRADAS.length} funciones que borrará`, quedan.join(', '));
+    const anonF = (await sql`select proname from pg_proc where pronamespace = 'public'::regnamespace and proname = any(${BORRADAS}) and has_function_privilege('anon', oid, 'execute')`).map((x) => x.proname);
+    ok(anonF.length === 0, 'ninguna la ejecuta anon', anonF.join(', '));
+    ok(!sinDic && colsSE.length === 8, 'siguen el diccionario y las 8 columnas sporteasy_*', colsSE.join(', '));
+  }
+  ok(bloqueado(await api('/diccionario_sporteasy?select=*')) && bloqueado(await api('/rpc/respuestas_web_encendido', { metodo: 'POST', cuerpo: {} })), 'anónimo por la API: ni el diccionario ni respuestas_web_encendido');
 
   console.log('\n== Anónimo (HTTPS)');
   for (const t of [...NUEVAS, 'v_mis_eventos', 'v_quien_va']) ok(bloqueado(await api(`/${t}?select=*`)), `anónimo NO lee ${t}`);
@@ -134,9 +144,11 @@ try {
   const gestores = await sql`select g.user_id from public.gestores g where g.user_id is not null order by g.nombre`;
   if (!gestores.length) ok(false, 'hay al menos un gestor vinculado');
   let est0 = null;
+  const d172e = (await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261102200000'`)[0].n === 1;
   for (const g of gestores.slice(0, 2)) await como(g.user_id, async (tx) => {
     const est = (await tx`select public.estado_activacion() e`)[0].e;
-    ok(Object.keys(est).sort().join() === CLAVES && typeof est.plantilla === 'number', `un gestor ve los contadores (nada del interruptor): ${est.entrados}/${est.plantilla} han entrado, ${est.con_avisos} con avisos`, Object.keys(est).sort().join());
+    // Antes de D172 trae además los campos del interruptor; los contadores son los mismos.
+    ok((d172e ? Object.keys(est).sort().join() === CLAVES : CLAVES.split(',').every((k) => k in est)) && typeof est.plantilla === 'number', `un gestor ve los contadores (nada del interruptor): ${est.entrados}/${est.plantilla} han entrado, ${est.con_avisos} con avisos`, Object.keys(est).sort().join());
     if (est0) ok(est.plantilla === est0.plantilla && est.entrados === est0.entrados, 'otro gestor ve lo mismo');
     est0 ??= est;
     ok((await tx`select count(*)::int n from public.respuestas`)[0].n >= 0, 'el gestor lee las respuestas');

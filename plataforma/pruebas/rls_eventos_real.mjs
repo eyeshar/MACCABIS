@@ -8,8 +8,8 @@
 // Para comprobar la ESCRITURA sin escribir, se intenta cada insert/update/delete dentro de la transaccion de solo
 // lectura: Postgres lo rechaza siempre; ademas se comprueban los permisos (has_table_privilege) y las politicas.
 //
-// Desde D172 (migración 20261102200000, se pasa después de aplicarla) ya no existen diccionario_sporteasy ni las
-// columnas sporteasy_* de los eventos.
+// D172 (migración 20261102200000): antes de aplicarla siguen diccionario_sporteasy y las columnas sporteasy_*; después,
+// ya no existen. La prueba mira si está aplicada y comprueba lo que toca (sirve antes y después, D111).
 //
 //   npm run pruebas:eventos-real
 
@@ -82,9 +82,18 @@ try {
   ok(!pol.some((p) => p.cmd === 'DELETE' || p.cmd === 'ALL'), 'ninguna política permite DELETE ni ALL');
   const [v] = await sql`select has_table_privilege('anon', 'public.v_eventos_publicos', 'select') a, has_table_privilege('anon', 'public.v_eventos_publicos', 'insert') i`;
   ok(v.a && !v.i, 'anon puede leer la vista pública y no escribirla');
-  ok((await sql`select to_regclass('public.diccionario_sporteasy') is null n`)[0].n, 'diccionario_sporteasy ya no existe (D172)');
+  // D172 (migración 20261102200000): antes de aplicarla, el diccionario y las columnas siguen; después, ya NO existen.
+  const d172 = (await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261102200000'`)[0].n === 1;
+  const sinDic = (await sql`select to_regclass('public.diccionario_sporteasy') is null n`)[0].n;
   const colsSE = (await sql`select column_name from information_schema.columns where table_schema = 'public' and table_name = 'eventos' and column_name like 'sporteasy%'`).map((x) => x.column_name);
-  ok(colsSE.length === 0, 'eventos ya no tiene columnas sporteasy_* (D172)', colsSE.join(', '));
+  if (d172) {
+    ok(sinDic, 'D172 aplicada: diccionario_sporteasy ya no existe');
+    ok(colsSE.length === 0, 'D172 aplicada: eventos ya no tiene columnas sporteasy_*', colsSE.join(', '));
+  } else {
+    ok(!sinDic && colsSE.length === 3, 'D172 aún sin aplicar: siguen el diccionario y las 3 columnas sporteasy_* de eventos', colsSE.join(', '));
+    const [dp] = await sql`select relrowsecurity r from pg_class where oid = 'public.diccionario_sporteasy'::regclass`;
+    ok(dp.r && !(await sql`select has_table_privilege('anon', 'public.diccionario_sporteasy', 'select') a`)[0].a, 'D172 aún sin aplicar: el diccionario sigue con RLS y sin lectura para anon');
+  }
 
   console.log('\n== Gestor (cuenta real existente, transacción de solo lectura)');
   const [gestor] = await sql`select user_id from public.gestores where user_id is not null limit 1`;

@@ -106,8 +106,13 @@ try {
   const [m9] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261025100000'`;
   if (!m9.n) console.log('  (aún no aplicada: nada que comprobar)');
   else {
+    // D172 (migración 20261102200000) borra ultima_importacion_respuestas: antes de aplicarla existe; después, ya NO.
+    const [m172] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261102200000'`;
     const f9 = await sql`select proname, has_function_privilege('anon', oid, 'execute') anon from pg_proc where pronamespace = 'public'::regnamespace and proname in ('convocados_del_domingo', 'ultima_importacion_respuestas')`;
-    ok(f9.length === 2 && f9.every((f) => !f.anon), 'convocados_del_domingo y ultima_importacion_respuestas existen y anónimo no las ejecuta');
+    const conv9 = f9.find((f) => f.proname === 'convocados_del_domingo'), imp9 = f9.find((f) => f.proname === 'ultima_importacion_respuestas');
+    ok(conv9 && !conv9.anon, 'convocados_del_domingo existe y anónimo no la ejecuta');
+    if (m172.n) ok(!imp9, 'D172 aplicada: ultima_importacion_respuestas ya NO existe');
+    else ok(imp9 && !imp9.anon, 'D172 aún sin aplicar: ultima_importacion_respuestas existe y anónimo no la ejecuta');
     const rA = await api('/rpc/convocados_del_domingo', { metodo: 'POST', cuerpo: { p_fecha: '2026-10-25' } });
     ok(rA.status >= 400 || rA.datos === null, 'anónimo (HTTPS): convocados_del_domingo no le da nada', `${rA.status}`);
     const [apr] = await sql`select fecha::text, equipos from public.convocatorias where estado = 'aprobada' order by fecha desc limit 1`;
@@ -124,8 +129,10 @@ try {
           const r = await intenta(tx, 'select public.convocados_del_domingo($1::date) r', [bor.fecha]);
           ok(r.ok && r.r[0].r === null, `jugador, convocatoria sin aprobar del ${bor.fecha}: nada (null)`);
         }
-        const u = await intenta(tx, 'select public.ultima_importacion_respuestas() r');
-        ok(u.ok && (u.r[0].r === null || u.r[0].r instanceof Date), 'jugador: ultima_importacion_respuestas da solo una hora');
+        if (!m172.n) {
+          const u = await intenta(tx, 'select public.ultima_importacion_respuestas() r');
+          ok(u.ok && (u.r[0].r === null || u.r[0].r instanceof Date), 'jugador: ultima_importacion_respuestas da solo una hora (D172 aún sin aplicar)');
+        }
       });
     }
   }

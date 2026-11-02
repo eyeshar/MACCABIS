@@ -60,7 +60,8 @@ try {
     ok(rango.length === 23, `entrenos cambiados: ${rango.length} (${rango[0]?.f} … ${rango.at(-1)?.f})`);
     ok(rango.every((r) => r.i === '20:30:00' && r.fi === '22:30:00' && !r.pista_id && !r.ubicacion_nombre && r.s === 'Valdebernardo'), 'todos de 20:30 a 22:30 en Valdebernardo, «solo con ficha»');
     const colsSE = (await tx`select column_name from information_schema.columns where table_schema = 'public' and table_name = 'eventos' and column_name like 'sporteasy%'`).map((r) => r.column_name);
-    ok(colsSE.length === 0, 'los eventos ya no llevan el estado de copia a SportEasy (D172)', colsSE.join(', '));
+    const d172 = (await tx`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261102200000'`)[0].n === 1;
+    ok(d172 ? colsSE.length === 0 : colsSE.length === 3, d172 ? 'D172 aplicada: los eventos ya no llevan el estado de copia a SportEasy' : 'D172 aún sin aplicar: siguen las 3 columnas sporteasy_* de los eventos', colsSE.join(', '));
     console.log('\n== Invitados');
     const despues = await invitados();
     const antes = new Map(foto.invitados.map((x) => { const [c, p, i] = x.split('|'); return [`${c}|${p}`, i]; }));

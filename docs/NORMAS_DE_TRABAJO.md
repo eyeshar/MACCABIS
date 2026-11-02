@@ -58,8 +58,9 @@ Prompts para Code en un único bloque · los docs del repo son la fuente de verd
 No hay entorno de pruebas (staging) y no se va a crear: los cambios de esquema se aplican **directamente en el Supabase real**. **Cada cambio**, sin excepción, lleva estas protecciones (las de D94 y D108), en este orden:
 1. **Volcado completo previo, fuera de git** (`privado/backups/AAAA-MM-DD_pre-<bloque>.sql`), comprobado que existe, que pesa más de 0 y que git lo ignora.
 2. **Migración solo aditiva**, con su **`.revertir.sql`** al lado **probado en la pila local** (se deshace limpia y se vuelve a aplicar).
-3. **Prueba de permisos en real, en solo lectura, antes y después** de aplicar.
-4. **Recuento de cuentas de `auth.users` antes y después** (tiene que salir igual).
+3. **Búsqueda obligatoria antes de aplicar (D172, 02/11/2026):** si la migración borra o cambia tablas, columnas o funciones, se busca **cada una** por su nombre en **todas** las pruebas `-real` (`plataforma/pruebas/*real*.mjs`, `verificar_*.mjs`) y en todo lo que corre contra el real (`plataforma/scripts/`, `scripts/`, `chat-worker/`, `src/`, `.github/`). Todo lo que las use se adapta **antes** de aplicar, de forma que la misma prueba valga antes y después: mira si la migración está registrada en `supabase_migrations.schema_migrations` y comprueba el estado que toca. Las pruebas `-real` no van a GitHub Actions: se pasan en solo lectura contra el real antes de aplicar. _(Origen: el 02/11/2026 la migración de D172 se revirtió porque `rls_convocatoria_real` todavía esperaba una función que la migración borraba.)_
+4. **Prueba de permisos en real, en solo lectura, antes y después** de aplicar (las pruebas `-real` del punto 3). **Si alguna falla después, se revierte y se para.**
+5. **Recuento de cuentas de `auth.users` antes y después** (tiene que salir igual).
 - **Si un cambio no puede ser aditivo, se para y se consulta a Iván.** Nunca se borra ni se cambia nada existente sin su OK expreso.
 
 ## 11. Sesiones en paralelo: una sesión, un worktree (D114)

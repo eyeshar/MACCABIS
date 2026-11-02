@@ -15,10 +15,10 @@
 - [x] **C. Mensaje de convocatoria** (`feat/equipacion-convocatoria`, D160; #11, mergeada el 01/11): línea de equipación siempre presente (Bases 47 JDM 5.11), la misma en el aviso push, el WhatsApp y Scouting. (La salida «SportEasy» se va con el PR #3, `feat/cierre-sporteasy`.)
 - [x] **D. Asistencias históricas de SportEasy** (`feat/asistencia-sporteasy`, D161; #7, mergeada y cargada el 01/11): SportEasy hasta el 23/10, la plataforma desde el 24/10. _Carga en el real con el OK de Iván._
 - [x] **E. Scouting y Liga** (`feat/scouting-liga-fuente-unica`, D162; #14, mergeada y aplicada el 01/11): fuente única = tabla de eventos; Scouting rivales y Liga consolidada para cualquier jugador con sesión (matiza D73).
-- **F. Migración de GitHub Pages** (`feat/migracion-liga-equipo`, #8; no quedaba nada por migrar): Liga y Equipo/Jugadores/Ficha (`docs/MIGRACION_WEB.md`); lo siguiente, Rankings y Cuartos → Rivales → El Club → MdA → Asistencia.
+- [x] **F. Migración de GitHub Pages** (`feat/migracion-liga-equipo`, #8; mergeado el 01/11/2026): **no queda nada por migrar**: las diez pestañas (Liga, Equipo, Jugadores, Ficha, Rankings, Cuartos, Rivales, El Club, MdA y Asistencia) están en la web nueva desde el 07/10/2026 y las redirecciones están activas (`docs/MIGRACION_WEB.md`, «Estado»). Lo único abierto es decidir cuándo retirar GitHub Pages del todo (hoy solo redirige; recomendación: a final de temporada) — va en «Pendiente de Iván».
 - [x] **G. Pendientes menores** (`feat/pendientes-menores`, D164; #12, mergeada el 01/11): Panel en móvil con tarjetas, «Partidos» activo, contraste de la clasificación oficial en la rutina B (D74), lienzo de EventoRespuestas/EventoImportar, textos «de noche solo si el partido es en pocas horas» (D155).
-- **H. Limpieza de docs** (`docs/orden-vigente-31-10`, #6): este orden, SMTP y ESTADO.
-- **I. Sin ventanas de consola en Windows** (`fix/ventanas-consola`, #13, pedido por Iván el 31/10): `windowsHide: true` en todos los procesos hijos de pruebas y utilidades, y que se cierren al terminar cada suite, también si falla. Sin cambios de comportamiento.
+- [x] **H. Limpieza de docs** (`docs/orden-vigente-31-10`, #6; mergeado el 01/11/2026): este orden, SMTP y ESTADO.
+- [x] **I. Sin ventanas de consola en Windows** (`fix/ventanas-consola`, #13, pedido por Iván el 31/10; mergeado el 01/11/2026): `windowsHide: true` en todos los procesos hijos de pruebas y utilidades, y que se cierren al terminar cada suite, también si falla. Sin cambios de comportamiento.
 
 **2. [x] Rutina C automática** (`feat/rutina-c-automatica`, D173, 02/11/2026; PR #32 mergeado y migración aplicada): plazo el martes a las 12:00, propuesta automática tras el cierre con push a Iván, «Aprobar y avisar», recambios tras aprobar; `RUTINAS/C_CONVOCATORIA.md` v3 (la plataforma lo hace sola; Iván revisa y aprueba).
 
@@ -32,12 +32,10 @@
 
 > Ordenado por lo que más trabajo manual le quita a Iván. Lo que necesita su OK (esquema, datos del real) lo dice.
 
-0. [ ] **`pruebas:planes` es intermitente — investigarlo en el próximo bloque (Iván, 02/11/2026).** Falló dos veces en GitHub Actions el 31/10 y una el 02/11 en local (`TypeError: Cannot read properties of undefined (reading 'fecha')` en `rls_planes.mjs:162`, en «Recordatorio un día antes»: `eventosGestor.find(...)` no encuentra el plan creado); repetida sola, en la misma tanda y en `main`, pasó. Hipótesis (sin confirmar): la prueba no espera a que la base de pruebas tenga cargadas las funciones/filas nuevas antes de leer (`eventosGestor`), o depende de la hora/fecha. **No silenciarla ni desactivarla** (norma: sin esperas fijas; usar `hasta(() => …)` de `infra/esperas.mjs`). Cerrar con la causa, el arreglo y varias pasadas seguidas en verde.
 
 2. [ ] _(El contraste automático de la clasificación calculada con la oficial va en el apartado G del «Orden vigente».)_ **Evaluar los CSV de gesdeportiva.fbm.es/clubes** (clasificación y listado completo de partidos, D106) para la **rutina B**: contraste de la clasificación calculada con la oficial (D74) y posible calendario de los dos grupos sin Deportes/web.
    - Junto con: **Contrastar la clasificación calculada con la oficial** de Deportes/web (jueves 20:00) y, si hay incomparecencias, anotar sus puntos oficiales (D74).
 6. [ ] Más adelante: «partidos convocado» con las convocatorias aprobadas (hoy sale solo de las hojas cargadas); entrenos de 4 semanas con el pase de lista real cuando exista.
-8. [ ] Asistente (D142): comprobar en producción, sin crear cuentas, que el botón sale con sesión y no sin ella ni en la parte pública.
 9. [ ] Más adelante: aviso al móvil del recordatorio de un plan también si el plan se crea con menos de un día de margen (hoy, sin «un día antes», no sale nada).
 10. [ ] D129: pista de los partidos entre rivales (el calendario que tenemos solo trae la de MdA y MdL); si se carga el calendario completo del Ayuntamiento, la página de partido la enseña. _(Puede salir del listado completo de partidos de gesdeportiva, punto 2.)_
 11. [ ] _(Apartado G del «Orden vigente».)_ **«Partidos» sin estado activo** en la cabecera y la barra inferior: es un ancla de la portada (`/#calendario`); tendrá estado activo cuando tenga página propia.
@@ -49,13 +47,14 @@
 17. [ ] **Tapar 2013/14, 2019/20 y 2025/26 desde las actas propias**: no están en el histórico del portal (2025/26 vive en el dataset 211549 de temporada en curso).
 _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 
-21. [ ] **`pruebas:planes` intermitente en Actions** (01/11/2026, 2 veces): «404 Could not find the function public.crear_plan in the schema cache»; pasa al relanzar. Esperar a que PostgREST vea la función (reintento con `hasta()` o `notify pgrst` tras migrar) antes de la primera llamada.
 
 22. [ ] **D173, comprobar en el real la primera propuesta automática** (martes 10/11/2026, 12:00, J5 del 15/11; Lección del 28/10: «funciona» solo con un aviso automático REAL): en `avisos_registro`, `conv-auto:2026-11-15:<Iván>` y los `rec:dudas`/`rec:cierre` de esa mañana; en `convocatorias`, el borrador con `automatica_en`. Si no sale, mirar `/api/avisos/tarea` (500 con «convocatoria: …»).
 
 ## Pendiente de Iván
 
 **Operativa de ahora**
+- [ ] **Asistente (D142), comprobación tuya en el móvil:** con sesión, que el botón flotante sale en Inicio, Agenda, Mi zona y Gestión. (Lo de «sin sesión» ya está comprobado en producción el 02/11/2026: no sale en portada, Liga, Historia, Plantilla, El club, Privacidad ni Entrar.)
+- [ ] **Retirar GitHub Pages del todo** (decide Iván; `docs/MIGRACION_WEB.md`): hoy solo redirige a la web nueva. Recomendación: mantenerla hasta final de temporada.
 - [x] **D173 (rutina C automática):** OK de Iván («todo hoy»); migración aplicada en el real con D111 y PR #32 mergeado el 02/11/2026 a las 20:12.
 - [ ] **Edu: activar los avisos en su móvil** (`/avisos`): hoy no tiene ninguna suscripción y no le llegarían los avisos de la convocatoria (el Panel lo dice).
 - [x] **Hecho (01/11/2026, OK de Iván, con D111; 28 cuentas antes y después):** **OK a la marca «Reserva» (D158, `feat/reserva`):** aplicar en el real la migración `20261031180000_reserva` (con D111) y la carga `node plataforma/scripts/cargar_reserva.mjs --aplicar` (reserva para Fernando M. y Guillermo), **antes** de mergear la rama (la convocatoria lee la columna). Lo hace Code cuando Iván dé el OK.
@@ -71,7 +70,6 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 
 **Decisiones**
 - [x] **Decidido (01/11/2026): 2025/26 no se toca; 2017/18–2024/25 sí se cargan (pestañas).** **Asistencia 2025/26 desde el export completo de SportEasy** (01/11/2026): elegir entre no tocarla, solo entrenos o completar las 8 personas que faltan (`docs/SPORTEASY_EXPORT.md`, cuadre en `privado/sporteasy/cuadre_asistencia_2025-26.md`). Y si se cargan como pestañas las temporadas 2017/18–2024/25 (propuesta en el mismo documento).
-- [ ] **Rama local `feat/calendario-automatico` (`4a1149b`, 25/09/2026, sin mergear):** recomendación de Code (auditoría del 30/10): **archivarla** (etiqueta `archivo/calendario-automatico` en `4a1149b` y borrar la rama), ni mergearla ni rehacerla. Motivos: (1) lo que hacía ya lo hacen la rutina B (lee Deportes/web, la programación oficial de los jueves) e Importar → Calendario, que compara con la tabla de eventos (fuente de verdad, D47/D95) con Aceptar/Ignorar, que era el detector de D47; (2) su fuente, el dataset 211549, a 25/09 no traía la 26/27 y su `robots.txt` veta la descarga programada; (3) su tabla para SportEasy sobra desde D62/D136; (4) mergearla pisaría `data/calendario_2026-27.json` (44 partidos) con uno vacío y metería un workflow semanal en Actions. Lo único reutilizable (`--descubrir` de códigos de equipo, para cruzar la 26/27 con el histórico JDM en la 27/28) queda en la etiqueta; para el calendario de los dos grupos es mejor el CSV de gesdeportiva («Pendiente de Code», 2). Code no la toca sin el OK de Iván.
 - [ ] Más adelante, decisión de Iván: retirar `asistencia_resumen` (sin uso desde D116; tiene 6 filas de 2026/27 con valores viejos).
 - [ ] **Retirar `asistencia_motivos`** («será otra decisión, más adelante»; venía del pendiente del paso 2, punto 6).
 - [ ] Más adelante: los pedidos de ropa de campañas cerradas ya no se ven en el inicio (D117); si se echan de menos, una página «Mis pedidos».
@@ -132,6 +130,12 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ---
 
 ## Histórico
+
+### Cerrado en el mantenimiento corto (02/11/2026, `fix/mantenimiento-02-11`)
+
+- [x] **Rama `feat/calendario-automatico` archivada** (OK de Iván, 02/11/2026): etiqueta `archivo/calendario-automatico` en `4a1149b` (ya creada y subida; la rama ya no existe, ni local ni remota). Motivos de la recomendación del 30/10: lo que hacía lo hacen la rutina B e Importar → Calendario; su fuente (dataset 211549) no traía la 26/27 y su `robots.txt` veta la descarga programada; la tabla para SportEasy sobra (D62/D136); mergearla pisaría `data/calendario_2026-27.json`. Lo reutilizable (`--descubrir` de códigos de equipo, para la 27/28) queda en la etiqueta.
+- [x] **Asistente (D142), parte pública** (antiguo «Pendiente de Code» 8): comprobado en producción el 02/11/2026, sin cuentas, que el botón no sale sin sesión en `/`, `/liga`, `/historia`, `/plantilla`, `/club`, `/privacidad`, `/entrar` ni `/asistente`. Lo de «con sesión» queda en «Pendiente de Iván».
+- [x] **`pruebas:planes` intermitente** (antiguos «Pendiente de Code» 0 y 21; eran el mismo fallo, `pruebas/rls_planes.mjs`): tras revertir y volver a aplicar las migraciones, la prueba esperaba a PostgREST como máximo 10 s, solo miraba `crear_plan`, contaba como «listo» cualquier respuesta que no fuera 404 (también el 503 de «recargando») y, si se agotaba, seguía en silencio. PostgREST puede quedarse un rato con una caché del esquema a medias (visto: `crear_plan` sí, `editar_plan` y `responder_plan` no), con lo que `crear_plan` fallaba con «404 Could not find the function public.crear_plan in the schema cache» (Actions, 31/10 y 01/11) o, si esa llamada sí pasaba, se rompía el resto, el plan no existía y todo acababa en el `TypeError … 'fecha'` de la línea 162 (local, 02/11): mismo fallo visto desde dos sitios. No era la hora ni el orden entre pruebas. **Arreglo (solo la prueba, sin tocar código ni base):** `hasta()` con límite de 60 s hasta que anon recibe un rechazo de permisos (no 404/503) de las siete funciones que usa la prueba, en 4 rondas seguidas, y nuevo `notify pgrst` cada 3 s si tarda; si no llega, falla ahí con el nombre de las funciones que faltan. Antes: 2 fallos en 10 pasadas seguidas en local (pasadas 3 y 8); después: 12 de 12 en verde.
 
 ### Cerrado con el fin de SportEasy (02/11/2026, `feat/fin-sporteasy`, D172)
 

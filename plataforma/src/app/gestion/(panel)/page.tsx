@@ -76,7 +76,19 @@ export default async function InicioGestion() {
   const mismaHora = delDomingo.length === 2 && delDomingo[0].inicio && delDomingo[0].inicio === delDomingo[1].inicio;
   const conAviso = delDomingo.filter((e) => e.aviso?.hay);
   // Convocatoria del domingo (D107): cuántos van por equipo y su estado (sin la migración aplicada, «Pendiente»).
-  const { data: convDomingo } = fecha ? await supabase.from("convocatorias").select("estado, origen, equipos").eq("fecha", fecha).maybeSingle() : { data: null };
+  // «*»: vale antes y después de la migración de D173 (automatica_en).
+  const { data: convDomingo } = fecha ? await supabase.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle() : { data: null };
+  // D173: la propuesta automática del martes también se ve al entrar en Gestión (aunque no llegue el push), y el Panel dice
+  // qué gestor no recibirá los avisos de la convocatoria (sin ninguna suscripción activa).
+  const [{ data: gestoresF }, { data: subsG }, { data: propuestas }] = await Promise.all([
+    supabase.from("gestores").select("nombre, user_id"),
+    supabase.from("suscripciones_avisos").select("user_id").eq("activa", true),
+    // Cualquier propuesta automática aún sin aprobar (sin la migración de D173 la columna no existe: error y nada).
+    supabase.from("convocatorias").select("fecha").eq("estado", "borrador").not("automatica_en", "is", null).gte("fecha", hoy).order("fecha").limit(1),
+  ]);
+  const propuestaLista = ((propuestas ?? []) as { fecha: string }[])[0]?.fecha ?? null;
+  const conAvisosG = new Set(((subsG ?? []) as { user_id: string | null }[]).map((x) => x.user_id));
+  const gestoresSinAvisos = ((gestoresF ?? []) as { nombre: string; user_id: string | null }[]).filter((g) => !g.user_id || !conAvisosG.has(g.user_id)).map((g) => g.nombre.split(" ")[0]);
   const convocados = (e: Evento) => {
     const c = convDomingo as { estado: string; origen: string | null; equipos: Record<string, unknown[]> } | null;
     if (!c?.origen) return "Pendiente";
@@ -158,8 +170,8 @@ export default async function InicioGestion() {
           <span>Horarios, pistas, clasificación oficial y colores de los rivales.</span>
         </div>
         <div className="gs-caja">
-          <div className="gs-caja-cab"><span className="gs-eyebrow">C · Convocatoria</span><span className="pastilla">Lun–Mar</span></div>
-          <strong>Reparto MdA / MdL</strong>
+          <div className="gs-caja-cab"><span className="gs-eyebrow">C · Convocatoria</span><span className="pastilla">Mar 12:00</span></div>
+          <strong>Propuesta automática tras el cierre</strong>
           <span>
             {mismaHora ? "Misma hora los dos: sin dobladores esta jornada." : delDomingo.length === 2 ? `MdA a las ${delDomingo.find((e) => e.equipo === "MDA")?.inicio ?? "?"} y MdL a las ${delDomingo.find((e) => e.equipo === "MDL")?.inicio ?? "?"}.` : delDomingo.length === 1 ? `Solo juega ${NOMBRE_EQUIPO[delDomingo[0].equipo!]}.` : "Sin partidos."}
             {conAviso.length ? ` Equipación: ${conAviso.length === 1 ? "1 aviso" : `${conAviso.length} avisos`}.` : ""}
@@ -167,6 +179,17 @@ export default async function InicioGestion() {
         </div>
       </section>
 
+      {propuestaLista && (
+        <div className="ev-aviso" role="note" data-testid="panel-propuesta" style={{ marginBottom: 16 }}>
+          <span><b>Convocatoria del domingo {diaMes(propuestaLista)} lista para revisar.</b> La ha propuesto la plataforma tras el cierre del martes; no sale nada hasta que la apruebes.</span>
+          <Link className="boton boton-amarillo" href={`/gestion/convocatoria?fecha=${propuestaLista}`}>Revisar y aprobar</Link>
+        </div>
+      )}
+      {gestoresSinAvisos.length > 0 && (
+        <p className="aviso aviso-error" role="note" data-testid="panel-gestores-sin-avisos" style={{ marginBottom: 16 }}>
+          {gestoresSinAvisos.join(" y ")} no recibirá{gestoresSinAvisos.length > 1 ? "n" : ""} los avisos de la convocatoria: no tiene{gestoresSinAvisos.length > 1 ? "n" : ""} los avisos activados en ningún móvil (<Link href="/avisos">/avisos</Link>).
+        </p>
+      )}
       {viva && <div style={{ marginBottom: 20 }}><TarjetaAvisos inicial={viva} /></div>}
 
       <div className="gs-dos">

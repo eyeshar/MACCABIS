@@ -153,7 +153,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
           </div>
         )}
         <p className="in-nota" data-testid="regla-recordatorios">
-          Si no respondes, te lo recordamos: el lunes a las 19:00 (todo lo de la semana en un aviso), los entrenos también el mismo día a las 10:00 y los partidos el martes a las 10:00. Nunca de 22:30 a 8:00.
+          Plazo para responder: hasta el martes a las 12:00 para el partido del domingo y hasta el miércoles a las 12:00 para el entreno. Si no respondes, te lo recordamos el lunes a las 19:00 (todo lo de la semana en un aviso) y el día del plazo a las 09:00. Nunca de 22:30 a 8:00.
           {" "}Los planes, solo si quien lo organiza lo pide: un aviso un día antes.
         </p>
       </section>

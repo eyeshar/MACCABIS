@@ -21,7 +21,7 @@ type Props = {
 };
 
 const LIBRE = "__libre";
-const HUECOS: Record<TipoEvento, (keyof typeof TEXTO_HUECO)[]> = { entreno: ["lunes", "dia"], liga: ["lunes", "martes"], amistoso: ["creado", "24h"], torneo: ["creado", "24h"], interno: ["creado", "24h"], quedada: ["creado", "24h"], pachanga: ["creado", "24h"], otro: ["creado", "24h"] };
+const HUECOS: Record<TipoEvento, (keyof typeof TEXTO_HUECO)[]> = { entreno: ["lunes", "plazo"], liga: ["lunes", "plazo", "cierre"], amistoso: ["creado", "24h"], torneo: ["creado", "24h"], interno: ["creado", "24h"], quedada: ["creado", "24h"], pachanga: ["creado", "24h"], otro: ["creado", "24h"] };
 
 /** Crear y editar un evento (maqueta EventoEditar, D99 4.3). Un partido del Ayuntamiento solo cambia las notas (el
  *  encuentro es siempre 20 minutos antes, D98). Recordatorios, vista previa del aviso de cambio y «Guardar sin avisar» /

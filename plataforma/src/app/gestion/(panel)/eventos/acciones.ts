@@ -9,7 +9,8 @@ import {
   describirCambios, deLaSerieDesde, fechaDMA, hhmm, pistaEfectiva, quedadaPorDefecto, sumarDias,
   type CamposEditables, type EquipoEvento, type EstadoPista, type EventoFila, type Pista, type TipoEvento,
 } from "@/lib/eventos/dominio";
-import { avisarCambioEvento, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/servidor";
+import { avisarCambioEvento, clienteServicio, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/servidor";
+import { revisarTrasCalendario } from "@/lib/convocatoria/tarea";
 import { leerEnlaceGoogle } from "@/lib/ubicacion";
 import { compararCalendario, leerCalendario, leerFecha, normalizar, type CambioCalendario, type Senal } from "@/lib/eventos/importador";
 
@@ -25,6 +26,13 @@ const hora = (v: string) => (/^\d{1,2}:\d{2}$/.test(v) ? v.padStart(5, "0") : nu
 const refrescar = () => { revalidatePath("/gestion/eventos"); revalidatePath("/gestion"); revalidatePath("/"); revalidatePath("/calendario.ics"); revalidateTag("calendario", "max"); };
 
 type Campos = CamposEditables;
+
+/** D173: tras cambiar o cancelar un partido de liga, vuelve a revisar las convocatorias aprobadas de esos domingos (avisa a
+ *  los gestores si se rompe una regla). Nunca para la acción. */
+async function revisarConvocatorias(fechas: string[]) {
+  if (!fechas.length || !configuradoEnvio()) return;
+  await revisarTrasCalendario(clienteServicio(), fechas);
+}
 
 /** Solo se avisa al movil de los eventos de las proximas dos semanas (en una serie, no se avisa de todo el curso). */
 const AVISAR_DIAS = 14;
@@ -160,6 +168,7 @@ export async function guardarEvento(id: string, _prev: Estado, f: FormData): Pro
     n += r.avisados;
     if (r.avisados && "programado" in r && r.programado && r.programado > new Date()) sale = r.programado;
   }
+  if (antes.tipo === "liga") await revisarConvocatorias([...new Set(objetivos.flatMap((o) => [o.fecha, nuevo.fecha]))]);
   refrescar();
   // `sale`: solo si el aviso espera a que acabe la franja de noche (22:30-08:00, D155); si no, ha salido ya.
   redirect(`/gestion/eventos/${id}?guardado=${alcance === "siguientes" ? `serie-${objetivos.length}` : "cambio"}${avisar ? `&avisados=${n}${sale ? `&sale=${sale.toISOString()}` : ""}` : ""}`);
@@ -182,6 +191,7 @@ export async function cancelarEvento(id: string, alcance: "este" | "siguientes",
     const limite = sumarDias(hoyMadrid(), AVISAR_DIAS);
     for (const o of objetivos) if (o.fecha >= hoyMadrid() && o.fecha <= limite) await avisarCambioEvento(o.id, "cancelacion", false);
   }
+  if (antes.tipo === "liga") await revisarConvocatorias(objetivos.map((o) => o.fecha));
   refrescar();
   redirect(`/gestion/eventos/${id}?guardado=${restablecer ? "restablecido" : "cancelado"}${objetivos.length > 1 ? `-${objetivos.length}` : ""}`);
 }
@@ -292,6 +302,7 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
   const aplicadosEn: string[] = [];
   const porAvisar: { id: string; cambiaDia: boolean }[] = [];
   const sinAviso: string[] = [];
+  const fechasTocadas: string[] = [];
   let avisados = 0;
   let sale: Date | null = null;
   for (const [eventoId, cs] of porEvento) {
@@ -319,6 +330,7 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
     if (error) throw new Error(`No se pudo aplicar ${e.clave}: ${error.message}`);
     aplicadosEn.push(`${e.equipo} J${e.jornada}`);
     const fechaNueva = (cambio.fecha as string | undefined) ?? e.fecha;
+    fechasTocadas.push(e.fecha, fechaNueva);
     if (visible && fechaNueva >= hoyMadrid()) porAvisar.push({ id: eventoId, cambiaDia: "fecha" in cambio });
     else if (visible) sinAviso.push(`${e.equipo} J${e.jornada} (ya jugado)`);
   }
@@ -328,6 +340,7 @@ export async function aplicarCalendario(textoPegado: string, aceptados: string[]
     if (r.motivo === "sin_configurar") sinAviso.push("avisos sin configurar en el servidor");
     if (r.avisados && "programado" in r && r.programado && r.programado > new Date()) sale = r.programado;
   }
+  await revisarConvocatorias([...new Set(fechasTocadas)]);
   await supabase.from("importaciones").insert({
     tipo: "calendario", por_user_id: user.id, por_nombre: nombre, lineas: comp.lineas, validas: comp.nuestras,
     aceptadas: elegidos.length, ignoradas: comp.cambios.length - elegidos.length, bloqueadas: comp.errores.length,

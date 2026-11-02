@@ -3,7 +3,7 @@
 //   - PRIVACIDAD: un jugador ve nombre y estado (va, duda, no va, sin responder) de los eventos a los que está invitado, nunca el
 //     motivo, el detalle ni el origen; no ve eventos ajenos; anónimo, nada;
 //   - HORA LÍMITE: `_limite_dudas` (base) y `limiteDudas` (web) dan la misma hora en más de 600 eventos, con el cambio de hora de
-//     octubre y el de marzo; desde el límite la base rechaza «duda» (jugador, «responder por él», tablero, plan);
+//     octubre y el de marzo (D173: martes 12:00 el partido, miércoles 12:00 el entreno del miércoles); desde el límite la base rechaza «duda» (jugador, «responder por él», tablero, plan);
 //   - CIERRE: `cerrar_dudas` pasa a «no va · no confirmó» (origen sistema) con hora simulada, es idempotente, no toca lo que no
 //     toca (antes del límite, empezado, cancelado), cierra también los planes y solo la ejecuta el rol de servicio;
 //   - TAREA DE AVISOS de extremo a extremo (cada 15 minutos): cierra, avisa una sola vez, y volver a «voy» no avisa;
@@ -273,7 +273,7 @@ try {
   const abierta = liga.every((ev) => H.dudaAbierta({ tipo: ev.tipo, fecha: ev.f, inicio: ev.i }, new Date()));
   const hayDuda = (await pu2.getByRole('button', { name: 'Duda', exact: true }).count()) === 1;
   ok(hayDuda === abierta && (await pu2.getByTestId('limite-dudas').count()) === (abierta ? 1 : 0), `domingo ${dom.f}: el límite ${abierta ? 'no ha llegado: hay «Duda» y el aviso' : 'ya pasó: no hay «Duda» ni aviso'}`);
-  if (abierta) ok(/Si dudas, tienes hasta (hoy|mañana|el martes( \d+)?) a las 20:00 para confirmar/.test(await pu2.getByTestId('limite-dudas').innerText()), '«Si dudas, tienes hasta el martes a las 20:00 para confirmar»');
+  if (abierta) ok(/Si dudas, tienes hasta (hoy|mañana|el martes( \d+)?) a las 12:00 para confirmar/.test(await pu2.getByTestId('limite-dudas').innerText()), '«Si dudas, tienes hasta el martes a las 12:00 para confirmar» (D173)');
   ok(await pu2.getByTestId(`respuestas-${liga[0].equipo}`).count() === 1, 'cada partido del domingo trae su bloque «Respuestas al partido» (quién va, duda, no va, sin responder)');
   await pu2.getByTestId(`respuestas-numeros-${liga[0].equipo}-duda`).click();
   ok(/Uno/.test(await pu2.getByTestId(`respuestas-numeros-${liga[0].equipo}-lista`).innerText()), 'y «dudan» lleva a Uno por su nombre');

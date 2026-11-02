@@ -1,30 +1,38 @@
-# RUTINA C — Disponibilidad y convocatoria (procedimiento, v2, 31/10/2026; v1 del 08/10/2026)
+# RUTINA C — Disponibilidad y convocatoria (v3, 02/11/2026, D173; v2 del 31/10/2026, v1 del 08/10/2026)
 
-> **SportEasy no se usa (D153, 31/10/2026; D172, 02/11/2026).** Esta rutina no lee ni escribe en SportEasy. Las respuestas,
-> los motivos y las ausencias se dan y se leen **solo en la web**, que está **siempre encendida** (D172: ya no hay
-> interruptor). Lo de la fase puente (Importar → Respuestas, la tarea «Maccabis · respuestas de SportEasy», la cola «Copia a
-> SportEasy», el procedimiento de activación) queda abajo, en **«Histórico»**: no son pasos vigentes.
+> **La hace la plataforma sola.** Claude ya no tiene pasos en esta rutina: todo corre dentro de la tarea de avisos de cada
+> 15 minutos (pg_cron → `/api/avisos/tarea`), sin tareas programadas aparte. Lo único que hace Iván es **revisar y aprobar
+> desde el móvil el martes**. Reglas: `docs/REGLAS_CONVOCATORIA.md`. SportEasy no se usa (D153, D172): lo de la fase puente,
+> abajo, en «Histórico».
 
-Cuándo: lunes y martes (la jornada es el domingo); **la convocatoria del partido se propone el martes por la noche, después de las 20:00, cuando se cierran las dudas (D141)**. Fuente de las respuestas: **la web** (Gestión → Eventos → Respuestas, el tablero y la pantalla de Convocatoria). Reglas: `docs/REGLAS_CONVOCATORIA.md`. Datos privados de plantilla (posición, nivel A–E, dobla): solo en `privado/plantilla_2026-27.csv` y `privado/criterios_convocatoria.md` (nunca a git ni a docs).
+## Lo que hace la plataforma sola cada semana (hora de Madrid; nunca de 22:30 a 08:00, D155)
 
-## 0. Tarea programada «Maccabis · respuestas de SportEasy»: borrada (D153, D172)
-- **Ya no existe:** la borró Claude el 02/11/2026. Lo que hacía, en «Histórico» (apartado H0).
+| Cuándo | Qué |
+|---|---|
+| **Lunes 19:00** | A cada jugador, un aviso con todo lo que le falta de la semana (entreno y partido). |
+| **Martes 09:00** | (Si la convocatoria de ese domingo ya está aprobada, no sale.) A quien no ha respondido al partido o sigue en «duda»: «Tienes hasta hoy a las 12:00 para decir si vas; si no, te quedas fuera de la convocatoria» (uno solo, junto con lo demás de ese día). |
+| **Martes 12:00 — cierre del partido** | Las «duda» pasan a «no va · no confirmó» (con su aviso). A quien sigue sin responder: «No has respondido: no entras en la propuesta…» (su respuesta no se toca). **Propuesta automática** como borrador (si no hay una aprobada ni un borrador tocado a mano) y **push a Iván**: «Convocatoria del domingo DD/MM lista: MdA 9 · MdL 9 · 1 aviso…» o «MdL: 6 de 7, faltan interiores». También se ve en el Panel. |
+| **Martes 19:00** | Si sigue sin aprobar: recordatorio a Iván. |
+| **Martes 21:00** | Si sigue sin aprobar: aviso a los tres gestores (puede aprobar cualquiera). |
+| **Miércoles 09:00** | A quien no ha respondido al entreno o sigue en «duda»: «Tienes hasta hoy a las 12:00…». |
+| **Miércoles 12:00 — cierre del entreno** | Las «duda» del entreno pasan a «no va». |
+| **Tras aprobar, hasta el domingo** | Si un convocado dice «no voy» (o un gestor lo cambia): push a los gestores «Sale Jon (MdA). Propuesta: entra Fernando M.», con la hoja de recambio. Un «voy» tardío solo avisa si un equipo está por debajo de un mínimo. Si un cambio de calendario (Importar, editar o cancelar un partido) rompe la convocatoria aprobada, push con el arreglo. |
 
-## 1. Ver las respuestas (en la web)
-1. Entrar con la sesión de gestor de Iván en `https://maccabis.vercel.app/gestion/eventos` y abrir los eventos de la semana (entreno del miércoles y partidos del domingo de MdA y MdL).
-2. En `/gestion/eventos/<evento>/respuestas`: orden no van → dudan → sin responder → van, motivos y detalle de cada «no voy» y franja de las ausencias por periodo. La vista de conjunto, en `/gestion/tablero`; la de la convocatoria, en Gestión → Convocatoria.
-3. Si un jugador dice algo por WhatsApp, **«Responder por él»** en la pantalla del evento (queda «puesto por …»).
+**Nunca se aprueba sola.** Ningún aviso ni WhatsApp lleva niveles ni la marca «reserva».
 
-## 2. Convocatoria
-4. **Esperar al cierre de dudas: martes a las 20:00 (D141).** Antes de esa hora, la pantalla de Convocatoria enseña una propuesta *provisional* con los «va» y las dudas aparte en «Posibles (dudas)» (no se convocan). Pasadas las 20:00 (la tarea de cada 15 minutos las ha pasado a «no va · no confirmó»), aplicar `REGLAS_CONVOCATORIA.md` con los datos de `privado/` y las respuestas guardadas; proponer a Iván el reparto MdA / MdL. Añadir al mensaje la línea de equipación del partido (`lineaEquipacion`, D75; la genera también el mensaje de WhatsApp del evento).
-5. Redactar el mensaje de WhatsApp. **Lo envía Iván** (o Claude con su OK explícito).
-6. Después del martes a las 20:00 (cierre de dudas y convocatoria definitiva, D141; antes las 10:00), cualquier cambio de un partido sale en **banda roja** (y avisa a los gestores): revisar la convocatoria y pulsar «Visto».
+## Lo que hace Iván (el martes, desde el móvil)
 
-## 3. Recordatorios (salen solos)
-7. Los recordatorios salen solos (lunes 19:00 agrupado; martes 10:00 del partido, solo a quien no ha respondido; **a las 12:00 del día del límite, aviso a quien siga en «duda» (martes 20:00 para el entreno del miércoles y el partido; 24 h antes en los demás eventos), juntado con otro recordatorio de ese día si lo hay**; miércoles 10:00 del entreno). **Al llegar el límite, la «duda» pasa a «no va» (motivo interno «no confirmó», origen «sistema») y el jugador recibe un aviso; puede volver a decir «voy».** Si hace falta uno extra, **«Enviar un recordatorio ahora»** en la pantalla del evento. Horario de los avisos: D155 (nunca de 22:30 a 08:00, hora de Madrid).
-8. **Ya no se marcan jornadas limpias** (D139; el interruptor se quitó en D172): el Panel tiene la tarjeta «Avisos y accesos» («Con avisos: N/27» y «Faltan por entrar» si falta alguien, con los mensajes para copiar).
+1. Abrir el push o Gestión → Panel → **«Revisar y aprobar»** (`/gestion/convocatoria?fecha=…`).
+2. Mirar arriba, por equipo: convocados por línea, avisos (rojo / ámbar), **riesgo** (rojo / ámbar: nivel del partido más difícil y proyección; cambiar la dificultad no rehace la propuesta), proyección, rival y dificultad (se puede cambiar ahí), y quién se queda fuera y por qué. Si alguien dijo «voy» después de la propuesta, sale en «Respondió después de la propuesta» con **«Rehacer propuesta»**. Si no se llega a un mínimo, la lista de quién falta por responder con un **WhatsApp para copiar**.
+3. Ajustar si hace falta con lo de siempre, debajo («Mover a…», «Deshacer», «Cambiar», o el tablero).
+4. **«Aprobar y avisar»**: aprueba y avisa ya a cada jugador (convocado; convocado con un equipo y no con el otro; o «esta vez no entras»).
+5. En la salida: «Avisados N de M (los otros no tienen avisos)» y **«Copiar mensaje»** para pegar el WhatsApp en el grupo. «Reenviar» solo si algún aviso falló.
+6. Si después llega un push de baja: abrir la hoja de recambio, dejar el propuesto o elegir otro (o ninguno) y **«Aplicar y avisar»**; copiar el WhatsApp del cambio.
 
-Notas: Claude no inventa respuestas ni motivos. Nunca se pide a los jugadores que respondan fuera de la web.
+Cualquier gestor puede hacer lo mismo. Responder por un jugador que escribe por WhatsApp: «Responder por él» en la pantalla del evento o el tablero (queda «puesto por …»). Notas: nadie inventa respuestas ni motivos; nunca se pide a los jugadores que respondan fuera de la web.
+
+### Antes de D173 (v2, 31/10/2026)
+Claude proponía el reparto el martes por la noche tras el cierre de las 20:00 y redactaba el WhatsApp; el aviso «Estás convocado» salía con «Enviar ahora» (D127); recordatorios el martes y el miércoles a las 10:00 y aviso de dudas a las 12:00 (D99.6, D141).
 
 ---
 

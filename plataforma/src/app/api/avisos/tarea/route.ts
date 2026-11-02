@@ -14,11 +14,19 @@ function autorizado(req: Request) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** La hora de la pasada: la real. Solo en las pruebas (variable AVISOS_PRUEBAS_AHORA=1, que nunca está en Vercel) se puede
+ *  simular con ?ahora=<ISO> para probar el martes a las 12:00 cualquier día (D173). */
+function horaDeLaPasada(req: Request) {
+  const pedida = process.env.AVISOS_PRUEBAS_AHORA === "1" ? new URL(req.url).searchParams.get("ahora") : null;
+  const t = pedida ? new Date(pedida) : null;
+  return t && !Number.isNaN(t.getTime()) ? t : new Date();
+}
+
 export async function POST(req: Request) {
   if (!autorizado(req)) return Response.json({ error: "no autorizado" }, { status: 401 });
   if (!configuradoEnvio()) return Response.json({ error: "faltan las claves de avisos en el servidor" }, { status: 503 });
   try {
-    return Response.json(await ejecutarTarea(new Date()));
+    return Response.json(await ejecutarTarea(horaDeLaPasada(req)));
   } catch (e) {
     return Response.json({ error: (e as Error).message }, { status: 500 });
   }

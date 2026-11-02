@@ -1,6 +1,6 @@
 # Maccabis · Guía del jugador
 
-_Versión del 27/10/2026. Fuente: guía del jugador (Claude Docs). Base de conocimiento del chat IA._
+_Versión del 02/11/2026. Fuente: guía del jugador (Claude Docs). Base de conocimiento del chat IA._
 
 ## Qué es y qué puedes hacer
 
@@ -68,13 +68,17 @@ En cada evento pulsa una de las tres opciones. Puedes cambiarla cuando quieras.
 
 - Voy.
 - No voy: elige el motivo (lesión, trabajo, viaje, familia u otro). El motivo solo lo ven los gestores.
-- Duda: úsala solo si de verdad no lo sabes. Las dudas tienen hora límite: el martes a las 20:00 para el entreno de esa semana y el partido del domingo. Si a esa hora sigues en duda, cuentas como «no va».
+- Duda: úsala solo si de verdad no lo sabes.
+
+Plazo para responder (y para las dudas): hasta el martes a las 12:00 para el partido del domingo y hasta el miércoles a las 12:00 para el entreno de esa semana. Si a esa hora sigues en duda, cuentas como «no va». Si al cierre del martes no has respondido al partido, no entras en la propuesta de convocatoria; si después puedes jugar, di «voy» cuanto antes.
 
 Domingos con dos partidos. Si tienes ficha en MdA y MdL, respondes una vez por domingo: a los dos, solo a uno o a ninguno.
 
 Quién va. En cada evento ves cuántos van, dudan, no van y no han contestado. Pulsa un número para ver los nombres. Pulsando el número de «no han contestado» ves quiénes faltan por responder.
 
-Recordatorios. Si no respondes, te avisamos el lunes a las 19:00 (todo lo de la semana en un aviso), el martes a las 10:00 para el partido y el mismo día a las 10:00 para el entreno. Nunca entre las 22:30 y las 8:00.
+Recordatorios. Si no respondes, te avisamos el lunes a las 19:00 (todo lo de la semana en un aviso) y el día del plazo a las 09:00 (el martes para el partido, el miércoles para el entreno). Nunca entre las 22:30 y las 8:00.
+
+La convocatoria. Tras el cierre del martes se prepara la convocatoria del domingo. Cuando se aprueba te llega un aviso: si estás convocado y con qué equipo, o, si somos muchos, que esta vez no entras. Estar disponible no es estar convocado.
 
 ## Ausencias por periodo
 

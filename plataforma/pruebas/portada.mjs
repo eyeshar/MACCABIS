@@ -345,7 +345,7 @@ try {
     const agenda = p.locator('#agenda');
     // D172: las respuestas en la web, siempre encendidas: la agenda con sus entrenos y la regla de los recordatorios
     // (nunca «desactivadas»; sin SportEasy).
-    ok((await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').count()) >= 1 && /^Si no respondes, te lo recordamos:/.test(await p.getByTestId('regla-recordatorios').innerText()), 'Tu agenda: entrenos; y «Si no respondes, te lo recordamos: …»', await p.getByTestId('regla-recordatorios').innerText().catch(() => ''));
+    ok((await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').count()) >= 1 && /^Plazo para responder: hasta el martes a las 12:00 .* Si no respondes, te lo recordamos/.test(await p.getByTestId('regla-recordatorios').innerText()), 'Tu agenda: entrenos; y «Plazo para responder: hasta el martes a las 12:00… Si no respondes, te lo recordamos…» (D173)', await p.getByTestId('regla-recordatorios').innerText().catch(() => ''));
     ok(!/desactivadas/.test(await p.locator('main').innerText()) && !(await p.getByTestId('respuestas-apagadas').count()), 'inicio: sin «Las respuestas en la web están desactivadas» (ya no existe)');
     ok(!/SportEasy/i.test(await p.textContent('main')) && !(await p.getByTestId('responder-sporteasy').count()), 'inicio: sin «SportEasy» ni «Responder en SportEasy»');
     const filasLibre = await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').allTextContents();

@@ -64,26 +64,42 @@ export function textoSale(t: Date) {
   return `de noche: sale el ${m.fecha.slice(8, 10)}/${m.fecha.slice(5, 7)} a las ${m.hora}`;
 }
 
-// ---------------------------------------------------------------- dudas con hora limite (D141)
+// ---------------------------------------------------------------- plazo de respuesta y dudas (D141, D173)
 const UN_DIA = 24 * 3600 * 1000;
+/** Hora del plazo semanal (D173, Iván 02/11/2026; antes, martes a las 20:00). */
+export const HORA_PLAZO = "12:00";
+/** Hora del aviso único del día del plazo (D173): «tienes hasta hoy a las 12:00…». */
+export const HORA_AVISO_PLAZO = "09:00";
 
-/** Hora limite de las «dudas» de un evento (misma definicion que `_limite_dudas` en la base; una prueba las compara).
- *  Entreno oficial del miercoles y partido de liga oficial de miercoles a domingo: el MARTES de esa semana a las 20:00 (los
- *  dos, el mismo martes). Todo lo demas (amistosos, torneos, «entre nosotros», planes, entrenos de otro dia): 24 h antes
- *  del inicio. Desde ese instante ya no hay «duda»: quien siga en ella pasa a «no va». */
-export function limiteDudas(e: { tipo: string; fecha: string; inicio: string | null; oficial?: boolean }): Date {
+/** ¿Es un evento con PLAZO SEMANAL (D173)? Entreno oficial del miércoles y partido de liga oficial de miércoles a domingo. */
+export function plazoSemanal(e: { tipo: string; fecha: string; oficial?: boolean }) {
+  if (e.oficial === false) return null;
   const dia = diaSemana(e.fecha);
-  if (e.oficial !== false) {
-    if (e.tipo === "entreno" && dia === 2) return madrid(sumarDias(e.fecha, -1), "20:00");
-    if (e.tipo === "liga" && dia >= 2) return madrid(sumarDias(lunesDe(e.fecha), 1), "20:00");
-  }
+  if (e.tipo === "entreno" && dia === 2) return "entreno" as const;
+  if (e.tipo === "liga" && dia >= 2) return "partido" as const;
+  return null;
+}
+
+/** Hora limite para responder y para las «dudas» de un evento (misma definicion que `_limite_dudas` en la base; una prueba
+ *  las compara). D173: partido de liga oficial de miercoles a domingo, el MARTES de esa semana a las 12:00; entreno oficial
+ *  del miercoles, ese MIERCOLES a las 12:00. Todo lo demas (amistosos, torneos, «entre nosotros», planes, entrenos de otro
+ *  dia): 24 h antes del inicio. Desde ese instante ya no hay «duda»: quien siga en ella pasa a «no va»; quien no ha
+ *  respondido sigue «sin responder» (el motor ya solo convoca a los «va»). */
+export function limiteDudas(e: { tipo: string; fecha: string; inicio: string | null; oficial?: boolean }): Date {
+  const p = plazoSemanal(e);
+  if (p === "entreno") return madrid(e.fecha, HORA_PLAZO);
+  if (p === "partido") return madrid(sumarDias(lunesDe(e.fecha), 1), HORA_PLAZO);
   return new Date(madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00").getTime() - UN_DIA);
 }
+
+/** D173: el aviso del día del plazo sale a las 09:00 de ese día (a quien no ha respondido o sigue en «duda»). */
+export const avisoDePlazo = (limite: Date) => madrid(enMadrid(limite).fecha, HORA_AVISO_PLAZO);
 
 /** ¿Siguen valiendo las «dudas» en este instante? */
 export const dudaAbierta = (e: Parameters<typeof limiteDudas>[0], ahora: Date) => ahora.getTime() < limiteDudas(e).getTime();
 
-/** Cuando sale el aviso de «te quedan hasta las HH:MM» a quien siga en «duda»: las 12:00 del dia del limite; si el limite es
+/** Eventos SIN plazo semanal (amistosos, torneos, planes…): cuando sale el aviso de «te quedan hasta las HH:MM» a quien siga
+ *  en «duda»: las 12:00 del dia del limite; si el limite es
  *  antes de las 13:00, una hora antes del limite pero nunca antes de las 08:00 (fin del silencio); null si ni asi cabe
  *  (limite antes de las 09:00 pasado el silencio: no hay aviso previo, solo el paso a «no va»). */
 export function avisoDeDudas(limite: Date): Date | null {
@@ -96,8 +112,8 @@ export function avisoDeDudas(limite: Date): Date | null {
 }
 
 const DIAS_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-/** El limite en palabras: "hoy a las 20:00" / "mañana a las 20:00" si cae hoy / mañana; si no, "el martes a las 20:00"
- *  (con el numero del dia si falta mas de cinco dias: "el martes 3 a las 20:00"). */
+/** El limite en palabras: "hoy a las 12:00" / "mañana a las 12:00" si cae hoy / mañana; si no, "el martes a las 12:00"
+ *  (con el numero del dia si falta mas de cinco dias: "el martes 3 a las 12:00"). */
 export function textoLimite(limite: Date, ahora: Date) {
   const l = enMadrid(limite);
   const hoy = enMadrid(ahora).fecha;

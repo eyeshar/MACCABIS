@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Recordatorios y horas de silencio (D99.6, D99.7, D155: 22:30–08:00) con la HORA FIJA SIMULADA, sin base de datos:
-//   lunes agrupado · martes a sin responder y a «duda» · miércoles del entreno · amistoso al crearlo y 24 h antes ·
+//   lunes agrupado · día del plazo a las 09:00 (D173) · aviso del cierre · amistoso al crearlo y 24 h antes ·
 //   silencio y excepción de menos de 12 h · cambio de hora del 25/10/2026 · ausencia que cuenta como respondido ·
 //   «sin recordatorios» · textos de los avisos (sin motivos, niveles ni posiciones) ·
 //   el aviso «no va (por defecto)» al propio jugador (D152): único, y nunca si respondió, está ausente o no está invitado.
@@ -87,34 +87,58 @@ ok(de(a, 'jon')[0].titulo === 'Te falta 1 respuesta' && de(a, 'jon')[0].url === 
 a = P.planificar(datos(M('2026-10-12', '19:20'), { respuestas: [{ evento_id: 'mda2', person_id: 'jon', respuesta: 'va' }] }));
 ok(de(a, 'jon')[0].titulo === 'Te faltan 2 respuestas', 'con un partido respondido y el otro no, el domingo sigue faltando');
 
-console.log('\n== Martes 10:00: solo a quien no ha respondido (las «duda» tienen su aviso de las 12:00, D141)');
-const resp = [
-  { evento_id: 'mda2', person_id: 'jon', respuesta: 'duda' }, { evento_id: 'mdl2', person_id: 'jon', respuesta: 'duda' },
-];
-a = P.planificar(datos(M('2026-10-13', '10:05'), { respuestas: resp }));
-ok(!de(a, 'jon').some((x) => x.clave.startsWith('rec:martes')), 'quien tiene «duda» a los dos partidos ya no recibe el del martes a las 10:00 (le llega el de las 12:00)');
-a = P.planificar(datos(M('2026-10-13', '10:05'), { respuestas: [{ evento_id: 'mda2', person_id: 'jon', respuesta: 'duda' }] }));
-const jm = de(a, 'jon').find((x) => x.clave.startsWith('rec:martes'));
-ok(jm && jm.titulo === 'Domingo 18: aún no has respondido' && jm.cuerpo === 'Hoy se hace la convocatoria. ¿Puedes jugar el domingo a las 10:15?', 'con un partido en «duda» y otro sin responder, sí: «Domingo 18: aún no has respondido»', JSON.stringify(jm));
-const gm = de(a, 'guille').find((x) => x.clave.startsWith('rec:martes'));
-ok(gm && gm.titulo === 'Domingo 18: aún no has respondido' && gm.url === '/mi-zona/evento/mda2', 'Guillermo (sin responder, una ficha): le llega y abre su partido');
-ok(!de(a, 'edimil').some((x) => x.clave.startsWith('rec:martes')), 'quien no tiene ficha no recibe el del partido');
-a = P.planificar(datos(M('2026-10-13', '10:05'), { respuestas: [{ evento_id: 'mda2', person_id: 'guille', respuesta: 'va' }] }));
-ok(!de(a, 'guille').some((x) => x.clave.startsWith('rec:martes')), 'quien ya dijo «voy» no recibe nada');
-a = P.planificar(datos(M('2026-10-20', '10:01')));
-const j3 = de(a, 'jon').find((x) => x.clave.startsWith('rec:martes'));
-ok(j3 && j3.cuerpo === 'Hoy se hace la convocatoria. ¿Puedes jugar el domingo a las 09:00 y a las 14:00?' && iso(j3.programado_para) === '2026-10-20T08:00:00.000Z', 'semana del cambio de hora: martes 20/10 a las 10:00 (08:00 UTC), con las dos horas del domingo', JSON.stringify(j3));
+console.log('\n== Día del plazo a las 09:00 (D173): UN aviso a quien no ha respondido o sigue en «duda»; ya no hay martes 10:00 ni miércoles 10:00');
+const dd = (ahora, extra = {}) => P.conAvisosDeDudas(P.planificar(datos(ahora, extra)), datos(ahora, extra));
+const claveD = (a, p) => a.find((x) => x.person_id === p && x.clave.startsWith('rec:dudas:'));
+a = P.planificar(datos(M('2026-10-13', '10:05')));
+ok(!a.some((x) => x.clave.startsWith('rec:martes')) && !P.planificar(datos(M('2026-10-14', '10:05'))).some((x) => x.clave.startsWith('rec:dia')), 'el recordatorio del martes a las 10:00 y el del miércoles a las 10:00 ya no existen');
+a = dd(M('2026-10-13', '09:05'));
+const gp = claveD(a, 'guille');
+ok(gp && gp.titulo === 'Domingo 18: responde hasta hoy a las 12:00' && gp.cuerpo === 'Tienes hasta hoy a las 12:00 para decir si vas; si no, te quedas fuera de la convocatoria.', 'martes 13/10 a las 09:05: Guillermo (sin responder) recibe «Tienes hasta hoy a las 12:00 para decir si vas; si no, te quedas fuera de la convocatoria»', JSON.stringify(gp));
+ok(gp && gp.url === '/mi-zona/evento/mda2' && iso(gp.programado_para) === iso(M('2026-10-13', '09:00')), 'sale a las 09:00 y abre su partido');
+ok(de(a, 'jon').length === 1 && claveD(a, 'jon').url === '/mi-zona/domingo/2026-10-18' && claveD(a, 'jon').eventos.sort().join() === 'mda2,mdl2', 'Jon (dos fichas): UN aviso por el domingo (los dos partidos), que abre el domingo');
+ok(!de(a, 'edimil').length, 'quien no tiene ficha no recibe el del partido');
+a = dd(M('2026-10-13', '09:05'), { respuestas: [{ evento_id: 'mda2', person_id: 'jon', respuesta: 'duda' }, { evento_id: 'mdl2', person_id: 'jon', respuesta: 'duda' }] });
+ok(de(a, 'jon').length === 1 && /Tienes hasta hoy a las 12:00 para decir si vas/.test(claveD(a, 'jon').cuerpo), 'con «duda» a los dos partidos: el mismo aviso único (sustituye al de las 12:00 de D141)');
+a = dd(M('2026-10-13', '09:05'), { respuestas: [{ evento_id: 'mda2', person_id: 'guille', respuesta: 'va' }, { evento_id: 'mda2', person_id: 'jon', respuesta: 'no' }, { evento_id: 'mdl2', person_id: 'jon', respuesta: 'no' }] });
+ok(!de(a, 'guille').length && !de(a, 'jon').length, 'quien ya dijo «voy» o «no voy» no recibe nada');
+ok(!dd(M('2026-10-13', '08:55')).some((x) => x.clave.startsWith('rec:dudas')), 'a las 08:55 todavía nada');
+ok(!dd(M('2026-10-13', '12:00')).some((x) => x.clave.startsWith('rec:dudas') && x.eventos.includes('mda2')), 'a las 12:00 (el plazo) ya no sale');
+ok(claveD(dd(M('2026-10-13', '09:20')), 'guille').clave === gp.clave && claveD(dd(M('2026-10-13', '11:50')), 'guille').clave === gp.clave, 'la clave es la misma en cada pasada (la tarea no lo duplica)');
+// Entreno del miércoles: su plazo es el miércoles a las 12:00 y su aviso, ese miércoles a las 09:00.
+a = dd(M('2026-10-14', '09:05'));
+const ej = claveD(a, 'jon');
+ok(ej && ej.titulo === 'Entreno del miércoles 14: responde hasta hoy a las 12:00' && ej.cuerpo === 'Tienes hasta hoy a las 12:00 para decir si vas al entreno (20:00).' && ej.url === '/mi-zona/evento/e14', 'miércoles 14 a las 09:05: «Entreno del miércoles 14: responde hasta hoy a las 12:00» (sin hablar de convocatoria)', JSON.stringify(ej));
+a = dd(M('2026-10-14', '09:05'), { respuestas: [{ evento_id: 'e14', person_id: 'jon', respuesta: 'duda' }] });
+ok(/si sigues en «duda», contarás como «no va»/.test(claveD(a, 'jon').cuerpo), 'con «duda» al entreno, avisa de que pasará a «no va»');
+ok(!dd(M('2026-10-13', '09:05')).some((x) => x.eventos.includes('e14')), 'el martes no se le avisa del entreno (su plazo es el miércoles)');
+// Un entreno de otro día (no tiene plazo semanal): el mismo día a las 10:00 como siempre.
+const juevesE = ev('e15', 'entreno', 'ambos', '2026-10-15', '20:00', '22:00');
+ok(P.planificar(datos(M('2026-10-15', '10:05'), { eventos: [juevesE] })).some((x) => x.clave === 'rec:dia:e15:jon'), 'un entreno en jueves sigue con su aviso del mismo día a las 10:00');
+// Se junta con cualquier otro aviso de ese día.
+const amHoy = ev('amx', 'amistoso', 'ambos', '2026-10-17', '11:00', '13:00', { titulo: 'Contra los de Vallecas', creado_en: M('2026-10-13', '08:30').toISOString() });
+a = dd(M('2026-10-13', '09:05'), { eventos: [...BASE, amHoy] });
+const gj = de(a, 'guille');
+ok(gj.length === 1 && gj[0].clave.startsWith('rec:dudas:') && iso(gj[0].programado_para) === iso(M('2026-10-13', '08:30')) && /Además: Nuevo amistoso «Contra los de Vallecas»: ¿vas\?$/.test(gj[0].cuerpo), 'si ese día ya salía otro aviso (un amistoso creado a las 08:30), sale UNO solo con «Además: …», a la hora del primero', JSON.stringify(gj));
+// Cambio de hora: octubre (verano → invierno) y marzo (invierno → verano), a cada lado.
+ok(iso(H.avisoDePlazo(H.limiteDudas(mdaJ3))) === '2026-10-20T07:00:00.000Z' && iso(H.avisoDePlazo(H.limiteDudas(entreno28))) === '2026-10-28T08:00:00.000Z', 'octubre: martes 20/10 a las 09:00 de verano (07:00 UTC); miércoles 28/10 a las 09:00 de invierno (08:00 UTC)');
+const marzo1 = ev('m1', 'liga', 'MdA', '2027-03-28', '10:15', null), marzo2 = ev('m2', 'liga', 'MdA', '2027-04-04', '10:15', null);
+ok(iso(H.limiteDudas(marzo1)) === '2027-03-23T11:00:00.000Z' && iso(H.limiteDudas(marzo2)) === '2027-03-30T10:00:00.000Z', 'marzo: la jornada del 28/03 cierra el martes 23/03 a las 12:00 de invierno (11:00 UTC); la del 04/04, el martes 30/03 a las 12:00 de verano (10:00 UTC)');
+ok(iso(H.avisoDePlazo(H.limiteDudas(marzo1))) === '2027-03-23T08:00:00.000Z' && iso(H.avisoDePlazo(H.limiteDudas(marzo2))) === '2027-03-30T07:00:00.000Z', 'y sus avisos, a las 09:00 de cada lado (08:00 y 07:00 UTC)');
 
-console.log('\n== Miércoles del entreno, a las 10:00');
-a = P.planificar(datos(M('2026-10-14', '10:00')));
-const em = de(a, 'jon').find((x) => x.clave.startsWith('rec:dia'));
-ok(em && em.titulo === 'Entreno hoy: ¿vas?' && em.cuerpo === '20:00 (encuentro 19:40) en Antonio Díaz Miguel, pista 3. Aún no has respondido.', '«Entreno hoy: ¿vas?» / «20:00 (encuentro 19:40) en Antonio Díaz Miguel, pista 3. Aún no has respondido.»', JSON.stringify(em));
-ok(em.url === '/mi-zona/evento/e14', 'al tocarlo abre el entreno');
-a = P.planificar(datos(M('2026-10-21', '10:00')));
-ok(de(a, 'jon').find((x) => x.clave.startsWith('rec:dia'))?.cuerpo === '20:30 (encuentro 20:10), pista por confirmar. Aún no has respondido.', 'con pista por confirmar, el texto lo dice (y no bloquea, D96)');
-a = P.planificar(datos(M('2026-10-14', '10:00'), { respuestas: [{ evento_id: 'e14', person_id: 'jon', respuesta: 'no' }] }));
-ok(!de(a, 'jon').some((x) => x.clave.startsWith('rec:dia')), 'a quien ya respondió (aunque sea «no») no le llega');
-ok(!P.planificar(datos(M('2026-10-14', '20:05'))).length, 'con el entreno ya empezado no sale nada');
+console.log('\n== Al cierre del partido (martes 12:00, D173): aviso a quien sigue sin responder; su respuesta no se toca');
+a = P.avisosCierre(datos(M('2026-10-13', '12:05'), { respuestas: [{ evento_id: 'mda2', person_id: 'guille', respuesta: 'va' }] }));
+const cj = de(a, 'jon');
+ok(cj.length === 1 && cj[0].clave === 'rec:cierre:2026-10-18:jon' && cj[0].titulo === 'Domingo 18: no has respondido' && cj[0].cuerpo === 'No has respondido: no entras en la propuesta de convocatoria. Si puedes jugar, di «voy» cuanto antes.' && cj[0].url === '/mi-zona/domingo/2026-10-18', 'Jon (sin responder a ningún partido): UN aviso «No has respondido: no entras en la propuesta de convocatoria…»', JSON.stringify(cj));
+ok(!de(a, 'guille').length && !de(a, 'edimil').length, 'a quien dijo «voy» o no tiene ficha, nada');
+ok(!de(P.avisosCierre(datos(M('2026-10-13', '12:05'), { respuestas: [{ evento_id: 'mda2', person_id: 'jon', respuesta: 'duda' }] })), 'jon').length, 'quien estaba en «duda» no recibe este (recibe el de «tu duda ha pasado a no va»)');
+ok(!P.avisosCierre(datos(M('2026-10-13', '11:55'))).length && !P.avisosCierre(datos(M('2026-10-13', '15:05'))).length, 'antes de las 12:00 nada; pasado el margen de 3 h, tampoco');
+ok(!de(P.avisosCierre(datos(M('2026-10-13', '12:05'), { ausencias: [{ person_id: 'jon', desde: '2026-10-17', hasta: '2026-10-19' }] })), 'jon').length, 'con una ausencia que cubre el domingo, nada');
+ok(!P.avisosCierre(datos(M('2026-10-14', '12:05'))).some((x) => x.eventos.includes('e14')), 'el entreno no tiene aviso de cierre');
+
+console.log('\n== Lateral de Gestión: calendario de recordatorios');
+ok(P.calendarioRecordatorios(entreno14).map((h) => h.tipo).join() === 'lunes,plazo' && P.calendarioRecordatorios(entreno14).map((h) => H.enMadrid(h.envio).hora).join() === '19:00,09:00', 'entreno del miércoles: lunes 19:00 y el miércoles a las 09:00');
+ok(P.calendarioRecordatorios(mdaJ3).map((h) => h.tipo).join() === 'lunes,plazo,cierre' && P.calendarioRecordatorios(mdaJ3).map((h) => H.enMadrid(h.envio).hora).join() === '19:00,09:00,12:00', 'partido: lunes 19:00, martes 09:00 y el cierre del martes a las 12:00');
 
 console.log('\n== Amistoso, torneo o «entre nosotros»: al crearlo y 24 h antes');
 const amistoso = ev('am', 'amistoso', 'ambos', '2026-10-17', '11:00', '13:00', { titulo: 'Contra los de Vallecas', creado_en: M('2026-10-15', '12:00').toISOString() });
@@ -157,9 +181,6 @@ ok(!a.length, 'evento cancelado: nada');
 const claves = P.planificar(datos(M('2026-10-12', '19:05'))).map((x) => x.clave);
 ok(new Set(claves).size === claves.length && JSON.stringify(claves) === JSON.stringify(P.planificar(datos(M('2026-10-12', '19:10'))).map((x) => x.clave)), 'las claves son únicas y repetir la tarea a los 5 minutos da las mismas (el registro no duplica)');
 
-console.log('\n== Lateral de Gestión: calendario de recordatorios');
-ok(P.calendarioRecordatorios(entreno14).map((h) => h.tipo).join() === 'lunes,dia' && P.calendarioRecordatorios(mdaJ3).map((h) => H.enMadrid(h.envio).hora).join() === '19:00,10:00', 'entreno: lunes y mismo día; partido: lunes 19:00 y martes 10:00');
-
 console.log('\n== Textos de cambios, cancelaciones, prueba y gestores');
 const tc = T.textoCambio(entreno14, 'va', false);
 ok(tc.titulo === 'Cambio en el entreno del miércoles 14' && tc.cuerpo === 'Antonio Díaz Miguel, pista 3, de 20:00 a 22:00 (encuentro 19:40). Sigues en «Voy»: si ya no puedes, cámbialo.', '«Cambio en el entreno del miércoles 14» / «Antonio Díaz Miguel, pista 3, de 20:00 a 22:00 (encuentro 19:40). Sigues en «Voy»: si ya no puedes, cámbialo.»', JSON.stringify(tc));
@@ -169,8 +190,8 @@ ok(tx.titulo === 'Se cancela el entreno del miércoles 14' && tx.cuerpo === 'No 
 const tg = T.textoGestores('Jon', mdaJ3, 'va', 'no');
 ok(tg.titulo === 'Jon cambia el partido del domingo 25 (MdA)' && /«Voy» a «No voy»/.test(tg.cuerpo), 'a los gestores: nombre y respuesta, sin motivo');
 const todos = [
-  ...P.planificar(datos(M('2026-10-12', '19:05'))), ...P.planificar(datos(M('2026-10-13', '10:05'), { respuestas: resp })),
-  ...P.planificar(datos(M('2026-10-14', '10:00'))), tc, tx, tg, T.TEXTO_PRUEBA,
+  ...P.planificar(datos(M('2026-10-12', '19:05'))), ...dd(M('2026-10-13', '09:05')), ...dd(M('2026-10-14', '09:05')),
+  ...P.avisosCierre(datos(M('2026-10-13', '12:05'))), tc, tx, tg, T.TEXTO_PRUEBA,
 ];
 ok(!todos.some((x) => /lesi[oó]n|trabajo|viaje|familia|horario|nivel|posici|base|alero|p[ií]vot|exterior|interior/i.test(`${x.titulo} ${x.cuerpo}`)), `ningún texto de aviso lleva motivos, niveles ni posiciones (${todos.length} revisados)`);
 
@@ -210,7 +231,8 @@ console.log('\n== Aviso de convocatoria (D127): a quien toca y sin dobles');
   const de = (id) => d.personas.find((p) => p.person_id === id);
   ok(d.cambio && d.personas.length === 3 && de('ana').equipos.join() === 'MdA' && de('luis').equipos.join() === 'MdL' && de('guille').equipos.length === 0 && !de('jon'), 'cambio tras enviar: a quien cambia (Ana pasa, Luis entra, Guille sale), no a Jon');
   const tc = CM.textoCambioConvocatoria('2026-10-25', PART, ['MdA']);
-  ok(tc.titulo === 'Cambio en la convocatoria · domingo 25/10' && tc.cuerpo === 'Estás convocado: MdA a las 09:00 (quedada 08:40). Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.', '«Cambio en la convocatoria · domingo 25/10»', JSON.stringify(tc));
+  ok(tc.titulo === 'Cambio en la convocatoria · domingo 25/10' && tc.cuerpo === 'Entras en la convocatoria del MdA · 09:00, quedada 08:40. Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.', 'quien entra (D173): «Entras en la convocatoria del MdA · 09:00, quedada 08:40.» + equipación', JSON.stringify(tc));
+  ok(CM.textoCambioConvocatoria('2026-10-25', PART, ['MdL'], ['MdA']).cuerpo.startsWith('Ahora vas con el MdL · 14:00, quedada 13:40.'), 'quien cambia de equipo: «Ahora vas con el MdL…»');
   ok(CM.textoCambioConvocatoria('2026-10-25', PART, []).cuerpo === 'Ya no estás convocado este domingo.', 'quien sale: «Ya no estás convocado este domingo.»');
   ok(CM.firmaConvocatoria(conv) === CM.firmaConvocatoria({ MdL: [{ person_id: 'ana' }, { person_id: 'jon' }], MdA: [{ person_id: 'guille' }, { person_id: 'jon' }] }) && CM.firmaConvocatoria(conv) !== CM.firmaConvocatoria(despues), 'la firma de la clave única no depende del orden y cambia si cambia la convocatoria');
   const todos = [t1, t2, tc].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
@@ -222,73 +244,53 @@ console.log('\n== Aviso de convocatoria (D127): a quien toca y sin dobles');
 }
 
 
-// ---------------------------------------------------------------- D141: dudas con hora limite
-console.log('\n== Hora límite de las dudas (D141): martes 20:00 para entreno del miércoles y partido del domingo; 24 h para lo demás');
+// ---------------------------------------------------------------- D141 + D173: plazo de respuesta y dudas
+console.log('\n== Plazo (D173): martes 12:00 el partido del domingo, miércoles 12:00 el entreno del miércoles; 24 h para lo demás');
 const lim = (e) => H.limiteDudas(e);
-ok(iso(lim(entreno14)) === '2026-10-13T18:00:00.000Z' && iso(lim(mdaJ2)) === '2026-10-13T18:00:00.000Z' && iso(lim(mdlJ2)) === iso(lim(mdaJ2)), 'entreno del miércoles 14 y partidos del domingo 18: el mismo martes 13/10 a las 20:00 (18:00 UTC)');
-ok(iso(lim(mdaJ3)) === '2026-10-20T18:00:00.000Z' && iso(lim(mdlJ3)) === iso(lim(mdaJ3)), 'semana del cambio de hora: la J3 del 25/10 cierra el martes 20/10 a las 20:00 (verano)');
-ok(iso(lim(entreno28)) === '2026-10-27T19:00:00.000Z', 'entreno del 28/10: martes 27/10 a las 20:00 (invierno = 19:00 UTC)');
+ok(iso(lim(mdaJ2)) === '2026-10-13T10:00:00.000Z' && iso(lim(mdlJ2)) === iso(lim(mdaJ2)), 'partidos del domingo 18: el martes 13/10 a las 12:00 (10:00 UTC, verano)');
+ok(iso(lim(entreno14)) === '2026-10-14T10:00:00.000Z', 'entreno del miércoles 14: ese miércoles a las 12:00 (antes, el martes a las 20:00)');
+ok(iso(lim(mdaJ3)) === '2026-10-20T10:00:00.000Z' && iso(lim(mdlJ3)) === iso(lim(mdaJ3)), 'semana del cambio de hora: la J3 del 25/10 cierra el martes 20/10 a las 12:00 (verano)');
+ok(iso(lim(entreno28)) === '2026-10-28T11:00:00.000Z', 'entreno del 28/10: miércoles 28/10 a las 12:00 (invierno = 11:00 UTC)');
 const amis = ev('a1', 'amistoso', 'ambos', '2026-10-17', '17:00', '19:00');
-ok(iso(lim(amis)) === iso(M('2026-10-16', '17:00')), 'amistoso del sábado a las 17:00: 24 h antes (viernes 17:00)');
+ok(iso(lim(amis)) === iso(M('2026-10-16', '17:00')), 'amistoso del sábado a las 17:00: 24 h antes (viernes 17:00), sin cambios');
 ok(iso(lim(ev('a2', 'amistoso', 'ambos', '2026-10-25', '10:00', null))) === iso(M('2026-10-24', '11:00')), '24 h son 24 horas de reloj aunque el 25/10 vuelva atrás una hora: sábado 24/10 a las 11:00');
 ok(iso(lim({ ...entreno14, oficial: false })) === iso(new Date(M('2026-10-14', '20:00').getTime() - 24 * 3600 * 1000)), 'un plan no oficial, aunque sea en miércoles: 24 h antes');
 ok(iso(lim(ev('e15', 'entreno', 'ambos', '2026-10-15', '20:00', '22:00'))) === iso(M('2026-10-14', '20:00')), 'un entreno de jueves: 24 h antes');
 ok(iso(lim(ev('t1', 'torneo', 'ambos', '2026-11-08', '09:00', '14:00'))) === iso(M('2026-11-07', '09:00')) && iso(lim(ev('i1', 'interno', 'ambos', '2026-10-21', '20:30', '22:30'))) === iso(M('2026-10-20', '20:30')), 'torneo y «entre nosotros»: 24 h antes');
-ok(H.dudaAbierta(entreno14, M('2026-10-13', '19:59')) && !H.dudaAbierta(entreno14, M('2026-10-13', '20:00')) && !H.dudaAbierta(mdaJ2, M('2026-10-14', '09:00')), 'abierta hasta las 20:00 en punto; después, cerrada');
-ok(H.textoLimite(lim(entreno14), M('2026-10-10', '12:00')) === 'el martes a las 20:00' && H.textoLimite(lim(entreno14), M('2026-10-01', '12:00')) === 'el martes 13 a las 20:00', 'texto del límite: «el martes a las 20:00» (con el número si falta más de cinco días)');
-ok(H.textoLimite(lim(entreno14), M('2026-10-13', '12:05')) === 'hoy a las 20:00' && H.textoLimite(lim(entreno14), M('2026-10-12', '23:00')) === 'mañana a las 20:00' && H.textoLimite(lim(entreno14), M('2026-10-11', '12:00')) === 'el martes a las 20:00', 'texto del límite: «hoy a las 20:00» si es hoy, «mañana a las 20:00» si es mañana, «el martes a las 20:00» si no');
+ok(H.dudaAbierta(mdaJ2, M('2026-10-13', '11:59')) && !H.dudaAbierta(mdaJ2, M('2026-10-13', '12:00')) && H.dudaAbierta(entreno14, M('2026-10-14', '11:59')) && !H.dudaAbierta(entreno14, M('2026-10-14', '12:00')), 'abierta hasta las 12:00 en punto (martes el partido, miércoles el entreno); después, cerrada');
+ok(H.textoLimite(lim(mdaJ2), M('2026-10-10', '12:00')) === 'el martes a las 12:00' && H.textoLimite(lim(mdaJ2), M('2026-10-01', '12:00')) === 'el martes 13 a las 12:00', 'texto del plazo: «el martes a las 12:00» (con el número si falta más de cinco días)');
+ok(H.textoLimite(lim(mdaJ2), M('2026-10-13', '09:05')) === 'hoy a las 12:00' && H.textoLimite(lim(entreno14), M('2026-10-13', '09:05')) === 'mañana a las 12:00', '«hoy a las 12:00» / «mañana a las 12:00»');
+ok(H.plazoSemanal(entreno14) === 'entreno' && H.plazoSemanal(mdaJ2) === 'partido' && H.plazoSemanal(juevesE) === null && H.plazoSemanal({ ...entreno14, oficial: false }) === null && H.plazoSemanal(amis) === null, 'qué tiene plazo semanal: entreno oficial del miércoles y partido de liga');
 
-console.log('\n== Aviso de las 12:00 a quien siga en «duda»');
-ok(iso(H.avisoDeDudas(lim(entreno14))) === iso(M('2026-10-13', '12:00')), 'límite de las 20:00: aviso a las 12:00 del mismo día');
+console.log('\n== «Duda» en los demás eventos (D141, sin cambios): aviso a las 12:00 del día del límite');
+ok(iso(H.avisoDeDudas(M('2026-10-16', '20:00'))) === iso(M('2026-10-16', '12:00')), 'límite a las 20:00: aviso a las 12:00 del mismo día');
 ok(iso(H.avisoDeDudas(M('2026-10-16', '10:00'))) === iso(M('2026-10-16', '09:00')), 'límite temprano (10:00): una hora antes, a las 09:00');
 ok(H.avisoDeDudas(M('2026-10-16', '08:45')) === null && iso(H.avisoDeDudas(M('2026-10-16', '09:00'))) === iso(M('2026-10-16', '08:00')) && iso(H.avisoDeDudas(M('2026-10-16', '09:45'))) === iso(M('2026-10-16', '08:45')), 'límite a las 08:45: no cabe fuera del silencio (sin aviso previo); a las 09:00, a las 08:00; a las 09:45, a las 08:45');
 const duda = (ev_, p) => ({ evento_id: ev_, person_id: p, respuesta: 'duda' });
-const rd = [duda('e14', 'jon'), duda('mda2', 'jon'), duda('mdl2', 'jon')];
-const dd = (ahora, extra = {}) => P.conAvisosDeDudas(P.planificar(datos(ahora, extra)), datos(ahora, extra));
-const claveD = (a, p) => a.find((x) => x.person_id === p && x.clave.startsWith('rec:dudas:'));
-a = dd(M('2026-10-13', '12:05'), { respuestas: rd });
-const d1 = claveD(a, 'jon');
-ok(d1 && iso(d1.programado_para) === iso(M('2026-10-13', '12:00')) && d1.titulo === 'Tienes «duda»: confirma hasta hoy a las 20:00', 'martes 13/10 a las 12:05: a Jon le sale el aviso (de las 12:00)', JSON.stringify(d1));
-ok(d1 && d1.cuerpo.startsWith('Te quedan hasta hoy a las 20:00 para confirmar; si no, contarás como «no va».') && /Entreno del miércoles 14 y partido del domingo 18\./.test(d1.cuerpo), 'texto: «Te quedan hasta las 20:00 para confirmar; si no, contarás como «no va».» y qué tiene en duda', d1?.cuerpo);
-ok(a.filter((x) => x.person_id === 'jon').length === 1, 'UN solo aviso para Jon (entreno y los dos partidos juntos)');
-ok(!de(dd(M('2026-10-13', '11:55'), { respuestas: rd }), 'jon').length, 'antes de las 12:00: nada');
-ok(claveD(dd(M('2026-10-13', '14:55'), { respuestas: rd }), 'jon') && !claveD(dd(M('2026-10-13', '15:05'), { respuestas: rd }), 'jon'), 'si la tarea no pasa, sale hasta 3 horas después y ya no más');
-ok(!de(dd(M('2026-10-13', '20:00'), { respuestas: rd }), 'jon').length, 'a las 20:00 ya no hay aviso: pasan a «no va»');
-ok(claveD(dd(M('2026-10-13', '12:20'), { respuestas: rd }), 'jon').clave === d1.clave && claveD(dd(M('2026-10-13', '14:00'), { respuestas: rd }), 'jon').clave === d1.clave, 'la clave es la misma en cada pasada de la tarea (no se duplica)');
-ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: [{ evento_id: 'e14', person_id: 'jon', respuesta: 'va' }, { evento_id: 'mda2', person_id: 'jon', respuesta: 'no' }, { evento_id: 'mdl2', person_id: 'jon', respuesta: 'sin_responder' }] }), 'jon'), 'quien ya dijo «voy» o «no voy» (o no ha respondido) no recibe el de las dudas');
-ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: rd, eventos: BASE.map((e) => ({ ...e, sin_recordatorios: true })) }), 'jon'), '«Sin recordatorios»: nada');
-ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: rd, eventos: BASE.map((e) => ({ ...e, estado: 'cancelado' })) }), 'jon'), 'cancelado: nada');
-ok(!claveD(dd(M('2026-10-13', '12:05'), { respuestas: [duda('mda2', 'edimil')] }), 'edimil'), 'quien no está invitado a ese evento no recibe nada');
-a = dd(M('2026-10-20', '12:02'), { respuestas: [duda('mda3', 'jon'), duda('mdl3', 'jon')] });
-ok(iso(claveD(a, 'jon').programado_para) === '2026-10-20T10:00:00.000Z', 'semana del cambio de hora: 12:00 de verano (10:00 UTC)');
-a = dd(M('2026-10-27', '12:02'), { respuestas: [duda('e28', 'jon')] });
-ok(iso(claveD(a, 'jon').programado_para) === '2026-10-27T11:00:00.000Z', 'y la del 28/10 a las 12:00 de invierno (11:00 UTC)');
-// Otros eventos: 24 h antes; los planes no oficiales, también.
+ok(!claveD(dd(M('2026-10-13', '09:05'), { respuestas: [duda('mda2', 'jon'), duda('mdl2', 'jon')], eventos: BASE.map((e) => ({ ...e, sin_recordatorios: true })) }), 'jon'), '«Sin recordatorios»: nada');
+ok(!claveD(dd(M('2026-10-13', '09:05'), { respuestas: [duda('mda2', 'jon')], eventos: BASE.map((e) => ({ ...e, estado: 'cancelado' })) }), 'jon'), 'cancelado: nada');
 const amis2 = ev('a3', 'amistoso', 'ambos', '2026-10-17', '10:00', '12:00', { titulo: 'Amistoso con Vallecas', creado_en: '2026-10-01T10:00:00Z' });
 a = dd(M('2026-10-16', '09:05'), { eventos: [...BASE, amis2], respuestas: [duda('a3', 'jon')] });
 ok(iso(claveD(a, 'jon').programado_para) === iso(M('2026-10-16', '09:00')) && claveD(a, 'jon').titulo === 'Tienes «duda»: confirma hasta hoy a las 10:00', 'amistoso del sábado a las 10:00: límite el viernes a las 10:00, aviso a las 09:00');
+a = dd(M('2026-10-16', '09:05'), { eventos: [...BASE, amis2], respuestas: [] });
+ok(!claveD(a, 'jon'), 'en un amistoso, a quien no ha respondido no le llega este aviso (solo a las «duda»)');
 const plan = ev('p1', 'quedada', 'ambos', '2026-10-17', '19:00', '21:00', { titulo: 'Cena', oficial: false, creado_en: '2026-10-01T10:00:00Z' });
 a = dd(M('2026-10-16', '12:05'), { eventos: [...BASE, plan], respuestas: [duda('p1', 'jon')] });
 ok(claveD(a, 'jon') && a.filter((x) => x.person_id === 'jon').length === 1, 'un plan en «duda» recibe su aviso (viernes 12:00)');
-// Si ya sale otro recordatorio ese día, se juntan en uno.
-const rj = [duda('e14', 'guille')];
-a = dd(M('2026-10-13', '10:05'), { respuestas: rj });
-const g1 = de(a, 'guille');
-ok(g1.length === 1 && g1[0].clave.startsWith('rec:dudas:') && iso(g1[0].programado_para) === iso(M('2026-10-13', '10:00')) && /Además: Domingo 18: aún no has respondido\./.test(g1[0].cuerpo), 'martes 10:05: Guillermo (duda al entreno, sin responder al partido) recibe UN aviso que junta el de las dudas y el del martes', JSON.stringify(g1));
-const g2 = de(dd(M('2026-10-13', '12:05'), { respuestas: rj }), 'guille');
-ok(g2.length === 1 && g2[0].clave === g1[0].clave, 'a las 12:05 sigue siendo UN aviso, con la misma clave (la tarea no lo repite)');
-const g3 = de(dd(M('2026-10-13', '13:30'), { respuestas: rj }), 'guille');
-ok(g3.length === 1 && g3[0].clave === g1[0].clave, 'ya sin el del martes (pasadas las 13:00), el de las dudas sigue con la misma clave');
+const textosPlazo = [...dd(M('2026-10-13', '09:05')), ...dd(M('2026-10-14', '09:05')), ...P.avisosCierre(datos(M('2026-10-13', '12:05')))].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
+ok(!/nivel|posici|exterior|interior|Dobla|lesi|trabajo|viaje|familia|reserva/i.test(textosPlazo), 'los avisos del plazo y del cierre no llevan motivos, niveles, posiciones ni «reserva»');
 
 console.log('\n== Paso automático a «no va» y su aviso');
-const sis = (ev_, p, cuando = '2026-10-13T18:00:20Z') => ({ evento_id: ev_, person_id: p, respuesta: 'no', motivo: 'no_confirmo', origen: 'sistema', cambiado_en: cuando });
-const pas = P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('e14', 'jon'), sis('mda2', 'jon'), sis('mdl2', 'jon')] }, M('2026-10-13', '20:05'));
-ok(pas.length === 1 && pas[0].person_id === 'jon' && pas[0].titulo === 'Tus «duda» han pasado a «no va»' && /entreno del miércoles 14 y partido del domingo 18/.test(pas[0].cuerpo), 'un aviso por persona y límite, con lo que pasó a «no va»', JSON.stringify(pas));
+const sis = (ev_, p, cuando = '2026-10-13T10:00:20Z') => ({ evento_id: ev_, person_id: p, respuesta: 'no', motivo: 'no_confirmo', origen: 'sistema', cambiado_en: cuando });
+const pas = P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('mda2', 'jon'), sis('mdl2', 'jon')] }, M('2026-10-13', '12:05'));
+ok(pas.length === 1 && pas[0].person_id === 'jon' && pas[0].titulo === 'Tu «duda» ha pasado a «no va»' && /partido del domingo 18/.test(pas[0].cuerpo), 'un aviso por persona y límite (los dos partidos del domingo, juntos), con lo que pasó a «no va»', JSON.stringify(pas));
+const pasE = P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('e14', 'jon', '2026-10-14T10:00:20Z'), sis('mda2', 'jon', '2026-10-13T12:00:00Z')] }, M('2026-10-14', '12:05'));
+ok(pasE.length === 2, 'el entreno (plazo el miércoles) y el partido (el martes) tienen límites distintos: dos avisos, uno por límite');
 ok(pas[0].cuerpo.includes('Si al final puedes, entra y pon «Voy»') && !/motivo|nivel|posici/i.test(pas[0].cuerpo), 'invita a volver a decir «Voy»; sin motivos en la pantalla de bloqueo');
-ok(P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('e14', 'jon')] }, M('2026-10-13', '20:30'))[0].clave === P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('e14', 'jon')] }, M('2026-10-13', '20:45'))[0].clave, 'la clave es estable: repetir la tarea no lo duplica');
-ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [{ ...sis('e14', 'jon'), respuesta: 'va', motivo: null, origen: 'jugador' }] }, M('2026-10-13', '20:05')).length, 'quien ya volvió a decir «Voy» no recibe el aviso');
-ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('e14', 'jon', '2026-10-10T18:00:20Z')] }, M('2026-10-13', '20:05')).length, 'un paso de hace más de 24 h ya no se avisa');
-ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [{ ...sis('e14', 'jon'), motivo: 'trabajo', origen: 'jugador' }] }, M('2026-10-13', '20:05')).length, 'solo avisa de lo que cerró el sistema');
+ok(P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('mda2', 'jon')] }, M('2026-10-13', '12:30'))[0].clave === P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('mda2', 'jon')] }, M('2026-10-13', '12:45'))[0].clave, 'la clave es estable: repetir la tarea no lo duplica');
+ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [{ ...sis('e14', 'jon'), respuesta: 'va', motivo: null, origen: 'jugador' }] }, M('2026-10-13', '12:05')).length, 'quien ya volvió a decir «Voy» no recibe el aviso');
+ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [sis('e14', 'jon', '2026-10-10T18:00:20Z')] }, M('2026-10-13', '12:05')).length, 'un paso de hace más de 24 h ya no se avisa');
+ok(!P.avisosPasoNoVa({ eventos: BASE, respuestas: [{ ...sis('e14', 'jon'), motivo: 'trabajo', origen: 'jugador' }] }, M('2026-10-13', '12:05')).length, 'solo avisa de lo que cerró el sistema');
 // Silencio: el límite de un amistoso de las 23:00 cierra a las 23:00 del día anterior; el aviso espera a las 08:00.
 const am23 = ev('a4', 'amistoso', 'ambos', '2026-10-18', '23:00', '23:59');
 const pas2 = P.avisosPasoNoVa({ eventos: [am23], respuestas: [sis('a4', 'jon', iso(M('2026-10-17', '23:05')))] }, M('2026-10-17', '23:10'));
@@ -323,15 +325,16 @@ console.log('\n== Disponibilidad por defecto (D146): «no suele entrenar» y «s
   ok(de(r, 'nse').length === 1 && de(r, 'nse')[0].titulo === 'Te falta 1 respuesta' && de(r, 'nse')[0].url === '/mi-zona/domingo/2026-10-18', 'lunes: a quien no suele entrenar solo le falta el partido (el entreno no cuenta)', JSON.stringify(de(r, 'nse')));
   ok(de(r, 'nap').length === 1 && de(r, 'nap')[0].url === '/mi-zona/evento/e14' && de(r, 'nap')[0].eventos.join() === 'e14', 'lunes: a «nunca a partidos» solo le falta el entreno', JSON.stringify(de(r, 'nap')));
   ok(de(r, 'jon').length === 1 && de(r, 'jon')[0].titulo === 'Te faltan 2 respuestas', 'sin marca, todo igual que antes');
-  r = P.planificar(conMarcas(M('2026-10-14', '10:05')));
-  ok(de(r, 'nse').length === 0, 'entreno, el mismo día a las 10:00: a quien no suele entrenar y no ha respondido no le llega nada (por defecto, no va)');
+  const conDudas = (d) => P.conAvisosDeDudas(P.planificar(d), d);
+  r = conDudas(conMarcas(M('2026-10-14', '09:05')));
+  ok(de(r, 'nse').length === 0, 'entreno, el miércoles a las 09:00 (D173): a quien no suele entrenar y no ha respondido no le llega nada (por defecto, no va)');
   ok(de(r, 'nap').length === 1 && de(r, 'jon').length === 1, 'y a «nunca a partidos» y a quien no tiene marca, sí');
-  r = P.planificar(conMarcas(M('2026-10-14', '10:05'), { quitados: [{ evento_id: 'e14', person_id: 'nse' }] }));
-  ok(de(r, 'nse').length === 1 && de(r, 'nse')[0].clave === 'rec:dia:e14:nse', 'si un gestor se lo quita para ese entreno (vuelve a «sin responder»), le llega el recordatorio');
-  r = P.planificar(conMarcas(M('2026-10-21', '10:05'), { quitados: [{ evento_id: 'e14', person_id: 'nse' }] }));
+  r = conDudas(conMarcas(M('2026-10-14', '09:05'), { quitados: [{ evento_id: 'e14', person_id: 'nse' }] }));
+  ok(de(r, 'nse').length === 1 && de(r, 'nse')[0].clave.startsWith('rec:dudas:') && de(r, 'nse')[0].eventos.join() === 'e14', 'si un gestor se lo quita para ese entreno (vuelve a «sin responder»), le llega el aviso del plazo');
+  r = conDudas(conMarcas(M('2026-10-21', '09:05'), { quitados: [{ evento_id: 'e14', person_id: 'nse' }] }));
   ok(de(r, 'nse').length === 0, 'quitárselo en un entreno no vale para el siguiente');
-  r = P.planificar(conMarcas(M('2026-10-13', '10:05')));
-  ok(de(r, 'nse').length === 1 && de(r, 'nse')[0].clave === 'rec:martes:2026-10-18:nse', 'en un partido la marca «no suele entrenar» no cuenta: le llega el del martes');
+  r = conDudas(conMarcas(M('2026-10-13', '09:05')));
+  ok(de(r, 'nse').length === 1 && de(r, 'nse')[0].eventos.join() === 'mda2', 'en un partido la marca «no suele entrenar» no cuenta: le llega el del martes a las 09:00');
   ok(de(r, 'nap').length === 0, 'martes del partido: a «nunca a partidos» no le llega (no cuenta como pendiente)');
   const sinNada = { respuestas: [], ausencias: [] };
   ok(P.pendienteDe(NSE, entreno14, sinNada) === false && P.pendienteDe(NSE, mdaJ2, sinNada) === true, 'pendienteDe: «no suele entrenar», entreno no, partido sí');
@@ -358,7 +361,7 @@ console.log('\n== Aviso «no va (por defecto)» al propio jugador (D152)');
   ok(de(r, 'jon').length === 0 && de(r, 'edimil').length === 0 && r.every((x) => x.person_id.startsWith('nse')), 'a quien no tiene la marca no le llega este aviso');
   ok(!/suele|marca|defecto/i.test(r.map((x) => x.titulo + x.cuerpo).join(' ')), 'el texto no nombra la marca (lo ve la pantalla de bloqueo)');
   ok(pd(conMarcas(M('2026-10-12', '18:55'))).length === 0 && pd(conMarcas(M('2026-10-12', '22:05'))).length === 0, 'antes de las 19:00 nada, y pasado el margen tampoco');
-  ok(pd(conMarcas(M('2026-10-14', '10:05'))).length === 0, 'el día del entreno no se repite (solo el lunes)');
+  ok(pd(conMarcas(M('2026-10-14', '09:05'))).length === 0, 'el día del entreno no se repite (solo el lunes)');
   const otraVez = pd(conMarcas(M('2026-10-12', '19:20')));
   ok(de(otraVez, 'nse').map((x) => x.clave).join() === 'rec:defecto:e14:nse', 'la tarea 15 minutos después da la MISMA clave: el registro (clave única) no lo vuelve a mandar');
   const movido = { ...entreno14, fecha: '2026-10-21' };
@@ -399,6 +402,88 @@ console.log('\== Mensajes para copiar: singular / plural y la noche según D155'
   const p1 = MA.mensajePidieronNoEntraron(['Fernando'], W), pN = MA.mensajePidieronNoEntraron(['Fernando', 'Luis'], W);
   ok(p1 === `Hola, Fernando: te llegó el correo pero no llegaste a entrar. Pide el código otra vez en ${W}/entrar y escribe los 6 números.`, 'lo pidieron y no terminaron, una persona: singular', p1);
   ok(/^Hola, Fernando, Luis: os llegó el correo pero no llegasteis a entrar\. Pedid el código otra vez en .+\/entrar y escribid los 6 números\.$/.test(pN), 'lo pidieron y no terminaron, varias: plural', pN);
+}
+
+
+console.log('\n== Aviso al aprobar (D173): un solo aviso por jugador, según su caso; y los avisos a gestores');
+{
+  const PART = [
+    { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '10:15', encuentro: '09:55', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: 'Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' },
+    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '11:30', encuentro: '11:10', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.' },
+  ];
+  const t1 = CM.textoAvisoConvocatoria('2026-11-15', PART, ['MdL'], ['MdA', 'MdL']);
+  ok(t1.titulo === 'Estás convocado · domingo 15/11' && t1.cuerpo === 'Estás convocado con el MdL (no con el MdA) · 11:30, quedada 11:10. Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.', 'disponible para los dos y convocado en uno: «Estás convocado con el MdL (no con el MdA) · 11:30, quedada 11:10.» + equipación', JSON.stringify(t1));
+  const t2 = CM.textoAvisoConvocatoria('2026-11-15', PART, ['MdA'], ['MdA']);
+  ok(t2.cuerpo === 'MdA a las 10:15 (quedada 09:55). Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' && t2.titulo === 'Estás convocado · domingo 15/11', 'convocado en el único al que podía ir: el «Estás convocado» de siempre', JSON.stringify(t2));
+  const t3 = CM.textoAvisoConvocatoria('2026-11-08', [PART[1]], [], ['MdL']);
+  ok(t3.cuerpo === 'Esta vez no entras en la convocatoria: somos muchos para un solo partido. Gracias por estar disponible, cuenta contigo para el siguiente.', 'dijo «voy» y no entra, domingo con un solo partido: «Esta vez no entras… somos muchos para un solo partido…»', t3.cuerpo);
+  ok(/somos muchos este domingo/.test(CM.textoAvisoConvocatoria('2026-11-15', PART, [], ['MdA']).cuerpo), 'con dos partidos: «somos muchos este domingo»');
+  ok(CM.textoAvisoConvocatoria('2026-11-15', PART, ['MdA', 'MdL'], ['MdA', 'MdL']).cuerpo.startsWith('MdA a las 10:15 (quedada 09:55) y MdL a las 11:30'), 'dobla: el de siempre, con los dos partidos');
+  const conv = { MdA: [{ person_id: 'jon' }], MdL: [{ person_id: 'ana' }] };
+  const disp = new Map([['jon', ['MdA', 'MdL']], ['ana', ['MdL']], ['luis', ['MdL']]]);
+  const d = CM.destinatariosAviso(conv, null, disp);
+  ok(!d.cambio && d.personas.map((x) => x.person_id).join() === 'jon,ana,luis' && d.personas.find((x) => x.person_id === 'luis').equipos.length === 0, 'al aprobar: a los convocados y a quien dijo «voy» y no entra (Luis)');
+  ok(CM.textoParaPersona('2026-11-15', PART, false, d.personas[0]).cuerpo.startsWith('Estás convocado con el MdA (no con el MdL)'), 'Jon, disponible para los dos: «con el MdA (no con el MdL)»');
+  ok(CM.destinatariosAviso(conv, conv, disp).personas.length === 0, 'tras aprobar, sin cambios: a nadie (tampoco a Luis otra vez)');
+  const avisosJug = [t1, t2, t3].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
+  ok(!/nivel|reserva|posici|exterior|interior|base|Dobla/i.test(avisosJug), 'ni niveles ni la marca «reserva» en los avisos a jugadores (F)');
+  // A los gestores
+  const r9 = { total: 9, bases: { puros: 2, reserva: 0, estado: 'ok' }, exteriores: { n: 4, estado: 'ok' }, interiores: { n: 3, estado: 'minimo' } };
+  const rOk = { total: 9, bases: { puros: 2, reserva: 0, estado: 'ok' }, exteriores: { n: 3, estado: 'ok' }, interiores: { n: 4, estado: 'ok' } };
+  const r6 = { total: 6, bases: { puros: 2, reserva: 0, estado: 'ok' }, exteriores: { n: 2, estado: 'mal' }, interiores: { n: 2, estado: 'mal' } };
+  const pl = CM.textoPropuestaLista('2026-11-15', [{ equipo: 'MdA', recuento: rOk }, { equipo: 'MdL', recuento: r9 }]);
+  ok(pl.titulo === 'Convocatoria del domingo 15/11 lista' && pl.cuerpo === 'MdA 9 · MdL 9 · 1 aviso (MdL con 3 interiores). Revísala y apruébala.', '«Convocatoria del domingo 15/11 lista» · «MdA 9 · MdL 9 · 1 aviso (MdL con 3 interiores)»', JSON.stringify(pl));
+  const pm = CM.textoPropuestaLista('2026-11-15', [{ equipo: 'MdA', recuento: rOk }, { equipo: 'MdL', recuento: r6 }]);
+  ok(pm.cuerpo === 'MdA 9 · MdL 6 · MdL: 6 de 7, faltan exteriores e interiores. Revísala y apruébala.' || pm.cuerpo === 'MdA 9 · MdL 6 · MdL: 6 de 7, faltan exteriores y interiores. Revísala y apruébala.', 'por debajo de un mínimo: «MdL: 6 de 7, faltan … interiores»', pm.cuerpo);
+  const tb = CM.textoBaja('Jon', 'MdA', '2026-11-15', 'Fernando M.');
+  ok(tb.cuerpo === 'Sale Jon (MdA). Propuesta: entra Fernando M. Toca para elegir.', 'baja: «Sale Jon (MdA). Propuesta: entra Fernando M.»', tb.cuerpo);
+  ok(/Sin recambio propuesto/.test(CM.textoBaja('Jon', 'MdA', '2026-11-15', null).cuerpo), 'sin recambio: lo dice');
+  ok(/Ana dice «voy» y el MdL: 6 de 7/.test(CM.textoVoyTardio('Ana', '2026-11-15', ['el MdL: 6 de 7']).cuerpo), '«voy» tardío con un equipo bajo mínimos');
+  ok(/19:00|12:00/.test(CM.textoSinAprobar('2026-11-15', false).cuerpo) && /Cualquiera de los tres/.test(CM.textoSinAprobar('2026-11-15', true).cuerpo), 'sin aprobar: a las 19:00 a Iván y a las 21:00 a los tres');
+  const gest = [pl, pm, tb, CM.textoSinAprobar('2026-11-15', true), CM.textoCalendarioRompe('2026-11-15', 'Jon dobla y ahora los dos partidos son a la misma hora', 'sale del MdL, entra Ana')].map((x) => `${x.titulo} ${x.cuerpo}`).join(' ');
+  ok(!/nivel|\b[A-E][+-]?\b(?= )|«Dobla»/.test(gest.replace(/MdA|MdL/g, '')), 'los avisos a gestores llevan el aviso de línea, nunca niveles');
+  const wa = CM.mensajeFaltan('2026-11-15', ['Luis', 'Ana']);
+  ok(/^Hola, Luis y Ana: nos faltan jugadores para el domingo 15\/11/.test(wa) && wa.endsWith('/mi-zona/domingo/2026-11-15') && !/nivel|reserva/i.test(wa), 'WhatsApp para quien no ha respondido cuando faltan jugadores', wa);
+  ok(CM.textoAvisados(14, 16) === 'Avisados 14 de 16 (los otros 2 no tienen avisos)' && CM.textoAvisados(1, 2) === 'Avisados 1 de 2 (el otro no tiene avisos)' && CM.textoAvisados(3, 3) === 'Avisados 3 de 3', '«Avisados N de M (los otros M−N no tienen avisos)»');
+}
+
+
+console.log('\n== Domingo con la convocatoria YA APROBADA (D173): sin aviso de las 09:00 ni del cierre para sus partidos; el entreno, sí');
+{
+  const ap = (ahora, extra = {}) => ({ ...datos(ahora, extra), aprobadas: ['2026-10-18'] });
+  const dda = (d) => P.conAvisosDeDudas(P.planificar(d), d);
+  let a = dda(ap(M('2026-10-13', '09:05')));
+  ok(!a.some((x) => x.eventos.some((id) => id === 'mda2' || id === 'mdl2')), 'martes 09:05, domingo 18 aprobado: nadie recibe «Tienes hasta hoy a las 12:00… te quedas fuera de la convocatoria»', JSON.stringify(a.map((x) => x.clave)));
+  a = dda(ap(M('2026-10-13', '09:05'), { respuestas: [{ evento_id: 'mda2', person_id: 'jon', respuesta: 'duda' }] }));
+  ok(!a.some((x) => x.eventos.includes('mda2')), 'tampoco a quien está en «duda» a ese partido');
+  ok(!P.avisosCierre(ap(M('2026-10-13', '12:05'))).length, 'martes 12:05: nadie recibe «No has respondido: no entras en la propuesta»');
+  a = dda(ap(M('2026-10-14', '09:05')));
+  ok(a.some((x) => x.person_id === 'jon' && x.eventos.includes('e14') && /Entreno del miércoles 14: responde hasta hoy a las 12:00/.test(x.titulo)), 'el entreno del miércoles sigue con su regla nueva (miércoles 09:00, plazo a las 12:00)');
+  ok(dda({ ...datos(M('2026-10-13', '09:05')), aprobadas: ['2026-10-25'] }).some((x) => x.eventos.includes('mda2')), 'aprobada OTRA fecha: el domingo 18 sí tiene su aviso');
+}
+
+console.log('\n== Riesgo por equipo (D173): solo gestores; nivel con dos partidos de dificultad distinta, proyección siempre');
+{
+  const R = await import('../src/lib/convocatoria/riesgo.ts');
+  const dos = [{ equipo: 'MdA', dificultad: 'alta' }, { equipo: 'MdL', dificultad: 'media' }];
+  const pr = (a, l) => ({ MdA: a == null ? null : { puntos: a }, MdL: l == null ? null : { puntos: l } });
+  let r = R.riesgos(dos, { MdA: 3, MdL: 3.2 }, pr(60, 60));
+  ok(r.length === 1 && r[0].gravedad === 'alto' && r[0].equipo === 'MdA' && r[0].texto === 'Riesgo alto: el MdA (rival más difícil) lleva igual o menos nivel medio que el MdL.', 'el MdA (más difícil) con menos nivel medio: rojo', JSON.stringify(r));
+  ok(R.riesgos(dos, { MdA: 3, MdL: 3 }, pr(60, 60))[0]?.gravedad === 'alto', 'con el mismo nivel medio: rojo');
+  r = R.riesgos(dos, { MdA: 3.2, MdL: 3 }, pr(60, 60));
+  ok(r.length === 1 && r[0].gravedad === 'medio' && /^Riesgo medio/.test(r[0].texto), 'más nivel pero por menos de un cuarto de letra (0,2): ámbar');
+  ok(!R.riesgos(dos, { MdA: 3.3, MdL: 3 }, pr(60, 60)).length, 'con 0,3 de diferencia o más: sin riesgo');
+  ok(!R.riesgos([{ equipo: 'MdA', dificultad: 'media' }, { equipo: 'MdL', dificultad: 'media' }], { MdA: 2, MdL: 4 }, pr(60, 60)).length, 'rivales parejos: no hay riesgo de nivel (se equilibra)');
+  r = R.riesgos(dos, { MdA: 4, MdL: 3 }, pr(44, 47));
+  ok(r.find((x) => x.equipo === 'MdA')?.texto === 'Riesgo alto: proyección por debajo de la anotación mínima (44 de 45).' && r.find((x) => x.equipo === 'MdL')?.gravedad === 'medio', 'proyección 44: rojo; 47 (a menos de 5 de la mínima): ámbar');
+  ok(!R.riesgos(dos, { MdA: 4, MdL: 3 }, pr(50, 50)).length, 'proyección 50: sin riesgo');
+  const uno = R.riesgos([{ equipo: 'MdL', dificultad: 'alta' }], { MdL: 1 }, { MdL: { puntos: 40 } });
+  ok(uno.length === 1 && uno[0].motivo === 'proyeccion', 'un solo partido: solo cuenta la proyección');
+  ok(R.riesgos([{ equipo: 'MdL', dificultad: 'alta' }], { MdL: 1 }, { MdL: { puntos: 40 } }, { MdL: 0 }).length === 0, 'sin convocados: nada');
+  ok(R.textoRiesgoPush(uno) === '1 aviso de riesgo' && R.textoRiesgoPush(R.riesgos(dos, { MdA: 3.2, MdL: 3 }, pr(60, 60))) === null, 'en el push del martes: «1 aviso de riesgo» solo si es rojo, sin niveles');
+  const pl = CM.textoPropuestaLista('2026-11-15', [{ equipo: 'MdL', recuento: { total: 9, bases: { puros: 2, reserva: 0, estado: 'ok' }, exteriores: { n: 4, estado: 'ok' }, interiores: { n: 4, estado: 'ok' } } }], '1 aviso de riesgo');
+  ok(pl.cuerpo === 'MdL 9 · sin avisos · 1 aviso de riesgo. Revísala y apruébala.', 'push: «MdL 9 · sin avisos · 1 aviso de riesgo»', pl.cuerpo);
+  ok(R.RIESGO.margenNivel === 0.25 && R.RIESGO.margenProyeccion === 5, 'umbrales ajustables en RIESGO (0,25 de nivel; 5 puntos)');
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

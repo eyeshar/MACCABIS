@@ -19,6 +19,8 @@ import type { Cambio, Contexto, FilaConvocatoria, FilaPrivada, JugadorVista, Par
 
 // Lectura de todo lo que necesita la convocatoria de un domingo (D107), con la sesion del GESTOR: la base (RLS +
 // is_gestor) decide quien lee. Los datos privados (jugadores_privado) solo los devuelve la base a los gestores.
+// D173: la tarea de avisos (rol de servicio, `servicio: true`) lee lo mismo con su hora (`ahora`); los datos privados le
+// llegan por convocatoria_privados_tarea() (desde D146 no lee jugadores_privado) y nunca salen en un aviso.
 
 const NOMBRE_GRUPO: Record<Equipo, "G1" | "G2"> = { MdA: "G1", MdL: "G2" };
 type Liga = { grupos: Record<string, { jornadas_cargadas: number[]; clasificacion: { pos: number; equipo: string; pj: number; dif: number }[] }> };
@@ -96,8 +98,15 @@ export function sitioDe(e: EventoFila, pistas: Pista[]) {
   return { sitio: `${pe.pista.nombre_corto ?? pe.pista.nombre}${e.numero_pista ? `, pista ${e.numero_pista}` : ""}`, direccion: pe.pista.direccion };
 }
 
-export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise<Contexto | null> {
-  const hoy = hoyMadrid();
+export type OpcionesContexto = {
+  servicio?: boolean; ahora?: Date;
+  /** Datos privados ya leídos (el simulacro en solo lectura contra el real los trae por su conexión). */
+  privados?: FilaPrivada[];
+};
+
+export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones: OpcionesContexto = {}): Promise<Contexto | null> {
+  const ahora = opciones.ahora ?? new Date();
+  const hoy = opciones.ahora ? ahora.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }) : hoyMadrid();
   const [eventos, pistas] = await Promise.all([cargarEventos(sb), cargarPistas(sb)]);
   const liga = eventos.filter((e) => e.tipo === "liga" && e.estado === "programado" && (e.equipo === "MdA" || e.equipo === "MdL"));
   const domingos = [...new Map(liga.filter((e) => e.fecha >= hoy).map((e) => [e.fecha, { fecha: e.fecha, jornada: e.jornada }])).values()].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
@@ -112,10 +121,13 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
 
   const [jug, resp, respEnt, priv, conv, respPas, convPas, ausencias] = await Promise.all([
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
-    sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").in("evento_id", ids),
+    sb.from("respuestas").select("evento_id, person_id, respuesta, motivo, cambiado_en").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
-    sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos, reserva"),
-    sb.from("convocatorias").select("id, fecha, jornada, estado, origen, equipos, dificultad, cambiado_en, cambiado_por_nombre, aprobada_en, aprobada_por_nombre, whatsapp_estado, whatsapp_en, whatsapp_base, aviso_estado, aviso_en, aviso_base").eq("fecha", fecha).maybeSingle(),
+    opciones.privados ? Promise.resolve({ data: opciones.privados, error: null })
+      : opciones.servicio ? sb.rpc("convocatoria_privados_tarea")
+      : sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos, reserva"),
+    // «*»: así vale antes y después de la migración de D173 (automatica_en), también en la vista previa contra el real.
+    sb.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle(),
     pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D133).
     sb.from("convocatorias").select("fecha, equipos, dificultad").eq("estado", "aprobada"),
@@ -129,7 +141,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
   const fila = (sinMigracion ? null : (conv.data as FilaConvocatoria | null)) ?? null;
   let cambios: Cambio[] = [];
   if (fila) {
-    const { data } = await sb.from("convocatoria_cambios").select("id, en, por_nombre, accion, person_id, equipo, motivo, nota").eq("convocatoria_id", fila.id).order("en", { ascending: false }).limit(50);
+    const { data } = await sb.from("convocatoria_cambios").select("id, en, por_nombre, por_user_id, accion, person_id, equipo, motivo, nota").eq("convocatoria_id", fila.id).order("en", { ascending: false }).limit(100);
     // Las marcas antiguas de la copia a SportEasy (accion «sporteasy», antes de D153) no se muestran.
     cambios = ((data ?? []) as Cambio[]).filter((c) => c.accion !== "sporteasy");
   }
@@ -172,8 +184,11 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
     };
   });
 
-  const respDe = new Map<string, { respuesta: RespuestaPartido; motivo: string | null }>();
-  for (const r of (resp.data ?? []) as { evento_id: string; person_id: string; respuesta: RespuestaPartido; motivo: string | null }[]) respDe.set(`${r.evento_id}|${r.person_id}`, r);
+  const respDe = new Map<string, { respuesta: RespuestaPartido; motivo: string | null; cambiado_en: string | null }>();
+  for (const r of (resp.data ?? []) as { evento_id: string; person_id: string; respuesta: RespuestaPartido; motivo: string | null; cambiado_en: string | null }[]) respDe.set(`${r.evento_id}|${r.person_id}`, r);
+  // D173: la ultima propuesta (automatica o «Usar propuesta» / «Recalcular»): quien dice «voy» despues sale como «Respondió
+  // después de la propuesta», con «Rehacer propuesta». No entra solo.
+  const ultimaPropuesta = cambios.filter((c) => c.accion === "propuesta" || c.accion === "recalcular").map((c) => c.en).sort().at(-1) ?? null;
   const activos = ((jug.data ?? []) as { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; entrena: boolean; activo: boolean; rol: "jugador" | "solo_entreno" | "entrenador" }[])
     .filter((j) => j.activo && j.rol !== "entrenador");
   // La regla unica (`respuestaEfectiva`, D146 y D150): un «nunca a partidos» sin responder no es invitado; sin responder y
@@ -197,13 +212,14 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
       if (ef.respuesta === "no") motivoNo[e.equipo as Equipo] = r?.motivo ?? ef.ausencia?.motivo ?? null;
     }
     const st = stats.get(j.person_id);
+    const tarde = !!ultimaPropuesta && delDia.some((e) => respuesta[e.equipo as Equipo] === "va" && (respDe.get(`${e.id}|${j.person_id}`)?.cambiado_en ?? "") > ultimaPropuesta);
     return {
       person_id: j.person_id, nombre: j.nombre_visible, ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, solo_entreno: j.rol === "solo_entreno",
       respuesta, privado, sancionado: !!(p?.sancionado_hasta_jornada && jornada != null && p.sancionado_hasta_jornada >= jornada),
       convocados: st?.convocados ?? 0, doblajes: st?.doblajes ?? 0, entrenos4: entrenosDe.get(j.person_id) ?? 0, domingosFuera: domingosFuera(j),
       // D146: un «nunca a partidos» sin responder no cuenta como invitado (ni en «sin responder» ni en los contadores).
       invitado: invitadoA(j, p).length > 0, invitadoA: invitadoA(j, p),
-      motivoNo, sancionHasta: p?.sancionado_hasta_jornada ?? null,
+      motivoNo, sancionHasta: p?.sancionado_hasta_jornada ?? null, respondioTarde: tarde,
     };
   });
 
@@ -223,7 +239,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string): Promise
 
   return {
     fecha, jornada, partidos, jugadores, convocatoria: fila, cambios, contadores,
-    limiteDudas: limiteDe?.toISOString() ?? null, dudasAbiertas: limiteDe ? Date.now() < limiteDe.getTime() : false,
+    limiteDudas: limiteDe?.toISOString() ?? null, dudasAbiertas: limiteDe ? ahora.getTime() < limiteDe.getTime() : false,
+    ultimaPropuesta,
     eventoRespuestas: delDia[0]?.id ?? null, sinMigracion,
     proyeccion: datosProyeccion(jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre })), new Map(jugadores.map((j) => [j.person_id, ((privados.get(j.person_id) as FilaPrivada | undefined)?.nota_ataque ?? null) as Letra | null])),
       delDia.map((e) => ({ equipo: e.equipo as Equipo, rival: e.rival, jornada: e.jornada })), dificultades),

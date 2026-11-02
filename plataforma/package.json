@@ -90,6 +90,8 @@
     "pruebas:proximo-partido": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/proximo_partido.mjs",
     "pruebas:inicio-proximo-partido": "node pruebas/inicio_proximo_partido.mjs",
     "pruebas:reserva": "node pruebas/reserva.mjs",
+    "pruebas:privacidad-avisos": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/privacidad_avisos.mjs",
+    "pruebas:rutina-c": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/rutina_c.mjs",
     "pruebas:fin-sporteasy": "node pruebas/fin_sporteasy.mjs",
     "pruebas:aviso-defecto": "node pruebas/aviso_por_defecto.mjs",
     "pruebas:safe-area": "node pruebas/safe_area.mjs",

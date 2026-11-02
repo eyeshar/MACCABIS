@@ -5,6 +5,7 @@
 //   npm run pruebas:claves
 import fs from 'node:fs';
 import { AJUSTES, clavesRival, lineaClave, primerasClaves } from '../src/lib/scouting/claves.ts';
+import { claveNombre } from '../src/lib/jugadoresLiga.ts';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -46,12 +47,15 @@ function partidos({ jornadas = 3, r = [], suyos = {}, nuestros = {}, incomp = []
   return out;
 }
 
-/** Ocho jugadores por equipo, repartidos por igual: nadie destaca por nada. Cada equipo, en n partidos. */
+/** Ocho jugadores por equipo, repartidos por igual. Los de los demás equipos tienen mejores números por partido que los del
+ *  rival en todo (puntos, triples, libres intentados y faltas), así que ninguno del rival está entre los 5 primeros del grupo. */
 function plantilla(equipo, n, cambios = {}) {
+  const otro = equipo !== 'Rival';
   return Array.from({ length: 8 }, (_, i) => {
+    const tli = otro ? Math.round((20 * n) / 3) : Math.round((10 * n) / 3);
     const base = {
       grupo: 'G1', equipo, nombre: `${equipo.toUpperCase()} JUGADOR${i + 1}, NOMBRE`, dorsal: String(i + 1), pj: n, segundos: 1500 * n,
-      pts: Math.round((50 * n) / 8), p2a: 3, p3a: i === 0 ? 2 : 1, tla: 6, tli: 10, faltas: 2 * n,
+      pts: otro ? 10 * n : Math.round((50 * n) / 8), p2a: 3, p3a: otro ? n : i === 0 ? 2 : 1, tla: Math.round(tli * 0.6), tli, faltas: otro ? 3 * n : 2 * n,
     };
     return { ...base, ...(cambios[i] ?? {}) };
   });
@@ -60,8 +64,10 @@ function jugadoresDe({ n = 3, rival = {}, resto = {} } = {}) {
   return ['Rival', ...OTROS, 'MdA'].flatMap((q) => plantilla(q, n, q === 'Rival' ? rival : resto));
 }
 const entrada = (o = {}) => ({ equipo: 'Rival', nuestro: 'MdA', partidos: partidos(o), jugadores: jugadoresDe({ n: o.jornadas ?? 3, rival: o.rival, resto: o.resto }), historial: null, ...(o.entrada ?? {}) });
-const claves = (o = {}, opc = { tope: 0 }) => clavesRival(entrada(o), opc);
-const hay = (res, regla) => res.claves.find((c) => c.regla === regla);
+const claves = (o = {}, opc = { topEquipo: 0, topJugadores: 0 }) => clavesRival(entrada(o), opc);
+// `hay`: las reglas que se cumplen (antes de quedarse con una por tema)
+const hay = (res, regla) => res.candidatas.find((c) => c.regla === regla);
+const todas = (res) => [...res.equipo, ...res.jugadores];
 
 // Marcadores del rival: [pf, pc] por partido.
 const marcadores = (...v) => v.map(([pf, pc = 50]) => ({ pf, pc }));
@@ -70,7 +76,7 @@ const conEst = (pf, e, pc = 50) => ({ pf, pc, est: e });
 console.log('\n== Pocos datos');
 {
   const dos = claves({ jornadas: 2 });
-  ok(dos.pocosDatos === 'Pocos datos: 2 partidos jugados' && dos.claves.length === 0 && dos.partidos === 2, 'con 2 partidos: «Pocos datos: 2 partidos jugados» y ninguna clave', JSON.stringify(dos));
+  ok(dos.pocosDatos === 'Pocos datos: 2 partidos jugados' && dos.equipo.length === 0 && dos.jugadores.length === 0 && dos.partidos === 2, 'con 2 partidos: «Pocos datos: 2 partidos jugados» y ninguna clave', JSON.stringify(dos));
   const tres = claves();
   ok(tres.pocosDatos === null && tres.partidos === 3, 'con 3 partidos ya se calculan (el mínimo es 3)');
   const uno = clavesRival({ ...entrada({ jornadas: 1 }) });
@@ -84,7 +90,7 @@ console.log('\n== Pocos datos');
 console.log('\n== Equipo normal: ninguna clave (y la media no cuenta al rival)');
 {
   const r = claves({ r: marcadores([60], [40], [60]) });
-  ok(r.claves.length === 0, 'un rival dentro de lo normal del grupo: sin claves', r.claves.map((c) => c.regla).join(','));
+  ok(r.equipo.length === 0 && r.jugadores.length === 0, 'un rival dentro de lo normal del grupo: sin claves', todas(r).map((c) => c.regla).join(','));
   const p = claves({ r: marcadores([100], [100], [100]) });
   ok(hay(p, 'puntos')?.referencia === 50, 'la media del grupo no cuenta al propio rival (50,0 aunque él anote 100)', String(hay(p, 'puntos')?.referencia));
 }
@@ -127,13 +133,6 @@ console.log('\n== 1) Cómo anotan: triples por partido, parte de triple, quién 
   const parte = hay(claves({ r: t(4, 4, 4) }), 'triples_parte');
   ok(parte?.tipo === 'cuidado' && parte.texto === 'El 24 % de sus puntos son de triple (media del grupo: 18 %)', 'parte de sus puntos de triple', JSON.stringify(parte));
   ok(!hay(claves({ r: t(3, 3, 3) }), 'triples_parte'), 'en la media: no sale');
-  // quién tira los triples: 4 de 10 (40 %) sale; 4 de 11 no; con menos de 5 triples en el equipo no sale
-  const tj = (a, resto) => { const c = { 0: { p3a: a } }; for (let i = 1; i < 8; i++) c[i] = { p3a: i <= resto ? 1 : 0 }; return c; };
-  const j40 = hay(claves({ rival: tj(4, 6) }), 'triples_jugador');
-  ok(j40?.tipo === 'cuidado' && /mete el 40 % de sus triples \(4 de 10\)$/.test(j40.texto), 'uno mete el 40 % de los triples: «mete el 40 % de sus triples (4 de 10)»', j40?.texto);
-  ok(!hay(claves({ rival: tj(4, 7) }), 'triples_jugador'), '36 %: no sale');
-  ok(!hay(claves({ rival: tj(4, 0) }), 'triples_jugador'), 'con 4 triples en todo el equipo, no sale (ruido)');
-  ok(!hay(claves({ rival: { ...tj(5, 5), 0: { p3a: 5, pj: 1 } } }), 'triples_jugador'), 'quien no llega al mínimo de partidos no cuenta');
   // mezcla: tiros libres como parte de los puntos
   const mez = hay(claves({ r: [10, 10, 10].map((x) => conEst(50, { tl: x })) }), 'mezcla');
   ok(mez?.tipo === 'ojo' && mez.texto === 'El 20 % de sus puntos son de tiro libre (media del grupo: 16 %)', 'mucho tiro libre: «El 20 % de sus puntos son de tiro libre»', JSON.stringify(mez));
@@ -151,18 +150,6 @@ console.log('\n== 2) Tiros libres y faltas');
   ok(!hay(claves({ r: tl(1, 3) }), 'tl_equipo'), 'con 9 tiros libres intentados (menos de 10) no sale, aunque sea 33 %');
   ok(hay(claves({ r: tl(1, 4) }), 'tl_equipo'), 'con 12 intentados (más de 10) sí');
 
-  // jugadores que tiran mal: referencia del grupo 60 % (6/10 en los demás); umbral 45 % con 6+ intentos y minutos
-  const p = (tla, tli, extra = {}) => ({ 0: { tla, tli, ...extra } });
-  const mal = hay(claves({ rival: p(9, 20) }), 'tl_jugadores');
-  ok(mal?.tipo === 'aprovechar' && mal.texto === 'Nombre Rival Jugador1: 9 de 20 en libres (media del grupo: 60 %)', 'jugador a 15 puntos de la media (45 % frente a 60 %): «X: 9 de 20 en libres»', mal?.texto);
-  ok(!hay(claves({ rival: p(10, 20) }), 'tl_jugadores'), '50 % (10 puntos por debajo): no sale');
-  ok(!hay(claves({ rival: p(0, 5) }), 'tl_jugadores'), 'con 5 intentos (menos de 6): no sale');
-  ok(hay(claves({ rival: p(2, 6) }), 'tl_jugadores'), 'con 6 intentos sí');
-  ok(!hay(claves({ rival: p(2, 12, { segundos: 3 * 540 }) }), 'tl_jugadores'), 'solo entre los que juegan minutos: 9 min por partido, no sale');
-  ok(!hay(claves({ rival: p(2, 12, { pj: 1, segundos: 1500 }) }), 'tl_jugadores'), 'ni quien no llega al mínimo de partidos');
-  const dos = hay(claves({ rival: { 0: { tla: 4, tli: 12 }, 1: { tla: 2, tli: 8 }, 2: { tla: 3, tli: 10 } } }), 'tl_jugadores');
-  ok(dos && dos.texto.split(';').length === 2, 'como mucho dos jugadores en la clave', dos?.texto);
-
   const f = (x) => [0, 1, 2].map(() => conEst(50, { faltas: x }));
   ok(hay(claves({ r: f(18) }), 'faltas_equipo')?.tipo === 'aprovechar', 'faltas +20 %: Aprovechar', JSON.stringify(hay(claves({ r: f(18) }), 'faltas_equipo')));
   ok(hay(claves({ r: f(18) }), 'faltas_equipo')?.texto === 'Cometen 18,0 faltas por partido (media del grupo: 15,0)', 'texto de faltas por partido');
@@ -170,13 +157,6 @@ console.log('\n== 2) Tiros libres y faltas');
   ok(hay(claves({ r: f(12) }), 'faltas_equipo')?.tipo === 'contexto', 'faltas −20 %: Contexto');
   ok(!hay(claves({ r: f(13) }), 'faltas_equipo'), 'faltas −13 %: no sale');
 
-  // jugador importante con 3,5 faltas por partido o más (de los que más anotan o más minutos juegan)
-  const fj = (faltas, extra = {}) => ({ 0: { faltas, pts: 40, ...extra } });
-  const fa = hay(claves({ rival: fj(11) }), 'faltas_jugador');   // 11 faltas / 3 partidos = 3,67
-  ok(fa?.tipo === 'aprovechar' && /: 3,7 faltas por partido$/.test(fa.texto), 'importante con 3,7 faltas por partido: Aprovechar', fa?.texto);
-  ok(!hay(claves({ rival: fj(10) }), 'faltas_jugador'), '3,33 faltas por partido: no sale');
-  ok(/: 7,0 faltas por partido$/.test(hay(claves({ rival: fj(21) }), 'faltas_jugador')?.texto ?? ''), 'el límite es por partido: 21 faltas en 3 partidos = 7,0');
-  ok(!hay(claves({ rival: { 7: { faltas: 30, pts: 1, segundos: 3 * 300 } } }), 'faltas_jugador'), 'un jugador que no es de los importantes (poco anota y poco juega) no sale');
   const tlp = [0, 1, 2].map(() => conEst(50, { tl_int: 18 }));
   ok(hay(claves({ r: tlp }), 'tl_provocan')?.tipo === 'cuidado', 'tiros libres que provocan +50 %: Cuidado');
   ok(!hay(claves({ r: [0, 1, 2].map(() => conEst(50, { tl_int: 14 })) }), 'tl_provocan'), '+17 %: no sale');
@@ -240,7 +220,7 @@ console.log('\n== 4) Forma y contexto');
   ok(inc?.tipo === 'contexto' && inc.texto === 'No se presentó a 1 partido (J4); sus puntos salen de la clasificación oficial', 'incomparecencia: lo dice y remite a la clasificación oficial (D74)', JSON.stringify(inc));
   ok(!hay(claves({ incomp: [[4, 'Zeta']] }), 'incomparecencias'), 'si no se presentó el otro equipo, no es del rival');
   ok(hay(claves({ incomp: [[4, 'Rival'], [5, 'Rival']] }), 'incomparecencias')?.texto.startsWith('No se presentó a 2 partidos (J4, J5)'), 'plural: «2 partidos (J4, J5)»');
-  ok(!claves({ jornadas: 3 }).claves.some((x) => /casa|fuera/i.test(x.texto)), 'no hay clave de casa/fuera (todos juegan en Moratalaz, D129)');
+  ok(!todas(claves({ jornadas: 3 })).some((x) => /casa|fuera/i.test(x.texto)), 'no hay clave de casa/fuera (todos juegan en Moratalaz, D129)');
 }
 
 console.log('\n== 5) Cruce con nosotros');
@@ -265,7 +245,7 @@ console.log('\n== 5) Cruce con nosotros');
   ok(!hay(claves({ r: rf }), 'cruce_faltas'), 'sin que nosotros cometamos de más, no hay cruce de faltas');
   // El cruce pesa más que su clave suelta
   const todo = claves({ r: rt3, nuestros: contraNos });
-  ok(todo.claves.findIndex((c) => c.regla === 'cruce_triples') < todo.claves.findIndex((c) => c.regla === 'triples'), 'el cruce va por delante de la clave suelta de triples');
+  ok(todo.equipo.some((c) => c.regla === 'cruce_triples') && todo.equipo.some((c) => c.regla === 'triples'), 'el cruce compite como una más: sale a la vez que la clave suelta de triples (son temas distintos)');
 }
 
 console.log('\n== 5) Historial contra ellos (solo si el rival se identifica con seguridad)');
@@ -286,32 +266,118 @@ console.log('\n== 5) Historial contra ellos (solo si el rival se identifica con 
   ok(!hay(claves({}), 'historial'), 'sin historial: no sale');
 }
 
-console.log('\n== Orden, tope y determinismo');
+console.log('\n== Vía A «Del equipo»: una clave por tema, orden por lo que se aparta, lo que no cambia el partido al final, máximo 3');
 {
-  // Un rival con muchas cosas a la vez
+  // Triples +67 %: salen «triples» y «parte de triple» (mismo tema): se queda la de más peso
+  const t5 = [0, 1, 2].map(() => conEst(50, { t3: 5 }));
+  const r5 = claves({ r: t5 });
+  ok(hay(r5, 'triples') && hay(r5, 'triples_parte'), 'las dos reglas de triples se cumplen...');
+  const deTriples = r5.equipo.filter((c) => c.tema === 'triples');
+  ok(deTriples.length === 1 && deTriples[0].peso === Math.max(hay(r5, 'triples').peso, hay(r5, 'triples_parte').peso), '...pero solo una sale (la de más peso)', JSON.stringify(deTriples.map((c) => c.regla)));
+  // Rotación: «5 primeros juegan el 92 %» y «banquillo corto» son la misma
+  const conc = { 0: { segundos: 5700, pj: 3 }, 1: { segundos: 5700 }, 2: { segundos: 5700 }, 3: { segundos: 5700 }, 4: { segundos: 5700 }, 5: { segundos: 500, pj: 1 }, 6: { segundos: 500, pj: 1 }, 7: { segundos: 500, pj: 1 } };
+  const rr = claves({ rival: conc });
+  ok(hay(rr, 'minutos_concentrados') && hay(rr, 'rotacion') && rr.equipo.filter((c) => c.tema === 'rotacion').length === 1, 'rotación: «5 primeros» y «banquillo corto» son un tema: sale una sola', JSON.stringify(rr.equipo.map((c) => c.regla)));
+  // Cada tema, una vez, en cualquier escenario
   const e = { t3: 5, tl: 12, tl_int: 18, faltas: 20 };
   const o = { r: [conEst(70, e, 50), conEst(70, e, 50), conEst(70, e, 50)], nuestros: { 1: { rival: { t3: 5, tl_int: 18 }, est: { faltas: 20 } }, 2: { rival: { t3: 5, tl_int: 18 }, est: { faltas: 20 } }, 3: { rival: { t3: 5, tl_int: 18 }, est: { faltas: 20 } } } };
-  const todo = claves(o);
+  const todoA = claves(o);
+  const temas = todoA.equipo.map((c) => c.tema);
+  ok(new Set(temas).size === temas.length, 'nunca dos claves del mismo tema', temas.join(','));
+  ok(todoA.candidatas.length > todoA.equipo.length && todoA.disponiblesEquipo === todoA.equipo.length, `de ${todoA.candidatas.length} reglas cumplidas quedan ${todoA.equipo.length} (una por tema)`);
   const pag = clavesRival(entrada(o));
-  ok(todo.claves.length > AJUSTES.topPagina && pag.claves.length === AJUSTES.topPagina && pag.disponibles === todo.claves.length, `salen ${todo.claves.length} claves; la página enseña como mucho ${AJUSTES.topPagina}`, `${todo.claves.length}/${pag.claves.length}/${pag.disponibles}`);
-  ok(todo.claves.every((c, i, a) => i === 0 || a[i - 1].peso >= c.peso), 'ordenadas por peso, de mayor a menor');
-  ok(JSON.stringify(pag.claves) === JSON.stringify(todo.claves.slice(0, 5)), 'la página enseña las 5 primeras');
-  ok(primerasClaves(pag).length === 2 && JSON.stringify(primerasClaves(pag)) === JSON.stringify(todo.claves.slice(0, 2)), 'las tarjetas, las 2 primeras');
+  ok(pag.equipo.length === AJUSTES.topEquipo && AJUSTES.topEquipo === 3 && pag.disponiblesEquipo === todoA.equipo.length && todoA.equipo.length > 3, `la página enseña como mucho 3 (hay ${pag.disponiblesEquipo})`);
+  ok(JSON.stringify(pag.equipo) === JSON.stringify(todoA.equipo.slice(0, 3)), 'enseña las 3 primeras, por lo que se apartan');
+  ok(todoA.equipo.every((c, i, a) => i === 0 || a[i - 1].peso >= c.peso), 'orden por cuánto se aparta de lo normal');
+  ok(todoA.equipo.every((c) => c.bloque === 'equipo' && c.regla && c.texto && ['cuidado', 'aprovechar', 'ojo', 'contexto'].includes(c.tipo) && typeof c.peso === 'number' && 'valor' in c && 'referencia' in c), 'cada clave lleva tipo, texto, valor, referencia y peso');
+  // Al final y como «Contexto»: hacen POCAS faltas (−60 %) frente a un exceso de puntos (+20 %): aun pesando más, va detrás
+  const fin = claves({ r: [conEst(60, { faltas: 6 }), conEst(60, { faltas: 6 }), conEst(60, { faltas: 6 })] });
+  const iF = fin.equipo.findIndex((c) => c.regla === 'faltas_equipo'), iP = fin.equipo.findIndex((c) => c.regla === 'puntos');
+  ok(iF >= 0 && iP >= 0 && fin.equipo[iF].tipo === 'contexto' && fin.equipo[iF].peso > fin.equipo[iP].peso && iF > iP && iF === fin.equipo.length - 1,
+    'pocas faltas: «Contexto», va al final aunque se aparte más', JSON.stringify(fin.equipo.map((c) => [c.regla, c.peso])));
+}
+
+console.log('\n== Vía B «Jugadores a vigilar»: cada jugador frente a los jugadores del grupo');
+{
+  const nombre = (i) => `Nombre Rival Jugador${i + 1}`;
+  const subir = (...pts) => Object.fromEntries(pts.map((p, i) => [i, { pts: p }]));   // puntos por jugador del rival (por 3 partidos)
+  // Puestos: los demás tienen 10 por partido (30 en 3); el rival con 90, 80, 70, 60, 50 y 40 ocupa del 1.º al 6.º del grupo
+  const seis = claves({ rival: subir(90, 80, 70, 60, 50, 40) });
+  ok(seis.jugadores.length === 5 && seis.disponiblesJugadores === 5, 'entre los 5 primeros del grupo: salen 5 (el 6.º no)', JSON.stringify(seis.jugadores.map((c) => c.texto)));
+  ok(seis.jugadores[0].texto === `${nombre(0)}: 30,0 pts por partido (1.º del grupo)` && seis.jugadores[4].texto === `${nombre(4)}: 16,7 pts por partido (5.º del grupo)`, 'una línea por jugador con su puesto en el grupo', seis.jugadores.map((c) => c.texto).join(' | '));
+  ok(seis.jugadores.every((c) => c.bloque === 'jugadores' && c.tipo === 'vigilar' && c.etiqueta === 'Vigilar'), 'etiqueta «Vigilar»');
+  ok(clavesRival(entrada({ rival: subir(90, 80, 70, 60, 50, 40) })).jugadores.length === 3, 'la página enseña como mucho 3 líneas');
+  ok(!claves({ rival: subir(90, 80, 70, 60, 50, 40) }).jugadores.some((c) => c.texto.startsWith(nombre(5))), 'el 6.º puesto no entra');
+  ok(JSON.stringify(seis.jugadores.map((c) => c.valor)) === '[1,2,3,4,5]', 'orden por el mejor puesto');
+  // mínimo de partidos de D169: quien no llega no cuenta ni sube a los demás de puesto
+  const unSoloPartido = claves({ rival: { 0: { pts: 100, pj: 1 }, 1: { pts: 90 } } });
+  ok(unSoloPartido.jugadores.length === 1 && unSoloPartido.jugadores[0].texto.startsWith(nombre(1)) && /\(1\.º del grupo\)/.test(unSoloPartido.jugadores[0].texto), 'un jugador con 1 partido (mínimo 2) no cuenta y no desplaza a nadie', JSON.stringify(unSoloPartido.jugadores.map((c) => c.texto)));
+  // varios criterios en una línea: puntos y triples (puesto), con el pico y con los libres
+  const filas = (nombreJ, partidoPts, partidoT3) => [1, 2, 3].map((jor) => ({
+    partido_id: `p${jor}`, grupo: 'G1', jornada: jor, equipo: 'Rival', dorsal: '1', nombre: nombreJ, segundos: 1500,
+    pts: partidoPts[jor - 1] ?? 0, p2a: 0, p3a: partidoT3[jor - 1] ?? 0, tla: 0, tli: 0, faltas: 0,
+  }));
+  const NOM = 'RIVAL JUGADOR1, NOMBRE';
+  const linea = (cambios, pts, t3) => clavesRival({ ...entrada({ rival: { 0: cambios } }), filas: filas(NOM, pts, t3) }, { topEquipo: 0, topJugadores: 0 }).jugadores;
+  const uno = linea({ pts: 90, p3a: 15, tli: 6, tla: 0 }, [30, 21, 39], [0, 4, 0]);
+  ok(uno.length === 1, 'un jugador con varios criterios: UNA línea', JSON.stringify(uno.map((c) => c.texto)));
+  ok(uno[0]?.texto === `${nombre(0)}: 30,0 pts por partido (1.º del grupo) y 5,0 triples (1.º); metió 39 puntos contra Delta y 4 triples contra Gama; 0 de 6 en libres (media del grupo: 60 %)`, 'junta lo suyo: puestos, pico (con el rival) y libres', uno[0]?.texto);
+  // pico: 4 triples o 20 puntos en un partido, en los dos lados del umbral (sin puesto en el grupo: solo pico)
+  const pico = (pts, t3) => linea({ pts: 20, p3a: 2 }, pts, t3).find((c) => c.texto.startsWith(nombre(0)))?.texto ?? null;
+  ok(pico([0, 0, 0], [0, 4, 0]) === `${nombre(0)}: metió 4 triples contra Gama`, '4 triples en un partido: sale («metió 4 triples contra Gama»)', pico([0, 0, 0], [0, 4, 0]));
+  ok(pico([0, 0, 0], [0, 3, 0]) === null, '3 triples: no sale');
+  ok(pico([20, 0, 0], [0, 0, 0]) === `${nombre(0)}: metió 20 puntos contra Beta`, '20 puntos en un partido: sale («metió 20 puntos contra Beta»)', pico([20, 0, 0], [0, 0, 0]));
+  ok(pico([19, 0, 0], [0, 0, 0]) === null, '19 puntos: no sale');
+  ok(pico([21, 0, 0], [4, 0, 0]) === `${nombre(0)}: metió 21 puntos y 4 triples contra Beta`, 'los dos picos en el mismo partido: una sola frase', pico([21, 0, 0], [4, 0, 0]));
+  ok(claves({ rival: { 0: { pts: 20, p3a: 2 } } }).jugadores.length === 0, 'sin las hojas partido a partido no hay picos');
+  const sinPico = clavesRival({ ...entrada({ rival: { 0: { pts: 20, p3a: 2, pj: 1 } } }), filas: filas(NOM, [30, 0, 0], [0, 0, 0]) }, { topEquipo: 0, topJugadores: 0 }).jugadores;
+  ok(sinPico.length === 0, 'el pico también exige el mínimo de partidos (D169)');
+  // libres: 6 intentos y 15 puntos por debajo del 60 % del grupo (45 %); «0 de 6», nunca un recuento sin decir de qué
+  const tl = (tla, tli, extra = {}) => claves({ rival: { 0: { tla, tli, ...extra } } }).jugadores.find((c) => c.texto.startsWith(nombre(0)))?.texto ?? null;
+  ok(tl(0, 6) === `${nombre(0)}: 0 de 6 en libres (media del grupo: 60 %)`, '0 de 6 en libres: sale, con el recuento y de qué', tl(0, 6));
+  ok(tl(2, 5) === null, 'con 5 intentos no sale');
+  ok(/9 de 20 en libres \(media del grupo: 60 %\)/.test(tl(9, 20) ?? ''), 'justo 15 puntos por debajo (45 %): sale');
+  ok(!/en libres/.test(tl(10, 20) ?? ''), '50 % (10 puntos por debajo): no sale');
+  ok(tl(0, 6, { segundos: 3 * 540 }) === null, 'solo entre quienes juegan minutos (9 por partido: no)');
+  ok(tl(0, 6, { pj: 1 }) === null, 'ni quien no llega al mínimo de partidos');
+  ok(claves({ rival: { 0: { tla: 0, tli: 6 } } }).jugadores[0].tipo === 'aprovechar', 'solo libres: etiqueta Aprovechar');
+  // faltas: entre los 5 primeros del grupo por partido
+  const fa = claves({ rival: { 0: { faltas: 30 } } }).jugadores[0];
+  ok(fa?.texto === `${nombre(0)}: 10,0 faltas por partido (1.º del grupo)` && fa.tipo === 'aprovechar', 'faltas entre las 5 primeras del grupo: «10,0 faltas por partido (1.º del grupo)»', JSON.stringify(fa));
+  ok(claves({ rival: { 0: { tli: 40, tla: 24 } } }).jugadores[0]?.texto === `${nombre(0)}: 13,3 tiros libres intentados por partido (1.º del grupo)`, 'tiros libres intentados: «13,3 tiros libres intentados por partido (1.º del grupo)»');
+  ok(claves({ rival: { 0: { p3a: 12 } } }).jugadores[0]?.texto === `${nombre(0)}: 4,0 triples por partido (1.º del grupo)`, 'triples por partido');
+  // orden: por el mejor puesto; sin puesto (solo pico o libres), detrás
+  const mezcla = clavesRival({ ...entrada({ rival: { 0: { pts: 60 }, 1: { tla: 0, tli: 6 }, 2: { pts: 90 } } }), filas: [] }, { topEquipo: 0, topJugadores: 0 }).jugadores;
+  ok(mezcla.map((c) => c.texto.split(':')[0]).join('|') === `${nombre(2)}|${nombre(0)}|${nombre(1)}`, 'orden por el mejor puesto; el que solo tira mal los libres, detrás', mezcla.map((c) => c.texto).join(' | '));
+  // «Nunca 4 de 8 a secas»: todo recuento dice de qué
+  const textosB = [...seis.jugadores, ...uno, ...mezcla].map((c) => c.texto);
+  ok(textosB.every((t) => !/\b\d+ de \d+\b(?! (en libres|partidos))/.test(t)), 'ningún recuento «N de M» sin decir de qué', textosB.join(' | '));
+  // los nuestros y los demás equipos no salen en la vía B
+  ok(claves({ resto: { 0: { pts: 300 } } }).jugadores.every((c) => c.texto.includes('Rival Jugador')), 'solo los jugadores del rival');
+}
+
+console.log('\n== Tarjetas, determinismo y entrada');
+{
+  const e = { t3: 5, tl: 12, tl_int: 18, faltas: 20 };
+  const o = { r: [conEst(70, e, 50), conEst(70, e, 50), conEst(70, e, 50)], rival: { 0: { pts: 90 }, 1: { pts: 80 } } };
+  const pag = clavesRival(entrada(o));
+  const t = primerasClaves(pag);
+  ok(t.length === 2 && t[0] === pag.equipo[0] && t[1] === pag.jugadores[0] && AJUSTES.topTarjeta === 1, 'las tarjetas: la primera de cada vía');
+  ok(primerasClaves({ ...pag, jugadores: [] }).length === 1, 'sin jugadores a vigilar, solo la del equipo');
   ok(JSON.stringify(clavesRival(entrada(o))) === JSON.stringify(clavesRival(entrada(o))), 'determinista: misma entrada, mismas claves');
   const orig = entrada(o), copia = JSON.stringify(orig);
   clavesRival(orig);
   ok(JSON.stringify(orig) === copia, 'no modifica la entrada');
   const baraja = { ...entrada(o), partidos: [...entrada(o).partidos].reverse(), jugadores: [...entrada(o).jugadores].reverse() };
   ok(JSON.stringify(clavesRival(baraja)) === JSON.stringify(clavesRival(entrada(o))), 'el orden de los datos de entrada no cambia el resultado');
-  ok(todo.claves.every((c) => c.regla && c.texto && ['cuidado', 'aprovechar', 'ojo', 'contexto'].includes(c.tipo) && typeof c.peso === 'number' && 'valor' in c && 'referencia' in c), 'cada clave lleva tipo, texto, valor, referencia y peso');
-  ok(lineaClave(todo.claves[0]).startsWith(`${todo.claves[0].etiqueta}: `), 'la línea lleva delante la etiqueta («Cuidado: …»)');
+  ok(lineaClave(pag.equipo[0]).startsWith(`${pag.equipo[0].etiqueta}: `), 'la línea lleva delante la etiqueta («Cuidado: …»)');
 }
 
 console.log('\n== Textos: solo datos, coma decimal, sin adjetivos sobre personas');
 {
   const e = { t3: 5, tl: 12, tl_int: 18, faltas: 20 };
   const o = { r: [conEst(70, e, 50), conEst(70, e, 50), conEst(70, e, 50)], rival: { 0: { pts: 60, tla: 4, tli: 12, faltas: 11 } } };
-  const textos = claves(o).claves.map((c) => c.texto);
+  const textos = todas(claves(o)).map((c) => c.texto);
   ok(textos.length > 4, `${textos.length} textos para revisar`);
   ok(textos.every((t) => !/\d\.\d/.test(t)), 'ninguna cifra con punto decimal');
   const MALOS = /\b(malo|mala|malos|flojo|floja|flojos|torpe|peor|mejor|bueno|buena|pésimo|horrible|terrible|vago|lento|débil|inútil|fatal)\b/i;

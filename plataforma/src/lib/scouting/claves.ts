@@ -4,60 +4,64 @@
 // hojas: puntos, 2P y 3P ANOTADOS, tiros libres anotados/intentados, faltas COMETIDAS y minutos (nada de rebotes,
 // asistencias, perdidas, intentos de campo ni parciales por cuarto de partidos ajenos).
 // Son datos de terceros por jugador (D73, D162): solo se ensenan con sesion. Nunca nuestros niveles ni datos internos.
-import { bonito, dec, minimoPartidos, type JugadorLiga } from "../jugadoresLiga.ts";
+import { bonito, claveNombre, dec, minimoPartidos, type FilaHoja, type JugadorLiga } from "../jugadoresLiga.ts";
 
 // ----------------------------------------------------------------------------------------------- ajustes (un solo sitio)
 export const AJUSTES = {
   minPartidos: 3,            // el rival tiene que haber jugado al menos 3 partidos; si no, «Pocos datos»
-  umbral: 0.2,               // una clave comparada con la media del grupo sale si se aparta un 20 % o mas
-  topPagina: 5,              // claves como mucho en la pagina del rival
-  topTarjeta: 2,             // y las primeras en las tarjetas (Panel y «Tu proximo partido»)
-  // anotan
-  dependencia1: 0.35,        // el primero mete mas del 35 % de los puntos...
-  dependencia2: 0.55,        // ...o los dos primeros mas del 55 %
-  triplesJugador: 0.4,       // uno mete el 40 % o mas de los triples de su equipo
-  triplesMinEquipo: 5,       // ...si el equipo ha metido al menos 5 (con menos es ruido)
-  // tiros libres y faltas
-  tlMinEquipo: 10,           // TL% del equipo: minimo de intentos
-  tlMinJugador: 6,           // TL% de un jugador: minimo de intentos
-  tlDifJugador: 0.15,        // ...y 15 puntos o mas por debajo de la media del grupo
-  tlMinutosJugador: 600,     // ...solo entre quienes juegan minutos (10 min por partido o mas, en segundos)
-  faltasJugador: 3.5,        // un jugador importante con 3,5 faltas o mas por partido
-  importantes: 3,            // «importante» = de los 3 que mas anotan o de los 3 que mas minutos juegan
-  // rotacion
-  venido: 2 / 3,             // el mas peligroso ha venido a menos de 2 de cada 3 partidos
-  // forma y contexto
-  racha: 3,                  // racha de 3 o mas
-  paliza: 15,                // paliza = 15 puntos o mas de diferencia
-  apretado: 5,               // partido apretado = 5 puntos o menos
-  fraccionPartidos: 0.5,     // paliza o apretados: al menos la mitad de sus partidos (y 2 como minimo)
+  umbral: 0.2,               // vía A: una clave comparada con la media de los equipos del grupo sale si se aparta un 20 % o más
+  topEquipo: 3,              // vía A «Del equipo»: claves como mucho en la página del rival
+  topJugadores: 3,           // vía B «Jugadores a vigilar»: líneas como mucho en la página del rival
+  topTarjeta: 1,             // en las tarjetas (Panel y «Tu próximo partido»): la primera de cada vía
   desvMax: 2,                // tope de lo que se aparta al ordenar (una cifra disparada no tapa al resto)
-  comunesDif: 10,            // rival comun: sale si el resultado es distinto o los margenes se separan 10 puntos o mas
+  // vía A
+  dependencia1: 0.35,        // el primero mete más del 35 % de los puntos...
+  dependencia2: 0.55,        // ...o los dos primeros más del 55 %
+  tlMinEquipo: 10,           // TL% del equipo: mínimo de intentos
+  venido: 2 / 3,             // el más peligroso ha venido a menos de 2 de cada 3 partidos
+  racha: 3,                  // racha de 3 o más
+  paliza: 15,                // paliza = 15 puntos o más de diferencia
+  apretado: 5,               // partido apretado = 5 puntos o menos
+  fraccionPartidos: 0.5,     // paliza o apretados: al menos la mitad de sus partidos (y 2 como mínimo)
+  comunesDif: 10,            // rival común: sale si el resultado es distinto o los márgenes se separan 10 puntos o más
+  // vía B: cada jugador frente a los JUGADORES del grupo (con el mínimo de partidos de D169)
+  puestoGrupo: 5,            // entre los 5 primeros del grupo por partido (puntos, triples, tiros libres intentados, faltas)
+  picoTriples: 4,            // pico en un partido: 4 triples o más...
+  picoPuntos: 20,            // ...o 20 puntos o más
+  tlMinJugador: 6,           // libres: al menos 6 intentos...
+  tlDifJugador: 0.15,        // ...y 15 puntos o más por debajo del TL% medio del grupo
+  tlMinutosJugador: 600,     // ...solo entre quienes juegan minutos (10 min por partido o más, en segundos)
 } as const;
 
-/** Importancia de cada regla (el orden es peso = importancia × cuanto se aparta de la media o del umbral). */
-const IMPORTANCIA: Record<string, number> = {
-  cruce_triples: 3, cruce_tl: 3, cruce_faltas: 2, dependencia: 3, triples_jugador: 2.5, puntos: 2, encajados: 2, triples: 2,
-  triples_parte: 1.5, mezcla: 1.5, tl_equipo: 2, tl_jugadores: 2.5, faltas_equipo: 2, faltas_jugador: 2.5, tl_provocan: 2,
-  rotacion: 2, minutos_concentrados: 2, peligroso_ausente: 2.5, racha: 1, paliza: 1, apretados: 1, comunes: 1,
-  incomparecencias: 1, historial: 0.8,
+/** Tema de cada regla de la vía A: de cada tema solo se queda la clave de más peso. */
+const TEMA: Record<string, string> = {
+  puntos: "anotacion", dependencia: "anotacion", encajados: "encajados", triples: "triples", triples_parte: "triples",
+  tl_equipo: "libres", tl_provocan: "libres", mezcla: "libres", faltas_equipo: "faltas",
+  rotacion: "rotacion", minutos_concentrados: "rotacion", peligroso_ausente: "rotacion",
+  racha: "forma", paliza: "forma", apretados: "forma", comunes: "comunes",
+  cruce_triples: "cruce", cruce_tl: "cruce", cruce_faltas: "cruce", historial: "historial", incomparecencias: "incomparecencias",
 };
 
 // ----------------------------------------------------------------------------------------------------- tipos
-export type TipoClave = "cuidado" | "aprovechar" | "ojo" | "contexto";
-export const ETIQUETA: Record<TipoClave, string> = { cuidado: "Cuidado", aprovechar: "Aprovechar", ojo: "Ojo", contexto: "Contexto" };
+export type TipoClave = "cuidado" | "aprovechar" | "ojo" | "contexto" | "vigilar";
+export const ETIQUETA: Record<TipoClave, string> = { cuidado: "Cuidado", aprovechar: "Aprovechar", ojo: "Ojo", contexto: "Contexto", vigilar: "Vigilar" };
 
 export type Clave = {
   regla: string; tipo: TipoClave; etiqueta: string; texto: string;
-  valor: number | null;       // la cifra del rival que mueve la clave
+  bloque: "equipo" | "jugadores";
+  tema: string;
+  valor: number | null;       // la cifra del rival que mueve la clave (en la vía B, su mejor puesto)
   referencia: number | null;  // con lo que se compara (media del grupo o umbral)
   peso: number;
 };
 export type ResultadoClaves = {
   partidos: number;           // partidos jugados por el rival (con marcador, sin incomparecencias)
-  pocosDatos: string | null;  // «Pocos datos: N partidos jugados» (y entonces claves = [])
-  disponibles: number;        // cuantas claves cumplian su regla, antes del tope
-  claves: Clave[];
+  pocosDatos: string | null;  // «Pocos datos: N partidos jugados» (y entonces no hay claves)
+  equipo: Clave[];            // vía A «Del equipo» (una por tema), como mucho `topEquipo`
+  jugadores: Clave[];         // vía B «Jugadores a vigilar» (una línea por jugador), como mucho `topJugadores`
+  disponiblesEquipo: number;      // cuántas cumplían su regla (una por tema), antes del tope
+  disponiblesJugadores: number;   // cuántos jugadores cumplían alguna condición, antes del tope
+  candidatas: Clave[];        // todas las reglas de la vía A que se cumplen, antes de quedarse con una por tema
 };
 
 /** Totales de un equipo en un partido (fila TOTALES de la hoja). */
@@ -77,6 +81,7 @@ export type EntradaClaves = {
   nuestro: string;                 // nuestro equipo del grupo («MdA» o «MdL»)
   partidos: PartidoClaves[];       // todos los del grupo (resultados con la hoja por equipo)
   jugadores: JugadorLiga[];        // todos los jugadores de los equipos del grupo (hojas, D168)
+  filas?: FilaHoja[];              // las hojas partido a partido (para los picos de un jugador); sin ellas no hay picos
   historial?: HistorialEntrada | null;
 };
 
@@ -148,15 +153,15 @@ function reparto(js: JugadorLiga[], pjEquipo: number) {
 }
 
 // ------------------------------------------------------------------------------------------------- reglas
-type Candidata = Omit<Clave, "peso" | "etiqueta"> & { desv: number };
+type Candidata = Omit<Clave, "peso" | "etiqueta" | "bloque" | "tema"> & { desv: number };
 
 /** Las claves de un rival, ordenadas por peso (importancia × cuanto se aparta) y con tope. `tope: 0` = sin tope. */
-export function clavesRival(e: EntradaClaves, opciones: { tope?: number } = {}): ResultadoClaves {
-  const tope = opciones.tope ?? AJUSTES.topPagina;
+export function clavesRival(e: EntradaClaves, opciones: { topEquipo?: number; topJugadores?: number } = {}): ResultadoClaves {
+  const topEquipo = opciones.topEquipo ?? AJUSTES.topEquipo, topJugadores = opciones.topJugadores ?? AJUSTES.topJugadores;
   const juegos = juegosDe(e.equipo, e.partidos);
   const n = juegos.length;
   if (n < AJUSTES.minPartidos) {
-    return { partidos: n, pocosDatos: `Pocos datos: ${pl(n, "partido jugado", "partidos jugados")}`, disponibles: 0, claves: [] };
+    return { partidos: n, pocosDatos: `Pocos datos: ${pl(n, "partido jugado", "partidos jugados")}`, equipo: [], jugadores: [], disponiblesEquipo: 0, disponiblesJugadores: 0, candidatas: [] };
   }
 
   const equipos = [...new Set(e.partidos.flatMap((p) => [p.local, p.visitante]))].sort((a, b) => a.localeCompare(b, "es"));
@@ -241,52 +246,6 @@ export function clavesRival(e: EntradaClaves, opciones: { tope?: number } = {}):
     }
   }
 
-  // quien tira los triples
-  const triplesEq = suma(js.map((j) => j.p3a));
-  if (triplesEq >= AJUSTES.triplesMinEquipo) {
-    const t = js.filter((j) => j.pj >= min).sort((x, y) => y.p3a - x.p3a || x.nombre.localeCompare(y.nombre, "es"))[0];
-    if (t && t.p3a / triplesEq >= AJUSTES.triplesJugador - EPS) {
-      add({ regla: "triples_jugador", tipo: "cuidado", texto: `${nombreDe(t)} mete el ${pct(t.p3a / triplesEq)} de sus triples (${t.p3a} de ${triplesEq})`, valor: t.p3a / triplesEq, referencia: AJUSTES.triplesJugador, desv: Math.max(AJUSTES.umbral, t.p3a / triplesEq / AJUSTES.triplesJugador - 1) });
-    }
-  }
-
-  // jugadores que tiran mal los libres: por debajo de la media del grupo, entre quienes juegan minutos
-  {
-    const resto = otros.flatMap(otrosJug);
-    const i = suma(resto.map((j) => j.tli));
-    const refTl = i ? suma(resto.map((j) => j.tla)) / i : null;
-    if (refTl !== null) {
-      const flojos = jm
-        .filter(({ j, minP }) => j.tli >= AJUSTES.tlMinJugador && minP >= AJUSTES.tlMinutosJugador && j.pj >= min && j.tla / j.tli <= refTl - AJUSTES.tlDifJugador + EPS)
-        .sort((x, y) => x.j.tla / x.j.tli - y.j.tla / y.j.tli || x.j.nombre.localeCompare(y.j.nombre, "es")).slice(0, 2);
-      if (flojos.length) {
-        const peor = flojos[0].j;
-        add({
-          regla: "tl_jugadores", tipo: "aprovechar", valor: peor.tla / peor.tli, referencia: refTl,
-          texto: `${flojos.map(({ j }) => `${nombreDe(j)}: ${j.tla} de ${j.tli} en libres`).join("; ")} (media del grupo: ${pct(refTl)})`,
-          desv: Math.max(AJUSTES.umbral, (refTl - peor.tla / peor.tli) / refTl),
-        });
-      }
-    }
-  }
-
-  // faltas de un jugador importante
-  {
-    const porPuntos = [...jm].filter(({ j }) => j.pj >= min).sort((x, y) => y.media - x.media || x.j.nombre.localeCompare(y.j.nombre, "es")).slice(0, AJUSTES.importantes);
-    const porMinutos = [...jm].filter(({ j }) => j.pj >= min).sort((x, y) => y.minP - x.minP || x.j.nombre.localeCompare(y.j.nombre, "es")).slice(0, AJUSTES.importantes);
-    const imp = [...new Set([...porPuntos, ...porMinutos])]
-      .filter(({ j }) => j.faltas / j.pj >= AJUSTES.faltasJugador - EPS)
-      .sort((x, y) => y.j.faltas / y.j.pj - x.j.faltas / x.j.pj || x.j.nombre.localeCompare(y.j.nombre, "es")).slice(0, 2);
-    if (imp.length) {
-      const fpp = (j: JugadorLiga) => j.faltas / j.pj;
-      add({
-        regla: "faltas_jugador", tipo: "aprovechar", valor: fpp(imp[0].j), referencia: AJUSTES.faltasJugador,
-        texto: imp.map(({ j }) => `${nombreDe(j)}: ${dec(fpp(j))} faltas por partido`).join("; "),
-        desv: Math.max(AJUSTES.umbral, fpp(imp[0].j) / AJUSTES.faltasJugador - 1),
-      });
-    }
-  }
-
   // 3) Rotacion
   {
     const jugados = (q: string, np: number) => (np ? suma(otrosJug(q).map((j) => j.pj)) / np : null);
@@ -349,7 +308,7 @@ export function clavesRival(e: EntradaClaves, opciones: { tope?: number } = {}):
       const nuestro = mejor.nuestro > 0 ? `nosotros ganamos de ${mejor.nuestro}` : `nosotros perdimos de ${-mejor.nuestro}`;
       add({
         regla: "comunes", tipo: "contexto", texto: `${suyo}; ${nuestro}`, valor: mejor.suyo - mejor.nuestro, referencia: AJUSTES.comunesDif,
-        desv: Math.max(AJUSTES.umbral, Math.abs(mejor.suyo - mejor.nuestro) / AJUSTES.comunesDif - 1),
+        desv: Math.max(AJUSTES.umbral, Math.abs(mejor.suyo - mejor.nuestro) / 50),
       });
     }
   }
@@ -367,10 +326,99 @@ export function clavesRival(e: EntradaClaves, opciones: { tope?: number } = {}):
   // 5) Historial contra nosotros, SOLO si el rival se identifica con seguridad
   add(historial(e.historial));
 
-  const claves: Clave[] = out
-    .map(({ desv, ...c }) => ({ ...c, etiqueta: ETIQUETA[c.tipo], peso: Math.round((IMPORTANCIA[c.regla] ?? 1) * Math.min(desv, AJUSTES.desvMax) * 1000) / 1000 }))
+  // Vía A: peso = cuanto se aparta de lo normal (con tope); una sola clave por tema (la de más peso); lo que no cambia el
+  // partido, al final.
+  const candidatas: (Clave & { alFinal: boolean })[] = out
+    .map(({ desv, ...c }) => ({
+      ...c, bloque: "equipo" as const, tema: TEMA[c.regla] ?? c.regla, etiqueta: ETIQUETA[c.tipo], peso: Math.round(Math.min(desv, AJUSTES.desvMax) * 1000) / 1000,
+      alFinal: (c.regla === "faltas_equipo" || c.regla === "rotacion") && c.tipo === "contexto",
+    }))
     .sort((a, b) => b.peso - a.peso || a.regla.localeCompare(b.regla));
-  return { partidos: n, pocosDatos: null, disponibles: claves.length, claves: tope > 0 ? claves.slice(0, tope) : claves };
+  const porTema = new Map<string, Clave & { alFinal: boolean }>();
+  for (const c of candidatas) if (!porTema.has(c.tema)) porTema.set(c.tema, c);
+  const ordenadas = [...porTema.values()].sort((a, b) => Number(a.alFinal) - Number(b.alFinal) || b.peso - a.peso || a.regla.localeCompare(b.regla));
+  const quitar = ({ alFinal: _f, ...c }: Clave & { alFinal: boolean }): Clave => c;
+  const jugadores = vigilar(e, n, nombreDe);
+  return {
+    partidos: n, pocosDatos: null, disponiblesEquipo: ordenadas.length, disponiblesJugadores: jugadores.length,
+    equipo: (topEquipo > 0 ? ordenadas.slice(0, topEquipo) : ordenadas).map(quitar),
+    jugadores: topJugadores > 0 ? jugadores.slice(0, topJugadores) : jugadores,
+    candidatas: candidatas.map(quitar),
+  };
+}
+
+/** Vía B «Jugadores a vigilar»: cada jugador del rival frente a los JUGADORES del grupo (con el mínimo de partidos de D169).
+ *  Sale si es de los 5 primeros del grupo por partido en puntos, triples, tiros libres intentados o faltas, si tuvo un pico
+ *  en un partido (4 triples o más, o 20 puntos o más) o si tira mal los libres. Una línea por jugador, con su puesto. */
+function vigilar(e: EntradaClaves, n: number, nombreDe: (j: JugadorLiga) => string): Clave[] {
+  const pjEq = new Map<string, number>();
+  const pjDe = (q: string) => { const k = norm(q); if (!pjEq.has(k)) pjEq.set(k, juegosDe(q, e.partidos).length); return pjEq.get(k)!; };
+  const pool = e.jugadores.filter((j) => j.pj > 0 && j.pj >= minimoPartidos(pjDe(j.equipo)));
+  const suyos = pool.filter((j) => mismo(j.equipo, e.equipo));
+  // media de tiros libres del grupo (los jugadores de los demás equipos)
+  const resto = pool.filter((j) => !mismo(j.equipo, e.equipo));
+  const intentosResto = suma(resto.map((j) => j.tli));
+  const refTl = intentosResto ? suma(resto.map((j) => j.tla)) / intentosResto : null;
+
+  const STATS = [
+    { k: "pts", valor: (j: JugadorLiga) => j.pts / j.pj, texto: (v: number, primero: boolean) => (primero ? `${dec(v)} pts por partido` : `${dec(v)} pts`) },
+    { k: "p3a", valor: (j: JugadorLiga) => j.p3a / j.pj, texto: (v: number, primero: boolean) => (primero ? `${dec(v)} triples por partido` : `${dec(v)} triples`) },
+    { k: "tli", valor: (j: JugadorLiga) => j.tli / j.pj, texto: (v: number, primero: boolean) => (primero ? `${dec(v)} tiros libres intentados por partido` : `${dec(v)} tiros libres intentados`) },
+    { k: "faltas", valor: (j: JugadorLiga) => j.faltas / j.pj, texto: (v: number, primero: boolean) => (primero ? `${dec(v)} faltas por partido` : `${dec(v)} faltas`) },
+  ] as const;
+  const puesto = (j: JugadorLiga, f: (x: JugadorLiga) => number) => 1 + pool.filter((x) => f(x) > f(j) + EPS).length;
+
+  // picos: de las hojas partido a partido
+  const rival = (jornada: number) => {
+    const p = e.partidos.find((x) => x.jornada === jornada && (mismo(x.local, e.equipo) || mismo(x.visitante, e.equipo)));
+    return p ? (mismo(p.local, e.equipo) ? p.visitante : p.local) : null;
+  };
+  const filasDe = (j: JugadorLiga) => (e.filas ?? []).filter((f) => mismo(f.equipo, e.equipo) && f.grupo === j.grupo && claveNombre(f.nombre) === claveNombre(j.nombre) && f.segundos > 0);
+
+  const lineas: (Clave & { mejor: number; criterios: number })[] = [];
+  for (const j of suyos) {
+    const rank = STATS.map((s) => ({ s, v: s.valor(j), p: puesto(j, s.valor) })).filter((x) => x.v > 0 && x.p <= AJUSTES.puestoGrupo).sort((a, b) => a.p - b.p || STATS.indexOf(a.s) - STATS.indexOf(b.s));
+    const partes = rank.map((x, i) => `${x.s.texto(x.v, i === 0)} (${x.p}.º${i === 0 ? " del grupo" : ""})`);
+    const segmentos: string[] = [];
+    if (partes.length) segmentos.push(partes.length > 1 ? `${partes.slice(0, -1).join(", ")} y ${partes[partes.length - 1]}` : partes[0]);
+
+    // pico en un partido
+    const filas = filasDe(j);
+    const duplicado = new Set(filas.map((f) => f.partido_id)).size !== filas.length;
+    let pico = "";
+    if (filas.length && !duplicado) {
+      const mejorPts = [...filas].sort((a, b) => b.pts - a.pts || b.jornada - a.jornada)[0];
+      const mejorT3 = [...filas].sort((a, b) => b.p3a - a.p3a || b.jornada - a.jornada)[0];
+      const hayPts = mejorPts.pts >= AJUSTES.picoPuntos, hayT3 = mejorT3.p3a >= AJUSTES.picoTriples;
+      const contra = (f: FilaHoja) => { const r = rival(f.jornada); return r ? ` contra ${r}` : ""; };
+      if (hayPts && hayT3 && mejorPts.partido_id === mejorT3.partido_id) pico = `metió ${mejorPts.pts} puntos y ${mejorPts.p3a} triples${contra(mejorPts)}`;
+      else {
+        const cl = [hayPts ? `${mejorPts.pts} puntos${contra(mejorPts)}` : "", hayT3 ? `${mejorT3.p3a} triples${contra(mejorT3)}` : ""].filter(Boolean);
+        if (cl.length) pico = `metió ${cl.join(" y ")}`;
+      }
+    }
+    if (pico) segmentos.push(pico);
+
+    // libres: lo que tira mal, con su recuento y de que
+    let tlMal = false;
+    if (refTl !== null && j.tli >= AJUSTES.tlMinJugador && j.segundos / j.pj >= AJUSTES.tlMinutosJugador && j.tla / j.tli <= refTl - AJUSTES.tlDifJugador + EPS) {
+      tlMal = true;
+      segmentos.push(`${j.tla} de ${j.tli} en libres (media del grupo: ${pct(refTl)})`);
+    }
+    if (!segmentos.length) continue;
+    const mejor = rank.length ? rank[0].p : 99;
+    const vigila = rank.some((x) => x.s.k !== "faltas") || !!pico;
+    lineas.push({
+      regla: "jugador", bloque: "jugadores", tema: "jugador", tipo: vigila ? "vigilar" : "aprovechar", etiqueta: ETIQUETA[vigila ? "vigilar" : "aprovechar"],
+      texto: `${nombreDe(j)}: ${segmentos.join("; ")}`, valor: rank.length ? mejor : null, referencia: AJUSTES.puestoGrupo,
+      peso: rank.length ? Math.round((1 - (mejor - 1) / (AJUSTES.puestoGrupo + 1)) * 1000) / 1000 : pico ? 0.1 : 0.05,
+      mejor, criterios: segmentos.length,
+    });
+  }
+  void n;
+  return lineas
+    .sort((a, b) => a.mejor - b.mejor || b.criterios - a.criterios || a.texto.localeCompare(b.texto, "es"))
+    .map(({ mejor: _m, criterios: _c, ...c }) => c);
 }
 
 /** Historial contra nosotros en temporadas anteriores. Sin rastro, con homonimos en otros distritos o con algun partido que
@@ -383,12 +431,12 @@ function historial(h: HistorialEntrada | null | undefined): Candidata | null {
   const ult = [...ps].filter((p) => p.fecha).sort((a, b) => (a.fecha! < b.fecha! ? 1 : -1))[0];
   const ultimo = ult ? `; último: ${ult.pf > ult.pc ? "ganamos" : "perdimos"} ${ult.pf}-${ult.pc} (${fecha(ult.fecha!)})` : "";
   return {
-    regla: "historial", tipo: "contexto", valor: dif, referencia: null, desv: Math.max(AJUSTES.umbral, Math.abs(dif) / 20),
+    regla: "historial", tipo: "contexto", valor: dif, referencia: null, desv: Math.max(AJUSTES.umbral, Math.abs(dif) / 50),
     texto: `Contra ellos en temporadas anteriores: ${pl(g, "victoria", "victorias")} y ${pl(d, "derrota", "derrotas")}${ultimo}; diferencia media: ${dif > 0 ? "+" : ""}${dec(dif)}`,
   };
 }
 
-/** Las primeras claves (tarjetas del Panel y de «Tu proximo partido»). */
-export const primerasClaves = (r: ResultadoClaves, n: number = AJUSTES.topTarjeta) => r.claves.slice(0, n);
+/** Las de las tarjetas (Panel y «Tu proximo partido»): la primera de cada via. */
+export const primerasClaves = (r: ResultadoClaves, n: number = AJUSTES.topTarjeta) => [...r.equipo.slice(0, n), ...r.jugadores.slice(0, n)];
 /** «Cuidado: …» en una sola linea. */
 export const lineaClave = (c: Pick<Clave, "etiqueta" | "texto">) => `${c.etiqueta}: ${c.texto}`;

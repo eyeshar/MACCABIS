@@ -14,7 +14,7 @@ import liga from '../src/data/liga.json' with { type: 'json' };
 const { ok, fallos } = contador();
 const e = await preparar();
 const { sql, APP } = e;
-const ETIQ = /^(Cuidado|Aprovechar|Ojo|Contexto)\b/i;   // la etiqueta de la caja va en mayúsculas por CSS
+const ETIQ = /^(Cuidado|Aprovechar|Ojo|Contexto|Vigilar)\b/i;   // la etiqueta de la caja va en mayúsculas por CSS
 // Lo que delata una clave en una pagina (la caja, la tarjeta y sus clases): sin sesion no puede salir.
 const CLAVES_HTML = /claves-partido|claves-tarjeta|claves-lista|cl-clave|Pocos datos: \d/;
 try {
@@ -28,7 +28,7 @@ try {
   // Un rival de cada grupo con claves por lo que se sabe de los equipos (con las hojas habra mas) y uno con pocos datos.
   const claves = (g, equipo) => clavesRival({ equipo, nuestro: g === 'G1' ? 'MdA' : 'MdL', partidos: liga.grupos[g].resultados, jugadores: [], historial: null }, { tope: 0 });
   const rivales = (g) => Object.values(liga.grupos[g].equipos).filter((x) => !x.nuestro).map((x) => ({ nombre: x.nombre, r: claves(g, x.nombre) }));
-  const conClaves = (g) => rivales(g).find((x) => x.r.claves.length >= 2)?.nombre;
+  const conClaves = (g) => rivales(g).find((x) => x.r.equipo.length >= 2)?.nombre;
   const R1 = conClaves('G1'), R2 = conClaves('G2');
   const pocos = [...rivales('G1'), ...rivales('G2')].find((x) => x.r.pocosDatos);
   ok(!!R1 && !!R2, `hay un rival con claves en cada grupo (${R1} y ${R2})`);
@@ -45,8 +45,11 @@ try {
     const caja = p.getByTestId('claves-partido');
     ok(await visto(caja), `${quien}: la caja «Claves del partido» de ${R1} se ve`);
     ok((await caja.locator('h3').innerText()) === 'Claves del partido', `${quien}: con su título`);
-    const li = await caja.locator('li').allInnerTexts();
-    ok(li.length >= 2 && li.length <= 5, `${quien}: de 2 a 5 claves (hay ${li.length})`, li.join(' | '));
+    const li = await caja.getByTestId('claves-lista').locator('li').allInnerTexts();
+    ok(li.length >= 2 && li.length <= 3, `${quien}: «Del equipo», de 2 a 3 claves (hay ${li.length})`, li.join(' | '));
+    ok((await caja.locator('h4').allInnerTexts()).join('|') === 'Del equipo|Jugadores a vigilar', `${quien}: los dos bloques con su título`);
+    const lj = await caja.locator('[data-testid="claves-jugadores"] li').allInnerTexts();
+    ok(lj.length <= 3 && lj.every((t) => /^(Vigilar|Aprovechar)\b/i.test(t.trim())) && (lj.length > 0 || (await caja.getByTestId('claves-ninguna-jugadores').count()) === 1), `${quien}: «Jugadores a vigilar»: hasta 3 líneas (${lj.length}) o el aviso de que no hay`, lj.join(' | '));
     ok(li.every((t) => ETIQ.test(t.trim())), `${quien}: cada clave empieza por su etiqueta (Cuidado, Aprovechar, Ojo o Contexto)`, li.join(' | '));
     ok(li.every((t) => !/\d\.\d/.test(t)), `${quien}: cifras con coma decimal`, li.join(' | '));
     ok(await p.evaluate(() => { const c = document.querySelector('[data-testid="claves-partido"]'), t = document.querySelector('[data-testid="peligrosos"], [data-testid="tabla-scouting"]'); return !t || !!(c.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING); }), `${quien}: va arriba, antes de «Más peligrosos» y de la tabla`);
@@ -73,7 +76,7 @@ try {
     ok((await conC.count()) >= 1, `las tarjetas llevan sus claves (${await conC.count()} de ${n})`);
     for (let i = 0; i < await conC.count(); i++) {
       const lineas = await conC.nth(i).locator('.cl-linea').allInnerTexts();
-      ok(lineas.length >= 1 && lineas.length <= 2 && lineas.every((t) => ETIQ.test(t.trim()) || /^Pocos datos/.test(t.trim())), `tarjeta ${i + 1}: como mucho 2 claves, con etiqueta`, lineas.join(' | '));
+      ok(lineas.length >= 1 && lineas.length <= 2 && lineas.every((t) => ETIQ.test(t.trim()) || /^Pocos datos/.test(t.trim())), `tarjeta ${i + 1}: la primera de cada bloque (como mucho 2), con etiqueta`, lineas.join(' | '));
     }
     const href = await tarjetas.first().getAttribute('href');
     ok(/^\/liga\/scouting\?e=/.test(href ?? ''), 'la tarjeta enlaza al scouting del rival', href);
@@ -90,7 +93,8 @@ try {
     ok((await cs.count()) === 2, `una por rival (MdA y MdL): ${await cs.count()}`);
     for (let i = 0; i < await cs.count(); i++) {
       const lineas = await cs.nth(i).locator('.cl-linea').allInnerTexts();
-      ok(lineas.length === 2 && lineas.every((t) => ETIQ.test(t.trim())), `tarjeta ${i + 1}: exactamente las 2 primeras claves, con etiqueta`, lineas.join(' | '));
+      ok(lineas.length >= 1 && lineas.length <= 2 && lineas.every((t) => ETIQ.test(t.trim())) && !/^Vigilar/i.test(lineas[0].trim()), `tarjeta ${i + 1}: la primera del equipo y, si hay, la primera de los jugadores a vigilar`, lineas.join(' | '));
+      ok(lineas.length === 1 || /^(Vigilar|Aprovechar)/i.test(lineas[1].trim()), `tarjeta ${i + 1}: la segunda línea es de un jugador`, lineas.join(' | '));
       const enlace = cs.nth(i).getByRole('link', { name: 'Ver el scouting' });
       ok(/^\/liga\/scouting\?e=/.test((await enlace.getAttribute('href')) ?? ''), `tarjeta ${i + 1}: enlace «Ver el scouting» al rival`, await enlace.getAttribute('href'));
       ok(await enlace.evaluate((a) => a.getBoundingClientRect().height >= 44), `tarjeta ${i + 1}: el enlace es tocable (≥ 44 px)`);
@@ -99,7 +103,7 @@ try {
     await cs.first().getByRole('link', { name: 'Ver el scouting' }).click();
     await p.waitForURL((u) => u.pathname === '/liga/scouting');
     const sinEtiqueta = (t) => t.trim().replace(/^\w+:?\s+/, '');
-    ok(sinEtiqueta(await p.getByTestId('claves-partido').locator('li').first().innerText()) === sinEtiqueta(primera), 'el enlace lleva al scouting del rival, y su primera clave es la misma de la tarjeta');
+    ok(sinEtiqueta(await p.getByTestId('claves-lista').locator('li').first().innerText()) === sinEtiqueta(primera), 'el enlace lleva al scouting del rival, y su primera clave es la misma de la tarjeta');
     await p.goto(`${APP}/`);
     ok(await sinDesbordar(p), '375 px: sin desbordar');
     await p.context().close();

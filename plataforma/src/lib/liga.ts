@@ -25,6 +25,7 @@ export type PartidoCalendario = {
 
 export type DatosLiga = {
   jugadores: JugadorLiga[];
+  filas: FilaHoja[];            // las hojas partido a partido (los picos de las claves, D174)
   clasificacion: FilaClasificacion[];
   calendario: PartidoCalendario[];
   hoy: string;
@@ -60,6 +61,7 @@ export async function cargarLiga(supabase: SupabaseClient, grupos?: string[]): P
   return {
     // D168: un jugador por equipo y nombre normalizado (el dorsal no es identidad); quien no ha jugado ningun minuto no sale.
     jugadores: agruparJugadores(filas).jugadores,
+    filas,
     clasificacion,
     calendario: calendarioDeEventos(fuente, clasificacion),
     hoy: new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }),

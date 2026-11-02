@@ -15,11 +15,12 @@ function historialDe(grupo: Grupo, equipo: string): HistorialEntrada | null {
 }
 
 /** Claves de un equipo del grupo (que no sea el nuestro), con los datos de la liga ya cargados. */
-export function clavesDeEquipo(liga: Pick<DatosLiga, "jugadores">, grupo: Grupo, equipo: string, opciones: { tope?: number } = {}): ResultadoClaves {
+export function clavesDeEquipo(liga: Pick<DatosLiga, "jugadores" | "filas">, grupo: Grupo, equipo: string, opciones: { topEquipo?: number; topJugadores?: number } = {}): ResultadoClaves {
   return clavesRival({
     equipo, nuestro: NUESTRO_DE[grupo],
     partidos: LIGA.grupos[grupo].resultados,
     jugadores: liga.jugadores.filter((j) => j.grupo === grupo),
+    filas: liga.filas.filter((f) => f.grupo === grupo),
     historial: historialDe(grupo, equipo),
   }, opciones);
 }
@@ -31,8 +32,8 @@ export function grupoDe(equipo: string): Grupo | null {
 }
 
 /** Claves de un rival escrito como en el calendario o la tabla de eventos («MEJORADA 2012 C.B..»): null si no esta en la liga o es de los nuestros. */
-export function clavesPorNombre(liga: Pick<DatosLiga, "jugadores">, grupo: Grupo, nombre: string, opciones: { tope?: number } = {}): (ResultadoClaves & { equipo: string }) | null {
+export function clavesPorNombre(liga: Pick<DatosLiga, "jugadores" | "filas">, grupo: Grupo, nombre: string, opciones: { topEquipo?: number; topJugadores?: number } = {}): (ResultadoClaves & { nombreEquipo: string }) | null {
   const e = Object.values(LIGA.grupos[grupo].equipos).find((x) => norm(x.nombre) === norm(nombre));
   if (!e || e.nuestro) return null;
-  return { ...clavesDeEquipo(liga, grupo, e.nombre, opciones), equipo: e.nombre };
+  return { ...clavesDeEquipo(liga, grupo, e.nombre, opciones), nombreEquipo: e.nombre };
 }

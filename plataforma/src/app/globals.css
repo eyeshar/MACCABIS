@@ -823,6 +823,8 @@ a.nv-entrada[aria-current="page"] { background: var(--panel-3); box-shadow: inse
 .cl-aprovechar { border-left-color: var(--ok); }
 .cl-ojo { border-left-color: var(--c-amarillo); }
 .cl-contexto { border-left-color: var(--tinta-tenue); }
+.cl-vigilar { border-left-color: var(--c-naranja); }
+.cl-sub { margin: 10px 0 6px; font-size: 0.95rem; }
 .cl-tarjeta { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 .cl-linea { margin: 0; font-size: 0.85rem; line-height: 1.35; color: var(--tinta-suave); overflow-wrap: anywhere; }
 .cl-mas { font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; min-height: var(--toque); }

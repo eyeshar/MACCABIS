@@ -211,7 +211,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
                       </div>
                       {ligaClaves && e.rival && (() => {
                         const c = clavesPorNombre(ligaClaves, e.equipo === "MdA" ? "G1" : "G2", a?.rival ?? e.rival);
-                        return c ? <ClavesTarjeta res={c} href={`/liga/scouting?e=${encodeURIComponent(c.equipo)}${e.equipo === "MdL" ? "&v=mdl" : ""}`} /> : null;
+                        return c ? <ClavesTarjeta res={c} href={`/liga/scouting?e=${encodeURIComponent(c.nombreEquipo)}${e.equipo === "MdL" ? "&v=mdl" : ""}`} /> : null;
                       })()}
                       {rival && <p className="in-rival pequeno" data-testid="color-rival-inicio"><i className="eq-punto" style={{ background: rival.css }} aria-hidden="true" /> El rival: {textoColores(rival)}</p>}
                     </article>

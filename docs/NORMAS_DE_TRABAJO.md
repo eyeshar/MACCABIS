@@ -105,3 +105,7 @@ El repositorio es **público** y su historial no se reescribe (decisión de Ivá
 - **Nunca correos, DNIs ni teléfonos** en `docs/`, en el código, en los datos publicados ni en los **mensajes de commit**. En docs, a cada persona se la nombra por su **`person_id` o su mote**; un correo se describe («su correo personal», «el de su cuenta de Google»), no se escribe.
 - En las pruebas, solo correos de ejemplo (`*.local`, `example.com`) y datos sintéticos (`sint-…`), como hasta ahora.
 - Las direcciones institucionales que hagan falta (p. ej. el soporte de la liga) sí, porque no son de una persona.
+
+## 18. Un push por rama, salvo para corregir un fallo (Iván, 03/11/2026)
+- Cada push a una rama lanza la batería completa en GitHub Actions: se sube **una vez**, con el trabajo terminado y probado en local, para **no lanzarla varias veces por descuido**.
+- **Si Actions falla y hay que corregirlo, se corrige en la misma rama y se hace un segundo push.** No hace falta cerrar el PR ni abrir otro.

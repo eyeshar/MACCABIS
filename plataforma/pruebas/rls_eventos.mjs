@@ -197,7 +197,10 @@ try {
   let e14 = await vista('entreno-semanal-2026-10-14');
   ok(e14.pista_por_confirmar === true && e14.pista_nombre === null && e14.pista_motivo === 'Valdebernardo en obras', 'entreno futuro con Valdebernardo en obras: «Pista por confirmar (Valdebernardo en obras)»', JSON.stringify(e14));
   const e7 = await vista('entreno-semanal-2026-10-07');
-  ok(e7.pista_por_confirmar === false && e7.pista_nombre === 'Caja Mágica' && e7.notas === 'Cambiado solo esta semana.' && String(e7.inicio).slice(0, 5) === '20:00' && String(e7.fin).slice(0, 5) === '21:00', '07/10: Caja Mágica 20:00–21:00, «Cambiado solo esta semana»');
+  ok(e7.pista_por_confirmar === false && e7.pista_nombre === 'Caja Mágica' && String(e7.inicio).slice(0, 5) === '20:00' && String(e7.fin).slice(0, 5) === '21:00', '07/10: Caja Mágica 20:00–21:00');
+  // Revisión de seguridad (20261103210000): la nota que escribe un gestor no sale en lo público; sigue en la tabla.
+  ok(!('notas' in e7) && (await api('/v_eventos_publicos?select=notas&limit=1')).status >= 400, 'la vista pública no tiene «notas» (anónimo no puede pedirla)');
+  ok((await sql`select notas from public.eventos where clave = 'entreno-semanal-2026-10-07'`)[0].notas === 'Cambiado solo esta semana.', 'la nota sigue guardada en el evento (se ve con sesión)');
   const p2 = await vista('mda-j2');
   ok(p2.pista_nombre_corto === 'Moratalaz' && p2.numero_pista === 2 && p2.pista_por_confirmar === false && p2.es_local === true, 'partido: «Moratalaz · Pista 2»');
   // Pista propia en un miercoles concreto + reabrir Valdebernardo

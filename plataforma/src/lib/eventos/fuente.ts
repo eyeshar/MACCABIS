@@ -7,15 +7,19 @@ import { limpiarRival } from "./dominio";
 
 // Fuente PUBLICA del calendario desde la tabla de eventos (paso 2, D94): lee SOLO las vistas publicas
 // (v_eventos_publicos, v_descansos_publicos, v_pista_habitual_publica) con la clave anonima: sin respuestas, sin motivos,
-// sin datos personales. Si Supabase no responde o la vista viene vacia, devuelve undefined y la web usa los ficheros del
-// repo (la fuente de siempre): el calendario nunca se queda en blanco.
+// sin datos personales y, desde la revision de seguridad (03/11/2026, migracion 20261103210000), sin las notas que un
+// gestor escribe a mano en un evento: esas solo se ven con sesion (agenda, ficha del evento). Si Supabase no responde o la
+// vista viene vacia, devuelve undefined y la web usa los ficheros del repo (la fuente de siempre, publica en git): el
+// calendario nunca se queda en blanco.
 type Fila = {
   clave: string; tipo: string; equipo: "MdA" | "MdL" | "ambos"; titulo: string | null; jornada: number | null; rival: string | null; es_local: boolean | null;
-  fecha: string; inicio: string | null; fin: string | null; notas: string | null; estado: string;
+  fecha: string; inicio: string | null; fin: string | null; estado: string;
   pista_nombre: string | null; numero_pista: number | null; pista_por_confirmar: boolean; pista_motivo: string | null;
   /** Ubicacion libre (D119) de un evento sin pista propia (migracion 20261027100000; sin ella, undefined). */
   ubicacion_nombre?: string | null;
 };
+// Por nombre, nunca «*»: si la vista gana una columna, no llega sola a la web publica.
+const COLUMNAS = "clave, tipo, equipo, titulo, jornada, rival, es_local, fecha, inicio, fin, estado, pista_nombre, numero_pista, pista_por_confirmar, pista_motivo, ubicacion_nombre";
 const h = (t: string | null) => (t ? t.slice(0, 5) : null);
 
 export function construirFuente(
@@ -32,11 +36,11 @@ export function construirFuente(
   // Misma regla que pistaEfectiva: pista propia; si no, la ubicacion libre (D119); si no, la de la serie o «por confirmar».
   const entrenos: Evento[] = filas.filter((f) => f.tipo === "entreno" && f.estado !== "cancelado").map((f) => f.ubicacion_nombre ? {
     id: f.clave, tipo: "entreno", fecha: f.fecha, inicio: h(f.inicio), fin: h(f.fin), titulo: f.titulo ?? "Entrenamiento",
-    lugar: f.ubicacion_nombre, pistaPorConfirmar: false, nota: f.notas || null,
+    lugar: f.ubicacion_nombre, pistaPorConfirmar: false, nota: null,
   } satisfies Evento : {
     id: f.clave, tipo: "entreno", fecha: f.fecha, inicio: h(f.inicio), fin: h(f.fin), titulo: f.titulo ?? "Entrenamiento",
     lugar: f.pista_por_confirmar ? "Pista por confirmar" : f.pista_nombre ?? "Pista por confirmar", pistaPorConfirmar: f.pista_por_confirmar,
-    nota: [f.pista_motivo, f.notas].filter(Boolean).join(" · ") || null,
+    nota: f.pista_motivo || null,
   } satisfies Evento);
   const hab = inicioFinHabitual ?? (() => {
     const cuenta = new Map<string, number>();
@@ -58,7 +62,7 @@ async function leer(): Promise<FuenteCalendario | null> {
       global: { fetch: (entrada, init) => fetch(entrada, { ...init, signal: AbortSignal.timeout(8000) }) },
     });
     const [ev, de, ha] = await Promise.all([
-      sb.from("v_eventos_publicos").select("*").eq("temporada", "2026-27").order("fecha"),
+      sb.from("v_eventos_publicos").select(COLUMNAS).eq("temporada", "2026-27").order("fecha"),
       sb.from("v_descansos_publicos").select("equipo, jornada, fecha").eq("temporada", "2026-27"),
       sb.from("v_pista_habitual_publica").select("nombre, estado").limit(1),
     ]);

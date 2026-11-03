@@ -20,6 +20,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { migrar } from '../scripts/db.mjs';
+import { revertirPosteriores } from './revertir_posteriores.mjs';
 import { cargarEventos } from '../scripts/cargar_eventos.mjs';
 import { quienResponde, fueraPorFicha, avisoSinFicha } from '../src/lib/respuestas/dominio.ts';
 import { pistaEfectiva } from '../src/lib/eventos/dominio.ts';
@@ -74,6 +75,8 @@ try {
   ok((await sql`select count(*)::int n from public.pistas where solo_con_ficha`)[0].n === 0, 'por defecto ninguna pista tiene la marca');
   const conLaMigracion = await matriz();
   const vistaCon = await vista();
+  // Las posteriores que rehacen la vista pública (20261103210000, sin «notas») van antes; migrar las vuelve a aplicar.
+  await revertirPosteriores(sql, path.dirname(MIG2), '20261103100000');
   await sql.begin((tx) => tx.unsafe(fs.readFileSync(`${MIG2}.revertir.sql`, 'utf8')));
   ok((await sql`select count(*)::int n from information_schema.columns where table_name = 'pistas' and column_name in ('habitual_desde', 'solo_con_ficha_desde')`)[0].n === 0
     && (await sql`select 1 from supabase_migrations.schema_migrations where version = '20261029120000'`).length === 0, '20261029120000_pista_desde revertida: sin las dos columnas ni su registro');

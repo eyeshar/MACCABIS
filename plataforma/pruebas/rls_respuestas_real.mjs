@@ -96,6 +96,11 @@ try {
   console.log('\n== Un jugador real (solo lectura)');
   const [jug] = await sql`select u.id, j.person_id, j.ficha_mda, j.ficha_mdl from public.jugadores j join auth.users u on lower(u.email) = lower(j.email)
                           where j.activo and not exists (select 1 from public.gestores g where g.user_id = u.id) and (j.ficha_mda or j.ficha_mdl) order by (j.ficha_mda and j.ficha_mdl) limit 1`;
+  // Revisión de seguridad (20261103210000): las claves push de cada móvil, solo para el servidor. Vale antes y después.
+  const sinClaves = (await sql`select 1 from supabase_migrations.schema_migrations where version = '20261103210000'`).length === 1;
+  const [cp] = await sql`select bool_or(has_column_privilege('authenticated', 'public.suscripciones_avisos', c, 'select')) lee,
+    has_column_privilege('authenticated', 'public.suscripciones_avisos', 'activa', 'select') activa from unnest(array['endpoint', 'p256dh', 'auth']) c`;
+  ok(cp.activa && cp.lee === !sinClaves, sinClaves ? 'authenticated no lee endpoint, p256dh ni auth (20261103210000 aplicada); sí «activa»' : 'authenticated aún lee las claves push (20261103210000 sin aplicar)');
   // (fuera de la transaccion: la conexion es una sola)
   const [ajeno] = jug ? await sql`select e.id from public.eventos e where e.tipo = 'liga' and e.equipo = ${jug.ficha_mda ? 'MdL' : 'MdA'} limit 1` : [];
   if (!jug) ok(false, 'hay al menos un jugador (no gestor) con cuenta');

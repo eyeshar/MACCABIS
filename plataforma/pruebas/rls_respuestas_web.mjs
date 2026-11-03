@@ -379,9 +379,15 @@ try {
   ok((await rpc('responder_domingo_por', { p_fecha: F('2026-10-25'), p_person: 'esteban-jon', p_opcion: 'ambos' }, jon.token)).status >= 400, 'un jugador no usa la función del gestor');
 
   console.log('\n== Suscripciones de avisos');
-  ok((await api('/suscripciones_avisos?select=*', { token: jon.token })).datos.length === 1, 'Jon ve su suscripción');
-  ok((await api('/suscripciones_avisos?select=*', { token: guille.token })).datos.length === 0, 'Guillermo NO ve la de Jon');
-  ok((await api('/suscripciones_avisos?select=*', { token: tG })).datos.length === 1, 'los gestores la ven (para «Avisos: Sí/No»)');
+  const SUSC = '/suscripciones_avisos?select=user_id,person_id,activa,navegador';
+  ok((await api(SUSC, { token: jon.token })).datos.length === 1, 'Jon ve su suscripción');
+  ok((await api(SUSC, { token: guille.token })).datos.length === 0, 'Guillermo NO ve la de Jon');
+  ok((await api(SUSC, { token: tG })).datos.length === 1, 'los gestores la ven (para «Avisos: Sí/No»)');
+  // Revisión de seguridad (20261103210000): las claves push de cada móvil, solo para el servidor (clave de servicio).
+  for (const col of ['endpoint', 'p256dh', 'auth']) {
+    ok((await api(`/suscripciones_avisos?select=${col}`, { token: tG })).status >= 400 && (await api(`/suscripciones_avisos?select=${col}`, { token: jon.token })).status >= 400,
+      `ni el gestor ni el propio jugador leen «${col}»`);
+  }
   ok((await api('/suscripciones_avisos', { metodo: 'POST', cuerpo: { user_id: jon.uid, endpoint: 'https://x', p256dh: 'a', auth: 'b' }, token: jon.token })).status >= 400, 'nadie escribe en la tabla directamente');
   ok((await rpc('alta_suscripcion', { p_endpoint: 'http://inseguro', p_p256dh: 'a', p_auth: 'b' }, jon.token)).status >= 400, 'un endpoint que no es https se rechaza');
   await rpc('alta_suscripcion', { p_endpoint: 'https://push.example/jon-2', p_p256dh: 'c2', p_auth: 'a2', p_navegador: 'Chrome Android' }, jon.token);

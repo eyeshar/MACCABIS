@@ -62,6 +62,10 @@ try {
   const cols = Object.keys(pub.datos?.[0] ?? {});
   ok(cols.length > 0 && !cols.some((c) => COLUMNAS_PRIVADAS.includes(c)), `la vista pública no trae columnas privadas (${cols.join(', ')})`);
   ok(!JSON.stringify(pub.datos.map((f) => Object.values(f))).match(/@|sporteasy|motivo|lesi/i), 'ningún valor de la vista pública es un correo, ni habla de SportEasy, motivos o lesiones');
+  // Revisión de seguridad (20261103210000): sin «notas» (las escribe un gestor a mano). Vale antes y después de aplicarla.
+  const sinNotas = (await sql`select 1 from supabase_migrations.schema_migrations where version = '20261103210000'`).length === 1;
+  ok(sinNotas ? !cols.includes('notas') && (await api('/v_eventos_publicos?select=notas&limit=1')).status >= 400 : cols.includes('notas'),
+    sinNotas ? 'la vista pública ya no trae «notas» (20261103210000 aplicada)' : 'la vista pública aún trae «notas» (20261103210000 sin aplicar)');
   const dp = await api('/v_descansos_publicos?select=*');
   ok(dp.status === 200 && dp.datos.length === 4, 'anónimo lee los 4 descansos');
   ok((await api('/v_eventos_publicos', { metodo: 'POST', cuerpo: {} })).status >= 400, 'la vista pública no admite escritura');

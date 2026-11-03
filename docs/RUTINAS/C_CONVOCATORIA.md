@@ -29,6 +29,8 @@
 5. En la salida: «Avisados N de M (los otros no tienen avisos)» y **«Copiar mensaje»** para pegar el WhatsApp en el grupo. «Reenviar» solo si algún aviso falló.
 6. Si después llega un push de baja: abrir la hoja de recambio, dejar el propuesto o elegir otro (o ninguno) y **«Aplicar y avisar»**; copiar el WhatsApp del cambio.
 
+**El WhatsApp de la convocatoria queda «al día» solo al pulsar «Copiar mensaje»** (Gestión → Convocatoria → Salida; D173, sin «Ya lo he pegado»): ahí se apunta lo copiado y el siguiente WhatsApp de cambios parte de eso. **Si el mensaje se manda por otra vía** (escrito a mano, desde otro móvil…), pulsar «Copiar mensaje» **una vez** igualmente para que el siguiente WhatsApp de cambios parta de lo enviado y no repita ni omita cambios.
+
 Cualquier gestor puede hacer lo mismo. Responder por un jugador que escribe por WhatsApp: «Responder por él» en la pantalla del evento o el tablero (queda «puesto por …»). Notas: nadie inventa respuestas ni motivos; nunca se pide a los jugadores que respondan fuera de la web.
 
 ### Antes de D173 (v2, 31/10/2026)

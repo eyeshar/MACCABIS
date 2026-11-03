@@ -55,7 +55,6 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ## Pendiente de Iván
 
 **Operativa de ahora**
-- [ ] **D178: subir tu archivo de teléfonos** en Gestión → Teléfonos (`/gestion/telefonos`), revisar la tabla y «Confirmar y guardar». Sin eso, el botón «WhatsApp» de «Sin responder» sale «Falta teléfono». Carlos (entrenador) no tiene contacto de WhatsApp: si hace falta, va en el CSV.
 - [ ] **Asistente (D142), comprobación tuya en el móvil:** con sesión, que el botón flotante sale en Inicio, Agenda, Mi zona y Gestión. (Lo de «sin sesión» ya está comprobado en producción el 02/11/2026: no sale en portada, Liga, Historia, Plantilla, El club, Privacidad ni Entrar.)
 - [ ] **Retirar GitHub Pages del todo** (decide Iván; `docs/MIGRACION_WEB.md`): hoy solo redirige a la web nueva. Recomendación: mantenerla hasta final de temporada.
 - [x] **D173 (rutina C automática):** OK de Iván («todo hoy»); migración aplicada en el real con D111 y PR #32 mergeado el 02/11/2026 a las 20:12.
@@ -73,8 +72,8 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 
 **Decisiones**
 - [x] **Decidido (01/11/2026): 2025/26 no se toca; 2017/18–2024/25 sí se cargan (pestañas).** **Asistencia 2025/26 desde el export completo de SportEasy** (01/11/2026): elegir entre no tocarla, solo entrenos o completar las 8 personas que faltan (`docs/SPORTEASY_EXPORT.md`, cuadre en `privado/sporteasy/cuadre_asistencia_2025-26.md`). Y si se cargan como pestañas las temporadas 2017/18–2024/25 (propuesta en el mismo documento).
-- [ ] Más adelante, decisión de Iván: retirar `asistencia_resumen` (sin uso desde D116; tiene 6 filas de 2026/27 con valores viejos).
-- [ ] **Retirar `asistencia_motivos`** («será otra decisión, más adelante»; venía del pendiente del paso 2, punto 6).
+- [ ] Más adelante, decisión de Iván: retirar `asistencia_resumen` (sin uso desde D116; tiene 6 filas de 2026/27 con valores viejos; D170 tampoco la usa: la asistencia de 2026/27 sale de `asistencia_eventos`).
+- [ ] **Retirar `asistencia_motivos`** («será otra decisión, más adelante»; venía del pendiente del paso 2, punto 6). _(D170, 02/11/2026: **aún no se puede**: los totales de 2025/26 siguen saliendo de ella y mandan sobre el detalle por evento de `asistencia_eventos`; solo sería posible si se decide cargar 2025/26 evento a evento.)_
 - [ ] Más adelante: los pedidos de ropa de campañas cerradas ya no se ven en el inicio (D117); si se echan de menos, una página «Mis pedidos».
 - [ ] **Tesorería / cuentas** (Eduardo). Datos sensibles → zona protegida. (D52; punto 3 del «Orden vigente» del 31/10/2026.)
 
@@ -103,19 +102,19 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 
 ## Con fecha
 
-**31/10/2026**
-- [ ] 29, 30 y 31/10 por la mañana: informe a Iván de las preguntas del día anterior y si se llegó al tope (solo contadores). Luego, mirar en el panel de Cloudflare el gasto real de neuronas.
+**Martes 3/11 — primer cierre real con la rutina C automática (D173; sustituye al cierre de las 20:00 de D141)**
+- [ ] **Vigilar** el cierre de las **12:00** (`_limite_dudas`) y el **aviso único de las 09:00** del día del plazo (D173.B): que llega a la hora, que sustituye a los recordatorios de las 10:00 y al aviso de dudas de las 12:00 (ya no salen en partidos ni en el entreno del miércoles) y que nadie se queja de que «Duda» desaparezca al cerrar. _(La J4 del 08/11 ya está aprobada: no lleva ni el aviso de las 09:00 ni el del cierre. El entreno del 04/11 sí: miércoles 09:00 y 12:00.)_
 
-**Martes 3/11 (primer cierre real de dudas a las 20:00, D141) y primeras semanas**
-- [ ] **Vigilar** las primeras semanas: que el aviso de las 12:00 llega a la hora, que se junta bien con el de las 10:00 y que nadie se queja de que «Duda» desaparezca.
+**Martes 10/11 — medir la cuota de Vercel (D179, D175)**
+- [ ] **Medir de nuevo el Active CPU** en el panel/observabilidad de Vercel (una semana entera tras D175, con un domingo de liga; separar el Chrome sin ventana de las sesiones de Claude en la nube) y, antes del 23/11 (paso del equipo «Web TCPC» a Hobby), el acumulado del ciclo. Reevaluar entonces la frecuencia de la tarea de avisos (D179.B). Sin navegador automático contra producción (D179.A). _(Misma fecha: primera propuesta automática real, «Pendiente de Code» 22.)_
 
 **Jueves 5/11 — rutina B**
 - [ ] **Rutina B del jueves 5/11: confirmar horarios y cortes oficiales de la media maratón 2026 y ajustar el texto si cambian.**
 - (Si Iván decide el alta de Iván Canario para la J4, el plazo de la FBM acaba ese jueves a las 20:00; ver «Pendiente de Iván».)
 
 **Domingo 8/11 — J4 (solo juega el MdL, 11:30)**
-- [ ] Comprobar en la J4 (08/11; el MdA descansa) la proyección del MdL, el modo rápido y «Enviar ahora» de verdad.
-- [ ] Probar la J4 de verdad (proponer, ajustar, aprobar, WhatsApp~~, SportEasy por Claude~~). _(SportEasy fuera por D153, 31/10/2026.)_
+- [ ] Comprobar en la J4 (08/11; el MdA descansa) la proyección del MdL, el modo rápido y «Aprobar y avisar» de verdad (D173; sustituye a «Enviar ahora», D127).
+- [ ] Probar la J4 de verdad (revisar la propuesta, ajustar, «Aprobar y avisar», «Copiar mensaje» del WhatsApp~~, SportEasy por Claude~~). _(SportEasy fuera por D153, 31/10/2026.)_
 
 **Tras la J6**
 - [ ] **Recalibrar tras la J6** (ya estaba: umbral de anotación mínima de 45) y, con más jornadas, revisar los parámetros de la proyección (pesos, 60 minutos, 240/40, ±15/±10 %) con el error medio acumulado.
@@ -133,6 +132,12 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ---
 
 ## Histórico
+
+### Cerrado el 03/11/2026 (`docs/backlog-03-11`)
+
+- [x] **D178: subir el archivo de teléfonos** (Pendiente de Iván; hecho y comprobado en el real el 03/11/2026): **26 de 28 jugadores con teléfono**; sin teléfono, los mismos dos que no tienen contacto de WhatsApp (Iván y Carlos, el entrenador). Importado por Gestión → Teléfonos (`/gestion/telefonos`), sin teléfonos en el repositorio (D178).
+- [~] **29, 30 y 31/10: informe de las preguntas del asistente y gasto de neuronas en Cloudflare** (era «Con fecha» 31/10/2026; D142): **venció sin cerrarse.** **Sigue pendiente de Iván: mirar el panel de Cloudflare** (gasto real de neuronas del Worker `maccabis-chat`) y decidir si el tope de 5 preguntas por persona y día sigue bien. No se da por hecho.
+- [~] **Cierre de dudas el martes 3/11 a las 20:00 (D141)**: superado por D173 (martes a las 12:00 y aviso único de las 09:00); reescrito en «Con fecha».
 
 ### Cerrado en el mantenimiento corto (02/11/2026, `fix/mantenimiento-02-11`)
 

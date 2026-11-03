@@ -30,6 +30,8 @@
 
 ## Pendiente de Code
 
+- [ ] **D178, más adelante:** editar el contacto de WhatsApp desde Gestión → Jugadores (hoy solo con «Importar teléfonos»; el teléfono sí se edita allí). Y, si Iván lo quiere, el aviso push del «no vas por defecto» (D152) con el mismo texto que la pantalla (D177: «Te hemos marcado como «no voy» porque normalmente no entrenas…»; el push dice aún «Te hemos puesto que no vas…»).
+
 > Ordenado por lo que más trabajo manual le quita a Iván. Lo que necesita su OK (esquema, datos del real) lo dice.
 
 
@@ -53,6 +55,7 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ## Pendiente de Iván
 
 **Operativa de ahora**
+- [ ] **D178: subir tu archivo de teléfonos** en Gestión → Teléfonos (`/gestion/telefonos`), revisar la tabla y «Confirmar y guardar». Sin eso, el botón «WhatsApp» de «Sin responder» sale «Falta teléfono». Carlos (entrenador) no tiene contacto de WhatsApp: si hace falta, va en el CSV.
 - [ ] **Asistente (D142), comprobación tuya en el móvil:** con sesión, que el botón flotante sale en Inicio, Agenda, Mi zona y Gestión. (Lo de «sin sesión» ya está comprobado en producción el 02/11/2026: no sale en portada, Liga, Historia, Plantilla, El club, Privacidad ni Entrar.)
 - [ ] **Retirar GitHub Pages del todo** (decide Iván; `docs/MIGRACION_WEB.md`): hoy solo redirige a la web nueva. Recomendación: mantenerla hasta final de temporada.
 - [x] **D173 (rutina C automática):** OK de Iván («todo hoy»); migración aplicada en el real con D111 y PR #32 mergeado el 02/11/2026 a las 20:12.

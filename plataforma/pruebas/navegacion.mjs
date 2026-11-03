@@ -250,7 +250,7 @@ try {
         const columnas = await pg.locator('.nv-grupo').evaluateAll((g) => g.map((x) => Math.round(x.getBoundingClientRect().left)));
         ok(new Set(columnas).size === 3, 'menu de Gestion: los tres grupos en columnas', columnas.join(','));
         const enlaces = await pg.locator('a.nv-entrada').evaluateAll((a) => a.map((x) => [x.querySelector('b').textContent.trim(), x.getAttribute('href'), x.querySelector('span')?.textContent.trim()]));
-        ok(JSON.stringify(enlaces.map((e) => e[0])) === JSON.stringify(['Panel de la semana', 'Eventos y pistas', 'Convocatoria', 'Tablero', 'Grupos', 'Jugadores', 'Asistencia y motivos', 'Pedido de ropa', 'Scouting rivales', 'Liga consolidada']) && enlaces.every((e) => e[2]) && enlaces.find((e) => e[0] === 'Eventos y pistas')[1] === '/gestion/eventos' && enlaces.find((e) => e[0] === 'Asistencia y motivos')[1] === '/gestion/asistencia' && enlaces.find((e) => e[0] === 'Convocatoria')[1] === '/gestion/convocatoria', 'menu de Gestion: todas las entradas con enlace y una linea de descripcion (Convocatoria ya enlazada, D107)', JSON.stringify(enlaces));
+        ok(JSON.stringify(enlaces.map((e) => e[0])) === JSON.stringify(['Panel de la semana', 'Eventos y pistas', 'Convocatoria', 'Tablero', 'Grupos', 'Jugadores', 'Importar teléfonos', 'Asistencia y motivos', 'Pedido de ropa', 'Scouting rivales', 'Liga consolidada']) && enlaces.every((e) => e[2]) && enlaces.find((e) => e[0] === 'Eventos y pistas')[1] === '/gestion/eventos' && enlaces.find((e) => e[0] === 'Asistencia y motivos')[1] === '/gestion/asistencia' && enlaces.find((e) => e[0] === 'Convocatoria')[1] === '/gestion/convocatoria', 'menu de Gestion: todas las entradas con enlace y una linea de descripcion (Convocatoria ya enlazada, D107)', JSON.stringify(enlaces));
         const paso2 = await pg.locator('.nv-paso2').evaluateAll((s) => s.map((x) => ({ t: x.textContent, a: x.getAttribute('aria-disabled'), tag: x.tagName, href: x.getAttribute('href') })));
         ok(paso2.length === 0, 'menu de Gestion: ninguna entrada lleva ya "paso 2" (Convocatoria enlazada, D107)', JSON.stringify(paso2));
         ok((await pg.textContent()).includes('Mi cuenta') === false, '"Mi cuenta" ya no esta en el menu de Gestion (solo en el de usuario)');
@@ -289,7 +289,7 @@ try {
         ok(['Plantilla', 'Historia', 'El club'].every((t) => ht.includes(t)) && /la web/i.test(ht), 'hoja: LA WEB con Plantilla, Historia y El club');
         if (rol === 'gestor') {
           const g = hoja.locator('.nv-hoja-gestion');
-          ok(await g.isVisible() && (await g.locator('a.nv-entrada').count()) === 10 && (await g.locator('.nv-paso2').count()) === 0, 'hoja (gestor): GESTIÓN con las mismas 10 entradas (con Tablero y Grupos), todas enlazadas');
+          ok(await g.isVisible() && (await g.locator('a.nv-entrada').count()) === 11 && (await g.locator('.nv-paso2').count()) === 0, 'hoja (gestor): GESTIÓN con las mismas 11 entradas (con Tablero, Grupos e Importar teléfonos), todas enlazadas');
           ok(ht.includes('Liga'), 'hoja (gestor): Liga pasa a «Más»');
         } else ok((await hoja.locator('.nv-hoja-gestion').count()) === 0, `hoja (${rol}): sin Gestion`);
         if (rol !== 'anon') ok(ht.includes('Mi cuenta') && ht.includes('Salir'), 'hoja: Mi cuenta y Salir');

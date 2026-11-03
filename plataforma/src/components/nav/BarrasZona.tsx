@@ -15,7 +15,7 @@ export function BarraGestion() {
         <span className="zb-etq" aria-hidden="true">GESTIÓN</span>
         {MENU_GESTION.map((g) => (
           <div key={g.grupo} className="zb-grupo" role="group" aria-label={g.grupo}>
-            {g.entradas.map((e) =>
+            {g.entradas.filter((e) => e.enBarra !== false).map((e) =>
               e.href ? (
                 <Link key={e.texto} href={e.href} aria-current={actual(e.href) ? "page" : undefined}>{e.corto}</Link>
               ) : (

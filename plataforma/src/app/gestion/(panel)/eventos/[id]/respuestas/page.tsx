@@ -9,7 +9,8 @@ import {
   convocadosDe, diaCorto, fechaDMA, hhmm, pistaEfectiva, rangoHoras, TEXTO_MOTIVO, tituloEvento,
   type EventoFila, type Motivo, type Respuesta,
 } from "@/lib/eventos/dominio";
-import { calendarioRecordatorios, TEXTO_HUECO } from "@/lib/avisos/planificador";
+import { calendarioRecordatorios, TEXTO_HUECO, urlDomingo, urlEvento } from "@/lib/avisos/planificador";
+import { enlaceWa, mensajeGrupo, mensajeIndividual, type EventoMensaje } from "@/lib/whatsapp/sinResponder";
 import { sitioAviso } from "@/lib/avisos/servidor";
 import { dudaAbierta, enMadrid, limiteDudas } from "@/lib/avisos/horario";
 import { MOTIVOS_JUGADOR } from "@/lib/respuestas/dominio";
@@ -22,7 +23,7 @@ import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
 import CambiarAMano from "../../CambiarAMano";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
-import { ausenciaQueCubre, claveQuitado, fueraDelPartido, NOTA_POR_DEFECTO, noVaPorDefecto, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
+import { ausenciaQueCubre, efectivaEn, NOTA_POR_DEFECTO, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
 export const metadata = { title: "Respuestas y motivos · Gestión Maccabis" };
 const SEMANAS = 12;
@@ -73,9 +74,11 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
 
   // Personas: invitadas a alguno de los eventos de la vista. D146: en un partido, quien es «nunca a partidos» y no ha
   // respondido no cuenta (ni sale); en un entreno, quien «no suele entrenar» y no ha respondido va a «no va (por defecto)».
+  // D177: todo sale de la regla única (`efectivaEn`), la misma que aplica la base al «Quién va» del jugador.
   const respDe = (e: EventoFila, p: string) => de(e.id, p)?.respuesta ?? "sin_responder";
-  const invitadosDe = (e: EventoFila) => convocadosDe(e, jugadores).filter((j) => !fueraDelPartido(e, defecto.marcas.get(j.person_id), respDe(e, j.person_id)));
-  const porDefecto = (e: EventoFila, p: string) => noVaPorDefecto(e, defecto.marcas.get(p), respDe(e, p), defecto.quitados.has(claveQuitado(e.id, p)));
+  const efectiva = (e: EventoFila, p: string) => efectivaEn(e, p, respDe(e, p), defecto);
+  const invitadosDe = (e: EventoFila) => convocadosDe(e, jugadores).filter((j) => !efectiva(e, j.person_id).fuera);
+  const porDefecto = (e: EventoFila, p: string) => efectiva(e, p).por === "defecto";
   const personas = [...new Map(eventos.flatMap(invitadosDe).map((j) => [j.person_id, j])).values()];
   type Linea = { person_id: string; nombre: string; clase: "no" | "duda" | "sin_responder" | "va"; texto: string; motivo: string | null; origenTxt: string | null; periodo: PeriodoW | null; avisos: boolean; dos: boolean; solo: string | null; defecto: boolean;
     /** D159: su respuesta en cada evento de la vista, para cambiarla a mano. */
@@ -89,9 +92,10 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
     const ultimo = rs.filter(Boolean).sort((a, b) => ((a!.cambiado_en ?? a!.leido_en ?? "") < (b!.cambiado_en ?? b!.leido_en ?? "") ? 1 : -1))[0];
     const origenTxt = !ultimo || ultimo.respuesta === "sin_responder" ? null : ultimo.origen === "sistema" ? "automático: no confirmó a tiempo" : ultimo.origen === "gestor" ? `puesto por ${ultimo.puesto_por_nombre ?? "un gestor"}` : ultimo.origen === "jugador" ? (ultimo.ausencia_id ? "por su ausencia" : "en la web") : "importada";
     let clase: Linea["clase"], texto: string, solo: string | null = null;
-    const defectoAqui = !per && suyos.length === 1 && porDefecto(suyos[0], j.person_id);
+    const defectoAqui = suyos.length === 1 && porDefecto(suyos[0], j.person_id);
+    const porAusencia = suyos.some((e) => efectiva(e, j.person_id).por === "ausencia");
     if (defectoAqui) { clase = "no"; texto = TEXTO_POR_DEFECTO; }
-    else if (vals.includes("sin_responder")) { clase = per ? "no" : "sin_responder"; texto = per ? "No va (ausencia)" : "Sin responder"; }
+    else if (vals.includes("sin_responder")) { clase = porAusencia ? "no" : "sin_responder"; texto = porAusencia ? "No va (ausencia)" : "Sin responder"; }
     else if (vals.every((v) => v === "va")) { clase = "va"; texto = suyos.length === 2 && distintas ? "A los dos" : "Va"; }
     else if (suyos.length === 2 && distintas && vals.includes("va")) { clase = "va"; const e = suyos[vals.indexOf("va")]; solo = e.id; texto = `Solo ${hhmm(e.inicio)} (${e.equipo})`; }
     else if (vals.includes("duda")) { clase = "duda"; texto = "Duda"; }
@@ -141,6 +145,20 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const sinAvisos = lineas.filter((l) => !l.avisos);
   const web = await origenWeb();
   const msgSinAvisos = mensajeSinAvisos(sinAvisos.map((l) => l.nombre), web);
+
+  // D178: WhatsApp a quien no ha respondido (la lista sale de la regla única, D177: sin los «no va por defecto» ni las
+  // ausencias). Contacto y teléfono, solo de esas personas (jugadores: RLS de gestores).
+  const sinResponder = lineas.filter((l) => l.clase === "sin_responder");
+  const { data: contactosDB } = sinResponder.length
+    ? await supabase.from("jugadores").select("person_id, whatsapp_contacto, telefono").in("person_id", sinResponder.map((l) => l.person_id))
+    : { data: [] };
+  const contactoDe = new Map(((contactosDB ?? []) as { person_id: string; whatsapp_contacto: string | null; telefono: string | null }[]).map((c) => [c.person_id, c]));
+  const eventoMsg: EventoMensaje = {
+    tipo: evento.tipo, fecha: evento.fecha, horas: eventos.map((e) => hhmm(e.inicio)).filter(Boolean) as string[],
+    lugar: !evento.pista_id && evento.ubicacion_nombre ? evento.ubicacion_nombre : sitioAviso(evento, pistas),
+    url: `${web}${evento.tipo === "liga" ? urlDomingo(evento.fecha) : urlEvento(evento)}`, limite: limiteDudas(evento),
+  };
+  const msgGrupo = sinResponder.length ? mensajeGrupo(sinResponder.map((l) => l.nombre), eventoMsg, ahora) : "";
   const opcionesPor = (l: Linea) => (dia && distintas && l.dos
     ? [{ id: "ambos", texto: "A los dos", opcion: "ambos" }, ...dia.map((e) => ({ id: `solo-${e.id}`, texto: `Solo al de las ${hhmm(e.inicio)} (${e.equipo})`, opcion: "solo", evento: e.id })), { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
     : dia ? [{ id: "voy", texto: "Va", opcion: "voy" }, { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
@@ -244,6 +262,31 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
               { k: "con", etiqueta: "con avisos", n: lineas.length - sinAvisos.length, tono: "ok", personas: lineas.filter((l) => l.avisos).map((l) => ({ nombre: l.nombre, href: hrefJugador(l.person_id) })) },
             ]} />
             {sinAvisos.length > 0 && <CopiarTexto texto={msgSinAvisos} etiqueta="Copiar mensaje" />}
+          </section>
+          <section className="gs-bloque" aria-labelledby="t-sinresp" data-testid="sin-responder">
+            <h2 id="t-sinresp" style={{ fontSize: 22 }}>Sin responder · {sinResponder.length}</h2>
+            {sinResponder.length === 0 ? <p className="pequeno suave" style={{ margin: 0 }}>Han respondido todos (quien no va por defecto o por una ausencia no cuenta aquí).</p> : (
+              <>
+                <ul className="lista-limpia ev-wa-lista" data-testid="sin-responder-lista">
+                  {sinResponder.map((l) => {
+                    const href = enlaceWa(contactoDe.get(l.person_id)?.telefono, mensajeIndividual(l.nombre, eventoMsg, ahora));
+                    return (
+                      <li key={l.person_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minHeight: 44 }}>
+                        <NombreJugador nombre={l.nombre} personId={l.person_id} negrita />
+                        {href
+                          ? <a className="boton boton-contorno" href={href} target="_blank" rel="noopener noreferrer" data-testid="boton-whatsapp" aria-label={`WhatsApp a ${l.nombre}`}>WhatsApp</a>
+                          : <button type="button" className="boton boton-contorno" disabled data-testid="boton-whatsapp" aria-label={`WhatsApp a ${l.nombre}: falta teléfono`}>Falta teléfono</button>}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div data-testid="mensaje-grupo"><CopiarTexto texto={msgGrupo} etiqueta="Mensaje al grupo" /></div>
+                <p className="pequeno" style={{ margin: 0 }} data-testid="ayuda-menciones">
+                  Para que la mención avise, escribe @ en WhatsApp y busca:{" "}
+                  {sinResponder.map((l, i) => <span key={l.person_id}>{i > 0 && ", "}<b>{contactoDe.get(l.person_id)?.whatsapp_contacto ?? `${l.nombre} (sin contacto guardado)`}</b></span>)}.
+                </p>
+              </>
+            )}
           </section>
         </aside>
       </div>

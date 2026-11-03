@@ -59,7 +59,7 @@ try {
   const tarjeta = (p, ev) => p.getByTestId('tarjeta-por-defecto').filter({ has: p.locator(`a[href="/mi-zona/evento/${ev.id}"]`) });
   ok((await tarjeta(luz, e1).count()) === 1 && (await tarjeta(luz, e2).count()) === 1, 'una tarjeta por entreno (los dos)');
   const t1 = await tarjeta(luz, e1).innerText();
-  ok(/No vas \(puesto por defecto\)/.test(t1) && /Te hemos puesto que no vas\. Si vienes, cámbialo aquí\./.test(t1), '«No vas (puesto por defecto)» y «Te hemos puesto que no vas. Si vienes, cámbialo aquí.»', t1);
+  ok(/No vas \(puesto por defecto\)/.test(t1) && t1.includes('Te hemos marcado como «no voy» porque normalmente no entrenas. Si vienes, cámbialo.'), '«No vas (puesto por defecto)» y «Te hemos marcado como «no voy» porque normalmente no entrenas. Si vienes, cámbialo.» (D177)', t1);
   ok(!(await luz.getByTestId('tarjeta-pendiente').filter({ has: luz.locator(`a[href="/mi-zona/evento/${e1.id}"]`) }).count()), 'los entrenos no salen en «Te faltan…» (ya cuentan como «no va»)');
   const filaAgenda = luz.locator(`a[data-testid="fila-agenda"][href="/mi-zona/evento/${e1.id}"]`);
   ok(/No vas \(puesto por defecto\)/.test(await filaAgenda.first().innerText()), '«Tu agenda»: la pastilla dice «No vas (puesto por defecto)»');
@@ -69,12 +69,13 @@ try {
   await luz.goto(`${APP}/agenda`);
   ok(/No vas \(puesto por defecto\)/.test(await luz.locator(`a[data-testid="fila-agenda"][href="/mi-zona/evento/${e2.id}"]`).innerText()) && !PRIVADO.test(await luz.content()), 'Agenda: también, y sin nada privado en el HTML');
   await luz.goto(`${APP}/mi-zona/evento/${e2.id}`);
-  ok(/No vas \(puesto por defecto\)/.test(await luz.locator('.rw-vas .rw-etiqueta').innerText()) && await visto(luz.getByTestId('por-defecto')), 'el entreno: «¿Vas?» con «No vas (puesto por defecto)» y «Te hemos puesto que no vas…»');
+  ok(/No vas \(puesto por defecto\)/.test(await luz.locator('.rw-vas .rw-etiqueta').innerText()) && (await luz.getByTestId('por-defecto').innerText()).includes('Te hemos marcado como «no voy» porque normalmente no entrenas. Si vienes, cámbialo.'), 'el entreno: «¿Vas?» con «No vas (puesto por defecto)» y «Te hemos marcado como «no voy»…» (D177)');
+  ok(await visto(luz.locator('.rw-vas .rw-btn-no.marcada')) && await visto(luz.locator('.rw-vas .rw-btn-va')), 'el entreno: «No voy» marcado, con «Voy» para cambiarlo (D177)');
   ok(!PRIVADO.test(await luz.content()), 'el entreno: nada de la marca ni privado, tampoco en el HTML');
   ok(await sinDesbordar(luz), 'el entreno a 375 px: sin desbordar');
 
-  console.log('\n== «Sí voy» guarda su respuesta');
-  await trasAccion(luz, () => luz.getByTestId('si-voy').click());
+  console.log('\n== «Voy» (en el entreno) y «Sí voy» (en el inicio) guardan su respuesta');
+  await trasAccion(luz, () => luz.locator('.rw-vas .rw-btn-va').click());
   ok(await hasta(async () => (await sql`select respuesta, origen from public.respuestas where evento_id = ${e2.id} and person_id = 'sint-luz'`)[0]?.respuesta === 'va'), 'desde el entreno: en la base, «voy» (respuesta suya, de la web)');
   await luz.reload();
   ok(/^Vas$/.test((await luz.locator('.rw-vas .rw-etiqueta').innerText()).trim()) && !(await luz.getByTestId('por-defecto').count()), 'y la pantalla ya dice «Vas» (sin «puesto por defecto»)');

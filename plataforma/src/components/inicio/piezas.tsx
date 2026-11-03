@@ -7,7 +7,7 @@ import {
   type ConvocatoriaMia, type MiAusencia, type MiRespuesta, type MotivoJugador, type Unidad,
 } from "@/lib/respuestas/dominio";
 import { dudaAbierta } from "@/lib/avisos/horario";
-import { TEXTO_POR_DEFECTO_JUGADOR } from "@/lib/disponibilidad/porDefecto";
+import { TEXTO_POR_DEFECTO_EXPLICACION, TEXTO_POR_DEFECTO_JUGADOR } from "@/lib/disponibilidad/porDefecto";
 
 // Piezas del inicio personal y de la Agenda (D117): la tarjeta de «Te faltan N respuestas» y la fila de «Tu agenda».
 
@@ -91,7 +91,7 @@ export function TarjetaPendiente({ u, respuestas, plazasLlenas }: { u: Unidad; r
   );
 }
 
-/** D152: un entreno que le hemos puesto como «No vas (puesto por defecto)», con «Sí voy». Sin nombrar por que. */
+/** D152: un entreno que le hemos puesto como «No vas (puesto por defecto)», con «Sí voy» (D177: dice por qué, es lo suyo). */
 export function TarjetaPorDefecto({ u }: { u: Unidad }) {
   const e = u.eventos[0];
   const h = horasDe(u);
@@ -100,7 +100,7 @@ export function TarjetaPorDefecto({ u }: { u: Unidad }) {
       <div className="in-pordefecto-que">
         <Link href={u.url}><strong>{tituloUnidad(u)}</strong> · {fechaAgenda(u.fecha)}{h.inicio ? ` · ${h.inicio}` : ""}</Link>
         <span className="in-pastilla in-p-novas">{TEXTO_POR_DEFECTO_JUGADOR}</span>
-        <span className="suave pequeno">Te hemos puesto que no vas. Si vienes, cámbialo aquí.</span>
+        <span className="suave pequeno">{TEXTO_POR_DEFECTO_EXPLICACION}</span>
       </div>
       <SiVoy eventoId={e.id} nombre={nombreCorto(e)} />
     </article>

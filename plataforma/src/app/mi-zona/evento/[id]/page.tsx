@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
 import Responder from "@/components/respuestas/Responder";
-import SiVoy from "@/components/respuestas/SiVoy";
 import QuienVaJugador from "@/components/numeros/QuienVa";
 import { dudaAbierta, limiteDudas, madrid, plazoSemanal, textoLimite } from "@/lib/avisos/horario";
 import { cargarMiEvento, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa, misEntrenosPorDefecto } from "@/lib/respuestas/jugador";
@@ -12,7 +11,7 @@ import {
   ausenciaQueCubre, enlaceLugar, enlaceMapa, fechaLarga, horario, lineaCambio, nombreCorto, pistaTexto, TEXTO_MOTIVO_TODO, TEXTO_TIPO, tituloDe,
   type MotivoJugador,
 } from "@/lib/respuestas/dominio";
-import { TEXTO_POR_DEFECTO_JUGADOR } from "@/lib/disponibilidad/porDefecto";
+import { TEXTO_POR_DEFECTO_EXPLICACION, TEXTO_POR_DEFECTO_JUGADOR } from "@/lib/disponibilidad/porDefecto";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Evento · Maccabis", robots: { index: false, follow: false } };
@@ -41,7 +40,7 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
   const quien = (await cargarQuienVa([e.id])).get(e.id)!;
   const cambio = lineaCambio(e);
   const actual = r && r.respuesta !== "sin_responder" ? r.respuesta : null;
-  // D152: «No vas (puesto por defecto)» con «Sí voy» (solo lo suyo, con respuestaEfectiva; nunca se nombra la marca).
+  // D152 y D177: «No vas (puesto por defecto)» con «No voy» marcado (solo lo suyo, con respuestaEfectiva).
   const porDefecto = abierto && (await misEntrenosPorDefecto([e], respuestas, ausencias).catch(() => new Set<string>())).has(e.id);
   const etiqueta = e.estado === "cancelado" ? "Cancelado"
     : porDefecto ? TEXTO_POR_DEFECTO_JUGADOR
@@ -73,8 +72,9 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
         <div className="mz-sec-cab"><h2 id="t-vas">¿Vas?</h2><span className={`rw-etiqueta${actual || porDefecto ? "" : " sin"}`}>{etiqueta}</span></div>
         {abierto && porDefecto ? (
             <>
-              <p style={{ margin: 0 }} data-testid="por-defecto">Te hemos puesto que no vas. Si vienes, cámbialo aquí:</p>
-              <SiVoy eventoId={e.id} nombre={nombreCorto(e)} grande />
+              {/* D177: «No voy» marcado (la respuesta que cuenta) y los botones de siempre para cambiarlo. */}
+              <Responder eventoId={e.id} fecha={e.fecha} actual="no" nombre={nombreCorto(e)} grande sinDuda={!conDuda} />
+              <p style={{ margin: 0 }} data-testid="por-defecto">{TEXTO_POR_DEFECTO_EXPLICACION}</p>
             </>
           ) : abierto ? (
             <>

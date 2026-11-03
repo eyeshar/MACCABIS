@@ -68,6 +68,9 @@ function vaciarPrerenderizado() {
     }
   } catch { /* sin compilacion o sin manifiesto: nada que vaciar */ }
   fs.rmSync(path.join(RAIZ, '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
+  // Next 16.4: lo que se vuelve a renderizar al pedirlo se guarda aparte, en server/route-cache (si no, una suite servia
+  // el /club de la anterior, con otra base: fuente-eventos en Actions, 03/11/2026).
+  fs.rmSync(path.join(RAIZ, '.next', 'server', 'route-cache'), { recursive: true, force: true });
 }
 
 /** Compila (si hace falta) y arranca la app en `puerto`. Devuelve { APP, parar }. */

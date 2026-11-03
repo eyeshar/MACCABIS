@@ -28,7 +28,8 @@ export const MENU_SESION: Seccion[] = [
 ];
 
 /** Entrada del menu de Gestion. Sin href = aun no existe (llega en el paso 2): se ve en gris, sin enlace. */
-export type EntradaGestion = { texto: string; corto: string; descripcion: string; href?: string };
+/** `enBarra: false`: solo en el desplegable y la hoja «Más», no en la barra fija de Gestión (que en escritorio ya va llena). */
+export type EntradaGestion = { texto: string; corto: string; descripcion: string; href?: string; enBarra?: false };
 export type GrupoGestion = { grupo: string; entradas: EntradaGestion[] };
 
 /** Menu de Gestion (D90): el desplegable de la cabecera, la hoja "Mas" del movil y la barra de la zona. */
@@ -47,6 +48,7 @@ export const MENU_GESTION: GrupoGestion[] = [
     grupo: "Plantilla",
     entradas: [
       { texto: "Jugadores", corto: "Jugadores", descripcion: "Plantilla, fichas y correos de acceso", href: "/gestion/jugadores" },
+      { texto: "Importar teléfonos", corto: "Teléfonos", descripcion: "Contacto de WhatsApp y teléfono de cada jugador (CSV)", href: "/gestion/telefonos", enBarra: false },
       { texto: "Asistencia y motivos", corto: "Asistencia y motivos", descripcion: "Quién viene y por qué falta (solo gestores)", href: "/gestion/asistencia" },
       { texto: "Pedido de ropa", corto: "Pedido de ropa", descripcion: "Campaña, pedidos y Excel para VIVE", href: "/gestion/ropa" },
     ],

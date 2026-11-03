@@ -1,4 +1,5 @@
 import { exigirGestor, origenMensajes } from "@/lib/sesion";
+import Link from "next/link";
 import Volver from "@/components/nav/Volver";
 import { mensajeBienvenida } from "@/lib/mensajes";
 import FilaJugador, { type JugadorGestion } from "./FilaJugador";
@@ -50,7 +51,7 @@ export default async function Jugadores() {
           <ul className="lista-limpia">{inactivos.map(fila)}</ul>
         </section>
       )}
-      <p className="pie">El teléfono es opcional y solo lo ven los gestores. Sirve para abrir WhatsApp con el mensaje ya escrito.</p>
+      <p className="pie">El teléfono es opcional y solo lo ven los gestores. Sirve para abrir WhatsApp con el mensaje ya escrito. Para cargarlos todos de una vez, con el contacto de WhatsApp: <Link href="/gestion/telefonos">Importar teléfonos</Link>.</p>
     </>
   );
 }

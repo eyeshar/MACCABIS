@@ -1,15 +1,17 @@
 // Disponibilidad por defecto (D146): funciones PURAS, una sola definicion para el Panel, Eventos, las respuestas del
 // evento, la convocatoria y los recordatorios (`node` carga este fichero tal cual en las pruebas).
 //
-// Dos marcas privadas por jugador (jugadores_privado, solo gestores; D39). Nunca llegan a una pantalla de jugador: alli
-// todo sigue igual (quien no ha respondido sale como «sin responder»).
+// Dos marcas privadas por jugador (jugadores_privado, solo gestores; D39). La marca nunca llega a la pantalla de otro
+// jugador, pero lo que cuenta sí (D177): en su «Quién va», quien no va por defecto sale en «no van», sin nota.
 //   - «No suele entrenar»: en un ENTRENO, si no ha respondido cuenta como «no va (por defecto)». Si responde, manda su
 //     respuesta. Un gestor puede quitarlo para un entreno concreto (vuelve a «sin responder»). Nunca cuenta en partidos.
 //   - «Solo entreno: nunca a partidos»: en un PARTIDO, si no ha respondido no cuenta como pendiente ni recibe
 //     recordatorios. El motor no lo propone nunca (regla 1.7 de REGLAS_CONVOCATORIA.md). En entrenos, como cualquiera.
 // Y la ausencia por periodo (D150): sin respuesta y con una ausencia que cubre el dia, cuenta como «no va» en cualquier
 // evento (el motivo, solo para gestores) y no recibe recordatorios. Si responde, manda su respuesta.
-// `respuestaEfectiva` junta las tres: la usan el Panel, Eventos, el tablero, los grupos, la convocatoria y los avisos.
+// `respuestaEfectiva` junta las tres: la usan el Panel, Eventos, las respuestas del evento, el tablero, los grupos, la
+// convocatoria y los avisos. La base tiene la MISMA regla para lo que ve el jugador (`_estado_efectivo`, que usa
+// v_quien_va; D177): pruebas:asistencia-efectiva las compara caso a caso. Si cambias una, cambia la otra.
 
 export type MarcasDisponibilidad = { no_suele_entrenar: boolean; nunca_partidos: boolean };
 type Resp = "va" | "duda" | "no" | "sin_responder";
@@ -96,3 +98,5 @@ export function porDefectoMio(e: EventoTipo & { id: string; fecha: string }, res
   }).por === "defecto";
 }
 export const TEXTO_POR_DEFECTO_JUGADOR = "No vas (puesto por defecto)";
+/** D177: lo que lee el propio jugador debajo, en su entreno y en su inicio (solo lo suyo). */
+export const TEXTO_POR_DEFECTO_EXPLICACION = "Te hemos marcado como «no voy» porque normalmente no entrenas. Si vienes, cámbialo.";

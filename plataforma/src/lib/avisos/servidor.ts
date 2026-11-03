@@ -3,7 +3,7 @@ import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pistaEfectiva, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { horaDeEnvio, limiteDudas, textoLimite } from "./horario";
-import { avisosCierre, avisosPasoNoVa, avisosPorDefecto, conAvisosDeDudas, inicioDe, invitados, pendienteDe, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
+import { avisosCierre, avisosPasoNoVa, avisosPorDefecto, conAvisosDeDudas, efectivaDe, inicioDe, invitados, pendienteDe, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
 import { TEXTO_PRUEBA, textoCambio, textoCancelacion, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
 
 // Envio de avisos al movil (D99.5): Web Push estandar con claves VAPID. Corre SOLO en el servidor con la clave de
@@ -232,7 +232,8 @@ export async function avisarCambioEvento(eventoId: string, tipo: "cambio" | "can
   const envio = horaDeEnvio(ahora, inicioDe(plan));
   const sello = ahora.getTime();
   const filas: FilaAviso[] = invitados(plan, base.jugadores).map((j) => {
-    const r = base.respuestas.find((x) => x.evento_id === e.id && x.person_id === j.person_id)?.respuesta ?? "sin_responder";
+    // D177: lo que cuenta (regla única): a quien no va por defecto o por su ausencia, «Tenías No voy».
+    const r = efectivaDe(j, plan, base).respuesta;
     const t = tipo === "cancelacion" ? textoCancelacion(plan) : textoCambio(plan, r, cambiaElDia);
     return { ...t, clave: `${tipo}:${e.id}:${sello}:${j.person_id}`, tipo, person_id: j.person_id, eventos: [e.id], url: e.tipo === "liga" ? urlDomingo(e.fecha) : urlEvento(e), programado_para: envio };
   });

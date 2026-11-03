@@ -229,7 +229,7 @@ try {
   await sql`delete from public.entreno_defecto_quitado where evento_id = ${ent.id} and person_id = 'sint-luz'`;
   const pj = await e.sesion('luz@pruebas.local', 375);
   await pj.goto(`${APP}/mi-zona/evento/${ent.id}`);
-  ok(await visto(pj.getByTestId('por-defecto')) && /Te hemos puesto que no vas/.test(await pj.getByTestId('por-defecto').innerText()), 'Luz («no suele entrenar», sin responder ni ausencia) ve en su entreno «Te hemos puesto que no vas» (D152): el estado por defecto está activo');
+  ok(await visto(pj.getByTestId('por-defecto')) && /Te hemos marcado como «no voy» porque normalmente no entrenas/.test(await pj.getByTestId('por-defecto').innerText()), 'Luz («no suele entrenar», sin responder ni ausencia) ve en su entreno «Te hemos marcado como «no voy»…» (D152, D177): el estado por defecto está activo');
   for (const ruta of ['/', `/mi-zona/evento/${ent.id}`, '/mi-zona', '/agenda']) {
     await pj.goto(`${APP}${ruta}`);
     const html = await pj.content();

@@ -137,7 +137,20 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
 - **Las páginas públicas (`/`, `/liga`, `/club`, `/historia`, `/plantilla`, `/privacidad`) son estáticas con `revalidate`: no pueden leer cookies, cabeceras ni `searchParams`** (ni el layout raíz). Lo que dependa de la sesión sale de `/api/sesion` en el navegador (`components/nav/Sesion.tsx`, `useSesion()`); lo que dependa de la consulta (`?hoy=`, `?g=`, `?persona=`, `?t=`) va a una página **gemela dinámica** (`/inicio`, `/liga/con-parametros`…) por `rewrites` de `next.config.ts`. Una página nueva que lea cookies o cabeceras deja de ser estática: `pruebas:cache-publica` falla si una página cacheada lleva datos de sesión.
 - **«/» con sesión es `/inicio`** (el proxy lo reescribe); sin cookie, el proxy ni se ejecuta. El `matcher` de `src/proxy.ts` lleva el nombre de la cookie (`sb-<proyecto>-auth-token`) y es literal: **si cambia el proyecto de Supabase, cámbialo ahí**.
 - **Las pruebas con la web compilada vacían lo prerenderizado antes de arrancar** (`infra/app.mjs`): cada suite renderiza las páginas públicas con su base. Una suite que mire la cabecera tras cargar una página con sesión espera a la sesión (`gotoConSesion`/`sesionLista`, `infra/esperas.mjs`; `comun_e2e.nuevaPagina` ya lo hace).
-- Medir velocidad: `node plataforma/scripts/medir_velocidad.mjs <url>` (TTFB, LCP y peso por página, primera visita y mediana en caliente).
+- Medir velocidad: `node plataforma/scripts/medir_velocidad.mjs <url>` **contra la web local** (`next build` + `next start`), nunca contra producción ni vistas previas (D179). Saca TTFB, LCP y peso por página, primera visita y mediana en caliente.
+
+## Producción y vistas previas: sin navegador automático (D179)
+
+**Norma de Iván (03/11/2026).** Motivo: el equipo de Vercel «Web TCPC» pasa a Hobby el 23/11/2026 y allí la cuota de Active CPU (4 h/mes)
+es **del equipo, compartida con la web del club**. Pasarse no se cobra, pero Vercel puede **pausar los dos proyectos**, también la web de las
+familias. Las vistas previas gastan de la misma cuota.
+
+- **Nunca se mide ni se verifica con navegador automático** (Playwright, Chrome sin ventana, `medir_velocidad.mjs`, `verificar_*.mjs`,
+  una suite apuntada a una URL de Vercel) **contra producción ni contra las vistas previas de Vercel.**
+- **Medir, en local:** `next build` + `next start` (o la pila de las pruebas) y `medir_velocidad.mjs http://localhost:<puerto>/…`.
+- **Verificar en producción, cuando haga falta:** una pasada corta (a mano o con `curl`) **solo a las pantallas, redirecciones o rutas de
+  API que toca el cambio**. Sin recorridos completos y sin repetirla.
+- Para ver el gasto: panel del equipo en Vercel, o la observabilidad de Vercel (Active CPU por ruta). Siguiente medida: 10/11/2026.
 
 ## Vercel: qué se construye (D149)
 

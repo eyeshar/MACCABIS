@@ -53,6 +53,7 @@
     "pruebas:eventos-real": "node pruebas/rls_eventos_real.mjs",
     "pruebas:eventos-logica": "node pruebas/eventos_logica.mjs",
     "pruebas:humo": "node pruebas/humo.mjs",
+    "pruebas:limite-codigo": "node pruebas/limite_codigo.mjs",
     "pruebas:procesos": "node pruebas/procesos_ocultos.mjs",
     "pruebas:sin-correos": "node pruebas/sin_correos.mjs",
     "pruebas:eventos-pantallas": "node pruebas/eventos_pantallas.mjs",

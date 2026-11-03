@@ -3,12 +3,14 @@
 import { redirect } from "next/navigation";
 import { clienteSesion } from "@/lib/supabase";
 import { destinoTrasEntrar } from "@/lib/sesion";
+import { limiteCodigo } from "@/lib/entrar/limite";
 
 export type EstadoCodigo = { paso: "correo" | "codigo"; email: string; error?: string; aviso?: string } | null;
 
 // Mismo mensaje tanto si el correo no esta en la lista blanca como si hay
 // cualquier otro fallo al mandar el codigo: no se distingue para no dar pistas.
 const ERROR_ENVIO = "No hemos podido mandar el código. Si tu correo no está dado de alta en Maccabis, habla con Iván, Carlos o Edu.";
+const ERROR_LIMITE = "Demasiados códigos incorrectos con este correo. Espera 15 minutos y pide uno nuevo.";
 
 export async function enviarCodigo(_prev: EstadoCodigo, form: FormData): Promise<EstadoCodigo> {
   const email = String(form.get("email") ?? "").trim().toLowerCase();
@@ -23,8 +25,12 @@ export async function verificarCodigo(prev: EstadoCodigo, form: FormData): Promi
   const email = String(form.get("email") ?? prev?.email ?? "").trim().toLowerCase();
   const codigo = String(form.get("codigo") ?? "").trim();
   if (!codigo) return { paso: "codigo", email, error: "Escribe el código que te hemos mandado." };
+  // Límite propio por correo (lib/entrar/limite.ts): pasado, ni se pregunta a Supabase.
+  const limite = limiteCodigo(email);
+  if (limite && !(await limite.permitido())) return { paso: "codigo", email, error: ERROR_LIMITE };
   const supabase = await clienteSesion();
   const { error } = await supabase.auth.verifyOtp({ email, token: codigo, type: "email" });
+  await limite?.apuntar(!error).catch(() => {});
   if (error) return { paso: "codigo", email, error: "Código incorrecto o caducado. Pide otro con el botón de abajo." };
   redirect(await destinoTrasEntrar(supabase));
 }

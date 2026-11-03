@@ -31,22 +31,30 @@ export type DatosLiga = {
   hoy: string;
 };
 
-/** Filas de las hojas de la temporada, partido a partido (la API da como mucho 1000 por consulta: se pide por paginas). */
+type FilaCruda = Omit<FilaHoja, "grupo" | "jornada"> & { id: string; liga_partidos: { grupo: string; jornada: number } };
+
+/** Filas de las hojas de la temporada, partido a partido (la API da como mucho 1000 por consulta: se pide por paginas).
+ *  D175: la primera pagina trae tambien el total y las demas se piden a la vez, no una tras otra. */
 async function filasHojas(supabase: SupabaseClient, grupos?: string[]): Promise<FilaHoja[]> {
   const PAGINA = 1000;
-  const out: FilaHoja[] = [];
-  for (let desde = 0; ; desde += PAGINA) {
+  const pagina = async (desde: number) => {
     let q = supabase.from("liga_estadisticas_jugador")
-      .select("id, partido_id, equipo, dorsal, nombre, segundos, pts, p2a, p3a, tla, tli, faltas, liga_partidos!inner(temporada, grupo, jornada)")
+      .select("id, partido_id, equipo, dorsal, nombre, segundos, pts, p2a, p3a, tla, tli, faltas, liga_partidos!inner(temporada, grupo, jornada)", desde === 0 ? { count: "exact" } : undefined)
       .eq("liga_partidos.temporada", TEMPORADA);
     if (grupos) q = q.in("liga_partidos.grupo", grupos);
-    const { data, error } = await q.order("id").range(desde, desde + PAGINA - 1);
+    const { data, error, count } = await q.order("id").range(desde, desde + PAGINA - 1);
     if (error) throw new Error(error.message);
-    for (const { liga_partidos: p, id: _id, ...f } of (data ?? []) as unknown as (Omit<FilaHoja, "grupo" | "jornada"> & { id: string; liga_partidos: { grupo: string; jornada: number } })[]) {
-      out.push({ ...f, grupo: p.grupo, jornada: p.jornada });
-    }
-    if ((data ?? []).length < PAGINA) return out;
+    return { filas: (data ?? []) as unknown as FilaCruda[], count };
+  };
+  const primera = await pagina(0);
+  const paginas = [primera];
+  if (primera.count != null) {
+    paginas.push(...(await Promise.all(Array.from({ length: Math.max(0, Math.ceil(primera.count / PAGINA) - 1) }, (_, i) => pagina((i + 1) * PAGINA)))));
+  } else {
+    // Sin total (no deberia pasar): de una en una hasta que una venga corta, como antes.
+    for (let ultima = primera; ultima.filas.length === PAGINA; ) paginas.push((ultima = await pagina(paginas.length * PAGINA)));
   }
+  return paginas.flatMap((p) => p.filas).map(({ liga_partidos: p, id: _id, ...f }) => ({ ...f, grupo: p.grupo, jornada: p.jornada }));
 }
 
 /** `grupos`: solo las hojas de esos grupos (las tarjetas de un solo partido no necesitan los dos). */

@@ -10,7 +10,7 @@ import { avisoDePrueba, configuradoEnvio, ejecutarTarea } from "@/lib/avisos/ser
 
 export type Resultado = { ok: true; aviso?: string } | { ok: false; error: string };
 
-const refrescar = () => { revalidatePath("/", "layout"); };
+const refrescar = () => { revalidatePath("/inicio"); };
 
 /** Si el cambio llega despues del cierre (martes a las 12:00, D173), la base deja una alerta: se avisa a los gestores en el momento
  *  (con las horas de silencio). Si falla el envio, la tarea de cada 15 minutos lo recoge. */

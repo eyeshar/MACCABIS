@@ -40,4 +40,20 @@ export async function hasta(cond, ms = 10000) {
   return false;
 }
 
+/** La sesion llega al navegador despues del HTML (D175): espera a que la cabecera sepa quien es (con cookie de sesion, el
+ *  <html> lleva data-sesion="pendiente" hasta que /api/sesion contesta; sin cookie no espera a nada). */
+export async function sesionLista(p, ms = 10000) {
+  // Sin cookie de sesion, nada que esperar; con ella, hasta que la cabecera enseñe a la persona (el estado «pendiente» se pone
+  // despues del cambio de URL, asi que no basta con mirarlo).
+  await p.waitForFunction(() => !/(?:^|; *)sb-[^=;]*-auth-token/.test(document.cookie) || (document.documentElement.dataset.sesion === 'listo' && document.querySelector('header .nv-avatar')), null, { timeout: ms }).catch(() => {});
+  await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))).catch(() => {});
+}
+
+/** Que cada goto() de esta pagina espere a la sesion (para pruebas que miran la cabecera nada mas cargar). */
+export function gotoConSesion(p) {
+  const ir = p.goto.bind(p);
+  p.goto = async (...a) => { const r = await ir(...a); await sesionLista(p); return r; };
+  return p;
+}
+
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));

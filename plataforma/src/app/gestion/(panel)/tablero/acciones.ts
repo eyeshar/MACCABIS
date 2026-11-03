@@ -11,7 +11,7 @@ import { MOTIVOS, type Motivo } from "@/lib/eventos/dominio";
 // defecto); cambiar respuestas, con gestor_responder (D159: «puesta por <gestor>», motivo opcional).
 
 export type R = { ok: true; registros?: string[]; aviso?: string } | { ok: false; error: string };
-const refrescar = () => { revalidatePath("/gestion/tablero"); revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/", "layout"); };
+const refrescar = () => { revalidatePath("/gestion/tablero"); revalidatePath("/gestion/convocatoria", "layout"); revalidatePath("/gestion"); revalidatePath("/inicio"); };
 const ERRORES: Record<string, string> = {
   solo_gestores: "Solo los gestores.", falta_motivo: "Elige un motivo para «No van».", no_invitado: "Alguno no está invitado a ese evento.",
   motivo_no_valido: "Ese motivo no es de la lista.", respuesta_no_valida: "Respuesta no válida.", detalle_largo: "El motivo es demasiado largo (máximo 120 caracteres).",

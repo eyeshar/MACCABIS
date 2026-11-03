@@ -1,28 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useRuta } from "@/components/nav/useRuta";
 import { asistenteEnRuta } from "@/lib/chat/acceso";
 import { Bocadillo } from "@/components/Iconos";
 import Chat from "./Chat";
 import { borrarConversacion } from "./conversacion";
+import { useSesion } from "@/components/nav/Sesion";
 
 const ENFOCABLES = 'a[href], button:not([disabled]), textarea:not([disabled]), [tabindex="0"]';
 
 /** Boton flotante «Pregunta al asistente» (D142) y su panel: hoja desde abajo en el movil (~85 % del alto), panel lateral
- *  de 400 px en escritorio. Solo con sesion y acceso (CHAT_IA_ABIERTO; lo decide el servidor en Cabecera: `chat` null =
+ *  de 400 px en escritorio. Solo con sesion y acceso (CHAT_IA_ABIERTO; lo decide /api/sesion: `chat` null =
  *  sin acceso) y solo en Inicio y las pantallas con login (asistenteEnRuta). Se cierra con ✕, Escape, tocando fuera o al
  *  cambiar de pantalla; la conversacion sigue (sessionStorage) y se borra al cerrar sesion. En Convocatoria, Tablero y
  *  Grupos el boton se esconde mientras su barra fija de acciones esta en pantalla (CSS). */
-export default function AsistenteFlotante({ chat }: { chat: { nombre: string; dueno: string } | null }) {
-  const ruta = usePathname();
+export default function AsistenteFlotante() {
+  const { chat, listo } = useSesion();
+  const ruta = useRuta();
   const [abierto, setAbierto] = useState(false);
   const [montado, setMontado] = useState(false);
   const boton = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
 
   // Sin sesion (o sin acceso): fuera la conversacion que hubiera en la pestaña.
-  useEffect(() => { if (!chat) borrarConversacion(); }, [chat]);
+  useEffect(() => { if (listo && !chat) borrarConversacion(); }, [chat, listo]);
   useEffect(() => { setAbierto(false); }, [ruta]);
 
   // El boton esta oculto mientras el panel esta abierto: el foco vuelve a el cuando ya se ve.

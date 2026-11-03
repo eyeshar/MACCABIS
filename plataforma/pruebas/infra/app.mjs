@@ -52,12 +52,31 @@ export async function esperar(url, ms = 90000) {
   throw new Error(`${url} no arranca`);
 }
 
+/** D175: las paginas publicas se prerenderizan al compilar, con los datos de la pila que hubiera entonces, y la compilacion se
+ *  reutiliza entre suites. Antes de arrancar se quita lo prerenderizado y la cache de datos, para que cada arranque renderice
+ *  con SU base (en produccion lo hace revalidate; aqui no se puede esperar). Las rutas siguen en el manifiesto: se
+ *  renderizan en la primera peticion. */
+function vaciarPrerenderizado() {
+  const app = path.join(RAIZ, '.next', 'server', 'app');
+  try {
+    const rutas = Object.keys(JSON.parse(fs.readFileSync(path.join(RAIZ, '.next', 'prerender-manifest.json'), 'utf8')).routes);
+    for (const r of rutas.filter((x) => !x.startsWith('/_'))) {
+      const base = path.join(app, r === '/' ? 'index' : r.slice(1));
+      if (!fs.existsSync(`${base}.html`)) continue;
+      for (const ext of ['.html', '.rsc', '.meta']) fs.rmSync(base + ext, { force: true });
+      fs.rmSync(`${base}.segments`, { recursive: true, force: true });
+    }
+  } catch { /* sin compilacion o sin manifiesto: nada que vaciar */ }
+  fs.rmSync(path.join(RAIZ, '.next', 'cache', 'fetch-cache'), { recursive: true, force: true });
+}
+
 /** Compila (si hace falta) y arranca la app en `puerto`. Devuelve { APP, parar }. */
 export async function arrancarApp({ puerto, env, envExtra = {}, compilarAntes = true }) {
   await exigirLibres({ app: puerto });
   const entorno = { ...process.env, NEXT_TELEMETRY_DISABLED: '1', ...env, ...envExtra };
   // Lo que pone la suite (y no viene del entorno de fuera) entra en la huella: con otro valor, otra compilacion.
   if (compilarAntes) compilar(entorno, Object.keys(entorno).filter((k) => entorno[k] !== process.env[k]));
+  vaciarPrerenderizado();
   const hijo = lanzar(process.execPath, [NEXT, 'start', '-p', String(puerto), '-H', '127.0.0.1'], { cwd: RAIZ, env: entorno, stdio: 'ignore' });
   const APP = `http://127.0.0.1:${puerto}`;
   await esperar(APP);

@@ -13,7 +13,8 @@ export const metadata: Metadata = {
   description: `Maccabis, club de baloncesto amateur de Madrid desde ${FUNDACION}: MdA y MdL en la Liga Municipal de Moratalaz, una sola plantilla.`,
   alternates: { canonical: "/club" },
 };
-export const dynamic = "force-dynamic";
+// D175: ya hecha, desde la cache (se rehace como mucho cada minuto y cuando un gestor toca el calendario).
+export const revalidate = 60;
 
 export default async function Club() {
   const h = resumenHistoria();

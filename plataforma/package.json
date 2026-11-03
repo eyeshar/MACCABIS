@@ -36,6 +36,7 @@
     "pruebas:campana": "node pruebas/campana_estado.mjs",
     "pruebas:activacion": "node pruebas/activar_redirecciones.mjs",
     "pruebas:privacidad": "node pruebas/privacidad_paginas.mjs",
+    "pruebas:cache-publica": "node pruebas/cache_publica.mjs",
     "iconos": "node scripts/generar_iconos.mjs",
     "db:asistencia": "node scripts/cargar_asistencia.mjs",
     "db:asistencia-vincular": "node scripts/vincular_asistencia_historica.mjs",

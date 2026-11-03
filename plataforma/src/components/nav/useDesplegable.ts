@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useRuta } from "@/components/nav/useRuta";
 
 const ENFOCABLES = 'a[href], button:not([disabled]), [tabindex="0"]';
 
@@ -12,7 +12,7 @@ export function useDesplegable({ modal = false }: { modal?: boolean } = {}) {
   const [abierto, setAbierto] = useState(false);
   const boton = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
-  const ruta = usePathname();
+  const ruta = useRuta();
 
   const cerrar = useCallback((devolverFoco = false) => {
     setAbierto(false);

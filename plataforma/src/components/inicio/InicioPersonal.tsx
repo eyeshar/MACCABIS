@@ -47,8 +47,11 @@ const conSigno = (x: number) => (x > 0 ? `+${x}` : String(x));
 export default async function InicioPersonal({ usuario, aviso }: { usuario: Usuario; aviso?: "guardado" | "no_gestor" | null }) {
   const hoy = hoyMadrid();
   const ahora = new Date();
-  const zona = await cargarMiZona().catch(() => null);
-  const pendientesGestion = usuario.esGestor ? await cargarPendientesSemana(await clienteSesion()).catch(() => []) : [];
+  // En paralelo (D175): la zona y, si es gestor, lo pendiente de la semana.
+  const [zona, pendientesGestion] = await Promise.all([
+    cargarMiZona().catch(() => null),
+    usuario.esGestor ? clienteSesion().then((c) => cargarPendientesSemana(c)).catch(() => []) : Promise.resolve([]),
+  ]);
   const grupos = clasificaciones();
 
   const club = (
@@ -84,15 +87,27 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const { jugador, campana, pedidos } = zona;
   const equipos = (["MdA", "MdL"] as const).filter((e) => (e === "MdA" ? jugador.ficha_mda : jugador.ficha_mdl));
   const sb = await clienteSesion();
-  const [eventos, respuestas, ausencias, convocatorias, misGrupos, avisosPersonales, { data: posicion }] = await Promise.all([
+  const [eventos, respuestas, ausencias, convocatorias, misGrupos, avisosPersonales, { data: posicion }, verLiga] = await Promise.all([
     cargarMisEventos(hoy).catch(() => [] as MiEvento[]), cargarMisRespuestas().catch(() => []), cargarMisAusencias().catch(() => []),
     cargarMiConvocatoria().catch(() => []), cargarMisGrupos(), cargarAvisosPersonales(), sb.rpc("mi_posicion"),
+    puedeVerLigaActual().catch(() => false),
   ]);
-  // D152: entrenos que le salen como «No vas (puesto por defecto)» (solo lo suyo; nunca se nombra la marca).
-  const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias).catch(() => new Set<string>());
   const abierta = (u: Unidad) => u.eventos.some((e) => e.estado === "programado" && madrid(e.fecha, hhmm(e.inicio) ?? "00:00") > ahora);
   const todas = unidades(eventos);
   const limite = sumarDias(hoy, 14);
+
+  // Tu próximo partido (D171): el próximo domingo al que VA A IR o PUEDE IR. Con la convocatoria aprobada, solo si está
+  // convocado; sin ella, si su respuesta es va, duda o sin responder. Los demás se saltan (línea pequeña arriba).
+  const proximo = proximoPartido(todas.filter((u) => u.tipo === "domingo" && abierta(u)), convocatorias, respuestas, ausencias);
+  const domingo = proximo.unidad;
+  const partidosVer = proximo.partidos;
+  // Claves del partido (D174): las 2 primeras de cada rival, con enlace a su scouting. Mismo acceso que Scouting (D162):
+  // solo con sesion de jugador con ficha o de gestor; si la liga no responde, la tarjeta sale sin ellas. D175: empieza ya,
+  // a la vez que las consultas de abajo (no depende de ellas), y se espera al final.
+  const ligaClavesP = domingo && partidosVer.length && verLiga
+    ? cargarLiga(sb, [...new Set(partidosVer.map((e) => (e.equipo === "MdA" ? "G1" : "G2")))]).catch(() => null) : Promise.resolve(null);
+  // D152: entrenos que le salen como «No vas (puesto por defecto)» (solo lo suyo; nunca se nombra la marca).
+  const porDefecto = await misEntrenosPorDefecto(eventos, respuestas, ausencias).catch(() => new Set<string>());
 
   // «Te faltan N respuestas»: lo que la web pide (14 dias, D102); los planes no oficiales, siempre (D118).
   const pendientes = todas.filter((u) => {
@@ -107,16 +122,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const ocupacion = conPlazas.length ? await cargarQuienVa(conPlazas) : new Map();
   const lleno = (e: MiEvento) => Boolean(e.plazas && (ocupacion.get(e.id)?.va.length ?? 0) >= e.plazas);
 
-  // Tu próximo partido (D171): el próximo domingo al que VA A IR o PUEDE IR. Con la convocatoria aprobada, solo si está
-  // convocado; sin ella, si su respuesta es va, duda o sin responder. Los demás se saltan (línea pequeña arriba).
-  const proximo = proximoPartido(todas.filter((u) => u.tipo === "domingo" && abierta(u)), convocatorias, respuestas, ausencias);
-  const domingo = proximo.unidad;
-  const partidosVer = proximo.partidos;
   const estadoPartido = pastillaProximo(proximo, convocatorias, respuestas, ausencias, porDefecto);
-  // Claves del partido (D174): las 2 primeras de cada rival, con enlace a su scouting. Mismo acceso que Scouting (D162):
-  // solo con sesion de jugador con ficha o de gestor; si la liga no responde, la tarjeta sale sin ellas.
-  const ligaClaves = domingo && partidosVer.length && (await puedeVerLigaActual())
-    ? await cargarLiga(sb, [...new Set(partidosVer.map((e) => (e.equipo === "MdA" ? "G1" : "G2")))]).catch(() => null) : null;
+  const ligaClaves = await ligaClavesP;
   const saltoTexto = proximo.saltado ? textoSalto(proximo.saltado, hoy) : null;
   const temporada = temporadaDe(jugador.person_id);
   const dorsales = temporada?.dorsales ?? [];

@@ -1,7 +1,8 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRuta } from "@/components/nav/useRuta";
 import { CLAVE_RASTRO, etiquetaDe, origenDe } from "@/lib/rastro";
 import "./volver.css";
 
@@ -19,7 +20,7 @@ function Enlace({ href, texto, enLinea, ...resto }: { href: string; texto: strin
 }
 
 function Origen({ defecto, etiqueta, enLinea }: { defecto: string; etiqueta: string; enLinea?: boolean }) {
-  const pathname = usePathname();
+  const pathname = useRuta();
   const busqueda = useSearchParams().toString();
   const [destino, setDestino] = useState<{ href: string; texto: string; indice: number | null }>({ href: defecto, texto: etiqueta, indice: null });
   useEffect(() => {

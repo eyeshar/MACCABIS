@@ -721,6 +721,8 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .nv-sep { width: 1px; height: 24px; background: var(--borde-fuerte); margin: 0 8px; }
 .nv-menu a.nv-mizona { color: var(--tinta); }
 .nv-derecha { display: flex; align-items: center; gap: 10px; flex: none; margin-left: auto; }
+/* D175: con cookie de sesion, la cabecera espera (sin quitar el sitio) a saber quien es; sin cookie sale ya. */
+html[data-sesion="pendiente"] :is(.nv-menu, .nv-derecha, .nv-barra, .w-pie-sin-sesion) { visibility: hidden; }
 .nv-acceso { display: inline-flex; align-items: center; gap: 8px; min-height: var(--toque); padding: 0 20px; border-radius: var(--radio); background: var(--c-amarillo); color: var(--c-sobre-acento); font-weight: 700; text-decoration: none; white-space: nowrap; }
 .nv-acceso:hover { background: var(--c-amarillo-vivo); color: var(--c-sobre-acento); }
 .nv-desplegable { position: relative; }

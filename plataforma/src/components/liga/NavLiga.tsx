@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useRuta } from "@/components/nav/useRuta";
+import { useSesion } from "@/components/nav/Sesion";
 
 // Navegación de la sección Liga: arriba, las tres partes (Liga 26/27, Rivales 26/27, Estadísticas por temporada) y,
 // dentro de las temporadas, el selector 2013/14 → 2026/27 y sus pestañas. Con sesion de jugador o gestor (D162), ademas,
 // Scouting rivales y Liga consolidada (datos por jugador de terceros: nunca sin sesion).
-export function NavLiga({ temporadaPorDefecto, conSesion = false }: { temporadaPorDefecto: string; conSesion?: boolean }) {
-  const ruta = usePathname();
+export function NavLiga({ temporadaPorDefecto }: { temporadaPorDefecto: string }) {
+  const ruta = useRuta();
+  const conSesion = useSesion().verLiga;
   const partes = [
     // La pagina de un partido (D129) es de la Liga 26/27, aunque cuelgue de /liga/<temporada>/partido/<id>.
     { t: "Liga 26/27", href: "/liga", activa: ruta === "/liga" || /^\/liga\/\d{4}-\d{2}\/partido\//.test(ruta) },
@@ -21,7 +24,7 @@ export function NavLiga({ temporadaPorDefecto, conSesion = false }: { temporadaP
   return (
     <nav className="e-nav" aria-label="Liga">
       {partes.map((p) => (
-        <Link key={p.href} href={p.href} aria-current={p.activa ? "page" : undefined}>{p.t}</Link>
+        <Link prefetch={false} key={p.href} href={p.href} aria-current={p.activa ? "page" : undefined}>{p.t}</Link>
       ))}
     </nav>
   );
@@ -30,7 +33,7 @@ export function NavLiga({ temporadaPorDefecto, conSesion = false }: { temporadaP
 export function NavTemporada({ temporada, temporadas, pestanas }: {
   temporada: string; temporadas: { id: string; label: string }[]; pestanas: { id: string; t: string }[];
 }) {
-  const ruta = usePathname();
+  const ruta = useRuta();
   const router = useRouter();
   const actual = ruta.split("/")[3] ?? "equipo";
   // En la pagina de un partido (D129) no hay selector de temporada ni pestañas: es de la Liga 26/27.
@@ -45,7 +48,7 @@ export function NavTemporada({ temporada, temporadas, pestanas }: {
       </div>
       <nav className="e-pestanas" aria-label="Pestañas de la temporada">
         {pestanas.map((p) => (
-          <Link key={p.id} href={p.id === "jugadores" ? `/plantilla?t=${temporada}` : `/liga/${temporada}/${p.id}`} aria-current={actual === p.id ? "page" : undefined}>{p.t}</Link>
+          <Link prefetch={false} key={p.id} href={p.id === "jugadores" ? `/plantilla?t=${temporada}` : `/liga/${temporada}/${p.id}`} aria-current={actual === p.id ? "page" : undefined}>{p.t}</Link>
         ))}
       </nav>
     </div>

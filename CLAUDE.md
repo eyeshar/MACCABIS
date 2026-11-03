@@ -59,6 +59,7 @@ Si `--lista` elige algo que no encaja o se queda corto, añade con `--suite`. Au
 | `src/app/entrar`, `cuenta`, `auth`, la navegación (`src/components/nav/`) | plataforma | `pruebas`, `pruebas:navegacion` (y las que entran con código) |
 | `src/app/page.tsx`, `layout.tsx`, `globals.css` (raíz) | plataforma | `pruebas:portada`, `pruebas:navegacion` (+ las que usen lo tocado) |
 | `src/app/asistente`, `api/chat`, `src/lib/chat/` | plataforma | `pruebas:chat-ia` |
+| `src/proxy.ts`, `next.config.ts` (rewrites), `src/app/layout.tsx`, `components/nav/Sesion.tsx`, `api/sesion`, una página pública cacheada (`/`, `/liga`, `/club`, `/historia`, `/plantilla`) | plataforma | `pruebas:cache-publica`, `pruebas:navegacion`, `pruebas:portada`, `pruebas:inicio-personal` |
 | `src/lib/avisos/`, `api/avisos`, avisos | plataforma | `pruebas:avisos-logica`, `pruebas:respuestas-pantallas`, `pruebas:dudas`… |
 | `src/app/liga…`, `historia`, `plantilla`, `jugador`, `gestion/liga`, `gestion/scouting`, `src/components/liga/` | **estadísticas** | sus suites web (`pruebas:pantallas`, `pruebas:liga-partidos`, `pruebas:cuadre`, `pruebas:privacidad`…) **+** `test:regresion`, `test:liga`, `test:privacidad`, `pruebas:liga` |
 | `data/`, `scripts/` (raíz), `index.html`, `plataforma/src/data/` | **estadísticas** | las comprobaciones de la raíz (`check:*`, `test:*`) + `pruebas:liga` |
@@ -131,9 +132,16 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
   (`plataforma/pruebas/infra/matar.mjs`). La pila (`pila.mjs`) ya lo hace; una suite nueva que arranque su propio Postgres,
   igual (`apuntarPostgres(dir)` antes de arrancarlo).
 
+## Web pública servida desde la caché (D175)
+
+- **Las páginas públicas (`/`, `/liga`, `/club`, `/historia`, `/plantilla`, `/privacidad`) son estáticas con `revalidate`: no pueden leer cookies, cabeceras ni `searchParams`** (ni el layout raíz). Lo que dependa de la sesión sale de `/api/sesion` en el navegador (`components/nav/Sesion.tsx`, `useSesion()`); lo que dependa de la consulta (`?hoy=`, `?g=`, `?persona=`, `?t=`) va a una página **gemela dinámica** (`/inicio`, `/liga/con-parametros`…) por `rewrites` de `next.config.ts`. Una página nueva que lea cookies o cabeceras deja de ser estática: `pruebas:cache-publica` falla si una página cacheada lleva datos de sesión.
+- **«/» con sesión es `/inicio`** (el proxy lo reescribe); sin cookie, el proxy ni se ejecuta. El `matcher` de `src/proxy.ts` lleva el nombre de la cookie (`sb-<proyecto>-auth-token`) y es literal: **si cambia el proyecto de Supabase, cámbialo ahí**.
+- **Las pruebas con la web compilada vacían lo prerenderizado antes de arrancar** (`infra/app.mjs`): cada suite renderiza las páginas públicas con su base. Una suite que mire la cabecera tras cargar una página con sesión espera a la sesión (`gotoConSesion`/`sesionLista`, `infra/esperas.mjs`; `comun_e2e.nuevaPagina` ya lo hace).
+- Medir velocidad: `node plataforma/scripts/medir_velocidad.mjs <url>` (TTFB, LCP y peso por página, primera visita y mediana en caliente).
+
 ## Vercel: qué se construye (D149)
 
-`plataforma/vercel.json` (la Root Directory de Vercel es `plataforma/`) tiene un `ignoreCommand` (`plataforma/scripts/vercel_construir.sh`): **un commit que no toca `plataforma/` no se construye** (ni producción ni vista previa); uno que toca cualquier cosa de `plataforma/`, también `src/data/`, sí. Compara contra el último commit desplegado de la rama o, si no lo hay, contra el primer padre (en un `merge --no-ff`, el `main` anterior). Si dudas, construye. Consecuencia: un commit de solo `docs` no genera vista previa ni despliegue. Nada de esto se cambia desde el panel de Vercel: el equipo «Web TCPC» es compartido con TCPC y su configuración la decide Iván.
+`plataforma/vercel.json` (la Root Directory de Vercel es `plataforma/`) tiene un `ignoreCommand` (`plataforma/scripts/vercel_construir.sh`): **un commit que no toca `plataforma/` no se construye** (ni producción ni vista previa); uno que toca cualquier cosa de `plataforma/`, también `src/data/`, sí. Compara contra el último commit desplegado de la rama o, si no lo hay, contra el primer padre (en un `merge --no-ff`, el `main` anterior). Si dudas, construye. **Región de las funciones: `"regions": ["dub1"]` en ese mismo `vercel.json` (D175), junto a la base de Supabase (eu-west-1); es del proyecto Maccabis, no toca Web TCPC.** Consecuencia: un commit de solo `docs` no genera vista previa ni despliegue. Nada de esto se cambia desde el panel de Vercel: el equipo «Web TCPC» es compartido con TCPC y su configuración la decide Iván.
 
 ## Worktrees (una sesión, un worktree; norma 11)
 

@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
-import { trasAccion, hasta } from './infra/esperas.mjs';
+import { trasAccion, hasta, gotoConSesion, sesionLista } from './infra/esperas.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -104,6 +104,7 @@ try {
     await p.getByLabel('Código del correo').fill((await codigoDe(email)) ?? '000000');
     await p.getByRole('button', { name: 'Entrar', exact: true }).click();
     await p.waitForURL((u) => !u.pathname.startsWith('/entrar') || u.pathname.startsWith('/entrar/elegir'), { timeout: 15000 });
+    await sesionLista(p);
   }
   // Firma de la cabecera: lo que se ve en ella, sin el elemento activo (que cambia de pagina en pagina).
   const firma = (p) => p.evaluate(() => {
@@ -118,7 +119,7 @@ try {
     for (const [rol, conf] of Object.entries(ROLES)) {
       console.log(`\n== ${rol}, ${etiqueta}`);
       const ctx = await nav.newContext({ viewport: { width: ancho, height: alto }, deviceScaleFactor: movil ? 2 : 1, isMobile: movil, hasTouch: movil, locale: 'es-ES' });
-      const p = await ctx.newPage();
+      const p = gotoConSesion(await ctx.newPage());
       const errores = [];
       p.on('pageerror', (e) => errores.push(String(e)));
       p.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
@@ -376,7 +377,7 @@ try {
   console.log('\n== Gestor sin ficha de jugador');
   {
     const ctx = await nav.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, locale: 'es-ES' });
-    const p = await ctx.newPage();
+    const p = gotoConSesion(await ctx.newPage());
     await entrar(p, soloGestor);
     ok(p.url().endsWith('/gestion'), 'entra en /gestion', p.url());
     const textos = await p.locator('nav[aria-label="Secciones"] > a, nav[aria-label="Secciones"] > button').allTextContents();

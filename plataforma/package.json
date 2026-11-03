@@ -54,6 +54,7 @@
     "pruebas:eventos-logica": "node pruebas/eventos_logica.mjs",
     "pruebas:humo": "node pruebas/humo.mjs",
     "pruebas:procesos": "node pruebas/procesos_ocultos.mjs",
+    "pruebas:sin-correos": "node pruebas/sin_correos.mjs",
     "pruebas:eventos-pantallas": "node pruebas/eventos_pantallas.mjs",
     "pruebas:fuente-eventos": "node pruebas/fuente_eventos.mjs",
     "pruebas:respuestas-web": "node pruebas/rls_respuestas_web.mjs",

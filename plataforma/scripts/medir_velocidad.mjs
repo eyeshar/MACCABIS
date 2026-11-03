@@ -4,6 +4,7 @@
 import { chromium } from "playwright";
 import { writeFileSync } from "node:fs";
 import https from "node:https";
+import { spawnSync } from "node:child_process";
 
 const args = process.argv.slice(2);
 const base = (args.find((a) => /^https?:/.test(a)) ?? "https://maccabis.vercel.app").replace(/\/$/, "");
@@ -11,7 +12,16 @@ const val = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] :
 const N = Number(val("--n", 5));
 const rutas = val("--rutas", "/,/liga,/historia,/plantilla,/club").split(",");
 const salida = val("--json", null);
-const cabecerasExtra = val("--bypass", null) ? { "x-vercel-protection-bypass": val("--bypass"), "x-vercel-set-bypass-cookie": "true" } : undefined;
+// Vista previa de Vercel (protegida): el bypass sale de la sesion de la CLI (`vercel curl`), como en verificar_chat_preview.mjs;
+// el valor se usa en memoria y no se imprime.
+function bypassDeLaCLI() {
+  const env = { ...process.env }; delete env.VERCEL_TOKEN; delete env.VERCEL_TEAM_ID;
+  const r = spawnSync("npx", ["--yes", "vercel@latest", "curl", base + "/", "--", "-s", "-v", "-o", "NUL"], { env, shell: true, encoding: "utf8", windowsHide: true, maxBuffer: 1 << 24 });
+  const m = ((r.stderr ?? "") + (r.stdout ?? "")).match(/x-vercel-protection-bypass:\s*(\S+)/i);
+  if (!m) throw new Error("no se pudo obtener el bypass de la CLI de Vercel");
+  return m[1];
+}
+const cabecerasExtra = args.includes("--vercel-curl") ? { "x-vercel-protection-bypass": bypassDeLaCLI(), "x-vercel-set-bypass-cookie": "true" } : undefined;
 const mediana = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
 
 // TTFB como curl (time_starttransfer): conexion nueva, desde que sale la peticion hasta la primera respuesta. El

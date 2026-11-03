@@ -9,9 +9,9 @@ export default function PieAcceso() {
   const { usuario } = useSesion();
   return (
     <>
-      {!usuario && <Link href="/entrar" className="w-pie-acceso w-pie-sin-sesion">Acceso jugadores y gestores</Link>}
-      {usuario?.esJugador && <Link href="/agenda" className="w-pie-acceso">Tu agenda</Link>}
-      {usuario?.esGestor && <Link href="/gestion" className={usuario.esJugador ? "w-pie-zona" : "w-pie-acceso"}>Gestión</Link>}
+      {!usuario && <Link prefetch={false} href="/entrar" className="w-pie-acceso w-pie-sin-sesion">Acceso jugadores y gestores</Link>}
+      {usuario?.esJugador && <Link prefetch={false} href="/agenda" className="w-pie-acceso">Tu agenda</Link>}
+      {usuario?.esGestor && <Link prefetch={false} href="/gestion" className={usuario.esJugador ? "w-pie-zona" : "w-pie-acceso"}>Gestión</Link>}
     </>
   );
 }

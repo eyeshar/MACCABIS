@@ -24,7 +24,7 @@ export function NavLiga({ temporadaPorDefecto }: { temporadaPorDefecto: string }
   return (
     <nav className="e-nav" aria-label="Liga">
       {partes.map((p) => (
-        <Link key={p.href} href={p.href} aria-current={p.activa ? "page" : undefined}>{p.t}</Link>
+        <Link prefetch={false} key={p.href} href={p.href} aria-current={p.activa ? "page" : undefined}>{p.t}</Link>
       ))}
     </nav>
   );
@@ -48,7 +48,7 @@ export function NavTemporada({ temporada, temporadas, pestanas }: {
       </div>
       <nav className="e-pestanas" aria-label="Pestañas de la temporada">
         {pestanas.map((p) => (
-          <Link key={p.id} href={p.id === "jugadores" ? `/plantilla?t=${temporada}` : `/liga/${temporada}/${p.id}`} aria-current={actual === p.id ? "page" : undefined}>{p.t}</Link>
+          <Link prefetch={false} key={p.id} href={p.id === "jugadores" ? `/plantilla?t=${temporada}` : `/liga/${temporada}/${p.id}`} aria-current={actual === p.id ? "page" : undefined}>{p.t}</Link>
         ))}
       </nav>
     </div>

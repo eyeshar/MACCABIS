@@ -10,6 +10,8 @@ import { Barras, Calendario, Candado, Casa, Mas, Panel, Tendencia } from "@/comp
 import { borrarConversacion } from "@/components/asistente/conversacion";
 import { useDesplegable } from "./useDesplegable";
 
+// Los enlaces de la cabecera, la barra y el pie no se precargan (prefetch={false}, D175): las paginas publicas son ya estaticas
+// y se piden a la CDN al pulsar (≈ 60 ms); precargarlas en cada pantalla añadia ≈ 45 KB por visita y colgaba las peticiones.
 // Navegacion unica de toda la web (D89, maquetas NavCabecera y NavMovil; D117 con sesion). Sin sesion: la de siempre
 // (Inicio · Partidos · Liga · Plantilla · Historia · El club). Con sesion, lo de cada persona primero: en escritorio
 // Inicio · Agenda · Mis números · Liga · Historia (y el menu GESTIÓN de los gestores); en el movil, barra de 5: jugador
@@ -40,7 +42,7 @@ function zonaDe(ruta: string, personId: string | null): Zona {
 function Enlace({ s, actual, className, children }: { s: Seccion; actual: boolean; className?: string; children?: React.ReactNode }) {
   const contenido = children ?? s.texto;
   if (s.externo) return <a href={s.href} className={className}>{contenido}</a>;
-  return <Link href={s.href} className={className} aria-current={actual ? "page" : undefined}>{contenido}</Link>;
+  return <Link prefetch={false} href={s.href} className={className} aria-current={actual ? "page" : undefined}>{contenido}</Link>;
 }
 
 /** Entradas de Gestion por grupos. Lo que aun no existe sale en gris con "paso 2", sin enlace. */
@@ -53,7 +55,7 @@ function EntradasGestion({ grupos, ruta, conDescripcion }: { grupos: GrupoGestio
           <div className="nv-grupo-titulo" id={`nv-g-${conDescripcion ? "d" : "h"}-${g.grupo}`}>{g.grupo}</div>
           {g.entradas.map((e) =>
             e.href ? (
-              <Link key={e.texto} href={e.href} className="nv-entrada" aria-current={actual(e.href) ? "page" : undefined}>
+              <Link prefetch={false} key={e.texto} href={e.href} className="nv-entrada" aria-current={actual(e.href) ? "page" : undefined}>
                 <b>{e.texto}</b>
                 {conDescripcion && <span>{e.descripcion}</span>}
               </Link>
@@ -88,8 +90,8 @@ function MenuUsuario({ usuario, actual }: { usuario: Usuario; actual: boolean })
           </div>
         </div>
         <nav aria-label="Tu cuenta">
-          <Link href={RUTA_CUENTA} className="nv-entrada" aria-current={actual ? "page" : undefined}><b>Mi cuenta</b></Link>
-          <Link href="/avisos" className="nv-entrada"><b>Instalar en el móvil</b></Link>
+          <Link prefetch={false} href={RUTA_CUENTA} className="nv-entrada" aria-current={actual ? "page" : undefined}><b>Mi cuenta</b></Link>
+          <Link prefetch={false} href="/avisos" className="nv-entrada"><b>Instalar en el móvil</b></Link>
         </nav>
         <form action={salir} onSubmit={borrarConversacion}><button type="submit" className="nv-entrada nv-salir"><b>Salir</b></button></form>
       </div>
@@ -145,7 +147,7 @@ function HojaMas({ usuario, ruta, zona }: { usuario: Usuario | null; ruta: strin
           {usuario && (
             <div className="nv-grupo">
               <div className="nv-grupo-titulo">{usuario.completo}</div>
-              <Link href={RUTA_CUENTA} className="nv-entrada" aria-current={zona === "cuenta" ? "page" : undefined}><b>Mi cuenta</b></Link>
+              <Link prefetch={false} href={RUTA_CUENTA} className="nv-entrada" aria-current={zona === "cuenta" ? "page" : undefined}><b>Mi cuenta</b></Link>
             </div>
           )}
         </nav>
@@ -170,7 +172,7 @@ export default function Navegacion({ escudo }: { escudo: React.ReactNode }) {
     <>
       <header className="nv-cab">
         <div className="w-dentro nv-cab-fila">
-          <Link href="/" className="nv-marca" aria-label="Maccabis, inicio">
+          <Link prefetch={false} href="/" className="nv-marca" aria-label="Maccabis, inicio">
             {escudo}
             <span>MACCABIS</span>
           </Link>
@@ -182,29 +184,29 @@ export default function Navegacion({ escudo }: { escudo: React.ReactNode }) {
             {usuario ? (
               <MenuUsuario usuario={usuario} actual={zona === "cuenta"} />
             ) : (
-              <Link href="/entrar" className="nv-acceso" aria-current={cur("acceso")}><Candado />Acceso</Link>
+              <Link prefetch={false} href="/entrar" className="nv-acceso" aria-current={cur("acceso")}><Candado />Acceso</Link>
             )}
           </div>
         </div>
       </header>
       <nav aria-label="Secciones" className="nv-barra">
-        <Link href="/" className="nv-barra-item" aria-current={cur("inicio")}><Casa />Inicio</Link>
+        <Link prefetch={false} href="/" className="nv-barra-item" aria-current={cur("inicio")}><Casa />Inicio</Link>
         {personal ? (
           <>
-            <Link href="/agenda" className="nv-barra-item" aria-current={cur("agenda")}><Calendario />Agenda</Link>
-            <Link href="/mis-numeros" className="nv-barra-item" aria-current={cur("numeros")}><Tendencia />Mis números</Link>
+            <Link prefetch={false} href="/agenda" className="nv-barra-item" aria-current={cur("agenda")}><Calendario />Agenda</Link>
+            <Link prefetch={false} href="/mis-numeros" className="nv-barra-item" aria-current={cur("numeros")}><Tendencia />Mis números</Link>
             {usuario?.esGestor
-              ? <Link href="/gestion" className="nv-barra-item" aria-current={cur("gestion")}><Panel size={22} />Gestión</Link>
-              : <Link href={liga.href} className="nv-barra-item" aria-current={cur("liga")}><Barras />Liga</Link>}
+              ? <Link prefetch={false} href="/gestion" className="nv-barra-item" aria-current={cur("gestion")}><Panel size={22} />Gestión</Link>
+              : <Link prefetch={false} href={liga.href} className="nv-barra-item" aria-current={cur("liga")}><Barras />Liga</Link>}
           </>
         ) : (
           <>
-            <Link href={partidos.href} className="nv-barra-item" aria-current={cur("partidos")}><Calendario />Partidos</Link>
+            <Link prefetch={false} href={partidos.href} className="nv-barra-item" aria-current={cur("partidos")}><Calendario />Partidos</Link>
             <a href={liga.href} className="nv-barra-item"><Barras />Liga</a>
             {usuario?.esGestor ? (
-              <Link href="/gestion" className="nv-barra-item" aria-current={cur("gestion")}><Panel size={22} />Gestión</Link>
+              <Link prefetch={false} href="/gestion" className="nv-barra-item" aria-current={cur("gestion")}><Panel size={22} />Gestión</Link>
             ) : (
-              <Link href="/entrar" className="nv-barra-item" aria-current={cur("acceso")}><Candado size={22} />Acceso</Link>
+              <Link prefetch={false} href="/entrar" className="nv-barra-item" aria-current={cur("acceso")}><Candado size={22} />Acceso</Link>
             )}
           </>
         )}

@@ -24,7 +24,7 @@ Mucha gente tiene **doble ficha** (juega en los dos equipos); algunos solo en un
 
 ## Las personas (organización — los 3 gestores)
 
-- **Iván (Villaescusa Silva, Iván)** — coordinador, capitán y responsable general. Usuario GitHub: `eyeshar`. Email: eyeshar@gmail.com. Mantenedor único del proyecto. NO es programador (más allá de lo aprendido en este proyecto).
+- **Iván (Villaescusa Silva, Iván)** — coordinador, capitán y responsable general. Usuario GitHub: `eyeshar`. Email: el de su cuenta de Google (no se escribe en docs: norma 17). Mantenedor único del proyecto. NO es programador (más allá de lo aprendido en este proyecto).
 - **Carlos (Barreiro Carballal, Carlos José)** — entrenador/delegado. Genera las estadísticas históricas. (Nota: aparecía por error como jugador en algún acta; excluido de stats de jugadores.)
 - **Eduardo (Martín-Ortega Rico, Eduardo)** — tesorero. También delegado y jugador.
 

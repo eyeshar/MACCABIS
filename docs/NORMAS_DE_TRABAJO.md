@@ -99,3 +99,9 @@ La norma anterior era excesiva y agotaba la memoria del equipo. Desde el 01/11/2
 ## 16. PR de solo documentación (Iván, 02/11/2026, D173)
 - Un PR que **solo toca `docs/`** se puede mergear **sin el OK de Iván** si GitHub Actions está en verde (`npm run ci:estado`).
 - **Cualquier PR con código, datos o migraciones sigue necesitando su OK** expreso, como siempre.
+
+## 17. Sin datos personales en el repositorio (Iván, 03/11/2026, revisión de seguridad)
+El repositorio es **público** y su historial no se reescribe (decisión de Iván, 03/11/2026: los correos que quedaron en commits viejos se asumen).
+- **Nunca correos, DNIs ni teléfonos** en `docs/`, en el código, en los datos publicados ni en los **mensajes de commit**. En docs, a cada persona se la nombra por su **`person_id` o su mote**; un correo se describe («su correo personal», «el de su cuenta de Google»), no se escribe.
+- En las pruebas, solo correos de ejemplo (`*.local`, `example.com`) y datos sintéticos (`sint-…`), como hasta ahora.
+- Las direcciones institucionales que hagan falta (p. ej. el soporte de la liga) sí, porque no son de una persona.

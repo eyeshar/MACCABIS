@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-_Última actualización: 03/11/2026: **velocidad de la web** (`perf/carga-inicial`, D175, PR abierto, **sin merge: espera el OK de Iván**): funciones en Dublín (`regions: ["dub1"]`; antes `iad1`, Washington), páginas públicas (`/`, `/liga`, `/club`, `/historia`, `/plantilla`) servidas ya hechas desde la caché (la sesión llega aparte, de `/api/sesion`), consultas del inicio personal y de la liga en paralelo, Barlow 500 fuera. Sin migraciones. Medición de partida en D175; la de después, en el PR y, tras el merge, aquí._
+_Última actualización: 03/11/2026: **velocidad de la web** (`perf/carga-inicial`, D175, PR #37 MERGEADO con el OK de Iván, medido en producción): funciones en Dublín (`regions: ["dub1"]`; antes `iad1`, Washington), páginas públicas (`/`, `/liga`, `/club`, `/historia`, `/plantilla`) servidas ya hechas desde la caché (la sesión llega aparte, de `/api/sesion`), consultas del inicio personal y de la liga en paralelo, Barlow 500 fuera. Sin migraciones. Medición de partida en D175; la de después, en la sección «Velocidad de la web»._
 _Última actualización: 02/11/2026, noche: **«Claves del partido»** (`feat/scouting-claves`, D174, PR #34 MERGEADO el 02/11 con el OK de Iván; producción comprobada: sin sesión, ni claves ni «Rival por jugador» y Scouting redirige a /entrar): Scouting dice qué hay que saber de cada rival en dos vías —«Del equipo» (hasta 3) y «Jugadores a vigilar» (hasta 3)— con reglas fijas sobre las hojas y el historial, sin IA, y la primera de cada vía en el Panel y en «Tu próximo partido»; y la página de partido de la liga enseña «Rival por jugador» a cualquier jugador con sesión (cumple D162). Sin migraciones._
 _Última actualización: 02/11/2026, noche: **rutina C automática** (`feat/rutina-c-automatica`, D173, PR #32 MERGEADO con el OK de Iván; migración `20261103100000` APLICADA en el real con D111, 28 cuentas antes y después): plazo el martes a las 12:00 (el entreno, el miércoles a las 12:00), aviso único a las 09:00 del día del plazo, aviso del cierre a quien no ha respondido, propuesta automática tras el cierre con push a Iván, «Aprobar y avisar» desde el móvil, recambio tras aprobar y revisión tras un cambio de calendario. Ver la primera sección._
 _Última actualización: 02/11/2026: **fin de SportEasy: limpieza total** (`feat/fin-sporteasy`, D172, PR #29 y #30 mergeados; migración aplicada en el real con D111): fuera el interruptor «respuestas en la web» (siempre encendidas; el Panel queda con «Avisos y accesos»), lo huérfano de SportEasy en la base (migración `20261102200000_fin_sporteasy`, aplicada en el real el 02/11 con D111, al segundo intento) y SportEasy de los docs vigentes. Ver la primera sección._
@@ -56,12 +56,24 @@ _Última actualización: 28/10/2026: **«Pregunta al asistente»** con IA gratui
 
 
 
-## Velocidad de la web (03/11/2026; D175) — `perf/carga-inicial`, PR abierto (sin merge hasta el OK de Iván)
+## Velocidad de la web (03/11/2026; D175) — `perf/carga-inicial`, PR #37 MERGEADO (OK de Iván, 03/11/2026)
 
 - **Medido (producción, antes):** funciones en `iad1`; las cinco páginas públicas sin caché (`x-vercel-cache: MISS`, `Cache-Control: private, no-store`): TTFB 210–330 ms, LCP 300–580 ms, 365–390 KB por la red. Tabla en D175.
+- **Medido (producción, después del merge, 03/11/2026, mismo método):** las páginas públicas salen de la CDN (`Cache-Control: public`, `x-vercel-cache: HIT`/`PRERENDER`, sin función); las dinámicas (`/liga?g=G2`, `/api/sesion`) con `x-vercel-id: cdg1::dub1::…`. Antes → después, TTFB y LCP en ms (1.ª = primera visita de la tanda, cal. = mediana de 5):
+
+  | Página | TTFB 1.ª | TTFB cal. | LCP 1.ª | LCP cal. | Peso (red) |
+  |---|---|---|---|---|---|
+  | `/` | 328 → 79 | 238 → 72 | 420 → 224 | 424 → 192 | 385 → 379 KB |
+  | `/liga` | 254 → 67 | 226 → 71 | 436 → 220 | 356 → 192 | 389 → 368 KB |
+  | `/historia` | 333 → 67 | 225 → 67 | 580 → 244 | 400 → 196 | 390 → 367 KB |
+  | `/plantilla` | 209 → 67 | 214 → 69 | 372 → 224 | 352 → 188 | 383 → 366 KB |
+  | `/club` | 257 → 74 | 225 → 70 | 304 → 164 | 312 → 172 | 365 → 342 KB |
+
+  La tanda hecha justo al terminar el despliegue (CDN aún fría en París) dio `/` 388/740, `/historia` 223/276, `/plantilla` 295/172 y `/club` 238/304 de TTFB/LCP en la 1.ª visita; una segunda tanda, ya con la CDN rellena, dio los números de la tabla. El frío de las funciones no se puede forzar (ver D175). Con sesión no se mide en producción (norma).
 - **Hecho:** (1) `vercel.json` → `"regions": ["dub1"]`; (2) el layout raíz ya no lee cookies: `components/nav/Sesion.tsx` + `/api/sesion` (sin caché), cabecera escondida sin quitarle el sitio mientras se sabe quién es (solo con cookie); `/`, `/liga`, `/club`, `/historia`, `/plantilla` estáticas con `revalidate` (60 s / 300 s) y rehechas al tocar el calendario; «/» con sesión = `/inicio` por el proxy; el proxy solo se ejecuta con cookie de sesión (matcher con `has: cookie`, **con el proyecto de Supabase escrito: si cambia, cambiarlo en `src/proxy.ts`**); consultas (`?hoy`, `?g`, `?persona`, `?t`) a su página gemela dinámica; (3) inicio personal y `cargarLiga` con consultas en paralelo; (4) Barlow 500 fuera (comprobado en 86 cargas de pantalla); (5) JSON en cliente: nada que quitar; enlaces de cabecera, barra y pie sin precarga (`prefetch={false}`: con páginas estáticas, Next las precargaba todas y colgaba `pruebas:cuadre`).
 - **Pruebas:** `pruebas:cache-publica` (nueva: todas las páginas cacheadas, con y sin sesión, sin datos de nadie), más las de lo tocado (D175). Las suites con la web compilada vacían lo prerenderizado antes de arrancar y esperan a la sesión tras cargar (`gotoConSesion`).
-- **Pendiente de decidir (Iván):** fichas de jugador y pestañas por temporada cacheables (cambia la URL: `/jugador/<id>/<temporada>`); `getClaims()` en vez de `getUser()` (seguridad); mirar el resultado en la vista previa y en producción tras el merge (región, `x-vercel-id` con `dub1`).
+- **Decidido por Iván (03/11):** la cabecera se queda escondida unos 100–300 ms hasta saber quién es; las fichas por temporada y las pestañas **sin cambiar las URL** (siguen dinámicas); **no** se cambia `getUser()` por `getClaims()`; el proyecto de Supabase del `matcher` de `src/proxy.ts` queda como está, con su prueba (`pruebas:cache-publica`).
+- **Región comprobada tras el merge:** la tarea de avisos (pg_cron → `/api/avisos/tarea`) responde 200; la de las 07:15 aún salió de `iad1` (antes del despliegue) y las siguientes de `dub1`.
 
 ## «Claves del partido» en Scouting, el Panel y «Tu próximo partido»; página de partido para cualquier jugador con sesión (02/11/2026; D174) — `feat/scouting-claves`, PR #34 MERGEADO (OK de Iván)
 

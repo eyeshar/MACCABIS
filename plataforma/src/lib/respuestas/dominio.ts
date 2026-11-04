@@ -125,7 +125,7 @@ export function estadoDe(u: Unidad, respuestas: MiRespuesta[], ausencias: MiAuse
   }
   if (vals.includes("duda")) return { clase: "duda", texto: "Duda", pendiente: false };
   const m = rs.find((r) => r?.motivo && r.motivo !== "horario")?.motivo;
-  return { clase: "novas", texto: `No vas${m ? ` · ${TEXTO_MOTIVO_TODO[m]}` : ""}`, pendiente: false };
+  return { clase: "novas", texto: `No vas${m === "no_confirmo" ? " · no confirmaste a tiempo" : m ? ` · ${TEXTO_MOTIVO_TODO[m]}` : ""}`, pendiente: false };
 }
 
 /** Partidos de un domingo que se le enseñan en «Tu próximo partido» (sin convocatoria): los que no ha dicho que no. Si
@@ -290,7 +290,7 @@ export const textoError = (m: string | undefined) => ERRORES[Object.keys(ERRORES
 /** Lo que `mi_convocatoria` da de un domingo con la convocatoria APROBADA: los equipos a los que está convocado (vacío = no
  *  convocado). Sin fila de ese día, la convocatoria aún no está aprobada. */
 export type ConvocatoriaMia = { fecha: string; equipos: ("MdA" | "MdL")[] };
-export type MotivoSalto = "no_convocado" | "no_va" | "baja";
+export type MotivoSalto = "no_convocado" | "no_confirmo" | "no_va" | "baja";
 
 /** ¿Va a ir, o puede ir, a este partido? Convocatoria aprobada: solo si está CONVOCADO. Sin convocatoria: solo si su respuesta
  *  es «va», «duda» o «sin responder». «No va», no convocado o de baja/lesión (ausencia por periodo): no, y por qué. */
@@ -299,7 +299,7 @@ export function situacionPartido(e: Pick<MiEvento, "id" | "equipo" | "fecha">, c
   if (conv) return conv.equipos.includes(e.equipo as "MdA" | "MdL") ? { va: true, motivo: null } : { va: false, motivo: "no_convocado" };
   const r = respuestas.find((x) => x.evento_id === e.id) ?? null;
   const aus = ausenciaQueCubre(e.fecha, ausencias);
-  if (r?.respuesta === "no") return { va: false, motivo: r.ausencia_id ? "baja" : "no_va" };
+  if (r?.respuesta === "no") return { va: false, motivo: r.ausencia_id ? "baja" : r.motivo === "no_confirmo" ? "no_confirmo" : "no_va" };
   if (aus && (!r || r.respuesta === "sin_responder")) return { va: false, motivo: "baja" };
   return { va: true, motivo: null };
 }
@@ -326,7 +326,7 @@ export function proximoPartido(domingos: Unidad[], convocatorias: ConvocatoriaMi
     }
     if (!saltado) {
       const m = sit.map((s) => s.motivo);
-      saltado = { fecha: u.fecha, motivo: m.includes("no_convocado") ? "no_convocado" : m.includes("no_va") ? "no_va" : "baja" };
+      saltado = { fecha: u.fecha, motivo: m.includes("no_convocado") ? "no_convocado" : m.includes("no_confirmo") ? "no_confirmo" : m.includes("no_va") ? "no_va" : "baja" };
     }
   }
   return { unidad: null, partidos: [], convocado: false, convocatoriaPendiente: false, saltado };
@@ -334,7 +334,7 @@ export function proximoPartido(domingos: Unidad[], convocatorias: ConvocatoriaMi
 
 /** «Este domingo no juegas (no convocado)». Si el domingo saltado queda a más de una semana, con su fecha. */
 export function textoSalto(s: { fecha: string; motivo: MotivoSalto }, hoy: string) {
-  const porque = s.motivo === "no_convocado" ? "no convocado" : s.motivo === "no_va" ? "has dicho que no vas" : "estás de baja";
+  const porque = s.motivo === "no_convocado" ? "no convocado" : s.motivo === "no_confirmo" ? "no confirmaste a tiempo" : s.motivo === "no_va" ? "has dicho que no vas" : "estás de baja";
   const dias = Math.round((new Date(`${s.fecha}T12:00:00Z`).getTime() - new Date(`${hoy}T12:00:00Z`).getTime()) / 86400000);
   return `${dias <= 7 ? "Este domingo" : `El ${fechaLarga(s.fecha)}`} no juegas (${porque})`;
 }

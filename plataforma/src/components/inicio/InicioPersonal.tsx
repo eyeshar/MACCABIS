@@ -180,7 +180,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
               <h2 id="t-partido">Tu próximo partido</h2>
               {estadoPartido && <span className={`in-pastilla in-p-${estadoPartido.clase}`} data-testid="estado-partido">{estadoPartido.texto}</span>}
             </div>
-            {saltoTexto && <p className="in-salto pequeno suave" data-testid="salto-partido">{saltoTexto}</p>}
+            {saltoTexto && <p className="in-salto pequeno suave" data-testid="salto-partido">{saltoTexto}{proximo.saltado?.motivo === "no_confirmo" && <> · <Link href={`/mi-zona/domingo/${proximo.saltado.fecha}`} data-testid="salto-motivo">Di el motivo (una sola vez) o pon «Voy»</Link></>}</p>}
             {domingo ? (
               <>
                 <p className="in-titular">{fechaTitular(domingo.fecha, hoy)}</p>

@@ -143,6 +143,24 @@ try {
     ok(!r.ok && /solo_gestores/.test(r.error), 'no ve el estado de activación (solo gestores)');
   });
 
+  console.log('\n== Aviso del entreno tras el cierre (D181, migración 20261104140000)');
+  // Búsqueda previa (D111), solo lectura: quién llama a _tras_cambio_jugador, qué dice hoy su definición, que sus permisos no
+  // cambian y qué alertas de entreno hay. Vale antes (nada de entreno, 0 alertas) y después de aplicarla.
+  const [m181] = await sql`select count(*)::int n from supabase_migrations.schema_migrations where version = '20261104140000'`;
+  const llaman = await sql`select proname from pg_proc where pronamespace = 'public'::regnamespace and proname <> '_tras_cambio_jugador' and prosrc like '%_tras_cambio_jugador(%' order by 1`;
+  console.log(`  (llaman a _tras_cambio_jugador: ${llaman.map((x) => x.proname).join(', ') || 'nadie'}; 20261104140000 ${m181.n ? 'aplicada' : 'SIN aplicar'})`);
+  ok(llaman.length >= 2, 'búsqueda previa: responder y la ausencia siguen llamando a _tras_cambio_jugador (la nueva regla les llega)', llaman.map((x) => x.proname).join(','));
+  const [def] = await sql`select prosrc, has_function_privilege('anon', oid, 'execute') a, has_function_privilege('authenticated', oid, 'execute') u from pg_proc where pronamespace = 'public'::regnamespace and proname = '_tras_cambio_jugador'`;
+  ok(def && !def.a && !def.u, '_tras_cambio_jugador: ni anónimos ni jugadores la ejecutan (igual antes y después)');
+  ok(m181.n ? /e\.tipo = 'entreno'/.test(def.prosrc) && /_limite_dudas/.test(def.prosrc) : !/entreno/.test(def.prosrc), m181.n ? 'aplicada: la función trata el entreno oficial desde su límite' : 'sin aplicar: la función solo conoce los partidos');
+  const [alE] = await sql`select count(*)::int n from public.alertas_gestores a join public.eventos e on e.id = a.evento_id where e.tipo = 'entreno'`;
+  if (!m181.n) ok(alE.n === 0, 'sin aplicar: ninguna alerta de entreno en la base');
+  else console.log(`  (alertas de entreno desde aplicarla: ${alE.n}; no se tocan)`);
+  if (jug) await como(jug.id, async (tx) => {
+    const r = await intenta(tx, 'select public._tras_cambio_jugador($1::uuid, $2, $3, $4)', ['00000000-0000-0000-0000-000000000000', 'x', 'va', 'no']);
+    ok(!r.ok && /permission denied/i.test(r.error), 'un jugador con sesión no ejecuta _tras_cambio_jugador por la API', r.ok ? 'la ejecutó' : r.error);
+  });
+
   console.log('\n== Un gestor real (solo lectura)');
   // estado_activacion (D172): solo los contadores del recuadro «Avisos y accesos», igual para todos los gestores.
   const CLAVES = 'con_avisos,entrados,faltan_por_entrar,pidio_codigo,plantilla';

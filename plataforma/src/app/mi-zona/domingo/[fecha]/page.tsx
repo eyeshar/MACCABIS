@@ -134,14 +134,14 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
       <section className="tarjeta rw-vas" aria-labelledby="t-puedes">
         <div className="mz-sec-cab"><h2 id="t-puedes">¿Puedes jugar?</h2>{est && <span className={`rw-etiqueta${est.pendiente ? " sin" : ""}`}>{est.pendiente ? "Aún no has respondido" : est.texto}</span>}</div>
         {u && (abierto ? (
-            <ElegirDomingo fecha={fecha} opciones={opcionesDomingo(u, conDuda)} actual={opcionActual(u, respuestas, miDomingo)} nombre={`partido del domingo ${+fecha.slice(8)}`}
+            <ElegirDomingo fecha={fecha} opciones={opcionesDomingo(u, conDuda)} actual={pasoNoVa ? null : opcionActual(u, respuestas, miDomingo)} nombre={`partido del domingo ${+fecha.slice(8)}`}
               motivo={(rNo?.motivo as MotivoJugador) ?? null} detalle={rNo?.detalle ?? null} />
           ) : <p className="suave" style={{ margin: 0 }}>Los partidos ya empezaron: no se puede cambiar la respuesta.</p>)}
         {u && abierto && est?.pendiente && (ahora.getTime() < limiteDudas(partidos[0]).getTime()
           ? <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="plazo-respuesta">Tienes hasta {textoLimite(limiteDudas(partidos[0]), ahora)} para decir si vas; si no, te quedas fuera de la convocatoria.</p>
           : <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="plazo-respuesta">Ya pasó el plazo del martes a las 12:00: no entras en la propuesta de convocatoria. Si puedes jugar, di «voy» cuanto antes.</p>)}
         {u && abierto && conDuda && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(partidos[0]), ahora)} para confirmar; si no, contarás como «no va».</p>}
-        {pasoNoVa && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Si al final puedes, pon «Voy».</p>}
+        {pasoNoVa && <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Elige «No voy» para decir el motivo (una sola vez) o «Voy» si al final puedes.</p>}
         <p className="rw-nota-conv">Estar disponible no es estar convocado: en la convocatoria te decimos en qué equipo juegas.</p>
       </section>
       <p><Link href="/mi-zona/ausencias/nueva" className="rw-enlace">¿Vas a faltar varios días? Marca una ausencia</Link></p>

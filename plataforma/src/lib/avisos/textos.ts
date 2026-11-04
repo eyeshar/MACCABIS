@@ -157,10 +157,17 @@ export const textoCancelacion = (e: EventoTexto): Texto => ({ titulo: `Se cancel
 /** (d) Aviso de prueba. */
 export const TEXTO_PRUEBA: Texto = { titulo: "Aviso de prueba", cuerpo: "Así te llegarán los avisos de Maccabis. Solo si te falta responder, si cambia algo o si se cancela; de noche solo si el partido es en pocas horas." };
 
+const CORTO_ESTADO: Record<RespuestaTexto, string> = { va: "va", duda: "duda", no: "no va", sin_responder: "sin responder" };
 const TEXTO_ESTADO: Record<RespuestaTexto, string> = { va: "Voy", duda: "Duda", no: "No voy", sin_responder: "Sin responder" };
 /** (e) A los gestores: un jugador cambia un partido despues del cierre (martes a las 12:00, D173) y antes de aprobar la
  *  convocatoria. Solo nombre y respuesta. (Tras aprobar, los cambios que importan salen con su propio aviso: lib/convocatoria.) */
-export function textoGestores(nombre: string, e: EventoTexto, antes: RespuestaTexto, despues: RespuestaTexto): Texto {
+export function textoGestores(nombre: string, e: EventoTexto, antes: RespuestaTexto, despues: RespuestaTexto, hoy?: string): Texto {
+  // D181: el entreno, tras su cierre (miércoles 12:00): «Carlos: de «va» a «no va»», «Entreno de hoy, 20:30». Solo nombre y respuesta.
+  if (e.tipo === "entreno") {
+    const manana = hoy ? new Date(new Date(`${hoy}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10) : null;
+    const dia = hoy && e.fecha === hoy ? "de hoy" : e.fecha === manana ? "de mañana" : `del ${nombreDia(e.fecha)}`;
+    return { titulo: `${nombre}: de «${CORTO_ESTADO[antes]}» a «${CORTO_ESTADO[despues]}»`, cuerpo: `Entreno ${dia}${hh(e.inicio) ? `, ${hh(e.inicio)}` : ""}, después del cierre. Toca para ver las respuestas.` };
+  }
   return {
     titulo: `${nombre} cambia el ${queEs(e)}${e.equipo !== "ambos" ? ` (${e.equipo})` : ""}`,
     cuerpo: `De «${TEXTO_ESTADO[antes]}» a «${TEXTO_ESTADO[despues]}», después del cierre del martes. Toca para ver las respuestas.`,

@@ -156,9 +156,9 @@ async function encolarAlertasGestores(sb: SupabaseClient, base: Awaited<ReturnTy
   for (const a of alertas) {
     const e = base.eventos.find((x) => x.id === a.evento_id);
     const j = base.jugadores.find((x) => x.person_id === a.person_id);
-    if (!e || !j || aprobadas.has(e.fecha)) continue;
-    const t = textoGestores(j.nombre_visible, aPlan(e, base.pistas), a.antes, a.despues);
+    if (!e || !j || (e.tipo !== "entreno" && aprobadas.has(e.fecha))) continue;
     const envio = horaDeEnvio(new Date(Math.max(new Date(a.en).getTime(), ahora.getTime() - 60_000)), inicioDe(e));
+    const t = textoGestores(j.nombre_visible, aPlan(e, base.pistas), a.antes, a.despues, envio.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }));
     for (const g of gestores) filas.push({ ...t, clave: `gestores:${a.id}:${g.user_id}`, tipo: "gestores", user_id: g.user_id, eventos: [e.id], url: `/gestion/eventos/${e.id}/respuestas`, programado_para: envio });
   }
   await encolar(sb, filas);

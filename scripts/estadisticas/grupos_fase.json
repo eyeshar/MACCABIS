@@ -1,0 +1,8 @@
+{
+ "_nota": "Mapa equipo -> grupo de los grupos AJENOS de la fase Moratalaz (D183): los que no son el G1 de MdA ni el G2 de MdL (esos dos salen de data/calendario_<temporada>.json). Solo nombres de equipo y grupo, sin datos personales. Se rellena con el Excel de clasificación de cada grupo (Afición FBM). La clave sigue la forma G<n> porque va en el nombre de las copias (liga_J--_G3_...): G3 = DOM MAÑ G3, G4 = DOM TAR, G5 = SAB TAR G1.",
+ "2026-27": {
+  "G3": { "nombre": "JDM MOR DOM MAÑ BC SEN MAS G3", "equipos": [] },
+  "G4": { "nombre": "JDM MOR DOM TAR BC SEN MAS", "equipos": [] },
+  "G5": { "nombre": "JDM MOR SAB TAR BC SEN MAS G1", "equipos": [] }
+ }
+}

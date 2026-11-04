@@ -24,6 +24,7 @@
     "test:privacidad": "node scripts/estadisticas/test_privacidad.js",
     "liga": "node scripts/estadisticas/liga.js 2026-27",
     "test:duplicados": "node scripts/estadisticas/test_duplicados.js",
+    "test:hojas-ajenas": "node scripts/estadisticas/test_hojas_ajenas.js",
     "check:datos": "node scripts/check_datos_publicados.js",
     "test:datos": "node scripts/test_check_datos.js",
     "hooks:instalar": "git config core.hooksPath .githooks",

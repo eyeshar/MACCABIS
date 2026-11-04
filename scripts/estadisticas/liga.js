@@ -35,6 +35,7 @@ const { execFileSync } = require('child_process');
 const { leerHojaLiga, validarSumas } = require('./leer_hoja_liga');
 const { normEquipo, pyRound, nombreTitulo } = require('./util');
 const CONFIG = require('./temporadas.json');
+const GRUPOS_FASE = require('./grupos_fase.json');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const AVISO_CLASIFICACION = 'Clasificación calculada con las Bases del 47 JDM a partir de las hojas de estadística; pendiente de contrastar con la oficial (las incomparecencias restan puntos y no generan hoja, D29).';
@@ -62,6 +63,14 @@ function contexto(temporada) {
     if (p.rival && !g.equipos.has(normEquipo(p.rival)))
       g.equipos.set(normEquipo(p.rival), { id: slug(p.rival), nombre: limpiaNombre(p.rival), nuestro: false });
   }
+  // Grupos AJENOS de la fase (D183): sin calendario ni jornadas; sus equipos salen de grupos_fase.json.
+  // MACCABIS_GRUPOS_FASE: otro mapa de grupos (solo para las pruebas).
+  const mapa = process.env.MACCABIS_GRUPOS_FASE ? JSON.parse(fs.readFileSync(process.env.MACCABIS_GRUPOS_FASE, 'utf8')) : GRUPOS_FASE;
+  for (const [clave, info] of Object.entries(mapa[temporada] || {})) {
+    if (grupos[clave]) throw new Error(`grupos_fase.json: ${clave} choca con un grupo del calendario.`);
+    grupos[clave] = { clave, nombre: info.nombre, nuestro: null, ajeno: true, equipos: new Map(), fechas: {}, jornadas: new Set() };
+    for (const n of info.equipos) grupos[clave].equipos.set(normEquipo(n), { id: slug(n), nombre: limpiaNombre(n), nuestro: false });
+  }
   return { cfg, cal, grupos };
 }
 
@@ -85,7 +94,8 @@ function identificarHoja(temporada, fichero) {
   const a = ctx.cfg.nombres_club;
   const propio = n => Object.values(a).flat().some(x => normEquipo(x) === normEquipo(n));
   const nuestro = propio(h.local) || propio(h.visitante);
-  const g = grupoDe(ctx, h.local, h.visitante);
+  let g = null;
+  try { g = grupoDe(ctx, h.local, h.visitante); } catch (e) { if (nuestro) throw e; }   // una hoja ajena sin grupo la decide quien llama
   return { hoja: h, ctx, grupo: g, nuestro, etiquetaOk: !!h.etiqueta && fichero && h.titulo.includes(ctx.cfg.etiqueta_fbm) };
 }
 
@@ -99,10 +109,10 @@ function leerFuentes(temporada, ctx) {
     try {
       const h = leerHojaLiga(f);
       const g = grupoDe(ctx, h.local, h.visitante);
-      const m = path.basename(f).match(/^liga_J(\d+)_(G\d+)_/i);
+      const m = path.basename(f).match(/^liga_J(\d+|--)_(G\d+)_/i);
       if (!m) throw new Error(`${path.basename(f)}: el nombre no lleva jornada y grupo (liga_J01_G1_...).`);
       if (m[2].toUpperCase() !== g.clave) throw new Error(`${path.basename(f)}: el nombre dice ${m[2]} pero el calendario dice ${g.clave}.`);
-      partidos.push({ grupo: g, jornada: +m[1], hoja: h, propio: false });
+      partidos.push({ grupo: g, jornada: m[1] === '--' ? null : +m[1], hoja: h, propio: false });
     } catch (e) { errores.push(e.message); }
   });
   lee('hojas', f => {
@@ -281,7 +291,7 @@ function construir(temporada) {
 
   // Un equipo no puede jugar dos veces en la misma jornada, ni un partido repetirse.
   const vistos = new Map();
-  for (const p of partidos) for (const n of [p.hoja.local, p.hoja.visitante]) {
+  for (const p of partidos.filter(p => p.jornada != null)) for (const n of [p.hoja.local, p.hoja.visitante]) {
     const k = `${p.grupo.clave}|${p.jornada}|${normEquipo(n)}`;
     if (vistos.has(k)) errores.push(`${n} aparece dos veces en la jornada ${p.jornada} del ${p.grupo.clave} (${vistos.get(k)} y ${p.hoja.fichero}).`);
     vistos.set(k, p.hoja.fichero);
@@ -295,7 +305,8 @@ function construir(temporada) {
     grupos: {},
   };
   const privado = [];
-  for (const g of Object.values(ctx.grupos)) {
+  // Los grupos ajenos (D183) se leen y validan arriba, pero no se publican ni se cargan a Supabase todavía.
+  for (const g of Object.values(ctx.grupos).filter(g => !g.ajeno)) {
     const mios = partidos.filter(p => p.grupo === g);
     const juegos = mios.map(p => {
       const h = p.hoja, [l, v] = h.equipos;

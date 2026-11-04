@@ -5,8 +5,9 @@
  * estadística (estadisticaPartido*.xlsx, desde la app Afición FBM) de la jornada, y opcionalmente el export
  * de asistencia de SportEasy (bilan_presence*.xlsx). Sin renombrar nada. Después:
  *
- *   npm run jornada                      (busca en ~/Downloads)
- *   npm run jornada -- --desde <carpeta> (busca en otra carpeta)
+ *   npm run jornada                      (busca en ~/Downloads y en la carpeta de Drive de las hojas, D182)
+ *   npm run jornada -- --desde <carpeta> (busca en otra carpeta en vez de Descargas; la de Drive se suma igual)
+ *   npm run jornada -- --drive <carpeta> (otra ruta para la carpeta de Drive; también MACCABIS_HOJAS_DRIVE; --sin-drive la quita)
  *   npm run jornada -- --jornada N       (las hojas de liga donde no jugamos son de la jornada N)
  *   npm run jornada -- --dry             (sólo dice qué haría)
  *   npm run jornada -- --no-interactivo  (para la rutina A automática, D66: ante cualquier duda PARA con código
@@ -19,7 +20,8 @@
  *      tabla, que se cambia en Importar → Calendario). Si la tabla no responde, sigue con la copia que hay. Con
  *      --no-interactivo y «Nada nuevo», la deja como estaba (la rutina A no deja cambios sin publicar).
  *   1. Localiza los ficheros NUEVOS de la temporada (las actas por su fecha, las hojas por la
- *      etiqueta "26/27" de su título) y los COPIA a fuentes_fbm/<temporada>/ con copia segura
+ *      etiqueta "26/27" de su título; de las hojas de OTROS equipos, D182/D183: el grupo sale de los equipos,
+ *      nunca del nombre ni de la fecha de descarga; una hoja de otra temporada se aparta y se avisa) y los COPIA a fuentes_fbm/<temporada>/ con copia segura
  *      (nunca sobrescribe; si choca un nombre con contenido distinto, para y avisa). Los
  *      originales se quedan donde estaban. fuentes_fbm/ está fuera de git: los ficheros de la
  *      FBM nunca van al repositorio.
@@ -73,6 +75,22 @@ function hashesCargados(base) {
   return res;
 }
 
+/** Huella del CONTENIDO de una hoja (celdas de la primera pestaña): la misma hoja descargada dos veces no coincide byte a byte (D182). */
+function huellaHoja(f) {
+  const X = require('xlsx');
+  const wb = X.readFile(f);
+  return md5Texto(JSON.stringify(X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' })));
+}
+const md5Texto = t => crypto.createHash('md5').update(t).digest('hex');
+const esXlsx = f => /\.xlsx$/i.test(f) && !path.basename(f).startsWith('~$');
+
+/** Huellas de contenido de los .xlsx ya cargados en una carpeta de temporada (md5 de bytes -> ruta ya la da hashesCargados). */
+function huellasCargadas(base) {
+  const res = new Map();                                   // huella de contenido -> ruta relativa a base
+  for (const rel of new Set(hashesCargados(base).values())) if (esXlsx(rel)) { try { res.set(huellaHoja(path.join(base, rel)), rel); } catch { /* ilegible: no cuenta */ } }
+  return res;
+}
+
 /** Equipos (slug) que ya tienen hoja de cada jornada en fuentes_fbm/<temporada>/ (liga/ y hojas/), con el fichero. */
 function hojasPorJornada(base, cfg) {
   const res = {};                                          // J02 -> Map(slug equipo -> fichero)
@@ -99,35 +117,49 @@ function hojasPorJornada(base, cfg) {
 async function recoger(o) {
   const cfg = CONFIG[o.temporada];
   if (!cfg) throw new Error(`No hay configuración para ${o.temporada}.`);
-  const DESDE = o.desde, BASE = o.base || path.join(ROOT, cfg.carpeta);
+  const DIRS = [].concat(o.desde), BASE = o.base || path.join(ROOT, cfg.carpeta);
   const log = o.log || console.log;
   const esNuestro = n => Object.values(cfg.nombres_club).flat().some(x => normEquipo(x) === normEquipo(n));
-  if (!fs.existsSync(DESDE)) throw new Error(`No existe la carpeta ${DESDE}`);
-  const todos = fs.readdirSync(DESDE);
+  for (const d of DIRS) if (!fs.existsSync(d)) throw new Error(`No existe la carpeta ${d}`);
+  // Nombres de todas las carpetas juntos; si dos carpetas tienen un fichero con el mismo nombre, el segundo lleva la carpeta delante.
+  const rutas = new Map();
+  for (const d of DIRS) for (const f of fs.readdirSync(d)) rutas.set(rutas.has(f) ? `${d}${path.sep}${f}` : f, path.join(d, f));
+  const todos = [...rutas.keys()];
+  const ruta = f => rutas.get(f);
   const plan = [], descartes = [], avisos = [];
   const cargados = hashesCargados(BASE);
   const yaEnJornada = hojasPorJornada(BASE, cfg);
+  const huellas = {}, enPlanContenido = new Map();   // huellas de contenido de lo ya cargado (carga perezosa)
   const enPlan = new Map();                                // md5 -> origen (duplicados dentro de la propia carpeta)
   const descarta = (origen, motivo) => { descartes.push({ origen, motivo }); log(`  = ${origen}: ${motivo}`); };
   const duda = msg => { if (o.estricto) throw new Error(msg); log(`  ! ${msg}`); };
   const aviso = msg => { avisos.push(msg); log(`  ! ${msg}`); };    // ni con --no-interactivo para
   /** true si el fichero ya está cargado (o ya va en el plan) y se ha descartado. */
   const repetido = (f, que) => {
-    const h = md5(path.join(DESDE, f));
+    const h = md5(ruta(f));
     if (cargados.has(h)) { descarta(f, `${que} ya cargada como ${cfg.carpeta}/${cargados.get(h)} (mismo contenido): no se vuelve a copiar.`); return true; }
     if (enPlan.has(h)) { descarta(f, `${que} es idéntica a "${enPlan.get(h)}" de la misma carpeta: se copia una sola vez.`); return true; }
+    if (esXlsx(f)) {                                       // misma hoja reexportada: bytes distintos, mismo contenido
+      let c = null; try { c = huellaHoja(ruta(f)); } catch { /* ilegible: lo dirá quien la lea */ }
+      if (c) {
+        const previas = huellas.previas || (huellas.previas = huellasCargadas(BASE));
+        if (previas.has(c)) { descarta(f, `${que} ya cargada como ${cfg.carpeta}/${previas.get(c)} (mismo contenido de hoja, descargada de nuevo): no se vuelve a copiar.`); return true; }
+        if (enPlanContenido.has(c)) { descarta(f, `${que} es la misma hoja que "${enPlanContenido.get(c)}" de las carpetas de entrada: se copia una sola vez.`); return true; }
+        enPlanContenido.set(c, f);
+      }
+    }
     enPlan.set(h, f);
     return false;
   };
 
   // Actas: por su fecha (dentro de la temporada) y porque juegue uno de nuestros equipos.
-  for (const f of todos.filter(f => /^Acta-Partido-\d+( \(\d+\))?\.pdf$/i.test(f))) {
+  for (const f of todos.filter(f => /^Acta-Partido-\d+( \(\d+\))?\.pdf$/i.test(path.basename(f)))) {
     let a;
-    try { a = await leerActa(path.join(DESDE, f)); } catch (e) { duda(`${f}: no se puede leer (${e.message})`); continue; }
+    try { a = await leerActa(ruta(f)); } catch (e) { duda(`${f}: no se puede leer (${e.message})`); continue; }
     if (!a.fecha || a.fecha < cfg.inicio) continue;
     if (!esNuestro(a.equipoA) && !esNuestro(a.equipoB)) continue;
     if (repetido(f, `acta ${a.num} (${a.fecha})`)) continue;
-    plan.push({ origen: f, destino: 'actas', nombre: `Acta-Partido-${a.num}.pdf`, que: `acta ${a.num} (${a.fecha})` });
+    plan.push({ origen: f, ruta: ruta(f), destino: 'actas', nombre: `Acta-Partido-${a.num}.pdf`, que: `acta ${a.num} (${a.fecha})` });
   }
 
   // Hojas: por la etiqueta de temporada del título ("... - FBM - 26/27"). El NOMBRE del fichero no
@@ -135,21 +167,40 @@ async function recoger(o) {
   // equipo, rival y local/visitante salen de la cabecera y el partido, del calendario.
   const calendario = cfg.calendario.filter(c => c.formato === 'json' && fs.existsSync(path.join(ROOT, c.fichero)))
     .flatMap(c => JSON.parse(fs.readFileSync(path.join(ROOT, c.fichero), 'utf8')).partidos);
-  const fechaDescarga = f => fs.statSync(path.join(DESDE, f)).mtime.toISOString().slice(0, 10);
+  const fechaDescarga = f => fs.statSync(ruta(f)).mtime.toISOString().slice(0, 10);
   const yaTiene = (jor, equipo) => (yaEnJornada[jor] || new Map()).get(slug(equipo));
   const reserva = (jor, equipo, f) => { (yaEnJornada[jor] || (yaEnJornada[jor] = new Map())).set(slug(equipo), f + ' (en esta misma carpeta)'); };
   const partidosLiga = (fs.existsSync(path.join(BASE, 'liga')) ? fs.readdirSync(path.join(BASE, 'liga')) : [])
     .map(f => f.match(/^liga_(J\d+)_G\d+_(.+)_vs_(.+)_[0-9a-f]{8}\.xlsx$/i))
     .filter(Boolean).map(m => ({ jornada: m[1].toUpperCase(), local: m[2].toLowerCase(), visitante: m[3].toLowerCase(), fichero: 'liga/' + m[0] }));
 
-  for (const f of todos.filter(f => /^estadisticaPartido.*\.xlsx$/i.test(f) && !f.startsWith('~$'))) {
+  for (const f of todos.filter(f => /^estadisticaPartido.*\.xlsx$/i.test(path.basename(f)) && !path.basename(f).startsWith('~$'))) {
     // Partidos de liga donde NO jugamos (D73): copia segura a liga/, con la jornada y el grupo en el nombre.
     // Los datos por jugador de esas hojas son de terceros: sólo van a Supabase, nunca al repositorio.
     let id;
-    try { id = liga.identificarHoja(o.temporada, path.join(DESDE, f)); } catch (e) { id = null; }
+    try { id = liga.identificarHoja(o.temporada, ruta(f)); } catch (e) { id = null; }
+
+    // Hoja de otra temporada (D182): se aparta sin procesar y se avisa. La temporada sale de la etiqueta de la cabecera, nunca del
+    // nombre ni de la fecha de descarga. (La 25/26 quedó fuera de alcance: la app no ofrece sus datos.)
+    if (id && id.hoja.etiqueta && id.hoja.etiqueta !== cfg.etiqueta_fbm) {
+      aviso(`${f} (${id.hoja.local} - ${id.hoja.visitante}): la cabecera dice la temporada ${id.hoja.etiqueta}, no la ${cfg.etiqueta_fbm}. Se aparta sin procesar.`);
+      continue;
+    }
+
+    // Hoja de liga de 26/27 donde no jugamos (G1/G2 por el calendario; G3-G5 por el mapa de grupos_fase.json, D183):
+    if (id && id.etiquetaOk && !id.nuestro && !id.grupo) {
+      aviso(`${f} (${id.hoja.local} - ${id.hoja.visitante}): sus equipos no están en ningún grupo conocido (falta el mapa equipo→grupo en scripts/estadisticas/grupos_fase.json). No se copia; sigue en la carpeta.`);
+      continue;
+    }
     if (id && id.etiquetaOk && !id.nuestro) {
       const que = `hoja de liga ${id.grupo.clave} ${id.hoja.local} - ${id.hoja.visitante}`;
       if (repetido(f, que)) continue;
+      if (id.grupo.ajeno) {                                  // sin calendario: la jornada es opcional (no bloquea nada)
+        const jorA = o.jornadaForzada ? J(o.jornadaForzada) : 'J--';
+        plan.push({ origen: f, ruta: ruta(f), destino: 'liga', nombre: `liga_${jorA}_${id.grupo.clave}_${slug(id.hoja.local)}_vs_${slug(id.hoja.visitante)}_${md5(ruta(f)).slice(0, 8)}.xlsx`,
+          que: `liga ${id.grupo.clave} (${id.grupo.nombre})${o.jornadaForzada ? ' ' + jorA : ', jornada sin asignar'}: ${id.hoja.local} - ${id.hoja.visitante}` });
+        continue;
+      }
       const jor = o.jornadaForzada || liga.jornadaPorFecha(id.grupo, o.hoy);
       if (!jor) { duda(`${f}: no sé de qué jornada es (usa --jornada N).`); continue; }
       const como = o.jornadaForzada ? `--jornada ${jor}` : `la jornada ${jor}, la última jugada del ${id.grupo.clave}`;
@@ -175,13 +226,16 @@ async function recoger(o) {
         aviso(`${f} (${id.hoja.local} - ${id.hoja.visitante}): según la fecha del fichero ${fecha}, pero no hay otra señal de que sea vieja (¿copiada con su fecha antigua?): se carga como ${J(jor)}.`);
       }
       reserva(J(jor), id.hoja.local, f); reserva(J(jor), id.hoja.visitante, f);
-      const nombre = `liga_${J(jor)}_${id.grupo.clave}_${slug(id.hoja.local)}_vs_${slug(id.hoja.visitante)}_${md5(path.join(DESDE, f)).slice(0, 8)}.xlsx`;
-      plan.push({ origen: f, destino: 'liga', nombre, que: `liga ${id.grupo.clave} ${J(jor)}${o.jornadaForzada ? '' : ' (inferida por fecha)'}: ${id.hoja.local} - ${id.hoja.visitante}` });
+      const nombre = `liga_${J(jor)}_${id.grupo.clave}_${slug(id.hoja.local)}_vs_${slug(id.hoja.visitante)}_${md5(ruta(f)).slice(0, 8)}.xlsx`;
+      plan.push({ origen: f, ruta: ruta(f), destino: 'liga', nombre, que: `liga ${id.grupo.clave} ${J(jor)}${o.jornadaForzada ? '' : ' (inferida por fecha)'}: ${id.hoja.local} - ${id.hoja.visitante}` });
       continue;
     }
     let h;
-    try { h = leerHoja(path.join(DESDE, f)); } catch (e) { duda(`${f}: no se puede leer (${e.message})`); continue; }
-    if (!h.titulo.includes(cfg.etiqueta_fbm)) continue;
+    try { h = leerHoja(ruta(f)); } catch (e) { duda(`${f}: no se puede leer (${e.message})`); continue; }
+    if (!h.titulo.includes(cfg.etiqueta_fbm)) {
+      aviso(`${f} (${h.local} - ${h.visitante}): la cabecera no es de la temporada ${cfg.etiqueta_fbm}. Se aparta sin procesar.`);
+      continue;
+    }
     const rival = h.esLocal ? h.visitante : h.local;
     const que = `hoja ${h.titulo.replace(/^Estadísticas - /, '').replace(/ - SenMas.*$/, '')}`;
     if (repetido(f, que)) continue;
@@ -195,16 +249,16 @@ async function recoger(o) {
       reserva(J(cal[0].jornada), h.equipo, f);
     }
     const jor = cal.length === 1 ? J(cal[0].jornada) : 'J--';
-    const nombre = `estadisticaPartido_${jor}_${h.equipo}_vs_${slug(rival)}_${md5(path.join(DESDE, f)).slice(0, 8)}.xlsx`;
-    plan.push({ origen: f, destino: 'hojas', nombre, que });
+    const nombre = `estadisticaPartido_${jor}_${h.equipo}_vs_${slug(rival)}_${md5(ruta(f)).slice(0, 8)}.xlsx`;
+    plan.push({ origen: f, ruta: ruta(f), destino: 'hojas', nombre, que });
   }
 
   // Asistencia: el export de SportEasy más reciente modificado desde el inicio de temporada.
-  const bilan = o.sinAsistencia ? undefined : todos.filter(f => /^bilan_presence.*\.xlsx$/i.test(f) && !f.startsWith('~$'))
-    .map(f => ({ f, t: fs.statSync(path.join(DESDE, f)).mtime })).filter(x => x.t.toISOString().slice(0, 10) >= cfg.inicio)
+  const bilan = o.sinAsistencia ? undefined : todos.filter(f => /^bilan_presence.*\.xlsx$/i.test(path.basename(f)) && !path.basename(f).startsWith('~$'))
+    .map(f => ({ f, t: fs.statSync(ruta(f)).mtime })).filter(x => x.t.toISOString().slice(0, 10) >= cfg.inicio)
     .sort((a, b) => b.t - a.t)[0];
   if (bilan && !repetido(bilan.f, 'asistencia de SportEasy'))
-    plan.push({ origen: bilan.f, destino: 'asistencia', nombre: `bilan_presence_${bilan.t.toISOString().slice(0, 10)}_${md5(path.join(DESDE, bilan.f)).slice(0, 8)}.xlsx`, que: 'asistencia de SportEasy' });
+    plan.push({ origen: bilan.f, ruta: ruta(bilan.f), destino: 'asistencia', nombre: `bilan_presence_${bilan.t.toISOString().slice(0, 10)}_${md5(ruta(bilan.f)).slice(0, 8)}.xlsx`, que: 'asistencia de SportEasy' });
   return { plan, descartes, avisos, cfg, base: BASE };
 }
 
@@ -216,8 +270,9 @@ function copiar(plan, o) {
   const log = o.log || console.log;
   let nuevos = 0;
   for (const p of plan) {
-    if (o.dry) { log(`  [dry] ${p.que}: ${p.origen} -> ${path.basename(o.base)}/${p.destino}/${p.nombre}`); continue; }
-    const r = copiaSegura(path.join(o.desde, p.origen), path.join(o.base, p.destino), p.nombre);
+    const base = o.base;
+    if (o.dry) { log(`  [dry] ${p.que}: ${p.origen} -> ${path.basename(base)}/${p.destino}/${p.nombre}`); continue; }
+    const r = copiaSegura(p.ruta || path.join(o.desde, p.origen), path.join(base, p.destino), p.nombre);
     if (r.copiado) { nuevos++; log(`  + ${p.que}  (${p.nombre})`); if (o.copiados) o.copiados.push(r.destino); }
   }
   return nuevos;
@@ -229,7 +284,14 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const argVal = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
   const TEMPORADA = args.find(a => /^\d{4}-\d{2}$/.test(a)) || '2026-27';
-  const DESDE = argVal('--desde', path.join(os.homedir(), 'Downloads'));
+  // Carpetas de entrada (D182): Descargas (o --desde) y la carpeta de Drive donde FolderSync deja las hojas del S21. Si la unidad
+  // no está montada, avisa y sigue con la otra.
+  const DRIVE = argVal('--drive', process.env.MACCABIS_HOJAS_DRIVE || 'I:\\Mi unidad\\Descargas aficion fbm');
+  const DESDE = [argVal('--desde', path.join(os.homedir(), 'Downloads'))];
+  if (!args.includes('--sin-drive')) {
+    if (fs.existsSync(DRIVE)) DESDE.push(DRIVE);
+    else console.log(`AVISO: la carpeta de Drive no está disponible (${DRIVE}): ¿Google Drive para Windows sin montar? Sigo solo con ${DESDE[0]}.`);
+  }
   const DRY = args.includes('--dry');
   const NOINT = args.includes('--no-interactivo');          // rutina A automática (D66): ante cualquier duda, para
   const RESUMEN = argVal('--resumen', null);
@@ -267,7 +329,7 @@ if (require.main === module) {
     }
     const restaurarCalendario = () => CAL.forEach((f, i) => { if (calPrevio[i]) fs.writeFileSync(f, calPrevio[i]); });
 
-    console.log(`Procesar jornada ${TEMPORADA}: buscando ficheros en ${DESDE}${NOINT ? ' (no interactivo)' : ''}`);
+    console.log(`Procesar jornada ${TEMPORADA}: buscando ficheros en ${DESDE.join(' y ')}${NOINT ? ' (no interactivo)' : ''}`);
     let plan, descartes;
     try {
       ({ plan, descartes, avisos: resumen.avisos } = await recoger({ temporada: TEMPORADA, desde: DESDE, base: BASE, jornadaForzada: JORNADA_FORZADA, sinAsistencia: args.includes('--sin-asistencia'), estricto: NOINT }));
@@ -280,7 +342,7 @@ if (require.main === module) {
       resumen.estado = 'nada'; escribeResumen(); return;
     }
     let nuevos = 0;
-    try { nuevos = copiar(plan, { desde: DESDE, base: BASE, dry: DRY, copiados }); }
+    try { nuevos = copiar(plan, { base: BASE, dry: DRY, copiados }); }
     catch (e) { para(e.message, `\nERROR: ${e.message}\nNo se ha tocado nada más.`); }
     if (!DRY) console.log(nuevos ? `${nuevos} fichero(s) nuevo(s) copiados a ${cfg.carpeta}/.` : 'No hay ficheros nuevos (ya estaban todos copiados).');
 

@@ -1,4 +1,4 @@
-# RUTINA A — Actas y estadísticas (procedimiento, 02/10/2026; reparto actas/hojas del 23/10/2026, D106; publicación automática del 24/10/2026, D66)
+# RUTINA A — Actas y estadísticas (procedimiento, 02/10/2026; reparto actas/hojas del 23/10/2026, D106; publicación automática del 24/10/2026, D66; hojas con el S21 y Drive desde el 04/11/2026, D182 y D183)
 
 **Cuándo:** lunes (tras la jornada del domingo), con una segunda pasada el jueves para lo que llegue tarde.
 
@@ -6,17 +6,17 @@
 | Quién | Qué | Cuándo |
 |---|---|---|
 | **Claude** (tarea programada «Maccabis · actas del lunes», en el Chrome de Iván) | Baja de gesdeportiva.fbm.es las **actas** que falten a Descargas | Lunes y jueves, 9:30 |
-| **Iván** | Baja las **hojas de estadística** (las nuestras y las de liga) de la app **Afición FBM** del móvil y las deja en Descargas del PC | Domingo noche o lunes por la mañana |
+| **Claude** (con el **S21 dedicado al club**, D182) | Baja las **hojas de estadística** (las nuestras y las de los 5 grupos de la fase, D183) de la app **Afición FBM**; FolderSync las lleva a Google Drive y de ahí al PC | Domingo noche o lunes por la mañana (FolderSync, cada 10 minutos) |
 | **`scripts/rutina_a_publicar.ps1`** (Programador de tareas de Windows, sin agentes) | Procesa (`npm run jornada -- --no-interactivo`) y, **si todo cuadra, publica solo** (D66); si no, para sin publicar nada | Lunes y jueves, 9:45 y 13:00 |
 
 **Reparto de fuentes (D106, 23/10/2026):**
 | Qué | De dónde | Cómo |
 |---|---|---|
 | **Actas** (`Acta-Partido-<nº>.pdf`, las de MdA y MdL) | Web **gesdeportiva.fbm.es/clubes** → Competiciones → Resultados y actas (una sola cuenta ve los dos equipos) | Iván inicia sesión en su Chrome (clave en el gestor de contraseñas); Claude descarga desde ahí con la extensión. Claude **nunca** maneja la clave ni resuelve el «no soy un robot»: si salen, para y avisa. |
-| **Hojas de estadística** (las nuestras y las de toda la liga, D73) | App **Afición FBM** (la web no las ofrece, ni partidos de otros equipos) | Enlace Móvil de Windows con el S22 Ultra (D70), como hasta ahora. |
+| **Hojas de estadística** (las nuestras y las de toda la liga, D73) | App **Afición FBM** (la web no las ofrece, ni partidos de otros equipos) | Enlace Móvil de Windows con el **S21 dedicado al club** (D182, matiza D70); FolderSync → Google Drive → `I:\Mi unidad\Descargas aficion fbm\`. |
 | Clasificación y listado completo de partidos (CSV) | La misma web | Pendiente de evaluar para la rutina B (contraste con la oficial, D74). |
 
-Todo a **Descargas**, sin renombrar. Si en Descargas quedan hojas de jornadas anteriores, `npm run jornada` se ejecuta con `--desde` una carpeta que solo tenga los ficheros nuevos (así se hizo con la J2 y con las actas de J1 y J2 el 23/10).
+Todo a **Descargas** (las actas) o a la **carpeta de Drive** (las hojas), sin renombrar. Si en Descargas quedan hojas de jornadas anteriores, `npm run jornada` se ejecuta con `--desde` una carpeta que solo tenga los ficheros nuevos (así se hizo con la J2 y con las actas de J1 y J2 el 23/10).
 
 ## Actas: web gesdeportiva.fbm.es (D106)
 
@@ -58,20 +58,20 @@ El script crea lo que falte (enlaces, `.env.local`, `npm ci`) al empezar; todo e
 
 **Si para:** mirar el motivo en el aviso o en el registro, arreglar (bajar la hoja que falta, confirmar un nombre nuevo en `personas.json`…) y relanzar a mano o esperar a la pasada del jueves. Las dudas las resuelve una persona: el script nunca adivina.
 
-## Hojas: app Afición FBM por Enlace Móvil (D70)
+## Hojas: S21 dedicado al club + FolderSync → Drive (D182, matiza D70)
 
-**Vía:** Enlace Móvil de Windows ("Aplicaciones"), con el Samsung S22 Ultra de Iván (D70, matiza D69). Claude abre Afición FBM del móvil en una ventana del PC y la maneja con el control del ordenador. Probado el 02/10/2026: la app carga y responde.
+**Dispositivo:** un **Samsung S21 dedicado al club**, siempre encendido y con Afición FBM abierta, manejado por Claude con **Enlace Móvil de Windows**. La ventana «Pantalla del teléfono» va en el **segundo monitor**. Sustituye al móvil personal de Iván (D70): ya no depende de que esté encendido, con wifi y cerca del PC. Probado el 04/11/2026.
 
-**Condición:** el móvil encendido, con wifi y cerca del PC (puede estar bloqueado).
+**Descargar una hoja (en la app):** equipo → **Partidos** → (desplegable **Grupos**) → el partido → **Estadísticas** → **EXCEL**. Sale «Abrir con»: se cierra con **Atrás**; el fichero queda en la carpeta Descargas del S21. En el buscador de la app, el texto se escribe letra a letra y llega en MAYÚSCULAS.
 
-## Procedimiento técnico (app)
+**Llegada al PC:** **FolderSync** (en el S21) copia Descargas → Google Drive, carpeta «Descargas aficion fbm» (un solo sentido, cada 10 minutos). En el PC, Google Drive para Windows la deja en `I:\Mi unidad\Descargas aficion fbm\`. Hay ficheros ocultos (`.exmu-cfg1.data`, `.thumbcache_*`) que se ignoran. Los nombres son `estadisticaPartido_<fecha de DESCARGA>.xlsx` con sufijos de duplicado (« (1)»…): **no dicen nada del partido**.
 
-1. Cerrar WhatsApp Desktop (y apps WebView2 como Teams u Outlook nuevo) si tapan la pantalla a Claude.
-2. Abrir "Enlace Móvil"; si está maximizado, restaurarlo (doble clic en la barra de título) para que quede a la derecha.
-3. Pestaña **Aplicaciones** → buscar **"FBM"** (con "aficion" no la encuentra) → Afición FBM.
-4. La ventana de la app debe quedar en la **mitad derecha** del monitor principal: el tercio izquierdo queda tapado para Claude por una ventana de otro proceso.
-5. En la app: menú ☰ → Inicio, Próximos Partidos, Buscador (Partidos / Equipos / Jugadores / Clubes), Mis Equipos (hoy solo "DRINK TEAM"). **El camino hasta el acta y la hoja de estadística lo enseña Iván en la sesión del lunes 5/10.**
-6. **Pendiente de averiguar:** dónde guarda el móvil los ficheros descargados y cómo llegan al PC (el móvil aparece en el Explorador como "S22 Ultra de Ivan" vía Enlace a Windows), para que `npm run jornada` los recoja y publique si todo cuadra (D66).
+**Entrada al pipeline:** `npm run jornada` mira **Descargas y esa carpeta** (`--drive <ruta>` / `MACCABIS_HOJAS_DRIVE` para otra ruta; `--sin-drive` para quitarla). Si la unidad no está montada, avisa y sigue con Descargas. Clasifica cada hoja por su **contenido**: la temporada, por la etiqueta de la cabecera («… - FBM - 26/27»; la hoja **no trae fecha del partido, ni grupo ni jornada**); el grupo, por los equipos; la jornada, del calendario (G1/G2) o, para los otros grupos, opcional (`J--`). Copia sin mover ni pisar y deduplica por contenido (la misma hoja reexportada trae bytes distintos).
+
+**Qué hacer si:**
+- **Aviso «sus equipos no están en ningún grupo conocido»:** falta el equipo en `scripts/estadisticas/grupos_fase.json` (G3, G4, G5). Bajar el Excel de clasificación del grupo desde la app y añadir los nombres. La hoja se queda en la carpeta y se carga en la siguiente pasada.
+- **Aviso «la cabecera dice la temporada X»:** hoja de otra temporada (25/26 está fuera de alcance, D183): se aparta sin procesar.
+- **Sin hojas nuevas desde el domingo:** mirar que FolderSync del S21 esté activo y que Google Drive para Windows esté sincronizando.
 
 ## Reserva descartada por ahora: emulador Android (D69)
 
@@ -81,9 +81,9 @@ Play Store no deja instalar Afición FBM en emuladores ("This app won't work for
 
 Lunes 5/10/2026: sesión de aprendizaje con las actas de la J1. Iván enseña el camino hasta el acta y la hoja de estadística dentro de Afición FBM; Claude lo registra aquí tras la sesión.
 
-## Alcance desde la J2: todas las hojas de la jornada, de los dos grupos (D73, 06/10/2026)
+## Alcance: todas las hojas de la jornada de los grupos de la fase (D73 desde la J2; 5 grupos desde el 04/11/2026, D183)
 
-Cada lunes, además de nuestras actas (web, D106) y hojas, se bajan **todas las hojas de estadística de la jornada de los dos grupos** (G1 y G2: 5 partidos por jornada y grupo, 10 en total; el equipo que descansa no tiene hoja). En la app: Buscador → Partidos → el partido de cada pareja → hoja de estadística. Las actas de los partidos ajenos **no** hacen falta. Todo a Descargas, sin renombrar.
+Cada lunes, además de nuestras actas (web, D106) y hojas, se bajan **todas las hojas de estadística de la jornada de los 5 grupos de la fase Moratalaz 26/27** (DOM MAÑ G1 —el de MdA—, G2 —el de MdL—, G3, DOM TAR y SAB TAR G1), para seguir a los posibles rivales de playoff. Solo **hojas**: las actas de los partidos ajenos **no** se bajan (Iván, 04/11/2026). El procedimiento en la app, arriba. G1 y G2 salen del calendario; G3, G4 y G5, del mapa de `scripts/estadisticas/grupos_fase.json` (D183), con `J--` si no se conoce la jornada (opcional). **Lo de G3-G5 por ahora solo se copia y se valida: no se publica ni va a Supabase** (pendiente). **25/26 queda fuera** (la app no tiene sus datos): una hoja de otra temporada se aparta y se avisa.
 
 `npm run jornada` hace el resto:
 - Las hojas de partidos donde no jugamos van a `fuentes_fbm/2026-27/liga/` como `liga_J01_G1_<local>_vs_<visitante>_<hash>.xlsx` (copia segura, fuera de git). La jornada se infiere por fecha (la última ya jugada del grupo); si bajas hojas atrasadas, usa `npm run jornada -- --jornada N`.

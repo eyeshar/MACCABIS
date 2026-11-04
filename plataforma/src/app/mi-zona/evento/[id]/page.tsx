@@ -78,11 +78,11 @@ export default async function MiEvento({ params }: { params: Promise<{ id: strin
             </>
           ) : abierto ? (
             <>
-              <Responder eventoId={e.id} fecha={e.fecha} domingo={e.tipo === "liga"} actual={actual} nombre={nombreCorto(e)} grande sinDuda={!conDuda} motivo={r?.motivo === "no_confirmo" ? null : ((r?.motivo as MotivoJugador) ?? null)} detalle={r?.detalle ?? null} />
+              <Responder eventoId={e.id} fecha={e.fecha} domingo={e.tipo === "liga"} actual={r?.motivo === "no_confirmo" ? null : actual} nombre={nombreCorto(e)} grande sinDuda={!conDuda} motivo={r?.motivo === "no_confirmo" ? null : ((r?.motivo as MotivoJugador) ?? null)} detalle={r?.detalle ?? null} />
               {r?.motivo !== "no_confirmo" && <p className="suave pequeno" style={{ margin: 0 }}>Si no vas, te pedimos el motivo. Puedes cambiar tu respuesta cuando quieras.</p>}
               {!actual && plazoSemanal(e) && ahora < limiteDudas(e) && <p className="suave pequeno" style={{ margin: 0 }} data-testid="plazo-respuesta">Tienes hasta {textoLimite(limiteDudas(e), ahora)} para decir si vas{plazoSemanal(e) === "partido" ? "; si no, te quedas fuera de la convocatoria" : ""}.</p>}
               {conDuda && <p className="suave pequeno" style={{ margin: 0 }} data-testid="limite-dudas">Si dudas, tienes hasta {textoLimite(limiteDudas(e), ahora)} para confirmar; si no, contarás como «no va».</p>}
-              {r?.motivo === "no_confirmo" && <p className="suave pequeno" style={{ margin: 0 }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Toca «No voy» para decir el motivo (una sola vez) o «Voy» si al final puedes.</p>}
+              {r?.motivo === "no_confirmo" && <p className="suave pequeno" style={{ margin: 0 }} data-testid="paso-no-va">Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Elige «No voy» para decir el motivo (una sola vez) o «Voy» si al final puedes.</p>}
               {r?.origen === "gestor" && r.puesto_por_nombre && <p className="tenue pequeno" style={{ margin: 0 }}>Respuesta puesta por {r.puesto_por_nombre}.</p>}
             </>
           ) : <p className="suave" style={{ margin: 0 }}>{e.estado === "cancelado" ? "No hace falta que hagas nada." : "El evento ya empezó: no se puede cambiar la respuesta."}</p>}

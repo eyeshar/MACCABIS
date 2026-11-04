@@ -56,6 +56,8 @@ console.log('\n== «No va», de baja o lesionado: se salta al siguiente que cump
   const p = prox([], [R('a8', 'no'), R('l8', 'no')]);
   ok(p.unidad.fecha === '2026-11-15' && p.saltado.motivo === 'no_va', 'no va a ninguno: sale el 15/11', JSON.stringify(p.saltado));
   ok(D.textoSalto(p.saltado, HOY) === 'Este domingo no juegas (has dicho que no vas)', 'línea: «Este domingo no juegas (has dicho que no vas)»');
+  const nc = prox([], [R('a8', 'no', { motivo: 'no_confirmo' }), R('l8', 'no', { motivo: 'no_confirmo' })]);
+  ok(nc.saltado.motivo === 'no_confirmo' && D.textoSalto(nc.saltado, HOY) === 'Este domingo no juegas (no confirmaste a tiempo)', 'el «no» del cierre de dudas (no_confirmo): «no confirmaste a tiempo», no «has dicho que no vas»', JSON.stringify(nc.saltado));
   const aus = [{ id: 'x', desde: '2026-11-05', hasta: '2026-11-09', motivo: 'lesion', detalle: null, borrada_en: null }];
   const b = prox([], [], aus);
   ok(b.unidad.fecha === '2026-11-15' && b.saltado.motivo === 'baja', 'de baja (ausencia por periodo) y sin responder: se salta', JSON.stringify(b.saltado));

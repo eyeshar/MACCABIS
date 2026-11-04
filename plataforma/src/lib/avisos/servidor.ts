@@ -181,42 +181,64 @@ async function cerrarDudas(sb: SupabaseClient, ahora: Date) {
   return Array.isArray(data) ? data.length : 0;
 }
 
+/** Un fallo en la tarea, con la parte en la que pasó y su motivo (va a los registros de Vercel y a la respuesta). */
+export type FalloTarea = { paso: string; motivo: string };
+
 /** La tarea de cada 15 minutos: cierra las dudas que llegan al limite, recordatorios que tocan (con el aviso del dia del plazo
  *  y el de «no va (por defecto)»), el aviso del cierre a quien no ha respondido (D173), la rutina C (propuesta automatica,
- *  recordatorios a gestores, bajas tras aprobar; D173), alertas a los gestores y envio de lo pendiente. */
+ *  recordatorios a gestores, bajas tras aprobar; D173), alertas a los gestores y envio de lo pendiente.
+ *  Cada parte va por separado: si una falla, las demas siguen (el envio de lo pendiente, siempre) y el fallo queda en el
+ *  registro con su parte y su motivo; la ruta responde entonces 500 con `fallos`, para que la alarma lo vea. */
 export async function ejecutarTarea(ahora = new Date()) {
   const sb = clienteServicio();
+  const fallos: FalloTarea[] = [];
+  async function paso<T>(nombre: string, f: () => Promise<T>): Promise<T | null> {
+    try {
+      return await f();
+    } catch (e) {
+      const motivo = e instanceof Error ? e.message : String(e);
+      console.error(`tarea de avisos: falla «${nombre}»: ${motivo}`);
+      fallos.push({ paso: nombre, motivo });
+      return null;
+    }
+  }
   let encolados = 0;
-  const cerradas = await cerrarDudas(sb, ahora);
-  const base = await cargarBase(sb);
-  const eventos = base.eventos.map((e) => aPlan(e, base.pistas));
-  // D173: domingos con la convocatoria ya aprobada (sin aviso de las 09:00 ni del cierre para sus partidos).
-  const { fechasAprobadas } = await import("@/lib/convocatoria/tarea");
-  const hoy = ahora.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
-  const aprobadas = [...(await fechasAprobadas(sb, [...new Set(eventos.filter((e) => e.tipo === "liga" && e.fecha >= hoy).map((e) => e.fecha))]))];
-  const datos = { ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias, quitados: base.quitados, aprobadas };
-  // Recordatorios: los del club y los planes con «recordar un dia antes» (D118); el aviso de las «duda» (D141) se junta
-  // con el que ya salga ese dia a esa persona.
-  const recordatorios = conAvisosDeDudas([...planificar(datos), ...planificarPlanes(datos)], datos);
-  encolados += await encolar(sb, recordatorios.map((p) => ({ ...p, person_id: p.person_id })));
-  // D152: «Te hemos puesto que no vas al entreno…», uno por entreno (aparte: no se junta con el de las dudas).
-  encolados += await encolar(sb, avisosPorDefecto(datos));
-  encolados += await encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas, jugadores: base.jugadores }, ahora));
-  // D173: al cierre del partido, a quien sigue sin responder (su respuesta no se toca).
-  encolados += await encolar(sb, avisosCierre(datos));
-  // D173: la rutina C. Un fallo aqui no frena los avisos a los jugadores: se envia lo pendiente y despues se da el error.
-  let fallo: Error | null = null;
-  let convocatoria: { propuestas: string[] } = { propuestas: [] };
-  try {
-    const { tareaConvocatoria } = await import("@/lib/convocatoria/tarea");
-    const r = await tareaConvocatoria(sb, ahora, base.eventos);
-    encolados += r.encolados;
-    convocatoria = { propuestas: r.propuestas };
-  } catch (e) { fallo = e as Error; }
-  encolados += await encolarAlertasGestores(sb, base, ahora);
-  const envio = await enviarPendientes(sb, ahora);
-  if (fallo) throw new Error(`convocatoria: ${fallo.message}`);
-  return { cerradas, encolados, ...envio, propuestas: convocatoria.propuestas };
+  const sumar = (n: number | null) => { encolados += n ?? 0; };
+  const cerradas = (await paso("cierre de dudas", () => cerrarDudas(sb, ahora))) ?? 0;
+  let propuestas: string[] = [];
+  const base = await paso("lectura de la base", () => cargarBase(sb));
+  if (base) {
+    const eventos = base.eventos.map((e) => aPlan(e, base.pistas));
+    // D173: domingos con la convocatoria ya aprobada (sin aviso de las 09:00 ni del cierre para sus partidos).
+    const hoy = ahora.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+    const aprobadas = await paso("convocatorias aprobadas", async () => {
+      const { fechasAprobadas } = await import("@/lib/convocatoria/tarea");
+      return [...(await fechasAprobadas(sb, [...new Set(eventos.filter((e) => e.tipo === "liga" && e.fecha >= hoy).map((e) => e.fecha))]))];
+    });
+    const datos = { ahora, eventos, jugadores: base.jugadores, respuestas: base.respuestas, ausencias: base.ausencias, quitados: base.quitados, aprobadas: aprobadas ?? [] };
+    // Sin saber que domingos estan aprobados no se manda nada que dependa de ello (recordatorios de liga y cierre): mejor
+    // en la pasada siguiente que un aviso de mas a un convocado.
+    if (aprobadas) {
+      // Recordatorios: los del club y los planes con «recordar un dia antes» (D118); el aviso de las «duda» (D141) se junta
+      // con el que ya salga ese dia a esa persona.
+      sumar(await paso("recordatorios", () => encolar(sb, conAvisosDeDudas([...planificar(datos), ...planificarPlanes(datos)], datos).map((p) => ({ ...p, person_id: p.person_id })))));
+    }
+    // D152: «Te hemos puesto que no vas al entreno…», uno por entreno (aparte: no se junta con el de las dudas).
+    sumar(await paso("avisos de no va por defecto", () => encolar(sb, avisosPorDefecto(datos))));
+    sumar(await paso("avisos de paso a no va", () => encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas, jugadores: base.jugadores }, ahora))));
+    // D173: al cierre del partido, a quien sigue sin responder (su respuesta no se toca).
+    if (aprobadas) sumar(await paso("aviso del cierre", () => encolar(sb, avisosCierre(datos))));
+    // D173: la rutina C.
+    const r = await paso("convocatoria", async () => {
+      const { tareaConvocatoria } = await import("@/lib/convocatoria/tarea");
+      return tareaConvocatoria(sb, ahora, base.eventos);
+    });
+    if (r) { sumar(r.encolados); propuestas = r.propuestas; }
+    sumar(await paso("alertas a gestores", () => encolarAlertasGestores(sb, base, ahora)));
+  }
+  const envio = (await paso("envio de lo pendiente", () => enviarPendientes(sb, ahora))) ?? { pendientes: 0, enviados: 0 };
+  const error = fallos.length ? fallos.map((x) => `${x.paso}: ${x.motivo}`).join(" | ") : undefined;
+  return { cerradas, encolados, ...envio, propuestas, ...(error ? { error, fallos } : {}) };
 }
 
 /** (b) y (c): al guardar un cambio de fecha, hora, pista o encuentro, o al cancelar, con «Guardar y avisar». Pasa por el

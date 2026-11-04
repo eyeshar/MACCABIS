@@ -7,6 +7,12 @@
 //   npm run avisos:programar -- --aplicar lo aplica (SOLO con el OK de Ivan, D94)
 //   npm run avisos:programar -- --quitar  quita el trabajo programado (los avisos dejan de salir solos)
 //
+// Reintento (fix/tarea-avisos-500, 04/11/2026): un segundo trabajo, cada 5 minutos (:02, :07, :12…), vuelve a llamar SOLO
+// si la ultima respuesta que ha recibido pg_net (de menos de 14 minutos) no es un 200: Vercel a veces corta la peticion
+// en su entrada (500 INTERNAL_SERVER_ERROR sin llegar a la funcion, sin registro ni CPU) y la pasada se perdia hasta 15
+// minutos. Como mucho 3 reintentos por pasada; si la ultima fue bien no hace nada (no gasta CPU de Vercel, D179). La
+// tarea es idempotente (claves en avisos_registro): repetirla no duplica avisos.
+//
 // pg_cron y pg_net estan disponibles en el plan gratuito de Supabase (comprobado en el proyecto el 08/10/2026:
 // pg_cron 1.6.4 y pg_net 0.20.4, sin instalar; supabase_vault 0.3.1 instalada).
 
@@ -19,6 +25,8 @@ const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(RAIZ, '.env.local') });
 const URL_TAREA = process.env.AVISOS_URL_TAREA || 'https://maccabis.vercel.app/api/avisos/tarea';
 const NOMBRE = 'maccabis-avisos';
+const NOMBRE_REINTENTO = 'maccabis-avisos-reintento';
+const CADA_REINTENTO = '2-59/5 * * * *';
 const aplicar = process.argv.includes('--aplicar');
 const quitar = process.argv.includes('--quitar');
 
@@ -28,13 +36,18 @@ const ORDEN = `select net.http_post(
       'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'avisos_secreto')),
     body := '{}'::jsonb,
     timeout_milliseconds := 30000)`;
+// Sin FROM, Postgres evalua el WHERE antes que la llamada: si la ultima pasada fue bien, no se llama.
+const ORDEN_REINTENTO = `${ORDEN}
+  where exists (select 1 from (select status_code, created from net._http_response order by created desc limit 1) u
+    where u.status_code is distinct from 200 and u.created > now() - interval '14 minutes')`;
 
-console.log(`Tarea: cada 15 minutos -> ${URL_TAREA}`);
+console.log(`Tarea: cada 15 minutos -> ${URL_TAREA}; reintento cada 5 minutos solo si la ultima pasada fallo`);
 if (!aplicar && !quitar) {
   console.log('\nLo que se aplicaría (el secreto va a Vault y no se muestra):\n');
   console.log("create extension if not exists pg_cron;\ncreate extension if not exists pg_net with schema extensions;");
   console.log("select vault.create_secret('<AVISOS_SECRETO de .env.local>', 'avisos_secreto');   -- o update_secret si ya existe");
-  console.log(`select cron.schedule('${NOMBRE}', '*/15 * * * *', $$${ORDEN}$$);`);
+  console.log(`select cron.schedule('${NOMBRE}', '*/15 * * * *', $${ORDEN}$);`);
+  console.log(`select cron.schedule('${NOMBRE_REINTENTO}', '${CADA_REINTENTO}', $${ORDEN_REINTENTO}$);`);
   console.log('\nNo se ha tocado nada. Para aplicarlo: npm run avisos:programar -- --aplicar');
   process.exit(0);
 }
@@ -43,7 +56,7 @@ if (aplicar && (!secreto || secreto.length < 32)) { console.error('Falta AVISOS_
 const sql = conectar();
 try {
   if (quitar) {
-    await sql`select cron.unschedule(${NOMBRE}) where exists (select 1 from cron.job where jobname = ${NOMBRE})`;
+    for (const n of [NOMBRE, NOMBRE_REINTENTO]) await sql`select cron.unschedule(${n}) where exists (select 1 from cron.job where jobname = ${n})`;
     console.log('Trabajo quitado: los avisos ya no salen solos (el envío al guardar y el aviso de prueba siguen).');
   } else {
     await sql.unsafe('create extension if not exists pg_cron');
@@ -52,8 +65,11 @@ try {
     if (ya) await sql`select vault.update_secret(${ya.id}, ${secreto})`;
     else await sql`select vault.create_secret(${secreto}, 'avisos_secreto')`;
     await sql`select cron.schedule(${NOMBRE}, '*/15 * * * *', ${ORDEN})`;
-    const [j] = await sql`select jobid, schedule, active from cron.job where jobname = ${NOMBRE}`;
-    console.log(`Programada: trabajo ${j.jobid}, «${j.schedule}», activo=${j.active}. Revisa las ejecuciones en cron.job_run_details y net._http_response.`);
+    await sql`select cron.schedule(${NOMBRE_REINTENTO}, ${CADA_REINTENTO}, ${ORDEN_REINTENTO})`;
+    for (const j of await sql`select jobid, jobname, schedule, active from cron.job where jobname in (${NOMBRE}, ${NOMBRE_REINTENTO}) order by jobid`) {
+      console.log(`Programada: ${j.jobname} (trabajo ${j.jobid}), «${j.schedule}», activo=${j.active}.`);
+    }
+    console.log('Revisa las ejecuciones en cron.job_run_details y net._http_response.');
   }
 } finally {
   await sql.end();

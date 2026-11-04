@@ -25,9 +25,13 @@ function horaDeLaPasada(req: Request) {
 export async function POST(req: Request) {
   if (!autorizado(req)) return Response.json({ error: "no autorizado" }, { status: 401 });
   if (!configuradoEnvio()) return Response.json({ error: "faltan las claves de avisos en el servidor" }, { status: 503 });
+  // Una parte que falla no frena las demas (ejecutarTarea): se responde 500 con `fallos` (parte y motivo) para que la
+  // alarma lo cuente, y cada fallo queda en los registros de Vercel. Lo que se escape de ahi, tambien al registro.
   try {
-    return Response.json(await ejecutarTarea(horaDeLaPasada(req)));
+    const r = await ejecutarTarea(horaDeLaPasada(req));
+    return Response.json(r, { status: r.fallos ? 500 : 200 });
   } catch (e) {
+    console.error("tarea de avisos: error inesperado:", e);
     return Response.json({ error: (e as Error).message }, { status: 500 });
   }
 }

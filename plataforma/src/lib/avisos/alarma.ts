@@ -4,6 +4,7 @@
 export type Pasada = { codigo: number | null; creado: string };
 
 const MIN_SIN_PASADAS = 40;
+const ERRORES_POR_HORA = 2;
 
 /** Dos pasadas seguidas con error, o ninguna en los ultimos 40 minutos (con historial). `null` = todo bien o sin datos. */
 export function problemaTarea(pasadas: Pasada[], ahora = new Date()): string | null {
@@ -20,8 +21,15 @@ export function problemaTarea(pasadas: Pasada[], ahora = new Date()): string | n
   return null;
 }
 
-/** Salud para el workflow de GitHub: "ok" si la ultima pasada correcta (200) tiene menos de 40 minutos. */
-export function estadoSalud(ultimaOk: string | null, ahora = new Date()): "ok" | "fallando" {
+/** Pasadas con error (codigo distinto de 200 o sin respuesta) en la ultima hora. */
+export function erroresUltimaHora(pasadas: Pasada[], ahora = new Date()): number {
+  return pasadas.filter((p) => p.codigo !== 200 && ahora.getTime() - new Date(p.creado).getTime() <= 60 * 60_000).length;
+}
+
+/** Salud para el workflow de GitHub: "ok" si la ultima pasada correcta (200) tiene menos de 40 minutos y en la ultima hora
+ *  hay menos de 2 pasadas con error (el 04/11/2026 fallaron 7 de 17 sueltas y la regla de los 40 minutos no lo vio). */
+export function estadoSalud(ultimaOk: string | null, ahora = new Date(), pasadas: Pasada[] = []): "ok" | "fallando" {
   if (!ultimaOk) return "fallando";
+  if (erroresUltimaHora(pasadas, ahora) >= ERRORES_POR_HORA) return "fallando";
   return ahora.getTime() - new Date(ultimaOk).getTime() > MIN_SIN_PASADAS * 60_000 ? "fallando" : "ok";
 }

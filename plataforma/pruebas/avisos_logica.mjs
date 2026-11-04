@@ -314,6 +314,13 @@ ok(AL.problemaTarea([], t0) === null, 'alarma: sin historial (pila local o pg_ne
 ok(AL.estadoSalud(new Date(t0.getTime() - 10 * 60000).toISOString(), t0) === 'ok', 'salud: última pasada correcta hace 10 minutos, ok');
 ok(AL.estadoSalud(new Date(t0.getTime() - 41 * 60000).toISOString(), t0) === 'fallando', 'salud: hace 41 minutos, fallando');
 ok(AL.estadoSalud(null, t0) === 'fallando', 'salud: ninguna pasada correcta, fallando');
+const hace10 = new Date(t0.getTime() - 10 * 60000).toISOString();
+// El 04/11/2026: 500 sueltos de Vercel entre pasadas buenas (7 de 17); la regla de los 40 minutos no saltaba.
+ok(AL.estadoSalud(hace10, t0, pasadasT(200, 500, 200, 500)) === 'fallando', 'salud: 2 pasadas con error en la última hora, aunque haya buenas entre medias, fallando');
+ok(AL.estadoSalud(hace10, t0, pasadasT(200, 500, 200, 200)) === 'ok', 'salud: un solo error en la hora, ok');
+ok(AL.estadoSalud(hace10, t0, pasadasT(200, null, 200, 401)) === 'fallando', 'salud: sin respuesta (null) y un 401 cuentan como error');
+ok(AL.erroresUltimaHora(pasadasT(200, 200, 200, 200, 200, 500, 500), t0) === 0, 'salud: los errores de hace más de una hora no cuentan');
+ok(AL.estadoSalud(hace10, t0, []) === 'ok', 'salud: sin las pasadas de la hora (migración sin aplicar), solo la regla de los 40 minutos');
 
 console.log('\n== Disponibilidad por defecto (D146): «no suele entrenar» y «solo entreno: nunca a partidos»');
 {

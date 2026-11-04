@@ -213,6 +213,7 @@ try {
   await sql`revoke execute on function public.cerrar_dudas(timestamptz) from service_role`;
   t = await tarea();
   ok(t.status === 500 && /cerrar dudas/.test(t.json.error ?? ''), 'error de cerrar_dudas distinto de «no existe»: la tarea devuelve 500 con el motivo (antes se escondía)', JSON.stringify(t));
+  ok(t.json.fallos?.length === 1 && t.json.fallos[0].paso === 'cierre de dudas' && typeof t.json.enviados === 'number' && typeof t.json.encolados === 'number', 'y el resto de la tarea sigue (recordatorios, convocatoria, envío): un fallo de una parte no tumba las demás', JSON.stringify(t));
   await sql`grant execute on function public.cerrar_dudas(timestamptz) to service_role`;
   t = await tarea();
   ok(t.status === 200 && t.json.cerradas === 0, 'devuelto el permiso, la tarea vuelve a 200 e informa de cuántas dudas cerró', JSON.stringify(t));
@@ -305,7 +306,13 @@ try {
   ok(sa.status === 503 && ja.estado === 'fallando' && ja.ultima_pasada_ok === null, 'salud: sin ninguna pasada correcta, 503 «fallando»', JSON.stringify(ja));
   await sql`insert into net._http_response (status_code, created) values (401, now()), (200, now() - interval '5 minutes')`;
   sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
-  ok(sa.status === 200 && ja.estado === 'ok' && !!ja.ultima_pasada_ok && Object.keys(ja).sort().join() === 'estado,ultima_pasada_ok', 'salud: con una pasada 200 reciente, 200 «ok», y solo el estado y la hora (sin datos personales)', JSON.stringify(ja));
+  ok(sa.status === 200 && ja.estado === 'ok' && !!ja.ultima_pasada_ok && Object.keys(ja).sort().join() === 'errores_ultima_hora,estado,ultima_pasada_ok' && ja.errores_ultima_hora === 1, 'salud: con una pasada 200 reciente y un solo error, 200 «ok», y solo el estado, la hora y el número de errores (sin datos personales)', JSON.stringify(ja));
+  await sql`insert into net._http_response (status_code, created) values (500, now() - interval '30 minutes'), (200, now() - interval '15 minutes')`;
+  sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
+  ok(sa.status === 503 && ja.estado === 'fallando' && ja.errores_ultima_hora === 2, 'salud: 2 pasadas con error en la última hora (con buenas entre medias), 503 «fallando»', JSON.stringify(ja));
+  await sql`update net._http_response set created = now() - interval '70 minutes' where status_code = 500`;
+  sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
+  ok(sa.status === 200 && ja.estado === 'ok' && ja.errores_ultima_hora === 1, 'salud: el error de hace más de una hora ya no cuenta', JSON.stringify(ja));
   await sql`delete from net._http_response`; await sql`insert into net._http_response (status_code, created) values (200, now() - interval '50 minutes')`;
   sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
   ok(sa.status === 503 && ja.estado === 'fallando', 'salud: la última pasada correcta de hace 50 minutos, «fallando»', JSON.stringify(ja));

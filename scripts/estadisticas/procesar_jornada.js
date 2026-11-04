@@ -117,13 +117,23 @@ function hojasPorJornada(base, cfg) {
 async function recoger(o) {
   const cfg = CONFIG[o.temporada];
   if (!cfg) throw new Error(`No hay configuración para ${o.temporada}.`);
+  const RECURSIVO = [].concat(o.recursivo || []);
   const DIRS = [].concat(o.desde), BASE = o.base || path.join(ROOT, cfg.carpeta);
   const log = o.log || console.log;
   const esNuestro = n => Object.values(cfg.nombres_club).flat().some(x => normEquipo(x) === normEquipo(n));
   for (const d of DIRS) if (!fs.existsSync(d)) throw new Error(`No existe la carpeta ${d}`);
   // Nombres de todas las carpetas juntos; si dos carpetas tienen un fichero con el mismo nombre, el segundo lleva la carpeta delante.
   const rutas = new Map();
-  for (const d of DIRS) for (const f of fs.readdirSync(d)) rutas.set(rutas.has(f) ? `${d}${path.sep}${f}` : f, path.join(d, f));
+  // Entra en las subcarpetas solo de las carpetas de o.recursivo (la de Drive; Descargas no, D182) (p. ej. respaldo_04112026\ de Drive, D182). Clave = nombre; si ya hay otro igual, la ruta entera.
+  const anda = (d, raiz) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { if (RECURSIVO.some(r => path.resolve(r) === path.resolve(raiz)) && !e.name.startsWith('.')) anda(p, raiz); continue; }
+      if (!e.isFile()) continue;
+      rutas.set(rutas.has(e.name) ? p : e.name, p);
+    }
+  };
+  for (const d of DIRS) anda(d, d);
   const todos = [...rutas.keys()];
   const ruta = f => rutas.get(f);
   const plan = [], descartes = [], avisos = [];
@@ -332,7 +342,7 @@ if (require.main === module) {
     console.log(`Procesar jornada ${TEMPORADA}: buscando ficheros en ${DESDE.join(' y ')}${NOINT ? ' (no interactivo)' : ''}`);
     let plan, descartes;
     try {
-      ({ plan, descartes, avisos: resumen.avisos } = await recoger({ temporada: TEMPORADA, desde: DESDE, base: BASE, jornadaForzada: JORNADA_FORZADA, sinAsistencia: args.includes('--sin-asistencia'), estricto: NOINT }));
+      ({ plan, descartes, avisos: resumen.avisos } = await recoger({ temporada: TEMPORADA, desde: DESDE, recursivo: DESDE.includes(DRIVE) ? [DRIVE] : [], base: BASE, jornadaForzada: JORNADA_FORZADA, sinAsistencia: args.includes('--sin-asistencia'), estricto: NOINT }));
     } catch (e) { para(e.message, `\nERROR: ${e.message}\nNo se ha copiado nada.`); }
     if (descartes.length) console.log(`${descartes.length} fichero(s) descartado(s) por estar ya cargados.`);
     resumen.nuevos = plan.length;

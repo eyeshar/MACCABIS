@@ -502,3 +502,8 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [x] Tabla de posiciones, niveles A–E y Dobla/No dobla de 2026/27 guardada en `privado/plantilla_2026-27.csv` (con `person_id`) y criterios de reparto en `privado/criterios_convocatoria.md`, fuente de la rutina C. Ignorados por git; no se copian a `data/` ni a docs.
 - [x] Limpieza menor hecha: quitados `URL_DASHBOARD`, `URL_ESTADISTICAS` y `estadisticas()` de `plataforma/src/lib`.
 - [x] `pruebas:cuadre` compara con la web antigua de GitHub Pages, que ahora redirige: si se vuelve a necesitar, ejecutarlo con las redirecciones desactivadas (copia temporal de `data/redireccion_web.js` con `ESTA_ACTIVA = false`). _(Auditoría 30/10: hecho, `plataforma/pruebas/liga_cuadre.mjs` ya desactiva la redirección por sí sola.)_
+
+## Hojas de los grupos ajenos (D183, 04/11/2026)
+- [ ] **Llevar G3–G6 (DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2) a Supabase y a «Scouting rivales»**, en un PR aparte y con staging antes (tocan datos de terceros y permisos). Hoy solo se copian y se validan.
+- [ ] **Saber cuál de las dos clasificaciones sin nombre es DOM MAÑ G3 y cuál DOM TAR** (`node scripts/estadisticas/mapa_grupos.js --ancla G3=<equipo> --escribir`). No cambia lo que se copia; sí el nombre del grupo.
+- [ ] _(Opcional)_ **Calendario de esos grupos desde el portal de datos abiertos 211549**, para dar jornada a sus hojas (hoy van `J--`). La rama `feat/calendario-automatico` no está en el remoto; hay que localizarla o repetir el sondeo.

@@ -6,6 +6,7 @@
  *  1. Una hoja de 26/27 de dos equipos sin grupo conocido no se copia y avisa (no para, ni con --no-interactivo).
  *  2. Con esos equipos en el mapa (grupos_fase.json), va a liga/ con su grupo (G5) y sin jornada (J--).
  *  3. Una hoja de otra temporada (25/26, fuera de alcance) se aparta sin procesar y se avisa.
+ *  5. La carpeta de Drive se lee con sus subcarpetas (respaldo_…); Descargas no.
  *  4. La misma hoja descargada otra vez (bytes distintos, mismo contenido) y la que está en dos carpetas de entrada se copian una vez.
  */
 const fs = require('fs');
@@ -71,6 +72,15 @@ const escribe = (dir, nombre, bytes) => { fs.mkdirSync(dir, { recursive: true })
   r = await llamada(d4, base);
   ok(r.plan.length === 0 && r.avisos.some(a => /25\/26, no la 26\/27/.test(a)), '3. hoja de 25/26: se aparta y avisa');
   ok(fs.readdirSync(base).join() === 'liga', '3b. no se crea ninguna carpeta nueva (ni rivales/)');
+
+  // 5. Subcarpetas: solo en las carpetas marcadas como recursivas (la de Drive: respaldo_04112026\), no en Descargas.
+  const d5 = tmp('drive-sub'), d6 = tmp('descargas-sub');
+  escribe(path.join(d5, 'respaldo_04112026'), 'estadisticaPartido_04112026 (7).xlsx', hoja('EQUIPO UNO', 'EQUIPO DOS', 61, 47, '26/27'));
+  escribe(path.join(d6, 'otra'), 'estadisticaPartido_04112026 (7).xlsx', hoja('EQUIPO UNO', 'EQUIPO DOS', 61, 47, '26/27'));
+  r = await recoger({ temporada: '2026-27', desde: d5, recursivo: [d5], base: tmp('base2'), sinAsistencia: true, log: () => {} });
+  ok(r.plan.length === 1, '5. entra en las subcarpetas de la carpeta de Drive');
+  r = await recoger({ temporada: '2026-27', desde: d6, base: tmp('base3'), sinAsistencia: true, log: () => {} });
+  ok(r.plan.length === 0, '5b. no entra en las subcarpetas de Descargas');
 
   delete process.env.MACCABIS_GRUPOS_FASE;
   console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo bien.');

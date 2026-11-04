@@ -287,7 +287,8 @@ function construir(temporada) {
 
   const { partidos, errores: eLectura } = leerFuentes(temporada, ctx);
   errores.push(...eLectura);
-  for (const p of partidos) errores.push(...validarSumas(p.hoja));
+  // En los grupos ajenos (D183) una hoja descuadrada en origen (la FBM) es un aviso: no puede parar la publicación de G1 y G2.
+  for (const p of partidos) (p.grupo.ajeno ? avisos : errores).push(...validarSumas(p.hoja).map(e => (p.grupo.ajeno ? `Liga ${p.grupo.clave}: ${e}` : e)));
 
   // Un equipo no puede jugar dos veces en la misma jornada, ni un partido repetirse.
   const vistos = new Map();

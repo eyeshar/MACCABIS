@@ -1,8 +1,71 @@
 {
  "_nota": "Mapa equipo -> grupo de los grupos AJENOS de la fase Moratalaz (D183): los que no son el G1 de MdA ni el G2 de MdL (esos dos salen de data/calendario_<temporada>.json). Solo nombres de equipo y grupo, sin datos personales. Se rellena con el Excel de clasificación de cada grupo (Afición FBM). La clave sigue la forma G<n> porque va en el nombre de las copias (liga_J--_G3_...): G3 = DOM MAÑ G3, G4 = DOM TAR, G5 = SAB TAR G1.",
  "2026-27": {
-  "G3": { "nombre": "JDM MOR DOM MAÑ BC SEN MAS G3", "equipos": [] },
-  "G4": { "nombre": "JDM MOR DOM TAR BC SEN MAS", "equipos": [] },
-  "G5": { "nombre": "JDM MOR SAB TAR BC SEN MAS G1", "equipos": [] }
+  "G5": {
+   "nombre": "SAB TAR G1",
+   "equipos": [
+    "NUSOTROS",
+    "TROTAMUNDOS",
+    "TAURUS",
+    "PERROS BB",
+    "BARTEAM OSBORNE",
+    "CHIQUI Y DESGUACES",
+    "ESTUDIABANTES",
+    "LOS JUGONES",
+    "DEVIL HOOPERS",
+    "LLORONES FUERA",
+    "ACCIÓN MUTANTE"
+   ]
+  },
+  "G6": {
+   "nombre": "SAB TAR G2 (PRIMERA FASE)",
+   "equipos": [
+    "ROMA BASKET",
+    "PER C.B.",
+    "UTURBU",
+    "CLUB AGUIRRE",
+    "DRINK TEAM",
+    "FAKIN PANZAS",
+    "CACIQUES",
+    "CB MADRID",
+    "MAFIA DEL ALCOHOL",
+    "TOTEM BLUE",
+    "TRIFASIC BLUNTERS"
+   ]
+  },
+  "G3": {
+   "nombre": "DOM MAÑ G3 o DOM TAR (sin asignar cuál es cuál)",
+   "sin_asignar": true,
+   "equipos": [
+    "THE MOLOCHOFFF COCKTAIL",
+    "KRIPTOS TABERNA DE LA QUINA",
+    "IMSERSO",
+    "MAD FLOWERS",
+    "OLMOS RENACIDOS",
+    "UNICAJA DE CERVEZAS",
+    "HIPERDESGUACE VICALVARO",
+    "PROYECTO DARWIN II",
+    "PUMAS RABIOSOS",
+    "PANATHIMANKOS B",
+    "ARTIC YONKIS"
+   ]
+  },
+  "G4": {
+   "nombre": "DOM MAÑ G3 o DOM TAR (sin asignar cuál es cuál)",
+   "sin_asignar": true,
+   "equipos": [
+    "LOS ANGELES DE JUANAS",
+    "GUINDILLAS",
+    "GUERREROS MASTER",
+    "SPV",
+    "BEBERLY-TRONAS",
+    "PANATHIMANKOS A",
+    "SUPERLOSERS",
+    "CAFÉ HNOS. VELASCO SETTAS",
+    "MO ES MO",
+    "ESTRELLA NEGRA",
+    "SAINZ DE VICUÑA"
+   ]
+  }
  }
 }

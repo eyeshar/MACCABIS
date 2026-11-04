@@ -12,7 +12,7 @@ _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se proce
 ## Reparto desde el 24/10/2026: se publica solo si todo cuadra (D66)
 
 - **Actas:** las baja Claude con la tarea programada «Maccabis · actas del lunes» (lunes y jueves, 9:30) desde gesdeportiva.fbm.es, en tu Chrome con la sesión iniciada.
-- **Hojas de estadística (D182, desde el 04/11/2026):** las baja Claude de la app **Afición FBM** con el **S21 dedicado al club** (Enlace Móvil); **FolderSync** las copia a Google Drive cada 10 minutos y llegan al PC a `I:\Mi unidad\Descargas aficion fbm\`. Son las nuestras y las de **los 5 grupos de la fase** (D183). Ya no tienes que bajarlas tú.
+- **Hojas de estadística (D182, desde el 04/11/2026):** las baja Claude de la app **Afición FBM** con el **S21 dedicado al club** (Enlace Móvil); **FolderSync** las copia a Google Drive cada 10 minutos y llegan al PC a `I:\Mi unidad\Descargas aficion fbm\`. Son las nuestras y las de **los grupos de la fase** (D183). Ya no tienes que bajarlas tú.
 - **Procesar y publicar:** `scripts/rutina_a_publicar.ps1`, desde el Programador de tareas de Windows (lunes y jueves, 9:45 y 13:00): `npm run jornada -- --no-interactivo`, pruebas, commit y push, `db:liga`, `db:asistencia` y `verificar_produccion`. Ante cualquier duda (nombre desconocido, hoja que no es de la jornada, acta que no cuadra, falta una hoja o un acta) **para sin publicar nada** y te avisa con una notificación de Windows («Rutina A parada: <motivo>»); si publica, «Jornada N publicada: MdA x–y Rival · Rival x–y MdL». Registro en `privado/registro_rutina_a.log`. Detalle en `docs/RUTINAS/A_ACTAS.md`.
 
 Lo de abajo sigue valiendo para hacerlo a mano (o cuando la rutina para).

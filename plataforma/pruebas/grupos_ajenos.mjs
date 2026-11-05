@@ -164,7 +164,7 @@ try {
   const esperado = `${sumadas.length} personas de los ${clasN.filter((c) => c.pj > 0).length} equipos con partidos jugados, hasta la jornada ${Math.max(...clasN.map((c) => c.pj))}. «dobla» = sale con MdA y con MdL (sus dos fichas se suman).`;
   ok((await resumen()) === esperado, `cabecera de siempre: «${esperado}»`, await resumen());
   ok((await marcadas()) === 'G1,G2', 'el selector marca MdA (G1) y MdL (G2), y ningún otro', await marcadas());
-  const etiquetas = await selector().locator('label.lg-check').allInnerTexts();
+  const etiquetas = await selector().locator('label.lg-check').allTextContents();   // las de «Otros grupos», plegadas: textContent
   ok(JSON.stringify(etiquetas.map((x) => x.trim())) === JSON.stringify(['MdA (G1)', 'MdL (G2)', 'G3 · DOM MAÑ G3', 'G4 · DOM TAR', 'G5 · SAB TAR G1', 'G6 · SAB TAR G2']), 'casillas: MdA y MdL arriba y los cuatro grupos ajenos en «Otros grupos», con su nombre', etiquetas.join(' | '));
   ok((await selector().locator('details.lg-otros').getAttribute('open')) === null, '«Otros grupos» viene plegado si no hay ninguno marcado');
   ok(fugas(await texto(), ['G3', 'G4']).length === 0, 'ni un jugador ni un equipo de G3-G6', fugas(await texto(), ['G3', 'G4']).join(', '));
@@ -215,7 +215,7 @@ try {
   ok(/\(G1, G2 y G4\), hasta la jornada 2\./.test(await resumen()), 'la cabecera dice qué grupos', await resumen());
   await p.locator('#lideres .lg-conmutador button', { hasText: 'Totales' }).click();
   const lider124 = await p.locator('#lideres .lg-lider').first().locator('li').first().textContent();
-  ok(/Sint Gcuatro, Epsilon/i.test(lider124) && /60\s*$/.test(lider124), 'líder en puntos: Epsilon (G4, 60)', lider124);
+  ok(/Sint Gcuatro, Zeta/i.test(lider124) && /71\s*$/.test(lider124), 'líder en puntos: Zeta (G4, 71 = 41 + 30), por encima de los nuestros', lider124);
   ok(/36\t/.test(await filaDe(DOBLA).first().innerText()), 'con MdA y MdL marcados, el que dobla sigue con sus dos fichas sumadas (36)');
   await p.locator('details.lg-ranking > summary').click();
   ok((await rankingSinMezcla(['G1', 'G2', 'G4'])) === '', 'ranking: tres clasificaciones (G1, G2 y G4), una debajo de otra y sin mezclar equipos', await rankingSinMezcla(['G1', 'G2', 'G4']));
@@ -252,7 +252,7 @@ try {
   await p.waitForURL(/vista=resultados/);
   const u = new URL(p.url());
   ok(u.searchParams.get('grupos') === 'G1,G2,G4' && (await marcadas()) === 'G1,G2,G4', 'cambiar a Resultados mantiene los grupos marcados', p.url());
-  ok(/Resultados · jornada 2/.test(await p.getByTestId('resultados').innerText()), 'por defecto, la última jornada jugada (J2)');
+  ok(/Resultados · jornada 2/i.test(await p.getByTestId('resultados').innerText()), 'por defecto, la última jornada jugada (J2)');
   const bloques = await p.locator('[data-testid^="resultados-G"]').evaluateAll((b) => b.map((x) => x.getAttribute('data-testid')));
   ok(JSON.stringify(bloques) === JSON.stringify(['resultados-G1', 'resultados-G2', 'resultados-G4']), 'un bloque por grupo marcado: MdA, MdL y luego el resto', bloques.join(', '));
   const b1 = await p.getByTestId('resultados-G1').innerText();

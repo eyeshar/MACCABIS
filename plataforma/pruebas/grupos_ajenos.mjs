@@ -152,7 +152,8 @@ try {
     }
     return (await p.locator('[data-testid^="ranking-"]').count()) === grupos.length ? '' : `hay ${await p.locator('[data-testid^="ranking-"]').count()} clasificaciones`;
   };
-  const ver = async () => { await selector().getByRole('button', { name: 'Ver' }).click(); };
+  // Cada casilla se aplica al marcarla (D186): espera a la URL y a que la pagina nueva haya pintado su selector.
+  const aplicada = async (re) => { await p.waitForURL(re); await p.locator('[data-testid="selector-grupos"][aria-busy="false"]').waitFor(); };
 
   console.log('\n== Por defecto (MdA y MdL marcados): la página de siempre');
   await p.goto(`${APP}/liga/consolidada`);
@@ -192,21 +193,21 @@ try {
   ok(/hasta la jornada 2\./.test(await resumen()) && /3 equipos/.test(await resumen()) && /solo cuentan sus partidos con MdA/.test(await resumen()), 'G1: cabecera con los 3 equipos del G1, la jornada 2 y que solo cuentan sus partidos con MdA', await resumen());
   ok((await p.locator('details.lg-ranking summary').innerText()).includes('G1 · MdA (3 equipos)'), 'G1: ranking solo del G1');
   await p.goto(`${APP}/liga/consolidada`);
-  await casilla('G1').uncheck();
-  await ver();
-  await p.waitForURL(/[?&]grupos=G2/);
-  ok(new URL(p.url()).searchParams.get('grupos') === 'G2', 'desmarcar MdA deja ?grupos=G2 en la URL', p.url());
+  ok((await selector().getByRole('button', { name: 'Ver' }).count()) === 0, 'no hay botón «Ver» que pulsar (con JavaScript)');
+  await casilla('G1').click();
+  await aplicada(/[?&]grupos=G2/);
+  ok(new URL(p.url()).searchParams.get('grupos') === 'G2', 'desmarcar MdA se aplica al momento, sin pulsar nada: ?grupos=G2 en la URL', p.url());
   const g2 = await filaDe(DOBLA).first().innerText();
   ok(/\t1\t/.test(g2) && /\t20\t/.test(g2) && /dobla/.test(g2) && fugas(await texto(), ['G1', 'G3', 'G4'], ['G2']).length === 0, 'G2: el que dobla, 1 PJ y 20 puntos, con «dobla»; nadie de otro grupo', g2);
-  await casilla('G2').uncheck();
-  ok(await selector().getByRole('button', { name: 'Ver' }).isDisabled() && /Marca al menos un grupo/.test(await selector().innerText()), 'sin ningún grupo marcado no se puede pulsar «Ver» y lo dice');
+  await casilla('G2').click();
+  ok(await visto(selector().getByText('Tiene que quedar al menos un grupo marcado.')) && await casilla('G2').isChecked() && new URL(p.url()).searchParams.get('grupos') === 'G2',
+    'quitar el último grupo marcado no se deja: sigue marcado, la URL no cambia y lo dice', p.url());
 
   console.log('\n== MdA + MdL + G4: todo sale solo de esos tres grupos');
   await p.goto(`${APP}/liga/consolidada`);
   await selector().locator('details.lg-otros > summary').click();
-  await casilla('G4').check();
-  await ver();
-  await p.waitForURL(/[?&]grupos=G1,G2,G4/);
+  await casilla('G4').click();
+  await aplicada(/[?&]grupos=G1,G2,G4/);
   ok(new URL(p.url()).search === '?grupos=G1,G2,G4', 'la selección queda en la URL tal cual: ?grupos=G1,G2,G4', p.url());
   ok((await marcadas()) === 'G1,G2,G4' && (await selector().locator('details.lg-otros').getAttribute('open')) !== null, 'el selector la recuerda y «Otros grupos» viene abierto');
   const t124 = await texto();
@@ -278,6 +279,12 @@ try {
     'volver lleva a Resultados con los mismos grupos y la misma jornada', volver.toString());
   await p.goto(`${APP}/liga/consolidada?grupos=G3&vista=resultados&j=1`);
   ok(/Descansa: Sint Ajeno Tres C/.test(await p.getByTestId('resultados-G3').innerText()), 'G3, J1: descansa Sint Ajeno Tres C (del fichero de jornadas)');
+  await casilla('G4').click();
+  await aplicada(/[?&]grupos=G3,G4/);
+  ok(new URL(p.url()).searchParams.get('vista') === 'resultados' && (await p.locator('[data-testid^="resultados-G"]').count()) === 2,
+    'en Resultados, marcar el G4 se aplica al momento y sigue en Resultados (un bloque más)', p.url());
+  await casilla('G4').click();
+  await aplicada((x) => new URL(x).searchParams.get('grupos') === 'G3');
   await p.getByTestId('pestanas-consolidada').getByRole('link', { name: 'Jugadores y equipos' }).click();
   await p.waitForURL((x) => !/vista=resultados/.test(x.toString()));
   ok(new URL(p.url()).searchParams.get('grupos') === 'G3' && (await marcadas()) === 'G3', 'volver a Jugadores mantiene los grupos', p.url());

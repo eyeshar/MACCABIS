@@ -35,7 +35,7 @@ export default async function LigaConsolidada({ searchParams }: { searchParams: 
       <div className="aviso aviso-info">
         <b>Solo con sesión.</b> Datos por jugador de otros equipos: son de terceros; los ves por ser del equipo, no se publican (D73, D162).
       </div>
-      <SelectorGrupos sel={sel} vista={vista} />
+      <SelectorGrupos key={sel.join()} sel={sel} vista={vista} />
       <nav className="lg-pestanas" aria-label="Liga consolidada" data-testid="pestanas-consolidada">
         <Link href={hrefConsolidada(sel)} aria-current={vista === "jugadores" ? "page" : undefined} className={vista === "jugadores" ? "on" : ""}>Jugadores y equipos</Link>
         <Link href={hrefConsolidada(sel, { vista: "resultados" })} aria-current={vista === "resultados" ? "page" : undefined} className={vista === "resultados" ? "on" : ""}>Resultados</Link>

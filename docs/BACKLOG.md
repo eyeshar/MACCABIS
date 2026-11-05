@@ -504,5 +504,7 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [x] `pruebas:cuadre` compara con la web antigua de GitHub Pages, que ahora redirige: si se vuelve a necesitar, ejecutarlo con las redirecciones desactivadas (copia temporal de `data/redireccion_web.js` con `ESTA_ACTIVA = false`). _(Auditoría 30/10: hecho, `plataforma/pruebas/liga_cuadre.mjs` ya desactiva la redirección por sí sola.)_
 
 ## Hojas de los grupos ajenos (D183, 04/11/2026)
-- [ ] **Llevar G3–G6 (DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2) a Supabase y a «Scouting rivales»**, en un PR aparte y con staging antes (tocan datos de terceros y permisos). **Antes, decidir qué datos de los jugadores rivales se publican** (son de terceros, D73). Hoy solo se copian y se validan.
+- [x] ~~**Llevar G3–G6 (DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2) a Supabase y a «Scouting rivales»**~~ **Hecho en `feat/grupos-ajenos` (D184, 05/11/2026):** los mismos datos que G1/G2, solo con sesión; Liga consolidada con selector de grupo (sin «Todos») y Scouting de cualquier equipo de G1–G6.
+- [ ] **Aplicar `20261105100000_liga_grupos_ajenos` en el real** (D111: volcado, permisos en solo lectura antes y después, recuento de auth) y cargar con `npm run db:liga`, con el OK de Iván, antes de mergear el PR de D184.
+- [ ] **Jornada de G3–G6:** hoy van sin jornada (la hoja no la trae). Si se quiere la jornada partido a partido, sacarla del calendario del portal 211549 (ver abajo) o con `npm run jornada -- --jornada N` al copiar.
 - [ ] _(Opcional)_ **Calendario de esos grupos desde el portal de datos abiertos 211549**, para dar jornada a sus hojas (hoy van `J--`). La rama `feat/calendario-automatico` no está en el remoto; hay que localizarla o repetir el sondeo.

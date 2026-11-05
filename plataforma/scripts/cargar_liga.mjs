@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Carga en Supabase la liga de TODOS los equipos (D73): partidos, estadisticas POR JUGADOR (de terceros: solo
-// gestores, RLS), el calendario propio de MdA y MdL y la clasificacion calculada.
+// Carga en Supabase la liga de TODOS los equipos (D73): partidos, estadisticas POR JUGADOR (de terceros: solo con
+// sesion, RLS), el calendario propio de MdA y MdL y la clasificacion calculada. Tambien los grupos AJENOS de la fase
+// (G3-G6, D184): sus partidos sin jornada y su clasificacion calculada, que nunca van a data/liga_<temporada>.json.
 //
 //   npm run db:liga                    carga fuentes_fbm/2026-27/{liga,hojas}/*.xlsx (conexion de .env.local)
 //   npm run db:liga -- --dry           lee, valida y cuenta, sin escribir
@@ -27,11 +28,11 @@ export function leerLiga(temporada) {
   if (r.errores.length) throw new Error('Las hojas no cuadran, no se carga nada:\n  - ' + r.errores.join('\n  - '));
   const cal = JSON.parse(fs.readFileSync(path.join(RAIZ, '..', 'data', `calendario_${temporada}.json`), 'utf8'));
   const calendario = cal.partidos.filter((p) => p.fase === 'liga').map((p) => ({ ...p, rival: p.rival ? nombreTitulo(p.rival) : null }));
-  return { privado: r.privado, publico: r.publico, calendario };
+  return { privado: r.privado, publico: r.publico, ajenos: r.ajenos ?? {}, calendario };
 }
 
 export async function cargarLiga(sql, liga, temporada, { log = console.log } = {}) {
-  const { privado: partidos, publico, calendario } = liga;
+  const { privado: partidos, publico, ajenos = {}, calendario } = liga;
   let jugadores = 0;
   let filasClasificacion = 0;
   await sql.begin(async (tx) => {
@@ -43,7 +44,7 @@ export async function cargarLiga(sql, liga, temporada, { log = console.log } = {
       await tx`insert into public.liga_calendario (temporada, equipo, jornada, fecha, hora, local, descansa, rival, campo)
                values (${temporada}, ${c.equipo}, ${c.jornada}, ${c.fecha}, ${c.hora}, ${c.local}, ${!!c.descansa}, ${c.rival}, ${c.campo})`;
     }
-    for (const [grupo, g] of Object.entries(publico.grupos)) {
+    for (const [grupo, g] of [...Object.entries(publico.grupos), ...Object.entries(ajenos)]) {
       for (const x of g.clasificacion) {
         await tx`insert into public.liga_clasificacion (temporada, grupo, pos, equipo, nuestro, pj, g, p, pf, pc, pts, pts_fuente)
                  values (${temporada}, ${grupo}, ${x.pos}, ${x.equipo}, ${x.nuestro}, ${x.pj}, ${x.g}, ${x.p}, ${x.pf}, ${x.pc}, ${x.pts}, ${x.pts_fuente ?? null})`;

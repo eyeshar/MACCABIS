@@ -10,6 +10,16 @@ import type { FuenteCalendario } from "./publico";
 
 export const TEMPORADA = "2026-27";
 
+// Grupos de la fase (D183, D184): los nuestros (G1 de MdA, G2 de MdL) y los cuatro ajenos. Nunca se mezclan grupos ajenos
+// entre si ni con los nuestros: se carga y se ensena un grupo ajeno cada vez.
+export const GRUPOS_NUESTROS = ["G1", "G2"] as const;
+export const GRUPOS_AJENOS = ["G3", "G4", "G5", "G6"] as const;
+export const GRUPOS_TODOS: readonly string[] = [...GRUPOS_NUESTROS, ...GRUPOS_AJENOS];
+const NOMBRE_GRUPO: Record<string, string> = { G1: "MdA", G2: "MdL", G3: "DOM MAÑ G3", G4: "DOM TAR", G5: "SAB TAR G1", G6: "SAB TAR G2" };
+/** «G3 · DOM MAÑ G3», «G1 · MdA». */
+export const etiquetaGrupo = (g: string) => (NOMBRE_GRUPO[g] ? `${g} · ${NOMBRE_GRUPO[g]}` : g);
+export const esGrupoNuestro = (g: string) => (GRUPOS_NUESTROS as readonly string[]).includes(g);
+
 import { agruparJugadores, type FilaHoja, type JugadorLiga } from "./jugadoresLiga";
 export type { JugadorLiga } from "./jugadoresLiga";
 export { NUESTROS, bonito, dec, masPeligrosos, minimoPartidos, mmss, porMediaPts, quienDobla, textoDorsales, unirDoblan } from "./jugadoresLiga";
@@ -31,17 +41,17 @@ export type DatosLiga = {
   hoy: string;
 };
 
-type FilaCruda = Omit<FilaHoja, "grupo" | "jornada"> & { id: string; liga_partidos: { grupo: string; jornada: number } };
+type FilaCruda = Omit<FilaHoja, "grupo" | "jornada"> & { id: string; liga_partidos: { grupo: string; jornada: number | null } };
 
 /** Filas de las hojas de la temporada, partido a partido (la API da como mucho 1000 por consulta: se pide por paginas).
  *  D175: la primera pagina trae tambien el total y las demas se piden a la vez, no una tras otra. */
-async function filasHojas(supabase: SupabaseClient, grupos?: string[]): Promise<FilaHoja[]> {
+async function filasHojas(supabase: SupabaseClient, grupos: readonly string[]): Promise<FilaHoja[]> {
   const PAGINA = 1000;
   const pagina = async (desde: number) => {
     let q = supabase.from("liga_estadisticas_jugador")
       .select("id, partido_id, equipo, dorsal, nombre, segundos, pts, p2a, p3a, tla, tli, faltas, liga_partidos!inner(temporada, grupo, jornada)", desde === 0 ? { count: "exact" } : undefined)
       .eq("liga_partidos.temporada", TEMPORADA);
-    if (grupos) q = q.in("liga_partidos.grupo", grupos);
+    q = q.in("liga_partidos.grupo", grupos);
     const { data, error, count } = await q.order("id").range(desde, desde + PAGINA - 1);
     if (error) throw new Error(error.message);
     return { filas: (data ?? []) as unknown as FilaCruda[], count };
@@ -54,18 +64,27 @@ async function filasHojas(supabase: SupabaseClient, grupos?: string[]): Promise<
     // Sin total (no deberia pasar): de una en una hasta que una venga corta, como antes.
     for (let ultima = primera; ultima.filas.length === PAGINA; ) paginas.push((ultima = await pagina(paginas.length * PAGINA)));
   }
-  return paginas.flatMap((p) => p.filas).map(({ liga_partidos: p, id: _id, ...f }) => ({ ...f, grupo: p.grupo, jornada: p.jornada }));
+  // jornada 0 = sin jornada: los grupos ajenos (D184), cuya hoja no la trae.
+  return paginas.flatMap((p) => p.filas).map(({ liga_partidos: p, id: _id, ...f }) => ({ ...f, grupo: p.grupo, jornada: p.jornada ?? 0 }));
 }
 
-/** `grupos`: solo las hojas de esos grupos (las tarjetas de un solo partido no necesitan los dos). */
-export async function cargarLiga(supabase: SupabaseClient, grupos?: string[]): Promise<DatosLiga> {
-  const [filas, c, fuente] = await Promise.all([
+/** Clasificacion calculada de esos grupos (solo datos por equipo). */
+export async function cargarClasificacion(supabase: SupabaseClient, grupos: readonly string[]): Promise<FilaClasificacion[]> {
+  const c = await supabase.from("liga_clasificacion").select("grupo, pos, equipo, nuestro, pj, g, p, pf, pc, pts, pts_fuente")
+    .eq("temporada", TEMPORADA).in("grupo", grupos).order("grupo").order("pos");
+  if (c.error) throw new Error(c.error.message);
+  return (c.data ?? []) as FilaClasificacion[];
+}
+
+/** `grupos`: solo las hojas y la clasificacion de esos grupos; por defecto, los nuestros (G1 y G2): los ajenos (D184) solo
+ *  cuando se piden. `clasificacion`: la ya leida (Scouting la lee de todos los grupos para el selector). */
+export async function cargarLiga(supabase: SupabaseClient, grupos: readonly string[] = GRUPOS_NUESTROS,
+  opciones: { clasificacion?: FilaClasificacion[] } = {}): Promise<DatosLiga> {
+  const [filas, clasificacion, fuente] = await Promise.all([
     filasHojas(supabase, grupos),
-    supabase.from("liga_clasificacion").select("grupo, pos, equipo, nuestro, pj, g, p, pf, pc, pts, pts_fuente").eq("temporada", TEMPORADA).order("grupo").order("pos"),
+    opciones.clasificacion ?? cargarClasificacion(supabase, grupos),
     cargarFuente(),
   ]);
-  if (c.error) throw new Error(c.error.message);
-  const clasificacion = (c.data ?? []) as FilaClasificacion[];
   return {
     // D168: un jugador por equipo y nombre normalizado (el dorsal no es identidad); quien no ha jugado ningun minuto no sale.
     jugadores: agruparJugadores(filas).jugadores,

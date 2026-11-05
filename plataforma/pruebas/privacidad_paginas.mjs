@@ -30,7 +30,17 @@ function nombresRivales() {
   try {
     const { construir } = createRequire(import.meta.url)(path.join(REPO, 'scripts', 'estadisticas', 'liga.js'));
     const nuestros = new Set(['MdA', 'MdL']);
-    return [...new Set(construir('2026-27').privado.flatMap((p) => p.equipos.filter((e) => !nuestros.has(e.equipo)).flatMap((e) => e.jugadores.map((j) => j.nombre))))];
+    // D184: con los grupos ajenos, una persona del club puede jugar ademas en otro equipo (y salir en su hoja): sigue siendo
+    // nuestra y sale en lo publico como tal. Fuera de la lista quien juega con MdA o MdL o esta en data/personas.json, y
+    // el nombre de otro equipo que va DENTRO del de una persona del club («Perez, Juan» en «Garcia Perez, Juan»):
+    // la busqueda es por subcadena y daria la fuga en la ficha de la nuestra.
+    const clave = (n) => n.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const privado = construir('2026-27').privado;
+    const delClub = new Set([
+      ...privado.flatMap((p) => p.equipos.filter((e) => nuestros.has(e.equipo)).flatMap((e) => e.jugadores.map((j) => clave(j.nombre)))),
+      ...JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'personas.json'), 'utf8')).personas.map((x) => clave(x.formal)),
+    ]);
+    return [...new Set(privado.flatMap((p) => p.equipos.filter((e) => !nuestros.has(e.equipo)).flatMap((e) => e.jugadores.map((j) => j.nombre))))].filter((n) => ![...delClub].some((c) => ` ${c} `.includes(` ${clave(n)} `)));
   } catch { return null; }
 }
 

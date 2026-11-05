@@ -304,7 +304,7 @@ try {
   const imp = (await sql`select tipo, por_nombre, lineas, validas, aceptadas, ignoradas from public.importaciones where tipo = 'calendario'`);
   ok(imp.length === 1 && imp[0].aceptadas === 1 && imp[0].lineas === 44 && imp[0].por_nombre === 'Gestor de pruebas', 'la importación queda registrada: quién, cuántas líneas y qué se aceptó', JSON.stringify(imp));
   // varios cambios: aceptar todos / ignorar
-  const varios = modif.split('\n').map((l) => (l.startsWith('G2;5;') ? l.replace(';12:45;', ';13:00;') : l.startsWith('G1;3;') ? l.replace(/;1$/, ';2') : l.startsWith('G1;5;') ? l.replace('09:00', '09:30') : l)).join('\n');
+  const varios = modif.split('\n').map((l) => (l.startsWith('G2;5;') ? l.replace(';12:45;', ';13:00;') : l.startsWith('G1;3;') ? l.replace(/;1$/, ';2') : l.startsWith('G1;5;') ? l.replace(/;\d{2}:\d{2};/, ';09:30;') : l)).join('\n');   // la J5 de MdA, a las 09:30 (sea cual sea su hora: pasó al 20/12 a las 13:30)
   await p.locator('#cal-texto').fill(varios);
   await p.getByRole('button', { name: 'Comparar' }).click();
   await p.waitForFunction(() => document.querySelector('[data-testid=titulo-resultado]')?.textContent === '3 cambios');

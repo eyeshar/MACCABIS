@@ -185,19 +185,6 @@ CATEGORIES:Entrenamiento
 TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT
-UID:mda-j5-2026-27@maccabis
-DTSTAMP:20261031T231955Z
-DTSTART;TZID=Europe/Madrid:20261115T090000
-DTEND;TZID=Europe/Madrid:20261115T101500
-SUMMARY:MdA – Nabuco TD (J5)
-LOCATION:Moratalaz · Pista 1
-DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 5.\nEqui
- pación: Coinciden colores: cambia Nabuco TD. Llevad la amarilla por si ac
- aso.\nCalendario de Maccabis: maccabis.vercel.app
-CATEGORIES:Partido
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
 UID:mdl-j5-2026-27@maccabis
 DTSTAMP:20261031T231955Z
 DTSTART;TZID=Europe/Madrid:20261115T124500
@@ -342,6 +329,19 @@ LOCATION:Pista por confirmar (Valdebernardo en obras)
 DESCRIPTION:Pista por confirmar: el calendario se actualiza cuando se fije.
  \nCalendario de Maccabis: maccabis.vercel.app
 CATEGORIES:Entrenamiento
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+UID:mda-j5-2026-27@maccabis
+DTSTAMP:20261031T231955Z
+DTSTART;TZID=Europe/Madrid:20261220T133000
+DTEND;TZID=Europe/Madrid:20261220T144500
+SUMMARY:MdA – Nabuco TD (J5)
+LOCATION:Moratalaz · Pista 1
+DESCRIPTION:MdA · Liga Municipal de Moratalaz\, grupo 1\, jornada 5.\nEqui
+ pación: Coinciden colores: cambia Nabuco TD. Llevad la amarilla por si ac
+ aso.\nCalendario de Maccabis: maccabis.vercel.app
+CATEGORIES:Partido
 TRANSP:OPAQUE
 END:VEVENT
 BEGIN:VEVENT

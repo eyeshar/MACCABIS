@@ -104,7 +104,9 @@ console.log('\n== Proximo partido');
 const prox = (h, e) => A.proximoPartido(cal, h, e);
 ok(prox('2026-10-06', 'MDA').jornada === 2 && prox('2026-10-06', 'MDL').jornada === 2, 'el 06/10 el proximo de MdA y MdL es la J2');
 ok(prox('2026-10-18', 'MDA').jornada === 2, 'el dia del partido todavia cuenta como proximo');
-ok(prox('2026-11-01', 'MDA').jornada === 5, 'salta la jornada de descanso (J4 de MdA)');
+// La J5 de MdA paso del 15/11 al 20/12 (cambio del calendario oficial, rutina A del 05/11/2026): tras el descanso de la J4,
+// el siguiente por fecha es la J6 (22/11).
+ok(prox('2026-11-01', 'MDA').jornada === 6, 'salta la jornada de descanso (J4 de MdA) y va por fecha: la J6, porque la J5 pasó al 20/12');
 ok(prox('2027-06-01', 'MDA') === null, 'acabada la liga: null');
 
 console.log('\n== Copias de la plataforma');

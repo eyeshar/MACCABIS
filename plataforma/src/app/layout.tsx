@@ -5,7 +5,9 @@ import { Suspense } from "react";
 import Cabecera from "@/components/nav/Cabecera";
 import SesionProvider, { SCRIPT_SESION } from "@/components/nav/Sesion";
 import RastroNavegacion from "@/components/nav/RastroNavegacion";
+import Analitica from "@/components/analitica/Analitica";
 import { URL_PRODUCCION, esVistaPrevia } from "@/lib/indexacion";
+import { ANALITICA_ACTIVA } from "@/lib/analitica";
 import "./globals.css";
 
 // Tipos del redisenio (D76). next/font los sirve desde el propio dominio: la CSP sigue en font-src 'self'.
@@ -48,6 +50,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </SesionProvider>
         <Suspense fallback={null}><RastroNavegacion /></Suspense>
         <RegistroSW />
+        {/* D188: Web Analytics de Vercel, lista pero apagada (NEXT_PUBLIC_ANALITICA=1 la enciende al compilar). */}
+        {ANALITICA_ACTIVA && <Analitica />}
       </body>
     </html>
   );

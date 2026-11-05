@@ -60,6 +60,7 @@
     "pruebas:procesos": "node pruebas/procesos_ocultos.mjs",
     "pruebas:destino": "node pruebas/destino.mjs",
     "pruebas:destino-pila": "node pruebas/destino_pila.mjs",
+    "pruebas:analitica": "node pruebas/analitica.mjs",
     "pruebas:sin-correos": "node pruebas/sin_correos.mjs",
     "pruebas:eventos-pantallas": "node pruebas/eventos_pantallas.mjs",
     "pruebas:fuente-eventos": "node pruebas/fuente_eventos.mjs",
@@ -126,6 +127,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.1",
+    "@vercel/analytics": "2.0.1",
     "exceljs": "^4.4.0",
     "next": "^16.4.4",
     "react": "19.2.4",

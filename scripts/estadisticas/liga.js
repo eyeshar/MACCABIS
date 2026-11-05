@@ -36,6 +36,7 @@ const { leerHojaLiga, validarSumas } = require('./leer_hoja_liga');
 const { normEquipo, pyRound, nombreTitulo } = require('./util');
 const CONFIG = require('./temporadas.json');
 const GRUPOS_FASE = require('./grupos_fase.json');
+const jornadasAjenas = require('./jornadas_ajenas');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const AVISO_CLASIFICACION = 'Clasificación calculada con las Bases del 47 JDM a partir de las hojas de estadística; pendiente de contrastar con la oficial (las incomparecencias restan puntos y no generan hoja, D29).';
@@ -102,6 +103,8 @@ function identificarHoja(temporada, fichero) {
 function leerFuentes(temporada, ctx) {
   const base = path.join(ROOT, ctx.cfg.carpeta);
   const partidos = [], errores = [];
+  let porHoja = null;
+  const registro = () => porHoja || (porHoja = jornadasAjenas.porHoja(jornadasAjenas.leer(temporada)));
   const lee = (dir, fn) => fs.existsSync(path.join(base, dir))
     ? fs.readdirSync(path.join(base, dir)).filter(f => /\.xlsx$/i.test(f)).sort().forEach(f => fn(path.join(base, dir, f))) : null;
 
@@ -112,7 +115,16 @@ function leerFuentes(temporada, ctx) {
       const m = path.basename(f).match(/^liga_J(\d+|--)_(G\d+)_/i);
       if (!m) throw new Error(`${path.basename(f)}: el nombre no lleva jornada y grupo (liga_J01_G1_...).`);
       if (m[2].toUpperCase() !== g.clave) throw new Error(`${path.basename(f)}: el nombre dice ${m[2]} pero el calendario dice ${g.clave}.`);
-      partidos.push({ grupo: g, jornada: m[1] === '--' ? null : +m[1], hoja: h, propio: false });
+      let jornada = m[1] === '--' ? null : +m[1];
+      // Grupos ajenos (D186): la jornada de una copia sin ella (J--) sale de data/jornadas_grupos_ajenos_<temporada>.json.
+      const reg = g.ajeno ? registro().get(path.basename(f)) : null;
+      if (reg) {
+        if (reg.grupo !== g.clave || normEquipo(reg.local) !== normEquipo(h.local) || normEquipo(reg.visitante) !== normEquipo(h.visitante))
+          throw new Error(`${path.basename(f)}: en ${path.basename(jornadasAjenas.fichero(temporada))} es ${reg.grupo} ${reg.local} - ${reg.visitante}, pero la hoja es ${g.clave} ${h.local} - ${h.visitante}.`);
+        if (jornada != null && jornada !== reg.jornada) throw new Error(`${path.basename(f)}: el nombre dice la J${jornada} y ${path.basename(jornadasAjenas.fichero(temporada))} la J${reg.jornada}.`);
+        jornada = reg.jornada;
+      }
+      partidos.push({ grupo: g, jornada, hoja: h, propio: false });
     } catch (e) { errores.push(e.message); }
   });
   lee('hojas', f => {
@@ -315,7 +327,7 @@ function construir(temporada) {
   };
   const privado = [];
   // Los grupos ajenos (D183, D184) van solo a lo PRIVADO (Supabase, con sesión): sus partidos por jugador en `privado` y su
-  // clasificación calculada en `ajenos`. Nunca a `publico` (data/liga_<temporada>.json, GitHub Pages). Sin jornada: la hoja no la trae.
+  // clasificación calculada en `ajenos`. Nunca a `publico` (data/liga_<temporada>.json, GitHub Pages). La jornada, del nombre de la copia o de data/jornadas_grupos_ajenos_<temporada>.json (D186).
   const ajenos = {};
   for (const g of Object.values(ctx.grupos)) {
     const mios = partidos.filter(p => p.grupo === g);

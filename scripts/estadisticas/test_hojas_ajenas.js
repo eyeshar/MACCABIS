@@ -95,6 +95,63 @@ const escribe = (dir, nombre, bytes) => { fs.mkdirSync(dir, { recursive: true })
   ok(nuestro.errores.length > 0 && nuestro.avisos.length === 0, '6. hoja descuadrada en G1/G2: error (para la rutina)');
   ok(ajeno.errores.length === 0 && ajeno.avisos.length > 0, '6b. hoja descuadrada en G3-G6: solo aviso');
 
+  // 7. Jornada de G3-G6 (D186): del registro de descargas de la rutina A (jornadas_hojas.csv en la carpeta de Drive) y, si el
+  //    partido ya estaba, de data/jornadas_grupos_ajenos_<temporada>.json (aquí, uno temporal).
+  fs.writeFileSync(mapa, JSON.stringify({ '2026-27': { G5: { nombre: 'SAB TAR G1 (prueba)', equipos: ['EQUIPO UNO', 'EQUIPO DOS', 'EQUIPO TRES', 'EQUIPO CUATRO'] } } }));
+  const datos = path.join(tmp('datos'), 'jornadas.json');
+  fs.writeFileSync(datos, JSON.stringify({ temporada: '2026-27', nota: '', partidos: [], jornadas: [] }));
+  process.env.MACCABIS_JORNADAS_AJENAS = datos;
+  const ja = require('./jornadas_ajenas');
+  const { contexto } = require('./liga');
+  const CAB = 'archivo;grupo;jornada;local;visitante\n';
+  const d8 = tmp('drive-reg'), base8 = tmp('base8');
+  escribe(d8, 'estadisticaPartido_10112026.xlsx', hoja('EQUIPO UNO', 'EQUIPO DOS', 61, 40, '26/27'));
+  escribe(d8, 'estadisticaPartido_10112026 (1).xlsx', hoja('EQUIPO TRES', 'EQUIPO CUATRO', 52, 49, '26/27'));
+  fs.writeFileSync(path.join(d8, ja.MANIFIESTO), CAB + 'estadisticaPartido_10112026.xlsx;G5;4;EQUIPO UNO;EQUIPO DOS\n;SAB TAR G1 (prueba);J4;Equipo Tres;Equipo Cuatro\n');
+  r = await recoger({ temporada: '2026-27', desde: d8, recursivo: [d8], base: base8, sinAsistencia: true, estricto: true, log: () => {} });
+  const nombres = r.plan.map(p => p.nombre).sort();
+  ok(nombres.length === 2 && nombres.every(n => /^liga_J04_G5_/.test(n)), `7. con el registro de descargas, la copia lleva su jornada (por el nombre del fichero y, sin él, por el partido y el nombre del grupo) (${nombres.join(', ')})`);
+  copiar(r.plan, { base: base8, log: () => {} });
+  ja.anotar('2026-27', r.plan.map(p => p.registro).filter(Boolean), contexto('2026-27').grupos);
+  let reg = ja.leer('2026-27');
+  ok(reg.partidos.length === 2 && reg.partidos.every(p => p.jornada === 4 && p.comprobado === true && /^liga_J04_G5_/.test(p.hoja) && !('marcador' in p)),
+    '7b. y queda anotada en el fichero de datos (sin marcador)');
+  ok(reg.jornadas.length === 1 && reg.jornadas[0].descansa === null, '7c. con 4 equipos y 2 partidos no descansa nadie');
+
+  // Sin registro: se copia igual como J-- y se avisa, también con --no-interactivo (no para la rutina).
+  const d9 = tmp('drive-sin');
+  escribe(d9, 'estadisticaPartido_17112026.xlsx', hoja('EQUIPO UNO', 'EQUIPO TRES', 44, 39, '26/27'));
+  r = await recoger({ temporada: '2026-27', desde: d9, recursivo: [d9], base: base8, sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
+  ok(!(r instanceof Error) && r.plan.length === 1 && /^liga_J--_G5_/.test(r.plan[0].nombre) && !r.plan[0].registro && r.avisos.some(a => /sin jornada/.test(a)),
+    '7d. sin registro: se copia como J-- y avisa, sin parar la rutina');
+
+  // Ya en el fichero de datos (la misma hoja con otro contenido, p. ej. corregida): toma esa jornada; si el registro dice otra, duda.
+  const d10 = tmp('drive-otra');
+  escribe(d10, 'estadisticaPartido_18112026.xlsx', hoja('EQUIPO UNO', 'EQUIPO DOS', 61, 41, '26/27'));
+  r = await recoger({ temporada: '2026-27', desde: d10, recursivo: [d10], base: tmp('base10'), sinAsistencia: true, estricto: true, log: () => {} });
+  ok(r.plan.length === 1 && /^liga_J04_G5_/.test(r.plan[0].nombre) && !r.plan[0].registro, '7e. un partido que ya está en el fichero de datos toma de ahí su jornada (y no se anota dos veces)');
+  fs.writeFileSync(path.join(d10, ja.MANIFIESTO), CAB + 'estadisticaPartido_18112026.xlsx;G5;5;EQUIPO UNO;EQUIPO DOS\n');
+  r = await recoger({ temporada: '2026-27', desde: d10, recursivo: [d10], base: tmp('base11'), sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
+  ok(r instanceof Error && /lo tiene en la J04, no en la J05/.test(r.message), `7f. el registro y el fichero de datos no coinciden: duda (${r.message})`);
+
+  // El registro apunta a otro partido para ese fichero: duda.
+  const d11 = tmp('drive-mal');
+  escribe(d11, 'estadisticaPartido_19112026.xlsx', hoja('EQUIPO DOS', 'EQUIPO CUATRO', 50, 30, '26/27'));
+  fs.writeFileSync(path.join(d11, ja.MANIFIESTO), CAB + 'estadisticaPartido_19112026.xlsx;G5;5;EQUIPO TRES;EQUIPO UNO\n');
+  r = await recoger({ temporada: '2026-27', desde: d11, recursivo: [d11], base: tmp('base12'), sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
+  ok(r instanceof Error && /pero la hoja es G5 EQUIPO DOS - EQUIPO CUATRO/.test(r.message), '7g. el registro dice otro partido para ese fichero: duda');
+
+  // Un equipo que ya juega esa jornada: duda.
+  fs.writeFileSync(path.join(d11, ja.MANIFIESTO), CAB + 'estadisticaPartido_19112026.xlsx;G5;4;EQUIPO DOS;EQUIPO CUATRO\n');
+  r = await recoger({ temporada: '2026-27', desde: d11, recursivo: [d11], base: tmp('base13'), sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
+  ok(r instanceof Error && /no puede ser de la J04/.test(r.message), '7h. un equipo que ya juega esa jornada: duda');
+
+  // Un registro mal escrito: duda (no se adivina).
+  fs.writeFileSync(path.join(d11, ja.MANIFIESTO), CAB + 'estadisticaPartido_19112026.xlsx;G9;x;EQUIPO DOS;EQUIPO CUATRO\n');
+  r = await recoger({ temporada: '2026-27', desde: d11, recursivo: [d11], base: tmp('base14'), sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
+  ok(r instanceof Error && /grupo desconocido/.test(r.message), '7i. una línea del registro con un grupo desconocido: duda');
+
+  delete process.env.MACCABIS_JORNADAS_AJENAS;
   delete process.env.MACCABIS_GRUPOS_FASE;
   console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo bien.');
   process.exit(fallos ? 1 : 0);

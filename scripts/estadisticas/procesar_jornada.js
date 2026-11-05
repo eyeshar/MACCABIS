@@ -9,6 +9,8 @@
  *   npm run jornada -- --desde <carpeta> (busca en otra carpeta en vez de Descargas; la de Drive se suma igual)
  *   npm run jornada -- --drive <carpeta> (otra ruta para la carpeta de Drive; también MACCABIS_HOJAS_DRIVE; --sin-drive la quita)
  *   npm run jornada -- --jornada N       (las hojas de liga donde no jugamos son de la jornada N)
+ *   (G3-G6, D186: la jornada sale del registro de descargas jornadas_hojas.csv de la carpeta de Drive y queda en
+ *    data/jornadas_grupos_ajenos_<temporada>.json; sin ella, J-- y aviso)
  *   npm run jornada -- --dry             (sólo dice qué haría)
  *   npm run jornada -- --no-interactivo  (para la rutina A automática, D66: ante cualquier duda PARA con código
  *                                        distinto de 0, deshace las copias y no escribe nada; sin ficheros
@@ -52,6 +54,7 @@ const { copiaSegura } = require('../lib/copia_segura');
 const { leerActa } = require('./leer_acta');
 const { leerHoja } = require('./leer_hoja');
 const liga = require('./liga');
+const jornadasAjenas = require('./jornadas_ajenas');
 const { normEquipo } = require('./util');
 const CONFIG = require('./temporadas.json');
 
@@ -141,6 +144,7 @@ async function recoger(o) {
   const yaEnJornada = hojasPorJornada(BASE, cfg);
   const huellas = {}, enPlanContenido = new Map();   // huellas de contenido de lo ya cargado (carga perezosa)
   const enPlan = new Map();                                // md5 -> origen (duplicados dentro de la propia carpeta)
+  const ajenas = { manifiesto: null, datos: null, nuevos: [] };   // jornada de las hojas de G3-G6 (D186), carga perezosa
   const descarta = (origen, motivo) => { descartes.push({ origen, motivo }); log(`  = ${origen}: ${motivo}`); };
   const duda = msg => { if (o.estricto) throw new Error(msg); log(`  ! ${msg}`); };
   const aviso = msg => { avisos.push(msg); log(`  ! ${msg}`); };    // ni con --no-interactivo para
@@ -205,10 +209,34 @@ async function recoger(o) {
     if (id && id.etiquetaOk && !id.nuestro) {
       const que = `hoja de liga ${id.grupo.clave} ${id.hoja.local} - ${id.hoja.visitante}`;
       if (repetido(f, que)) continue;
-      if (id.grupo.ajeno) {                                  // sin calendario: la jornada es opcional (no bloquea nada)
-        const jorA = o.jornadaForzada ? J(o.jornadaForzada) : 'J--';
-        plan.push({ origen: f, ruta: ruta(f), destino: 'liga', nombre: `liga_${jorA}_${id.grupo.clave}_${slug(id.hoja.local)}_vs_${slug(id.hoja.visitante)}_${md5(ruta(f)).slice(0, 8)}.xlsx`,
-          que: `liga ${id.grupo.clave} (${id.grupo.nombre})${o.jornadaForzada ? ' ' + jorA : ', jornada sin asignar'}: ${id.hoja.local} - ${id.hoja.visitante}` });
+      if (id.grupo.ajeno) {
+        // Sin calendario (D186): la jornada sale de --jornada, del registro de descargas de la rutina A (jornadas_hojas.csv
+        // en la carpeta de Drive) o, si el partido ya estaba, de data/jornadas_grupos_ajenos_<temporada>.json. Sin ninguna,
+        // se copia igual (J--) y se avisa: no bloquea nada.
+        const { local, visitante } = id.hoja, g = id.grupo.clave;
+        if (!ajenas.manifiesto) {
+          ajenas.manifiesto = jornadasAjenas.leerManifiesto(ruta(jornadasAjenas.MANIFIESTO), id.ctx.grupos);
+          ajenas.manifiesto.errores.forEach(duda);
+          ajenas.datos = jornadasAjenas.leer(o.temporada);
+        }
+        const enReg = jornadasAjenas.enManifiesto(ajenas.manifiesto.entradas, path.basename(f), g, local, visitante);
+        if (enReg && (enReg.grupo !== g || normEquipo(enReg.local) !== normEquipo(local) || normEquipo(enReg.visitante) !== normEquipo(visitante)))
+          duda(`${f}: ${jornadasAjenas.MANIFIESTO} (línea ${enReg.linea}) dice ${enReg.grupo} ${enReg.local} - ${enReg.visitante}, pero la hoja es ${g} ${local} - ${visitante}.`);
+        const enDatos = jornadasAjenas.buscar(ajenas.datos, g, local, visitante);
+        const jor = o.jornadaForzada || (enReg && enReg.grupo === g ? enReg.jornada : null) || (enDatos ? enDatos.jornada : null);
+        if (jor && enDatos && enDatos.jornada !== jor)
+          duda(`${f} (${g} ${local} - ${visitante}): ${path.basename(jornadasAjenas.fichero(o.temporada))} lo tiene en la ${J(enDatos.jornada)}, no en la ${J(jor)}.`);
+        if (jor && !enDatos) {
+          const choca = [...ajenas.datos.partidos, ...ajenas.nuevos].find(p => p.grupo === g && p.jornada === jor && [p.local, p.visitante].some(n => [local, visitante].some(m => normEquipo(n) === normEquipo(m))));
+          if (choca) duda(`${f} (${g} ${local} - ${visitante}) no puede ser de la ${J(jor)}: ${choca.local} - ${choca.visitante} ya es de esa jornada.`);
+        }
+        if (!jor) aviso(`${f} (${g} ${local} - ${visitante}): sin jornada (no está en ${jornadasAjenas.MANIFIESTO} de la carpeta de Drive). Se carga igual como J--; apúntala en data/jornadas_grupos_ajenos_${o.temporada}.json.`);
+        const jorA = jor ? J(jor) : 'J--';
+        const nombre = `liga_${jorA}_${g}_${slug(local)}_vs_${slug(visitante)}_${md5(ruta(f)).slice(0, 8)}.xlsx`;
+        const registro = jor && !enDatos ? { grupo: g, jornada: jor, local, visitante, hoja: nombre, comprobado: true } : null;
+        if (registro) ajenas.nuevos.push(registro);
+        plan.push({ origen: f, ruta: ruta(f), destino: 'liga', nombre, registro,
+          que: `liga ${g} (${id.grupo.nombre})${jor ? ' ' + jorA : ', jornada sin asignar'}: ${local} - ${visitante}` });
         continue;
       }
       const jor = o.jornadaForzada || liga.jornadaPorFecha(id.grupo, o.hoy);
@@ -355,6 +383,12 @@ if (require.main === module) {
     try { nuevos = copiar(plan, { base: BASE, dry: DRY, copiados }); }
     catch (e) { para(e.message, `\nERROR: ${e.message}\nNo se ha tocado nada más.`); }
     if (!DRY) console.log(nuevos ? `${nuevos} fichero(s) nuevo(s) copiados a ${cfg.carpeta}/.` : 'No hay ficheros nuevos (ya estaban todos copiados).');
+    // D186: la jornada de cada hoja nueva de G3-G6 queda en data/jornadas_grupos_ajenos_<temporada>.json (se publica con data/).
+    const registros = plan.map(p => p.registro).filter(Boolean);
+    if (registros.length) {
+      if (DRY) console.log(`  [dry] ${registros.length} partido(s) de G3-G6 irían a ${path.relative(ROOT, jornadasAjenas.fichero(TEMPORADA))}.`);
+      else console.log(`${jornadasAjenas.anotar(TEMPORADA, registros, liga.contexto(TEMPORADA).grupos)} partido(s) de G3-G6 anotados en ${path.relative(ROOT, jornadasAjenas.fichero(TEMPORADA))}.`);
+    }
 
     const antes = fs.existsSync(path.join(ROOT, 'data', `season_${TEMPORADA}.json`))
       ? JSON.parse(fs.readFileSync(path.join(ROOT, 'data', `season_${TEMPORADA}.json`), 'utf8')) : { partidos: [], box: {} };

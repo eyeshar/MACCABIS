@@ -1,11 +1,11 @@
 {
  "temporada": "2026-27",
  "fuente": "CALENDARIO DE PRUEBA (D185): rivales y datos inventados, fechas fijas. Las pruebas nunca leen el calendario real (data/calendario_<temporada>.json ni la tabla real de eventos).",
- "hoy": "2026-10-12",
+ "hoy": "2026-10-19",
  "casos": {
   "descanso": "MdA J4 (08/11): descansa.",
   "aplazado": "MdA J5: en el calendario base, 15/11 a las 09:00; el cambio oficial la pasa al 20/12 a las 13:30.",
-  "hora_y_pista": "MdL J2 (18/10): de las 10:15 en la pista 1 a las 11:30 en la pista 2.",
+  "hora_y_pista": "MdL J4 (08/11): de las 11:30 en la pista 2 a las 12:45 en la pista 3.",
   "local_a_visitante": "MdL J5 (15/11): de local a visitante; el rival viste de negro (choca): como local cambian ellos, como visitante nos toca la amarilla."
  },
  "cambios_prueba": [
@@ -25,14 +25,14 @@
   {
    "caso": "hora_y_pista",
    "equipo": "MDL",
-   "jornada": 2,
+   "jornada": 4,
    "antes": {
-    "hora": "10:15",
-    "campo": "1"
-   },
-   "despues": {
     "hora": "11:30",
     "campo": "2"
+   },
+   "despues": {
+    "hora": "12:45",
+    "campo": "3"
    }
   },
   {
@@ -47,6 +47,28 @@
    }
   }
  ],
+ "rivales_liga": {
+  "Falta Técnica FC": "28500",
+  "Halcones Ficticios": "Enfermos del Aro",
+  "LOBOS DE PRUEBA": "LITROS DE MAHOU",
+  "Pivots Imaginarios": "LOS KHINKIS RUSOS",
+  "Triple Doble FC": "NABUCO TD",
+  "REBOTE FICTICIO": "VALLEKAS BASKET",
+  "Tapón Inventado": "WILD BOYS",
+  "Bandeja de Prueba": "RIF",
+  "Zona Imaginaria": "TROPICALEROS",
+  "Contraataque Ficticio": "Chavalitros",
+  "CLUB INVENTADO": "CHUPITIMANGUIS",
+  "Alero Inventado": "MEJORADA 2012 C.B..",
+  "Base de Prueba": "Quinto Tiempo",
+  "Pick and Roll Ficticio": "Suanzes Motor",
+  "MATE IMAGINARIO": "TRASCENDEDORES C.B.",
+  "Canasta de Prueba": "VANNER",
+  "Rebotadores Inventados": "CASTAÑAZO",
+  "TIRO LIBRE FICTICIO": "Craps",
+  "Bote de Prueba": "F.T. FLOPPERS",
+  "Personal Imaginaria": "La Cancha Roja"
+ },
  "equipos": {
   "MDA": {
    "grupo": "JDM MOR DOM MAÑ BC SEN MAS G1",

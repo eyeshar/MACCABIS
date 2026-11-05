@@ -101,6 +101,7 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
 - **Coste cero:** solo `ubuntu-latest` (nunca servidores grandes ni de pago), `concurrency` por rama con
   `cancel-in-progress` y `timeout-minutes`. **Es gratis porque el repositorio es público**; si algún día pasa a privado,
   hay que revisarlo antes (gastaría la bolsa de minutos de la cuenta, que comparte Web TCPC). No tocar `salud-avisos.yml`.
+- **Nunca el calendario real ni el reloj real (D185):** las pruebas usan el calendario de prueba (`plataforma/pruebas/fixtures/calendario_prueba.json`, `infra/calendario.mjs`) y «hoy» fijo (`infra/reloj.mjs`: 12/10/2026; `fechas_prueba.hoyMadrid()`, `ahoraPrueba()`). Nada de `data/calendario_…`, `new Date()` para «hoy» ni `now()` en el SQL de una prueba (usar `pruebas.ahora()`). Un caso nuevo de calendario va a `cambios_prueba`.
 - **Sin esperas fijas** (`waitForTimeout`): tras un clic que guarda, `trasAccion(p, () => …click())`; para algo de la
   interfaz, `hasta(() => condición)` (`plataforma/pruebas/infra/esperas.mjs`).
 - **Capturas:** solo si se pide (`PRUEBAS_CAPTURAS=1`, o una suite suelta con `npm run pruebas:<suite>`; en las tandas,

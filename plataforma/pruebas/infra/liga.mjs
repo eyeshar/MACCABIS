@@ -26,3 +26,26 @@ export function ligaParaPruebas(temporada) {
     return { privado: [], publico, calendario: calendarioLiga() };
   }
 }
+
+/**
+ * Para las suites que cruzan el calendario con la liga (Scouting, «Tu próximo partido», páginas de partido): cada rival
+ * INVENTADO del calendario de prueba pasa a ser su equipo de la liga (`rivales_liga` del calendario de prueba: el que
+ * sustituye, con sus mismos colores), escrito como en la liga cargada, en la tabla de eventos de la pila. Siempre el mismo
+ * emparejamiento. Devuelve el mapa {inventado: equipo de la liga} (D185).
+ */
+export async function rivalesDeLiga(sql, liga) {
+  const cal = calendarioPrueba();
+  const clave = (t) => String(t).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const equiposLiga = Object.values(liga.publico.grupos).flatMap((g) => g.clasificacion.map((c) => c.equipo));
+  const mapa = {};
+  for (const [inventado, real] of Object.entries(cal.rivales_liga)) {
+    const enLiga = equiposLiga.find((e) => clave(e) === clave(real));
+    if (!enLiga) throw new Error(`rivalesDeLiga: «${real}» no está en la liga cargada`);
+    mapa[inventado] = enLiga;
+  }
+  for (const [inventado, real] of Object.entries(mapa)) await sql`update public.eventos set rival = ${real} where tipo = 'liga' and rival = ${inventado}`;
+  return mapa;
+}
+
+/** El calendario de prueba con los rivales de la liga de `rivalesDeLiga`. */
+export const conRivalesDeLiga = (mapa, cal = calendarioPrueba()) => ({ ...cal, partidos: cal.partidos.map((p) => (p.rival && mapa[p.rival] ? { ...p, rival: mapa[p.rival] } : p)) });

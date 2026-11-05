@@ -1,4 +1,4 @@
-// Reloj de las pruebas (D185): «hoy» es siempre el mismo, el lunes 12/10/2026 a las 10:00 (Madrid), para que ninguna
+// Reloj de las pruebas (D185): «hoy» es siempre el mismo, el lunes 19/10/2026 a las 10:00 (Madrid), para que ninguna
 // prueba cambie de resultado según el día en que se ejecuta. Va con el calendario de prueba (fixtures/calendario_prueba.json),
 // cuyas fechas están puestas respecto a este día. El reloj avanza desde ese instante al ritmo normal (las esperas y los
 // plazos de unos minutos siguen funcionando).
@@ -12,8 +12,8 @@
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export const HOY_PRUEBA = '2026-10-12';
-export const INSTANTE_PRUEBA = '2026-10-12T10:00:00+02:00';
+export const HOY_PRUEBA = '2026-10-19';
+export const INSTANTE_PRUEBA = '2026-10-19T10:00:00+02:00';
 
 const PRELOAD = pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), 'reloj_node.mjs')).href;
 

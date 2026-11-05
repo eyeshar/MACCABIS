@@ -6,7 +6,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
 import { lanzar, matarArbol, olvidarProceso } from './procesos.mjs';
-import { exigirLibres } from './puertos.mjs';
+import { estaLibre, exigirLibres } from './puertos.mjs';
 import { entornoReloj, relojNavegador } from './reloj.mjs';
 import { fileURLToPath } from 'node:url';
 
@@ -121,3 +121,13 @@ async function sinCapturas(nav) {
 
 /** Capturas de pantalla: en las tandas (rapidas/completas) y en GitHub Actions no se hacen (PRUEBAS_CAPTURAS=0). */
 export const conCapturas = () => process.env.PRUEBAS_CAPTURAS !== '0' && !process.env.CI;
+
+/** Espera (como mucho `ms`) a que `puerto` quede libre: tras parar la web, Linux tarda un poco en soltarlo. */
+export async function esperarLibre(puerto, ms = 20000) {
+  const fin = Date.now() + ms;
+  for (;;) {
+    if (await estaLibre(puerto)) return;
+    if (Date.now() > fin) return exigirLibres({ app: puerto });   // dice quién lo tiene y para
+    await new Promise((r) => setTimeout(r, 300));
+  }
+}

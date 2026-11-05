@@ -125,8 +125,8 @@ console.log('\n== Cambios oficiales del calendario de prueba (lo que acepta la r
     `de local a visitante (MdL J5 contra ${rival('MDL', 5)}, negro): de «cambian ellos» a «nos toca cambiar»`);
   ok(A.lineaConvocatoria(equip, p2('MDL', 5)) === 'Coinciden colores: cambiamos nosotros, de amarillo.' + FIN, 'de local a visitante: la línea de la convocatoria pasa a «cambiamos nosotros»');
   const hp = cambioPrueba('hora_y_pista');
-  ok(p2('MDL', 2).hora === hp.despues.hora && p2('MDL', 2).campo === hp.despues.campo && !A.avisoPartido(equip, p2('MDL', 2)).hay,
-    `cambio de hora y pista (MdL J2: ${hp.antes.hora} pista ${hp.antes.campo} → ${hp.despues.hora} pista ${hp.despues.campo}): el aviso no cambia (sin choque)`);
+  ok(p2(hp.equipo, hp.jornada).hora === hp.despues.hora && p2(hp.equipo, hp.jornada).campo === hp.despues.campo && A.avisoPartido(equip, p2(hp.equipo, hp.jornada)).tipo === a(hp.equipo, hp.jornada).tipo,
+    `cambio de hora y pista (MdL J${hp.jornada}: ${hp.antes.hora} pista ${hp.antes.campo} → ${hp.despues.hora} pista ${hp.despues.campo}): el aviso de equipación no cambia`);
 }
 ok(prox('2027-06-01', 'MDA') === null, 'acabada la liga: null');
 

@@ -60,6 +60,9 @@ function quien(puerto) {
 }
 
 /** Comprueba que todos los puertos estén libres; si alguno no, para la prueba con un mensaje claro (código 3). */
+/** ¿Está libre el puerto? (sin parar nada; para esperar a que se suelte). */
+export const estaLibre = async (p) => !(await escucha(p)) && (await sePuedeAbrir(p));
+
 export async function exigirLibres(puertos) {
   for (const [nombre, p] of Object.entries(puertos)) {
     if ((await escucha(p)) || !(await sePuedeAbrir(p))) {

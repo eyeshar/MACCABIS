@@ -27,7 +27,8 @@ fs.mkdirSync(SALIDA, { recursive: true });
 const require = createRequire(import.meta.url);
 const A = require(path.join(REPO, 'data', 'avisos_equipacion.js'));
 const equip = equipacionesPrueba();
-const cal = calendarioPrueba();
+// D185: el calendario de prueba con los rivales de la liga (Scouting cruza el calendario con la liga): rivalesDeLiga().
+let cal = calendarioPrueba();
 const hoyReal = hoyMadrid();
 const bonito = (n) => A.equipoPorNombre(equip, n)?.nombre ?? n;
 // "MdA – Litros de Mahou" (el local primero, como en Mi zona y en el calendario oficial)
@@ -62,11 +63,13 @@ try {
 
   // =================== PLATAFORMA
   const { sql, url, anonKey } = pila;
-  const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
+  const { ligaParaPruebas, rivalesDeLiga, conRivalesDeLiga } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
   const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
-  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
+  const liga = ligaParaPruebas('2026-27');
+  await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   const { cargarEventos } = await import('./infra/calendario.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
+  cal = conRivalesDeLiga(await rivalesDeLiga(sql, liga));   // D185
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;

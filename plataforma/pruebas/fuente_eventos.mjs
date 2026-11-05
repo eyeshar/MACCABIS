@@ -12,7 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { aplicarCambiosEnBase, calendarioPrueba, cambioPrueba, cargarEventos } from './infra/calendario.mjs';
-import { arrancarApp } from './infra/app.mjs';
+import { arrancarApp, esperarLibre } from './infra/app.mjs';
 import { PUERTOS } from './infra/puertos.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -67,14 +67,16 @@ try {
   const tocados = await aplicarCambiosEnBase(sql);
   // La web se arranca otra vez (sin compilar): empieza sin la caché de 60 s del calendario público.
   app.parar();
+  await esperarLibre(PUERTO);
   app = await arrancarApp({ puerto: PUERTO, env, compilarAntes: false });
   const despues = await (await fetch(`${APP}/calendario.ics`)).text();
   const ev1 = eventos(despues);
   const ap = cambioPrueba('aplazado'), hp = cambioPrueba('hora_y_pista');
+  const kHp = `${hp.equipo.toLowerCase()}-j${hp.jornada}`;
   ok(ev1['mda-j5'].includes(`DTSTART;TZID=Europe/Madrid:${ap.despues.fecha.replace(/-/g, '')}T${hhmm(ap.despues.hora)}00`) && !despues.includes(`${ap.antes.fecha.replace(/-/g, '')}T${hhmm(ap.antes.hora)}00`),
     `aplazado: la J5 de MdA pasa del ${ap.antes.fecha} al ${ap.despues.fecha} a las ${ap.despues.hora}`);
-  ok(ev1['mdl-j2'].includes(`T${hhmm(hp.despues.hora)}00`) && ev1['mdl-j2'].includes(`LOCATION:Moratalaz · Pista ${hp.despues.campo}`),
-    `hora y pista: la J2 de MdL pasa a las ${hp.despues.hora} en la pista ${hp.despues.campo}`);
+  ok(ev1[kHp].includes(`T${hhmm(hp.despues.hora)}00`) && ev1[kHp].includes(`LOCATION:Moratalaz · Pista ${hp.despues.campo}`),
+    `hora y pista: la J${hp.jornada} de MdL pasa a las ${hp.despues.hora} en la pista ${hp.despues.campo}`);
   const rivalJ5 = nombreDe(ev0['mdl-j5']);
   ok(ev0['mdl-j5'].includes(`SUMMARY:MdL – ${rivalJ5} (J5)`) && ev1['mdl-j5'].includes(`SUMMARY:${rivalJ5} – MdL (J5)`),
     'de local a visitante: la J5 de MdL pasa a «rival – MdL» (el local primero)');

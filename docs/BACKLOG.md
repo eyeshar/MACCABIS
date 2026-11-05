@@ -503,6 +503,10 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [x] Limpieza menor hecha: quitados `URL_DASHBOARD`, `URL_ESTADISTICAS` y `estadisticas()` de `plataforma/src/lib`.
 - [x] `pruebas:cuadre` compara con la web antigua de GitHub Pages, que ahora redirige: si se vuelve a necesitar, ejecutarlo con las redirecciones desactivadas (copia temporal de `data/redireccion_web.js` con `ESTA_ACTIVA = false`). _(Auditoría 30/10: hecho, `plataforma/pruebas/liga_cuadre.mjs` ya desactiva la redirección por sí sola.)_
 
+## Pruebas sin el calendario real (D185, 05/11/2026)
+- [x] **Calendario y reloj de prueba fijos** (`test/calendario-prueba`): ninguna prueba lee `data/calendario_…`, sus copias ni la tabla real de eventos; «hoy» fijo en base, web y navegador; casos a propósito (descanso, aplazamiento, hora y pista, local a visitante). PR abierto, espera el OK de Iván.
+- [ ] Si se añade una suite nueva que necesite una fecha concreta o un cambio de calendario: añadirlo a `fixtures/calendario_prueba.json` (`cambios_prueba`), nunca leer el real ni `new Date()` para «hoy» (usar `fechas_prueba.hoyMadrid()` / `reloj.ahoraPrueba()`).
+
 ## Hojas de los grupos ajenos (D183, 04/11/2026)
 - [x] ~~**Llevar G3–G6 (DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2) a Supabase y a «Scouting rivales»**~~ **Hecho en `feat/grupos-ajenos` (D184, 05/11/2026):** los mismos datos que G1/G2, solo con sesión; Liga consolidada con selector de grupo (sin «Todos») y Scouting de cualquier equipo de G1–G6.
 - [x] **Aplicar `20261105100000_liga_grupos_ajenos` en el real** _(hecho el 05/11/2026 con D111 y cargado con `db:liga`; ver ESTADO)_ (D111: volcado, permisos en solo lectura antes y después, recuento de auth) y cargar con `npm run db:liga`, con el OK de Iván, antes de mergear el PR de D184.

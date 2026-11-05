@@ -19,7 +19,7 @@ import { cargarEventos } from './infra/calendario.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS } from './infra/puertos.mjs';
 import { gotoConSesion } from './infra/esperas.mjs';
-import { ligaParaPruebas } from './infra/liga.mjs';
+import { ligaParaPruebas, rivalesDeLiga } from './infra/liga.mjs';
 import { cargarLiga } from '../scripts/cargar_liga.mjs';
 import { diaLargo, diaMes, sumarDias } from '../src/lib/dias.ts';
 import { hoyMadrid } from './fechas_prueba.mjs';
@@ -35,6 +35,7 @@ try {
   await cargarEventos(sql, { log: () => {} });
   const liga = ligaParaPruebas('2026-27');
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
+  await rivalesDeLiga(sql, liga);   // D185: Scouting cruza el calendario (de prueba) con la liga
   const gente = await personas(pila, {
     jugadores: [['esteban-jon', 'jugador@pruebas.local']],
     gestores: [['Gestor de pruebas', 'gestor@pruebas.local']],

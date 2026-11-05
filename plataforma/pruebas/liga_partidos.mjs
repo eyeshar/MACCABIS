@@ -22,7 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
-import { ligaParaPruebas } from './infra/liga.mjs';
+import { ligaParaPruebas, rivalesDeLiga } from './infra/liga.mjs';
 import { arrancarApp, abrirNavegador, compilar } from './infra/app.mjs';
 import { PUERTOS } from './infra/puertos.mjs';
 import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
@@ -68,8 +68,10 @@ const pila = await arrancar();
 let app, nav;
 try {
   const { sql, url, anonKey } = pila;
-  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
+  const ligaPrueba = ligaParaPruebas('2026-27');
+  await cargarLiga(sql, ligaPrueba, '2026-27', { log: () => {} });
   await (await import('./infra/calendario.mjs')).cargarEventos(sql, { log: () => {} }); // Scouting lee el calendario de la tabla de eventos (D162)
+  await rivalesDeLiga(sql, ligaPrueba);   // D185: los rivales del calendario de prueba, equipos de la liga
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;

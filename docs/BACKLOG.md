@@ -504,7 +504,7 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [x] `pruebas:cuadre` compara con la web antigua de GitHub Pages, que ahora redirige: si se vuelve a necesitar, ejecutarlo con las redirecciones desactivadas (copia temporal de `data/redireccion_web.js` con `ESTA_ACTIVA = false`). _(Auditoría 30/10: hecho, `plataforma/pruebas/liga_cuadre.mjs` ya desactiva la redirección por sí sola.)_
 
 ## Pruebas sin el calendario real (D185, 05/11/2026)
-- [x] **Calendario y reloj de prueba fijos** (`test/calendario-prueba`): ninguna prueba lee `data/calendario_…`, sus copias ni la tabla real de eventos; «hoy» fijo en base, web y navegador; casos a propósito (descanso, aplazamiento, hora y pista, local a visitante). PR abierto, espera el OK de Iván.
+- [x] **Calendario y reloj de prueba fijos** (`test/calendario-prueba`): ninguna prueba lee `data/calendario_…`, sus copias ni la tabla real de eventos; «hoy» fijo en base, web y navegador; casos a propósito (descanso, aplazamiento, hora y pista, local a visitante). PR #56 mezclado (`76e56d1`, 05/11/2026); producción en READY, sin el alias de prueba.
 - [ ] Si se añade una suite nueva que necesite una fecha concreta o un cambio de calendario: añadirlo a `fixtures/calendario_prueba.json` (`cambios_prueba`), nunca leer el real ni `new Date()` para «hoy» (usar `fechas_prueba.hoyMadrid()` / `reloj.ahoraPrueba()`).
 
 ## Hojas de los grupos ajenos (D183, 04/11/2026)

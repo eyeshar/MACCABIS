@@ -32,6 +32,8 @@ const nextConfig: NextConfig = {
           "@/data/calendario.json": "./pruebas/fixtures/calendario_prueba.json",
           "@/data/entrenos.json": "./pruebas/fixtures/entrenos_prueba.json",
           "@/data/equipaciones.json": "./pruebas/fixtures/equipaciones_prueba.json",
+          // D186: quien descansa y los huecos de los grupos ajenos, de los equipos sinteticos de pruebas:grupos-ajenos.
+          "@/data/jornadasAjenas.json": "./pruebas/fixtures/jornadas_ajenas_prueba.json",
         } }
       : {}),
   },

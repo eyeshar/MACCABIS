@@ -10,15 +10,10 @@ import type { FuenteCalendario } from "./publico";
 
 export const TEMPORADA = "2026-27";
 
-// Grupos de la fase (D183, D184): los nuestros (G1 de MdA, G2 de MdL) y los cuatro ajenos. Nunca se mezclan grupos ajenos
-// entre si ni con los nuestros: se carga y se ensena un grupo ajeno cada vez.
-export const GRUPOS_NUESTROS = ["G1", "G2"] as const;
-export const GRUPOS_AJENOS = ["G3", "G4", "G5", "G6"] as const;
-export const GRUPOS_TODOS: readonly string[] = [...GRUPOS_NUESTROS, ...GRUPOS_AJENOS];
-const NOMBRE_GRUPO: Record<string, string> = { G1: "MdA", G2: "MdL", G3: "DOM MAÑ G3", G4: "DOM TAR", G5: "SAB TAR G1", G6: "SAB TAR G2" };
-/** «G3 · DOM MAÑ G3», «G1 · MdA». */
-export const etiquetaGrupo = (g: string) => (NOMBRE_GRUPO[g] ? `${g} · ${NOMBRE_GRUPO[g]}` : g);
-export const esGrupoNuestro = (g: string) => (GRUPOS_NUESTROS as readonly string[]).includes(g);
+// Grupos de la fase (D183, D184, D186): los nuestros (G1 de MdA, G2 de MdL) y los cuatro ajenos. Se carga solo lo de los grupos
+// marcados en Liga consolidada; en el ranking cada grupo va en su propia clasificacion (nunca se mezclan).
+export { GRUPOS_AJENOS, GRUPOS_NUESTROS, GRUPOS_TODOS, esGrupoNuestro, etiquetaGrupo } from "./gruposLiga";
+import { GRUPOS_NUESTROS, type PartidoLiga } from "./gruposLiga";
 
 import { agruparJugadores, type FilaHoja, type JugadorLiga } from "./jugadoresLiga";
 export type { JugadorLiga } from "./jugadoresLiga";
@@ -74,6 +69,14 @@ export async function cargarClasificacion(supabase: SupabaseClient, grupos: read
     .eq("temporada", TEMPORADA).in("grupo", grupos).order("grupo").order("pos");
   if (c.error) throw new Error(c.error.message);
   return (c.data ?? []) as FilaClasificacion[];
+}
+
+/** Partidos de esos grupos (liga_partidos, con sesion: RLS), con marcador, jornada y fecha si se conoce (D186). */
+export async function cargarPartidos(supabase: SupabaseClient, grupos: readonly string[]): Promise<PartidoLiga[]> {
+  const r = await supabase.from("liga_partidos").select("id, grupo, jornada, fecha, local, visitante, pts_local, pts_visitante")
+    .eq("temporada", TEMPORADA).in("grupo", grupos).order("grupo").order("jornada").order("local");
+  if (r.error) throw new Error(r.error.message);
+  return (r.data ?? []) as PartidoLiga[];
 }
 
 /** `grupos`: solo las hojas y la clasificacion de esos grupos; por defecto, los nuestros (G1 y G2): los ajenos (D184) solo

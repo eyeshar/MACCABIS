@@ -4,8 +4,9 @@ import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { bonito, dec, mmss, textoDorsales, type FilaTabla } from "@/lib/jugadoresLiga";
 import { comparadorTabla, pasaMinimo, separarPorMinimo, textoMenos, type Columna, type Minimo } from "@/lib/ordenLideres";
+import { etiquetaGrupo, textoGrupos } from "@/lib/gruposLiga";
 
-// Tabla "Todos los jugadores" de la liga (G1 + G2, con MdA y MdL). Con sesion de jugador o gestor (D73, D162): son datos de terceros.
+// Tabla "Todos los jugadores" de los grupos marcados en Liga consolidada (D186; por defecto G1 + G2, con MdA y MdL). Con sesion de jugador o gestor (D73, D162): son datos de terceros.
 // Solo lo que trae la hoja de la FBM; nada estimado.
 
 const POR_PAGINA = 25;
@@ -47,11 +48,13 @@ function celda(j: FilaTabla, k: Columna, pp: boolean): string {
 const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const clave = (j: FilaTabla) => `${j.grupo}|${j.equipo}|${j.nombre}`;
 
-export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo, grupo: grupoPagina = null }: {
+export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo, grupos }: {
   sumadas: FilaTabla[]; fichas: FilaTabla[]; equipos: { grupo: string; equipo: string }[]; fichasEquipo: Record<string, string>;
-  grupo?: string | null;   // D184: el grupo elegido arriba (G1...G6); null = «Nuestros grupos» (G1 + G2)
+  grupos: string[];   // D186: los grupos marcados arriba (G1…G6, como minimo uno)
 }) {
-  const ajeno = !!grupoPagina && grupoPagina !== "G1" && grupoPagina !== "G2";
+  const ambos = grupos.includes("G1") && grupos.includes("G2");   // quien dobla suma sus dos fichas
+  const hayNuestro = grupos.includes("G1") || grupos.includes("G2");
+  const varios = grupos.length > 1;
   const [col, setCol] = useState<Columna>("pts");
   const [dir, setDir] = useState<1 | -1>(-1);
   const [porPartido, setPorPartido] = useState(false);
@@ -73,9 +76,9 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo,
 
   const equiposVisibles = equipos.filter((e) => grupo === "todos" || e.grupo === grupo);
   const min: Minimo = minimo === "auto" || minimo === "todos" ? minimo : Number(minimo);
-  // Con un filtro de grupo o de equipo (y sin "Solo Maccabis") quien dobla se ve con SOLO la ficha de ese grupo o equipo; si no, con las dos sumadas.
-  // Con un grupo elegido arriba (D184), siempre las fichas de ese grupo: «sumadas» ya son esas fichas.
-  const filas = !grupoPagina && !soloMaccabis && (grupo !== "todos" || equipo !== "todos") ? fichas : sumadas;
+  // Con MdA y MdL marcados y un filtro de grupo o de equipo (sin "Solo Maccabis"), quien dobla se ve con SOLO la ficha de ese grupo o
+  // equipo; si no, con las dos sumadas. Con uno solo de los dos marcado (D186), siempre su ficha de ese grupo: «sumadas» ya son esas.
+  const filas = ambos && !soloMaccabis && (grupo !== "todos" || equipo !== "todos") ? fichas : sumadas;
   const filtrosActivos = [grupo !== "todos", equipo !== "todos", soloMaccabis, buscar.trim() !== "", minimo !== "auto"].filter(Boolean).length;
 
   // D169: con el minimo "Automatico", quien no llega no se oculta: va debajo, tras «Menos de N partidos». Con un minimo
@@ -109,10 +112,12 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo,
   return (
     <section className="tarjeta lg-todos" aria-label="Todos los jugadores">
       <h2 style={{ marginTop: 0 }}>Todos los jugadores</h2>
-      {!grupoPagina ? (
+      {ambos && grupos.length === 2 ? (
         <p className="lg-sub">{sumadas.length} personas de la liga (G1 + G2, con MdA y MdL). «dobla» = sale con MdA y con MdL: una sola fila con las dos fichas sumadas; si filtras por grupo o equipo, solo la ficha de ese grupo o equipo.</p>
+      ) : ambos ? (
+        <p className="lg-sub">{sumadas.length} personas de {textoGrupos(grupos)}. «dobla» = sale con MdA y con MdL: una sola fila con las dos fichas sumadas; si filtras por grupo o equipo, solo la ficha de ese grupo o equipo.</p>
       ) : (
-        <p className="lg-sub">{sumadas.length} personas del {grupoPagina}.{!ajeno && ` «dobla» = sale con MdA y con MdL: aquí, solo su ficha del ${grupoPagina}.`}</p>
+        <p className="lg-sub">{sumadas.length} personas {varios ? "de" : "del"} {textoGrupos(grupos)}.{hayNuestro && ` «dobla» = sale con MdA y con MdL: aquí, solo su ficha del ${grupos.includes("G1") ? "G1" : "G2"}.`}</p>
       )}
 
       <div className="lg-barra">
@@ -134,10 +139,11 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo,
       </div>
 
       <div id="lg-filtros-panel" className={`lg-filtros lg-filtros-panel${filtrosAbiertos ? " abierto" : ""}`}>
-        {!grupoPagina && (
+        {varios && (
           <label>Grupo
             <select value={grupo} onChange={(e) => { cambiar(setGrupo)(e.target.value); setEquipo("todos"); }}>
-              <option value="todos">Todos</option><option value="G1">G1 · MdA</option><option value="G2">G2 · MdL</option>
+              <option value="todos">Todos los marcados</option>
+              {grupos.map((g) => <option key={g} value={g}>{etiquetaGrupo(g)}</option>)}
             </select>
           </label>
         )}
@@ -156,7 +162,7 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo,
             <option value="2">2 o más</option><option value="3">3 o más</option><option value="5">5 o más</option>
           </select>
         </label>
-        {!ajeno && <label className="lg-check"><input type="checkbox" checked={soloMaccabis} onChange={(e) => cambiar(setSoloMaccabis)(e.target.checked)} /> Solo Maccabis</label>}
+        {hayNuestro && <label className="lg-check"><input type="checkbox" checked={soloMaccabis} onChange={(e) => cambiar(setSoloMaccabis)(e.target.checked)} /> Solo Maccabis</label>}
       </div>
 
       <p className="lg-nota" role="status">

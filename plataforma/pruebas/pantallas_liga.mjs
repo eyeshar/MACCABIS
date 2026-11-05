@@ -181,9 +181,9 @@ try {
     await p.locator('details.lg-ranking > summary').click();
     ok((await p.locator('details.lg-ranking tbody tr').count()) === CON_PARTIDOS, `liga: el ranking desplegado tiene los ${CON_PARTIDOS} equipos con partidos`, String(await p.locator('details.lg-ranking tbody tr').count()));
     ok(await sinDesbordar(), 'liga: desplegado, sin desbordamiento de pagina');
-    const cab = await p.$$eval('details.lg-ranking thead th', (ths) => ths.filter((t) => t.getBoundingClientRect().width > 0).map((t) => t.textContent.trim()));
+    const cab = await p.$$eval('details.lg-ranking [data-testid="ranking-G1"] thead th', (ths) => ths.filter((t) => t.getBoundingClientRect().width > 0).map((t) => t.textContent.trim()));
     const cabEsperada = movil ? ['#', 'Equipo', 'G-P', '%V', 'Dif/p'] : ['#', 'Equipo', 'PJ', 'G', 'P', '%V', 'PF/p', 'PC/p', 'Dif/p', 'Pts'];
-    ok(JSON.stringify(cab) === JSON.stringify(cabEsperada), movil ? 'ranking movil: solo #, Equipo+grupo, G-P, %V y Dif/p' : 'ranking escritorio: todas las columnas', cab.join(','));
+    ok(JSON.stringify(cab) === JSON.stringify(cabEsperada), movil ? 'ranking movil (una clasificación por grupo, D186): solo #, Equipo, G-P, %V y Dif/p' : 'ranking escritorio (una clasificación por grupo, D186): todas las columnas', cab.join(','));
     const sinScroll = await p.evaluate(() => { const d = document.querySelector('details.lg-ranking .tabla-desplazable'); return d.scrollWidth <= d.clientWidth + 1; });
     ok(sinScroll, 'ranking: la tabla cabe, sin scroll horizontal');
     const celdasEnPantalla = await p.evaluate(() => [...document.querySelectorAll('details.lg-ranking tr')].every((tr) => [...tr.children].filter((c) => c.getBoundingClientRect().width > 0).every((c) => c.getBoundingClientRect().right <= window.innerWidth + 1)));

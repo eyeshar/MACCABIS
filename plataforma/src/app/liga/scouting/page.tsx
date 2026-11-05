@@ -123,7 +123,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
               ))}
             </select>
             <button className="boton" type="submit">Ver</button>
-            <Link className="boton boton-claro" href={ajeno ? `/liga/consolidada?grupo=${grupo}#todos` : "/liga/consolidada#todos"}>{ajeno ? `Ver todos los jugadores del ${grupo}` : "Ver todos los jugadores de la liga"}</Link>
+            <Link className="boton boton-claro" href={ajeno ? `/liga/consolidada?grupos=${grupo}#todos` : "/liga/consolidada#todos"}>{ajeno ? `Ver todos los jugadores del ${grupo}` : "Ver todos los jugadores de la liga"}</Link>
           </div>
         </form>
       </section>

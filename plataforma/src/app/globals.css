@@ -830,3 +830,34 @@ a.nv-entrada[aria-current="page"] { background: var(--panel-3); box-shadow: inse
 .cl-tarjeta { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 .cl-linea { margin: 0; font-size: 0.85rem; line-height: 1.35; color: var(--tinta-suave); overflow-wrap: anywhere; }
 .cl-mas { font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; min-height: var(--toque); }
+
+/* ===== Liga consolidada (D186): selector de varios grupos, pestañas y Resultados por jornada ===== */
+.lg-grupos { border: 0; margin: 0; padding: 0; min-width: 0; }
+.lg-grupos .lg-check, .lg-form > .lg-form-fila .lg-check { display: inline-flex; align-items: center; gap: 6px; min-height: var(--toque); padding: 0 12px; border: 1px solid var(--borde-fuerte); border-radius: 8px; background: var(--campo); font-weight: 600; cursor: pointer; }
+.lg-grupos .lg-check:has(input:checked) { background: var(--amarillo-claro); border-color: var(--c-amarillo); }
+.lg-otros { margin-top: 8px; }
+.lg-otros > summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; font-weight: 700; }
+.lg-form button[disabled] { opacity: 0.5; cursor: not-allowed; }
+.lg-pestanas { display: flex; gap: 0; margin: 14px 0 6px; border-bottom: 2px solid var(--borde); flex-wrap: wrap; }
+.lg-pestanas a { display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 16px; color: var(--tinta-suave); text-decoration: none; font-weight: 700; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.lg-pestanas a.on { color: var(--tinta); border-bottom-color: var(--c-amarillo); }
+.lg-pestanas a:hover, .lg-pestanas a:focus-visible { background: var(--amarillo-claro); }
+.lg-ranking-grupo { margin-top: 12px; }
+.lg-ranking-grupo h3 { margin: 0 0 6px; font-size: 1rem; }
+.lg-jornadas { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
+.lg-jornadas a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 40px; padding: 0 10px; border: 1px solid var(--borde-fuerte); border-radius: 999px; color: var(--tinta); text-decoration: none; font-weight: 700; background: var(--tarjeta); }
+.lg-jornadas a.on { background: var(--c-amarillo); color: var(--c-sobre-acento); border-color: var(--c-amarillo); }
+.lg-res-grupo { margin-bottom: 10px; }
+.lg-res-grupo h3 { margin: 0 0 8px; font-size: 1rem; }
+.lg-res-lista { display: grid; gap: 4px; }
+.lg-res-partido, .lg-res-hueco { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 8px; min-height: var(--toque); padding: 4px 8px; border-radius: 8px; color: var(--tinta); text-decoration: none; }
+.lg-res-partido:hover, .lg-res-partido:focus-visible { background: var(--amarillo-claro); }
+.lg-res-partido > span:first-child, .lg-res-hueco > span:first-child { text-align: right; }
+.lg-res-partido .gana { font-weight: 700; }
+.lg-res-marcador { font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 56px; text-align: center; }
+.lg-res-partido small { color: var(--tinta-suave); }
+.lg-res-hueco { color: var(--tinta-suave); }
+@media (max-width: 639px) {
+  .lg-res-partido, .lg-res-hueco { grid-template-columns: 1fr auto 1fr; font-size: 0.92rem; }
+  .lg-res-partido small, .lg-res-hueco .etiqueta { grid-column: 1 / -1; text-align: center; }
+}

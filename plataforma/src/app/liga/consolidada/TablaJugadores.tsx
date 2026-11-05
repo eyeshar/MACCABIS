@@ -47,9 +47,11 @@ function celda(j: FilaTabla, k: Columna, pp: boolean): string {
 const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const clave = (j: FilaTabla) => `${j.grupo}|${j.equipo}|${j.nombre}`;
 
-export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo }: {
+export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo, grupo: grupoPagina = null }: {
   sumadas: FilaTabla[]; fichas: FilaTabla[]; equipos: { grupo: string; equipo: string }[]; fichasEquipo: Record<string, string>;
+  grupo?: string | null;   // D184: el grupo elegido arriba (G1...G6); null = «Nuestros grupos» (G1 + G2)
 }) {
+  const ajeno = !!grupoPagina && grupoPagina !== "G1" && grupoPagina !== "G2";
   const [col, setCol] = useState<Columna>("pts");
   const [dir, setDir] = useState<1 | -1>(-1);
   const [porPartido, setPorPartido] = useState(false);
@@ -72,7 +74,8 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
   const equiposVisibles = equipos.filter((e) => grupo === "todos" || e.grupo === grupo);
   const min: Minimo = minimo === "auto" || minimo === "todos" ? minimo : Number(minimo);
   // Con un filtro de grupo o de equipo (y sin "Solo Maccabis") quien dobla se ve con SOLO la ficha de ese grupo o equipo; si no, con las dos sumadas.
-  const filas = !soloMaccabis && (grupo !== "todos" || equipo !== "todos") ? fichas : sumadas;
+  // Con un grupo elegido arriba (D184), siempre las fichas de ese grupo: «sumadas» ya son esas fichas.
+  const filas = !grupoPagina && !soloMaccabis && (grupo !== "todos" || equipo !== "todos") ? fichas : sumadas;
   const filtrosActivos = [grupo !== "todos", equipo !== "todos", soloMaccabis, buscar.trim() !== "", minimo !== "auto"].filter(Boolean).length;
 
   // D169: con el minimo "Automatico", quien no llega no se oculta: va debajo, tras «Menos de N partidos». Con un minimo
@@ -106,7 +109,11 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
   return (
     <section className="tarjeta lg-todos" aria-label="Todos los jugadores">
       <h2 style={{ marginTop: 0 }}>Todos los jugadores</h2>
-      <p className="lg-sub">{sumadas.length} personas de la liga (G1 + G2, con MdA y MdL). «dobla» = sale con MdA y con MdL: una sola fila con las dos fichas sumadas; si filtras por grupo o equipo, solo la ficha de ese grupo o equipo.</p>
+      {!grupoPagina ? (
+        <p className="lg-sub">{sumadas.length} personas de la liga (G1 + G2, con MdA y MdL). «dobla» = sale con MdA y con MdL: una sola fila con las dos fichas sumadas; si filtras por grupo o equipo, solo la ficha de ese grupo o equipo.</p>
+      ) : (
+        <p className="lg-sub">{sumadas.length} personas del {grupoPagina}.{!ajeno && ` «dobla» = sale con MdA y con MdL: aquí, solo su ficha del ${grupoPagina}.`}</p>
+      )}
 
       <div className="lg-barra">
         <div className="lg-conmutador" role="group" aria-label="Totales o por partido">
@@ -127,11 +134,13 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
       </div>
 
       <div id="lg-filtros-panel" className={`lg-filtros lg-filtros-panel${filtrosAbiertos ? " abierto" : ""}`}>
-        <label>Grupo
-          <select value={grupo} onChange={(e) => { cambiar(setGrupo)(e.target.value); setEquipo("todos"); }}>
-            <option value="todos">Todos</option><option value="G1">G1 · MdA</option><option value="G2">G2 · MdL</option>
-          </select>
-        </label>
+        {!grupoPagina && (
+          <label>Grupo
+            <select value={grupo} onChange={(e) => { cambiar(setGrupo)(e.target.value); setEquipo("todos"); }}>
+              <option value="todos">Todos</option><option value="G1">G1 · MdA</option><option value="G2">G2 · MdL</option>
+            </select>
+          </label>
+        )}
         <label>Equipo
           <select value={equipo} onChange={(e) => cambiar(setEquipo)(e.target.value)}>
             <option value="todos">Todos</option>
@@ -147,7 +156,7 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo 
             <option value="2">2 o más</option><option value="3">3 o más</option><option value="5">5 o más</option>
           </select>
         </label>
-        <label className="lg-check"><input type="checkbox" checked={soloMaccabis} onChange={(e) => cambiar(setSoloMaccabis)(e.target.checked)} /> Solo Maccabis</label>
+        {!ajeno && <label className="lg-check"><input type="checkbox" checked={soloMaccabis} onChange={(e) => cambiar(setSoloMaccabis)(e.target.checked)} /> Solo Maccabis</label>}
       </div>
 
       <p className="lg-nota" role="status">

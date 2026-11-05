@@ -314,8 +314,10 @@ function construir(temporada) {
     grupos: {},
   };
   const privado = [];
-  // Los grupos ajenos (D183) se leen y validan arriba, pero no se publican ni se cargan a Supabase todavía.
-  for (const g of Object.values(ctx.grupos).filter(g => !g.ajeno)) {
+  // Los grupos ajenos (D183, D184) van solo a lo PRIVADO (Supabase, con sesión): sus partidos por jugador en `privado` y su
+  // clasificación calculada en `ajenos`. Nunca a `publico` (data/liga_<temporada>.json, GitHub Pages). Sin jornada: la hoja no la trae.
+  const ajenos = {};
+  for (const g of Object.values(ctx.grupos)) {
     const mios = partidos.filter(p => p.grupo === g);
     const juegos = mios.map(p => {
       const h = p.hoja, [l, v] = h.equipos;
@@ -337,6 +339,11 @@ function construir(temporada) {
     juegos.sort((a, b) => a.jornada - b.jornada || a.local.nombre.localeCompare(b.local.nombre, 'es'));
     const equipos = [...g.equipos.values()];
     const tabla = clasificar(equipos, juegos, cfgLiga, (cfgLiga.puntos_oficiales || {})[g.clave]);
+    if (g.ajeno) {
+      ajenos[g.clave] = { nombre: g.nombre, clasificacion: tabla.map((x, i) => ({ pos: i + 1, equipo: x.nombre, nuestro: false, pj: x.pj, g: x.g, p: x.p, pf: x.pf, pc: x.pc,
+        pts: x.pts_pendiente ? null : x.pts, ...(x.np ? { pts_fuente: x.pts_fuente || 'pendiente de la oficial' } : {}) })) };
+      continue;
+    }
     const jornadas = [...new Set(juegos.map(j => j.jornada))].sort((a, b) => a - b);
     const descansan = {};
     for (const jn of jornadas) {
@@ -364,7 +371,7 @@ function construir(temporada) {
   for (const p of privado) avisos.push(...nombresRepetidos(p));
   // D132: nunca menos jornadas, hojas ni partidos que lo ya publicado (vale para liga.js, npm run jornada y db:liga).
   errores.push(...comprobarNoRetrocede(publico, temporada));
-  return { publico, privado, errores, avisos, fuentes: partidos.length };
+  return { publico, privado, ajenos, errores, avisos, fuentes: partidos.length };
 }
 
 module.exports = { construir, validarPartidos, nombresRepetidos, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };

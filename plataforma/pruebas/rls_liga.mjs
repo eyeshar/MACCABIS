@@ -2,7 +2,8 @@
 // Pruebas de RLS de las tablas de liga (D73, D162), contra la pila local (Postgres + PostgREST reales con
 // NUESTRAS migraciones, ver pila.mjs). Los datos por jugador de otros equipos son de terceros: los leen los
 // gestores y, desde D162, los jugadores con sesion y ficha; anon y una cuenta sin ficha, nada. liga_calendario
-// sigue solo para gestores. Tambien prueba el .revertir.sql de D162 (vuelve a solo gestores) y que se reaplica.
+// sigue solo para gestores. Tambien prueba el .revertir.sql de D162 (vuelve a solo gestores) y que se reaplica, y los
+// grupos ajenos de la fase (G3-G6, D184): se cargan con su grupo y sin jornada, con la misma RLS, y su .revertir.sql.
 //
 //   npm run pruebas:liga
 //
@@ -43,7 +44,9 @@ try {
   const esperadoJug = partidos.reduce((s, p) => s + p.equipos.reduce((t, e) => t + e.jugadores.length, 0), 0);
   // Cifras leidas de los datos (crecen cada jornada): partidos cargados, jornadas y partidos nuestros (MdA o MdL).
   const N = partidos.length;
-  const jornadas = [...new Set(partidos.map((p) => p.jornada))].sort((a, b) => a - b);
+  const jornadas = [...new Set(partidos.filter((p) => p.grupo === 'G1' || p.grupo === 'G2').map((p) => p.jornada))].sort((a, b) => a - b);
+  const AJENOS = partidos.filter((p) => p.grupo !== 'G1' && p.grupo !== 'G2').length;   // G3-G6, sin jornada (D184)
+  const FILAS_CLAS = Object.values(liga.publico.grupos).reduce((n, g) => n + g.clasificacion.length, 0) + Object.values(liga.ajenos).reduce((n, g) => n + g.clasificacion.length, 0);
   const NUESTROS = partidos.filter((p) => ['MdA', 'MdL'].some((n) => n === p.local || n === p.visitante)).length;
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   const cuenta = async () => ({
@@ -51,7 +54,10 @@ try {
     j: (await sql`select count(*)::int n from public.liga_estadisticas_jugador`)[0].n,
   });
   let c = await cuenta();
-  ok(c.p === N && N > 0, `${N} partidos cargados (J${jornadas.join(', J')} de G1 y G2)`, String(c.p));
+  ok(c.p === N && N > 0, `${N} partidos cargados (J${jornadas.join(', J')} de G1 y G2 y ${AJENOS} de G3-G6)`, String(c.p));
+  const sinJornada = await sql`select grupo, count(*)::int n from public.liga_partidos where jornada is null group by grupo order by grupo`;
+  ok(AJENOS > 0 && sinJornada.every((x) => x.grupo !== 'G1' && x.grupo !== 'G2') && sinJornada.reduce((n, x) => n + x.n, 0) === AJENOS,
+    `los ${AJENOS} partidos de G3-G6 van sin jornada (${sinJornada.map((x) => `${x.grupo} ${x.n}`).join(', ')}); G1 y G2, todos con jornada`);
   ok(c.j === esperadoJug, `${esperadoJug} filas de jugador cargadas`, String(c.j));
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   c = await cuenta();
@@ -84,7 +90,7 @@ try {
   ok(new Set(filas.map((f) => f.nombre.concat('|', f.equipos.join()))).size === filas.length, 'ninguna persona aparece dos veces en la tabla');
   const porEquipo = new Map();
   for (const j of jug) porEquipo.set(`${j.grupo}|${j.equipo}`, (porEquipo.get(`${j.grupo}|${j.equipo}`) ?? 0) + j.pts);
-  ok(clas.filter((c) => c.pj > 0).every((c) => porEquipo.get(`${c.grupo}|${c.equipo}`) === c.pf), 'la suma de PTS por jugador de cada equipo = sus puntos a favor en la clasificacion calculada (20 equipos con partidos)');
+  ok(clas.filter((c) => c.pj > 0).every((c) => porEquipo.get(`${c.grupo}|${c.equipo}`) === c.pf), `la suma de PTS por jugador de cada equipo = sus puntos a favor en la clasificacion calculada (${clas.filter((c) => c.pj > 0).length} equipos con partidos, G1-G6)`);
   const sumaTabla = filas.reduce((n, f) => n + f.pts, 0), sumaFichas = jug.reduce((n, j) => n + j.pts, 0), sumaPF = clas.reduce((n, c) => n + c.pf, 0);
   ok(sumaTabla === sumaFichas && sumaFichas === sumaPF, `los dobladores no se cuentan dos veces: PTS de la tabla (${sumaTabla}) = PTS de las fichas (${sumaFichas}) = puntos a favor de toda la liga (${sumaPF})`);
   for (const f of dobles) {
@@ -102,6 +108,13 @@ try {
     ok(grupoEntero === clas.filter((c) => c.grupo === grupo).reduce((n, c) => n + c.pf, 0), `con filtro de grupo ${grupo}, la suma de PTS de todas las filas = puntos a favor de todo el grupo`);
   }
   ok(fichas.filter((f) => f.dobla).every((f) => f.soloFicha === f.equipos[0]), 'las fichas de los dobladores van marcadas con su ficha (MdA o MdL)');
+  // D184: cada grupo ajeno, por separado, cuadra consigo mismo y no comparte jugadores con los nuestros
+  for (const g of ['G3', 'G4', 'G5', 'G6']) {
+    const delGrupo = fichas.filter((f) => f.grupo === g);
+    const pfGrupo = clas.filter((c) => c.grupo === g).reduce((n, c) => n + c.pf, 0);
+    ok(delGrupo.length > 0 && delGrupo.reduce((n, f) => n + f.pts, 0) === pfGrupo && delGrupo.every((f) => !f.dobla && !f.nuestro),
+      `${g}: ${delGrupo.length} jugadores; suma de PTS = puntos a favor del grupo (${pfGrupo}); nadie «dobla» ni es nuestro`);
+  }
 
   console.log('\n== RLS: anonimo e intruso no ven nada; el jugador con ficha, todo menos liga_calendario (D162)');
   const tablas = ['liga_partidos', 'liga_estadisticas_jugador', 'v_liga_jugadores', 'liga_calendario', 'liga_clasificacion'];
@@ -115,6 +128,13 @@ try {
     ok(vacioOBloqueado(await api(`/${t}?select=*`)), `anonimo NO lee ${t}`);
     ok(vacioOBloqueado(await api(`/${t}?select=*`, { token: tIntruso })), `un usuario sin ficha NO lee ${t}`);
   }
+  for (const t of abiertas) {
+    ok(vacioOBloqueado(await api(t === 'liga_estadisticas_jugador' ? '/liga_estadisticas_jugador?select=nombre,liga_partidos!inner(grupo)&liga_partidos.grupo=in.(G3,G4,G5,G6)' : `/${t}?select=*&grupo=in.(G3,G4,G5,G6)`)), `anonimo NO lee G3-G6 en ${t} (D184)`);
+    if (t !== 'liga_estadisticas_jugador') {
+      const x = await api(`/${t}?select=grupo&grupo=in.(G3,G4,G5,G6)&limit=1`, { token: tJugador });
+      ok(x.status === 200 && x.datos.length === 1, `un jugador con ficha lee G3-G6 en ${t} (D184)`);
+    }
+  }
   const lee = await jugadorLee();
   for (const t of abiertas) ok(lee[t], `un jugador con ficha y sesion lee ${t} (D162)`);
   ok(vacioOBloqueado(await api('/liga_calendario?select=*', { token: tJugador })), 'un jugador NO lee liga_calendario (solo gestores; ya no la lee ninguna pantalla)');
@@ -124,7 +144,7 @@ try {
   await sql`update public.jugadores set activo = true where person_id = 'esteban-jon'`;
 
   console.log('\n== RLS: el gestor lee todo');
-  for (const [t, n] of [['liga_calendario', 44], ['liga_clasificacion', 22]]) {
+  for (const [t, n] of [['liga_calendario', 44], ['liga_clasificacion', FILAS_CLAS]]) {
     const rg = await api(`/${t}?select=*`, { token: tGestor });
     ok(rg.status === 200 && rg.datos.length === n, `gestor lee ${t} (${n} filas)`, `status ${rg.status} / ${rg.datos?.length}`);
   }
@@ -181,6 +201,18 @@ try {
   await new Promise((r2) => setTimeout(r2, 600));
   const otraVez = await jugadorLee();
   ok(abiertas.every((t) => otraVez[t]), 'reaplicada: el jugador vuelve a leer la liga', JSON.stringify(otraVez));
+
+  console.log('\n== Reversion de D184 (grupos ajenos) y vuelta a aplicar');
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261105100000_liga_grupos_ajenos.revertir.sql'), 'utf8')));
+  ok((await sql`select count(*)::int n from public.liga_partidos where grupo not in ('G1', 'G2')`)[0].n === 0
+    && (await sql`select count(*)::int n from public.liga_clasificacion where grupo not in ('G1', 'G2')`)[0].n === 0, 'revertida: sin partidos ni clasificacion de G3-G6');
+  ok((await sql`select count(*)::int n from public.liga_partidos`)[0].n === N - AJENOS, `revertida: G1 y G2 intactos (${N - AJENOS} partidos)`);
+  const [{ nulo }] = await sql`select is_nullable = 'YES' as nulo from information_schema.columns where table_name = 'liga_partidos' and column_name = 'jornada'`;
+  ok(!nulo && (await sql`select 1 from supabase_migrations.schema_migrations where version = '20261105100000'`).length === 0, 'revertida: la jornada vuelve a ser obligatoria y se borra su registro');
+  await migrar(sql, { log: () => {} });
+  await cargarLiga(sql, liga, '2026-27', { log: () => {} });
+  c = await cuenta();
+  ok(c.p === N && c.j === esperadoJug, 'reaplicada y recargada: vuelven los partidos de G3-G6');
 } finally {
   await pila.parar();
 }

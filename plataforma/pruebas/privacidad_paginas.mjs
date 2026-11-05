@@ -24,14 +24,35 @@ const liga = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'liga_2026-27.js
 /** D129: la pagina de cada partido de la liga (los dos grupos). */
 const PARTIDOS = Object.values(liga.grupos).flatMap((g) => g.resultados.map((r) => `/liga/2026-27/partido/${r.id}`));
 
-/** Nombres de jugadores de OTROS equipos (de las hojas, fuera de git): no pueden salir en ninguna pagina publica (D73).
- *  Sin fuentes_fbm/ en este equipo, se omite (null). */
+/** D184: personas DEL CLUB que ademas juegan en un equipo de un grupo ajeno y salen en su hoja. Su nombre sale en lo
+ *  publico como nuestro (su ficha, la Historia), asi que no se buscan por el nombre: por cada una se comprueba que su
+ *  equipo ajeno no sale en la pagina (eso delataria sus datos de terceros). Van por person_id (data/personas.json): el
+ *  equipo ajeno se lee de las hojas al ejecutar, no se escribe aqui (el repositorio es publico). */
+const DEL_CLUB_EN_AJENOS = [
+  'calahorro-sanchez-manuel',            // juega con MdA/MdL y en un equipo de un grupo ajeno
+  'perchin-garcia-javier',               // en la Historia (25/26) y ahora en un equipo de un grupo ajeno
+  'de-carvalho-rodrigues-julio-cesar',   // la hoja ajena lo escribe sin tildes: es la misma persona que su ficha del club
+];
+
+/** Jugadores de OTROS equipos (de las hojas, fuera de git): no pueden salir en ninguna pagina publica (D73). Devuelve
+ *  { nombres, delClub }: `nombres`, los que se buscan por su nombre completo; `delClub`, las excepciones de arriba con su
+ *  equipo ajeno. Sin fuentes_fbm/ en este equipo, se omite (null). */
 function nombresRivales() {
   try {
     const { construir } = createRequire(import.meta.url)(path.join(REPO, 'scripts', 'estadisticas', 'liga.js'));
     const nuestros = new Set(['MdA', 'MdL']);
-    return [...new Set(construir('2026-27').privado.flatMap((p) => p.equipos.filter((e) => !nuestros.has(e.equipo)).flatMap((e) => e.jugadores.map((j) => j.nombre))))];
-  } catch { return null; }
+    const clave = (n) => n.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const personas = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'personas.json'), 'utf8')).personas;
+    const excepcion = new Map(DEL_CLUB_EN_AJENOS.map((id) => [clave(personas.find((x) => x.person_id === id)?.formal ?? id), id]));
+    const nombres = new Set(), delClub = new Map();
+    for (const p of construir('2026-27').privado) for (const e of p.equipos) if (!nuestros.has(e.equipo)) for (const j of e.jugadores) {
+      if (excepcion.has(clave(j.nombre))) delClub.set(excepcion.get(clave(j.nombre)), e.equipo);
+      else nombres.add(j.nombre);
+    }
+    // Sin hojas (GitHub Actions: fuentes_fbm/ esta fuera de git) no hay nada que buscar ni excepciones que comprobar.
+    if (nombres.size) for (const id of DEL_CLUB_EN_AJENOS) if (!delClub.has(id)) throw new Error(`excepción ${id} sin hoja ajena: quítala de DEL_CLUB_EN_AJENOS`);
+    return { nombres: [...nombres], delClub: [...delClub.values()] };
+  } catch (e) { if (/DEL_CLUB_EN_AJENOS/.test(e.message)) throw e; return null; }
 }
 
 /** Una ficha por jugador y temporada (todas las de GitHub Pages). */
@@ -93,7 +114,14 @@ export async function revisar({ log = console.log } = {}) {
       if (ruta.startsWith('/liga') || ruta.startsWith('/?') || ruta === '/') {
         const norm = (t) => t.toUpperCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ');
         const sube = norm(html);
-        const fuga = (terceros ?? []).find((n) => n.length > 6 && sube.includes(norm(n)));
+        // Nombre COMPLETO (D184): sin otra palabra pegada delante ni detras, para que «Perez, Juan» no case dentro de
+        // «Garcia Perez, Juan» (de otra persona). Las personas del club en un equipo ajeno: que no salga ese equipo.
+        const esc = (n) => norm(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const entero = (n) => new RegExp(`(?<![\\p{L}\\d])(?<![\\p{L}\\d] )${esc(n)}(?![\\p{L}\\d])(?! [\\p{L}\\d])`, 'u');
+        const palabra = (n) => new RegExp(`(?<![\\p{L}\\d])${esc(n)}(?![\\p{L}\\d])`, 'u');   // un equipo: palabras enteras
+        const fuga = (terceros?.nombres ?? []).find((n) => n.length > 6 && entero(n).test(sube))
+          // el equipo ajeno, solo en la temporada en curso: en las de otros años puede haber sido rival nuestro (es publico)
+          ?? (/^\/liga\/20(?!26-27)/.test(ruta) ? undefined : (terceros?.delClub ?? []).find((eq) => palabra(eq).test(sube)));
         if (fuga || /rival-por-jugador|Rival por jugador/.test(html)) { fallos++; log(`  FALLO ${ruta} -> ${fuga ? `sale un jugador de otro equipo${dato(fuga)}` : 'sale la sección «Rival por jugador» sin sesión'}`); }
       }
       // D174: sin sesion no sale ninguna «clave del partido» (ni la caja, ni la tarjeta, ni su texto) en ninguna pagina.
@@ -106,7 +134,7 @@ export async function revisar({ log = console.log } = {}) {
       if (r.status !== 200 || malos.length) { fallos++; log(`  FALLO ${ruta} -> ${r.status !== 200 ? 'estado ' + r.status : ''} ${malos.join(', ')}`); }
     }
     log(`  ${fallos ? 'FALLO' : 'OK   '} ${RUTAS.length} paginas publicas migradas: sin motivos de ausencia, niveles, DNI, telefonos, correos ni fechas de nacimiento`);
-    log(`  ${fallos ? 'FALLO' : 'OK   '} ${PARTIDOS.length} paginas de partido (D129) y el resto de la Liga, sin sesion: ni un jugador de otro equipo ${terceros ? `(${terceros.length} nombres de las hojas)` : '(sin fuentes_fbm/: solo se comprueba la seccion de gestores)'} ni la seccion «Rival por jugador»`);
+    log(`  ${fallos ? 'FALLO' : 'OK   '} ${PARTIDOS.length} paginas de partido (D129) y el resto de la Liga, sin sesion: ni un jugador de otro equipo ${terceros ? `(${terceros.nombres.length} nombres de las hojas por su nombre completo y ${terceros.delClub.length} personas del club que juegan también en un grupo ajeno, por su equipo ajeno)` : '(sin fuentes_fbm/: solo se comprueba la seccion de gestores)'} ni la seccion «Rival por jugador»`);
     const conClaves = jsonPublicosConClaves();
     if (conClaves.length) { fallos++; log(`  FALLO ficheros públicos con «claves del partido»: ${conClaves.join(', ')}`); }
     log(`  ${conClaves.length ? 'FALLO' : 'OK   '} D174: ni el HTML sin sesión de ${RUTAS.length} páginas ni los JSON públicos (data/, src/data, public/) llevan «claves del partido»`);

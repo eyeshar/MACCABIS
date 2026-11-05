@@ -7,8 +7,8 @@ import { exigirLiga } from "@/lib/sesion";
 import { AvisoCaja, Camiseta } from "@/components/ProximoPartido";
 import { avisoContra, coloresDe } from "@/lib/equipacion";
 import {
-  bonito, cargarLiga, codigoNuestro, dec, fechaCorta, masPeligrosos, minimoPartidos, mmss, nombreNuestro, porMediaPts, proximoPartido,
-  quienDobla, textoDorsales, type JugadorLiga,
+  bonito, cargarClasificacion, cargarLiga, codigoNuestro, dec, esGrupoNuestro, etiquetaGrupo, fechaCorta, GRUPOS_NUESTROS, GRUPOS_TODOS,
+  masPeligrosos, minimoPartidos, mmss, nombreNuestro, porMediaPts, proximoPartido, quienDobla, textoDorsales, type JugadorLiga,
 } from "@/lib/liga";
 import { separarPorMinimo, textoMenos } from "@/lib/ordenLideres";
 import { CajaClaves } from "@/components/liga/Claves";
@@ -60,7 +60,11 @@ function ordenar(lista: JugadorLiga[], k: Col) {
 export default async function Scouting({ searchParams }: { searchParams: Promise<Params> }) {
   const { supabase } = await exigirLiga();
   const { e, v, o } = await searchParams;
-  const liga = await cargarLiga(supabase);
+  // D184: el selector ofrece los equipos de todos los grupos (solo datos por equipo); las hojas por jugador, solo las del grupo
+  // del equipo pedido: un equipo ajeno (G3-G6) carga solo su grupo, nunca mezclado con otro.
+  const todas = await cargarClasificacion(supabase, GRUPOS_TODOS);
+  const grupoPedido = e ? todas.find((c) => c.equipo === e)?.grupo : undefined;
+  const liga = await cargarLiga(supabase, grupoPedido && !esGrupoNuestro(grupoPedido) ? [grupoPedido] : GRUPOS_NUESTROS, { clasificacion: todas });
   const { clasificacion, calendario, hoy } = liga;
   if (!clasificacion.length) {
     return (<><Volver defecto="/liga" etiqueta="Liga" /><SecH titulo="Scouting rivales" tag="Con sesión" /><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
@@ -81,13 +85,14 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
   const { llegan, debajo } = TASAS.includes(col) ? separarPorMinimo(jugadores, (j) => j.pj >= minimo) : { llegan: jugadores, debajo: [] };
   const urlOrden = (k: Col) => `/liga/scouting?${new URLSearchParams({ ...(e ? { e } : {}), ...(v ? { v } : {}), ...(k === "media" ? {} : { o: k }) })}`;
   const dobla = quienDobla(liga.jugadores);
-  const prox = elegido.nuestro ? null : proximoPartido(calendario, hoy, codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo);
+  const ajeno = !esGrupoNuestro(grupo);   // de un grupo ajeno (D184): no juega contra nosotros en esta fase
+  const prox = elegido.nuestro || ajeno ? null : proximoPartido(calendario, hoy, codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo);
   // Aviso de equipacion: con los mismos partidos de la tabla de eventos (D151, D162), como el Panel y la convocatoria.
   const aviso = prox ? avisoContra(codigoNuestro(grupo) as "MDA" | "MDL", elegido.equipo, calendario, hoy) : null;
   // D174: las claves del partido (reglas fijas sobre las hojas y el historial); de los nuestros no.
-  const claves = elegido.nuestro ? null : clavesDeEquipo(liga, grupo as "G1" | "G2", elegido.equipo);
+  const claves = elegido.nuestro || ajeno ? null : clavesDeEquipo(liga, grupo as "G1" | "G2", elegido.equipo);
   const suma = (k: "pts" | "p2a" | "p3a" | "tla" | "tli" | "faltas" | "segundos") => jugadores.reduce((s, j) => s + j[k], 0);
-  const grupos = ["G1", "G2"];
+  const grupos = GRUPOS_TODOS.filter((g) => clasificacion.some((c) => c.grupo === g));
 
   return (
     <>
@@ -112,13 +117,13 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
           <div className="lg-form-fila">
             <select id="eq" name="e" defaultValue={elegido.equipo}>
               {grupos.map((g) => (
-                <optgroup key={g} label={`${g} · ${nombreNuestro(g)}`}>
+                <optgroup key={g} label={etiquetaGrupo(g)}>
                   {clasificacion.filter((c) => c.grupo === g).map((c) => <option key={c.equipo} value={c.equipo}>{c.equipo}</option>)}
                 </optgroup>
               ))}
             </select>
             <button className="boton" type="submit">Ver</button>
-            <Link className="boton boton-claro" href="/liga/consolidada#todos">Ver todos los jugadores de la liga</Link>
+            <Link className="boton boton-claro" href={ajeno ? `/liga/consolidada?grupo=${grupo}#todos` : "/liga/consolidada#todos"}>{ajeno ? `Ver todos los jugadores del ${grupo}` : "Ver todos los jugadores de la liga"}</Link>
           </div>
         </form>
       </section>
@@ -126,7 +131,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
       <section className="tarjeta">
         <div className="lg-cab-equipo">
           <div>
-            <h2 style={{ margin: 0, fontSize: "1.5rem" }}>{elegido.equipo} <span className={`etiqueta ${grupo === "G1" ? "etiqueta-abierta" : "etiqueta-cerrada"}`}>{grupo}</span></h2>
+            <h2 style={{ margin: 0, fontSize: "1.5rem" }}>{elegido.equipo} <span className={`etiqueta ${grupo === "G1" ? "etiqueta-abierta" : "etiqueta-cerrada"}`}>{ajeno ? etiquetaGrupo(grupo) : grupo}</span></h2>
             <p className="lg-sub">
               {elegido.pos}º del grupo · {elegido.g} ganados, {elegido.p} perdidos · {elegido.pf}–{elegido.pc} ({elegido.pf - elegido.pc > 0 ? "+" : ""}{elegido.pf - elegido.pc}) ·{" "}
               {elegido.pts === null ? "pendiente de la oficial" : `${elegido.pts} pts`} <i>(clasificación calculada)</i>
@@ -145,6 +150,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
             </div>
           )}
           {elegido.nuestro && <p className="lg-sub">Es uno de los nuestros: así nos ven los rivales.</p>}
+          {ajeno && <p className="lg-sub">De otro grupo de la fase ({etiquetaGrupo(grupo)}): no juega contra nosotros en esta fase. Sin jornadas: la hoja de la FBM no la trae.</p>}
         </div>
 
         {claves && <CajaClaves res={claves} equipo={elegido.equipo} />}

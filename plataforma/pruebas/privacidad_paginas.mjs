@@ -49,7 +49,8 @@ function nombresRivales() {
       if (excepcion.has(clave(j.nombre))) delClub.set(excepcion.get(clave(j.nombre)), e.equipo);
       else nombres.add(j.nombre);
     }
-    for (const id of DEL_CLUB_EN_AJENOS) if (!delClub.has(id)) throw new Error(`excepción ${id} sin hoja ajena: quítala de DEL_CLUB_EN_AJENOS`);
+    // Sin hojas (GitHub Actions: fuentes_fbm/ esta fuera de git) no hay nada que buscar ni excepciones que comprobar.
+    if (nombres.size) for (const id of DEL_CLUB_EN_AJENOS) if (!delClub.has(id)) throw new Error(`excepción ${id} sin hoja ajena: quítala de DEL_CLUB_EN_AJENOS`);
     return { nombres: [...nombres], delClub: [...delClub.values()] };
   } catch (e) { if (/DEL_CLUB_EN_AJENOS/.test(e.message)) throw e; return null; }
 }

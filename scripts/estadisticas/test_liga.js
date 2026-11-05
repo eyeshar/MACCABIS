@@ -75,5 +75,18 @@ ok(/pendiente de contrastar con la oficial/.test(pub.clasificacion_estado), 'la 
   t = clasificar(E, juegos, cfg, { b: { pts: -1 } });
   ok(t.find(x => x.id === 'b').pts === -1 && !t.find(x => x.id === 'b').pts_pendiente && t.find(x => x.id === 'b').pts_fuente === 'oficial', 'con la clasificacion oficial anotada, se usan sus puntos');
 }
+// 5. Jornada de G3-G6 (D186): cada partido de un grupo ajeno tiene jornada, la de data/jornadas_grupos_ajenos_<T>.json, y cada
+//    hoja de ese fichero existe en fuentes_fbm/. Solo mira equipos y jornadas (nada por jugador).
+{
+  const ja = require('./jornadas_ajenas');
+  const reg = ja.leer(T);
+  const aj = r.privado.filter(p => /^G[3-6]$/.test(p.grupo));
+  const porHoja = ja.porHoja(reg);
+  const mal = aj.filter(p => p.jornada == null || (porHoja.get(p.fichero) && porHoja.get(p.fichero).jornada !== p.jornada));
+  ok(aj.length > 0 && mal.length === 0, `G3-G6: los ${aj.length} partidos con hoja tienen jornada y coincide con ${path.basename(ja.fichero(T))}`);
+  const hojas = new Set(aj.map(p => p.fichero));
+  const sinHoja = reg.partidos.filter(p => !hojas.has(p.hoja));
+  ok(sinHoja.length === 0, `G3-G6: las ${reg.partidos.length} hojas del fichero de datos están en fuentes_fbm/ (${sinHoja.map(p => `${p.grupo} J${p.jornada}`).join(', ')})`);
+}
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

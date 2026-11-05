@@ -102,6 +102,33 @@ function jsonPublicosConClaves() {
   return malos;
 }
 
+/** D186: data/jornadas_grupos_ajenos_<temporada>.json es publico (GitHub Pages) y solo lleva emparejamientos (el calendario
+ *  oficial): grupo, jornada, local, visitante, hoja y comprobado; por jornada, quien descansa y los huecos. Falla si aparece
+ *  cualquier otro campo (un marcador, un jugador...), un valor con forma de marcador o una hoja con ruta. Devuelve los problemas. */
+export function jornadasAjenasConDatos(fichero = path.join(REPO, 'data', 'jornadas_grupos_ajenos_2026-27.json')) {
+  if (!fs.existsSync(fichero)) return [];
+  const j = JSON.parse(fs.readFileSync(fichero, 'utf8'));
+  const CAMPOS = {
+    raiz: ['temporada', 'nota', 'partidos', 'jornadas'],
+    partido: ['grupo', 'jornada', 'local', 'visitante', 'hoja', 'comprobado'],
+    jornada: ['grupo', 'jornada', 'descansa', 'huecos'],
+    hueco: ['local', 'visitante', 'motivo', 'nota', 'comprobado'],
+  };
+  const malos = [];
+  const mira = (o, que, donde) => {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) { malos.push(`${donde}: no es un objeto`); return; }
+    for (const k of Object.keys(o)) if (!CAMPOS[que].includes(k)) malos.push(`${donde}: campo «${k}» (solo ${CAMPOS[que].join(', ')})`);
+    for (const [k, v] of Object.entries(o)) if (typeof v === 'string' && !['nota', 'temporada', 'hoja'].includes(k) && /\d+\s*[-–:]\s*\d+/.test(v)) malos.push(`${donde}.${k}: valor con forma de marcador`);
+  };
+  mira(j, 'raiz', 'raíz');
+  (j.partidos ?? []).forEach((p, i) => {
+    mira(p, 'partido', `partidos[${i}]`);
+    if (p.hoja != null && (/[\\/:]/.test(p.hoja) || !/^liga_J(\d+|--)_G[3-6]_.+\.xlsx$/i.test(p.hoja))) malos.push(`partidos[${i}].hoja: no es solo el nombre de una hoja de G3–G6`);
+  });
+  (j.jornadas ?? []).forEach((x, i) => { mira(x, 'jornada', `jornadas[${i}]`); (x.huecos ?? []).forEach((h, k) => mira(h, 'hueco', `jornadas[${i}].huecos[${k}]`)); });
+  return malos;
+}
+
 export async function revisar({ log = console.log } = {}) {
   const app = await arrancarApp({ puerto: PUERTO, env: await entornoPila() });
   let fallos = 0;
@@ -138,6 +165,9 @@ export async function revisar({ log = console.log } = {}) {
     const conClaves = jsonPublicosConClaves();
     if (conClaves.length) { fallos++; log(`  FALLO ficheros públicos con «claves del partido»: ${conClaves.join(', ')}`); }
     log(`  ${conClaves.length ? 'FALLO' : 'OK   '} D174: ni el HTML sin sesión de ${RUTAS.length} páginas ni los JSON públicos (data/, src/data, public/) llevan «claves del partido»`);
+    const jornadas = jornadasAjenasConDatos();
+    if (jornadas.length) { fallos++; log(`  FALLO data/jornadas_grupos_ajenos_2026-27.json: ${jornadas.slice(0, 3).join(' | ')}`); }
+    log(`  ${jornadas.length ? 'FALLO' : 'OK   '} D186: data/jornadas_grupos_ajenos_2026-27.json solo lleva emparejamientos (sin marcadores ni datos de jugadores)`);
   } finally { app.parar(); }
   return fallos;
 }

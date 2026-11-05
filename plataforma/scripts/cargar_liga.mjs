@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Carga en Supabase la liga de TODOS los equipos (D73): partidos, estadisticas POR JUGADOR (de terceros: solo con
 // sesion, RLS), el calendario propio de MdA y MdL y la clasificacion calculada. Tambien los grupos AJENOS de la fase
-// (G3-G6, D184): sus partidos sin jornada y su clasificacion calculada, que nunca van a data/liga_<temporada>.json.
+// (G3-G6, D184): sus partidos (con la jornada de data/jornadas_grupos_ajenos_<temporada>.json, D186) y su clasificacion
+// calculada, que nunca van a data/liga_<temporada>.json.
 //
 //   npm run db:liga                    carga fuentes_fbm/2026-27/{liga,hojas}/*.xlsx (conexion de .env.local)
 //   npm run db:liga -- --dry           lee, valida y cuenta, sin escribir

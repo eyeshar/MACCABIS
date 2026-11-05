@@ -66,7 +66,22 @@ El script crea lo que falte (enlaces, `.env.local`, `npm ci`) al empezar; todo e
 
 **Llegada al PC:** **FolderSync** (en el S21) copia Descargas → Google Drive, carpeta «Descargas aficion fbm» (un solo sentido, cada 10 minutos). En el PC, Google Drive para Windows la deja en `I:\Mi unidad\Descargas aficion fbm\`. Hay ficheros ocultos (`.exmu-cfg1.data`, `.thumbcache_*`) que se ignoran. Los nombres son `estadisticaPartido_<fecha de DESCARGA>.xlsx` con sufijos de duplicado (« (1)»…): **no dicen nada del partido**.
 
-**Entrada al pipeline:** `npm run jornada` mira **Descargas y esa carpeta (con sus subcarpetas, p. ej. `respaldo_…`; Descargas no)** (`--drive <ruta>` / `MACCABIS_HOJAS_DRIVE` para otra ruta; `--sin-drive` para quitarla). Si la unidad no está montada, avisa y sigue con Descargas. Clasifica cada hoja por su **contenido**: la temporada, por la etiqueta de la cabecera («… - FBM - 26/27»; la hoja **no trae fecha del partido, ni grupo ni jornada**); el grupo, por los equipos; la jornada, del calendario (G1/G2) o, para los otros grupos, opcional (`J--`). Copia sin mover ni pisar y deduplica por contenido (la misma hoja reexportada trae bytes distintos).
+**Registro de descargas de G3–G6 (D186, desde el 05/11/2026):** la hoja no trae la jornada y los grupos ajenos no tienen calendario propio, así que **se apunta al descargar**. Por cada hoja de G3–G6, Claude añade una línea a `jornadas_hojas.csv`, en la raíz de la carpeta de Drive (`I:\Mi unidad\Descargas aficion fbm\`; si no existe, la crea con la cabecera):
+
+```
+archivo;grupo;jornada;local;visitante
+estadisticaPartido_10112026 (3).xlsx;G5;4;NUSOTROS;TAURUS
+;DOM TAR;4;IMSERSO;MAD FLOWERS
+```
+
+- `grupo`: `G3`…`G6` o su nombre de la app (`DOM MAÑ G3`, `DOM TAR`, `SAB TAR G1`, `SAB TAR G2`). `jornada`: el número (o `J4`). `local` y `visitante`, como en la app (el local primero).
+- `archivo`: el nombre con que queda el fichero en Drive, si se conoce. Si va vacío, cuenta el partido (grupo + local + visitante), que no se repite en la fase.
+- Las descargas se hacen **jornada a jornada y en orden** (así se dedujo la jornada de las 58 primeras, D186).
+- Las actas no van a ese registro; G1 y G2 tampoco (su jornada sale del calendario).
+
+`npm run jornada` lee el registro: copia la hoja como `liga_J04_G5_…` y **anota el partido** en `data/jornadas_grupos_ajenos_2026-27.json` (público: solo grupo, jornada, local, visitante, hoja y comprobado, nunca marcadores, D186); de ahí lo toma `db:liga`. **Si una hoja de G3–G6 llega sin jornada, se carga igual (`liga_J--_…`) y se avisa**: no para la rutina; la jornada se apunta a mano en ese fichero (con el nombre de la copia en `hoja`). Lo que **sí para** (con `--no-interactivo`): una línea del registro mal escrita (grupo o jornada que no existen), un registro que dice otro partido para ese fichero, una jornada distinta de la que ya tenía ese partido en el fichero de datos o un equipo que ya juega esa jornada.
+
+**Entrada al pipeline:** `npm run jornada` mira **Descargas y esa carpeta (con sus subcarpetas, p. ej. `respaldo_…`; Descargas no)** (`--drive <ruta>` / `MACCABIS_HOJAS_DRIVE` para otra ruta; `--sin-drive` para quitarla). Si la unidad no está montada, avisa y sigue con Descargas. Clasifica cada hoja por su **contenido**: la temporada, por la etiqueta de la cabecera («… - FBM - 26/27»; la hoja **no trae fecha del partido, ni grupo ni jornada**); el grupo, por los equipos; la jornada, del calendario (G1/G2) o, para los otros grupos, del registro de descargas (si falta, `J--` y aviso). Copia sin mover ni pisar y deduplica por contenido (la misma hoja reexportada trae bytes distintos).
 
 **Qué hacer si:**
 - **Aviso «sus equipos no están en ningún grupo conocido»:** falta el equipo en `scripts/estadisticas/grupos_fase.json` (G3-G6). Bajar el Excel de clasificación del grupo desde la app (queda en la misma carpeta de Drive, `clasificacion_<fecha>.xlsx`) y regenerar el mapa con `node scripts/estadisticas/mapa_grupos.js --escribir` (no se edita a mano; avisa si un equipo sale en dos grupos). La hoja se queda en la carpeta y se carga en la siguiente pasada.
@@ -83,7 +98,7 @@ Lunes 5/10/2026: sesión de aprendizaje con las actas de la J1. Iván enseña el
 
 ## Alcance: todas las hojas de la jornada de los grupos de la fase (D73 desde la J2; 6 grupos desde el 04/11/2026, D183)
 
-Cada lunes, además de nuestras actas (web, D106) y hojas, se bajan **todas las hojas de estadística de la jornada de los grupos de la fase Moratalaz 26/27** (los nuestros, G1 de MdA y G2 de MdL, y cuatro ajenos: DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2), para seguir a los posibles rivales de playoff. Solo **hojas**: las actas de los partidos ajenos **no** se bajan (Iván, 04/11/2026). El procedimiento en la app, arriba. G1 y G2 salen del calendario; G3-G6, del mapa de `scripts/estadisticas/grupos_fase.json` (D183), con `J--` si no se conoce la jornada (opcional). **Lo de G3-G6 por ahora solo se copia y se valida: no se publica ni va a Supabase** (pendiente). **25/26 queda fuera** (la app no tiene sus datos): una hoja de otra temporada se aparta y se avisa.
+Cada lunes, además de nuestras actas (web, D106) y hojas, se bajan **todas las hojas de estadística de la jornada de los grupos de la fase Moratalaz 26/27** (los nuestros, G1 de MdA y G2 de MdL, y cuatro ajenos: DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2), para seguir a los posibles rivales de playoff. Solo **hojas**: las actas de los partidos ajenos **no** se bajan (Iván, 04/11/2026). El procedimiento en la app, arriba. G1 y G2 salen del calendario; G3-G6, del mapa de `scripts/estadisticas/grupos_fase.json` (D183), con la jornada del registro de descargas (`jornadas_hojas.csv`, D186; `J--` y aviso si falta). **Lo de G3-G6 no se publica**: sus datos por jugador y su clasificación van solo a Supabase con sesión (`db:liga`, D184); en `data/` solo sus emparejamientos (`jornadas_grupos_ajenos_<temporada>.json`, D186). **25/26 queda fuera** (la app no tiene sus datos): una hoja de otra temporada se aparta y se avisa.
 
 `npm run jornada` hace el resto:
 - Las hojas de partidos donde no jugamos van a `fuentes_fbm/2026-27/liga/` como `liga_J01_G1_<local>_vs_<visitante>_<hash>.xlsx` (copia segura, fuera de git). La jornada se infiere por fecha (la última ya jugada del grupo); si bajas hojas atrasadas, usa `npm run jornada -- --jornada N`.

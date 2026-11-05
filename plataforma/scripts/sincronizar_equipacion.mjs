@@ -35,6 +35,9 @@ export const COPIAS = [
   ['avisos.json', 'avisos.json'],
   // Historial de los rivales para el factor rival de la proyeccion (D133; npm run proyeccion:historial).
   ['historial_rivales_2026-27.json', 'historialRivales.json'],
+  // Jornadas de los grupos ajenos G3-G6 (D186): solo emparejamientos, quien descansa y los huecos (sin marcadores). La lee
+  // la pestaña Resultados de Liga consolidada (con sesion).
+  ['jornadas_grupos_ajenos_2026-27.json', 'jornadasAjenas.json'],
   ...COPIAS_ESTADISTICAS,
 ];
 const RESUMEN = 'historia_resumen.json';

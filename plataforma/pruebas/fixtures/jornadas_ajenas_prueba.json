@@ -1,0 +1,47 @@
+{
+  "temporada": "2026-27",
+  "nota": "Jornadas de PRUEBA de los grupos ajenos (D185, D186): equipos sintéticos de pruebas/grupos_ajenos.mjs. Lo compila la web de las pruebas (next.config.ts, PRUEBAS_CALENDARIO) en lugar de data/jornadas_grupos_ajenos_2026-27.json.",
+  "partidos": [],
+  "jornadas": [
+    {
+      "grupo": "G3",
+      "jornada": 1,
+      "descansa": "SINT AJENO TRES C",
+      "huecos": []
+    },
+    {
+      "grupo": "G3",
+      "jornada": 2,
+      "descansa": "SINT AJENO TRES A",
+      "huecos": []
+    },
+    {
+      "grupo": "G4",
+      "jornada": 1,
+      "descansa": null,
+      "huecos": [
+        {
+          "local": "SINT AJENO CUATRO C",
+          "visitante": "SINT AJENO CUATRO D",
+          "motivo": "incomparecencia",
+          "nota": "prueba",
+          "comprobado": true
+        }
+      ]
+    },
+    {
+      "grupo": "G4",
+      "jornada": 2,
+      "descansa": null,
+      "huecos": [
+        {
+          "local": "SINT AJENO CUATRO A",
+          "visitante": "SINT AJENO CUATRO D",
+          "motivo": "sin_hoja",
+          "nota": "prueba",
+          "comprobado": true
+        }
+      ]
+    }
+  ]
+}

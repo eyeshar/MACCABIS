@@ -1,0 +1,560 @@
+{
+  "temporada": "2026-27",
+  "nota": "Jornada de las hojas de los grupos ajenos G3–G6 (D183, D184, D186). Deducida el 05/11/2026 por el orden de exportación de cada hoja: la hora de generación y el contador de imágenes que guarda el servidor dentro del .xlsx dan el mismo orden. Duplicados por contenido quitados. Una jornada empieza cuando un equipo aparece por segunda vez y ningún equipo juega dos veces en la misma jornada. «comprobado»: true si cuadra por las dos vías; false en los casos dudosos (pendientes de contrastar con la app). Sin marcadores ni datos por jugador: salen de la hoja y van a Supabase con sesión (D184). «hoja» es el nombre del fichero en fuentes_fbm/2026-27/liga/.",
+  "partidos": [
+    {
+      "grupo": "G3",
+      "jornada": 1,
+      "local": "LOS ANGELES DE JUANAS",
+      "visitante": "MO ES MO",
+      "hoja": "liga_J--_G3_los-angeles-de-juanas_vs_mo-es-mo_c3d92f48.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 1,
+      "local": "GUINDILLAS",
+      "visitante": "PANATHIMANKOS A",
+      "hoja": "liga_J--_G3_guindillas_vs_panathimankos-a_b6f2d9b5.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 1,
+      "local": "GUERREROS MASTER",
+      "visitante": "SAINZ DE VICUÑA",
+      "hoja": "liga_J--_G3_guerreros-master_vs_sainz-de-vicuna_f1a368a5.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 1,
+      "local": "ESTRELLA NEGRA",
+      "visitante": "SPV",
+      "hoja": "liga_J--_G3_estrella-negra_vs_spv_7daa4faa.xlsx",
+      "comprobado": false
+    },
+    {
+      "grupo": "G3",
+      "jornada": 1,
+      "local": "CAFÉ HNOS. VELASCO SETTAS",
+      "visitante": "SUPERLOSERS",
+      "hoja": "liga_J--_G3_cafe-hnos-velasco-settas_vs_superlosers_2ff5a6ed.xlsx",
+      "comprobado": false
+    },
+    {
+      "grupo": "G3",
+      "jornada": 2,
+      "local": "SPV",
+      "visitante": "GUERREROS MASTER",
+      "hoja": "liga_J--_G3_spv_vs_guerreros-master_0f824ad0.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 2,
+      "local": "SUPERLOSERS",
+      "visitante": "ESTRELLA NEGRA",
+      "hoja": "liga_J--_G3_superlosers_vs_estrella-negra_58892188.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 2,
+      "local": "SAINZ DE VICUÑA",
+      "visitante": "GUINDILLAS",
+      "hoja": "liga_J--_G3_sainz-de-vicuna_vs_guindillas_f2acdc37.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 2,
+      "local": "PANATHIMANKOS A",
+      "visitante": "LOS ANGELES DE JUANAS",
+      "hoja": "liga_J--_G3_panathimankos-a_vs_los-angeles-de-juanas_ea966da0.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 2,
+      "local": "BEBERLY-TRONAS",
+      "visitante": "CAFÉ HNOS. VELASCO SETTAS",
+      "hoja": "liga_J--_G3_beberly-tronas_vs_cafe-hnos-velasco-settas_a57ea30d.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 3,
+      "local": "GUERREROS MASTER",
+      "visitante": "SUPERLOSERS",
+      "hoja": "liga_J--_G3_guerreros-master_vs_superlosers_969a7eb5.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 3,
+      "local": "ESTRELLA NEGRA",
+      "visitante": "BEBERLY-TRONAS",
+      "hoja": "liga_J--_G3_estrella-negra_vs_beberly-tronas_ab0b89a7.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 3,
+      "local": "GUINDILLAS",
+      "visitante": "SPV",
+      "hoja": "liga_J--_G3_guindillas_vs_spv_0adafa93.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 3,
+      "local": "LOS ANGELES DE JUANAS",
+      "visitante": "SAINZ DE VICUÑA",
+      "hoja": "liga_J--_G3_los-angeles-de-juanas_vs_sainz-de-vicuna_23267c52.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 3,
+      "local": "MO ES MO",
+      "visitante": "PANATHIMANKOS A",
+      "hoja": "liga_J--_G3_mo-es-mo_vs_panathimankos-a_1d63f497.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 1,
+      "local": "MAD FLOWERS",
+      "visitante": "OLMOS RENACIDOS",
+      "hoja": "liga_J--_G4_mad-flowers_vs_olmos-renacidos_6fcf81db.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 1,
+      "local": "KRIPTOS TABERNA DE LA QUINA",
+      "visitante": "PANATHIMANKOS B",
+      "hoja": "liga_J--_G4_kriptos-taberna-de-la-quina_vs_panathimankos-b_358ecf05.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 1,
+      "local": "IMSERSO",
+      "visitante": "PROYECTO DARWIN II",
+      "hoja": "liga_J--_G4_imserso_vs_proyecto-darwin-ii_cf77a7e3.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 1,
+      "local": "HIPERDESGUACE VICALVARO",
+      "visitante": "PUMAS RABIOSOS",
+      "hoja": "liga_J--_G4_hiperdesguace-vicalvaro_vs_pumas-rabiosos_c47cf1e8.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 1,
+      "local": "ARTIC YONKIS",
+      "visitante": "THE MOLOCHOFFF COCKTAIL",
+      "hoja": "liga_J--_G4_artic-yonkis_vs_the-molochofff-cocktail_33bb13dc.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 2,
+      "local": "PUMAS RABIOSOS",
+      "visitante": "IMSERSO",
+      "hoja": "liga_J--_G4_pumas-rabiosos_vs_imserso_1f46b2dd.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 2,
+      "local": "THE MOLOCHOFFF COCKTAIL",
+      "visitante": "HIPERDESGUACE VICALVARO",
+      "hoja": "liga_J--_G4_the-molochofff-cocktail_vs_hiperdesguace-vicalvaro_6a6c3946.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 2,
+      "local": "PROYECTO DARWIN II",
+      "visitante": "KRIPTOS TABERNA DE LA QUINA",
+      "hoja": "liga_J--_G4_proyecto-darwin-ii_vs_kriptos-taberna-de-la-quina_8e4d2bd0.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 2,
+      "local": "PANATHIMANKOS B",
+      "visitante": "MAD FLOWERS",
+      "hoja": "liga_J--_G4_panathimankos-b_vs_mad-flowers_7b020fe1.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 2,
+      "local": "UNICAJA DE CERVEZAS",
+      "visitante": "ARTIC YONKIS",
+      "hoja": "liga_J--_G4_unicaja-de-cervezas_vs_artic-yonkis_fb465cac.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 3,
+      "local": "IMSERSO",
+      "visitante": "THE MOLOCHOFFF COCKTAIL",
+      "hoja": "liga_J--_G4_imserso_vs_the-molochofff-cocktail_1043593d.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 3,
+      "local": "HIPERDESGUACE VICALVARO",
+      "visitante": "UNICAJA DE CERVEZAS",
+      "hoja": "liga_J--_G4_hiperdesguace-vicalvaro_vs_unicaja-de-cervezas_268c9387.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 3,
+      "local": "KRIPTOS TABERNA DE LA QUINA",
+      "visitante": "PUMAS RABIOSOS",
+      "hoja": "liga_J--_G4_kriptos-taberna-de-la-quina_vs_pumas-rabiosos_f31bab37.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 3,
+      "local": "MAD FLOWERS",
+      "visitante": "PROYECTO DARWIN II",
+      "hoja": "liga_J--_G4_mad-flowers_vs_proyecto-darwin-ii_3c294cc8.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 3,
+      "local": "OLMOS RENACIDOS",
+      "visitante": "PANATHIMANKOS B",
+      "hoja": "liga_J--_G4_olmos-renacidos_vs_panathimankos-b_cfe333c2.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 1,
+      "local": "ACCIÓN MUTANTE",
+      "visitante": "TROTAMUNDOS",
+      "hoja": "liga_J--_G5_accion-mutante_vs_trotamundos_7d7f03b8.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 1,
+      "local": "CHIQUI Y DESGUACES",
+      "visitante": "PERROS BB",
+      "hoja": "liga_J--_G5_chiqui-y-desguaces_vs_perros-bb_90af84ff.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 1,
+      "local": "DEVIL HOOPERS",
+      "visitante": "NUSOTROS",
+      "hoja": "liga_J--_G5_devil-hoopers_vs_nusotros_0223e048.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 1,
+      "local": "BARTEAM OSBORNE",
+      "visitante": "TAURUS",
+      "hoja": "liga_J--_G5_barteam-osborne_vs_taurus_0087c39a.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 2,
+      "local": "NUSOTROS",
+      "visitante": "ESTUDIABANTES",
+      "hoja": "liga_J--_G5_nusotros_vs_estudiabantes_dfe84f90.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 2,
+      "local": "TAURUS",
+      "visitante": "CHIQUI Y DESGUACES",
+      "hoja": "liga_J--_G5_taurus_vs_chiqui-y-desguaces_6587b61b.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 2,
+      "local": "PERROS BB",
+      "visitante": "DEVIL HOOPERS",
+      "hoja": "liga_J--_G5_perros-bb_vs_devil-hoopers_4150d50e.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 2,
+      "local": "LOS JUGONES",
+      "visitante": "ACCIÓN MUTANTE",
+      "hoja": "liga_J--_G5_los-jugones_vs_accion-mutante_69b77202.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 3,
+      "local": "DEVIL HOOPERS",
+      "visitante": "TAURUS",
+      "hoja": "liga_J--_G5_devil-hoopers_vs_taurus_b87a0099.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 3,
+      "local": "ESTUDIABANTES",
+      "visitante": "PERROS BB",
+      "hoja": "liga_J--_G5_estudiabantes_vs_perros-bb_7e60af62.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 3,
+      "local": "CHIQUI Y DESGUACES",
+      "visitante": "TROTAMUNDOS",
+      "hoja": "liga_J--_G5_chiqui-y-desguaces_vs_trotamundos_f8653871.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 3,
+      "local": "LLORONES FUERA",
+      "visitante": "NUSOTROS",
+      "hoja": "liga_J--_G5_llorones-fuera_vs_nusotros_a9862234.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 3,
+      "local": "BARTEAM OSBORNE",
+      "visitante": "LOS JUGONES",
+      "hoja": "liga_J--_G5_barteam-osborne_vs_los-jugones_7feed93e.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 1,
+      "local": "TRIFASIC BLUNTERS",
+      "visitante": "MAFIA DEL ALCOHOL",
+      "hoja": "liga_J--_G6_trifasic-blunters_vs_mafia-del-alcohol_6a52eb4f.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 1,
+      "local": "DRINK TEAM",
+      "visitante": "ROMA BASKET",
+      "hoja": "liga_J--_G6_drink-team_vs_roma-basket_42269b2e.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 1,
+      "local": "FAKIN PANZAS",
+      "visitante": "PER C.B.",
+      "hoja": "liga_J--_G6_fakin-panzas_vs_per-c-b_3736406b.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 1,
+      "local": "CB MADRID",
+      "visitante": "UTURBU",
+      "hoja": "liga_J--_G6_cb-madrid_vs_uturbu_4b1161ce.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 1,
+      "local": "CLUB AGUIRRE",
+      "visitante": "TOTEM BLUE",
+      "hoja": "liga_J--_G6_club-aguirre_vs_totem-blue_99ff28b8.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 2,
+      "local": "CACIQUES",
+      "visitante": "CB MADRID",
+      "hoja": "liga_J--_G6_caciques_vs_cb-madrid_7f42b170.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 2,
+      "local": "TOTEM BLUE",
+      "visitante": "DRINK TEAM",
+      "hoja": "liga_J--_G6_totem-blue_vs_drink-team_53494aee.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 2,
+      "local": "UTURBU",
+      "visitante": "CLUB AGUIRRE",
+      "hoja": "liga_J--_G6_uturbu_vs_club-aguirre_b15c913f.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 2,
+      "local": "ROMA BASKET",
+      "visitante": "FAKIN PANZAS",
+      "hoja": "liga_J--_G6_roma-basket_vs_fakin-panzas_898f1e05.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 2,
+      "local": "PER C.B.",
+      "visitante": "TRIFASIC BLUNTERS",
+      "hoja": "liga_J--_G6_per-c-b_vs_trifasic-blunters_0a38a81a.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 3,
+      "local": "DRINK TEAM",
+      "visitante": "UTURBU",
+      "hoja": "liga_J--_G6_drink-team_vs_uturbu_19b54fc4.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 3,
+      "local": "CLUB AGUIRRE",
+      "visitante": "CACIQUES",
+      "hoja": "liga_J--_G6_club-aguirre_vs_caciques_065f5420.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 3,
+      "local": "FAKIN PANZAS",
+      "visitante": "TOTEM BLUE",
+      "hoja": "liga_J--_G6_fakin-panzas_vs_totem-blue_5d8538ba.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 3,
+      "local": "TRIFASIC BLUNTERS",
+      "visitante": "ROMA BASKET",
+      "hoja": "liga_J--_G6_trifasic-blunters_vs_roma-basket_a410d0f6.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 3,
+      "local": "MAFIA DEL ALCOHOL",
+      "visitante": "PER C.B.",
+      "hoja": "liga_J--_G6_mafia-del-alcohol_vs_per-c-b_70ca77f1.xlsx",
+      "comprobado": true
+    }
+  ],
+  "jornadas": [
+    {
+      "grupo": "G3",
+      "jornada": 1,
+      "descansa": "BEBERLY-TRONAS",
+      "huecos": []
+    },
+    {
+      "grupo": "G3",
+      "jornada": 2,
+      "descansa": "MO ES MO",
+      "huecos": []
+    },
+    {
+      "grupo": "G3",
+      "jornada": 3,
+      "descansa": "CAFÉ HNOS. VELASCO SETTAS",
+      "huecos": []
+    },
+    {
+      "grupo": "G4",
+      "jornada": 1,
+      "descansa": "UNICAJA DE CERVEZAS",
+      "huecos": []
+    },
+    {
+      "grupo": "G4",
+      "jornada": 2,
+      "descansa": "OLMOS RENACIDOS",
+      "huecos": []
+    },
+    {
+      "grupo": "G4",
+      "jornada": 3,
+      "descansa": "ARTIC YONKIS",
+      "huecos": []
+    },
+    {
+      "grupo": "G5",
+      "jornada": 1,
+      "descansa": "LOS JUGONES",
+      "huecos": [
+        {
+          "local": "ESTUDIABANTES",
+          "visitante": "LLORONES FUERA",
+          "motivo": "sin_hoja",
+          "nota": "«Partido no encontrado» en la app (D183)",
+          "comprobado": false
+        }
+      ]
+    },
+    {
+      "grupo": "G5",
+      "jornada": 2,
+      "descansa": "LLORONES FUERA",
+      "huecos": [
+        {
+          "local": "TROTAMUNDOS",
+          "visitante": "BARTEAM OSBORNE",
+          "motivo": "incomparecencia",
+          "nota": "incomparecencia: no genera hoja (D29, D183); local/visitante sin confirmar",
+          "comprobado": false
+        }
+      ]
+    },
+    {
+      "grupo": "G5",
+      "jornada": 3,
+      "descansa": "ACCIÓN MUTANTE",
+      "huecos": []
+    },
+    {
+      "grupo": "G6",
+      "jornada": 1,
+      "descansa": "CACIQUES",
+      "huecos": []
+    },
+    {
+      "grupo": "G6",
+      "jornada": 2,
+      "descansa": "MAFIA DEL ALCOHOL",
+      "huecos": []
+    },
+    {
+      "grupo": "G6",
+      "jornada": 3,
+      "descansa": "CB MADRID",
+      "huecos": []
+    }
+  ]
+}

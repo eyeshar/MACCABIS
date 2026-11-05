@@ -99,16 +99,21 @@ en los paneles de Supabase y Vercel.
      `https://maccabis-git-feat-plataforma-v0-web-tcpc.vercel.app`).
 
 ### 4. Cargar la base de datos (me lo pides a mí, o lo haces tú)
-Desde `plataforma/`:
+Desde `plataforma/`. Todo lo que escribe en la base exige decir a cuál va (norma 19, D187): `--confirmar <ref>` para el
+real (el ref del proyecto, `pqbjnxmknhawlkszwmln`; la conexión de `.env.local` tiene que ser de ese proyecto) o `--pila`
+para la pila local de las pruebas (con `SUPABASE_DB_URL` a `127.0.0.1`; no lee `.env.local`). Sin eso, para sin
+conectarse:
 ```
 npm install
-npm run db:migrar
-npm run db:semilla
-npm run db:gestor -- correo-de-ivan@... Iván
-npm run db:gestor -- correo-de-carlos@... Carlos
-npm run db:gestor -- correo-de-edu@... Edu
+npm run db:migrar -- --confirmar pqbjnxmknhawlkszwmln
+npm run db:semilla -- --confirmar pqbjnxmknhawlkszwmln
+npm run db:gestor -- correo-de-ivan@... Iván --confirmar pqbjnxmknhawlkszwmln
+npm run db:gestor -- correo-de-carlos@... Carlos --confirmar pqbjnxmknhawlkszwmln
+npm run db:gestor -- correo-de-edu@... Edu --confirmar pqbjnxmknhawlkszwmln
 npm run db:estado
 ```
+Deshacer una migración aplicada (su `.revertir.sql`, D94): `npm run db:revertir -- <versión> --confirmar <ref>`.
+Protecciones de D111 para una carga de la liga (foto, volcado y vuelta atrás): `npm run db:d111-liga`.
 La semilla crea los 25 de la plantilla (24 jugadores + Carlos) y la campaña "Ropa 2026/27" **cerrada**, sin
 correos. `db:gestor` reserva la plaza de cada gestor por correo (se vincula sola la primera vez que entra).
 Los correos de los jugadores se ponen en Gestión → «Jugadores y enlaces» o con `npm run db:correo` (uno a uno). (El
@@ -189,8 +194,9 @@ Las claves **nunca** van al repositorio ni al chat. Ya están generadas en tu `p
    hace nada). Con las claves sin poner respondería 503.
 
 **c) La tarea cada 15 minutos (pg_cron + pg_net de Supabase, D101)** — solo tras tu OK, y después del redeploy:
-`npm run avisos:programar` enseña lo que haría; `npm run avisos:programar -- --aplicar` lo aplica (activa pg_cron y
-pg_net, guarda el secreto cifrado en Vault y programa el trabajo); `-- --quitar` lo quita.
+`npm run avisos:programar` enseña lo que haría; `npm run avisos:programar -- --aplicar --confirmar <ref>` lo aplica
+(activa pg_cron y pg_net, guarda el secreto cifrado en Vault y programa el trabajo); `-- --quitar --confirmar <ref>` lo
+quita (D187).
 
 ## Pruebas
 
@@ -208,9 +214,9 @@ Excel celda a celda con la plantilla de `privado/`. Informe y capturas en `prueb
 misma lógica de sesión y lista blanca; Google se revisa a mano en la vista previa de Vercel.
 
 ```
-node pruebas/verificar_real.mjs
+node pruebas/verificar_real.mjs --confirmar pqbjnxmknhawlkszwmln
 ```
-Verifica contra el proyecto real de Supabase (lee `.env.local`): la lista blanca (`correo_permitido`, el hook),
+Verifica contra el proyecto real de Supabase (lee `.env.local`; sin el ref del real no se conecta, D187): la lista blanca (`correo_permitido`, el hook),
 RLS, quién puede entrar y quién no, y que un jugador solo ve lo suyo. Crea datos temporales y los borra al final.
 
 ## Imágenes de las prendas

@@ -142,7 +142,7 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
 
 ## Producción y vistas previas: sin navegador automático (D179)
 
-**Norma de Iván (03/11/2026).** Motivo: el equipo de Vercel «Web TCPC» pasa a Hobby el 23/11/2026 y allí la cuota de Active CPU (4 h/mes)
+**Norma de Iván (03/11/2026).** Motivo: el equipo de Vercel «Web TCPC» está hoy en Pro y pasará a Hobby (previsto el 23/11/2026, D188); allí la cuota de Active CPU (4 h/mes)
 es **del equipo, compartida con la web del club**. Pasarse no se cobra, pero Vercel puede **pausar los dos proyectos**, también la web de las
 familias. Las vistas previas gastan de la misma cuota.
 

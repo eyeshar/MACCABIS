@@ -37,7 +37,8 @@ export const entornoPruebas = (base = process.env) => ({ PRUEBAS_CALENDARIO: '1'
 /** `next build` con el entorno dado, salvo que .next/ ya sea exactamente esa compilacion. Devuelve true si compilo. */
 export function compilar(envSuite, clavesExtra = []) {
   const env = { ...envSuite, ...entornoPruebas(envSuite) };
-  clavesExtra = [...new Set([...clavesExtra, ...Object.keys(entornoPruebas(envSuite))])];
+  // La referencia del reloj cambia en cada ejecución: no cuenta para la compilación (si contara, se compilaría siempre).
+  clavesExtra = [...new Set([...clavesExtra, ...Object.keys(entornoPruebas(envSuite))])].filter((k) => k !== 'PRUEBAS_RELOJ_REF');
   const clave = huella({ ...env, __CLAVES_EXTRA: clavesExtra });
   try {
     if (JSON.parse(fs.readFileSync(HUELLA, 'utf8')).clave === clave && fs.existsSync(path.join(RAIZ, '.next', 'BUILD_ID'))) return false;

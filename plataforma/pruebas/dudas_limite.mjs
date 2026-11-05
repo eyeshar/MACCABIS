@@ -232,7 +232,7 @@ try {
   await poner(E.fut, 'sint-tres', 'va');
   const pu = await e.sesion('uno@pruebas.local', 375);
   await pu.goto(`${APP}/mi-zona/evento/${E.fut}`);
-  const textoLim = H.textoLimite(fut.l, new Date());
+  const textoLim = H.textoLimite(fut.l, ahoraPrueba());
   ok(await visto(pu.getByTestId('limite-dudas')), 'evento abierto: se ve el aviso del límite');
   const ltxt = await pu.getByTestId('limite-dudas').innerText();
   ok(ltxt.startsWith(`Si dudas, tienes hasta ${textoLim} para confirmar`), `«Si dudas, tienes hasta ${textoLim} para confirmar…»`, ltxt);
@@ -272,7 +272,7 @@ try {
   for (const ev of liga) await poner(ev.id, 'sint-uno', 'duda');
   const pu2 = await e.sesion('uno@pruebas.local', 375);
   await pu2.goto(`${APP}/mi-zona/domingo/${dom.f}`);
-  const abierta = liga.every((ev) => H.dudaAbierta({ tipo: ev.tipo, fecha: ev.f, inicio: ev.i }, new Date()));
+  const abierta = liga.every((ev) => H.dudaAbierta({ tipo: ev.tipo, fecha: ev.f, inicio: ev.i }, ahoraPrueba()));
   const hayDuda = (await pu2.getByRole('button', { name: 'Duda', exact: true }).count()) === 1;
   ok(hayDuda === abierta && (await pu2.getByTestId('limite-dudas').count()) === (abierta ? 1 : 0), `domingo ${dom.f}: el límite ${abierta ? 'no ha llegado: hay «Duda» y el aviso' : 'ya pasó: no hay «Duda» ni aviso'}`);
   if (abierta) ok(/Si dudas, tienes hasta (hoy|mañana|el martes( \d+)?) a las 12:00 para confirmar/.test(await pu2.getByTestId('limite-dudas').innerText()), '«Si dudas, tienes hasta el martes a las 12:00 para confirmar» (D173)');

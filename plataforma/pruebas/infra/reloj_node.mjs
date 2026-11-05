@@ -5,7 +5,8 @@
 const instante = process.env.PRUEBAS_RELOJ;
 if (instante) {
   const Real = Date;
-  const desfase = new Real(instante).getTime() - Real.now();
+  // Con la referencia común de la prueba (PRUEBAS_RELOJ_REF), la misma hora que la base y el navegador (infra/reloj.mjs).
+  const desfase = new Real(instante).getTime() - Number(process.env.PRUEBAS_RELOJ_REF || Real.now());
   if (Number.isNaN(desfase)) throw new Error(`PRUEBAS_RELOJ no es una fecha: ${instante}`);
   const ahora = () => Real.now() + desfase;
   function DatePrueba(...a) {

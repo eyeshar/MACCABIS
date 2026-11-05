@@ -36,6 +36,7 @@ import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
 import { hoyMadrid } from './fechas_prueba.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = path.join(RAIZ, '..', 'privado', 'mockups_liga', 'rediseno', 'convocatoria');
@@ -333,7 +334,7 @@ try {
   const convF2 = (await sql`select equipos from public.convocatorias where fecha = ${F2}`)[0].equipos;
   const convocadosF2 = new Set(Object.values(convF2).flat().map((c) => c.person_id));
   const dentro01 = convocadosF2.has('sint-01');
-  const silencio = HOR.horaDeEnvio(new Date(), HOR.madrid(F2, '08:00')) > new Date();
+  const silencio = HOR.horaDeEnvio(ahoraPrueba(), HOR.madrid(F2, '08:00')) > ahoraPrueba();
   const regs = await sql`select person_id, titulo, cuerpo, enviado_en, resultado from public.avisos_registro where clave like ${`convocatoria:${F2}:%`}`;
   const M = regs.length;
   ok(regs.filter((r) => convocadosF2.has(r.person_id)).length === convocadosF2.size && regs.filter((r) => convocadosF2.has(r.person_id)).every((r) => r.titulo.startsWith('Estás convocado · ')), `un aviso por convocado (${convocadosF2.size}), «Estás convocado · …»`);

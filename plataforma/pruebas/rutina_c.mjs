@@ -20,7 +20,7 @@ import path from 'node:path';
 import webpush from 'web-push';
 import { preparar, sinteticos, personas, contador, visto, sinDesbordar, RAIZ } from './comun_e2e.mjs';
 import { firmar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
 import * as H from '../src/lib/avisos/horario.ts';
 import { prohibidoEn } from './prohibido.mjs';
@@ -67,13 +67,13 @@ try {
   // En el real la migración marca a Iván; aquí el gestor se crea después de migrar.
   await sql`update public.gestores set recibe_propuesta = true where nombre = 'Iván'`;
   await sql`insert into public.suscripciones_avisos (user_id, endpoint, p256dh, auth) values (${ivan.uid}, 'https://push.invalid/ivan', 'x', 'y')`;
-  await sql`update public.respuestas_web_config set dudas_desde = now() - interval '30 days' where id = 1`;
+  await sql`update public.respuestas_web_config set dudas_desde = pruebas.ahora() - interval '30 days' where id = 1`;
   const evento = async (clave, equipo, fecha, inicio) => (await sql`insert into public.eventos (clave, tipo, equipo, rival, fecha, inicio, quedada, jornada, temporada) values (${clave}, 'liga', ${equipo}, 'Rival de Prueba', ${fecha}, ${inicio}, ${H.enMadrid(new Date(M(fecha, inicio).getTime() - 20 * 60000)).hora}, 40, '2026-27') returning id`)[0].id;
   const E1 = await evento('rc-d1-mdl', 'MdL', D1, '11:30');
   const E2 = await evento('rc-d2-mdl', 'MdL', D2, '11:30');
   const E3 = await evento('rc-d3-mdl', 'MdL', D3, '11:30');
   const E4A = await evento('rc-d4-mda', 'MdA', D4, '10:15'), E4L = await evento('rc-d4-mdl', 'MdL', D4, '12:45');
-  const poner = (ev, p, resp, motivo = null) => sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, fuente, origen) values (${ev}, ${p}, ${resp}, ${motivo}, 'web', 'jugador') on conflict (evento_id, person_id) do update set respuesta = excluded.respuesta, motivo = excluded.motivo, origen = excluded.origen, cambiado_en = now()`;
+  const poner = (ev, p, resp, motivo = null) => sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, fuente, origen) values (${ev}, ${p}, ${resp}, ${motivo}, 'web', 'jugador') on conflict (evento_id, person_id) do update set respuesta = excluded.respuesta, motivo = excluded.motivo, origen = excluded.origen, cambiado_en = pruebas.ahora()`;
   for (const id of S.slice(0, 11)) await poner(E1, id, 'va');
   await poner(E1, 'sint-r13', 'duda');
 
@@ -121,10 +121,10 @@ try {
 
   console.log('\n== No pisa una aprobada ni un borrador tocado a mano');
   for (const id of S.slice(0, 11)) { await poner(E2, id, 'va'); await poner(E3, id, 'va'); }
-  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D2}, 40, 'aprobada', 'blanco', ${sql.json({ MdL: [{ person_id: 'sint-r01' }] })}, now())`;
+  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D2}, 40, 'aprobada', 'blanco', ${sql.json({ MdL: [{ person_id: 'sint-r01' }] })}, pruebas.ahora())`;
   const [{ id: c3 }] = await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos) values (${D3}, 40, 'borrador', 'propuesta', ${sql.json({ MdL: [{ person_id: 'sint-r02' }] })}) returning id`;
-  await sql`insert into public.convocatoria_cambios (convocatoria_id, por_nombre, accion, en) values (${c3}, 'Iván', 'propuesta', now() - interval '2 hours')`;
-  await sql`insert into public.convocatoria_cambios (convocatoria_id, por_nombre, accion, person_id, motivo, nota, en) values (${c3}, 'Iván', 'anadir', 'sint-r02', 'otro', 'ajuste manual', now() - interval '1 hour')`;
+  await sql`insert into public.convocatoria_cambios (convocatoria_id, por_nombre, accion, en) values (${c3}, 'Iván', 'propuesta', pruebas.ahora() - interval '2 hours')`;
+  await sql`insert into public.convocatoria_cambios (convocatoria_id, por_nombre, accion, person_id, motivo, nota, en) values (${c3}, 'Iván', 'anadir', 'sint-r02', 'otro', 'ajuste manual', pruebas.ahora() - interval '1 hour')`;
   t = await tarea(M(martes(D2), '09:05'));
   const [{ n: d2plazo }] = await sql`select count(*)::int n from public.avisos_registro where clave like 'rec:dudas:%' and ${E2}::text = any(eventos::text[])`;
   ok(t.status === 200 && d2plazo === 0, `domingo ${D2} ya aprobado: a las 09:00 nadie recibe «Tienes hasta hoy a las 12:00… te quedas fuera de la convocatoria» (aunque haya quien no ha respondido)`, JSON.stringify(t.json));
@@ -225,7 +225,7 @@ try {
   console.log('\n== Banda roja (_tras_cambio_jugador): desde el martes 12:00; aprobada, solo por un convocado o un «voy»');
   const pasado = '2026-09-27';
   const [{ id: EP }] = await sql`insert into public.eventos (clave, tipo, equipo, rival, fecha, inicio, temporada) values ('rc-pasado', 'liga', 'MdL', 'Rival', ${pasado}, '11:30', '2026-27') returning id`;
-  await sql`insert into public.convocatorias (fecha, estado, origen, equipos, aprobada_en) values (${pasado}, 'aprobada', 'blanco', ${sql.json({ MdL: [{ person_id: 'sint-r01' }] })}, now())`;
+  await sql`insert into public.convocatorias (fecha, estado, origen, equipos, aprobada_en) values (${pasado}, 'aprobada', 'blanco', ${sql.json({ MdL: [{ person_id: 'sint-r01' }] })}, pruebas.ahora())`;
   const tras = async (p, a, d) => (await sql`select public._tras_cambio_jugador(${EP}, ${p}, ${a}, ${d}) x`)[0].x;
   ok(await tras('sint-r01', 'va', 'no') === true, 'aprobada: un convocado que dice «no voy» salta');
   ok(await tras('sint-r02', 'va', 'no') === false, 'aprobada: alguien sin convocar que dice «no voy» no salta');
@@ -235,7 +235,7 @@ try {
   ok(futuro === false, 'antes del cierre del martes, nada');
 
   console.log('\n== Cambio de calendario tras aprobar: si alguien dobla y ahora es a la misma hora, push con el arreglo');
-  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D4}, 40, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-r01' }, { person_id: 'sint-r02' }], MdL: [{ person_id: 'sint-r01' }, { person_id: 'sint-r04' }] })}, now())`;
+  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D4}, 40, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-r01' }, { person_id: 'sint-r02' }], MdL: [{ person_id: 'sint-r01' }, { person_id: 'sint-r04' }] })}, pruebas.ahora())`;
   for (const id of S.slice(0, 11)) { await poner(E4A, id, 'va'); await poner(E4L, id, 'va'); }
   const pe = await e.sesion('gestor@pruebas.local', 1280);
   await pe.goto(`${APP}/gestion/eventos/${E4L}`);

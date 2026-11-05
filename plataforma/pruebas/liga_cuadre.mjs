@@ -17,6 +17,7 @@ import { desfasadas } from '../scripts/sincronizar_equipacion.mjs';
 import { arrancarApp, abrirNavegador, conCapturas } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 import { entornoPila } from './pila.mjs';
+import { FICHERO_CALENDARIO, FICHERO_ENTRENOS, FICHERO_EQUIPACIONES } from './infra/calendario.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -41,8 +42,12 @@ const esperar = async (url, ms = 60000) => { const fin = Date.now() + ms; while 
 
 // Web anterior: el repo tal cual, como la sirve GitHub Pages.
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png' };
+// D185: el calendario, los entrenos y las equipaciones que pide la web anterior son los de PRUEBA (los mismos con los que se
+// compila la nueva), nunca los reales de data/.
+const DE_PRUEBA = { '/data/calendario_2026-27.json': FICHERO_CALENDARIO, '/data/entrenos_2026-27.json': FICHERO_ENTRENOS, '/data/equipaciones_2026-27.json': FICHERO_EQUIPACIONES };
 const pages = http.createServer((req, res) => {
-  const f = path.join(REPO, decodeURIComponent(new URL(req.url, PAGES).pathname));
+  const ruta = decodeURIComponent(new URL(req.url, PAGES).pathname);
+  const f = DE_PRUEBA[ruta] ?? path.join(REPO, ruta);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': TIPOS[path.extname(f)] ?? 'application/octet-stream' });
   fs.createReadStream(f).pipe(res);

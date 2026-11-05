@@ -14,9 +14,10 @@ import * as I from '../src/lib/eventos/importador.ts';
 import * as D from '../src/lib/eventos/dominio.ts';
 import * as A from '../src/lib/eventos/asistencia.ts';
 import { partidosIniciales, entrenosIniciales } from '../scripts/cargar_eventos.mjs';
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+const cal = calendarioPrueba();
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
 
@@ -50,7 +51,8 @@ const uno = comparar(lineas.join('\n'));
 ok(uno.cambios.length === 1, 'cambiar la hora de la J2 de MdA -> exactamente 1 cambio', JSON.stringify(uno.cambios));
 const c1 = uno.cambios[0];
 ok(c1?.campo === 'hora' && c1.actual === '10:15' && c1.oficial === '11:30' && c1.claveEvento === 'mda-j2', 'dice campo (hora), valor actual (10:15) y valor del Ayuntamiento (11:30)');
-const dos = oficial.map((l) => l.replace('G2;5;VANNER;', 'G2;5;VANNER;').replace(/^G2;6;28500;Maccabi de Levantar;22\/11\/2026;12:45;3$/, 'G2;6;Maccabi de Levantar;28500;22/11/2026;12:45;1'));
+// La J6 de MdL (visitante, pista 3): pasa a local (se cambian los dos equipos de sitio) y a la pista 1.
+const dos = oficial.map((l) => { if (!l.startsWith('G2;6;')) return l; const c = l.split(';'); [c[2], c[3]] = [c[3], c[2]]; c[6] = '1'; return c.join(';'); });
 const d2 = comparar(dos.join('\n'));
 ok(d2.cambios.length === 2 && d2.cambios.some((c) => c.campo === 'local') && d2.cambios.some((c) => c.campo === 'pista'), 'pasar a local y cambiar de pista son 2 cambios aparte', JSON.stringify(d2.cambios.map((c) => c.campo)));
 const fecha = comparar(oficial.map((l) => l.replace('18/10/2026', '19/10/2026')).join('\n'));
@@ -112,7 +114,7 @@ ok(D.pistaEfectiva({ ...miercoles, pista_id: 'c' }, reabiertas).pista.slug === '
 ok(D.pistaEfectiva({ tipo: 'liga', pista_id: 'm', numero_pista: 2 }, pistas).texto === 'Moratalaz · Pista 2', 'partido: «Moratalaz · Pista 2»');
 ok(D.pistaEfectiva({ tipo: 'liga', pista_id: null, numero_pista: null }, pistas).porConfirmar, 'partido sin pista: por confirmar');
 ok(D.quedadaPorDefecto('10:15') === '09:55' && D.quedadaPorDefecto('00:10') === '23:50' && D.quedadaPorDefecto(null) === null, 'quedada por defecto: 20 minutos antes');
-const serie = entrenosIniciales().map((e, i) => ({ id: `e${i}`, serie: e.serie, fecha: e.fecha, estado: 'programado' }));
+const serie = entrenosIniciales(entrenosPrueba(), calendarioPrueba()).map((e, i) => ({ id: `e${i}`, serie: e.serie, fecha: e.fecha, estado: 'programado' }));
 ok(D.deLaSerieDesde(serie, { serie: 'entreno-semanal', fecha: '2026-10-14' }).length === 26, '«este y los siguientes» desde el 14/10: 26 entrenos (27 menos el del 07/10)');
 ok(D.deLaSerieDesde(serie, { serie: null, fecha: '2026-10-14' }).length === 0, 'un evento sin serie no tiene siguientes');
 ok(D.deLaSerieDesde([...serie, { id: 'c', serie: 'entreno-semanal', fecha: '2026-11-04', estado: 'cancelado' }], { serie: 'entreno-semanal', fecha: '2026-10-14' }).length === 26, 'los cancelados no cuentan');

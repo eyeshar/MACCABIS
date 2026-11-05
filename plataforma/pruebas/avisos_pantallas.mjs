@@ -15,6 +15,9 @@ import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -23,9 +26,10 @@ const DEUDA = path.join(SALIDA, 'deuda-octubre');
 fs.mkdirSync(SALIDA, { recursive: true });
 const require = createRequire(import.meta.url);
 const A = require(path.join(REPO, 'data', 'avisos_equipacion.js'));
-const equip = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'equipaciones_2026-27.json'), 'utf8'));
-const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
-const hoyReal = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+const equip = equipacionesPrueba();
+// D185: el calendario de prueba con los rivales de la liga (Scouting cruza el calendario con la liga): rivalesDeLiga().
+let cal = calendarioPrueba();
+const hoyReal = hoyMadrid();
 const bonito = (n) => A.equipoPorNombre(equip, n)?.nombre ?? n;
 // "MdA – Litros de Mahou" (el local primero, como en Mi zona y en el calendario oficial)
 const cruce = (nuestro, p) => (p.local ? `${nuestro} – ${bonito(p.rival)}` : `${bonito(p.rival)} – ${nuestro}`);
@@ -33,7 +37,7 @@ const proxReal = (e) => A.proximoPartido(cal, hoyReal, e);
 const avisoReal = (e) => { const p = proxReal(e); return p ? A.avisoPartido(equip, p) : null; };
 // El inicio personal (D117) enseña el próximo partido que AÚN NO HA EMPEZADO: un domingo, pasada la hora del partido, ya
 // es el siguiente (antes la prueba fallaba los domingos a partir de las 9:00).
-const ahoraHHMM = new Date().toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const ahoraHHMM = ahoraPrueba().toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const proxInicio = (e) => {
   const p = proxReal(e);
   if (!p || p.fecha !== hoyReal || !p.hora || p.hora > ahoraHHMM) return p;
@@ -59,11 +63,13 @@ try {
 
   // =================== PLATAFORMA
   const { sql, url, anonKey } = pila;
-  const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
+  const { ligaParaPruebas, rivalesDeLiga, conRivalesDeLiga } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
   const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
-  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
-  const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
+  const liga = ligaParaPruebas('2026-27');
+  await cargarLiga(sql, liga, '2026-27', { log: () => {} });
+  const { cargarEventos } = await import('./infra/calendario.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
+  cal = conRivalesDeLiga(await rivalesDeLiga(sql, liga));   // D185
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;

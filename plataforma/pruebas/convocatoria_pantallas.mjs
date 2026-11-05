@@ -31,10 +31,12 @@ import crypto from 'node:crypto';
 import webpush from 'web-push';
 import { arrancar } from './pila.mjs';
 import * as HOR from '../src/lib/avisos/horario.ts';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = path.join(RAIZ, '..', 'privado', 'mockups_liga', 'rediseno', 'convocatoria');
@@ -46,7 +48,7 @@ fs.mkdirSync(CAPTURAS, { recursive: true });
 const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
-const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+const hoy = hoyMadrid();
 async function esperar(url, ms = 90000) {
   const fin = Date.now() + ms;
   while (Date.now() < fin) { try { const r = await fetch(url); if (r.status < 500) return; } catch {} await new Promise((r) => setTimeout(r, 300)); }
@@ -332,7 +334,7 @@ try {
   const convF2 = (await sql`select equipos from public.convocatorias where fecha = ${F2}`)[0].equipos;
   const convocadosF2 = new Set(Object.values(convF2).flat().map((c) => c.person_id));
   const dentro01 = convocadosF2.has('sint-01');
-  const silencio = HOR.horaDeEnvio(new Date(), HOR.madrid(F2, '08:00')) > new Date();
+  const silencio = HOR.horaDeEnvio(ahoraPrueba(), HOR.madrid(F2, '08:00')) > ahoraPrueba();
   const regs = await sql`select person_id, titulo, cuerpo, enviado_en, resultado from public.avisos_registro where clave like ${`convocatoria:${F2}:%`}`;
   const M = regs.length;
   ok(regs.filter((r) => convocadosF2.has(r.person_id)).length === convocadosF2.size && regs.filter((r) => convocadosF2.has(r.person_id)).every((r) => r.titulo.startsWith('Estás convocado · ')), `un aviso por convocado (${convocadosF2.size}), «Estás convocado · …»`);

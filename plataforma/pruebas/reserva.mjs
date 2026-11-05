@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { preparar, personas, sinteticos, contador, visto, trasAccion, RAIZ } from './comun_e2e.mjs';
 import { adelantar, semanas } from './fechas_prueba.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 
 const MIGS = path.join(RAIZ, 'supabase', 'migrations');
 const MIG = '20261031180000_reserva';

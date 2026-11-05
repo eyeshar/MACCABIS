@@ -14,8 +14,9 @@ import path from 'node:path';
 import webpush from 'web-push';
 import { preparar, sinteticos, personas, contador, RAIZ } from './comun_e2e.mjs';
 import { firmar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 import * as T from '../src/lib/avisos/textos.ts';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const { ok, fallos } = contador();
 const vapid = webpush.generateVAPIDKeys();
@@ -28,7 +29,7 @@ const e = await preparar({
   },
 });
 const { sql, APP, pila } = e;
-const madridDe = (ms) => { const f = new Date(Date.now() + ms).toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }); return { fecha: f.slice(0, 10), hora: f.slice(11, 16) }; };
+const madridDe = (ms) => { const f = new Date(ahoraPrueba().getTime() + ms).toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }); return { fecha: f.slice(0, 10), hora: f.slice(11, 16) }; };
 const rpc = async (f, args, token) => {
   const r = await fetch(`${pila.url}/rest/v1/rpc/${f}`, { method: 'POST', headers: { apikey: pila.anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(args) });
   let datos = null; try { datos = await r.json(); } catch {}
@@ -54,12 +55,12 @@ try {
     gestores: [['Iván', 'gestor@pruebas.local', 'villaescusa-silva-ivan']],
   });
   const uno = P['sint-uno'].token, dos = P['sint-dos'].token, tres = P['sint-tres'].token;
-  await sql`update public.respuestas_web_config set dudas_desde = now() - interval '30 days' where id = 1`;
+  await sql`update public.respuestas_web_config set dudas_desde = pruebas.ahora() - interval '30 days' where id = 1`;
   const pronto = madridDe(20 * 3600000), lejos = madridDe(10 * 86400000);
   const nuevo = async (clave, tipo, f, hora, oficial = true) => (await sql`insert into public.eventos (clave, tipo, equipo, titulo, fecha, inicio, oficial, creado_por) values (${clave}, ${tipo}, 'ambos', ${clave}, ${f}, ${hora}, ${oficial}, ${oficial ? null : 'sint-uno'}) returning id`)[0].id;
   const E = { tarde: await nuevo('x-tarde', 'entreno', pronto.fecha, pronto.hora), lejos: await nuevo('x-lejos', 'entreno', lejos.fecha, '20:30'), libre: await nuevo('x-libre', 'entreno', pronto.fecha, pronto.hora, false) };
   const [lim] = await sql`select public._limite_dudas(${E.tarde}) l, public._limite_dudas(${E.lejos}) f`;
-  ok(lim.l.getTime() < Date.now() && lim.f.getTime() > Date.now(), 'preparado: «tarde» ya pasó su límite y «lejos» no');
+  ok(lim.l.getTime() < ahoraPrueba().getTime() && lim.f.getTime() > ahoraPrueba().getTime(), 'preparado: «tarde» ya pasó su límite y «lejos» no');
   const alertas = async (ev) => await sql`select person_id, antes, despues, aviso_encolado from public.alertas_gestores where evento_id = ${ev} order by en, person_id`;
 
   let r = await rpc('responder', { p_evento: E.lejos, p_respuesta: 'va' }, uno);
@@ -79,7 +80,7 @@ try {
   // el cierre automático no avisa
   await sql`insert into public.respuestas (evento_id, person_id, respuesta, fuente, origen) values (${E.tarde}, 'sint-dos', 'duda', 'web', 'jugador')`;
   const [{ n: antesCierre }] = await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${E.tarde}`;
-  await sql`select * from public.cerrar_dudas(now())`;
+  await sql`select * from public.cerrar_dudas(pruebas.ahora())`;
   const [{ n: trasCierre }] = await sql`select count(*)::int n from public.alertas_gestores where evento_id = ${E.tarde}`;
   ok((await sql`select respuesta, motivo from public.respuestas where evento_id = ${E.tarde} and person_id = 'sint-dos'`)[0].motivo === 'no_confirmo' && antesCierre === trasCierre, 'el cierre automático de dudas (duda → no va · no confirmó) no deja alerta');
 

@@ -8,7 +8,7 @@
 //
 //   npm run pruebas:numeros
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos } from './comun_e2e.mjs';
-import { adelantar, semanas } from './fechas_prueba.mjs';
+import { adelantar, semanas, hoyMadrid } from './fechas_prueba.mjs';
 
 const { ok, fallos, sumar } = contador();
 const e = await preparar();
@@ -16,7 +16,7 @@ const { sql, APP } = e;
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));
   const J3 = F('2026-10-25');
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   if (F('2026-10-18') === hoy) await sql`update public.eventos set inicio = '00:01', fin = null where tipo = 'liga' and fecha = ${hoy}`;
   await sinteticos(sql, [['sint-noe', 'Noe', true, true], ['sint-zoe', 'Zoe', true, true], ['sint-ari', 'Ari', true, true]]);
   await sql`update public.jugadores set ficha_mda = true, ficha_mdl = true where person_id = 'esteban-jon'`;

@@ -12,6 +12,7 @@ import webpush from 'web-push';
 import { preparar, sinteticos, personas, contador } from './comun_e2e.mjs';
 import { firmar } from './pila.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const { ok, fallos } = contador();
 const vapid = webpush.generateVAPIDKeys();
@@ -24,13 +25,13 @@ const e = await preparar({
   },
 });
 const { sql, APP } = e;
-const madridDe = (ms) => { const f = new Date(Date.now() + ms).toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }); return { fecha: f.slice(0, 10), hora: f.slice(11, 16) }; };
+const madridDe = (ms) => { const f = new Date(ahoraPrueba().getTime() + ms).toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }); return { fecha: f.slice(0, 10), hora: f.slice(11, 16) }; };
 const TEXTO = 'Tu «duda» pasó a «no va» porque no confirmaste a tiempo. Elige «No voy» para decir el motivo (una sola vez) o «Voy» si al final puedes.';
 
 try {
   await sinteticos(sql, [['sint-dos', 'Dos', true, true], ['sint-tres', 'Tres', true, true], ['sint-cuatro', 'Cuatro', false, true]]);
   await personas(e.pila, { jugadores: [['sint-dos', 'dos@pruebas.local'], ['sint-tres', 'tres@pruebas.local'], ['sint-cuatro', 'cuatro@pruebas.local']], gestores: [] });
-  await sql`update public.respuestas_web_config set dudas_desde = now() - interval '30 days' where id = 1`;
+  await sql`update public.respuestas_web_config set dudas_desde = pruebas.ahora() - interval '30 days' where id = 1`;
   // Un entreno que empieza dentro de 20 h (su límite pasó hace 4 h) y el próximo domingo de liga del calendario.
   const pronto = madridDe(20 * 3600000);
   const [{ id: ENT }] = await sql`insert into public.eventos (clave, tipo, equipo, titulo, fecha, inicio, oficial) values ('x-entreno', 'entreno', 'ambos', 'x-entreno', ${pronto.fecha}, ${pronto.hora}, true) returning id`;
@@ -39,8 +40,8 @@ try {
   const [{ id: MDA }] = await sql`insert into public.eventos (clave, tipo, equipo, rival, titulo, fecha, inicio, oficial, jornada) values ('x-mda', 'liga', 'MdA', 'Rival', 'x-mda', ${dom.f}, '09:00', true, 9) returning id`;
   const liga = await sql`select id, equipo from public.eventos where tipo = 'liga' and estado = 'programado' and fecha = ${dom.f}`;
   const MDL = liga.find((l) => l.equipo === 'MdL').id;
-  const poner = (ev, p) => sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, fuente, origen, puesto_por_nombre, cambiado_en) values (${ev}, ${p}, 'no', 'no_confirmo', 'web', 'sistema', 'Sistema', now())
-    on conflict (evento_id, person_id) do update set respuesta = 'no', motivo = 'no_confirmo', detalle = null, origen = 'sistema', puesto_por_nombre = 'Sistema', cambiado_en = now()`;
+  const poner = (ev, p) => sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, fuente, origen, puesto_por_nombre, cambiado_en) values (${ev}, ${p}, 'no', 'no_confirmo', 'web', 'sistema', 'Sistema', pruebas.ahora())
+    on conflict (evento_id, person_id) do update set respuesta = 'no', motivo = 'no_confirmo', detalle = null, origen = 'sistema', puesto_por_nombre = 'Sistema', cambiado_en = pruebas.ahora()`;
   const motivos = async (evs, p) => (await sql`select respuesta, motivo, origen from public.respuestas where person_id = ${p} and evento_id = any(${evs})`);
   // Dos: solo el entreno. Tres: solo el domingo (todos sus partidos). Cuatro: las dos cosas.
   await poner(ENT, 'sint-dos');

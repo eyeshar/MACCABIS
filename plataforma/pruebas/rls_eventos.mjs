@@ -15,10 +15,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { migrar } from './infra/migrar.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { cuadrar } from '../scripts/cuadre_eventos.mjs';
 import { revertirPosteriores } from './revertir_posteriores.mjs';
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const MIGS = path.join(AQUI, '..', 'supabase', 'migrations');
@@ -89,7 +90,7 @@ try {
   ok((await sql`select count(*)::int n from public.asistencia_resumen`)[0].n === filasOrigen.length + 1, 'una fila más en el origen se copia también');
 
   console.log('\n== Carga inicial y cuadre 1:1');
-  const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+  const cal = calendarioPrueba();
   for (const c of cal.partidos) {
     await sql`insert into public.liga_calendario (temporada, equipo, jornada, fecha, hora, local, descansa, rival, campo) values ('2026-27', ${c.equipo}, ${c.jornada}, ${c.fecha}, ${c.hora}, ${c.local}, ${!!c.descansa}, ${c.rival}, ${c.campo})`;
   }
@@ -98,7 +99,7 @@ try {
   const c2 = await cargarEventos(sql, { log: () => {} });
   ok(c2.nuevos === 0, 'repetir la carga no duplica nada');
   const lineas = [];
-  const q = await cuadrar(sql, { log: (l) => lineas.push(l) });
+  const q = await cuadrar(sql, { log: (l) => lineas.push(l), calendario: calendarioPrueba(), equipaciones: equipacionesPrueba(), entrenos: entrenosPrueba() });
   ok(q.fallos === 0 && q.partidos === 40 && q.descansos === 4 && q.entrenos === 27, `el cuadre sale OK (${q.comprobaciones} comprobaciones)`, lineas.filter((l) => l.includes('FALLO')).slice(0, 3).join(' | '));
   const [{ n: nPistas }] = await sql`select count(*)::int n from public.pistas`;
   ok(nPistas === 3, 'catálogo de pistas: 3');

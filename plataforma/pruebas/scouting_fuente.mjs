@@ -15,13 +15,14 @@
 
 import { contador, personas } from './comun_e2e.mjs';
 import { arrancar } from './pila.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS } from './infra/puertos.mjs';
 import { gotoConSesion } from './infra/esperas.mjs';
-import { ligaParaPruebas } from './infra/liga.mjs';
+import { ligaParaPruebas, rivalesDeLiga } from './infra/liga.mjs';
 import { cargarLiga } from '../scripts/cargar_liga.mjs';
 import { diaLargo, diaMes, sumarDias } from '../src/lib/dias.ts';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const { ok, fallos } = contador();
 // Sin comun_e2e.preparar(): la tabla se cambia ANTES de arrancar la app (la cache de datos de la fuente se llena con la
@@ -34,6 +35,7 @@ try {
   await cargarEventos(sql, { log: () => {} });
   const liga = ligaParaPruebas('2026-27');
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
+  await rivalesDeLiga(sql, liga);   // D185: Scouting cruza el calendario (de prueba) con la liga
   const gente = await personas(pila, {
     jugadores: [['esteban-jon', 'jugador@pruebas.local']],
     gestores: [['Gestor de pruebas', 'gestor@pruebas.local']],
@@ -42,7 +44,7 @@ try {
   const tIntruso = await pila.firmar({ sub: intruso, role: 'authenticated', email: 'intruso@pruebas.local' });
 
   console.log('\n== Se mueve un partido en la tabla de eventos (la copia vieja sigue en liga_calendario y en el repo)');
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   const clave = (t) => String(t).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
   // El proximo MdA de liga con al menos dos dias de margen (se adelanta un dia y la portada se mira el dia anterior).
   const [ev] = await sql`select id, jornada, rival, es_local, fecha::text, to_char(inicio, 'HH24:MI') hora, numero_pista from public.eventos

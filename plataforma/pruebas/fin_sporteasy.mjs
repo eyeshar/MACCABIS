@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { preparar, personas, sinteticos, contador, RAIZ } from './comun_e2e.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 
 const MIGS = path.join(RAIZ, 'supabase', 'migrations');
 const MIG = '20261102200000_fin_sporteasy';
@@ -97,7 +97,7 @@ try {
   console.log('\n== cerrar_dudas cierra también los oficiales');
   const [ev] = await sql`select id from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > current_date + 1 order by fecha limit 1`;
   await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen) values (${ev.id}, 'sint-beto', 'duda', 'jugador') on conflict (evento_id, person_id) do update set respuesta = 'duda', motivo = null`;
-  await sql`update public.respuestas_web_config set dudas_desde = now() - interval '400 days' where id = 1`;
+  await sql`update public.respuestas_web_config set dudas_desde = pruebas.ahora() - interval '400 days' where id = 1`;
   const [lim] = await sql`select public._limite_dudas(${ev.id}) l, public._inicio_evento(${ev.id}) i`;
   const cerradas = await sql`select * from public.cerrar_dudas(${new Date(new Date(lim.l).getTime() + 60_000)})`;
   ok(cerradas.some((c) => c.r_evento === ev.id && c.r_person === 'sint-beto') || new Date(lim.l) >= new Date(lim.i), 'la duda de un entreno oficial pasa a «no va» al llegar el límite', JSON.stringify(cerradas));

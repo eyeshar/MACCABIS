@@ -16,10 +16,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
+import { calendarioPrueba, cambioPrueba, conCambios, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -27,10 +29,10 @@ const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'rediseno');
 fs.mkdirSync(SALIDA, { recursive: true });
 const PUERTO = PUERTOS.app;
 const APP = `http://127.0.0.1:${PUERTO}`;
-const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+const cal = calendarioPrueba();
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
-const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+const hoy = hoyMadrid();
 
 async function esperar(url, ms = 60000) {
   const fin = Date.now() + ms;
@@ -39,7 +41,7 @@ async function esperar(url, ms = 60000) {
 }
 const dma = (f) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
 const NOMBRE = { MDA: 'Maccabi de Acostar', MDL: 'Maccabi de Levantar' };
-const bloqueOficial = () => cal.partidos.map((p) => {
+const bloqueOficial = (c = cal) => c.partidos.map((p) => {
   const g = p.equipo === 'MDA' ? 'G1' : 'G2';
   if (p.descansa) return `${g};${p.jornada};${NOMBRE[p.equipo]} descansa;;${dma(p.fecha)};;`;
   const [l, v] = p.local ? [NOMBRE[p.equipo], p.rival] : [p.rival, NOMBRE[p.equipo]];
@@ -304,7 +306,7 @@ try {
   const imp = (await sql`select tipo, por_nombre, lineas, validas, aceptadas, ignoradas from public.importaciones where tipo = 'calendario'`);
   ok(imp.length === 1 && imp[0].aceptadas === 1 && imp[0].lineas === 44 && imp[0].por_nombre === 'Gestor de pruebas', 'la importación queda registrada: quién, cuántas líneas y qué se aceptó', JSON.stringify(imp));
   // varios cambios: aceptar todos / ignorar
-  const varios = modif.split('\n').map((l) => (l.startsWith('G2;5;') ? l.replace(';12:45;', ';13:00;') : l.startsWith('G1;3;') ? l.replace(/;1$/, ';2') : l.startsWith('G1;5;') ? l.replace(/;\d{2}:\d{2};/, ';09:30;') : l)).join('\n');   // la J5 de MdA, a las 09:30 (sea cual sea su hora: pasó al 20/12 a las 13:30)
+  const varios = modif.split('\n').map((l) => (l.startsWith('G2;5;') ? l.replace(';12:45;', ';13:00;') : l.startsWith('G1;3;') ? l.replace(/;1$/, ';2') : l.startsWith('G1;5;') ? l.replace('09:00', '09:30') : l)).join('\n');
   await p.locator('#cal-texto').fill(varios);
   await p.getByRole('button', { name: 'Comparar' }).click();
   await p.waitForFunction(() => document.querySelector('[data-testid=titulo-resultado]')?.textContent === '3 cambios');
@@ -330,6 +332,49 @@ try {
   await p.getByRole('button', { name: 'Comparar' }).click();
   await p.waitForFunction(() => document.querySelectorAll('.aviso-error li').length === 2);
   ok(true, 'las líneas ilegibles se enumeran con su número y motivo');
+
+  // ---------------------------------------------------------------- cambios oficiales del calendario de prueba (D185)
+  console.log('\n== Importar: los cambios oficiales (aplazamiento, hora y pista, local a visitante), como en la rutina B');
+  {
+  // Cada comparación, desde la página recién cargada (sin el resultado de la anterior).
+  const comparar = async (texto) => {
+    await p.goto(`${APP}/gestion/eventos/importar`);
+    await p.locator('#cal-texto').fill(texto);
+    await p.getByRole('button', { name: 'Comparar' }).click();
+    await p.getByTestId('titulo-resultado').waitFor();
+    return p.getByTestId('titulo-resultado').textContent();
+  };
+  const aplicarTodos = async () => {
+    await p.getByRole('button', { name: 'Aceptar todos' }).click();
+    await p.getByRole('button', { name: 'Aplicar sin avisar' }).click();
+    await p.getByText(/^Aplicado: \d+ cambios? aceptados?/).waitFor();
+  };
+  // Primero, la tabla igual que el calendario de prueba (los pasos de arriba cambiaron algunas horas y pistas).
+  if ((await comparar(bloqueOficial())) !== '0 cambios') await aplicarTodos();
+  ok((await comparar(bloqueOficial())) === '0 cambios', 'la tabla vuelve a ser el calendario de prueba («0 cambios»)');
+  const titulo = await comparar(bloqueOficial(conCambios()));
+  const filasC = await p.locator('[data-testid=tabla-cambios] tbody tr').allTextContents();
+  const ap = cambioPrueba('aplazado'), hp = cambioPrueba('hora_y_pista');
+  const conTexto = (...t) => filasC.some((f) => t.every((x) => f.includes(x)));
+  ok(conTexto('Hora', ap.antes.hora, ap.despues.hora) && conTexto(dma(ap.antes.fecha).slice(0, 5), dma(ap.despues.fecha).slice(0, 5)), `aplazado: la J5 de MdA, fecha ${dma(ap.antes.fecha)} → ${dma(ap.despues.fecha)} y hora ${ap.antes.hora} → ${ap.despues.hora}`, filasC.join(' | '));
+  ok(conTexto('Hora', hp.antes.hora, hp.despues.hora) && filasC.some((f) => /pista/i.test(f)), `hora y pista: la J${hp.jornada} de MdL, ${hp.antes.hora} → ${hp.despues.hora} y pista ${hp.antes.campo} → ${hp.despues.campo}`, filasC.join(' | '));
+  ok(conTexto('J5 · MdL', 'Orden del cartel', 'MdL – ', ' – MdL'), 'de local a visitante: la J5 de MdL cambia el orden del cartel («MdL – rival» → «rival – MdL»)', filasC.join(' | '));
+  ok(titulo === `${filasC.length} cambios` && filasC.length >= 3, `${titulo}: solo los de los tres casos`, filasC.join(' | '));
+  await aplicarTodos();
+  ok((await comparar(bloqueOficial(conCambios()))) === '0 cambios', 'aplicados, la misma importación da «0 cambios»');
+  const ev = Object.fromEntries((await sql`select clave, fecha::text f, to_char(inicio, 'HH24:MI') h, numero_pista n, es_local l from public.eventos where clave in ('mda-j5', ${`mdl-j${hp.jornada}`}, 'mdl-j5')`).map((x) => [x.clave, x]));
+  ok(ev['mda-j5'].f === ap.despues.fecha && ev['mda-j5'].h === ap.despues.hora, 'aplicado: la J5 de MdA, en su fecha y hora nuevas', JSON.stringify(ev['mda-j5']));
+  ok(ev[`mdl-j${hp.jornada}`].h === hp.despues.hora && String(ev[`mdl-j${hp.jornada}`].n) === hp.despues.campo, `aplicado: la J${hp.jornada} de MdL, a su hora y en su pista nuevas`, JSON.stringify(ev[`mdl-j${hp.jornada}`]));
+  ok(ev['mdl-j5'].l === false, 'aplicado: la J5 de MdL, de visitante', JSON.stringify(ev['mdl-j5']));
+  await p.goto(`${APP}/gestion/eventos?f=liga`);
+  const fila = (clave) => p.locator(`tr[data-evento="${clave}"]`).textContent();
+  ok((await fila('mda-j5')).includes(ap.despues.hora) && (await fila('mda-j5')).includes(String(+ap.despues.fecha.slice(8, 10))), `pantalla de eventos: la J5 de MdA sale el ${+ap.despues.fecha.slice(8, 10)} a las ${ap.despues.hora}`, await fila('mda-j5'));
+  ok((await fila(`mdl-j${hp.jornada}`)).includes(hp.despues.hora) && (await fila(`mdl-j${hp.jornada}`)).includes(`Moratalaz · Pista ${hp.despues.campo}`), `pantalla de eventos: la J${hp.jornada} de MdL, ${hp.despues.hora} en la Pista ${hp.despues.campo}`, await fila('mdl-j2'));
+  ok((await fila('mdl-j5')).includes('Nos toca: amarilla') && !(await fila('mdl-j5')).includes('Cambian ellos'), 'pantalla de eventos: la J5 de MdL, ahora fuera, «Nos toca: amarilla»', await fila('mdl-j5'));
+  const orden = await p.locator('[data-testid=tabla-eventos] tbody tr[data-evento^="mda-j"]').evaluateAll((t) => t.map((x) => x.getAttribute('data-evento')));
+  ok(orden.indexOf('mda-j6') < orden.indexOf('mda-j5'), 'pantalla de eventos: la J5 de MdA, aplazada, va ya después de la J6 (orden por fecha)', orden.join(' '));
+  await p.goto(`${APP}/gestion/eventos/importar`);
+  }
 
   // ---------------------------------------------------------------- importar: sin respuestas (SportEasy ya no se usa)
   console.log('\n== Importar: solo el calendario');

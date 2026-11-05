@@ -585,7 +585,7 @@ try {
   await pA.goto(`${APP}/mi-zona/ropa/nuevo`);
   ok(await pA.getByText('El pedido de ropa está cerrado').isVisible(), 'el formulario de pedido dice que esta cerrado');
   // Plazo vencido con la campana "abierta": tambien rechaza.
-  await sql`update public.campanas_ropa set estado = 'abierta', fecha_limite = now() - interval '1 minute' where id = ${campana.id}`;
+  await sql`update public.campanas_ropa set estado = 'abierta', fecha_limite = pruebas.ahora() - interval '1 minute' where id = ${campana.id}`;
   r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 30, tallas: { sudadera: 'M' } } }, jwtB);
   ok(r.datos?.error === 'campana_cerrada', 'con la fecha limite pasada tambien se rechaza', JSON.stringify(r.datos));
 

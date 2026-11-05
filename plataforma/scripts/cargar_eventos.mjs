@@ -59,9 +59,10 @@ export function entrenosIniciales(ent = leer('data', 'entrenos_2026-27.json'), c
   return filas;
 }
 
-export async function cargarEventos(sql, { log = console.log } = {}) {
-  const { partidos, descansos } = partidosIniciales();
-  const entrenos = entrenosIniciales();
+/** `calendario` y `entrenos`: por defecto, los reales de data/; las pruebas pasan los suyos (pruebas/infra/calendario.mjs, D185). */
+export async function cargarEventos(sql, { log = console.log, calendario, entrenos: ent } = {}) {
+  const { partidos, descansos } = partidosIniciales(calendario);
+  const entrenos = entrenosIniciales(ent, calendario);
   const pistas = Object.fromEntries((await sql`select id, slug from public.pistas`).map((p) => [p.slug, p.id]));
   for (const s of ['cdm-moratalaz', 'valdebernardo', 'caja-magica']) if (!pistas[s]) throw new Error(`Falta la pista ${s} (¿migración sin aplicar?)`);
   const contar = async () => (await sql`select count(*)::int n from public.eventos`)[0].n;

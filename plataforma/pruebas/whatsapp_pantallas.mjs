@@ -10,12 +10,13 @@
 //
 //   npm run pruebas:whatsapp-pantallas
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos, trasAccion, hasta } from './comun_e2e.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const { ok, fallos, sumar } = contador();
 const e = await preparar();
 const { sql, APP } = e;
 try {
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   // Luz «no suele entrenar» (sin responder: no va por defecto); Rai y Sol sin responder (Rai con teléfono); Bea va.
   await sinteticos(sql, [['sint-luz', 'Luz', true, false], ['sint-rai', 'Rai', true, false], ['sint-sol', 'Sol', true, false], ['sint-bea', 'Bea', true, false]]);
   await sql`insert into public.jugadores_privado (person_id, no_suele_entrenar) values ('sint-luz', true)`;

@@ -13,6 +13,7 @@ import { preparar, personas, contador, visto, sinDesbordar, foto, PUERTOS } from
 import { enlaceGoogle, leerEnlaceGoogle, deNominatim } from '../src/lib/ubicacion.ts';
 import { mensajeWhatsApp, pistaEfectiva } from '../src/lib/eventos/dominio.ts';
 import { calendarioPersonal } from '../src/lib/calendario/icsPersonal.ts';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const { ok, fallos, sumar } = contador();
 const MAPA = (lat, lng) => `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
@@ -77,7 +78,7 @@ try {
   await pj.goto(`${APP}/planes/nuevo`);
   await pj.locator('.pl-tipo', { hasText: 'Quedada' }).click();
   await pj.getByLabel('Título', { exact: true }).fill('Cena de equipo');
-  const manana = new Date(Date.now() + 5 * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const manana = new Date(ahoraPrueba().getTime() + 5 * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
   await pj.getByLabel('Día', { exact: true }).fill(manana);
   await pj.getByLabel('Empieza', { exact: true }).fill('21:30');
   await pj.getByRole('combobox', { name: 'Dónde' }).fill('bar esquina');

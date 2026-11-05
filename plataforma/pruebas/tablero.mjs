@@ -15,12 +15,13 @@
 //
 //   npm run pruebas:tablero
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto } from './comun_e2e.mjs';
-import { adelantar, semanas } from './fechas_prueba.mjs';
+import { adelantar, semanas, hoyMadrid } from './fechas_prueba.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const MIG = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations', '20261031190000_respuesta_a_mano');
 
@@ -83,12 +84,12 @@ try {
   ok((await pg.locator('tbody[data-bloque="exterior"] tr[data-person="sint-carla"]').count()) === 1, 'Carla (escolta, base de reserva) en Exteriores');
 
   console.log('\n== Selector «Ver»: todos los eventos de la temporada, los futuros primero (D159)');
-  const hoyS = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoyS = hoyMadrid();
   const evs = await sql`select id, fecha::text, tipo, estado from public.eventos where temporada = '2026-27' and oficial and borrado_en is null order by fecha, inicio nulls last`;
   const opts = await pg.locator('#tb-ver option').evaluateAll((o) => o.map((x) => ({ v: x.value, g: x.parentElement.getAttribute('label') })));
   const optEv = opts.filter((o) => o.v.startsWith('evento:'));
   ok(optEv.length === evs.length && evs.every((x) => optEv.some((o) => o.v === `evento:${x.id}`)), `«Ver» trae los ${evs.length} eventos oficiales de la temporada (antes, solo los de las 5 semanas siguientes)`, `${optEv.length} en el selector`);
-  const lejano = evs.filter((x) => x.fecha > new Date(Date.now() + 40 * 864e5).toISOString().slice(0, 10)).at(-1);
+  const lejano = evs.filter((x) => x.fecha > new Date(ahoraPrueba().getTime() + 40 * 864e5).toISOString().slice(0, 10)).at(-1);
   ok(!lejano || optEv.some((o) => o.v === `evento:${lejano.id}`), 'incluye los de más de cinco semanas', lejano?.fecha);
   const domFut = [...new Set(evs.filter((x) => x.tipo === 'liga' && x.estado === 'programado').map((x) => x.fecha))];
   ok(opts.filter((o) => o.v.startsWith('domingo:')).length === domFut.length, `y los ${domFut.length} domingos de partidos (futuros y ya jugados)`);
@@ -152,7 +153,7 @@ try {
   await trasAccion(pg, () => celdaDe('sint-ana', 'MdL').click());
   await trasAccion(pg, () => pg.getByTestId('tb-mensaje').getByRole('button', { name: 'Deshacer' }).click());
   ok(!enEq(await conv(), 'MdL', 'sint-ana'), '«Deshacer» devuelve la convocatoria como estaba');
-  await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = now() - interval '1 minute', aprobada_por_nombre = 'Iván', whatsapp_estado = 'al_dia', whatsapp_base = equipos where fecha = ${J3}`;
+  await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = pruebas.ahora() - interval '1 minute', aprobada_por_nombre = 'Iván', whatsapp_estado = 'al_dia', whatsapp_base = equipos where fecha = ${J3}`;
   await pg.reload();
   ok((await pg.getByTestId('estado-convocatoria').innerText()) === 'Aprobada', 'convocatoria «Aprobada»');
   await trasAccion(pg, () => celdaDe('sint-ana', 'MdL').click());
@@ -198,7 +199,7 @@ try {
   ok(await sinDesbordar(pg), '1280 px sin desbordamiento');
 
   console.log('\n== Evento suelto (entreno): Van · Duda o sin responder · No van');
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   const [ent] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > ${hoy} order by fecha limit 1`;
   await resp(ent.id, 'sint-ana', 'va');
   await pg.goto(`${APP}/gestion/tablero?evento=${ent.id}`);

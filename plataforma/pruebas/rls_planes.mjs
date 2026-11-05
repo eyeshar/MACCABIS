@@ -16,19 +16,21 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { hasta } from './infra/esperas.mjs';
-import { migrar } from '../scripts/db.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { migrar } from './infra/migrar.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { planificar, planificarPlanes } from '../src/lib/avisos/planificador.ts';
 import { madrid } from '../src/lib/avisos/horario.ts';
 import { convocadosDe } from '../src/lib/eventos/dominio.ts';
 import { quienResponde } from '../src/lib/respuestas/dominio.ts';
+import { hoyMadrid } from './fechas_prueba.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const MIGS = path.join(AQUI, '..', 'supabase', 'migrations');
 const MIG = '20261024200000_inicio_y_planes';
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
-const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+const hoy = hoyMadrid();
 const sumar = (f, n) => { const d = new Date(`${f}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 const pila = await arrancar();
@@ -166,7 +168,7 @@ try {
   const planes = eventosGestor.filter((e) => e.oficial === false);
   ok(planes.length === 2, 'los planes existen (los ve un gestor)');
   const jug = (await api('/jugadores?select=person_id,nombre_visible,ficha_mda,ficha_mdl,entrena,activo,rol', { token: tG })).datos;
-  const ahoraRec = new Date(Date.now());
+  const ahoraRec = new Date(ahoraPrueba().getTime());
   const recClub = planificar({ ahora: ahoraRec, eventos: eventosGestor.map((e) => ({ ...e, sitio: 'x' })), jugadores: jug, respuestas: [], ausencias: [] });
   ok(!recClub.some((a) => a.eventos.some((id) => planes.some((p) => p.id === id))), 'los recordatorios del club no incluyen ningún plan (aunque estén «al crearlo»)');
   ok(convocadosDe({ tipo: 'quedada', equipo: 'MdL', oficial: false }, jug).every((j) => j.ficha_mdl) && quienResponde({ tipo: 'quedada', equipo: 'ambos', oficial: false }, jug.find((j) => j.person_id === 'feliz-gomez-edimil')), 'la definición de invitados de la web coincide con la base (MdL: solo fichas del MdL; toda la plantilla: también quien solo entrena)');

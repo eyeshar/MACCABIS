@@ -11,14 +11,14 @@
 //
 //   npm run pruebas:inicio-personal
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto, pequenos } from './comun_e2e.mjs';
-import { adelantar, semanas, diaLargo } from './fechas_prueba.mjs';
+import { adelantar, semanas, diaLargo, hoyMadrid } from './fechas_prueba.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const { ok, fallos, sumar } = contador();
 const e = await preparar();
 const { sql, APP } = e;
 try {
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   const F = await adelantar(sql, semanas('2026-10-25'));
   // La J3 tiene que ser el proximo domingo con partido. Un domingo, la J2 adelantada cae HOY y, antes de su hora,
   // seria el «próximo partido»: se le pone la hora 00:01 (ya empezado).
@@ -37,7 +37,7 @@ try {
   await personas(e.pila, { jugadores: [['sint-sara', 'sara@pruebas.local']] });
   const [ent] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > ${hoy} order by fecha limit 1`;
   await sql`insert into public.respuestas (evento_id, person_id, respuesta) values (${ent.id}, 'esteban-jon', 'sin_responder')`;
-  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${F('2026-10-25')}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'esteban-jon' }], MdL: [{ person_id: 'gianatti-adriano' }] })}, now())`;
+  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${F('2026-10-25')}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'esteban-jon' }], MdL: [{ person_id: 'gianatti-adriano' }] })}, pruebas.ahora())`;
   const api = (f, args, token) => fetch(`${e.pila.url}/rest/v1/rpc/${f}`, { method: 'POST', headers: { apikey: e.pila.anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(args) }).then((r) => r.json());
   const plan = await api('crear_plan', { p: { tipo: 'quedada', titulo: 'Cañas del jueves', fecha: ent.fecha, inicio: '22:40', equipo: 'ambos', ubicacion_nombre: 'Bar La Esquina', ubicacion_lat: 40.4, ubicacion_lng: -3.63 } }, P['gianatti-adriano'].token);
   // Un segundo plan, el mismo dia y mas tarde: dos tarjetas de plan en el carrusel.

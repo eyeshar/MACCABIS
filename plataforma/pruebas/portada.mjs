@@ -17,6 +17,8 @@ import { arrancar } from './pila.mjs';
 import { desfasadas } from '../scripts/sincronizar_equipacion.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -24,8 +26,8 @@ const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'rediseno');
 fs.mkdirSync(SALIDA, { recursive: true });
 const require = createRequire(import.meta.url);
 const A = require(path.join(REPO, 'data', 'avisos_equipacion.js'));
-const equip = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'equipaciones_2026-27.json'), 'utf8'));
-const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+const equip = equipacionesPrueba();
+const cal = calendarioPrueba();
 const resumen = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'historia_resumen.json'), 'utf8'));
 // Lo que Mi zona debe decirle al jugador de pruebas (Jon) sale de los datos publicados, no de cifras fijas:
 // con cada jornada cambian la ultima jugada y el total de la temporada (la J2 rompio los "30 puntos" de la J1).
@@ -60,7 +62,7 @@ async function esperar(url, ms = 60000) {
 
 console.log('== Datos');
 ok(desfasadas().length === 0, 'plataforma/src/data/ coincide con data/ (npm run datos:sync)', desfasadas().join(', '));
-const entrenos = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'entrenos_2026-27.json'), 'utf8'));
+const entrenos = entrenosPrueba();
 ok(entrenos.series[0].dia_semana === 3 && entrenos.series[0].inicio === '20:30' && entrenos.series[0].fin === '22:30', 'entreno semanal: miercoles 20:30-22:30');
 // D148 (29/10/2026): Valdebernardo reabierta y solo con ficha. La pila local sigue con la pista en obras (la de la migración): lo de abajo no cambia.
 ok(entrenos.pistas[entrenos.series[0].pista].estado === 'habitual' && entrenos.pistas[entrenos.series[0].pista].solo_con_ficha === true, 'pista habitual (Valdebernardo) reabierta y solo con ficha (D148)');
@@ -73,10 +75,10 @@ try {
   const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
   const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
   await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
-  const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
+  const { cargarEventos } = await import('./infra/calendario.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
   // El proximo entreno sin pista propia con la pista como UBICACION LIBRE (D119), como el del 28/10/2026 (D138).
-  const hoyP = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoyP = hoyMadrid();
   const [libre] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and pista_id is null and fecha >= ${hoyP} order by fecha limit 1`;
   await sql`update public.eventos set ubicacion_nombre = 'Ciudad de los Periodistas' where id = ${libre.id}`;
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
@@ -145,7 +147,7 @@ try {
   ok(new Set(ev.map((b) => b.match(/UID:(.*)/)[1])).size === ev.length, 'UID unicos');
   ok(desplegado.includes('TZID:Europe/Madrid') && ev.filter((b) => b.includes('DTSTART;TZID=Europe/Madrid')).length === ev.length, 'horas en Europe/Madrid con VTIMEZONE');
   const j2 = ev.find((b) => b.includes('UID:mda-j2-'));
-  ok(j2 && j2.includes('DTSTART;TZID=Europe/Madrid:20261018T101500') && j2.includes('SUMMARY:MdA – Litros de Mahou (J2)') && j2.includes('cambia Litros de Mahou'), 'J2 MdA: 18/10 10:15, con la linea de equipacion (cambian ellos)');
+  ok(j2 && j2.includes('DTSTART;TZID=Europe/Madrid:20261018T101500') && j2.includes('SUMMARY:MdA – Lobos de Prueba (J2)') && j2.includes('cambia Lobos de Prueba'), 'J2 MdA: 18/10 10:15, con la linea de equipacion (cambian ellos)');
   const caja = ev.find((b) => b.includes('20261007T200000'));
   ok(caja && caja.includes('DTEND;TZID=Europe/Madrid:20261007T210000') && caja.includes('LOCATION:Caja Mágica'), 'entreno 07/10: 20:00-21:00 en la Caja Magica');
   const e14 = ev.find((b) => b.includes('DTSTART;TZID=Europe/Madrid:20261014T203000'));
@@ -221,11 +223,11 @@ try {
     await p.goto(`${APP}/?hoy=2026-10-06`);
     ok(await sinDesbordar(), 'portada: sin desbordamiento horizontal');
     const mda = p.locator('article.w-partido[data-equipo="MDA"]'), mdl = p.locator('article.w-partido[data-equipo="MDL"]');
-    ok((await mda.textContent()).includes('Litros de Mahou') && (await mdl.textContent()).includes('Quinto Tiempo'), 'proxima jornada: MdA–Litros de Mahou y Quinto Tiempo–MdL (J2)');
+    ok((await mda.textContent()).includes('Lobos de Prueba') && (await mdl.textContent()).includes('Base de Prueba'), 'proxima jornada: MdA–Lobos de Prueba y Base de Prueba–MdL (J2)');
     ok((await p.locator('#partidos .w-meta').textContent()).toLowerCase().includes('j2 · domingo, 18 de octubre'), 'proxima jornada: J2 · domingo 18 de octubre');
     const avA = mda.locator('.eq-aviso');
-    ok((await avA.count()) === 1 && (await avA.getAttribute('data-tipo')) === 'cambian_ellos' && (await avA.textContent()).includes('Coinciden colores: cambia Litros de Mahou'), 'J2 MdA: aviso CAMBIAN ELLOS');
-    ok((await mdl.locator('.eq-aviso').count()) === 0 && (await mdl.locator('[data-tipo="sin_choque"]').count()) === 1, 'J2 MdL (Quinto Tiempo): sin choque de color');
+    ok((await avA.count()) === 1 && (await avA.getAttribute('data-tipo')) === 'cambian_ellos' && (await avA.textContent()).includes('Coinciden colores: cambia Lobos de Prueba'), 'J2 MdA: aviso CAMBIAN ELLOS');
+    ok((await mdl.locator('.eq-aviso').count()) === 0 && (await mdl.locator('[data-tipo="sin_choque"]').count()) === 1, 'J2 MdL (Base de Prueba): sin choque de color');
     const banda = await p.locator('section[aria-label="Últimos resultados"]').textContent();
     // Si la J1 sigue pendiente de acta o ya la tiene lo dicen los datos (desde D106, con acta).
     const j1 = JSON.parse(fs.readFileSync(path.join(RAIZ, '..', 'data', 'season_2026-27.json'), 'utf8')).partidos.filter((x) => x.fecha === '2026-10-04');
@@ -262,7 +264,7 @@ try {
     await p.getByRole('group', { name: 'Filtrar calendario' }).getByRole('button', { name: 'Todo', exact: true }).click();
     const antes = await calSel.locator('.w-cal-fila').count();
     await calSel.getByRole('button', { name: /Ver toda la temporada/ }).click();
-    ok((await calSel.locator('.w-cal-fila').count()) > antes && (await calSel.locator('[data-id="mdl-j6"] [data-aviso="nos_toca"]').count()) === 1, 'ver toda la temporada: J6 en 28500 con "Nos toca: amarilla"');
+    ok((await calSel.locator('.w-cal-fila').count()) > antes && (await calSel.locator('[data-id="mdl-j6"] [data-aviso="nos_toca"]').count()) === 1, 'ver toda la temporada: J6 en Falta Técnica FC con "Nos toca: amarilla"');
     const fechasEntreno = await calSel.locator('.w-cal-fila[data-tipo="entreno"]').evaluateAll((f) => f.map((x) => x.dataset.id.slice(-10)));
     ok(['2026-12-23', '2026-12-30', '2027-01-06', '2027-03-24'].every((f) => !fechasEntreno.includes(f)) && fechasEntreno.at(-1) === '2027-05-05', 'toda la temporada: sin entrenos en Navidad, Reyes ni Semana Santa; el ultimo, el 05/05/2027', fechasEntreno.at(-1));
     ok((await p.locator('a[href^="webcal://"]').count()) === 1 && (await p.locator('a[href="/calendario.ics"]').count()) === 1, '"Añadir a mi calendario": suscripcion webcal y descarga del .ics');
@@ -285,10 +287,10 @@ try {
     }
     await p.goto(`${APP}/?hoy=2026-10-06`);
     await captura(p, `real_portada_${etiqueta}`);
-    // NOS TOCA: el 20/11 el proximo de MdL es la J6 en 28500 (visitantes)
+    // NOS TOCA: el 20/11 el proximo de MdL es la J6 en Falta Técnica FC (visitantes)
     await p.goto(`${APP}/?hoy=2026-11-20`);
     const nos = p.locator('article.w-partido[data-equipo="MDL"] .eq-aviso');
-    ok((await nos.getAttribute('data-tipo')) === 'nos_toca' && (await nos.textContent()).includes('Nos toca cambiar: equipación AMARILLA') && (await nos.textContent()).includes('partido perdido'), 'el 20/11 (J6 MdL en 28500): NOS TOCA CAMBIAR');
+    ok((await nos.getAttribute('data-tipo')) === 'nos_toca' && (await nos.textContent()).includes('Nos toca cambiar: equipación AMARILLA') && (await nos.textContent()).includes('partido perdido'), 'el 20/11 (J6 MdL en Falta Técnica FC): NOS TOCA CAMBIAR');
     ok(errores.length === 0, 'portada: sin errores de JavaScript', errores.join(' | '));
     await ctx.close();
   }
@@ -320,7 +322,7 @@ try {
   }
 
   // ---------------------------------------------------------------- Acceso, Mi zona y gestion
-  const aMdA = A.proximoPartido(cal, new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' }), 'MDA');
+  const aMdA = A.proximoPartido(cal, hoyMadrid(), 'MDA');
   for (const [etiqueta, ancho, alto, movil] of [['375', 375, 812, true], ['escritorio', 1440, 900, false]]) {
     console.log(`\n== Acceso, Mi zona y gestion, ${etiqueta}`);
     const nuevo = () => nav.newContext({ viewport: { width: ancho, height: alto }, deviceScaleFactor: movil ? 2 : 1, isMobile: movil, hasTouch: movil, locale: 'es-ES' });
@@ -354,7 +356,10 @@ try {
     ok((await domingo.locator('.in-partido-uno').count()) >= 1, 'Tu próximo partido (dobla): los partidos de su próximo domingo');
     if (aMdA?.fecha === '2026-10-18') {
       ok((await domingo.textContent()).includes('no se puede doblar'), 'J2: misma hora, "no se puede doblar"', await domingo.textContent());
-      ok((await domingo.locator('.eq-aviso[data-tipo="cambian_ellos"]').count()) >= 1, 'Equipacion del domingo: cambian ellos (Litros de Mahou)');
+      // D160/D171: la tarjeta lleva la línea de equipación de la convocatoria (antes, la etiqueta .eq-aviso; esta rama no se
+      // ejecutaba desde octubre con la fecha real: con «hoy» fijo, D185, sí).
+      const lineas = await domingo.getByTestId('linea-equipacion').allTextContents();
+      ok(lineas.some((t) => t.includes('Coinciden colores: cambia Lobos de Prueba')), 'Equipacion del domingo: cambian ellos (Lobos de Prueba)', lineas.join(' | '));
     }
     ok((await p.getByTestId('tu-temporada').textContent()).includes(`${jon.tot.pts}`), `Tu temporada: ${jon.tot.pts} puntos`);
     ok(!/nivel|posici[oó]n/i.test(await p.textContent('main')), 'inicio: ni niveles ni posiciones (D39)');

@@ -32,14 +32,15 @@ const hhmm = (t) => (t ? String(t).slice(0, 5) : null);
 const tipografia = (t) => String(t ?? '').toLowerCase().replace(/\.+$/, '');
 const dia = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : d ? String(d).slice(0, 10) : null);
 
-export async function cuadrar(sql, { log = console.log } = {}) {
+/** `calendario` y `equipaciones`: por defecto, los reales de data/; las pruebas pasan los suyos (D185). */
+export async function cuadrar(sql, { log = console.log, calendario, equipaciones, entrenos: entrenosFuente } = {}) {
   let fallos = 0, comprobaciones = 0;
   const ok = (c, m, d = '') => { comprobaciones++; if (!c) { fallos++; log(`  FALLO ${m}${d ? ` -> ${d}` : ''}`); } };
-  const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
-  const equip = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'equipaciones_2026-27.json'), 'utf8'));
+  const cal = calendario ?? JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+  const equip = equipaciones ?? JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'equipaciones_2026-27.json'), 'utf8'));
   const A = require(path.join(REPO, 'data', 'avisos_equipacion.js'));
   const { partidos, descansos } = partidosIniciales(cal);
-  const entrenos = entrenosIniciales();
+  const entrenos = entrenosIniciales(entrenosFuente, calendario);
 
   const ev = await sql`select e.*, p.slug as pista_slug from public.eventos e left join public.pistas p on p.id = e.pista_id where e.temporada = '2026-27'`;
   const porClave = new Map(ev.map((e) => [e.clave, e]));

@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { preparar, personas, contador, RAIZ } from './comun_e2e.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 import { revertirPosteriores } from './revertir_posteriores.mjs';
 
 const { ok, fallos, sumar } = contador();

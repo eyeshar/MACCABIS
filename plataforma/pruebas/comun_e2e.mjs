@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { arrancarApp, abrirNavegador, conCapturas, esperar as esperarUrl } from './infra/app.mjs';
 import { PUERTOS } from './infra/puertos.mjs';
 import { gotoConSesion } from './infra/esperas.mjs';

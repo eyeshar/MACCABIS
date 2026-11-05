@@ -1,33 +1,35 @@
 #!/usr/bin/env node
-// Avisos de choque de equipacion (D79): el calculo (data/avisos_equipacion.js) con los datos reales del repo.
-// Sin base de datos ni navegador.
+// Avisos de choque de equipacion (D79): el calculo (data/avisos_equipacion.js) con el calendario y las equipaciones de
+// PRUEBA (D185: rivales inventados, fechas fijas; nunca el calendario real). Sin base de datos ni navegador.
 //
 //   npm run pruebas:equipacion
 //
-// Falla si algun equipo del calendario no tiene color, si las copias de plataforma/src/data/ estan desfasadas
-// o si los casos de control cambian. Al final lista todos los partidos de la temporada con aviso.
+// Falla si algun equipo del calendario no tiene color o si los casos de control cambian, y comprueba los cambios oficiales
+// del calendario de prueba (aplazamiento, cambio de local a visitante, descanso). Las copias de plataforma/src/data/ las
+// comprueba check:copias. Al final lista todos los partidos de la temporada con aviso.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { desfasadas } from '../scripts/sincronizar_equipacion.mjs';
+import { calendarioPrueba, cambioPrueba, conCambios, equipacionesPrueba } from './infra/calendario.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const require = createRequire(import.meta.url);
 const A = require(path.join(RAIZ, 'data', 'avisos_equipacion.js'));
-const leer = (f) => JSON.parse(fs.readFileSync(path.join(RAIZ, 'data', f), 'utf8'));
-const equip = leer('equipaciones_2026-27.json');
-const cal = leer('calendario_2026-27.json');
+const equip = equipacionesPrueba();
+const cal = calendarioPrueba();
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
 const partido = (eq, j) => cal.partidos.find((p) => p.equipo === eq && p.jornada === j);
+/** Nombre «bonito» del rival de esa jornada (el de equipaciones; el calendario lo trae a veces en mayúsculas). */
+const rival = (eq, j) => A.equipoPorNombre(equip, partido(eq, j).rival).nombre;
 
 console.log('\n== Datos');
 const COLORES = ['negro', 'azul oscuro', 'azul', 'blanco', 'rojo', 'rosa', 'naranja', 'amarillo'];
 const lista = Object.values(equip.equipos);
-ok(lista.length === 22, '22 equipos (20 rivales + MdA + MdL)', String(lista.length));
+ok(lista.length === 42, '42 equipos: los 22 reales congelados (20 rivales + MdA + MdL) y los 20 rivales inventados del calendario de prueba', String(lista.length));
 ok(lista.every((e) => e.camiseta_original && e.pantalon_original), 'todos con el texto original de camiseta y pantalon');
 {
   const MASC = /camiseta (negro|blanco|amarillo|rojo)\b/, FEM = /pantalón (negra|blanca|amarilla|roja)\b/;
@@ -62,25 +64,25 @@ ok(desc && !desc.conocido && !desc.hay, 'rival sin color: aviso "no conocido", s
 
 console.log('\n== Casos de control');
 const a = (eq, j) => A.avisoPartido(equip, partido(eq, j));
-ok(a('MDA', 2).hay && a('MDA', 2).tipo === 'cambian_ellos' && a('MDA', 2).colorRival === 'negro', 'J2 18/10 MdA–Litros de Mahou: CAMBIAN ELLOS (somos locales)');
-ok(a('MDA', 2).etiqueta === 'ℹ Coinciden colores: cambia Litros de Mahou' && a('MDA', 2).texto === 'Jugamos de negro; Litros de Mahou (camiseta negra) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.', 'J2: etiqueta y texto de "cambian ellos"', a('MDA', 2).texto);
-ok(a('MDL', 1).tipo === 'cambian_ellos' && a('MDL', 1).colorRival === 'azul oscuro', 'J1 04/10 MdL–Mejorada: CAMBIAN ELLOS (local, azul oscuro)');
-ok(a('MDL', 6).tipo === 'nos_toca' && a('MDL', 6).colorRival === 'negro' && partido('MDL', 6).local === false, 'J6 MdL en 28500 (negro): NOS TOCA (visitantes, vamos en segundo lugar)');
-ok(a('MDL', 6).etiqueta === '⚠ Nos toca cambiar: equipación AMARILLA' && a('MDL', 6).texto === 'Vamos en segundo lugar contra 28500 (camiseta negra). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).', 'J6: etiqueta y texto de "nos toca cambiar"', a('MDL', 6).texto);
-ok(a('MDA', 10).tipo === 'nos_toca' && a('MDA', 16).tipo === 'nos_toca' && a('MDA', 16).colorRival === 'azul', 'MdA en Chavalitros (negro) y en Nabuco TD (azul): NOS TOCA');
-ok(!a('MDL', 2).hay && a('MDL', 2).colorRival === 'naranja', 'J2 18/10 MdL–Quinto Tiempo: SIN aviso (naranja)');
-ok(!a('MDA', 3).hay && !a('MDL', 3).hay, 'J3: sin avisos (Khinkis rojo, Suanzes naranja)');
-ok(a('MDA', 5).hay && a('MDA', 5).colorRival === 'azul', 'J5 MdA–Nabuco TD: aviso (el azul cuenta, decision de Ivan)');
-ok(a('MDL', 1).hay && a('MDL', 1).colorRival === 'azul oscuro', 'J1 MdL–Mejorada: aviso (azul oscuro)');
+ok(a('MDA', 2).hay && a('MDA', 2).tipo === 'cambian_ellos' && a('MDA', 2).colorRival === 'negro', `J2 18/10 MdA–${rival('MDA', 2)}: CAMBIAN ELLOS (somos locales)`);
+ok(a('MDA', 2).etiqueta === `ℹ Coinciden colores: cambia ${rival('MDA', 2)}` && a('MDA', 2).texto === `Jugamos de negro; ${rival('MDA', 2)} (camiseta negra) va en segundo lugar y debe cambiar. Llevad la amarilla por si acaso.`, 'J2: etiqueta y texto de "cambian ellos"', a('MDA', 2).texto);
+ok(a('MDL', 1).tipo === 'cambian_ellos' && a('MDL', 1).colorRival === 'azul oscuro', `J1 04/10 MdL–${rival('MDL', 1)}: CAMBIAN ELLOS (local, azul oscuro)`);
+ok(a('MDL', 6).tipo === 'nos_toca' && a('MDL', 6).colorRival === 'negro' && partido('MDL', 6).local === false, `J6 MdL en ${rival('MDL', 6)} (negro): NOS TOCA (visitantes, vamos en segundo lugar)`);
+ok(a('MDL', 6).etiqueta === '⚠ Nos toca cambiar: equipación AMARILLA' && a('MDL', 6).texto === `Vamos en segundo lugar contra ${rival('MDL', 6)} (camiseta negra). Obligatorio: si no cambiamos, partido perdido (Bases 47 JDM, 5.11).`, 'J6: etiqueta y texto de "nos toca cambiar"', a('MDL', 6).texto);
+ok(a('MDA', 10).tipo === 'nos_toca' && a('MDA', 16).tipo === 'nos_toca' && a('MDA', 16).colorRival === 'azul', `MdA en ${rival('MDA', 10)} (negro) y en ${rival('MDA', 16)} (azul): NOS TOCA`);
+ok(!a('MDL', 2).hay && a('MDL', 2).colorRival === 'naranja', `J2 18/10 MdL–${rival('MDL', 2)}: SIN aviso (naranja)`);
+ok(!a('MDA', 3).hay && !a('MDL', 3).hay, 'J3: sin avisos (rival rojo y rival naranja)');
+ok(a('MDA', 5).hay && a('MDA', 5).colorRival === 'azul', `J5 MdA–${rival('MDA', 5)}: aviso (el azul cuenta, decision de Ivan)`);
+ok(a('MDL', 1).hay && a('MDL', 1).colorRival === 'azul oscuro', `J1 MdL–${rival('MDL', 1)}: aviso (azul oscuro)`);
 ok(!a('MDA', 1).hay && !a('MDA', 6).hay && !a('MDA', 7).hay, 'rival blanco / naranja / amarillo: sin aviso');
 ok(A.avisoPartido(equip, partido('MDA', 4)) === null, 'jornada de descanso: sin aviso ni rival');
 const FIN = ' Llevad la amarilla por si acaso.';
 const lc = (p) => A.lineaConvocatoria(equip, p);
 ok(lc(partido('MDL', 6)) === 'Coinciden colores: cambiamos nosotros, de amarillo.' + FIN, 'convocatoria (D160), nos toca: «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.»', lc(partido('MDL', 6)));
-ok(lc(partido('MDA', 2)) === 'Coinciden colores: cambia Litros de Mahou.' + FIN, 'convocatoria, cambian ellos: «Coinciden colores: cambia Litros de Mahou. Llevad…»', lc(partido('MDA', 2)));
-ok(lc(partido('MDL', 1)) === 'Coinciden colores: cambia Mejorada 2012 C.B.' + FIN, 'un nombre que acaba en punto no sale con «..»', lc(partido('MDL', 1)));
+ok(lc(partido('MDA', 2)) === `Coinciden colores: cambia ${rival('MDA', 2)}.` + FIN, `convocatoria, cambian ellos: «Coinciden colores: cambia ${rival('MDA', 2)}. Llevad…»`, lc(partido('MDA', 2)));
+ok(lc({ equipo: 'MDL', rival: 'MEJORADA 2012 C.B..', local: true, descansa: false }) === 'Coinciden colores: cambia Mejorada 2012 C.B.' + FIN, 'un nombre que acaba en punto no sale con «..»', lc({ equipo: 'MDL', rival: 'MEJORADA 2012 C.B..', local: true, descansa: false }));
 ok(lc(partido('MDL', 2)) === 'Jugamos de negro (ellos de naranja).' + FIN, 'convocatoria SIN choque: también hay línea, «Jugamos de negro (ellos de naranja). Llevad…»', lc(partido('MDL', 2)));
-ok(lc({ ...partido('MDA', 2), local: null }) === 'Coinciden colores con Litros de Mahou: no consta quién va en segundo lugar.' + FIN, 'choque sin saber quién es local: lo dice y no inventa quién cambia');
+ok(lc({ ...partido('MDA', 2), local: null }) === `Coinciden colores con ${rival('MDA', 2)}: no consta quién va en segundo lugar.` + FIN, 'choque sin saber quién es local: lo dice y no inventa quién cambia');
 ok(lc({ equipo: 'MDA', rival: 'Equipo Inventado', descansa: false }) === 'Jugamos de negro (no tenemos el color de Equipo Inventado).' + FIN, 'rival sin color: «Jugamos de negro (no tenemos el color de …)»');
 ok(lc(partido('MDA', 4)) === null, 'jornada de descanso: sin línea');
 ok(cal.partidos.filter((p) => !p.descansa && p.rival).every((p) => lc(p)?.endsWith(FIN) && A.avisoPartido(equip, p).convocatoria === lc(p)), 'TODOS los partidos con rival tienen línea, acaba en «Llevad la amarilla por si acaso.» y es la misma en avisoPartido().convocatoria');
@@ -104,14 +106,29 @@ console.log('\n== Proximo partido');
 const prox = (h, e) => A.proximoPartido(cal, h, e);
 ok(prox('2026-10-06', 'MDA').jornada === 2 && prox('2026-10-06', 'MDL').jornada === 2, 'el 06/10 el proximo de MdA y MdL es la J2');
 ok(prox('2026-10-18', 'MDA').jornada === 2, 'el dia del partido todavia cuenta como proximo');
-// La J5 de MdA paso del 15/11 al 20/12 (cambio del calendario oficial, rutina A del 05/11/2026): tras el descanso de la J4,
-// el siguiente por fecha es la J6 (22/11).
-ok(prox('2026-11-01', 'MDA').jornada === 6, 'salta la jornada de descanso (J4 de MdA) y va por fecha: la J6, porque la J5 pasó al 20/12');
-ok(prox('2027-06-01', 'MDA') === null, 'acabada la liga: null');
+ok(prox('2026-11-01', 'MDA').jornada === 5, 'salta la jornada de descanso (J4 de MdA)');
 
-console.log('\n== Copias de la plataforma');
-const d = desfasadas();
-ok(d.length === 0, 'plataforma/src/data/ coincide con data/ (npm run equipacion:sync)', d.join(', '));
+console.log('\n== Cambios oficiales del calendario de prueba (lo que acepta la rutina B)');
+{
+  const ap = cambioPrueba('aplazado'), lv = cambioPrueba('local_a_visitante');
+  const tras = conCambios();
+  const p2 = (eq, j) => tras.partidos.find((p) => p.equipo === eq && p.jornada === j);
+  ok(partido('MDA', 4).descansa && A.avisoPartido(equip, partido('MDA', 4)) === null, 'descanso (MdA J4): sin rival ni aviso');
+  // Aplazamiento: la J5 de MdA pasa del 15/11 al 20/12. El próximo partido tras el descanso pasa a ser la J6 (por fecha);
+  // la J5 sigue con su aviso (el rival no cambia) en su fecha nueva.
+  ok(A.proximoPartido(tras, '2026-11-01', 'MDA').jornada === 6 && p2('MDA', 5).fecha === ap.despues.fecha && p2('MDA', 5).hora === ap.despues.hora,
+    `aplazado (MdA J5 ${ap.antes.fecha} → ${ap.despues.fecha} ${ap.despues.hora}): tras el descanso, el próximo es la J6 (por fecha)`);
+  ok(A.avisoPartido(equip, p2('MDA', 5)).tipo === a('MDA', 5).tipo && A.listarAvisos(equip, tras).find((x) => x.equipo === 'MDA' && x.jornada === 5).fecha === ap.despues.fecha,
+    'aplazado: el aviso de equipación de la J5 sale en su fecha nueva');
+  // De local a visitante: el rival viste de negro; en casa cambian ellos, fuera nos toca la amarilla.
+  ok(a('MDL', 5).tipo === 'cambian_ellos' && A.avisoPartido(equip, p2('MDL', 5)).tipo === 'nos_toca' && lv.despues.local === false,
+    `de local a visitante (MdL J5 contra ${rival('MDL', 5)}, negro): de «cambian ellos» a «nos toca cambiar»`);
+  ok(A.lineaConvocatoria(equip, p2('MDL', 5)) === 'Coinciden colores: cambiamos nosotros, de amarillo.' + FIN, 'de local a visitante: la línea de la convocatoria pasa a «cambiamos nosotros»');
+  const hp = cambioPrueba('hora_y_pista');
+  ok(p2('MDL', 2).hora === hp.despues.hora && p2('MDL', 2).campo === hp.despues.campo && !A.avisoPartido(equip, p2('MDL', 2)).hay,
+    `cambio de hora y pista (MdL J2: ${hp.antes.hora} pista ${hp.antes.campo} → ${hp.despues.hora} pista ${hp.despues.campo}): el aviso no cambia (sin choque)`);
+}
+ok(prox('2027-06-01', 'MDA') === null, 'acabada la liga: null');
 
 console.log('\n== Partidos de la temporada con aviso');
 const av = A.listarAvisos(equip, cal);
@@ -136,7 +153,7 @@ console.log('\n== Una sola fuente del calendario (D151)');
   const filas = cal.partidos.filter((p) => !p.descansa).map((p) => ({ tipo: 'liga', equipo: C[p.equipo], jornada: p.jornada, rival: p.rival, es_local: p.local, fecha: p.fecha, inicio: p.hora ? `${p.hora}:00` : null, numero_pista: p.campo ? Number(p.campo) : null, estado: 'programado' }));
   const descansos = cal.partidos.filter((p) => p.descansa).map((p) => ({ equipo: C[p.equipo], jornada: p.jornada, fecha: p.fecha }));
   const gen = calendarioDesdeTabla(filas, descansos);
-  ok(JSON.stringify(gen) === JSON.stringify(cal), 'data/calendario_2026-27.json = lo que genera calendario:exportar desde la tabla (copia generada, no editada a mano)', diferencias(cal, gen).join('; ') || 'cabecera distinta');
+  ok(JSON.stringify(gen.partidos) === JSON.stringify(cal.partidos) && JSON.stringify(gen.equipos) === JSON.stringify(cal.equipos), 'el calendario (de prueba) = lo que genera calendario:exportar desde la tabla (copia generada, no editada a mano)', diferencias(cal, gen).join('; ') || 'cabecera distinta');
   // Un cambio de local/visitante en la tabla cambia el aviso sin tocar ningun fichero a mano (la rutina B ya no edita el JSON).
   const vuelta = calendarioDesdeTabla(filas.map((f) => (f.equipo === 'MdL' && f.jornada === 6 ? { ...f, es_local: true } : f)), descansos);
   ok(A.avisoPartido(equip, partido('MDL', 6)).tipo === 'nos_toca' && A.avisoPartido(equip, vuelta.partidos.find((p) => p.equipo === 'MDL' && p.jornada === 6)).tipo === 'cambian_ellos', 'MdL J6 pasa de «nos toca cambiar» a «cambian ellos» si la tabla lo pone en casa');

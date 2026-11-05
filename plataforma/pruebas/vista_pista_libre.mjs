@@ -9,8 +9,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as pila from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { migrar } from './infra/migrar.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REVERTIR = path.join(RAIZ, 'supabase', 'migrations', '20261027100000_vista_pista_libre.revertir.sql');

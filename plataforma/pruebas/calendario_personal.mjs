@@ -11,7 +11,7 @@
 //   npm run pruebas:calendario-personal
 import crypto from 'node:crypto';
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto } from './comun_e2e.mjs';
-import { adelantar, semanas } from './fechas_prueba.mjs';
+import { adelantar, semanas, hoyMadrid } from './fechas_prueba.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
 
 const { ok, fallos, sumar } = contador();
@@ -51,7 +51,7 @@ try {
   await sinteticos(sql, [['sint-ana', 'Ana', true, true]]);
   const P = await personas(e.pila, { jugadores: [['sint-ana', 'ana@pruebas.local'], ['galan-domingo-guillermo', 'guille@pruebas.local'], ['gianatti-adriano', 'adri@pruebas.local']] });
   const rpc = (f, args, token) => fetch(`${e.pila.url}/rest/v1/rpc/${f}`, { method: 'POST', headers: { apikey: e.pila.anonKey, authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: JSON.stringify(args) }).then((r) => r.json());
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   const [ent] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > ${hoy} order by fecha limit 1`;
   const planMdL = await rpc('crear_plan', { p: { tipo: 'pachanga', titulo: 'Pachanga del MdL', fecha: ent.fecha, inicio: '19:00', equipo: 'MdL' } }, P['gianatti-adriano'].token);
   const planTodos = await rpc('crear_plan', { p: { tipo: 'quedada', titulo: 'Cañas', fecha: ent.fecha, inicio: '22:40', equipo: 'ambos', ubicacion_nombre: 'Bar La Esquina', ubicacion_lat: 40.4011, ubicacion_lng: -3.6344 } }, P['gianatti-adriano'].token);
@@ -59,7 +59,7 @@ try {
   await sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, detalle) values (${ent.id}, 'gianatti-adriano', 'no', 'lesion', 'Rodilla izquierda')`;
   await sql`insert into public.respuestas (evento_id, person_id, respuesta) values (${ent.id}, 'sint-ana', 'va')`;
   await sql`insert into public.jugadores_privado (person_id, posicion, nivel) values ('sint-ana', 'pivot', 'A')`;
-  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${F('2026-10-25')}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }], MdL: [] })}, now())`;
+  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${F('2026-10-25')}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }], MdL: [] })}, pruebas.ahora())`;
 
   console.log('\n== «Tu calendario en el móvil» en la Agenda (375 px)');
   const pj = await e.sesion('ana@pruebas.local', 375);
@@ -133,7 +133,7 @@ try {
   await sql`update public.jugadores set activo = false where person_id = 'galan-domingo-guillermo'`;
   ok((await fetch(urlG)).status === 404, 'un jugador que deja de estar activo: 404');
   ok((await fetch(`${APP}/cal/esto-no-es-un-enlace.ics`)).status === 404 && (await fetch(`${APP}/cal/${'a'.repeat(43)}.ics`)).status === 404, 'un enlace inventado: 404');
-  await sql`update public.calendario_tokens set ventana_inicio = now(), peticiones = 120 where person_id = 'sint-ana'`;
+  await sql`update public.calendario_tokens set ventana_inicio = pruebas.ahora(), peticiones = 120 where person_id = 'sint-ana'`;
   ok((await fetch(nuevo)).status === 429, 'más de 120 lecturas en una hora: 429');
   const robots = await (await fetch(`${APP}/robots.txt`)).text();
   const sitemap = await (await fetch(`${APP}/sitemap.xml`)).text();

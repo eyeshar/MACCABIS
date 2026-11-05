@@ -23,11 +23,13 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import webpush from 'web-push';
 import { arrancar } from './pila.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
-import { adelantar, semanas, ddmm, diaLargo, diaMesCorto, diaNumero, mesAno } from './fechas_prueba.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
+import { adelantar, semanas, ddmm, diaLargo, diaMesCorto, diaNumero, mesAno, hoyMadrid } from './fechas_prueba.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -38,7 +40,7 @@ await exigirLibres({ 'doble de push': PUERTO_PUSH });
 const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
-const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+const hoy = hoyMadrid();
 async function esperar(url, ms = 90000) {
   const fin = Date.now() + ms;
   while (Date.now() < fin) { try { const r = await fetch(url); if (r.status < 500) return; } catch {} await new Promise((r) => setTimeout(r, 300)); }
@@ -167,7 +169,7 @@ try {
   // El boton «Mandarme un aviso de prueba» solo aparece si ESTE navegador esta suscrito (Chrome sin permisos de avisos
   // no lo esta): el envio del aviso de prueba se prueba por el mismo camino, el registro + la tarea.
   const antesPush = recibidos.length;
-  await sql`insert into public.avisos_registro (clave, tipo, user_id, titulo, cuerpo, url, programado_para) values ('prueba:test', 'prueba', ${jUid}, 'Aviso de prueba', 'Así te llegarán los avisos de Maccabis.', '/avisos', now())`;
+  await sql`insert into public.avisos_registro (clave, tipo, user_id, titulo, cuerpo, url, programado_para) values ('prueba:test', 'prueba', ${jUid}, 'Aviso de prueba', 'Así te llegarán los avisos de Maccabis.', '/avisos', pruebas.ahora())`;
   t = await fetch(`${APP}/api/avisos/tarea`, { method: 'POST', headers: { authorization: `Bearer ${secreto}` } });
   tj = await t.json();
   ok(t.status === 200 && tj.enviados === 1 && recibidos.length - antesPush === 2, `el aviso de prueba sale (llega a los 2 móviles: ${recibidos.slice(antesPush).join(', ')})`, JSON.stringify(tj));
@@ -351,11 +353,11 @@ try {
   await pg.getByTestId('avisos-numeros-sin').click(); // lo desplegado no se pierde al actualizar
   const nueva = clavesMovil();
   await sql`insert into public.suscripciones_avisos (user_id, person_id, endpoint, p256dh, auth, navegador) select user_id, person_id, ${`https://127.0.0.1:${PUERTO_PUSH}/ok/vivo`}, ${nueva.p256dh}, ${nueva.auth}, 'Android · Chrome' from public.suscripciones_avisos where person_id = 'esteban-jon' limit 1`;
-  await sql`update public.suscripciones_avisos set activa = false, desactivada_en = now(), motivo_baja = 'caducada' where person_id = 'esteban-jon' and endpoint like '%/ok/jon'`;
+  await sql`update public.suscripciones_avisos set activa = false, desactivada_en = pruebas.ahora(), motivo_baja = 'caducada' where person_id = 'esteban-jon' and endpoint like '%/ok/jon'`;
   // dos cambios que se compensan (una nueva, una caducada): sigue igual; quitamos ahora la nueva para ver bajar el contador
   await volver();
   ok(await hasta(async () => (await conAv()) === n0), 'sin recargar: una suscripción nueva sustituye a la caducada y el recuadro sigue cuadrando');
-  await sql`update public.suscripciones_avisos set activa = false, desactivada_en = now(), motivo_baja = 'caducada' where person_id = 'esteban-jon' and endpoint like '%/ok/vivo'`;
+  await sql`update public.suscripciones_avisos set activa = false, desactivada_en = pruebas.ahora(), motivo_baja = 'caducada' where person_id = 'esteban-jon' and endpoint like '%/ok/vivo'`;
   await volver();
   ok(await hasta(async () => (await conAv()) === n0 - 1), 'sin recargar: la suscripción caducada pasa a «sin avisos» (el contador baja)');
   ok(await visto(pg.getByTestId('avisos-numeros-lista')) && /Jon/i.test(await pg.getByTestId('avisos-numeros-lista').innerText()), '…y lo que el gestor tenía desplegado sigue abierto, con esa persona en «sin avisos»');
@@ -378,7 +380,7 @@ try {
   await foto(pg375, 'gestion_editar_375');
 
   console.log('\n== Importar calendario: «Aplicar y avisar» / «Aplicar sin avisar» (D103)');
-  const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+  const cal = calendarioPrueba();
   const dma = (f) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
   const NOMBRE = { MDA: 'Maccabi de Acostar', MDL: 'Maccabi de Levantar' };
   // Las líneas pegadas llevan las fechas movidas igual que los eventos de la prueba (F, pruebas/fechas_prueba.mjs).
@@ -411,7 +413,7 @@ try {
   const txtAviso = await pg.getByTestId('aviso-movil').innerText();
   ok(/Aviso al móvil para \d+ jugadores \((enviado ya|de noche: sale el \d\d\/\d\d a las 08:00)\)/.test(txtAviso) && !txtAviso.includes('08:30'), 'el resultado dice a cuántos jugadores y «enviado ya» (o, de noche, «sale el dd/mm a las 08:00»), nunca un «08:30» fijo', txtAviso);
   // Un partido a más de dos semanas también avisa (la J5 MdA del 31/10: 15/11 → 20/12, fuera de los 14 días, no avisó).
-  const lejos = conAvisar.find((l) => { const m = l.match(/^G1;(\d+);[^;]*;[^;]+;(\d\d)\/(\d\d)\/(\d{4});(\d\d:\d\d);/); return m && new Date(`${m[4]}-${m[3]}-${m[2]}T12:00:00Z`) > new Date(Date.now() + 20 * 864e5); });
+  const lejos = conAvisar.find((l) => { const m = l.match(/^G1;(\d+);[^;]*;[^;]+;(\d\d)\/(\d\d)\/(\d{4});(\d\d:\d\d);/); return m && new Date(`${m[4]}-${m[3]}-${m[2]}T12:00:00Z`) > new Date(ahoraPrueba().getTime() + 20 * 864e5); });
   const jLejos = +lejos.split(';')[1];
   const idLejos = await id(`mda-j${jLejos}`);
   await importar(conAvisar.map((l) => (l === lejos ? l.replace(/;(\d\d:\d\d);/, (_, h) => `;${h === '13:30' ? '12:30' : '13:30'};`) : l)), /^Aplicar y avisar/);

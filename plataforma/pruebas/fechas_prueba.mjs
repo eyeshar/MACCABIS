@@ -4,7 +4,10 @@
 // numero de semanas enteras: se conservan el dia de la semana, las horas y la distancia entre eventos. Las fechas fijas
 // de la prueba pasan por F() para que apunten al mismo evento ya movido.
 
-export const hoyMadrid = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+// D185: «hoy» de las pruebas es fijo (infra/reloj.mjs), igual que en la base, la web y el navegador de las pruebas. Con el
+// calendario de prueba ya colocado respecto a ese día, semanas() da 0 y adelantar() no mueve nada.
+import { HOY_PRUEBA } from './infra/reloj.mjs';
+export const hoyMadrid = () => HOY_PRUEBA;
 export const sumarDias = (f, n) => { const d = new Date(`${f}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const dias = (a, b) => Math.round((new Date(`${b}T12:00:00Z`) - new Date(`${a}T12:00:00Z`)) / 86400000);
 

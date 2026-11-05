@@ -31,10 +31,11 @@ import crypto from 'node:crypto';
 import webpush from 'web-push';
 import { arrancar } from './pila.mjs';
 import * as HOR from '../src/lib/avisos/horario.ts';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = path.join(RAIZ, '..', 'privado', 'mockups_liga', 'rediseno', 'convocatoria');
@@ -46,7 +47,7 @@ fs.mkdirSync(CAPTURAS, { recursive: true });
 const APP = `http://127.0.0.1:${PUERTO}`;
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
-const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+const hoy = hoyMadrid();
 async function esperar(url, ms = 90000) {
   const fin = Date.now() + ms;
   while (Date.now() < fin) { try { const r = await fetch(url); if (r.status < 500) return; } catch {} await new Promise((r) => setTimeout(r, 300)); }

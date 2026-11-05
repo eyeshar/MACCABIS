@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { contador, preparar, sinteticos, personas, trasAccion, hasta, RAIZ } from './comun_e2e.mjs';
 import { firmar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 
 const VERSION = '20261103200000';
 const REVERTIR = path.join(RAIZ, 'supabase', 'migrations', `${VERSION}_limite_codigo.revertir.sql`);

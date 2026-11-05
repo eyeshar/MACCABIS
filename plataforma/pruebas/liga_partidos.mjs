@@ -22,8 +22,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
+import { ligaParaPruebas } from './infra/liga.mjs';
 import { arrancarApp, abrirNavegador, compilar } from './infra/app.mjs';
 import { PUERTOS } from './infra/puertos.mjs';
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -66,8 +68,8 @@ const pila = await arrancar();
 let app, nav;
 try {
   const { sql, url, anonKey } = pila;
-  await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
-  await (await import('../scripts/cargar_eventos.mjs')).cargarEventos(sql, { log: () => {} }); // Scouting lee el calendario de la tabla de eventos (D162)
+  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
+  await (await import('./infra/calendario.mjs')).cargarEventos(sql, { log: () => {} }); // Scouting lee el calendario de la tabla de eventos (D162)
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
   await sql`insert into public.gestores (user_id, nombre, email) values (${gId}, 'Gestor de pruebas', ${gestorEmail})`;
@@ -191,7 +193,7 @@ try {
     ok((await href(p.locator('[data-testid="partido-local"]'))) === (r.local_id === 'mda' ? '/liga/2026-27/equipo?eq=MDA' : `/liga/rivales?g=MdA&r=${r.local_id}`)
       && (await href(p.locator('[data-testid="partido-visitante"]'))) === (r.visitante_id === 'mda' ? '/liga/2026-27/equipo?eq=MDA' : `/liga/rivales?g=MdA&r=${r.visitante_id}`), 'los dos equipos enlazan a su ficha');
     const cab = await p.locator('.e-pt-cab').innerText();
-    const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8')).partidos.find((x) => x.equipo === 'MDA' && x.jornada === r.jornada);
+    const cal = calendarioPrueba().partidos.find((x) => x.equipo === 'MDA' && x.jornada === r.jornada);
     ok(cab.toLowerCase().includes(`jornada ${r.jornada}`) && cab.includes(cal.hora) && cab.toLowerCase().includes(`pista ${cal.campo}`), `cabecera: jornada, fecha, hora (${cal.hora}) y pista (${cal.campo})`, cab);
     const sp = season.partidos.find((x) => x.equipo === 'MDA' && x.fecha === r.fecha);
     const cuartos = await p.locator('[data-testid="partido-cuartos"] tbody tr').evaluateAll((trs) => trs.map((tr) => [...tr.children].slice(1).map((c) => c.textContent)));

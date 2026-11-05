@@ -17,7 +17,7 @@
 //
 //   npm run pruebas:disponibilidad-pantallas
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos } from './comun_e2e.mjs';
-import { adelantar, semanas } from './fechas_prueba.mjs';
+import { adelantar, semanas, hoyMadrid } from './fechas_prueba.mjs';
 
 const { ok, fallos, sumar } = contador();
 const e = await preparar();
@@ -25,7 +25,7 @@ const { sql, APP } = e;
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));
   const J3 = F('2026-10-25');
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   // Luz y Teo «no suelen entrenar» (Teo responde «voy»); Ugo es «nunca a partidos» (con fichas, para probar el motor);
   // Ana y Bea, sin marca (Bea dice «voy»).
   await sinteticos(sql, [['sint-luz', 'Luz', true, false], ['sint-teo', 'Teo', true, true], ['sint-ugo', 'Ugo', true, true], ['sint-ana', 'Ana', true, true], ['sint-bea', 'Bea', true, true]]);
@@ -224,7 +224,7 @@ try {
   // Desde D150 Luz llegaba aquí con una ausencia (lesión, sin fecha de vuelta): su entreno salía como «no va» por la ausencia
   // y este bloque ya no comprobaba nada de la marca (lo dejó vacío el bloque D172). Se le quita la ausencia y la respuesta
   // para que el entreno vuelva a ser «no va (por defecto)», y se comprueba que lo ve (D152) sin que salga la marca (D146).
-  await sql`update public.ausencias_periodo set borrada_en = now() where person_id = 'sint-luz' and borrada_en is null`;
+  await sql`update public.ausencias_periodo set borrada_en = pruebas.ahora() where person_id = 'sint-luz' and borrada_en is null`;
   await sql`delete from public.respuestas where evento_id = ${ent.id} and person_id = 'sint-luz'`;
   await sql`delete from public.entreno_defecto_quitado where evento_id = ${ent.id} and person_id = 'sint-luz'`;
   const pj = await e.sesion('luz@pruebas.local', 375);

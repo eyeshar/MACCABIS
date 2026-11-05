@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
 import { lanzar, matarArbol, olvidarProceso } from './procesos.mjs';
 import { exigirLibres } from './puertos.mjs';
+import { entornoReloj, relojNavegador } from './reloj.mjs';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -22,15 +23,21 @@ function huella(env) {
     if (fs.statSync(abs).isDirectory()) { for (const n of fs.readdirSync(abs).sort()) recorrer(path.join(rel, n)); return; }
     h.update(rel.replace(/\\/g, '/')).update('\0').update(fs.readFileSync(abs)).update('\0');
   };
-  for (const r of ['src', 'public', 'next.config.ts', 'tsconfig.json', 'package-lock.json', '.env', '.env.local', '.env.production', '.env.production.local']) recorrer(r);
+  for (const r of ['src', 'public', 'pruebas/fixtures', 'next.config.ts', 'tsconfig.json', 'package-lock.json', '.env', '.env.local', '.env.production', '.env.production.local']) recorrer(r);
   // El entorno que ve la compilacion: todo NEXT_PUBLIC_* y lo que pase la suite (envExtra), mas el SO y la version de Node.
   const relevante = Object.entries(env).filter(([k]) => k.startsWith('NEXT_PUBLIC_') || env.__CLAVES_EXTRA?.includes(k)).sort();
   h.update(JSON.stringify(relevante)).update(process.platform).update(process.version);
   return h.digest('hex');
 }
 
+/** Lo que toda web de las pruebas lleva (D185): calendario, entrenos y equipaciones de prueba (alias de next.config.ts) y
+ *  el reloj de las pruebas («hoy» fijo, infra/reloj.mjs). */
+export const entornoPruebas = (base = process.env) => ({ PRUEBAS_CALENDARIO: '1', ...entornoReloj(base) });
+
 /** `next build` con el entorno dado, salvo que .next/ ya sea exactamente esa compilacion. Devuelve true si compilo. */
-export function compilar(env, clavesExtra = []) {
+export function compilar(envSuite, clavesExtra = []) {
+  const env = { ...envSuite, ...entornoPruebas(envSuite) };
+  clavesExtra = [...new Set([...clavesExtra, ...Object.keys(entornoPruebas(envSuite))])];
   const clave = huella({ ...env, __CLAVES_EXTRA: clavesExtra });
   try {
     if (JSON.parse(fs.readFileSync(HUELLA, 'utf8')).clave === clave && fs.existsSync(path.join(RAIZ, '.next', 'BUILD_ID'))) return false;
@@ -76,7 +83,8 @@ function vaciarPrerenderizado() {
 /** Compila (si hace falta) y arranca la app en `puerto`. Devuelve { APP, parar }. */
 export async function arrancarApp({ puerto, env, envExtra = {}, compilarAntes = true }) {
   await exigirLibres({ app: puerto });
-  const entorno = { ...process.env, NEXT_TELEMETRY_DISABLED: '1', ...env, ...envExtra };
+  const base = { ...process.env, NEXT_TELEMETRY_DISABLED: '1', ...env, ...envExtra };
+  const entorno = { ...base, ...entornoPruebas(base) };
   // Lo que pone la suite (y no viene del entorno de fuera) entra en la huella: con otro valor, otra compilacion.
   if (compilarAntes) compilar(entorno, Object.keys(entorno).filter((k) => entorno[k] !== process.env[k]));
   vaciarPrerenderizado();
@@ -93,6 +101,10 @@ export async function abrirNavegador() {
     try { nav = await chromium.connect(process.env.PRUEBAS_NAVEGADOR_WS); } catch { /* no esta: uno propio */ }
   }
   nav ??= await chromium.launch({ channel: 'chrome', headless: true });
+  // D185: cada contexto del navegador, con el reloj de las pruebas («hoy» fijo).
+  const nuevo = nav.newContext.bind(nav);
+  nav.newContext = async (...a) => { const ctx = await nuevo(...a); await relojNavegador(ctx); return ctx; };
+  nav.newPage = async (...a) => (await nav.newContext(...a)).newPage();
   if (!conCapturas()) await sinCapturas(nav);
   return nav;
 }

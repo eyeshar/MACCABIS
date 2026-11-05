@@ -8,18 +8,21 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { leerLiga } from '../../scripts/cargar_liga.mjs';
 import { REPO } from './puertos.mjs';
+import { calendarioPrueba } from './calendario.mjs';
+
+/** liga_calendario de las pruebas: el calendario de PRUEBA (D185), nunca el real. */
+function calendarioLiga() {
+  const { nombreTitulo } = createRequire(import.meta.url)(path.join(REPO, 'scripts', 'estadisticas', 'util.js'));
+  return calendarioPrueba().partidos.filter((p) => p.fase === 'liga').map((p) => ({ ...p, rival: p.rival ? nombreTitulo(p.rival) : null }));
+}
 
 export function ligaParaPruebas(temporada) {
   try {
-    return leerLiga(temporada);
+    return { ...leerLiga(temporada), calendario: calendarioLiga() };
   } catch (e) {
     if (!process.env.CI) throw e;
     console.log(`  (sin las hojas de fuentes_fbm/: liga ${temporada} publicada en data/, sin estadisticas por jugador)`);
     const publico = JSON.parse(fs.readFileSync(path.join(REPO, 'data', `liga_${temporada}.json`), 'utf8'));
-    // el calendario propio, como en leerLiga (no depende de las hojas)
-    const { nombreTitulo } = createRequire(import.meta.url)(path.join(REPO, 'scripts', 'estadisticas', 'util.js'));
-    const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', `calendario_${temporada}.json`), 'utf8'));
-    const calendario = cal.partidos.filter((p) => p.fase === 'liga').map((p) => ({ ...p, rival: p.rival ? nombreTitulo(p.rival) : null }));
-    return { privado: [], publico, calendario };
+    return { privado: [], publico, calendario: calendarioLiga() };
   }
 }

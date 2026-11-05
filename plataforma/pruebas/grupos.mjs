@@ -17,6 +17,7 @@
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, foto } from './comun_e2e.mjs';
 import { sugerirGrupos, mensajeGrupos, resumenGrupo, tamanos, estructuraGrupo, avisosEstructura, etiquetaPapel, parejasJuntas } from '../src/lib/grupos/sugerir.ts';
 import { trasAccion, hasta } from './infra/esperas.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const { ok, fallos, sumar } = contador();
 const J = (id, posicion, nivel = 'C', base_reserva = false) => ({ person_id: id, nombre: id.toUpperCase(), posicion, nivel, base_reserva });
@@ -163,7 +164,7 @@ const e = await preparar();
 const { sql, APP } = e;
 try {
   const P = await personas(e.pila, { jugadores: [['esteban-jon', 'jon@pruebas.local'], ['gianatti-adriano', 'adri@pruebas.local']], gestores: [['Iván', 'ivan@pruebas.local', null]] });
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   const [ent] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > ${hoy} order by fecha limit 1`;
   // Datos privados (posicion, nivel) solo en jugadores SINTETICOS (D39); Jon y Adriano (reales) van sin ellos.
   const POS = ['base', 'escolta', 'alero', 'ala_pivot', 'pivot'];
@@ -182,7 +183,7 @@ try {
   const [sigP] = await sql`select fecha::text from public.eventos where tipo = 'liga' and estado = 'programado' and equipo in ('MdA', 'MdL') and fecha > ${ent.fecha} order by fecha limit 1`;
   const juntos = Object.fromEntries(sint.map((x, i) => [x[0], [i < 5 ? 'MdA' : 'MdL']]));
   const siguiente = sigP ? { juntos, dia: new Date(`${sigP.fecha}T12:00:00Z`).toLocaleDateString('es-ES', { timeZone: 'UTC', weekday: 'long' }) } : null;
-  if (sigP) await sql`insert into public.convocatorias (fecha, estado, origen, equipos, aprobada_en) values (${sigP.fecha}, 'aprobada', 'propuesta', ${sql.json({ MdA: sint.slice(0, 5).map((x) => ({ person_id: x[0] })), MdL: sint.slice(5).map((x) => ({ person_id: x[0] })) })}, now())
+  if (sigP) await sql`insert into public.convocatorias (fecha, estado, origen, equipos, aprobada_en) values (${sigP.fecha}, 'aprobada', 'propuesta', ${sql.json({ MdA: sint.slice(0, 5).map((x) => ({ person_id: x[0] })), MdL: sint.slice(5).map((x) => ({ person_id: x[0] })) })}, pruebas.ahora())
     on conflict (fecha) do update set estado = 'aprobada', equipos = excluded.equipos`;
   ok(!!sigP, `hay un partido de liga después del entreno para el criterio de juntos (${sigP?.fecha})`);
   const enPantalla = (pg) => pg.getByTestId('grupo').evaluateAll((xs) => xs.map((x) => ({

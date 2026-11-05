@@ -14,7 +14,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 import { cargarEventos, informe } from '../scripts/cargar_asistencia_eventos.mjs';
 
 const PLAT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');

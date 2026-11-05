@@ -18,7 +18,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, esperar, RAIZ, REPO, PUERTOS } from './comun_e2e.mjs';
 import { arrancarApp } from './infra/app.mjs';
-import { adelantar, semanas } from './fechas_prueba.mjs';
+import { adelantar, semanas, hoyMadrid } from './fechas_prueba.mjs';
 import * as C from '../src/lib/chat/contexto.ts';
 import * as A from '../src/lib/chat/acceso.ts';
 import * as R from '../src/lib/chat/respuesta.ts';
@@ -146,7 +146,7 @@ async function otraWeb(puerto, modo) {
 }
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   await sinteticos(sql, [['sint-noe', 'Noe', true, true], ['sint-zoe', 'Zoe', true, true]]);
   await sql`update public.jugadores set ficha_mda = true, ficha_mdl = true where person_id = 'esteban-jon'`;
   await sql`update public.jugadores set email = 'noe.secreto@pruebas.local', telefono = '+34 600 111 222' where person_id = 'sint-noe'`;

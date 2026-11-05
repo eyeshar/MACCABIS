@@ -10,6 +10,7 @@
 //
 //   npm run pruebas:aviso-defecto
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos, hasta, trasAccion } from './comun_e2e.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const { ok, fallos, sumar } = contador();
 const e = await preparar();
@@ -17,7 +18,7 @@ const { sql, APP } = e;
 // Lo que nunca puede llegar a una pantalla de jugador: el nombre de la marca, las columnas, la nota de gestión, niveles.
 const PRIVADO = /suele entrenar|no_suele|nunca_partidos|nunca a partidos|quitados|Por defecto:|mi_disponibilidad|"nivel"|"posicion"/i;
 try {
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   // Dos entrenos en los próximos 14 días (lo que enseña el inicio): los dos primeros de la temporada, a hoy + 2 y + 9.
   let ents = await sql`select id from public.eventos where tipo = 'entreno' order by fecha limit 2`;
   for (const [i, x] of ents.entries()) await sql`update public.eventos set fecha = (${hoy}::date + ${2 + i * 7}::int), estado = 'programado' where id = ${x.id}`;

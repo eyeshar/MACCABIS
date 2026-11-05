@@ -13,11 +13,11 @@
 //
 //   npm run pruebas:domingo
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar } from './comun_e2e.mjs';
-import { adelantar, semanas } from './fechas_prueba.mjs';
+import { adelantar, semanas, hoyMadrid } from './fechas_prueba.mjs';
 import path from 'node:path';
 import fs from 'node:fs';
 import { REPO, RAIZ } from './comun_e2e.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 import { revertirPosteriores } from './revertir_posteriores.mjs';
 
 const { ok, fallos, sumar } = contador();
@@ -29,7 +29,7 @@ const { sql, APP } = e;
 try {
   const F = await adelantar(sql, semanas('2026-10-25'));
   const J3 = F('2026-10-25');
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoy = hoyMadrid();
   if (F('2026-10-18') === hoy) await sql`update public.eventos set inicio = '00:01', fin = null where tipo = 'liga' and fecha = ${hoy}`;
   const j3 = await sql`select id, equipo, inicio::text from public.eventos where tipo = 'liga' and fecha = ${J3} order by inicio`;
   const de = (eq) => j3.find((x) => x.equipo === eq);
@@ -59,7 +59,7 @@ try {
   await foto(pj, 'domingo_pendiente_375');
 
   console.log('\n== Convocado con el MdA (convocatoria aprobada)');
-  await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = now() where fecha = ${J3}`;
+  await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = pruebas.ahora() where fecha = ${J3}`;
   await pj.goto(URL_D);
   const sit = await pj.getByTestId('situacion').innerText();
   ok(sit === `Estás convocado con el MdA · ${h('MdA')}, quedada ${q('MdA')}`, `«Estás convocado con el MdA · ${h('MdA')}, quedada ${q('MdA')}»`, sit);

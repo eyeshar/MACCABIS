@@ -23,7 +23,18 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // La app vive en plataforma/ dentro del repositorio del dashboard: esta es su raiz.
   outputFileTracingRoot: path.join(__dirname),
-  turbopack: { root: path.join(__dirname) },
+  turbopack: {
+    root: path.join(__dirname),
+    // D185: la web de las PRUEBAS se compila con el calendario, los entrenos y las equipaciones de prueba (fijos), nunca con
+    // los reales. Solo la infraestructura de pruebas pone PRUEBAS_CALENDARIO (pruebas/infra/app.mjs); Vercel, nunca.
+    ...(process.env.PRUEBAS_CALENDARIO
+      ? { resolveAlias: {
+          "@/data/calendario.json": "./pruebas/fixtures/calendario_prueba.json",
+          "@/data/entrenos.json": "./pruebas/fixtures/entrenos_prueba.json",
+          "@/data/equipaciones.json": "./pruebas/fixtures/equipaciones_prueba.json",
+        } }
+      : {}),
+  },
   // forbidden() (403) en /asistente para quien no tiene abierto el asistente (D142).
   experimental: { authInterrupts: true },
   // Una sola pagina de cuenta para jugadores y gestores (D90): la antigua de gestion lleva a la nueva.

@@ -20,10 +20,11 @@ import path from 'node:path';
 import webpush from 'web-push';
 import { preparar, sinteticos, personas, contador, visto, RAIZ } from './comun_e2e.mjs';
 import { firmar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 import { revertirPosteriores } from './revertir_posteriores.mjs';
 import * as H from '../src/lib/avisos/horario.ts';
 import { trasAccion, hasta } from './infra/esperas.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const { ok, fallos } = contador();
 const vapid = webpush.generateVAPIDKeys();
@@ -37,7 +38,7 @@ const e = await preparar({
 });
 const { sql, APP, pila } = e;
 const iso = (t) => new Date(t).toISOString();
-const madridDe = (ms) => { const f = new Date(Date.now() + ms).toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }); return { fecha: f.slice(0, 10), hora: f.slice(11, 16) }; };
+const madridDe = (ms) => { const f = new Date(ahoraPrueba().getTime() + ms).toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }); return { fecha: f.slice(0, 10), hora: f.slice(11, 16) }; };
 const api = async (ruta, { metodo = 'GET', cuerpo, token } = {}) => {
   const r = await fetch(`${pila.url}/rest/v1${ruta}`, { method: metodo, headers: { apikey: pila.anonKey, authorization: `Bearer ${token ?? pila.anonKey}`, 'content-type': 'application/json' }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
   let datos = null; try { datos = await r.json(); } catch {}
@@ -53,7 +54,7 @@ try {
     gestores: [['Iván', 'gestor@pruebas.local', 'villaescusa-silva-ivan']],
   });
   const uno = P['sint-uno'].token, dos = P['sint-dos'].token, tres = P['sint-tres'].token, cuatro = P['sint-cuatro'].token, gestor = P['gestor@pruebas.local'].token;
-  await sql`update public.respuestas_web_config set dudas_desde = now() - interval '30 days' where id = 1`;
+  await sql`update public.respuestas_web_config set dudas_desde = pruebas.ahora() - interval '30 days' where id = 1`;
 
   // Eventos de prueba: uno lejano (límite en el futuro), uno que empieza dentro de 20 h (su límite pasó hace 4 h), un
   // partido solo del MdA y un plan que empieza dentro de 12 h.
@@ -69,7 +70,7 @@ try {
   };
   const limiteBase = async (id) => (await sql`select public._limite_dudas(${id}) l, public._inicio_evento(${id}) i`)[0];
   const fut = await limiteBase(E.fut), pro = await limiteBase(E.pronto);
-  ok(pro.l.getTime() < Date.now() && pro.i.getTime() > Date.now() && fut.l.getTime() > Date.now(), 'los eventos de prueba: «pronto» ya pasó su límite sin haber empezado y «fut» no', `${iso(pro.l)} ${iso(fut.l)}`);
+  ok(pro.l.getTime() < ahoraPrueba().getTime() && pro.i.getTime() > ahoraPrueba().getTime() && fut.l.getTime() > ahoraPrueba().getTime(), 'los eventos de prueba: «pronto» ya pasó su límite sin haber empezado y «fut» no', `${iso(pro.l)} ${iso(fut.l)}`);
 
   // ---------------------------------------------------------------------------------------------- base = web
   console.log('\n== La hora límite de la base y la de la web son la misma (cambio de hora incluido)');
@@ -171,15 +172,15 @@ try {
   // ---------------------------------------------------------------------------------------------- sin retroactividad
   console.log('\n== Sin retroactividad: solo se cierran dudas cuyo límite es POSTERIOR a la activación (dudas_desde)');
   await poner(E.fut, 'sint-uno', 'duda'); await poner(E.pronto, 'sint-uno', 'duda');
-  await sql`update public.respuestas_web_config set dudas_desde = now() where id = 1`;
-  rows = await cerrar(Date.now() + 60000);
+  await sql`update public.respuestas_web_config set dudas_desde = pruebas.ahora() where id = 1`;
+  rows = await cerrar(ahoraPrueba().getTime() + 60000);
   s = await estado(E.pronto);
   ok(rows.filter((x) => x.r_evento === E.pronto).length === 0 && s['sint-uno'].respuesta === 'duda', 'duda con el límite ANTES de la activación: no se cierra (límite ' + iso(pro.l) + ')');
   rows = await cerrar(lim);
   s = await estado(E.fut);
   ok(rows.some((x) => x.r_evento === E.fut && x.r_person === 'sint-uno') && s['sint-uno'].respuesta === 'no' && s['sint-uno'].origen === 'sistema', 'duda con el límite DESPUÉS de la activación: se cierra');
-  await sql`update public.respuestas_web_config set dudas_desde = now() - interval '30 days' where id = 1`;
-  rows = await cerrar(Date.now() + 60000);
+  await sql`update public.respuestas_web_config set dudas_desde = pruebas.ahora() - interval '30 days' where id = 1`;
+  rows = await cerrar(ahoraPrueba().getTime() + 60000);
   ok(rows.some((x) => x.r_evento === E.pronto), 'con la activación más atrás, la misma duda sí se cierra (prueba de que era la fecha lo que la frenaba)');
   await poner(E.fut, 'sint-uno', 'va'); await poner(E.fut, 'sint-dos', 'duda');
   await sql`delete from public.respuestas where evento_id = ${E.pronto} and person_id = 'sint-uno'`;
@@ -187,7 +188,7 @@ try {
   console.log('\n== Quién puede ejecutarla');
   const priv = (await sql`select has_function_privilege('authenticated', 'public.cerrar_dudas(timestamptz)', 'execute') a, has_function_privilege('anon', 'public.cerrar_dudas(timestamptz)', 'execute') n, has_function_privilege('service_role', 'public.cerrar_dudas(timestamptz)', 'execute') s, has_function_privilege('authenticated', 'public._limite_dudas(uuid)', 'execute') l`)[0];
   ok(!priv.a && !priv.n && priv.s && !priv.l, 'cerrar_dudas: solo el rol de servicio; _limite_dudas: nadie desde la API');
-  r = await rpc('cerrar_dudas', { p_ahora: new Date(Date.now() + 864000000).toISOString() }, gestor);
+  r = await rpc('cerrar_dudas', { p_ahora: new Date(ahoraPrueba().getTime() + 864000000).toISOString() }, gestor);
   ok(r.status >= 400, 'ni un gestor con sesión puede llamarla (no podría simular la hora)', String(r.status));
   r = await rpc('cerrar_dudas', {}, uno);
   ok(r.status >= 400, 'ni un jugador', String(r.status));
@@ -285,17 +286,17 @@ try {
   const pg = await e.sesion('gestor@pruebas.local', 1280);
   // Alarma de la tarea: con el esquema `net` falso de la pila local (en el real es pg_net)
   await sql`create schema if not exists net`;
-  await sql`create table if not exists net._http_response (id bigserial primary key, status_code int, created timestamptz default now())`;
+  await sql`create table if not exists net._http_response (id bigserial primary key, status_code int, created timestamptz default pruebas.ahora())`;
   await sql`delete from net._http_response`;
   await pg.goto(`${APP}/gestion`);
   ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'alarma de la tarea: sin historial no aparece');
-  await sql`insert into net._http_response (status_code, created) values (401, now() - interval '15 minutes'), (401, now())`;
+  await sql`insert into net._http_response (status_code, created) values (401, pruebas.ahora() - interval '15 minutes'), (401, pruebas.ahora())`;
   await pg.goto(`${APP}/gestion`);
   const al = await pg.getByTestId('alarma-tarea').innerText().catch(() => '');
   ok(/La tarea de avisos está fallando/.test(al) && /401 y 401/.test(al), 'dos 401 seguidos: banda roja en Gestión', al);
   await pg.goto(`${APP}/gestion/eventos`);
   ok((await pg.getByTestId('alarma-tarea').count()) === 1, 'y se ve en todas las pantallas de Gestión');
-  await sql`insert into net._http_response (status_code, created) values (200, now() + interval '1 minute')`;
+  await sql`insert into net._http_response (status_code, created) values (200, pruebas.ahora() + interval '1 minute')`;
   await pg.goto(`${APP}/gestion`);
   ok((await pg.getByTestId('alarma-tarea').count()) === 0, 'con la última pasada en 200, desaparece');
   r = await rpc('estado_tarea_avisos', {}, uno);
@@ -304,16 +305,16 @@ try {
   await sql`delete from net._http_response`;
   let sa = await fetch(`${APP}/api/avisos/salud`); let ja = await sa.json();
   ok(sa.status === 503 && ja.estado === 'fallando' && ja.ultima_pasada_ok === null, 'salud: sin ninguna pasada correcta, 503 «fallando»', JSON.stringify(ja));
-  await sql`insert into net._http_response (status_code, created) values (401, now()), (200, now() - interval '5 minutes')`;
+  await sql`insert into net._http_response (status_code, created) values (401, pruebas.ahora()), (200, pruebas.ahora() - interval '5 minutes')`;
   sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
   ok(sa.status === 200 && ja.estado === 'ok' && !!ja.ultima_pasada_ok && Object.keys(ja).sort().join() === 'errores_ultima_hora,estado,ultima_pasada_ok' && ja.errores_ultima_hora === 1, 'salud: con una pasada 200 reciente y un solo error, 200 «ok», y solo el estado, la hora y el número de errores (sin datos personales)', JSON.stringify(ja));
-  await sql`insert into net._http_response (status_code, created) values (500, now() - interval '30 minutes'), (200, now() - interval '15 minutes')`;
+  await sql`insert into net._http_response (status_code, created) values (500, pruebas.ahora() - interval '30 minutes'), (200, pruebas.ahora() - interval '15 minutes')`;
   sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
   ok(sa.status === 503 && ja.estado === 'fallando' && ja.errores_ultima_hora === 2, 'salud: 2 pasadas con error en la última hora (con buenas entre medias), 503 «fallando»', JSON.stringify(ja));
-  await sql`update net._http_response set created = now() - interval '70 minutes' where status_code = 500`;
+  await sql`update net._http_response set created = pruebas.ahora() - interval '70 minutes' where status_code = 500`;
   sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
   ok(sa.status === 200 && ja.estado === 'ok' && ja.errores_ultima_hora === 1, 'salud: el error de hace más de una hora ya no cuenta', JSON.stringify(ja));
-  await sql`delete from net._http_response`; await sql`insert into net._http_response (status_code, created) values (200, now() - interval '50 minutes')`;
+  await sql`delete from net._http_response`; await sql`insert into net._http_response (status_code, created) values (200, pruebas.ahora() - interval '50 minutes')`;
   sa = await fetch(`${APP}/api/avisos/salud`); ja = await sa.json();
   ok(sa.status === 503 && ja.estado === 'fallando', 'salud: la última pasada correcta de hace 50 minutos, «fallando»', JSON.stringify(ja));
   await sql`drop table net._http_response`; await sql`drop schema net`;
@@ -347,7 +348,7 @@ try {
   const texto = fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028100000_dudas_limite.sql'), 'utf8').replace(/--.*$/gm, '');
   ok(!/\bdrop table\b|\btruncate\b|\bdelete\b|\bcreate table\b|\bdrop column\b/i.test(texto), 'sin tablas nuevas ni borrados: solo relaja dos CHECK, cambia una función y añade dos');
   // Deshacer D172 vuelve a las funciones que exigen el interruptor encendido: se enciende para que «responder» funcione como antes.
-  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = coalesce(encendido_desde, now() - interval '1 day') where id = 1`;
+  await sql`update public.respuestas_web_config set encendido = true, encendido_desde = coalesce(encendido_desde, pruebas.ahora() - interval '1 day') where id = 1`;
   await revertirPosteriores(sql, path.join(RAIZ, 'supabase', 'migrations'), '20261028220000');
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028220000_ultima_pasada_avisos.revertir.sql'), 'utf8'));
   await sql.unsafe(fs.readFileSync(path.join(RAIZ, 'supabase', 'migrations', '20261028210000_estado_tarea_avisos.revertir.sql'), 'utf8'));

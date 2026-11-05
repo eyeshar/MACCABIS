@@ -15,8 +15,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 import { revertirPosteriores } from './revertir_posteriores.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const MIGS = path.join(AQUI, '..', 'supabase', 'migrations');
@@ -27,7 +28,7 @@ const ok = (cond, que, detalle = '') => {
   else { fallos++; console.log(`  FALLO ${que}${detalle ? ` -> ${detalle}` : ''}`); }
 };
 const NUEVAS = ['jugadores_privado', 'convocatorias', 'convocatoria_cambios'];
-const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+const hoy = hoyMadrid();
 const sumar = (f, n) => { const d = new Date(`${f}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 const pila = await arrancar();

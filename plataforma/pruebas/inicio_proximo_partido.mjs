@@ -31,7 +31,7 @@ try {
   const de = (L, eq) => L.find((x) => x.equipo === eq);
 
   // ---- Fase A: la convocatoria del primer domingo APROBADA: Ana (MdA) y Cira (MdL) convocadas; Beto, no (y con «no» puesto por un gestor).
-  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D1}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }], MdL: [{ person_id: 'sint-cira' }] })}, now())`;
+  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D1}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }], MdL: [{ person_id: 'sint-cira' }] })}, pruebas.ahora())`;
   await resp(de(L1, 'MdL'), 'sint-beto', 'no', 'otro');            // el caso real de Víctor
   await resp(de(L1, 'MdA'), 'sint-dani', 'va'); await resp(de(L1, 'MdL'), 'sint-dani', 'va');  // va, pero la convocatoria no lo lleva
   await sql`insert into public.ausencias_periodo (person_id, desde, hasta, motivo) values ('sint-hugo', ${hoy}, ${D2}, 'lesion')`;
@@ -103,7 +103,7 @@ try {
   const pa2 = await sesion('ana');
   const paA = await pastillas(pa2);
   ok(paA[0] === 'Sin responder', 'Agenda de Ana sin convocatoria: «Sin responder»', paA.join('|'));
-  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D1}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }], MdL: [] })}, now())`;
+  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D1}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }], MdL: [] })}, pruebas.ahora())`;
   const ps = await pastillas(pa2);
   ok(ps.includes('Convocado · MdA'), 'Agenda de Ana, con convocatoria: «Convocado · MdA»', ps.join('|'));
   const pbA = await pastillas(await sesion('beto'));

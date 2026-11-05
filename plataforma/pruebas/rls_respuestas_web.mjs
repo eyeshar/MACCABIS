@@ -19,9 +19,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { migrar } from './infra/migrar.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { adelantar, semanas, hoyMadrid as fpHoy, sumarDias as fpSumar } from './fechas_prueba.mjs';
+const hoyMadrid = fpHoy;   // D185: el «hoy» fijo de las pruebas
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
+import { ahoraPrueba } from './infra/reloj.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const MIGS = path.join(AQUI, '..', 'supabase', 'migrations');
@@ -32,7 +35,7 @@ const ok = (cond, que, detalle = '') => {
   else { fallos++; console.log(`  FALLO ${que}${detalle ? ` -> ${detalle}` : ''}`); }
 };
 const NUEVAS = ['respuestas_domingo', 'respuestas_web_config', 'respuestas_web_registro', 'jornadas_control', 'alertas_gestores', 'suscripciones_avisos', 'avisos_registro'];
-const hoyMadrid = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+
 const sumar = (f, n) => { const d = new Date(`${f}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 const pila = await arrancar();
@@ -82,7 +85,7 @@ try {
   for (let i = 0, seguidas = 0; i < 80 && seguidas < 3; i++) { seguidas = (await enCache()) ? seguidas + 1 : 0; await new Promise((ok) => setTimeout(ok, 250)); }
 
   console.log('\n== Carga de eventos y cuentas de prueba');
-  const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+  const cal = calendarioPrueba();
   for (const c of cal.partidos) {
     await sql`insert into public.liga_calendario (temporada, equipo, jornada, fecha, hora, local, descansa, rival, campo) values ('2026-27', ${c.equipo}, ${c.jornada}, ${c.fecha}, ${c.hora}, ${c.local}, ${!!c.descansa}, ${c.rival}, ${c.campo})`;
   }
@@ -200,7 +203,7 @@ try {
   const pasado = await id('entreno-semanal-2026-10-07');
   ok(/evento_cerrado/.test(error(await rpc('responder', { p_evento: pasado, p_respuesta: 'va' }, jon.token))), 'evento que ya empezó: no se responde');
   // un entreno de hoy que empezó hace un minuto
-  const ahoraMadrid = new Date(Date.now() - 60_000).toLocaleTimeString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(0, 5);
+  const ahoraMadrid = new Date(ahoraPrueba().getTime() - 60_000).toLocaleTimeString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(0, 5);
   const [hoyEv] = await sql`insert into public.eventos (clave, tipo, equipo, titulo, fecha, inicio) values ('x-hoy', 'entreno', 'ambos', 'Hoy', ${hoyMadrid()}, ${ahoraMadrid}) returning id`;
   ok(/evento_cerrado/.test(error(await rpc('responder', { p_evento: hoyEv.id, p_respuesta: 'va' }, jon.token))), 'el mismo día, en cuanto empieza (hora de Madrid), se cierra');
 
@@ -308,7 +311,7 @@ try {
   // Un partido de liga en los próximos días cuyo martes 20:00 ya pasó, y otro de la semana que viene (aún no).
   const hoy = hoyMadrid();
   const dow = (f) => (new Date(`${f}T12:00:00Z`).getUTCDay() + 6) % 7; // 0 = lunes
-  const madridAhora = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const madridAhora = ahoraPrueba().toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' });
   let tarde = null;
   for (let i = 1; i <= 6 && !tarde; i++) {
     const f = sumar(hoy, i);

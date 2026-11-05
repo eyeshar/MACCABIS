@@ -13,10 +13,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
-import { cargarEventos } from '../scripts/cargar_eventos.mjs';
+import { ligaParaPruebas } from './infra/liga.mjs';
+import { cargarEventos } from './infra/calendario.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
 import { gotoConSesion } from './infra/esperas.mjs';
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = path.join(RAIZ, '..', 'privado', 'mockups_liga');
@@ -36,7 +39,7 @@ const pila = await arrancar();
 let app, nav;
 try {
   const { sql, url, anonKey } = pila;
-  await cargarLiga(sql, leerLiga('2026-27'), '2026-27', { log: () => {} });
+  await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
   await cargarEventos(sql, { log: () => {} }); // el calendario de Scouting sale de la tabla de eventos (D162)
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
   const gId = await pila.crearUsuario(gestorEmail, 'no-se-usa');
@@ -46,8 +49,8 @@ try {
 
   // Lo esperado se lee de los datos (crecen cada jornada) y de la fecha de hoy, no se escribe a mano.
   const REPO = path.join(RAIZ, '..');
-  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
-  const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8')).partidos;
+  const hoy = hoyMadrid();
+  const cal = calendarioPrueba().partidos;
   const proximo = (eq) => cal.filter((x) => x.equipo === eq && !x.descansa && x.rival && x.fecha && x.fecha >= hoy).sort((a, b) => (a.fecha < b.fecha ? -1 : 1))[0];
   const PROX = { MDA: proximo('MDA'), MDL: proximo('MDL') };
   const normal = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();

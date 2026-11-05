@@ -13,8 +13,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { arrancar } from './pila.mjs';
-import { migrar } from '../scripts/db.mjs';
+import { migrar } from './infra/migrar.mjs';
 import { leerLiga, cargarLiga } from '../scripts/cargar_liga.mjs';
+import { ligaParaPruebas } from './infra/liga.mjs';
 import { filasTabla, filasFichas } from '../src/lib/jugadoresLiga.ts';
 
 let fallos = 0;
@@ -39,7 +40,7 @@ try {
   const vacioOBloqueado = (r) => r.status === 401 || r.status === 403 || (Array.isArray(r.datos) && r.datos.length === 0);
 
   console.log('\n== Carga (la misma que npm run db:liga)');
-  const liga = leerLiga('2026-27');
+  const liga = ligaParaPruebas('2026-27');
   const partidos = liga.privado;
   const esperadoJug = partidos.reduce((s, p) => s + p.equipos.reduce((t, e) => t + e.jugadores.length, 0), 0);
   // Cifras leidas de los datos (crecen cada jornada): partidos cargados, jornadas y partidos nuestros (MdA o MdL).

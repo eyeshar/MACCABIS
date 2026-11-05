@@ -17,6 +17,8 @@ import { arrancar } from './pila.mjs';
 import { desfasadas } from '../scripts/sincronizar_equipacion.mjs';
 import { arrancarApp, abrirNavegador } from './infra/app.mjs';
 import { PUERTOS, exigirLibres } from './infra/puertos.mjs';
+import { calendarioPrueba, entrenosPrueba, equipacionesPrueba } from './infra/calendario.mjs';
+import { hoyMadrid } from './fechas_prueba.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -24,8 +26,8 @@ const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'rediseno');
 fs.mkdirSync(SALIDA, { recursive: true });
 const require = createRequire(import.meta.url);
 const A = require(path.join(REPO, 'data', 'avisos_equipacion.js'));
-const equip = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'equipaciones_2026-27.json'), 'utf8'));
-const cal = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'calendario_2026-27.json'), 'utf8'));
+const equip = equipacionesPrueba();
+const cal = calendarioPrueba();
 const resumen = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'historia_resumen.json'), 'utf8'));
 // Lo que Mi zona debe decirle al jugador de pruebas (Jon) sale de los datos publicados, no de cifras fijas:
 // con cada jornada cambian la ultima jugada y el total de la temporada (la J2 rompio los "30 puntos" de la J1).
@@ -60,7 +62,7 @@ async function esperar(url, ms = 60000) {
 
 console.log('== Datos');
 ok(desfasadas().length === 0, 'plataforma/src/data/ coincide con data/ (npm run datos:sync)', desfasadas().join(', '));
-const entrenos = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'entrenos_2026-27.json'), 'utf8'));
+const entrenos = entrenosPrueba();
 ok(entrenos.series[0].dia_semana === 3 && entrenos.series[0].inicio === '20:30' && entrenos.series[0].fin === '22:30', 'entreno semanal: miercoles 20:30-22:30');
 // D148 (29/10/2026): Valdebernardo reabierta y solo con ficha. La pila local sigue con la pista en obras (la de la migración): lo de abajo no cambia.
 ok(entrenos.pistas[entrenos.series[0].pista].estado === 'habitual' && entrenos.pistas[entrenos.series[0].pista].solo_con_ficha === true, 'pista habitual (Valdebernardo) reabierta y solo con ficha (D148)');
@@ -73,10 +75,10 @@ try {
   const { ligaParaPruebas } = await import('./infra/liga.mjs'); // en Actions, sin hojas (D149)
   const { cargarLiga } = await import('../scripts/cargar_liga.mjs');
   await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
-  const { cargarEventos } = await import('../scripts/cargar_eventos.mjs');
+  const { cargarEventos } = await import('./infra/calendario.mjs');
   await cargarEventos(sql, { log: () => {} }); // el calendario publico lee de la tabla de eventos (paso 2, D94)
   // El proximo entreno sin pista propia con la pista como UBICACION LIBRE (D119), como el del 28/10/2026 (D138).
-  const hoyP = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+  const hoyP = hoyMadrid();
   const [libre] = await sql`select id, fecha::text from public.eventos where tipo = 'entreno' and estado = 'programado' and pista_id is null and fecha >= ${hoyP} order by fecha limit 1`;
   await sql`update public.eventos set ubicacion_nombre = 'Ciudad de los Periodistas' where id = ${libre.id}`;
   const gestorEmail = 'gestor@pruebas.local', jugadorEmail = 'jugador@pruebas.local';
@@ -320,7 +322,7 @@ try {
   }
 
   // ---------------------------------------------------------------- Acceso, Mi zona y gestion
-  const aMdA = A.proximoPartido(cal, new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' }), 'MDA');
+  const aMdA = A.proximoPartido(cal, hoyMadrid(), 'MDA');
   for (const [etiqueta, ancho, alto, movil] of [['375', 375, 812, true], ['escritorio', 1440, 900, false]]) {
     console.log(`\n== Acceso, Mi zona y gestion, ${etiqueta}`);
     const nuevo = () => nav.newContext({ viewport: { width: ancho, height: alto }, deviceScaleFactor: movil ? 2 : 1, isMobile: movil, hasTouch: movil, locale: 'es-ES' });

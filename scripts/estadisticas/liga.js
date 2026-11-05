@@ -279,6 +279,13 @@ function nombresRepetidos(p) {
   return out;
 }
 
+/** Validación de sumas de las hojas leídas: error en los grupos nuestros (G1/G2), aviso en los ajenos (D183). */
+function validarPartidos(partidos) {
+  const errores = [], avisos = [];
+  for (const p of partidos) (p.grupo.ajeno ? avisos : errores).push(...validarSumas(p.hoja).map(e => (p.grupo.ajeno ? `Liga ${p.grupo.clave}: ${e}` : e)));
+  return { errores, avisos };
+}
+
 function construir(temporada) {
   const ctx = contexto(temporada);
   const cfgLiga = ctx.cfg.liga;
@@ -288,7 +295,8 @@ function construir(temporada) {
   const { partidos, errores: eLectura } = leerFuentes(temporada, ctx);
   errores.push(...eLectura);
   // En los grupos ajenos (D183) una hoja descuadrada en origen (la FBM) es un aviso: no puede parar la publicación de G1 y G2.
-  for (const p of partidos) (p.grupo.ajeno ? avisos : errores).push(...validarSumas(p.hoja).map(e => (p.grupo.ajeno ? `Liga ${p.grupo.clave}: ${e}` : e)));
+  const v = validarPartidos(partidos);
+  errores.push(...v.errores); avisos.push(...v.avisos);
 
   // Un equipo no puede jugar dos veces en la misma jornada, ni un partido repetirse.
   const vistos = new Map();
@@ -359,7 +367,7 @@ function construir(temporada) {
   return { publico, privado, errores, avisos, fuentes: partidos.length };
 }
 
-module.exports = { construir, nombresRepetidos, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
+module.exports = { construir, validarPartidos, nombresRepetidos, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
 
 if (require.main === module) {
   const args = process.argv.slice(2);

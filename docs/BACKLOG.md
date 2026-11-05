@@ -504,6 +504,5 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [x] `pruebas:cuadre` compara con la web antigua de GitHub Pages, que ahora redirige: si se vuelve a necesitar, ejecutarlo con las redirecciones desactivadas (copia temporal de `data/redireccion_web.js` con `ESTA_ACTIVA = false`). _(Auditoría 30/10: hecho, `plataforma/pruebas/liga_cuadre.mjs` ya desactiva la redirección por sí sola.)_
 
 ## Hojas de los grupos ajenos (D183, 04/11/2026)
-- [ ] **Llevar G3–G6 (DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2) a Supabase y a «Scouting rivales»**, en un PR aparte y con staging antes (tocan datos de terceros y permisos). Hoy solo se copian y se validan.
-- [ ] **Saber cuál de las dos clasificaciones sin nombre es DOM MAÑ G3 y cuál DOM TAR** (`node scripts/estadisticas/mapa_grupos.js --ancla G3=<equipo> --escribir`). No cambia lo que se copia; sí el nombre del grupo.
+- [ ] **Llevar G3–G6 (DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2) a Supabase y a «Scouting rivales»**, en un PR aparte y con staging antes (tocan datos de terceros y permisos). **Antes, decidir qué datos de los jugadores rivales se publican** (son de terceros, D73). Hoy solo se copian y se validan.
 - [ ] _(Opcional)_ **Calendario de esos grupos desde el portal de datos abiertos 211549**, para dar jornada a sus hojas (hoy van `J--`). La rama `feat/calendario-automatico` no está en el remoto; hay que localizarla o repetir el sondeo.

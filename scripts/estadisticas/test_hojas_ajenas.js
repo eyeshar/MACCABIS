@@ -7,6 +7,7 @@
  *  2. Con esos equipos en el mapa (grupos_fase.json), va a liga/ con su grupo (G5) y sin jornada (J--).
  *  3. Una hoja de otra temporada (25/26, fuera de alcance) se aparta sin procesar y se avisa.
  *  5. La carpeta de Drive se lee con sus subcarpetas (respaldo_…); Descargas no.
+ *  6. Una hoja descuadrada en origen para en G1/G2 y solo avisa en los grupos ajenos.
  *  4. La misma hoja descargada otra vez (bytes distintos, mismo contenido) y la que está en dos carpetas de entrada se copian una vez.
  */
 const fs = require('fs');
@@ -81,6 +82,18 @@ const escribe = (dir, nombre, bytes) => { fs.mkdirSync(dir, { recursive: true })
   ok(r.plan.length === 1, '5. entra en las subcarpetas de la carpeta de Drive');
   r = await recoger({ temporada: '2026-27', desde: d6, base: tmp('base3'), sinAsistencia: true, log: () => {} });
   ok(r.plan.length === 0, '5b. no entra en las subcarpetas de Descargas');
+
+  // 6. Hoja descuadrada en origen (faltas por jugador distintas del total): PARA en G1/G2 (nuestros), solo avisa en los ajenos.
+  const { validarPartidos } = require('./liga');
+  const { leerHojaLiga } = require('./leer_hoja_liga');
+  const d7 = tmp('descuadre');
+  escribe(d7, 'x.xlsx', hoja('EQUIPO UNO', 'EQUIPO DOS', 58, 42, '26/27'));
+  const mala = leerHojaLiga(path.join(d7, 'x.xlsx'));
+  mala.equipos[0].totales.fc += 1;
+  const nuestro = validarPartidos([{ grupo: { clave: 'G1', ajeno: false }, hoja: mala }]);
+  const ajeno = validarPartidos([{ grupo: { clave: 'G3', ajeno: true }, hoja: mala }]);
+  ok(nuestro.errores.length > 0 && nuestro.avisos.length === 0, '6. hoja descuadrada en G1/G2: error (para la rutina)');
+  ok(ajeno.errores.length === 0 && ajeno.avisos.length > 0, '6b. hoja descuadrada en G3-G6: solo aviso');
 
   delete process.env.MACCABIS_GRUPOS_FASE;
   console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo bien.');

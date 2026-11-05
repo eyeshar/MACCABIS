@@ -21,11 +21,13 @@ const TEMPORADA = '2026-27', ETIQUETA = '26/27';
 const FICHERO = path.join(__dirname, 'grupos_fase.json');
 /** Grupos ajenos con nombre conocido: clave, nombre y un equipo que solo está en él. */
 const ANCLAS = {
+  G3: { nombre: 'DOM MAÑ G3', equipo: 'LOS ANGELES DE JUANAS' },
+  G4: { nombre: 'DOM TAR', equipo: 'THE MOLOCHOFFF COCKTAIL' },
   G5: { nombre: 'SAB TAR G1', equipo: 'ACCIÓN MUTANTE' },
   G6: { nombre: 'SAB TAR G2 (PRIMERA FASE)', equipo: 'ROMA BASKET' },
 };
-/** Nombres de los que aún no se saben distinguir entre sí (DOM MAÑ G3 y DOM TAR). */
-const SIN_ASIGNAR = ['G3', 'G4'];
+/** Claves sin nombre conocido (hoy ninguna: Iván confirmó G3 y G4 el 05/11/2026). */
+const SIN_ASIGNAR = [];
 
 function leerClasificacion(f) {
   const wb = X.readFile(f);

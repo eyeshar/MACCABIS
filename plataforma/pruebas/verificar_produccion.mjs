@@ -4,26 +4,27 @@
 // contrasena por la API de Supabase, pasa la sesion al navegador como cookies y recorre /entrar, /gestion, Scouting y (D162: en /liga/…)
 // Liga consolidada a 375 px y escritorio. Al final BORRA el usuario y la ficha de gestor temporales, pase lo que pase.
 //
-//   node pruebas/verificar_produccion.mjs [url]
+//   node pruebas/verificar_produccion.mjs [url] --confirmar <ref>   (norma 19: crea un gestor temporal; sin el ref del
+//                                                                 real, o --pila, no se conecta)
 
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
 import { createServerClient } from '@supabase/ssr';
 import { chromium } from 'playwright';
 import { conectar } from '../scripts/db.mjs';
+import { exigirDestino } from '../scripts/lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Filas del ranking de equipos de Liga consolidada: los equipos que ya tienen algun partido con hoja (crece
 // con las jornadas: 20 en la J1, 22 desde la J2, cuando RIF y 28500 dejaron de descansar).
 const EQUIPOS_CON_PARTIDOS = Object.values(JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'liga.json'), 'utf8')).grupos)
   .flatMap((g) => g.clasificacion).filter((c) => c.pj > 0).length;
-dotenv.config({ path: path.join(RAIZ, '.env.local') });
+const { args } = await exigirDestino(process.argv.slice(2), { conApi: true });
 /** Con la redireccion activada (scripts/activar_redirecciones.js) GitHub Pages ya no tiene barra: se omiten sus pruebas. */
 const REDIR_ACTIVA = /var ESTA_ACTIVA = true;/.test(fs.readFileSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'), 'data', 'redireccion_web.js'), 'utf8'));
-const BASE = (process.argv[2] || 'https://maccabis.vercel.app').replace(/\/$/, '');
+const BASE = (args[0] || 'https://maccabis.vercel.app').replace(/\/$/, '');
 const URL_SB = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const sql = conectar();

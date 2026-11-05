@@ -1,13 +1,20 @@
 #!/usr/bin/env node
-// Herramienta de base de datos de la plataforma. Lee la conexion de .env.local
+// Herramienta de base de datos de la plataforma. Contra el real lee la conexion de .env.local
 // (SUPABASE_DB_URL), que NUNCA se sube a git.
 //
-//   npm run db:migrar                  aplica las migraciones pendientes de supabase/migrations
-//   npm run db:semilla                 carga la plantilla 26/27 y la campana de ropa
-//   npm run db:gestor -- <email> <nombre>   reserva o vincula una plaza de gestor por correo (D68)
-//   npm run db:correo -- <person_id> <correo_nuevo>   cambia el correo de UN jugador, sincronizando
+// Las ordenes que escriben exigen el destino (norma 19, scripts/lib/destino.mjs): `-- --confirmar <ref>` para el
+// real o `-- --pila` para la pila local (con SUPABASE_DB_URL a 127.0.0.1; sin leer .env.local).
+//
+//   npm run db:migrar -- --confirmar <ref>   aplica las migraciones pendientes de supabase/migrations
+//   npm run db:semilla -- --confirmar <ref>  carga la plantilla 26/27 y la campana de ropa
+//   npm run db:gestor -- <email> <nombre> --confirmar <ref>   reserva o vincula una plaza de gestor por correo (D68)
+//   npm run db:correo -- <person_id> <correo_nuevo> --confirmar <ref>   cambia el correo de UN jugador, sincronizando
 //                                       su cuenta de auth (si ya existe) y la de gestores (si lo es)
-//   npm run db:estado                  resumen (sin mostrar telefonos)
+//   npm run db:revertir -- <migracion> --confirmar <ref>   aplica su .revertir.sql (D94) en una transaccion y quita
+//                                       su registro; <migracion> es la version (20261105100000) o el nombre del
+//                                       fichero. Para si no esta aplicada o si hay posteriores aplicadas (salvo
+//                                       --aunque-haya-posteriores).
+//   npm run db:estado                  resumen (sin mostrar telefonos; solo lee, sin destino)
 //
 // Las migraciones se registran en supabase_migrations.schema_migrations, la misma
 // tabla que usa la CLI de Supabase, para que las dos vias sean compatibles.
@@ -17,6 +24,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postgres from 'postgres';
 import { PLANTILLA_2026_27, CAMPANA_INICIAL } from './plantilla_2026_27.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIR_MIGRACIONES = path.join(RAIZ, 'supabase', 'migrations');
@@ -31,13 +39,15 @@ export function conectar(url = process.env.SUPABASE_DB_URL) {
   return postgres(url, { ssl: local ? false : 'require', onnotice: () => {}, max: 1 });
 }
 
+const migraciones = () => fs.readdirSync(DIR_MIGRACIONES).filter(f => /^\d+_.+\.sql$/.test(f) && !/\.revertir\.sql$/.test(f)).sort();
+
 export async function migrar(sql, { log = console.log } = {}) {
   await sql`create schema if not exists supabase_migrations`;
   await sql`create table if not exists supabase_migrations.schema_migrations (
     version text primary key, statements text[], name text)`;
   const hechas = new Set((await sql`select version from supabase_migrations.schema_migrations`).map(r => r.version));
   // Las reversiones (<migracion>.revertir.sql, D94) viven al lado pero NUNCA las aplica este comando.
-  const ficheros = fs.readdirSync(DIR_MIGRACIONES).filter(f => /^\d+_.+\.sql$/.test(f) && !/\.revertir\.sql$/.test(f)).sort();
+  const ficheros = migraciones();
   let aplicadas = 0;
   for (const f of ficheros) {
     const [version, ...resto] = f.replace(/\.sql$/, '').split('_');
@@ -52,6 +62,29 @@ export async function migrar(sql, { log = console.log } = {}) {
     aplicadas++;
   }
   log(aplicadas ? `Migraciones aplicadas: ${aplicadas}.` : 'No habia migraciones pendientes.');
+}
+
+/** Aplica el .revertir.sql de UNA migracion aplicada (D94) en una transaccion y quita su registro. */
+export async function revertirMigracion(sql, cual, { log = console.log, aunquePosteriores = false } = {}) {
+  const nombre = String(cual || '').replace(/\.revertir\.sql$|\.sql$/, '');
+  const elegidas = migraciones().filter(f => f.replace(/\.sql$/, '') === nombre || f.startsWith(`${nombre}_`));
+  if (elegidas.length !== 1) throw new Error(`«${cual}» no es una migracion de supabase/migrations${elegidas.length ? ' unica' : ''}.`);
+  const fichero = elegidas[0];
+  const version = fichero.split('_')[0];
+  const reversion = path.join(DIR_MIGRACIONES, fichero.replace(/\.sql$/, '.revertir.sql'));
+  if (!fs.existsSync(reversion)) throw new Error(`${fichero} no tiene .revertir.sql: no se puede deshacer con esta orden.`);
+  const hechas = (await sql`select version from supabase_migrations.schema_migrations order by version`).map(r => r.version);
+  if (!hechas.includes(version)) throw new Error(`${fichero} no esta aplicada en esta base: no hay nada que revertir.`);
+  const posteriores = hechas.filter(v => v > version);
+  if (posteriores.length && !aunquePosteriores) {
+    throw new Error(`hay ${posteriores.length} migracion(es) posterior(es) aplicada(s) (${posteriores.join(', ')}): reviertelas antes, de la mas nueva a la mas vieja, o pasa --aunque-haya-posteriores.`);
+  }
+  const texto = fs.readFileSync(reversion, 'utf8');
+  await sql.begin(async tx => {
+    await tx.unsafe(texto);
+    await tx`delete from supabase_migrations.schema_migrations where version = ${version}`;   // por si el .revertir.sql no lo hace
+  });
+  log(`Revertida ${fichero} (con ${path.basename(reversion)}).`);
 }
 
 export async function semilla(sql, { log = console.log } = {}) {
@@ -133,9 +166,17 @@ async function estado(sql) {
 
 // --- linea de comandos ---
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const dotenv = await import('dotenv');
-  dotenv.config({ path: path.join(RAIZ, '.env.local') });
-  const [orden, ...args] = process.argv.slice(2);
+  const [orden, ...resto] = process.argv.slice(2);
+  const ORDENES = ['migrar', 'semilla', 'gestor', 'correo', 'revertir', 'estado'];
+  if (!ORDENES.includes(orden)) {
+    console.log('Ordenes: migrar | semilla | gestor <email> <nombre> | correo <person_id> <correo_nuevo> | revertir <migracion> | estado');
+    process.exit(orden ? 1 : 0);
+  }
+  let args = resto;
+  if (orden === 'estado') {
+    const dotenv = await import('dotenv');
+    dotenv.config({ path: path.join(RAIZ, '.env.local') });
+  } else ({ args } = await exigirDestino(resto));   // norma 19: antes de conectarse
   const sql = conectar();
   try {
     if (orden === 'migrar') await migrar(sql);
@@ -148,8 +189,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       const [personId, correoNuevo] = args;
       if (!personId || !correoNuevo) throw new Error('Uso: npm run db:correo -- <person_id> <correo_nuevo>');
       await cambiarCorreo(sql, personId, correoNuevo);
+    } else if (orden === 'revertir') {
+      const [cual] = args.filter(a => !a.startsWith('--'));
+      if (!cual) throw new Error('Uso: npm run db:revertir -- <migracion> --confirmar <ref> (o --pila)');
+      await revertirMigracion(sql, cual, { aunquePosteriores: args.includes('--aunque-haya-posteriores') });
     } else if (orden === 'estado') await estado(sql);
-    else console.log('Ordenes: migrar | semilla | gestor <email> <nombre> | correo <person_id> <correo_nuevo> | estado');
   } catch (e) {
     console.error('ERROR:', e.message);
     process.exitCode = 1;

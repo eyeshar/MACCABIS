@@ -503,6 +503,13 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 - [x] Limpieza menor hecha: quitados `URL_DASHBOARD`, `URL_ESTADISTICAS` y `estadisticas()` de `plataforma/src/lib`.
 - [x] `pruebas:cuadre` compara con la web antigua de GitHub Pages, que ahora redirige: si se vuelve a necesitar, ejecutarlo con las redirecciones desactivadas (copia temporal de `data/redireccion_web.js` con `ESTA_ACTIVA = false`). _(Auditoría 30/10: hecho, `plataforma/pruebas/liga_cuadre.mjs` ya desactiva la redirección por sí sola.)_
 
+## Liga consolidada con varios grupos y resultados por jornada (D186, 05/11/2026)
+- [x] **Selector de varios grupos** (MdA y MdL por defecto, «Otros grupos», `?grupos=`, el antiguo `?grupo=` sigue valiendo), **ranking por grupo** y **pestaña Resultados** (jornada, descanso, huecos y la hoja de cada partido, con sesión). PR abierto, **sin mergear: espera el OK de Iván**.
+- [ ] **Cargar la jornada de G3–G6 en el real** (`npm run db:liga`, reemplaza la temporada; sin migración): **pide el OK de Iván** antes de tocar el real. Hasta entonces, en producción G3–G6 siguen sin jornada y su pestaña Resultados no tiene partidos.
+- [ ] **Contrastar con la app (S21)** los 3 casos dudosos (`comprobado: false`): Estrella Negra–SPV y Café Hnos. Velasco Settas–Superlosers (G3, J1) y la jornada de Trotamundos–Barteam Osborne (G5, J2; también quién era el local). Al confirmarlos, `comprobado: true`.
+- [ ] _(Opcional)_ **Incomparecencia Trotamundos–Barteam Osborne en la clasificación de G5:** anotarla en `temporadas.json` (`liga.incomparecencias`) cuando se sepa quién no se presentó (rutina B, clasificación oficial). Hoy solo sale como hueco en Resultados.
+- [ ] **Rutina A, lunes 09/11:** primera descarga con el registro `jornadas_hojas.csv` (Claude lo rellena al bajar cada hoja de G3–G6).
+
 ## Pruebas sin el calendario real (D185, 05/11/2026)
 - [x] **Calendario y reloj de prueba fijos** (`test/calendario-prueba`): ninguna prueba lee `data/calendario_…`, sus copias ni la tabla real de eventos; «hoy» fijo en base, web y navegador; casos a propósito (descanso, aplazamiento, hora y pista, local a visitante). PR #56 mezclado (`76e56d1`, 05/11/2026); producción en READY, sin el alias de prueba.
 - [ ] Si se añade una suite nueva que necesite una fecha concreta o un cambio de calendario: añadirlo a `fixtures/calendario_prueba.json` (`cambios_prueba`), nunca leer el real ni `new Date()` para «hoy» (usar `fechas_prueba.hoyMadrid()` / `reloj.ahoraPrueba()`).
@@ -510,5 +517,5 @@ Fuente: dataset **300257** del portal de datos abiertos del Ayuntamiento de Madr
 ## Hojas de los grupos ajenos (D183, 04/11/2026)
 - [x] ~~**Llevar G3–G6 (DOM MAÑ G3, DOM TAR, SAB TAR G1 y SAB TAR G2) a Supabase y a «Scouting rivales»**~~ **Hecho en `feat/grupos-ajenos` (D184, 05/11/2026):** los mismos datos que G1/G2, solo con sesión; Liga consolidada con selector de grupo (sin «Todos») y Scouting de cualquier equipo de G1–G6.
 - [x] **Aplicar `20261105100000_liga_grupos_ajenos` en el real** _(hecho el 05/11/2026 con D111 y cargado con `db:liga`; ver ESTADO)_ (D111: volcado, permisos en solo lectura antes y después, recuento de auth) y cargar con `npm run db:liga`, con el OK de Iván, antes de mergear el PR de D184.
-- [ ] **Jornada de G3–G6:** hoy van sin jornada (la hoja no la trae). Si se quiere la jornada partido a partido, sacarla del calendario del portal 211549 (ver abajo) o con `npm run jornada -- --jornada N` al copiar.
+- [x] ~~**Jornada de G3–G6**~~ **Hecho en `feat/liga-varios-grupos` (D186, 05/11/2026):** las 58 hojas, deducidas por el orden de exportación (`data/jornadas_grupos_ajenos_2026-27.json`, sin marcadores); las nuevas, del registro de descargas de la rutina A (`jornadas_hojas.csv`).
 - [ ] _(Opcional)_ **Calendario de esos grupos desde el portal de datos abiertos 211549**, para dar jornada a sus hojas (hoy van `J--`). La rama `feat/calendario-automatico` no está en el remoto; hay que localizarla o repetir el sondeo.

@@ -12,27 +12,24 @@ _Una página. Primera vez: la jornada 1 se juega el domingo 4/10/2026 y se proce
 ## Reparto desde el 24/10/2026: se publica solo si todo cuadra (D66)
 
 - **Actas:** las baja Claude con la tarea programada «Maccabis · actas del lunes» (lunes y jueves, 9:30) desde gesdeportiva.fbm.es, en tu Chrome con la sesión iniciada.
-- **Hojas de estadística:** las bajas tú desde la app **Afición FBM** del móvil (las nuestras y las de liga) y las dejas en Descargas del PC, sin renombrar.
+- **Hojas de estadística (D182, desde el 04/11/2026):** las baja Claude de la app **Afición FBM** con el **S21 dedicado al club** (Enlace Móvil); **FolderSync** las copia a Google Drive cada 10 minutos y llegan al PC a `I:\Mi unidad\Descargas aficion fbm\`. Son las nuestras y las de **los grupos de la fase** (D183). Ya no tienes que bajarlas tú.
 - **Procesar y publicar:** `scripts/rutina_a_publicar.ps1`, desde el Programador de tareas de Windows (lunes y jueves, 9:45 y 13:00): `npm run jornada -- --no-interactivo`, pruebas, commit y push, `db:liga`, `db:asistencia` y `verificar_produccion`. Ante cualquier duda (nombre desconocido, hoja que no es de la jornada, acta que no cuadra, falta una hoja o un acta) **para sin publicar nada** y te avisa con una notificación de Windows («Rutina A parada: <motivo>»); si publica, «Jornada N publicada: MdA x–y Rival · Rival x–y MdL». Registro en `privado/registro_rutina_a.log`. Detalle en `docs/RUTINAS/A_ACTAS.md`.
 
 Lo de abajo sigue valiendo para hacerlo a mano (o cuando la rutina para).
 
-## Lo que haces tú (5 minutos, el lunes)
+## Lo que haces tú (el lunes)
 
-> **Reparto desde el 23/10/2026 (D106):** las **actas** se bajan de la web **gesdeportiva.fbm.es/clubes** (Competiciones → Resultados y actas; una cuenta ve MdA y MdL): tú inicias sesión en tu Chrome con la clave del gestor de contraseñas y Claude descarga desde ahí (nunca maneja la clave ni el «no soy un robot»). Las **hojas de estadística** (las nuestras y las de toda la liga, D73) siguen saliendo de la **app Afición FBM**, porque la web no las ofrece.
+> **Reparto (D106, D182):** las **actas** se bajan de la web **gesdeportiva.fbm.es/clubes** (una cuenta ve MdA y MdL): tú inicias sesión en tu Chrome y Claude descarga desde ahí (nunca maneja la clave ni el «no soy un robot»). Las **hojas de estadística** las baja Claude con el S21 y llegan solas a Drive; la web no las ofrece.
 
-1. Deja la sesión de gesdeportiva.fbm.es/clubes iniciada en Chrome; Claude baja las **actas** de los dos partidos del domingo (PDF, `Acta-Partido-<número>.pdf`).
-2. En la app **Afición FBM** descarga la **hoja de estadística** de cada partido (Excel, se llama `estadisticaPartido_<fecha de descarga>.xlsx`; si bajas dos el mismo día, la segunda lleva " 1", "_1" o "(1)") y las de los partidos de los dos grupos (`docs/RUTINAS/A_ACTAS.md`).
-   En total, **4 ficheros nuestros** si jugaron los dos equipos, más las hojas de liga.
-3. **No les cambies el nombre.** El nombre de la hoja **no importa**: el equipo, el rival y si es local o visitante se leen del interior (cabecera "Estadísticas - X vs Y - ..."), y el partido se identifica con el calendario. Déjalos en la carpeta **Descargas** del ordenador
-   (si los bajas en el móvil, pásalos a Descargas del PC como hagas siempre).
-4. Opcional: el Excel de asistencia de SportEasy (`bilan_presence…xlsx`), también en Descargas.
-5. Abre Claude Code en la carpeta del proyecto y pídeme: **"procesa la jornada N"**.
-6. Si en Descargas quedan hojas de jornadas anteriores, lo proceso desde una carpeta aparte con solo lo nuevo (`npm run jornada -- --desde <carpeta>`), como con la J2 y con las actas de J1 y J2.
+1. Deja la sesión de gesdeportiva.fbm.es/clubes iniciada en Chrome; Claude baja las **actas** de los dos partidos del domingo (PDF, `Acta-Partido-<número>.pdf`, a Descargas).
+2. **Nada con las hojas:** están en `I:\Mi unidad\Descargas aficion fbm\` (`estadisticaPartido_<fecha de descarga>.xlsx`). **El nombre no importa**: la temporada, los equipos y el grupo se leen del interior; el partido, del calendario. No las renombres.
+3. Abre Claude Code en la carpeta del proyecto y pídeme: **"procesa la jornada N"** (o espera a la rutina automática).
+4. Si en la carpeta quedan hojas de jornadas anteriores, no pasa nada (se detectan por contenido). Para procesar solo una carpeta aparte: `npm run jornada -- --desde <carpeta> --sin-drive`.
+5. «Sus equipos no están en ningún grupo conocido» o «la cabecera dice la temporada X» son avisos, no paradas: ver `docs/RUTINAS/A_ACTAS.md`.
 
 ## Lo que hago yo
 
-1. Ejecuto `npm run jornada`: busca en Descargas los ficheros **nuevos** de la 26/27 y los
+1. Ejecuto `npm run jornada`: busca en Descargas y en la carpeta de Drive de las hojas los ficheros **nuevos** de la 26/27 y los
    **copia** (nunca los mueve ni los pisa) a `fuentes_fbm/2026-27/`, que no se sube a internet.
 2. Comprueba que los puntos de la hoja suman el marcador del acta y que los parciales cuadran.
    **Si algo no cuadra, no escribe nada** y te digo qué falta o qué falla.

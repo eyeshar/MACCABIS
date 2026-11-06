@@ -305,8 +305,10 @@ try {
   // Al cerrar sesion se borra la conversacion de la pestaña
   await ivan.goto(`${APP}/`);
   ok(Boolean(await ivan.evaluate(() => sessionStorage.getItem('maccabis-asistente'))), 'antes de salir la conversación está en la pestaña');
-  await ivan.locator('.nv-barra .nv-barra-item').last().click();
-  await ivan.locator('.nv-hoja').getByRole('button', { name: 'Salir' }).click();
+  // D189: «Salir» está en Yo (el avatar de la cabecera).
+  await ivan.getByTestId('avatar').click();
+  await ivan.waitForURL(/\/yo$/);
+  await ivan.getByRole('button', { name: 'Salir' }).click();
   await ivan.waitForURL(/\/entrar/);
   ok((await ivan.evaluate(() => sessionStorage.getItem('maccabis-asistente'))) === null, 'al cerrar sesión se borra');
   ok(!(await visto(FAB(ivan), 800)), 'y en /entrar no hay botón');

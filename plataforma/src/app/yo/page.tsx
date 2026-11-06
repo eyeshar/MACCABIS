@@ -4,7 +4,6 @@ import { exigirSesion, origen } from "@/lib/sesion";
 import { miEnlace } from "@/lib/calendario/enlace";
 import { usuarioActual } from "@/lib/usuario";
 import { cargarMiZona } from "@/app/mi-zona/datos";
-import { salir } from "@/app/entrar/acciones";
 import { temporadaDe } from "@/lib/publico";
 import { fichaEstadisticas } from "@/lib/mensajes";
 import { TEXTO_POSICION, type Posicion } from "@/lib/convocatoria/motor";
@@ -12,6 +11,7 @@ import { Flecha } from "@/components/Iconos";
 import CalendarioMovil from "@/components/inicio/CalendarioMovil";
 import { cifrasTemporada } from "@/components/inicio/TuTemporada";
 import Instalar from "./Instalar";
+import Salir from "./Salir";
 import "@/components/inicio/inicio.css";
 import "./yo.css";
 
@@ -76,7 +76,7 @@ export default async function Yo() {
         <h2 id="t-cuenta">Mi cuenta</h2>
         <p style={{ margin: 0 }}>Entras con <strong>{user.email}</strong>, con Google o con un código a este correo: no hay contraseña.</p>
         {u?.papel && <p className="suave pequeno" style={{ margin: 0 }}>{u.papel}</p>}
-        <form action={salir}><button className="boton boton-claro yo-salir" type="submit">Salir</button></form>
+        <Salir />
       </section>
       <p className="pie">¿Algo no cuadra? Habla con Iván, Carlos o Edu. · <Link href="/privacidad">Privacidad</Link></p>
     </main>

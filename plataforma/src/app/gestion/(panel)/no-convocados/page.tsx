@@ -29,7 +29,7 @@ export default async function NoConvocados() {
 
   return (
     <>
-      <Volver defecto="/gestion" etiqueta="Panel" />
+      <Volver defecto="/gestion" etiqueta="Gestión" />
       <div className="gs-titulo">
         <div>
           <div className="gs-eyebrow">Plantilla y club</div>

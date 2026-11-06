@@ -236,7 +236,7 @@ export default async function InicioGestion() {
                 <div data-testid="respuestas-entreno" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <Numeros variante="cajas" columnas={4} prueba="entreno-numeros" etiqueta="Respuestas al entreno" grupos={respEntreno.grupos} />
                   {respEntreno.dudas && <span className="pequeno suave" data-testid="linea-dudas">{respEntreno.dudas}</span>}
-                  <Link href={`/gestion/eventos/${respEntreno.id}/respuestas`} data-testid="enlace-respuestas" className="gp-enlace">Ver respuestas y motivos →</Link>
+                  <Link href={`/evento/${respEntreno.id}`} data-testid="enlace-respuestas" className="gp-enlace">Ver respuestas y motivos →</Link>
                 </div>
               ) : entreno ? (
                 <p className="suave" style={{ margin: 0 }} data-testid="entreno-sin-respuestas">Aún nadie ha respondido a este entreno.</p>
@@ -267,7 +267,7 @@ export default async function InicioGestion() {
                             <td className="cifra" style={{ whiteSpace: "nowrap" }}>{e.inicio ?? "¿?"} · P{e.partido?.campo ?? "?"}</td>
                             <td data-label="Equipación">{chip ? <span className={`pastilla pastilla-${chip.tipo}`}>{chip.texto}</span> : <span className="pastilla">Negra</span>}</td>
                             <td data-label="Respuestas" className={r?.hay ? "ev-celda-resp" : undefined}>
-                              {r?.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={cruce(e)} dudas={r.dudas} /> : r ? <Link href={`/gestion/eventos/${r.id}/respuestas`} className="tenue">Sin respuestas</Link> : <span className="suave">—</span>}
+                              {r?.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={cruce(e)} dudas={r.dudas} /> : r ? <Link href={`/evento/${r.id}`} className="tenue">Sin respuestas</Link> : <span className="suave">—</span>}
                               {r && <AccionesFaltan id={r.id} sin={r.sin} mensaje={r.mensaje} />}
                             </td>
                             <td data-label="Convocados">
@@ -313,7 +313,7 @@ export default async function InicioGestion() {
                     return (
                       <li key={e.id} data-evento={e.id}>
                         <b>{diaYNumero(e.fecha)} · {hhmm(e.inicio) ?? "hora por confirmar"} · {tituloEvento(e)}</b>
-                        {r.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={tituloEvento(e)} dudas={r.dudas} /> : <Link href={`/gestion/eventos/${e.id}/respuestas`} className="tenue">Sin respuestas</Link>}
+                        {r.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={tituloEvento(e)} dudas={r.dudas} /> : <Link href={`/evento/${e.id}`} className="tenue">Sin respuestas</Link>}
                         <AccionesFaltan id={r.id} sin={r.sin} mensaje={r.mensaje} />
                       </li>
                     );

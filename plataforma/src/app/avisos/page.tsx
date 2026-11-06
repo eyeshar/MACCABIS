@@ -14,7 +14,7 @@ export default async function Avisos() {
   await exigirSesion();
   return (
     <main className="pagina av-pagina">
-      <Volver defecto="/" etiqueta="Inicio" />
+      <Volver defecto="/yo" etiqueta="Yo" />
       <h1>Avisos en el móvil</h1>
       <p className="av-intro">Solo te avisamos si te falta responder, si cambia la hora o la pista y si se cancela algo. <strong>De noche, solo si el partido es en pocas horas.</strong></p>
       <ActivarAvisos />

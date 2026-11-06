@@ -19,5 +19,5 @@ export default async function PaginaConvocatoria({ searchParams }: { searchParam
   }
   // Cada nombre enlaza a su ficha (D139) si tiene estadisticas.
   const enlaces = Object.fromEntries(ctx.jugadores.flatMap((j) => { const h = hrefJugador(j.person_id); return h ? [[j.person_id, h]] : []; }));
-  return <><Volver defecto="/gestion" etiqueta="Panel" /><Convocatoria key={ctx.fecha} ctx={ctx} enlaces={enlaces} ocultarNiveles={niveles === "no"} /></>;
+  return <><Volver defecto="/gestion" etiqueta="Gestión" /><Convocatoria key={ctx.fecha} ctx={ctx} enlaces={enlaces} ocultarNiveles={niveles === "no"} /></>;
 }

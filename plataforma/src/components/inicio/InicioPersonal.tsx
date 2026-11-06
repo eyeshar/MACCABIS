@@ -11,6 +11,7 @@ import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
 import { avisosDelFichero } from "@/lib/inicio/avisos";
 import { cuentasDeLaSemana, type CuentaGestion } from "@/lib/inicio/semanaGestor";
 import { temporadaDe } from "@/lib/publico";
+import { pedidoVisibleParaJugadores } from "@/lib/pedidoRopa";
 import {
   cargarAvisosPersonales, cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas,
   cargarQuienVa, misEntrenosPorDefecto,
@@ -194,7 +195,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const dorsalDe = (eq: string) => (dorsales.length > 1 && dorsales.length === equiposJugador.length ? dorsales[equiposJugador.indexOf(eq as "MdA" | "MdL")] ?? null : dorsales[0] ?? null);
   const proximos = todas.filter((u) => u.fecha <= hasta && (abierta(u) || u.eventos.every((e) => e.estado === "cancelado")));
   const grupoDe = (u: Unidad) => (u.eventos[0].tipo === "entreno" ? misGrupos.find((g) => g.evento_id === u.eventos[0].id) ?? null : null);
-  const ropa = campana?.abierta_ahora || pedidos.some((p) => p.campana_abierta);
+  // La tarjeta del pedido de ropa, SOLO si un gestor lo ha abierto a los jugadores (bloque 5: interruptor y fecha límite).
+  const ropa = pedidoVisibleParaJugadores(campana) || pedidos.some((p) => p.campana_abierta);
 
   const tarjetaUnidad = (u: Unidad): DatosTarjeta => {
     const e = u.eventos[0];

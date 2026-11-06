@@ -112,7 +112,7 @@ try {
   ok(lj.length > 2 && lj.every((x) => x.ok), `/liga: ${lj.length} comprobaciones de verificar_jornada`, lj.filter((x) => !x.ok).map((x) => x.texto).join(' / '));
 
   console.log('\n== Lo dinámico con sesión no se cachea');
-  for (const r of ['/agenda', '/cuenta', '/liga/scouting', '/mis-numeros']) {
+  for (const r of ['/calendario', '/yo', '/liga/scouting', '/gestion']) {
     x = await fetch(`${APP}${r}`, { headers: { cookie }, redirect: 'manual' });
     await x.text();
     ok(!/s-maxage|public/.test(cc(x)), `${r}: sin cache pública (${cc(x)})`);

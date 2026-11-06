@@ -57,19 +57,19 @@ try {
   const luz = await e.sesion('luz@pruebas.local', 375);
   await luz.goto(`${APP}/`);
   ok(await visto(luz.getByTestId('por-defecto')), 'inicio: sale el bloque de entrenos puestos por defecto');
-  const tarjeta = (p, ev) => p.getByTestId('tarjeta-por-defecto').filter({ has: p.locator(`a[href="/mi-zona/evento/${ev.id}"]`) });
+  const tarjeta = (p, ev) => p.getByTestId('tarjeta-por-defecto').filter({ has: p.locator(`a[href="/evento/${ev.id}"]`) });
   ok((await tarjeta(luz, e1).count()) === 1 && (await tarjeta(luz, e2).count()) === 1, 'una tarjeta por entreno (los dos)');
   const t1 = await tarjeta(luz, e1).innerText();
   ok(/No vas \(puesto por defecto\)/.test(t1) && t1.includes('Te hemos marcado como «no voy» porque normalmente no entrenas. Si vienes, cámbialo.'), '«No vas (puesto por defecto)» y «Te hemos marcado como «no voy» porque normalmente no entrenas. Si vienes, cámbialo.» (D177)', t1);
-  ok(!(await luz.getByTestId('tarjeta-pendiente').filter({ has: luz.locator(`a[href="/mi-zona/evento/${e1.id}"]`) }).count()), 'los entrenos no salen en «Te faltan…» (ya cuentan como «no va»)');
-  const filaAgenda = luz.locator(`a[data-testid="fila-agenda"][href="/mi-zona/evento/${e1.id}"]`);
-  ok(/No vas \(puesto por defecto\)/.test(await filaAgenda.first().innerText()), '«Tu agenda»: la pastilla dice «No vas (puesto por defecto)»');
+  ok(!(await luz.getByTestId('tarjeta-pendiente').filter({ has: luz.locator(`a[href="/evento/${e1.id}"]`) }).count()), 'los entrenos no salen en «Te faltan…» (ya cuentan como «no va»)');
+  const filaAgenda = luz.getByTestId('tarjeta-semana').filter({ has: luz.locator(`a[href="/evento/${e1.id}"]`) });
+  ok(/No vas \(puesto por defecto\)/.test(await filaAgenda.first().getByTestId('estado-tarjeta').innerText()), 'Semana: la tarjeta dice «No vas (puesto por defecto)»');
   ok(!PRIVADO.test(await luz.content()), 'inicio: nada de la marca ni privado, tampoco en el HTML');
   ok(await sinDesbordar(luz), 'inicio a 375 px: sin desbordar');
   ok(!(await pequenos(luz, '[data-testid="si-voy"]')).length, '«Sí voy» con al menos 44 px', JSON.stringify(await pequenos(luz, '[data-testid="si-voy"]')));
-  await luz.goto(`${APP}/agenda`);
-  ok(/No vas \(puesto por defecto\)/.test(await luz.locator(`a[data-testid="fila-agenda"][href="/mi-zona/evento/${e2.id}"]`).innerText()) && !PRIVADO.test(await luz.content()), 'Agenda: también, y sin nada privado en el HTML');
-  await luz.goto(`${APP}/mi-zona/evento/${e2.id}`);
+  await luz.goto(`${APP}/calendario`);
+  ok(/No vas \(puesto por defecto\)/.test(await luz.locator(`a[data-testid="fila-agenda"][href="/evento/${e2.id}"]`).innerText()) && !PRIVADO.test(await luz.content()), 'Calendario: también, y sin nada privado en el HTML');
+  await luz.goto(`${APP}/evento/${e2.id}`);
   ok(/No vas \(puesto por defecto\)/.test(await luz.locator('.rw-vas .rw-etiqueta').innerText()) && (await luz.getByTestId('por-defecto').innerText()).includes('Te hemos marcado como «no voy» porque normalmente no entrenas. Si vienes, cámbialo.'), 'el entreno: «¿Vas?» con «No vas (puesto por defecto)» y «Te hemos marcado como «no voy»…» (D177)');
   ok(await visto(luz.locator('.rw-vas .rw-btn-no.marcada')) && await visto(luz.locator('.rw-vas .rw-btn-va')), 'el entreno: «No voy» marcado, con «Voy» para cambiarlo (D177)');
   ok(!PRIVADO.test(await luz.content()), 'el entreno: nada de la marca ni privado, tampoco en el HTML');
@@ -94,30 +94,30 @@ try {
     const p = await e.sesion(email, 375);
     await p.goto(`${APP}/`);
     ok(!(await tarjeta(p, e1).count()) && !PRIVADO.test(await p.content()), `${que}: inicio sin la tarjeta de ese entreno ni nada privado`);
-    await p.goto(`${APP}/agenda`);
-    ok(!/puesto por defecto/.test(await p.locator(`a[data-testid="fila-agenda"][href="/mi-zona/evento/${e1.id}"]`).innerText()) && !PRIVADO.test(await p.content()), `${que}: en la agenda, ese entreno sin «puesto por defecto»`);
-    await p.goto(`${APP}/mi-zona/evento/${e1.id}`);
+    await p.goto(`${APP}/calendario`);
+    ok(!/puesto por defecto/.test(await p.locator(`a[data-testid="fila-agenda"][href="/evento/${e1.id}"]`).innerText()) && !PRIVADO.test(await p.content()), `${que}: en el calendario, ese entreno sin «puesto por defecto»`);
+    await p.goto(`${APP}/evento/${e1.id}`);
     const html = await p.content();
     ok(!/puesto por defecto/.test(html) && !(await p.getByTestId('si-voy').count()) && !PRIVADO.test(html), `${que}: el entreno, sin «puesto por defecto» ni «Sí voy» ni nada privado`);
     if (extra) await extra(p);
     await p.context().close();
   };
   await sinDefecto('rai@pruebas.local', 'Rai (ya respondió «no voy» al primero)', async (p) => {
-    await p.goto(`${APP}/mi-zona/evento/${e1.id}`);
+    await p.goto(`${APP}/evento/${e1.id}`);
     ok(/No vas · Trabajo/.test(await p.locator('.rw-vas .rw-etiqueta').innerText()), 'Rai: su respuesta, con su motivo (solo él lo ve)');
-    await p.goto(`${APP}/mi-zona/evento/${e2.id}`);
+    await p.goto(`${APP}/evento/${e2.id}`);
     ok(/No vas \(puesto por defecto\)/.test(await p.locator('.rw-vas .rw-etiqueta').innerText()), 'Rai: en el otro, al que no respondió, sí sale');
   });
   await sinDefecto('vic@pruebas.local', 'Vic (ausencia que cubre el día)', async (p) => {
-    await p.goto(`${APP}/mi-zona/evento/${e1.id}`);
+    await p.goto(`${APP}/evento/${e1.id}`);
     ok(/Ausente/.test(await p.locator('.rw-vas .rw-etiqueta').innerText()), 'Vic: «Ausente», como siempre');
   });
   await sinDefecto('teo@pruebas.local', 'Teo (un gestor se lo quitó en el primero)', async (p) => {
     await p.goto(`${APP}/`);
-    ok(await visto(p.getByTestId('tarjeta-pendiente').filter({ has: p.locator(`a[href="/mi-zona/evento/${e1.id}"]`) })), 'Teo: el primero vuelve a «Te faltan…» con sus botones');
+    ok(await visto(p.getByTestId('tarjeta-pendiente').filter({ has: p.locator(`a[href="/evento/${e1.id}"]`) })), 'Teo: el primero vuelve a «Te faltan…» con sus botones');
   });
   await sinDefecto('ana@pruebas.local', 'Ana (sin la marca)', async (p) => {
-    await p.goto(`${APP}/mi-zona/evento/${e2.id}`);
+    await p.goto(`${APP}/evento/${e2.id}`);
     const quien = await p.locator('.rw-quien').innerText().catch(() => '');
     ok(!/puesto por defecto/.test(await p.content()), 'Ana: en «Quién va» del entreno no hay rastro del defecto de nadie', quien.slice(0, 200));
   });
@@ -125,9 +125,9 @@ try {
   await sql`update public.pistas set solo_con_ficha = true where slug = 'valdebernardo'`;
   await sql`update public.eventos set pista_id = (select id from public.pistas where slug = 'valdebernardo'), ubicacion_nombre = null where id in ${sql([e1.id, e2.id])}`;
   const sol = await e.sesion('sol@pruebas.local', 375);
-  for (const ruta of ['/', '/agenda']) {
+  for (const ruta of ['/', '/calendario']) {
     await sol.goto(`${APP}${ruta}`);
-    ok(!(await sol.locator(`[href="/mi-zona/evento/${e1.id}"], [href="/mi-zona/evento/${e2.id}"]`).count()) && !PRIVADO.test(await sol.content()), `Sol (sin ficha, entrenos «solo con ficha»): ${ruta} sin esos entrenos (ni su «puesto por defecto»)`);
+    ok(!(await sol.locator(`[href="/evento/${e1.id}"], [href="/evento/${e2.id}"]`).count()) && !PRIVADO.test(await sol.content()), `Sol (sin ficha, entrenos «solo con ficha»): ${ruta} sin esos entrenos (ni su «puesto por defecto»)`);
   }
   await sql`update public.pistas set solo_con_ficha = false where slug = 'valdebernardo'`;
   await sol.goto(`${APP}/`);

@@ -95,20 +95,20 @@ try {
   await aclarar(pt, 'domingo', liga.map((l) => l.id));
   await pt.close();
 
-  console.log('\n== Inicio (375 px): «Tu próximo partido» y «Tu agenda»');
+  console.log('\n== Semana (375 px): las tarjetas del domingo y del entreno (D189)');
   const pc = await e.sesion('cuatro@pruebas.local', 375);
   pc.persona = 'sint-cuatro';
   await pc.goto(`${APP}/`);
-  await pc.getByTestId('salto-partido').waitFor({ timeout: 20000 });
-  const salto = await pc.getByTestId('salto-partido').innerText();
-  ok(/no juegas \(no confirmaste a tiempo\)/.test(salto) && !/has dicho que no vas/.test(salto), '«Tu próximo partido»: «no juegas (no confirmaste a tiempo)», no «has dicho que no vas» (no lo dijo él)', salto);
-  ok(salto.includes('Di el motivo (una sola vez) o pon «Voy»') && await pc.getByTestId('salto-motivo').getAttribute('href') === `/mi-zona/domingo/${dom.f}`, 'y un enlace al partido para decir el motivo, sin botones ni hoja duplicados en el inicio', salto);
-  ok(await pc.getByTestId('paso-no-va').count() === 0 && await pc.locator('dialog[open]').count() === 0, 'el inicio no repite el texto ni abre ningún selector de motivo (los «Voy / No voy» que se ven son los del domingo siguiente, sin responder)');
-  const filaEntreno = pc.getByTestId('fila-agenda').filter({ hasText: 'x-entreno' });
-  ok(await filaEntreno.count() === 1 && /No vas/.test(await filaEntreno.innerText()) && !/Sin responder/.test(await filaEntreno.innerText()), '«Tu agenda»: el entreno sale «No vas» (no «Sin responder») y lleva a su pantalla', await filaEntreno.innerText().catch(() => ''));
-  ok(await filaEntreno.getAttribute('href') === `/mi-zona/evento/${ENT}`, 'la fila del entreno lleva a /mi-zona/evento/<id>');
-  await pc.getByTestId('salto-motivo').click();
-  await pc.waitForURL(`**/mi-zona/domingo/${dom.f}`);
+  const tarjetaDom = pc.getByTestId('tarjeta-semana').filter({ has: pc.locator(`a[href="/evento/${MDL}"], a[href="/mi-zona/domingo/${dom.f}"]`) }).first();
+  await tarjetaDom.waitFor({ timeout: 20000 });
+  const estadoDom = await tarjetaDom.getByTestId('estado-tarjeta').innerText();
+  ok(/No vas · no confirmaste a tiempo/.test(estadoDom) && !/has dicho que no vas/.test(await tarjetaDom.innerText()), 'tarjeta del domingo: «No vas · no confirmaste a tiempo», no «has dicho que no vas» (no lo dijo él)', estadoDom);
+  ok(await pc.getByTestId('paso-no-va').count() === 0 && await pc.locator('dialog[open]').count() === 0, 'la Semana no repite el texto ni abre ningún selector de motivo por su cuenta');
+  const filaEntreno = pc.getByTestId('tarjeta-semana').filter({ hasText: 'x-entreno' });
+  ok(await filaEntreno.count() === 1 && /No vas/.test(await filaEntreno.getByTestId('estado-tarjeta').innerText()) && !/Sin responder/.test(await filaEntreno.innerText()), 'tarjeta del entreno: «No vas» (no «Sin responder») y lleva a su pantalla', await filaEntreno.innerText().catch(() => ''));
+  ok(await filaEntreno.locator('a.sm-t-que').getAttribute('href') === `/evento/${ENT}`, 'la tarjeta del entreno lleva a /evento/<id>');
+  await tarjetaDom.locator('a.sm-t-que').click();
+  await pc.waitForURL((u) => u.pathname === `/evento/${MDL}` || u.pathname === `/mi-zona/domingo/${dom.f}`);
   await aclarar(pc, 'inicio → partido', [MDL]);
   await pc.close();
 } catch (err) {

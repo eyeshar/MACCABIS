@@ -143,28 +143,31 @@ try {
     const errJ = [];
     pj.on('pageerror', (e) => errJ.push(String(e)));
     await entrar(pj, jugadorEmail);
-    // Desde D117, «Tu próximo partido» del inicio personal («/»; /mi-zona redirige ahi).
+    // Desde D189, la tarjeta del domingo en la Semana («/»; /mi-zona redirige ahi) y, en el evento, «El rival».
     await pj.goto(`${APP}/mi-zona`);
-    const zona = pj.getByTestId('proximo-partido');
+    const zona = pj.locator('[data-testid="tarjeta-semana"][data-tipo="liga"]').first();
     const aMdA = proxReal('MDA'), aMdL = proxReal('MDL'), iMdA = proxInicio('MDA'), iMdL = proxInicio('MDL');
-    ok((await zona.locator('.in-partido-uno').count()) === 1, 'Mi zona: solo el proximo partido de SU equipo (ficha MdA)');
-    ok((await zona.textContent()).includes(bonito(iMdA.rival)) && !(await zona.textContent()).includes(bonito(iMdL.rival)), `Mi zona: el MdA contra ${bonito(iMdA.rival)} y no el de MdL`);
+    const equiposTarjeta = async () => (await zona.locator('.chip-eq').allTextContents()).map((t) => t.trim());
+    ok((await equiposTarjeta()).join() === 'MdA', 'Semana: solo el proximo partido de SU equipo (ficha MdA)');
+    ok((await zona.textContent()).includes(bonito(iMdA.rival)) && !(await zona.textContent()).includes(bonito(iMdL.rival)), `Semana: el MdA contra ${bonito(iMdA.rival)} y no el de MdL`);
     // D171/D160: la tarjeta personal lleva la línea única de equipación (en singular), no el cuadro de aviso aparte.
     const lineaEq = await zona.getByTestId('linea-equipacion').first().textContent();
-    ok((await zona.locator('.eq-aviso').count()) === 0 && /Lleva la amarilla por si acaso.$/.test(lineaEq) && (eti(avisoInicio('MDA')) ? /Coinciden colores: cambia/.test(lineaEq) : /Jugamos de negro/.test(lineaEq)), 'Mi zona: línea única de equipación; «Coinciden colores» si y solo si el próximo rival de MdA choca', lineaEq);
-    ok((await zona.locator('[data-testid="color-rival-inicio"]').first().textContent()).includes('camiseta'), 'Mi zona: color del rival visible (aparte de «Te pones»)');
-    ok(!/camiseta (negro|blanco|amarillo|rojo)/.test(await pj.locator('main').innerText()) && !/\((negro|blanco|amarillo|rojo)\)/.test(await pj.locator('main').innerText()), 'Mi zona: ningún «camiseta negro» ni color suelto sin concordar');
-    ok(await sinDesbordar(pj), 'Mi zona: sin desbordamiento horizontal');
+    ok((await zona.locator('.eq-aviso').count()) === 0 && /Lleva la amarilla por si acaso.$/.test(lineaEq) && (eti(avisoInicio('MDA')) ? /Coinciden colores: cambia/.test(lineaEq) : /Jugamos de negro/.test(lineaEq)), 'Semana: línea única de equipación; «Coinciden colores» si y solo si el próximo rival de MdA choca', lineaEq);
+    ok(!/camiseta (negro|blanco|amarillo|rojo)/.test(await pj.locator('main').innerText()) && !/\((negro|blanco|amarillo|rojo)\)/.test(await pj.locator('main').innerText()), 'Semana: ningún «camiseta negro» ni color suelto sin concordar');
+    ok(await sinDesbordar(pj), 'Semana: sin desbordamiento horizontal');
     await zona.scrollIntoViewIfNeeded();
     await pj.screenshot({ path: path.join(SALIDA, `real_e_aviso_mizona_${etiqueta}.png`), fullPage: true });
+    await zona.locator('a.sm-t-que').click();
+    await pj.waitForURL(/\/evento\//);
+    ok((await pj.getByTestId('color-rival').first().textContent()).includes('camiseta'), 'Evento: color del rival visible en «El rival» (aparte de la equipación)');
     // jugador de MdL: su partido, sin el de MdA
     await sql`update public.jugadores set ficha_mda = false, ficha_mdl = true where person_id = 'esteban-jon'`;
     await pj.goto(`${APP}/mi-zona`);
-    ok((await zona.locator('.in-partido-uno').count()) === 1 && (await zona.textContent()).includes(bonito(iMdL.rival)), 'Mi zona (ficha MdL): solo el proximo partido de MdL');
+    ok((await equiposTarjeta()).join() === 'MdL' && (await zona.textContent()).includes(bonito(iMdL.rival)), 'Semana (ficha MdL): solo el proximo partido de MdL');
     await sql`update public.jugadores set ficha_mda = true, ficha_mdl = true where person_id = 'esteban-jon'`;
     await pj.goto(`${APP}/mi-zona`);
-    ok((await zona.locator('.in-partido-uno').count()) === (aMdA.fecha === aMdL.fecha ? 2 : 1), 'Mi zona (dobla): los partidos de su proximo domingo');
-    ok(errJ.length === 0, 'Mi zona: sin errores de JavaScript', errJ.join(' | '));
+    ok((await equiposTarjeta()).length === (aMdA.fecha === aMdL.fecha ? 2 : 1), 'Semana (dobla): los partidos de su proximo domingo en una tarjeta');
+    ok(errJ.length === 0, 'Semana: sin errores de JavaScript', errJ.join(' | '));
     await cj.close();
 
     // ---- Gestion

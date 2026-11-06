@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Inicio personal (D117), de extremo a extremo: pila local, web compilada y Chrome.
+// La Semana (D189; antes el inicio personal de D117), de extremo a extremo: pila local, web compilada y Chrome.
 //   - anonimo: «/» es la portada publica de siempre; /mi-zona redirige a «/» (308);
-//   - jugador: lo suyo (saludo con posicion, fichas y dorsal; «Te faltan N» con carrusel y contador «1 de N»; proximo
-//     partido con «Convocado», casillas, «Te pones» y el color del rival aparte; avisos de la jornada; agenda con planes
-//     y «Tu grupo»; temporada; el club) y NO la banda de gestion;
-//   - «Te faltan N» cuenta los planes y los eventos oficiales de los proximos 14 dias sin responder (D172: las respuestas
-//     en la web, siempre encendidas), con Voy / No voy / Duda en cada tarjeta; nada de SportEasy;
-//   - gestor: la banda «Gestión esta semana» (plegable y recordada) y tres columnas en escritorio;
+//   - jugador: «Esta semana» y el rango; «Te faltan N» con carrusel y contador «1 de N» (planes y lo oficial de los
+//     proximos 14 dias sin responder, D172), con Voy / No voy / Duda en cada tarjeta; el plazo en una linea; las tarjetas
+//     de los proximos 10 dias (estado, hora y quedada, su equipo, la equipacion de D160 con su dorsal, avisos plegados,
+//     «tu grupo»); abajo «Calendario completo», «+ Proponer un plan» y «Tu temporada»; nada de SportEasy;
+//   - el nombre y la posicion, en Yo; nunca el nivel;
+//   - gestor: «Gestión · N pendientes» y la franja GESTIÓN en cada tarjeta;
 //   - 375 y 1280 px sin desbordamiento ni errores de consola. Capturas en privado/mockups_liga/inicio-y-planes/.
 //
 //   npm run pruebas:inicio-personal
@@ -63,24 +63,25 @@ try {
   ok(r.status === 308 && new URL(r.headers.get('location'), APP).pathname === '/', '/mi-zona redirige a «/» (308)', `${r.status} ${r.headers.get('location')}`);
   ok((await fetch(`${APP}/mi-zona/ausencias`, { redirect: 'manual' })).status !== 404, 'sus subpáginas siguen');
 
-  console.log('\n== Jugador en el móvil (375 px)');
+  console.log('\n== Jugador en el móvil (375 px): la Semana (D189)');
   const pj = await e.sesion('jon@pruebas.local', 375);
-  ok(new URL(pj.url()).pathname === '/', 'al entrar, el jugador va a su inicio («/»)', pj.url());
-  ok(await visto(pj.getByRole('heading', { name: /Hola,\s*Jon/ })), 'saludo «Hola, Jon»');
-  ok(/^MdA y MdL · #\d/.test(await pj.getByTestId('linea-saludo').innerText()), 'una línea: fichas y dorsal (sin posición cargada, no se inventa)', await pj.getByTestId('linea-saludo').innerText().catch(() => ''));
+  ok(new URL(pj.url()).pathname === '/', 'al entrar, el jugador va a su Semana («/»)', pj.url());
+  ok(await visto(pj.getByRole('heading', { name: 'Esta semana' })) && /^\S+ \d+ \S+ – \S+ \d+ \S+$/.test(await pj.getByTestId('rango-semana').innerText()), '«Esta semana» y el rango de fechas', await pj.getByTestId('rango-semana').innerText().catch(() => ''));
+  // El nombre, la posición, las fichas y el dorsal están en «Yo» (D189), no en la Semana.
   const ps = await e.sesion('sara@pruebas.local', 375);
-  ok((await ps.getByTestId('linea-saludo').innerText()) === 'Base · MdA y MdL', 'con su posición: «Base · MdA y MdL» (solo la suya, mi_posicion)', await ps.getByTestId('linea-saludo').innerText().catch(() => ''));
+  await ps.goto(`${APP}/yo`);
+  ok((await ps.getByTestId('yo-linea').innerText()) === 'Base · MdA y MdL', 'Yo: con su posición, «Base · MdA y MdL» (solo la suya, mi_posicion)', await ps.getByTestId('yo-linea').innerText().catch(() => ''));
   ok(!/nivel|Nivel/.test((await ps.content()).replace(/<script[\s\S]*?<\/script>/g, '')), 'y nunca su nivel');
   await ps.context().close();
-  ok(!(await pj.getByTestId('banda-gestion').count()), 'un jugador NO ve la banda de gestión');
+  ok(!(await pj.getByTestId('banda-gestion').count()) && !(await pj.getByTestId('franja-gestion').count()), 'un jugador NO ve «Gestión · N pendientes» ni la franja GESTIÓN');
   const titulo = (await pj.locator('#t-faltan').textContent()).trim();
   const n = Number(/Te faltan (\d+)/.exec(titulo)?.[1] ?? (/Te falta 1/.test(titulo) ? 1 : 0));
   // Los dos planes, el entreno «sin responder» y la J3 (sin respuesta suya), como poco: lo oficial de 14 días también se pide.
   ok(n >= 4 && n === await pj.getByTestId('tarjeta-pendiente').count(), `«${titulo}» (los dos planes y los eventos oficiales sin responder de los próximos 14 días)`, `${n} / ${await pj.getByTestId('tarjeta-pendiente').count()} tarjetas`);
-  const tarjetaEnt = pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/mi-zona/evento/${ent.id}"]`) });
+  const tarjetaEnt = pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/evento/${ent.id}"]`) });
   ok(await tarjetaEnt.count() === 1, 'el entreno «sin responder» sale en «Te faltan»');
-  ok(!(await pj.getByTestId('respuestas-apagadas').count()) && !(await pj.getByTestId('responder-sporteasy').count()) && !/SportEasy|desactivadas/i.test(await pj.locator('main').innerText()), 'sin «desactivadas» (ya no existe, D172), sin «Responder en SportEasy» y sin «SportEasy» en el inicio');
-  ok(/^Plazo para responder: hasta el martes a las 12:00 para el partido del domingo y hasta el miércoles a las 12:00 para el entreno\. Si no respondes, te lo recordamos el lunes a las 19:00 .* y el día del plazo a las 09:00\./.test(await pj.getByTestId('regla-recordatorios').innerText()), '«Plazo para responder: hasta el martes a las 12:00… Si no respondes, te lo recordamos…» (D173)', await pj.getByTestId('regla-recordatorios').innerText().catch(() => ''));
+  ok(!(await pj.getByTestId('respuestas-apagadas').count()) && !(await pj.getByTestId('responder-sporteasy').count()) && !/SportEasy|desactivadas/i.test(await pj.locator('main').innerText()), 'sin «desactivadas» (ya no existe, D172), sin «Responder en SportEasy» y sin «SportEasy» en la Semana');
+  ok((await pj.getByTestId('regla-recordatorios').innerText()) === 'Plazo: martes 12:00 para el partido del domingo y miércoles 12:00 para el entreno.', 'el plazo en una línea: martes 12:00 el partido, miércoles 12:00 el entreno (D173)', await pj.getByTestId('regla-recordatorios').innerText().catch(() => ''));
   const tarjetaPlan = pj.getByTestId('tarjeta-pendiente').filter({ hasText: 'Cañas del jueves' });
   ok(await tarjetaPlan.count() === 1 && await visto(tarjetaPlan.getByText('Plan no oficial')) && await visto(tarjetaPlan.getByRole('button', { name: 'Voy', exact: true })), 'el plan se responde aquí (Voy / No voy / Duda)');
   ok(await visto(pj.getByTestId('tarjeta-pendiente').first().locator('.in-casilla-quedada')) && /\w+ \d+ \w{3}/.test(await pj.locator('.in-pendiente-fecha').first().innerText()), 'cada tarjeta: fecha en grande («Miércoles 28 oct») y la casilla Quedada');
@@ -90,30 +91,23 @@ try {
   ok((await pj.getByTestId('contador').innerText()) === `${n} de ${n}`, 'al desplazar, el contador cambia', await pj.getByTestId('contador').innerText().catch(() => ''));
   const anchos = await pj.locator('.in-tarjeta-caja').first().evaluate((x) => ({ t: x.getBoundingClientRect().width, c: x.parentElement.getBoundingClientRect().width }));
   ok(anchos.t < anchos.c && anchos.t > anchos.c * 0.7, 'carrusel: una tarjeta visible y asomando la siguiente', JSON.stringify(anchos));
-  ok(await visto(pj.getByTestId('regla-recordatorios')), 'debajo, la línea sobre los recordatorios');
-  // Proximo partido
-  const pp = pj.getByTestId('proximo-partido');
-  ok((await pj.getByTestId('estado-partido').innerText()) === 'Convocado · MdA', 'próximo partido: «Convocado · MdA» (mi_convocatoria)');
-  ok((await pp.locator('.in-titular').innerText()).toLowerCase().includes(diaLargo(F('2026-10-25'))), `fecha en titular («${diaLargo(F('2026-10-25'))}»)`, await pp.locator('.in-titular').innerText());
-  ok(await visto(pp.getByText('Quedada')) && await visto(pp.getByText('Partido', { exact: true })), 'casillas Quedada y Partido');
-  ok((await pp.locator('.in-partido-uno').count()) === 1, 'solo su partido (el del MdA)');
-  const tp = await pp.getByTestId('te-pones').innerText();
-  ok(/Equipación (negra|amarilla)/.test(tp) && /dorsal/.test(tp) && !/camiseta (roja|blanca|azul)/.test(tp), '«Te pones»: SU equipación con su dorsal (sin el color del rival)', tp);
-  ok(await visto(pp.getByTestId('color-rival-inicio')) && /El rival: camiseta/.test(await pp.getByTestId('color-rival-inicio').innerText()), 'el color del rival, aparte');
-  ok(await visto(pp.getByRole('link', { name: 'Cómo llegar' })), '«Cómo llegar»');
-  const avisos = await pj.getByTestId('avisos-jornada').innerText().catch(() => '');
-  ok(hoy < '2026-10-20' || hoy > '2026-11-15' || /dorsal es obligatorio/.test(avisos), 'avisos de la jornada (data/avisos.json): el del dorsal desde la J3', avisos);
-  // Agenda
-  const filas = pj.getByTestId('fila-agenda');
-  ok((await filas.count()) <= 4 && (await filas.count()) > 0, `«Tu agenda»: sus próximos 4 (${await filas.count()})`);
-  ok(await visto(pj.locator('#agenda').getByText('Plan no oficial')), 'los planes llevan «Plan no oficial»');
-  ok(await visto(pj.getByTestId('tu-grupo')) && /Tu grupo: Azules/.test(await pj.getByTestId('tu-grupo').first().innerText()), 'el entreno con grupos publicados: «Tu grupo: Azules»');
-  ok(await visto(pj.getByRole('link', { name: 'Proponer un plan' })) && await visto(pj.getByRole('link', { name: 'Ver todo' })), '«Proponer un plan» y «Ver todo»');
-  // Orden en el movil: saludo -> pendientes -> proximo partido -> agenda -> temporada -> club
-  const y = await pj.evaluate(() => Object.fromEntries(['.in-hola', '#pendientes', '#proximo-partido', '#agenda', '#temporada', '#club'].map((s) => [s, Math.round(document.querySelector(s).getBoundingClientRect().top + scrollY)])));
-  const orden = Object.values(y);
-  ok(orden.every((v, i) => i === 0 || v > orden[i - 1]), 'móvil, una columna y en orden: saludo · faltan · próximo partido · agenda · temporada · el club', JSON.stringify(y));
-  ok(await visto(pj.getByTestId('tu-temporada')) && await visto(pj.locator('#club').getByText('MdA · grupo 1')), '«Tu temporada» y «El club»');
+  // Las tarjetas de los próximos días
+  const dias = pj.getByTestId('tarjeta-semana');
+  ok((await dias.count()) > 0, `tarjetas de los próximos 10 días (${await dias.count()})`);
+  const dom = pj.locator('[data-testid="tarjeta-semana"][data-tipo="liga"]').first();
+  ok((await dom.getByTestId('estado-tarjeta').innerText()) === 'Convocado · MdA', 'el domingo: «Convocado · MdA» (mi_convocatoria)');
+  ok(/quedada \d\d:\d\d/.test(await dom.locator('.sm-t-cuando').innerText()), 'la quedada en la tarjeta');
+  ok((await dom.locator('.chip-eq').allTextContents()).includes('MdA'), 'con su equipo (MdA; dobla: MdA y MdL en la misma tarjeta)');
+  const eq = await dom.getByTestId('linea-equipacion').innerText();
+  ok(/^(Negra|Amarilla)/.test(eq) && /dorsal \d+/.test(eq) && /Lleva la amarilla por si acaso\.$/.test(eq) && (eq.match(/Lleva la amarilla/g) ?? []).length === 1 && !/camiseta (roja|blanca|azul)/.test(eq), 'equipación en una línea: SU equipación con su dorsal y una sola «Lleva la amarilla por si acaso» (D160)', eq);
+  const avisos = await pj.getByTestId('avisos-dia').allInnerTexts();
+  ok(hoy < '2026-10-20' || hoy > '2026-11-15' || avisos.some((a) => /dorsal es obligatorio/.test(a)), 'avisos del día plegados (data/avisos.json): el del dorsal desde la J3', avisos.join(' | '));
+  ok(/tu grupo: Azules/.test(await pj.locator('[data-testid="tarjeta-semana"][data-tipo="entreno"]').first().innerText()), 'el entreno con grupos publicados: «tu grupo: Azules»');
+  ok(await visto(pj.getByRole('link', { name: '+ Proponer un plan' })) && await visto(pj.getByRole('link', { name: 'Calendario completo' })), 'abajo, «Calendario completo» y «+ Proponer un plan»');
+  ok(await visto(pj.getByTestId('tu-temporada')) && (await pj.getByTestId('tu-temporada').getAttribute('href')) === '/yo', 'y una línea «Tu temporada» que lleva a Yo');
+  // Orden: Esta semana -> pendientes -> tarjetas -> abajo
+  const y = await pj.evaluate(() => ['.sm-cab', '#pendientes', '[data-testid=proximos-dias]', '.sm-abajo'].map((s) => Math.round(document.querySelector(s).getBoundingClientRect().top + scrollY)));
+  ok(y.every((v, i) => i === 0 || v > y[i - 1]), 'en orden: Esta semana · te faltan · próximos días · calendario y temporada', JSON.stringify(y));
   ok(!(await pj.locator('#ropa').count()), 'sin campaña de ropa abierta, no sale la ropa');
   ok(await sinDesbordar(pj), '375 px sin desbordamiento');
   const peq = await pequenos(pj, '.in a, .in button');
@@ -126,7 +120,7 @@ try {
   // Fallo de produccion (25/10): el inicio de un jugador enlazaba /mi-zona/manifest.webmanifest, que leia mi_zona y daba
   // «permission denied». Un solo manifiesto, el de toda la web.
   const manifiestos = await pj.locator('link[rel="manifest"]').evaluateAll((l) => l.map((x) => x.getAttribute('href')));
-  ok(manifiestos.length === 1 && manifiestos[0] === '/manifest.webmanifest', 'el inicio del jugador enlaza el manifiesto de toda la web (/manifest.webmanifest), no uno bajo /mi-zona', JSON.stringify(manifiestos));
+  ok(manifiestos.length === 1 && manifiestos[0] === '/manifest.webmanifest', 'la Semana enlaza el manifiesto de toda la web (/manifest.webmanifest), no uno bajo /mi-zona', JSON.stringify(manifiestos));
 
   console.log('\n== Responder un plan desde la tarjeta: sale y el contador baja');
   await trasAccion(pj, () => tarjetaPlan.getByRole('button', { name: 'Voy', exact: true }).click());
@@ -142,7 +136,7 @@ try {
   await pj.keyboard.press('Escape');
   await foto(pj, 'inicio_jugador_no_voy_375');
 
-  console.log('\n== Sin nada pendiente: «Lo tienes todo respondido»');
+  console.log('\n== Sin nada pendiente: «✓ Lo tienes todo respondido»');
   await api('responder_plan', { p_evento: plan, p_respuesta: 'no' }, P['galan-domingo-guillermo'].token);
   await api('responder_plan', { p_evento: plan2, p_respuesta: 'no' }, P['galan-domingo-guillermo'].token);
   // Lo oficial de los próximos 14 días también se pide (D172): Guille lo tiene todo respondido («va»; lo que ya tuviera, se queda).
@@ -151,54 +145,44 @@ try {
     where estado = 'programado' and borrado_en is null and fecha between ${hoy}::date and ${hoy}::date + 14
     on conflict (evento_id, person_id) do nothing`;
   const pg = await e.sesion('guille@pruebas.local', 375);
-  ok((await pg.locator('#t-faltan').textContent()).trim() === 'Lo tienes todo respondido', '«Lo tienes todo respondido»', await pg.locator('#t-faltan').textContent());
-  // D171: con la convocatoria aprobada y sin estar en ella, ese partido NO sale en la tarjeta: se salta y lo dice una línea arriba.
-  ok((await pg.getByTestId('salto-partido').innerText()) === 'Este domingo no juegas (no convocado)' && !(await pg.getByTestId('estado-partido').innerText().catch(() => '')).includes('No convocado esta vez'), 'con la convocatoria aprobada y sin estar en ella: «Este domingo no juegas (no convocado)»', await pg.getByTestId('salto-partido').innerText().catch(() => ''));
-  ok(!(await pg.getByTestId('tu-grupo').count()) || /Rojos/.test(await pg.getByTestId('tu-grupo').first().innerText()), 'cada uno ve SOLO su grupo');
+  ok((await pg.locator('#t-faltan').textContent()).trim() === '✓ Lo tienes todo respondido', 'una sola línea: «✓ Lo tienes todo respondido»', await pg.locator('#t-faltan').textContent());
+  // D171: con la convocatoria aprobada y sin estar en ella, ese partido sale «No convocado» (nunca «No vas»).
+  ok((await pg.locator('[data-testid="tarjeta-semana"][data-tipo="liga"]').first().getByTestId('estado-tarjeta').innerText()) === 'No convocado', 'con la convocatoria aprobada y sin estar en ella: «No convocado»');
+  ok(/tu grupo: Rojos/.test(await pg.locator('[data-testid="tarjeta-semana"][data-tipo="entreno"]').first().innerText()), 'cada uno ve SOLO su grupo');
 
-  console.log('\n== Gestor (y jugador) en escritorio (1280 px): banda «Gestión esta semana» y tres columnas');
+  console.log('\n== Gestor (y jugador) en escritorio (1280 px): «Gestión · N pendientes» y la franja GESTIÓN');
   const pi = await e.sesion('ivan@pruebas.local', 1280);
-  ok(new URL(pi.url()).pathname === '/', 'el gestor que es jugador entra en su inicio', pi.url());
+  ok(new URL(pi.url()).pathname === '/', 'el gestor que es jugador entra en su Semana', pi.url());
   const banda = pi.getByTestId('banda-gestion');
-  ok(await visto(banda) && (await banda.locator('a').count()) >= 2 && await visto(banda.getByRole('link', { name: 'Abrir gestión' })), 'banda arriba del todo, con tareas enlazadas y «Abrir gestión»');
-  const yb = await pi.evaluate(() => [document.querySelector('[data-testid=banda-gestion]').getBoundingClientRect().top, document.querySelector('.in-hola').getBoundingClientRect().top]);
-  ok(yb[0] < yb[1], 'la banda va antes que el saludo');
-  const cols = await pi.evaluate(() => ['#proximo-partido', '#agenda', '#temporada'].map((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top) }; }));
-  ok(cols[0].x < cols[1].x && cols[1].x < cols[2].x && Math.abs(cols[0].y - cols[1].y) < 4 && Math.abs(cols[1].y - cols[2].y) < 4, 'escritorio: próximo partido | agenda | temporada, en tres columnas', JSON.stringify(cols));
-  const yPend = await pi.evaluate(() => document.querySelector('#pendientes').getBoundingClientRect().bottom);
-  ok(yPend <= cols[0].y, 'la fila de pendientes, encima de las tres columnas');
+  ok(await visto(banda) && (await banda.getByRole('link', { name: /Gestión · / }).getAttribute('href')) === '/gestion', '«Gestión · N pendientes», que lleva a /gestion');
+  const yb = await pi.evaluate(() => [document.querySelector('#pendientes').getBoundingClientRect().top, document.querySelector('[data-testid=banda-gestion]').getBoundingClientRect().top, document.querySelector('[data-testid=proximos-dias]').getBoundingClientRect().top]);
+  ok(yb[0] < yb[1] && yb[1] < yb[2], 'después de las respuestas que le faltan y antes de las tarjetas', JSON.stringify(yb));
+  const franja = pi.getByTestId('franja-gestion').first();
+  ok(await visto(franja) && /van/.test(await franja.innerText()) && await visto(franja.getByRole('link', { name: /Preparar|Grupos/ })), 'cada tarjeta con su franja GESTIÓN: contadores pulsables y «Preparar ›» o «Grupos ›»');
   ok(await sinDesbordar(pi), '1280 px sin desbordamiento');
   await foto(pi, 'inicio_gestor_1280');
   console.log('\n== Respuestas distintas por partido del domingo (J3: «va» al MdA, «no» al MdL), siendo gestor');
   // Sin convocatoria aprobada manda lo que respondió (con la aprobada, Iván no está en ella: D171, otra prueba).
   await sql`delete from public.convocatorias where fecha = ${F('2026-10-25')}`;
   await pi.goto(`${APP}/`);
-  const pIvan = pi.getByTestId('proximo-partido');
-  const partidosIvan = await pIvan.locator('.in-partido-uno').evaluateAll((xs) => xs.map((x) => x.dataset.equipo));
-  ok(partidosIvan.join(',') === 'MDA', '«Tu próximo partido»: solo el MdA (no el MdL al que dijo que no)', partidosIvan.join(','));
-  await pi.goto(`${APP}/agenda`);
+  const tIvan = await pi.locator('[data-testid="tarjeta-semana"][data-tipo="liga"]').first().getByTestId('estado-tarjeta').innerText();
+  ok(tIvan === 'Vas al MdA · no al MdL', 'Semana: la J3 dice «Vas al MdA · no al MdL», nunca «Vas a los dos»', tIvan);
+  await pi.goto(`${APP}/calendario`);
   const fJ3 = pi.locator(`a[data-testid="fila-agenda"][href="/mi-zona/domingo/${F('2026-10-25')}"]`);
   const tJ3 = (await fJ3.count()) ? await fJ3.first().locator('.in-pastilla').innerText() : '(sin fila)';
-  ok(tJ3 === 'Vas al MdA · no al MdL', 'agenda: la J3 dice «Vas al MdA · no al MdL», nunca «Vas a los dos»', tJ3);
+  ok(tJ3 === 'Vas al MdA · no al MdL', 'Calendario: la J3 dice «Vas al MdA · no al MdL»', tJ3);
   await pi.goto(`${APP}/mi-zona/domingo/${F('2026-10-25')}`);
   const txtDom = await pi.locator('main').innerText();
   ok(!/Vas a los dos/.test(txtDom), 'la página del domingo tampoco dice «Vas a los dos»');
-  await pi.goto(`${APP}/`);
-  await banda.getByRole('button', { name: 'Ocultar' }).click();
-  ok(await banda.locator('#in-gestion-lista').isHidden(), 'la banda se pliega');
-  await pi.reload();
-  ok(await visto(pi.getByTestId('banda-gestion').getByRole('button', { name: 'Mostrar' })) && await pi.getByTestId('banda-gestion').locator('#in-gestion-lista').isHidden(), 'y lo recuerda en este navegador');
-  await pi.getByTestId('banda-gestion').getByRole('button', { name: 'Mostrar' }).click();
   const pi375 = await e.nuevaPagina(await e.contexto(375));
   await pi375.context().addCookies(await pi.context().cookies());
   await pi375.goto(`${APP}/`);
-  ok(await visto(pi375.getByTestId('banda-gestion')) && await sinDesbordar(pi375), 'gestor a 375 px: banda y sin desbordamiento');
+  ok(await visto(pi375.getByTestId('banda-gestion')) && await sinDesbordar(pi375), 'gestor a 375 px: «Gestión · N pendientes» y sin desbordamiento');
   await foto(pi375, 'inicio_gestor_375');
   const pj1280 = await e.nuevaPagina(await e.contexto(1280));
   await pj1280.context().addCookies(await pj.context().cookies());
   await pj1280.goto(`${APP}/`);
   ok(await sinDesbordar(pj1280), 'jugador a 1280 px sin desbordamiento');
-  ok(await visto(pj1280.locator('.in-partidos-temporada')) || !(await pj1280.locator('.in-partidos-temporada').count()), 'escritorio: una línea por partido en «Tu temporada» (si ha jugado)');
   await foto(pj1280, 'inicio_jugador_1280');
 
   ok(!e.errores.length, 'sin errores de consola', e.errores.slice(0, 5).join(' | '));

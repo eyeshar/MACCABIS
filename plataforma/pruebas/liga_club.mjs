@@ -77,7 +77,7 @@ try {
   }
 
   /** Comprobaciones de una página en un tamaño. */
-  const fila = (p, sel) => p.evaluate((s) => { const ls = [...document.querySelectorAll(s)]; return ls.length > 0 && ls.every((a) => Math.abs(a.getBoundingClientRect().top - ls[0].getBoundingClientRect().top) < 2); }, sel);
+  const fila = (p, sel, todasALaVista = true) => p.evaluate(([s, v]) => { const ls = [...document.querySelectorAll(s)]; return ls.length > 0 && ls.every((a) => Math.abs(a.getBoundingClientRect().top - ls[0].getBoundingClientRect().top) < 2 && (!v || (a.getBoundingClientRect().left >= 0 && a.getBoundingClientRect().right <= window.innerWidth + 1))); }, [sel, todasALaVista]);
   const marcada = (p, sel) => p.evaluate((s) => [...document.querySelectorAll(`${s} a[aria-current="page"]`)].map((a) => a.textContent.trim()), sel);
   /** El elemento se ve entero sin desplazar y lo que hay en su centro es él (nada fijo encima: cabecera ni barra). */
   const aLaVista = (p, sel) => p.evaluate((s) => {
@@ -156,8 +156,8 @@ try {
     await p.goto(`${APP}/liga/${T}/equipo`);
     ok(JSON.stringify(await marcada(p, 'nav[aria-label="Liga"]')) === '["Temporadas"]', 'temporadas: «Temporadas» marcada');
     ok(JSON.stringify(await p.locator('nav[aria-label="Pestañas de la temporada"] a').allTextContents()) === JSON.stringify(['Equipo', 'Jugadores', 'Rankings', 'Por cuartos', 'Asistencia']), 'temporadas: Equipo · Jugadores · Rankings · Por cuartos · Asistencia', (await p.locator('nav[aria-label="Pestañas de la temporada"] a').allTextContents()).join(' · '));
-    ok(await fila(p, 'nav[aria-label="Pestañas de la temporada"] a'), 'temporadas: las subpestañas en una fila');
-    const juntos = await p.evaluate(() => { const s = document.querySelector('#e-sel-temporada'), q = document.querySelector('.e-segmento[aria-label="Equipo"]'); if (!s || !q) return false; return s.closest('.e-controles') === q.closest('.e-controles'); });
+    ok(await fila(p, 'nav[aria-label="Pestañas de la temporada"] a', false), 'temporadas: las subpestañas en una fila (se desplazan en ella si no caben)');
+    const juntos = await p.evaluate(() => { const s = document.querySelector('#e-sel-temporada'), q = document.querySelector('.e-segmento[aria-label="Equipo"]'); if (!s || !q) return false; return s.closest('.e-controles') === q.closest('.e-controles') && Math.abs(s.getBoundingClientRect().top - q.getBoundingClientRect().top) < 40; });
     ok(juntos, 'temporadas: temporada y equipo en la misma fila de controles');
     if (ancho === 390) {
       const v = await aLaVista(p, '[data-testid="equipo-kpis"] .e-kpi');
@@ -233,7 +233,7 @@ try {
   await p.goto(`${APP}/liga`);
   await visto(p.locator('nav[aria-label="Liga"] a', { hasText: 'Jugadores de la liga' }), 8000);
   ok(JSON.stringify(await p.locator('nav[aria-label="Liga"] a').allTextContents()) === JSON.stringify(['Clasificación', 'Rivales', 'Jugadores de la liga', 'Temporadas']), 'liga con sesión: las 4 pestañas', (await p.locator('nav[aria-label="Liga"] a').allTextContents()).join(' · '));
-  ok(await fila(p, 'nav[aria-label="Liga"] a'), 'liga con sesión: las 4 pestañas en una fila');
+  ok(await fila(p, 'nav[aria-label="Liga"] a'), 'liga con sesión: las 4 pestañas en una fila, todas a la vista');
   await p.goto(`${APP}/liga/rivales`);
   await visto(p.getByTestId('scouting-proximo'), 8000);
   ok((await p.getByTestId('rival-scouting').count()) > 0 && (await p.getByTestId('rival-scouting').first().getAttribute('href')).startsWith('/liga/scouting?e='), 'rivales con sesión: cada rival con su Scouting');

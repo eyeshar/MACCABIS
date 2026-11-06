@@ -244,7 +244,7 @@ try {
   seccion('Entrar con código por correo (jugador A)');
   await entrarPorCodigo(pA, A.email);
   await pA.waitForURL(`${APP}/`);
-  ok(await pA.getByRole('heading', { name: `Hola, ${A.nombre_visible}` }).isVisible(), 'codigo correcto: entra y abre su inicio');
+  ok((await pA.getByRole('heading', { name: 'Esta semana' }).isVisible() && (await pA.getByTestId('avatar').getAttribute('aria-label')).includes(A.nombre_visible.split(' ')[0])), 'codigo correcto: entra y abre su inicio');
   ok(await sinDesbordar(pA), 'zona personal sin desbordamiento horizontal a 375 px');
   await captura(pA, '01-zona-jugador');
 
@@ -265,7 +265,7 @@ try {
   const contextoLimpio = async () => { const c = await navegador.newContext(movil); const pg = await c.newPage(); pg.on('pageerror', (e) => erroresJS.push(String(e))); return { c, pg }; };
   // Un código de 6 dígitos vale en cualquier dispositivo (no depende del navegador donde se pidió el enlace): otro contexto sin nada previo.
   { const { c, pg } = await contextoLimpio(); await entrarPorCodigo(pg, B.email); await pg.waitForURL(`${APP}/`, { timeout: 15000 }).catch(() => {});
-    ok(await pg.getByRole('heading', { name: `Hola, ${B.nombre_visible}` }).isVisible().catch(() => false), 'el código de 6 dígitos del correo entra desde un navegador sin sesión previa', pg.url()); await c.close(); }
+    ok(await (async () => (await pg.getByRole('heading', { name: 'Esta semana' }).isVisible()) && (await pg.getByTestId('avatar').getAttribute('aria-label')).includes(B.nombre_visible.split(' ')[0]))().catch(() => false), 'el código de 6 dígitos del correo entra desde un navegador sin sesión previa', pg.url()); await c.close(); }
   await ctxAnon.clearCookies();
 
   seccion('Enlace del correo (D157): token_hash, botón «Entrar» y un solo uso');
@@ -286,7 +286,7 @@ try {
   await pN.goto(urlEnlace);
   await pN.getByTestId('confirmar-enlace').getByRole('button', { name: 'Entrar' }).click();
   await pN.waitForURL(`${APP}/`, { timeout: 15000 }).catch(() => {});
-  ok(await pN.getByRole('heading', { name: `Hola, ${B.nombre_visible}` }).isVisible().catch(() => false), 'enlace abierto en un navegador SIN sesión previa (sin code_verifier): pulsa «Entrar» y entra', pN.url());
+  ok(await (async () => (await pN.getByRole('heading', { name: 'Esta semana' }).isVisible()) && (await pN.getByTestId('avatar').getAttribute('aria-label')).includes(B.nombre_visible.split(' ')[0]))().catch(() => false), 'enlace abierto en un navegador SIN sesión previa (sin code_verifier): pulsa «Entrar» y entra', pN.url());
   ok((await cN.cookies()).some((x) => x.name.startsWith('sb-')), 'la sesión queda en cookies');
   await cN.close();
   const { c: cR, pg: pR } = await contextoLimpio();
@@ -320,10 +320,16 @@ try {
   ok(await pG.getByText('Panel de gestión', { exact: false }).first().isVisible() && await pG.getByRole('heading', { level: 1 }).isVisible(), 'el gestor entra al panel');
   await pG.goto(`${APP}/gestion/ropa`);
   ok(!(await pA.locator('#ropa').count()), 'con la campana cerrada, el inicio del jugador no enseña la ropa (D117)');
-  await pG.getByLabel('Estado').selectOption('abierta');
+  // Bloque 5: un solo estado con su causa y el interruptor «Abrir el pedido a los jugadores» (apagado por defecto); la edición, plegada.
+  ok(/Cerrado a los jugadores/i.test(await pG.getByTestId('ropa-estado').innerText()) && (await pG.getByTestId('ropa-estado').getAttribute('data-causa')) === 'interruptor', 'la campaña nueva nace cerrada: «Cerrado a los jugadores · interruptor apagado»');
+  await pG.getByTestId('ropa-editar').locator('summary').click();
   await pG.getByLabel('Fecha límite (incluida)').fill('2026-12-31');
   await pG.getByRole('button', { name: 'Guardar campaña' }).click();
   await pG.getByText('Campaña guardada.').waitFor();
+  ok((await sql`select estado from public.campanas_ropa where id = ${campana.id}`)[0].estado === 'cerrada', 'guardar la campaña (nombre, fecha, precios) no la abre');
+  await pG.getByRole('button', { name: 'Abrir el pedido a los jugadores' }).click();
+  await pG.getByTestId('ropa-estado').and(pG.locator('[data-abierto="si"]')).waitFor();
+  ok(/Abierto a los jugadores · hasta el 31 de diciembre/i.test((await pG.getByTestId('ropa-estado').innerText()).replace(/\s+/g, ' ')), 'con el interruptor: «Abierto a los jugadores · hasta el 31 de diciembre»', await pG.getByTestId('ropa-estado').innerText());
   const [cam] = await sql`select estado, fecha_limite from public.campanas_ropa where id = ${campana.id}`;
   ok(cam.estado === 'abierta' && new Date(cam.fecha_limite).toISOString() === '2026-12-31T22:59:59.000Z', 'campana abierta con fecha limite 31/12 a las 23:59 de Madrid', `${cam.estado} ${cam.fecha_limite?.toISOString?.()}`);
 
@@ -434,7 +440,9 @@ try {
   await pG.goto(`${APP}/gestion/jugadores`);
   const filaC = pG.locator(`li[data-person="esteban-jon"]`);
   ok(await filaC.getByText('Puede entrar').isVisible(), 'Jon ya tiene correo: "Puede entrar"');
-  await filaC.getByText('Editar datos').click();
+  // Bloque 4: la fila es compacta; al tocarla se despliegan los datos, los mensajes y «Editar datos».
+  await filaC.locator('summary').click();
+  ok(await filaC.getByTestId('jg-datos').isVisible() && /Nivel/.test(await filaC.getByTestId('jg-datos').innerText()) && /Teléfono/.test(await filaC.getByTestId('jg-datos').innerText()), 'la fila desplegada enseña posición, niveles, fichas, dobla, disponibilidad, sanción, acceso y teléfono');
   await filaC.getByLabel('Teléfono (opcional, solo gestores)').fill('600 111 222');
   await filaC.getByRole('button', { name: 'Guardar datos' }).click();
   await filaC.getByText('Guardado.').waitFor();
@@ -442,13 +450,15 @@ try {
   const wa = await pG.locator(`li[data-person="esteban-jon"] a`, { hasText: 'Enviar por WhatsApp' }).getAttribute('href');
   ok(wa?.startsWith('https://wa.me/34600111222?text=') && decodeURIComponent(wa).includes('/entrar') && decodeURIComponent(wa).includes(C.email), 'con telefono guardado aparece el enlace wa.me con el mensaje (correo y /entrar, sin token)');
   await ctxG.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: APP });
+  await pG.locator(`li[data-person="esteban-jon"] summary`).click();
   await pG.locator(`li[data-person="esteban-jon"]`).getByRole('button', { name: 'Copiar mensaje' }).click();
   const copiado = await pG.evaluate(() => navigator.clipboard.readText());
   ok(copiado.includes(`Hola, ${C.nombre_visible}`) && copiado.includes('/entrar') && copiado.includes(C.email), '"Copiar mensaje" copia el texto de bienvenida con el correo y el enlace de /entrar');
 
   const filaSinCorreo = pG.locator(`li[data-person="de-maria-sanchez-jaime"]`);
   ok(await filaSinCorreo.getByText('Sin correo: no puede entrar').isVisible(), 'un jugador sin correo se marca "Sin correo: no puede entrar"');
-  await filaSinCorreo.getByText('Editar datos').click();
+  // La fila de Jugadores es desplegable (bloque 4): se abre para editar sus datos.
+  if (!(await filaSinCorreo.getByLabel('Correo (para entrar)').isVisible())) await filaSinCorreo.locator('summary').first().click();
   // El correo de un gestor no se le puede dar a un jugador (cambiar_correo_jugador, D135). (Un correo con cuenta pero
   // sin ficha SI se puede dar a quien no tenia cuenta: queda enlazado; lo prueba la seccion de D135, mas abajo.)
   await filaSinCorreo.getByLabel('Correo (para entrar)').fill(gestorEmail);
@@ -465,7 +475,7 @@ try {
   await captura(pG, '07-gestion-jugadores');
 
   const filaDup = pG.locator(`li[data-person="esteban-jon"]`);
-  await filaDup.getByText('Editar datos').click();
+  if (!(await filaDup.getByLabel('Correo (para entrar)').isVisible())) await filaDup.locator('summary').first().click();
   await filaDup.getByLabel('Correo (para entrar)').fill('jaime@pruebas.local'); // ya es el de jaime
   await filaDup.getByRole('button', { name: 'Guardar datos' }).click();
   await filaDup.getByText('Ese correo ya está en uso por otro jugador.').waitFor({ timeout: 5000 }).catch(() => {});
@@ -570,9 +580,9 @@ try {
 
   seccion('Campana cerrada');
   await pG.goto(`${APP}/gestion/ropa`);
-  await pG.getByLabel('Estado').selectOption('cerrada');
-  await pG.getByRole('button', { name: 'Guardar campaña' }).click();
-  await pG.getByText('Campaña guardada.').waitFor();
+  await pG.getByRole('button', { name: 'Cerrar el pedido a los jugadores' }).click();
+  await pG.getByTestId('ropa-estado').and(pG.locator('[data-abierto="no"]')).waitFor();
+  ok((await sql`select estado from public.campanas_ropa where id = ${campana.id}`)[0].estado === 'cerrada', 'el interruptor lo cierra (estado «cerrada»)');
   r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 30, tallas: { sudadera: 'M' } } }, jwtB);
   ok(r.datos?.error === 'campana_cerrada', 'con la campana cerrada se rechaza un pedido nuevo', JSON.stringify(r.datos));
   r = await rpc('guardar_pedido', { p_pedido: { id: pedA.id, nombre_completo: 'Manuel Calahorro Sánchez', nombre_ropa: 'MANU', dorsal: 7, tallas: { camiseta: 'S' } } }, jwtA);
@@ -588,6 +598,9 @@ try {
   await sql`update public.campanas_ropa set estado = 'abierta', fecha_limite = pruebas.ahora() - interval '1 minute' where id = ${campana.id}`;
   r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 30, tallas: { sudadera: 'M' } } }, jwtB);
   ok(r.datos?.error === 'campana_cerrada', 'con la fecha limite pasada tambien se rechaza', JSON.stringify(r.datos));
+  await pG.goto(`${APP}/gestion/ropa`);
+  ok((await pG.getByTestId('ropa-estado').getAttribute('data-causa')) === 'fecha' && /Cerrado a los jugadores · pasó la fecha límite/i.test((await pG.getByTestId('ropa-estado').innerText()).replace(/\s+/g, ' ')) && !/Abiert/i.test(await pG.getByTestId('ropa-estado').innerText()),
+    'un solo estado con su causa: «Cerrado a los jugadores · pasó la fecha límite (…)», sin ningún «Abierta» al lado', await pG.getByTestId('ropa-estado').innerText());
 
   seccion('Excel para VIVE (estructura celda a celda con la plantilla)');
   // Mismo numero de filas por bloque que la plantilla (11 camisetas, 10 pantalones,

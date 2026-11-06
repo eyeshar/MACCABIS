@@ -26,6 +26,7 @@ export const Lista = ({ size = 20 }: P) => <svg {...base(size)}><path d="M9 11l3
 export const Lupa = ({ size = 20 }: P) => <svg {...base(size)}><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>;
 export const Tarjeta = ({ size = 20 }: P) => <svg {...base(size)}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h3" /></svg>;
 export const Mas = ({ size = 22 }: P) => <svg {...base(size)}><circle cx="5" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="19" cy="12" r="1.2" /></svg>;
+export const Club = ({ size = 22 }: P) => <svg {...base(size)}><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>;
 export const Bocadillo = ({ size = 26 }: P) => <svg {...base(size)}><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" /><path d="M8 10h8M8 13h5" /></svg>;
 export const Google = ({ size = 20 }: P) => (
   <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">

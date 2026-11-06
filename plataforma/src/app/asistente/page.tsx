@@ -19,7 +19,7 @@ export default async function Asistente() {
   if (!puedeUsarChat(usuario)) forbidden();
   return (
     <main className="pagina as-pagina">
-      <Volver defecto="/" etiqueta="Inicio" />
+      <Volver defecto="/" etiqueta="Semana" />
       <h1>Pregunta al asistente</h1>
       <p className="as-aviso" data-testid="aviso-fijo">Respuestas automáticas, pueden equivocarse. Lo oficial es lo que pone la web.</p>
       <Chat nombre={usuario!.corto} dueno={duenoConversacion(usuario!.email)} />

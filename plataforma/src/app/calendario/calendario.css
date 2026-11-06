@@ -1,0 +1,17 @@
+/* Calendario (D189): suscripcion en una linea, botones, chips y la lista por meses con la cabecera del mes fija. */
+.cl { display: flex; flex-direction: column; gap: 14px; padding-top: 14px; }
+.in-cal-compacto { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--radio-grande); border: 1px solid var(--borde); background: var(--panel-2); }
+.in-cal-compacto h2 { margin: 0; font-size: 1.05rem; font-family: var(--f-texto); font-weight: 700; }
+.in-cal-compacto .in-cal-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.in-cal-compacto .boton { min-height: var(--toque); }
+.cl-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.cl-botones .boton { min-height: var(--toque); }
+.cl-filtros { display: flex; flex-direction: column; gap: 8px; }
+.cl-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.cl-chip { display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 14px; border-radius: 999px; border: 1px solid var(--borde-fuerte); color: var(--tinta-suave); text-decoration: none; font-weight: 600; white-space: nowrap; flex: none; }
+.cl-chip:hover { color: var(--tinta); border-color: var(--tinta-tenue); }
+.cl-chip[aria-current] { background: var(--panel-3); color: var(--tinta); border-color: var(--c-amarillo); }
+.cl-chip-MdA[aria-current] { border-color: var(--c-amarillo); color: var(--c-amarillo); }
+.cl-chip-MdL[aria-current] { border-color: var(--c-naranja); color: var(--c-naranja); }
+.cl-mes { display: flex; flex-direction: column; gap: 8px; }
+.cl-mes-cab { position: sticky; top: 0; z-index: 5; margin: 0; padding: 8px 0; background: var(--fondo); font-size: 1.3rem; }

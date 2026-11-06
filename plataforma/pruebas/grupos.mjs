@@ -309,8 +309,8 @@ try {
   const htmlJ = (await pj.content()).replace(/<script[\s\S]*?<\/script>/g, '');
   const otro = rep.find((x) => !x.personas.includes('esteban-jon'));
   ok(!/nivel/i.test(htmlJ) && (!otro || !htmlJ.includes(otro.nombre === suyo.nombre ? '§' : `Tu grupo: ${otro.nombre}`)), 'nunca niveles ni otros grupos');
-  await pj.goto(`${APP}/agenda`);
-  ok(await visto(pj.getByTestId('tu-grupo')), 'agenda: también «Tu grupo»');
+  await pj.goto(`${APP}/calendario`);
+  ok(await visto(pj.getByTestId('tu-grupo')), 'calendario: también «Tu grupo»');
   ok(await sinDesbordar(pj), 'a 375 px sin desbordamiento');
 
   console.log('\n== Gestor a 375 px: vista normal y vista para el equipo');

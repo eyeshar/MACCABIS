@@ -11,7 +11,7 @@ export async function cambiarMiEnlace(): Promise<{ ok: boolean; error?: string }
   const zona = await cargarMiZona();
   if (!zona) return { ok: false, error: "Tu cuenta no tiene ficha de jugador." };
   const ok = await nuevoEnlace(supabase, zona.jugador.person_id);
-  revalidatePath("/agenda");
-  revalidatePath("/cuenta");
+  revalidatePath("/calendario");
+  revalidatePath("/yo");
   return ok ? { ok: true } : { ok: false, error: "No se pudo cambiar el enlace. Inténtalo otra vez." };
 }

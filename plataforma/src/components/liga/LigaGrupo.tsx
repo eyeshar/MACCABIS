@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, type ReactNode } from "react";
 import AvisoTarjeta from "@/components/AvisoTarjeta";
 import { textoColores } from "@/lib/colores";
 import { fechaCorta } from "@/lib/estadisticas/calculo";
@@ -10,6 +11,8 @@ import { CajaTabla, Control, Kpi, Nota, SecH, Segmento } from "./Comunes";
 
 // Liga 26/27 (migrada de GitHub Pages): clasificación calculada con las Bases del 47 JDM, resultados por jornada y ficha
 // por equipo. Solo datos por equipo (D73). D129: cada equipo enlaza a su ficha y cada partido a su página; sin «casa/fuera».
+// Bloque 6: el aviso de la clasificación calculada en una línea desplegable, la fila entera pulsable, y debajo Resultados
+// por jornada y Próximos (que llegan hechos de la página, `proximos`).
 const sig = (v: number) => (v > 0 ? "+" : "") + v;
 const dec = (v: number | null | undefined) => (v == null ? "–" : v.toFixed(1).replace(".", ","));
 
@@ -18,11 +21,12 @@ function Colores({ color }: { color: Color | null | undefined }) {
   return <div className="e-eqcol"><i className="e-eqdot" style={{ background: color.css }} />{textoColores(color)}</div>;
 }
 
-export default function LigaGrupoPanel({ grupos, generado, colores, contra, grupoInicial, sinRastro, enlaces, partidos }: {
+export default function LigaGrupoPanel({ grupos, generado, colores, contra, grupoInicial, sinRastro, enlaces, partidos, proximos }: {
   grupos: Record<Grupo, GrupoLiga>; generado: string; colores: Record<string, Color | null>;
   contra: Record<string, ContraNosotros | null>; grupoInicial: Grupo; sinRastro: string[];
-  enlaces: Record<Grupo, Record<string, string>>; partidos: Record<string, string>;
+  enlaces: Record<Grupo, Record<string, string>>; partidos: Record<string, string>; proximos?: ReactNode;
 }) {
+  const router = useRouter();
   const [g, setG] = useState<Grupo>(grupoInicial);
   const [jornada, setJornada] = useState<number | null>(null);
   const [equipo, setEquipo] = useState<string | null>(null);
@@ -46,13 +50,15 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
           <Segmento etiqueta="Grupo" valor={g} opciones={[{ v: "G1", t: "G1 · MdA" }, { v: "G2", t: "G2 · MdL" }]} onCambia={cambiaGrupo} />
         </Control>
       </div>
-      <div className="e-aviso">
-        Clasificación <b>calculada</b> a partir de las hojas de estadística de la FBM, <b>pendiente de contrastar con la oficial</b>. Victoria 2 puntos, derrota 1 (Bases del 47 JDM). Las incomparecencias restan puntos y no generan hoja: el equipo que no se presenta toma sus puntos de la clasificación oficial.
-      </div>
+      <details className="e-aviso e-aviso-plegable" data-testid="liga-aviso">
+        <summary>Calculada con las hojas de la FBM · pendiente de contrastar con la oficial <span aria-hidden="true">ⓘ</span></summary>
+        <p>Victoria 2 puntos, derrota 1 (Bases del 47 JDM). Las incomparecencias restan puntos y no generan hoja: el equipo que no se presenta toma sus puntos de la clasificación oficial.</p>
+        <p>Desempate según las Bases (2.9): puntos y diferencia en los partidos entre los empatados, diferencia general, cociente y puntos a favor. PF/PC = puntos a favor y en contra.</p>
+      </details>
 
-      <SecH titulo="Clasificación" tag={G.nombre} />
+      <SecH titulo="Clasificación" />
       <CajaTabla>
-        <table className="e-tabla e-clasificacion" data-testid="liga-clasificacion">
+        <table className="e-tabla e-clasificacion e-fija2" data-testid="liga-clasificacion">
           <thead>
             <tr>
               <th scope="col">#</th><th scope="col">Equipo</th><th scope="col" className="e-c">PJ</th><th scope="col" className="e-c">G</th><th scope="col" className="e-c">P</th>
@@ -61,7 +67,7 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
           </thead>
           <tbody>
             {G.clasificacion.map((x) => (
-              <tr key={x.id} className={x.nuestro ? "e-nos" : undefined} data-equipo={x.id}>
+              <tr key={x.id} className={`e-fila-click${x.nuestro ? " e-nos" : ""}`} data-equipo={x.id} onClick={() => router.push(enlaces[g][x.id])}>
                 <td className="e-mono">{x.pos}</td>
                 <td className="e-eq">
                   <Link href={enlaces[g][x.id]} className="e-enlace-eq">{x.equipo}</Link>
@@ -76,10 +82,7 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
           </tbody>
         </table>
       </CajaTabla>
-      <Nota>
-        {(hayPend || G.orden_provisional ? "Orden provisional: hay equipos con incomparecencias pendientes de la clasificación oficial. " : "")}
-        Desempate según las Bases (2.9): puntos y diferencia en los partidos entre los empatados, diferencia general, cociente y puntos a favor. PF/PC = puntos a favor y en contra.
-      </Nota>
+      {(hayPend || G.orden_provisional) && <Nota>Orden provisional: hay equipos con incomparecencias pendientes de la clasificación oficial.</Nota>}
 
       <SecH titulo="Resultados" tag="por jornada" />
       <div className="e-jornadas" role="group" aria-label="Jornada">
@@ -104,6 +107,8 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
         })}
         {descansan && <div className="e-desc">Descansa: {descansan.join(", ")}</div>}
       </div>
+
+      {proximos}
 
       <SecH titulo="Ficha por equipo" tag="solo datos de equipo" />
       <div className="e-ctl">

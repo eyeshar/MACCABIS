@@ -1,0 +1,21 @@
+/* Evento (D189): cabecera, quedada y hora en grande, pista, equipación, avisos plegados, rival y pestañas de gestor. */
+.ev2 { display: flex; flex-direction: column; gap: 12px; }
+.ev2-cab { display: flex; flex-direction: column; gap: 2px; }
+.ev2-tipo { font-family: var(--f-cifras); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amarillo-tinta); }
+.ev2-cab h1 { margin: 0; font-size: 2rem; line-height: 1.05; }
+.ev2-fecha { margin: 0; color: var(--tinta-suave); }
+.ev2-horas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ev2-hora { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: var(--radio-grande); border: 1px solid var(--borde); background: var(--panel-2); }
+.ev2-hora small { color: var(--tinta-tenue); font-size: 0.8rem; }
+.ev2-hora b { font-family: var(--f-titulos); font-weight: 800; font-size: 2.4rem; line-height: 1; }
+.ev2-quedada b { color: var(--c-amarillo); }
+.ev2-pista, .ev2-equipacion, .ev2-rival { display: flex; flex-direction: column; gap: 6px; }
+.ev2-pista .boton { align-self: flex-start; min-height: var(--toque); }
+.ev2-h2 { margin: 0; font-size: 1.2rem; }
+.ev2-avisos summary { cursor: pointer; min-height: var(--toque); display: flex; align-items: center; font-weight: 600; }
+.ev2-avisos p { margin: 6px 0 0; }
+.ev2-pestanas { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--borde); }
+.ev2-pestanas a { display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 14px; color: var(--tinta-suave); text-decoration: none; font-weight: 600; white-space: nowrap; flex: none; border-bottom: 2px solid transparent; }
+.ev2-pestanas a[aria-current] { color: var(--tinta); border-bottom-color: var(--c-amarillo); }
+.ev2-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ev2-gestor { max-width: 1240px; }

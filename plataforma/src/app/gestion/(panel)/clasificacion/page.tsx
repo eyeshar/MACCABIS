@@ -20,7 +20,7 @@ export default async function Clasificacion() {
     <>
       <div className="gs-titulo">
         <div>
-          <div className="gs-eyebrow"><Volver enLinea defecto="/gestion" etiqueta="Panel" /> · Rutina B</div>
+          <div className="gs-eyebrow"><Volver enLinea defecto="/gestion" etiqueta="Gestión" /> · Rutina B</div>
           <h1>Contrastar clasificación</h1>
         </div>
       </div>

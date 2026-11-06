@@ -130,17 +130,17 @@ try {
   await entrar(pj, jugadorEmail);
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.getByText('Activa los avisos en este móvil')), 'banda amarilla «Activa los avisos en este móvil»');
-  ok(/Si no respondes, te lo recordamos/.test(await pj.getByTestId('regla-recordatorios').innerText()) && !(await pj.getByText(/desactivadas/).count()), 'inicio: la regla de los recordatorios, sin «desactivadas»');
+  ok(/^Plazo: martes 12:00/.test(await pj.getByTestId('regla-recordatorios').innerText()) && !(await pj.getByText(/desactivadas/).count()), 'Semana: el plazo en una línea, sin «desactivadas» (los recordatorios se explican en /avisos)');
   ok(!/SportEasy/i.test(await pj.locator('main').innerText()) && !(await pj.getByTestId('responder-sporteasy').count()), 'inicio: ni «SportEasy» ni «Responder en SportEasy»');
   ok((await pj.locator('.rw-banda svg').count()) === 1 && !(await pj.locator('.rw-banda').innerText()).includes('🔔'), 'la banda lleva la campana dibujada (icono), no el emoji 🔔');
-  await pj.goto(`${APP}/agenda`);
-  ok(!(await pj.getByText(/desactivadas/).count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'agenda: sin «desactivadas» y sin «SportEasy»');
+  await pj.goto(`${APP}/calendario`);
+  ok(!(await pj.getByText(/desactivadas/).count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'calendario: sin «desactivadas» y sin «SportEasy»');
   await pj.goto(`${APP}/mi-zona/ausencias`);
   ok(new URL(pj.url()).pathname === '/mi-zona/ausencias' && await visto(pj.getByRole('heading', { name: 'Mis ausencias' })), '/mi-zona/ausencias se abre siempre (ya no manda a la Agenda)', pj.url());
   await pj.goto(`${APP}/mi-zona/evento/${E.entreno}`);
   ok(await visto(pj.getByRole('heading', { name: '¿Vas?' })) && await visto(pj.locator('.rw-btn')) && !(await pj.getByText(/desactivadas/).count()), 'evento: la información con los botones para responder, sin «desactivadas»');
   ok(!/SportEasy/i.test(await pj.locator('main').innerText()), 'evento: sin «SportEasy»');
-  ok(await visto(pj.getByText(/encuentro \d\d:\d\d/)), 'evento: «HH:MM–HH:MM · encuentro HH:MM»');
+  ok(/Quedada\s*\d\d:\d\d/.test(await pj.getByTestId('horas-evento').innerText()) && /\d\d:\d\d/.test(await pj.getByTestId('horas-evento').innerText()), 'evento: la quedada y la hora en grande (D189)');
   await pj.goto(`${APP}/avisos`);
   ok(await visto(pj.getByText('Solo te avisamos si te falta responder')) && await visto(pj.getByText('De noche, solo si el partido es en pocas horas.')), '/avisos: el texto de arriba');
   ok(await visto(pj.getByRole('button', { name: 'Activar avisos en este móvil' })), '/avisos (Chrome, no iPhone): «Activar avisos en este móvil»');
@@ -185,17 +185,17 @@ try {
   await pj.goto(`${APP}/mi-zona`);
   ok(await visto(pj.getByText(/Te faltan \d+ respuestas|Te falta 1 respuesta/).first()), '«Te faltan N respuestas»');
   ok(!(await pj.getByText('Las respuestas en la web están desactivadas').count()) && !/SportEasy/i.test(await pj.locator('main').innerText()), 'ni «desactivadas» ni «SportEasy»');
-  const tarjeta = pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/mi-zona/evento/${E.entreno}"]`) });
+  const tarjeta = pj.getByTestId('tarjeta-pendiente').filter({ has: pj.locator(`a[href="/evento/${E.entreno}"]`) });
   ok(await tarjeta.count() === 1, 'el próximo entreno tiene su tarjeta con los botones');
   const pequenos = await tactiles(pj, '.rw-btn, .rw-banda, .rw-marcar, .zb a');
   ok(!pequenos.length, 'botones y enlaces de Mi zona de al menos 44 px', JSON.stringify(pequenos));
   ok(await sinDesbordar(pj), 'Mi zona a 375 px sin desbordamiento');
-  // D117 (inicio personal, antes Mi zona): saludo, banda «Activa los avisos», «Te faltan N», próximo partido, agenda y temporada.
-  const om = await pj.evaluate(() => { const y = (sel) => { const e = document.querySelector(sel); return e ? Math.round(e.getBoundingClientRect().top + scrollY) : null; }; return { hola: y('.in-hola'), banda: y('.rw-banda'), faltan: y('#pendientes'), partido: y('#proximo-partido'), agenda: y('#agenda'), temporada: y('#temporada') }; });
+  // D189 (la Semana): «Esta semana», banda «Activa los avisos», «Te faltan N», las tarjetas de los próximos días y abajo.
+  const om = await pj.evaluate(() => { const y = (sel) => { const e = document.querySelector(sel); return e ? Math.round(e.getBoundingClientRect().top + scrollY) : null; }; return { cab: y('.sm-cab'), banda: y('.rw-banda'), faltan: y('#pendientes'), dias: y('[data-testid=proximos-dias]'), abajo: y('.sm-abajo') }; });
   const crece = (...xs) => xs.every((x) => x != null) && xs.every((x, i) => i === 0 || x > xs[i - 1]);
-  ok(crece(om.hola, om.banda, om.faltan, om.partido, om.agenda, om.temporada), 'inicio en el móvil: saludo → banda → «Te faltan» → próximo partido → «Tu agenda» → temporada', JSON.stringify(om));
-  await pj.goto(`${APP}/agenda`);
-  ok(await visto(pj.getByRole('link', { name: 'Marcar días que no estoy' })), '«Marcar días que no estoy» en la Agenda');
+  ok(crece(om.cab, om.banda, om.faltan, om.dias, om.abajo), 'Semana en el móvil: Esta semana → banda → «Te faltan» → próximos días → calendario y temporada', JSON.stringify(om));
+  await pj.goto(`${APP}/calendario`);
+  ok(await visto(pj.getByRole('link', { name: 'Días que no estoy' })), '«Días que no estoy» en el Calendario');
   await pj.goto(`${APP}/`);
   await foto(pj, 'mizona_375');
   await trasAccion(pj, () => tarjeta.getByRole('button', { name: 'Voy', exact: true }).click());
@@ -271,7 +271,7 @@ try {
   await trasAccion(pj, () => pj.getByRole('button', { name: 'Borrar' }).click());
   ok((await sql`select count(*)::int n from public.respuestas r join public.eventos e on e.id = r.evento_id where e.fecha = ${F('2026-10-25')} and r.person_id = 'esteban-jon' and r.respuesta = 'sin_responder'`)[0].n === 2, 'al borrarla, el domingo vuelve a «sin responder»');
   await pj.goto(`${APP}/mi-zona`);
-  ok(await visto(pj.locator('#agenda .in-pastilla').first()), '«Tu agenda» con estado por evento');
+  ok(await visto(pj.getByTestId('estado-tarjeta').first()), 'las tarjetas de la Semana con estado por evento');
   const htmlJ = await pj.content();
   ok(!/nivel|posici[oó]n|Rodilla/i.test(htmlJ), 'nada de niveles, posiciones ni motivos ajenos en Mi zona');
 

@@ -90,9 +90,9 @@ export function unidades(eventos: MiEvento[]): Unidad[] {
       hechos.add(e.fecha);
       const ps = (ligaPorFecha.get(e.fecha) ?? []).sort((a, b) => ((a.inicio ?? "") < (b.inicio ?? "") ? -1 : 1));
       const modo = ps.length === 1 ? "una" : hhmm(ps[0].inicio) === hhmm(ps[1].inicio) ? "misma" : "distintas";
-      out.push({ clave: `d-${e.fecha}`, tipo: "domingo", fecha: e.fecha, eventos: ps, modo, url: ps.length === 1 ? `/mi-zona/evento/${ps[0].id}` : `/mi-zona/domingo/${e.fecha}` });
+      out.push({ clave: `d-${e.fecha}`, tipo: "domingo", fecha: e.fecha, eventos: ps, modo, url: ps.length === 1 ? `/evento/${ps[0].id}` : `/mi-zona/domingo/${e.fecha}` });
     } else {
-      out.push({ clave: e.id, tipo: "evento", fecha: e.fecha, eventos: [e], modo: "evento", url: esPlan(e) ? `/planes/${e.id}` : `/mi-zona/evento/${e.id}` });
+      out.push({ clave: e.id, tipo: "evento", fecha: e.fecha, eventos: [e], modo: "evento", url: esPlan(e) ? `/planes/${e.id}` : `/evento/${e.id}` });
     }
   }
   return out;

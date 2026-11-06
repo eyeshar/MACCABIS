@@ -10,7 +10,7 @@ const e2e = await preparar();
 const { APP, nav, errores, nuevaPagina, contexto } = e2e;
 try {
   // Sin sesión: lo público responde y lo privado manda a /entrar.
-  for (const ruta of ['/', '/entrar', '/liga', '/historia', '/plantilla', '/club', '/agenda']) {
+  for (const ruta of ['/', '/entrar', '/liga', '/club', '/club/historia', '/club/el-club', '/agenda']) {
     const r = await fetch(`${APP}${ruta}`, { redirect: 'manual' });
     ok(r.status < 400, `${ruta} responde (${r.status})`);
   }

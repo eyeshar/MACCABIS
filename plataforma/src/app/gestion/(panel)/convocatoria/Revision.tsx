@@ -80,7 +80,18 @@ export default function Revision(p: Props) {
                   return (
                     <li key={l} className={`cv-rev-linea cv-${est}`} data-linea={ESTADO_LINEA[l]}>
                       <b>{t} {l === "base" ? r.bases.texto : l === "exterior" ? r.exteriores.texto : r.interiores.texto}</b>
-                      <span>{ids.length ? ids.map((c, i) => <span key={c.person_id}>{i ? ", " : ""}<Nombre id={c.person_id} nombre={nombre(c.person_id)} enlaces={enlaces} /></span>) : "—"}</span>
+                      <span className="cv-rev-chips">{ids.length ? ids.map((c) => {
+                        const otroEq = ctx.partidos.find((y) => y.equipo !== x.equipo)?.equipo;
+                        const dobla = !!otroEq && (conv[otroEq] ?? []).some((y) => y.person_id === c.person_id);
+                        return (
+                          <span key={c.person_id} className="cv-chip" data-person={c.person_id}>
+                            <Nombre id={c.person_id} nombre={nombre(c.person_id)} enlaces={enlaces} />
+                            <b className="cv-nivel" title="Nivel (solo gestores)">{porId.get(c.person_id)?.privado?.nivel ?? "–"}</b>
+                            {r.basesDeReserva.includes(c.person_id) && <small className="suave">res.</small>}
+                            {dobla && <span className="cv-etq cv-etq-dobla">dobla</span>}
+                          </span>
+                        );
+                      }) : "—"}</span>
                     </li>
                   );
                 })}

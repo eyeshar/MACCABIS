@@ -91,7 +91,7 @@ export default async function Asistencia({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <Volver defecto="/gestion" etiqueta="Panel" />
+      <Volver defecto="/gestion" etiqueta="Gestión" />
       <div className="gs-titulo">
         <div>
           <div className="gs-eyebrow">Solo gestores · {etiquetaT}</div>

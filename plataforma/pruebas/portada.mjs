@@ -100,7 +100,7 @@ try {
   ok(html.includes('Dos equipos.') && html.includes('Una plantilla.'), 'portada: heroe "Dos equipos. Una plantilla."');
   ok(/<meta name="theme-color" content="#0E0D12"/i.test(html), 'theme-color #0E0D12');
   ok(html.includes('rel="manifest" href="/manifest.webmanifest"'), 'la portada enlaza el manifiesto');
-  for (const ruta of ['/agenda', '/gestion', '/liga/scouting', '/liga/consolidada']) {
+  for (const ruta of ['/calendario', '/yo', '/gestion', '/liga/scouting', '/liga/consolidada']) {
     const x = await fetch(`${APP}${ruta}`, { redirect: 'manual' });
     ok(x.status >= 300 && x.status < 400 && (x.headers.get('location') || '').includes('/entrar'), `${ruta} sin sesion redirige a /entrar`, `${x.status} ${x.headers.get('location')}`);
   }
@@ -169,12 +169,12 @@ try {
   ok(paginasPartido.length > 0 && paginasPartido.length === resultados && new Set(paginasPartido).size === paginasPartido.length, `sitemap: las ${resultados} paginas de partido de la liga, sin repetir (${paginasPartido.length})`);
   const unPartido = paginasPartido.length ? await fetch(`${APP}${paginasPartido[0].replaceAll('&amp;', '&')}`, { redirect: 'manual' }) : null;
   ok(unPartido && unPartido.status === 200, `sitemap: la pagina de partido ${paginasPartido[0] || '(ninguna)'} se abre sin sesion (${unPartido ? unPartido.status : '-'})`);
-  for (const ruta of ['/', '/club', '/privacidad']) {
+  for (const ruta of ['/', '/club', '/club/historia', '/club/el-club', '/privacidad']) {
     const x = await fetch(`${APP}${ruta}`);
     const cuerpo = await x.text();
     ok(!(x.headers.get('x-robots-tag') || '').includes('noindex') && /<meta name="robots" content="index, follow"/.test(cuerpo), `${ruta}: indexable (sin X-Robots-Tag noindex, meta robots index)`);
   }
-  for (const ruta of ['/entrar', '/mi-zona/ausencias', '/agenda', '/planes/nuevo', '/gestion', '/liga/scouting', '/liga/consolidada', '/entrar/elegir']) {
+  for (const ruta of ['/entrar', '/mi-zona/ausencias', '/calendario', '/yo', '/planes/nuevo', '/gestion', '/liga/scouting', '/liga/consolidada', '/entrar/elegir']) {
     const x = await fetch(`${APP}${ruta}`, { redirect: 'manual' });
     ok((x.headers.get('x-robots-tag') || '').includes('noindex'), `${ruta}: X-Robots-Tag noindex`, String(x.headers.get('x-robots-tag')));
   }
@@ -184,8 +184,9 @@ try {
   ok(lista(ncfg, /const privadas = \[([^\]]+)\]/) === lista(idxts, /RUTAS_PRIVADAS = \[([^\]]+)\]/), 'next.config.ts y src/lib/indexacion.ts tienen la misma lista de rutas privadas');
   ok(/VERCEL_ENV/.test(ncfg) && /VERCEL_ENV/.test(idxts), 'las vistas previas de Vercel (VERCEL_ENV distinto de production) llevan noindex en todo');
 
-  console.log('\n== /club (D86)');
-  r = await fetch(`${APP}/club`);
+  // Bloque 6: «El club» es ahora la pestaña /club/el-club del Club (/club es la Plantilla).
+  console.log('\n== /club/el-club (D86)');
+  r = await fetch(`${APP}/club/el-club`);
   const club = (await r.text()).replace(/<!-- -->/g, '');
   ok(r.status === 200, '/club: 200 (antes 404)', String(r.status));
   ok(club.includes('Desde 2013') && club.includes('Maccabi de Levantar') && club.includes('Maccabi de Acostar'), '/club: desde 2013, MdA y MdL');
@@ -193,7 +194,7 @@ try {
   ok(club.includes('Miércoles, 20:30–22:30') && club.includes('Valdebernardo') && club.includes('en obras'), '/club: entrenos (miercoles 20:30-22:30, Valdebernardo en obras)', (club.match(/.{0,120}Miércoles.{0,160}/) ?? [club.slice(club.indexOf('ntreno'), club.indexOf('ntreno') + 300)])[0]);
   ok(club.includes('Centro Deportivo Municipal Moratalaz') && club.includes('Calle de Valdebernardo, 2, 28030 Madrid') && club.includes('Pavones (L9)'), '/club: instalación de los partidos (CDM Moratalaz, calle de Valdebernardo 2, metro Pavones L9)');
   ok(club.includes('Valdebernardo (Faustina Valladolid)') && club.includes('son dos sitios distintos') && !club.includes('pendiente de confirmar'), '/club: entrenos en Valdebernardo (Faustina Valladolid), aclarado que no es la de los partidos, sin hueco');
-  ok(club.includes('href="/historia"'), '/club: enlace a la rejilla completa de Historia (/historia)');
+  ok(club.includes('href="/club/historia"'), '/club/el-club: enlace a la Historia del club (/club/historia)');
   const proxClub = (club.replace(/<[^>]+>/g, '').match(/Próximo:[^.]*\./) ?? [''])[0];
   ok(proxClub.includes('Ciudad de los Periodistas') && !proxClub.includes('por confirmar'), `/club: «${proxClub}» (ubicación libre, D138)`);
   ok(!/[\w.+-]+@[\w-]+\.[\w.]+/.test(club.replace(/<script[\s\S]*?<\/script>/g, '')), '/club: ningun correo ni dato personal');
@@ -282,7 +283,7 @@ try {
     } else {
       ok(await p.locator('nav[aria-label="Principal"]').isVisible() && !(await p.locator('nav[aria-label="Secciones"]').isVisible()), 'escritorio: menu principal; sin barra inferior');
       const menu = await p.$$eval('nav[aria-label="Principal"] a', (a) => a.map((x) => x.textContent.trim()));
-      ok(['Inicio', 'Partidos', 'Liga', 'Plantilla', 'Historia', 'El club'].every((t, i) => menu[i]?.startsWith(t)), 'menu: Inicio, Partidos, Liga, Plantilla, Historia, El club', menu.join(','));
+      ok(JSON.stringify(menu) === JSON.stringify(['Inicio', 'Liga', 'Club', 'Acceso']), 'menu sin sesion (D189): Inicio, Liga, Club, Acceso', menu.join(','));
       ok((await p.locator('nav[aria-label="Principal"] a[href^="https://eyeshar.github.io/MACCABIS/"]').count()) === 0, 'Liga, Plantilla e Historia ya son de la web: ningun enlace del menu a GitHub Pages');
     }
     await p.goto(`${APP}/?hoy=2026-10-06`);
@@ -304,7 +305,7 @@ try {
     p.on('pageerror', (e) => errores.push(String(e)));
     await p.goto(`${APP}/club`);
     ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), '/club: sin desbordamiento horizontal');
-    const enlaceClub = movil ? 'nav[aria-label="Menú"] a[href="/club"]' : 'nav[aria-label="Principal"] a[href="/club"]';
+    const enlaceClub = movil ? 'nav[aria-label="Secciones"] a[href="/club"]' : 'nav[aria-label="Principal"] a[href="/club"]';
     ok((await p.locator(enlaceClub).count()) === 1 && (await p.locator('footer a[href="/club"]').count()) === 1, 'el menu y el pie enlazan a /club');
     if (!movil) ok((await p.locator('nav[aria-label="Principal"] a[href="/club"]').getAttribute('aria-current')) === 'page', '/club marcado en el menu');
     await captura(p, `real_club_${etiqueta}`);
@@ -340,20 +341,21 @@ try {
     await p.getByText('No hemos podido mandar el código').waitFor({ timeout: 5000 }).catch(() => {});
     ok(await p.getByText('No hemos podido mandar el código').isVisible(), 'acceso: correo fuera de la lista blanca, aviso generico (logica D68 intacta)');
 
-    // jugador (dobla): su inicio personal («/», D117; Mi zona ya no existe como pagina propia)
+    // jugador (dobla): su Semana («/», D189; Mi zona ya no existe como pagina propia)
     await entrar(p, jugadorEmail);
     ok(new URL(p.url()).pathname === '/', 'un jugador entra en su inicio («/»)', p.url());
-    ok(await p.getByRole('heading', { name: /Hola,\s*Jon/ }).isVisible(), 'inicio: "Hola, <nombre>"');
-    const agenda = p.locator('#agenda');
+    ok(await p.getByRole('heading', { name: 'Esta semana' }).isVisible(), 'Semana: «Esta semana»');
+    const agenda = p.getByTestId('proximos-dias');
     // D172: las respuestas en la web, siempre encendidas: la agenda con sus entrenos y la regla de los recordatorios
     // (nunca «desactivadas»; sin SportEasy).
-    ok((await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').count()) >= 1 && /^Plazo para responder: hasta el martes a las 12:00 .* Si no respondes, te lo recordamos/.test(await p.getByTestId('regla-recordatorios').innerText()), 'Tu agenda: entrenos; y «Plazo para responder: hasta el martes a las 12:00… Si no respondes, te lo recordamos…» (D173)', await p.getByTestId('regla-recordatorios').innerText().catch(() => ''));
+    const regla = (await p.getByTestId('regla-recordatorios').count()) ? await p.getByTestId('regla-recordatorios').innerText() : null;
+    ok((await agenda.locator('[data-testid="tarjeta-semana"][data-tipo="entreno"]').count()) >= 1 && (regla === null || /^Plazo: martes 12:00 para el partido del domingo y miércoles 12:00 para el entreno\.$/.test(regla)), 'Semana: entrenos; y, si falta algo, el plazo (martes 12:00 el partido, miércoles 12:00 el entreno, D173)', regla ?? '(nada pendiente)');
     ok(!/desactivadas/.test(await p.locator('main').innerText()) && !(await p.getByTestId('respuestas-apagadas').count()), 'inicio: sin «Las respuestas en la web están desactivadas» (ya no existe)');
     ok(!/SportEasy/i.test(await p.textContent('main')) && !(await p.getByTestId('responder-sporteasy').count()), 'inicio: sin «SportEasy» ni «Responder en SportEasy»');
-    const filasLibre = await agenda.locator('[data-testid="fila-agenda"][data-tipo="entreno"]').allTextContents();
-    ok(filasLibre.some((t) => t.includes('Ciudad de los Periodistas')), 'Tu agenda: el entreno con ubicación libre sale en «Ciudad de los Periodistas»', filasLibre.slice(0, 2).join(' | '));
-    const domingo = p.getByTestId('proximo-partido');
-    ok((await domingo.locator('.in-partido-uno').count()) >= 1, 'Tu próximo partido (dobla): los partidos de su próximo domingo');
+    const filasLibre = await agenda.locator('[data-testid="tarjeta-semana"][data-tipo="entreno"]').allTextContents();
+    ok(filasLibre.some((t) => t.includes('Ciudad de los Periodistas')), 'Semana: el entreno con ubicación libre sale en «Ciudad de los Periodistas»', filasLibre.slice(0, 2).join(' | '));
+    const domingo = p.locator('[data-testid="tarjeta-semana"][data-tipo="liga"]').first();
+    ok((await domingo.locator('.chip-eq').count()) >= 1, 'Semana (dobla): los partidos de su próximo domingo');
     if (aMdA?.fecha === '2026-10-18') {
       ok((await domingo.textContent()).includes('no se puede doblar'), 'J2: misma hora, "no se puede doblar"', await domingo.textContent());
       // D160/D171: la tarjeta lleva la línea de equipación de la convocatoria (antes, la etiqueta .eq-aviso; esta rama no se
@@ -376,7 +378,8 @@ try {
     await entrar(g, gestorEmail);
     ok(g.url().endsWith('/gestion'), 'un gestor entra en /gestion', g.url());
     ok((await g.textContent('.gs-eyebrow')).includes('Panel de gestión') && /Jornada \d+/.test(await g.textContent('h1')), 'panel: "Jornada N" de la semana');
-    ok((await g.locator('section[aria-label="Rutinas semanales"] .gs-caja').count()) === 3, 'panel: rutinas A, B y C');
+    // Estructura nueva (bloque 4): el estado de las rutinas va dentro de «3 · Pendiente».
+    ok((await g.locator('[data-testid="gp-rutinas"] li').count()) === 3, 'panel: rutinas A, B y C (en «Pendiente»)');
     ok((await g.locator('[aria-labelledby="t-prox"] .eq-partido').count()) >= 1, 'panel: partidos del domingo');
     ok(!(await g.locator('[data-testid="hueco-sporteasy"]').count()) && ((await g.locator('[data-testid="entreno-sin-respuestas"]').isVisible()) || (await g.locator('[data-testid="respuestas-entreno"]').isVisible())), 'panel: el entreno con sus respuestas o «Aún nadie ha respondido», sin el hueco de SportEasy');
     ok(!/SportEasy/i.test(await g.textContent('main')), 'panel: sin «SportEasy» en ninguna parte');
@@ -384,9 +387,8 @@ try {
     const tAvisos = g.getByTestId('tarjeta-avisos');
     ok(await tAvisos.isVisible() && await g.getByTestId('franja-avisos').isVisible() && !(await tAvisos.locator('input[type="checkbox"], [role="switch"]').count()) && !(await g.locator('[data-testid^="tarjeta-activar"]').count()), 'panel: la tarjeta «Avisos y accesos», sin interruptor (ni la vieja «Respuestas en la web»)');
     ok((await g.locator('.gs-pendientes li').count()) >= 1, 'panel: pendientes de la semana');
-    // D90: en movil la barra de Gestion es una fila con scroll horizontal; lo que no cabe se alcanza desplazandola.
-    const menuEntero = await g.evaluate(() => { const f = document.querySelector('nav[aria-label="Gestión"] .zb-fila'); return f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === 'auto'; });
-    ok(menuEntero, 'el menu de gestion no se corta (cabe o se desplaza en su fila)');
+    // D189: ya no hay barra de Gestión; /gestion lleva a todas sus pantallas.
+    ok(!(await g.locator('nav[aria-label="Gestión"]').count()), 'sin la barra de Gestión de antes (D189)');
     ok(await g.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'panel: sin desbordamiento');
     await captura(g, `real_gestion_${etiqueta}`);
     ok(errG.length === 0, 'gestion: sin errores de JavaScript', errG.join(' | '));

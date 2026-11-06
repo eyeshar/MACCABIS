@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-// «Tu próximo partido» del inicio del jugador (D171), de extremo a extremo: pila local, web compilada y Chrome (375 px).
-// Jugadores SINTÉTICOS. La tarjeta enseña el próximo partido al que el jugador VA A IR o PUEDE IR:
-//   - con la convocatoria aprobada, solo si está CONVOCADO (caso Víctor: no convocado y con «no» puesto por un gestor);
-//   - sin convocatoria, si su respuesta es va, duda o sin responder (este último, con el botón para responder bien visible);
-//   - no va / no convocado / de baja: se salta al siguiente que cumpla, con la línea «Este domingo no juegas (…)»;
-//   - si no queda ninguno: «No tienes partidos próximos» con enlace a la Agenda.
-// La Agenda sigue enseñando todo con su estado exacto (Convocado · No convocado · Vas · No vas · Duda · Sin responder · Lesión).
+// El estado de los próximos partidos del jugador (D171; desde D189 en las tarjetas de la Semana y en el Calendario), de
+// extremo a extremo: pila local, web compilada y Chrome (375 px). Jugadores SINTÉTICOS:
+//   - con la convocatoria aprobada, «Convocado · equipo» o «No convocado» (caso Víctor: no convocado y con «no» puesto por
+//     un gestor: nunca «No vas»);
+//   - sin convocatoria: Vas, Duda, No vas, Lesión o Sin responder (con los botones para responder en la tarjeta);
+//   - el Calendario enseña todos con su estado exacto (Convocado · No convocado · Vas · No vas · Duda · Sin responder · Lesión).
 // La equipación, la línea única de D160 (siempre con «la amarilla por si acaso»).
 //
 //   npm run pruebas:inicio-proximo-partido
@@ -36,39 +35,32 @@ try {
   await resp(de(L1, 'MdA'), 'sint-dani', 'va'); await resp(de(L1, 'MdL'), 'sint-dani', 'va');  // va, pero la convocatoria no lo lleva
   await sql`insert into public.ausencias_periodo (person_id, desde, hasta, motivo) values ('sint-hugo', ${hoy}, ${D2}, 'lesion')`;
 
-  const tarjeta = (p) => p.getByTestId('proximo-partido');
+  // D189: «Tu próximo partido» (D171) ya no existe: la Semana enseña una tarjeta por día (los próximos 10) con el estado exacto
+  // de cada uno, y el Calendario, todos. Los casos de D171 se comprueban en esas pastillas: «No vas» y «No convocado» nunca se
+  // confunden, y quien no ha respondido tiene sus botones a mano.
+  // El primer domingo (D1) es el unico partido de los proximos 10 dias: su tarjeta es la primera de liga.
+  const tarjeta = (p) => p.locator('[data-testid="tarjeta-semana"][data-tipo="liga"]').first();
+  const estado = async (p) => (await tarjeta(p).getByTestId('estado-tarjeta').innerText()).trim();
   const linea = (p) => p.getByTestId('linea-equipacion');
-  const fechaTarjeta = async (p) => (await tarjeta(p).locator('.in-titular').innerText()).toLowerCase();
-  const captura = (p, n) => (process.env.PRUEBAS_CAPTURAS ? tarjeta(p).screenshot({ path: path.join(CAPTURAS, `${n}.png`) }).catch(() => {}) : null);
-  const dia = (f) => String(+f.slice(8, 10));
+  const captura = (p, n) => (process.env.PRUEBAS_CAPTURAS ? p.screenshot({ path: path.join(CAPTURAS, `${n}.png`) }).catch(() => {}) : null);
   const sesion = (n) => e.sesion(`${n}@pruebas.local`, 375);
 
-  console.log('\n== Con la convocatoria aprobada: solo si está convocado');
+  console.log('\n== Con la convocatoria aprobada: «Convocado · equipo» o «No convocado» (nunca «No vas»)');
   const pa = await sesion('ana');
-  ok((await pa.getByTestId('estado-partido').innerText()) === 'Convocado · MdA' && (await fechaTarjeta(pa)).includes(dia(D1)), 'Ana, convocada al MdA: sale el primer domingo, «Convocado · MdA»');
-  ok((await tarjeta(pa).locator('.in-partido-uno').count()) === 1 && !(await pa.getByTestId('salto-partido').count()), 'solo su partido y sin línea de «no juegas»');
+  ok((await estado(pa)) === 'Convocado · MdA', 'Ana, convocada al MdA: «Convocado · MdA»', await estado(pa).catch(() => ''));
   const pc = await sesion('cira');
-  ok((await pc.getByTestId('estado-partido').innerText()) === 'Convocado · MdL', 'Cira, convocada al MdL: «Convocado · MdL»');
-  console.log('\n== No convocado (aunque su respuesta sea «va» o «no»): se salta al siguiente');
+  ok((await estado(pc)) === 'Convocado · MdL', 'Cira, convocada al MdL: «Convocado · MdL»');
   const pb = await sesion('beto');
-  ok(!(await tarjeta(pb).getByText('No vas').count()), 'Beto (caso Víctor: no convocado, con «no»): la tarjeta NO dice «No vas»');
-  ok((await pb.getByTestId('salto-partido').innerText()) === 'Este domingo no juegas (no convocado)', 'línea pequeña arriba: «Este domingo no juegas (no convocado)»', await pb.getByTestId('salto-partido').innerText().catch(() => ''));
-  ok((await fechaTarjeta(pb)).includes(dia(D2)), 'y la tarjeta enseña el siguiente domingo');
+  ok((await estado(pb)) === 'No convocado', 'Beto (caso Víctor: no convocado, con «no»): «No convocado», no «No vas»', await estado(pb).catch(() => ''));
   const pd = await sesion('dani');
-  ok((await pd.getByTestId('salto-partido').innerText()) === 'Este domingo no juegas (no convocado)' && (await fechaTarjeta(pd)).includes(dia(D2)), 'Dani (dijo «va» pero no está convocado): también se salta, «no convocado»');
-  console.log('\n== Sin convocatoria aún (segundo domingo): sin responder → botón para responder bien visible');
-  ok((await pb.getByTestId('estado-partido').innerText()) === 'Sin responder' && (await pb.getByTestId('convocatoria-pendiente').count()) === 1, 'Beto: «Sin responder» y «Convocatoria pendiente»');
-  const boton = pb.getByTestId('responder-proximo').getByRole('button', { name: 'Voy', exact: true });
-  ok(await visto(boton) && await visto(pb.getByTestId('responder-proximo').getByRole('button', { name: 'No voy', exact: true })), 'con el botón «Voy» / «No voy» dentro de la tarjeta');
-  ok(await boton.evaluate((b) => b.getBoundingClientRect().height >= 44), 'el botón es grande (≥ 44 px)');
+  ok((await estado(pd)) === 'No convocado', 'Dani (dijo «va» pero no está convocado): «No convocado»');
   const t = (await linea(pb).allInnerTexts()).join(' | ');
   ok(/Lleva la amarilla por si acaso\.$/.test(t) && !/Llevad/.test(t) && /Jugamos de negro|Coinciden colores/.test(t), 'equipación: la línea única de D160 en singular, siempre con «Lleva la amarilla por si acaso»', t);
   ok(!(await tarjeta(pb).locator('.eq-aviso').count()), 'sin el cuadro de aviso de choque aparte (la línea única lo dice todo)');
-  await captura(pb, 'inicio_proximo_salto_375');
+  await captura(pb, 'semana_no_convocado_375');
   ok(await sinDesbordar(pb), '375 px: sin desbordar');
-  console.log('\n== De baja o lesionado');
   const ph = await sesion('hugo');
-  ok((await ph.getByTestId('salto-partido').innerText()) === 'Este domingo no juegas (no convocado)', 'Hugo (lesionado): con la convocatoria aprobada manda ella; «no convocado»');
+  ok((await estado(ph)) === 'No convocado', 'Hugo (lesionado): con la convocatoria aprobada manda ella; «No convocado»');
   // Se retira la convocatoria: sin ella, la lesión (ausencia por periodo) lo deja fuera de los dos primeros domingos.
   await sql`delete from public.convocatorias`;
 
@@ -79,42 +71,42 @@ try {
   const ligas = await sql`select id from public.eventos where tipo = 'liga' and fecha > ${hoy}`;
   for (const x of ligas) await resp(x, 'sint-gaby', 'no', 'viaje');     // Gaby: no va a ninguno
   const pe = await sesion('eva');
-  ok((await pe.getByTestId('estado-partido').innerText()).startsWith('Vas') && (await fechaTarjeta(pe)).includes(dia(D1)), 'Eva, «va»: sale el primer domingo, «Vas»');
-  ok((await tarjeta(pe).locator('.in-partido-uno').count()) === 2 && !(await pe.getByTestId('salto-partido').count()), 'con «va» a los dos: sus dos partidos y sin línea de «no juegas»');
+  ok((await estado(pe)).startsWith('Vas') && (await tarjeta(pe).locator('.chip-eq').count()) === 2, 'Eva, «va» a los dos: «Vas…», con sus dos partidos en la tarjeta');
   const pf = await sesion('fer');
-  ok((await pf.getByTestId('estado-partido').innerText()) === 'Duda' && (await fechaTarjeta(pf)).includes(dia(D1)), 'Fer, «duda»: sale, «Duda»');
+  ok((await estado(pf)) === 'Duda', 'Fer, «duda»: «Duda»');
   const pc2 = await sesion('cira');
-  ok((await pc2.getByTestId('salto-partido').innerText()) === 'Este domingo no juegas (has dicho que no vas)' && (await fechaTarjeta(pc2)).includes(dia(D2)), 'Cira, «no» a los dos: «Este domingo no juegas (has dicho que no vas)» y el siguiente');
+  ok((await estado(pc2)) === 'No vas', 'Cira, «no» a los dos: «No vas»');
   const ph2 = await sesion('hugo');
-  ok((await ph2.getByTestId('salto-partido').innerText()) === 'Este domingo no juegas (estás de baja)' && (await fechaTarjeta(ph2)).includes(dia(D3)), 'Hugo, de baja por lesión: «Este domingo no juegas (estás de baja)»');
-  console.log('\n== Sin partidos próximos');
+  ok((await estado(ph2)) === 'Lesión', 'Hugo, de baja por lesión: «Lesión»');
+  const pb2 = await sesion('beto');
+  ok((await estado(pb2)) === 'Sin responder', 'Beto, sin convocatoria y sin responder al primero: «Sin responder»');
+  const boton = tarjeta(pb2).locator('button, a').filter({ hasText: /^(Voy|Responder al domingo)$/ }).first();
+  ok(await visto(boton) && await boton.evaluate((b) => b.getBoundingClientRect().height >= 44), 'con los botones para responder en la tarjeta (≥ 44 px)');
   const pg = await sesion('gaby');
-  ok((await tarjeta(pg).getByTestId('sin-partidos').innerText()).startsWith('No tienes partidos próximos'), 'Gaby (no va a ninguno): «No tienes partidos próximos»');
-  ok(await tarjeta(pg).getByRole('link', { name: /Ver la agenda/ }).getAttribute('href') === '/agenda', 'con el enlace a la Agenda');
-  ok(!(await pg.getByTestId('estado-partido').count()) && (await pg.getByTestId('salto-partido').innerText()).includes('has dicho que no vas'), 'sin pastilla, y la línea del domingo saltado');
-  await captura(pg, 'inicio_sin_partidos_375');
+  ok((await estado(pg)) === 'No vas', 'Gaby (no va a ninguno): «No vas»');
+  await captura(pg, 'semana_no_va_375');
   ok(await sinDesbordar(pg), '375 px: sin desbordar');
 
-  console.log('\n== La Agenda enseña todos los partidos con su estado exacto');
-  const pastillas = async (p) => { await p.goto(`${APP}/agenda`); await p.getByTestId('fila-agenda').first().waitFor({ timeout: 15000 }); return p.getByTestId('fila-agenda').filter({ hasText: 'Partidos del domingo' }).locator('.in-pastilla').allInnerTexts(); };
+  console.log('\n== El Calendario enseña todos los partidos con su estado exacto');
+  const pastillas = async (p) => { await p.goto(`${APP}/calendario?f=partidos`); await p.getByTestId('fila-agenda').first().waitFor({ timeout: 15000 }); return p.getByTestId('fila-agenda').filter({ hasText: 'Partidos del domingo' }).locator('.in-pastilla').allInnerTexts(); };
   const pgA = await pastillas(pg);
-  ok(pgA.length >= 2 && pgA.every((x) => x === 'No vas'), 'Agenda de Gaby: todos sus partidos, cada uno «No vas»', pgA.join('|'));
+  ok(pgA.length >= 2 && pgA.every((x) => x === 'No vas'), 'Calendario de Gaby: todos sus partidos, cada uno «No vas»', pgA.join('|'));
   ok(!(await pastillas(pg)).includes('No convocado'), '«No vas» y «No convocado» no se confunden');
   const pa2 = await sesion('ana');
   const paA = await pastillas(pa2);
-  ok(paA[0] === 'Sin responder', 'Agenda de Ana sin convocatoria: «Sin responder»', paA.join('|'));
+  ok(paA[0] === 'Sin responder', 'Calendario de Ana sin convocatoria: «Sin responder»', paA.join('|'));
   await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${D1}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }], MdL: [] })}, pruebas.ahora())`;
   const ps = await pastillas(pa2);
-  ok(ps.includes('Convocado · MdA'), 'Agenda de Ana, con convocatoria: «Convocado · MdA»', ps.join('|'));
+  ok(ps.includes('Convocado · MdA'), 'Calendario de Ana, con convocatoria: «Convocado · MdA»', ps.join('|'));
   const pbA = await pastillas(await sesion('beto'));
-  ok(pbA.includes('No convocado') && !pbA.slice(0, 1).includes('No vas'), 'Agenda de Beto (no convocado, con «no»): «No convocado», no «No vas»', pbA.join('|'));
+  ok(pbA.includes('No convocado') && !pbA.slice(0, 1).includes('No vas'), 'Calendario de Beto (no convocado, con «no»): «No convocado», no «No vas»', pbA.join('|'));
   const phA = await pastillas(await sesion('hugo'));
   await sql`delete from public.convocatorias`;
   const phB = await pastillas(await sesion('hugo'));
-  ok(phB.includes('Lesión'), 'Agenda de Hugo (de baja por lesión): «Lesión»', phB.join('|'));
+  ok(phB.includes('Lesión'), 'Calendario de Hugo (de baja por lesión): «Lesión»', phB.join('|'));
   ok(phA.includes('No convocado'), 'y con la convocatoria aprobada sin él, «No convocado»', phA.join('|'));
   const pfA = await pastillas(await sesion('fer'));
-  ok(pfA.includes('Duda'), 'Agenda de Fer: «Duda»', pfA.join('|'));
+  ok(pfA.includes('Duda'), 'Calendario de Fer: «Duda»', pfA.join('|'));
   ok(!e.errores.length, 'sin errores de JS en la consola', e.errores.join(' | '));
 } catch (err) {
   console.log(`  FALLO ${err.stack}`); sumar();

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Calendario personal suscribible (D120), de extremo a extremo: pila local, web compilada (con su secreto de prueba) y
 // Chrome.
-//   - «Tu calendario en el móvil» (Agenda y Mi cuenta): Google Calendar, iPhone (webcal://) y «Copiar enlace»;
+//   - «Tu calendario en el móvil» (Yo, entero; arriba del Calendario, en una línea, D189): Google Calendar, iPhone (webcal://) y «Copiar enlace»;
 //   - el .ics: solo SUS eventos (un plan solo del MdL no le sale a quien solo tiene ficha del MdA), con su estado y sin
 //     datos prohibidos (motivos, niveles, nombres de otros, respuestas ajenas);
 //   - al cambiar la hora de un evento cambian SEQUENCE y LAST-MODIFIED con el mismo UID; cancelado: STATUS:CANCELLED;
@@ -61,16 +61,19 @@ try {
   await sql`insert into public.jugadores_privado (person_id, posicion, nivel) values ('sint-ana', 'pivot', 'A')`;
   await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en) values (${F('2026-10-25')}, 3, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }], MdL: [] })}, pruebas.ahora())`;
 
-  console.log('\n== «Tu calendario en el móvil» en la Agenda (375 px)');
+  console.log('\n== «Tenlo en el calendario de tu móvil» en el Calendario y «Tu calendario en el móvil» en Yo (375 px)');
   const pj = await e.sesion('ana@pruebas.local', 375);
-  await pj.goto(`${APP}/agenda`);
+  await pj.goto(`${APP}/calendario`);
+  const corto = pj.getByTestId('tu-calendario');
+  ok(await visto(corto) && (await corto.textContent()).includes('se actualiza solo') && (await corto.getByRole('link', { name: 'iPhone' }).getAttribute('href')).startsWith('webcal://') && await visto(corto.getByRole('button', { name: 'Copiar enlace' })), 'arriba del Calendario, en una línea: Google, iPhone y Copiar enlace');
+  await pj.goto(`${APP}/yo`);
   const bloque = pj.getByTestId('tu-calendario');
-  ok(await visto(bloque), 'el bloque está en la Agenda');
+  ok(await visto(bloque), 'el bloque entero está en Yo');
   const google = await bloque.getByRole('link', { name: 'Añadir a Google Calendar' }).getAttribute('href');
   const iphone = await bloque.getByRole('link', { name: 'Añadir al iPhone' }).getAttribute('href');
   ok(google.startsWith('https://calendar.google.com/calendar/render?cid=webcal%3A%2F%2F') && iphone.startsWith('webcal://') && /\/cal\/[A-Za-z0-9_-]{40,}\.ics$/.test(iphone), 'Google (suscripción con el webcal) e iPhone (webcal://)', `${google} | ${iphone}`);
   ok(await visto(bloque.getByRole('button', { name: 'Copiar enlace' })) && await visto(bloque.getByText(/Los cambios llegan a tu calendario en unas horas \(Google puede tardar hasta un día\)\. Para cambios de última hora, mira los avisos\./)), '«Copiar enlace» y la línea honesta');
-  ok(await sinDesbordar(pj), 'Agenda a 375 px sin desbordamiento');
+  ok(await sinDesbordar(pj), 'Yo a 375 px sin desbordamiento');
   await foto(pj, 'agenda_calendario_375');
   const urlJon = iphone.replace(/^webcal:/, 'http:');
   const tokenHash = crypto.createHash('sha256').update(urlJon.match(/\/cal\/([^.]+)\.ics/)[1]).digest('hex');
@@ -101,8 +104,8 @@ try {
 
   console.log('\n== Guillermo (solo MdA): el plan del MdL no le sale');
   const pg = await e.sesion('guille@pruebas.local', 1280);
-  await pg.goto(`${APP}/cuenta`);
-  ok(await visto(pg.getByTestId('tu-calendario')), 'el bloque también está en Mi cuenta');
+  await pg.goto(`${APP}/yo`);
+  ok(await visto(pg.getByTestId('tu-calendario')), 'el bloque también está en Yo (escritorio)');
   await foto(pg, 'cuenta_calendario_1280');
   const urlG = (await pg.getByTestId('tu-calendario').getByRole('link', { name: 'Añadir al iPhone' }).getAttribute('href')).replace(/^webcal:/, 'http:');
   const icsG = await (await fetch(urlG)).text();
@@ -124,7 +127,7 @@ try {
   ok(r.status === 304, 'sin cambios, If-None-Match responde 304');
 
   console.log('\n== «Cambiar mi enlace», jugador inactivo y límite de peticiones');
-  await pj.goto(`${APP}/agenda`);
+  await pj.goto(`${APP}/yo`);
   await pj.getByTestId('cambiar-enlace').click();
   await trasAccion(pj, () => pj.getByTestId('cambiar-enlace-confirmar').getByRole('button', { name: 'Sí, cambiarlo' }).click());
   await pj.reload();

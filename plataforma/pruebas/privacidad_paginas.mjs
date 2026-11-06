@@ -64,8 +64,9 @@ function personasPorTemporada() {
 export const RUTAS = [
   // Paso 2 (D94): la portada, /club y el .ics leen de la tabla de eventos (vistas publicas): nada de respuestas ni motivos.
   '/', '/?hoy=2026-10-07', '/club', '/privacidad', '/calendario.ics',
-  '/historia', '/historia?persona=eric', '/historia?persona=barreiro-carballal-carlos-jose',
-  '/plantilla', ...temporadas.map((t) => `/plantilla?t=${t}`), '/jugador',
+  // Bloque 6: Plantilla e Historia son pestañas del Club (/plantilla y /historia redirigen aqui).
+  '/club/el-club', '/club/historia', '/club/historia?persona=eric', '/club/historia?persona=barreiro-carballal-carlos-jose',
+  ...temporadas.map((t) => `/club?t=${t}`), '/jugador',
   ...personasPorTemporada(),
   '/liga', '/liga?g=G2', '/liga/rivales', '/liga/rivales?g=MdL',
   ...rivales.filter((r) => !r.sin_rastro).slice(0, 6).map((r) => `/liga/rivales?g=${r.grupo}&r=${r.id}`),

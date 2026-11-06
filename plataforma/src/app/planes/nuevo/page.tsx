@@ -14,10 +14,10 @@ export default async function NuevoPlan() {
   const zona = await cargarMiZona().catch(() => null);
   return (
     <main className="pagina pl-pagina">
-      <Volver defecto="/agenda" etiqueta="Agenda" />
+      <Volver defecto="/calendario" etiqueta="Calendario" />
       <span className="pl-etq-plan">Plan no oficial</span>
       <h1>Proponer un plan</h1>
-      {zona ? <FormularioPlan hoy={hoyMadrid()} volver="/agenda" />
+      {zona ? <FormularioPlan hoy={hoyMadrid()} volver="/calendario" />
         : <p className="aviso aviso-info">Los planes los proponen los jugadores de la plantilla: tu cuenta no tiene ficha de jugador.</p>}
     </main>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { enlaceWhatsApp } from "@/lib/mensajes";
 import { guardarJugador } from "../acciones";
 
@@ -18,7 +19,14 @@ export type JugadorGestion = {
   activo: boolean;
   /** D158: reserva (de jugadores_privado; solo gestores). */
   reserva: boolean;
+  /** Datos privados (jugadores_privado; solo gestores, RLS): se ven en la fila desplegada; se editan en «Datos de los jugadores». */
+  privado?: {
+    posicion: string | null; nivel: string | null; nota_ataque: string | null; nota_defensa: string | null; dobla: boolean;
+    no_suele_entrenar: boolean; nunca_partidos: boolean; sancionado_hasta_jornada: number | null;
+  } | null;
 };
+
+const TEXTO_POS: Record<string, string> = { base: "Base", escolta: "Escolta", alero: "Alero", ala_pivot: "Ala-pívot", pivot: "Pívot" };
 
 const ROLES = { jugador: "Jugador", solo_entreno: "Solo entreno", entrenador: "Entrenador" } as const;
 
@@ -47,23 +55,39 @@ export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorG
 
   const fichas = [j.ficha_mda && "MdA", j.ficha_mdl && "MdL"].filter(Boolean).join(" + ") || "sin ficha";
 
+  const p = j.privado;
   return (
-    <li className="fila-jugador" data-person={j.person_id}>
-      <h3 style={{ marginBottom: 2 }}>{j.nombre_visible}</h3>
-      <p className="pequeno suave" style={{ marginBottom: 6 }}>
-        {j.nombre_oficial} · {fichas} · {ROLES[j.rol]}{j.reserva ? " · reserva" : ""}{j.entrena ? " · entrena" : ""}
-      </p>
-      <p className="pequeno" style={{ marginBottom: 0 }}>
-        {j.email ? (
-          <>
-            <span className="etiqueta etiqueta-ok">Puede entrar</span>{" "}
-            {!esGmail(j.email) && <span className="etiqueta etiqueta-aviso">Entrará con código por correo</span>}{" "}
-            <span className="suave">{j.email}</span>
-          </>
-        ) : (
-          <span className="etiqueta etiqueta-mal">Sin correo: no puede entrar</span>
-        )}
-      </p>
+    <li className="fila-jugador jg-fila" data-person={j.person_id}>
+      <details>
+      {/* La fila compacta: nombre, fichas, papel y si puede entrar; al tocarla se despliega lo demás (bloque 4). */}
+      <summary className="jg-cab">
+        <span className="jg-nombre"><b>{j.nombre_visible}</b>{p?.posicion && <small className="suave"> · {TEXTO_POS[p.posicion] ?? p.posicion}</small>}</span>
+        <span className="pequeno suave jg-linea">
+          {j.nombre_oficial} · {fichas} · {ROLES[j.rol]}{j.reserva ? " · reserva" : ""}{j.entrena ? " · entrena" : ""}
+        </span>
+        <span className="pequeno jg-acceso">
+          {j.email ? (
+            <>
+              <span className="etiqueta etiqueta-ok">Puede entrar</span>{" "}
+              {!esGmail(j.email) && <span className="etiqueta etiqueta-aviso">Entrará con código por correo</span>}
+            </>
+          ) : (
+            <span className="etiqueta etiqueta-mal">Sin correo: no puede entrar</span>
+          )}
+        </span>
+      </summary>
+
+      <dl className="jg-datos" data-testid="jg-datos">
+        <div><dt>Posición</dt><dd>{p?.posicion ? TEXTO_POS[p.posicion] ?? p.posicion : "sin cargar"}</dd></div>
+        <div><dt>Nivel</dt><dd><b>{p?.nivel ?? "–"}</b> global · {p?.nota_ataque ?? "–"} ataque · {p?.nota_defensa ?? "–"} defensa</dd></div>
+        <div><dt>Fichas</dt><dd>{fichas}</dd></div>
+        <div><dt>Dobla</dt><dd>{p ? (p.dobla ? "Dobla" : "No dobla") : "–"}</dd></div>
+        <div><dt>Disponibilidad</dt><dd>{[j.rol === "solo_entreno" && "solo entreno", p?.nunca_partidos && "nunca a partidos", p?.no_suele_entrenar && "no suele entrenar", j.reserva && "reserva"].filter(Boolean).join(" · ") || "normal"}</dd></div>
+        <div><dt>Sanción</dt><dd>{p?.sancionado_hasta_jornada ? `sancionado hasta la J${p.sancionado_hasta_jornada}` : "no"}</dd></div>
+        <div><dt>Acceso</dt><dd>{j.email ?? "sin correo"}</dd></div>
+        <div><dt>Teléfono</dt><dd>{j.telefono ?? "sin teléfono"}</dd></div>
+      </dl>
+      <p className="pequeno" style={{ margin: "4px 0 0" }}><Link href="/gestion/convocatoria/datos">Cambiar posición, nivel, dobla o sanción ›</Link></p>
 
       <div className="botones">
         {mensaje && (
@@ -78,8 +102,8 @@ export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorG
         )}
       </div>
 
-      <details style={{ marginTop: 8 }}>
-        <summary>Editar datos</summary>
+      <div style={{ marginTop: 8 }}>
+        <h4 className="jg-editar">Editar datos</h4>
         <form action={accionGuardar} className="rejilla-2">
           <div className="campo">
             <label htmlFor={`nv-${j.id}`}>Nombre visible</label>
@@ -104,13 +128,14 @@ export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorG
             <label className="opcion"><input type="checkbox" name="ficha_mdl" defaultChecked={j.ficha_mdl} /> Ficha MdL</label>
             <label className="opcion"><input type="checkbox" name="entrena" defaultChecked={j.entrena} /> Entrena</label>
             <label className="opcion"><input type="checkbox" name="activo" defaultChecked={j.activo} /> Activo</label>
-            <label className="opcion" title="Solo entra en la convocatoria si sin él no se cubren los mínimos (D158)"><input type="checkbox" name="reserva" defaultChecked={j.reserva} data-campo="reserva" /> Reserva</label>
+            <label className="opcion" title="Solo entra en la convocatoria si sin él no se cubren los mínimos"><input type="checkbox" name="reserva" defaultChecked={j.reserva} data-campo="reserva" /> Reserva</label>
           </div>
           <div>
             <button className="boton" disabled={guardando}>{guardando ? "Guardando…" : "Guardar datos"}</button>
             {aviso && <p className="ayuda" role="status">{aviso}</p>}
           </div>
         </form>
+      </div>
       </details>
     </li>
   );

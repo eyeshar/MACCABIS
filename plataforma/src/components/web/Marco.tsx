@@ -20,7 +20,7 @@ export function PiePublico() {
         <Escudo decorativo />
         <span>Maccabis · Baloncesto en Madrid desde {FUNDACION}</span>
         <span>Fuente: actas y hojas oficiales de la FBM</span>
-        <Link prefetch={false} href="/club">El club</Link>
+        <Link prefetch={false} href="/club">Club</Link>
         <Link prefetch={false} href="/liga">Todas las estadísticas</Link>
         <Link prefetch={false} href="/privacidad">Privacidad</Link>
         <PieAcceso />

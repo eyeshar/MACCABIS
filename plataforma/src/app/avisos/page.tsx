@@ -14,7 +14,7 @@ export default async function Avisos() {
   await exigirSesion();
   return (
     <main className="pagina av-pagina">
-      <Volver defecto="/" etiqueta="Inicio" />
+      <Volver defecto="/yo" etiqueta="Yo" />
       <h1>Avisos en el móvil</h1>
       <p className="av-intro">Solo te avisamos si te falta responder, si cambia la hora o la pista y si se cancela algo. <strong>De noche, solo si el partido es en pocas horas.</strong></p>
       <ActivarAvisos />
@@ -25,7 +25,7 @@ export default async function Avisos() {
           <li><strong>Android (Chrome):</strong> mantén pulsado el icono de Maccabis → Información de la aplicación → Notificaciones → actívalas. O en Chrome: ⋮ → Configuración → Configuración de sitios → Notificaciones → maccabis.vercel.app → Permitir.</li>
         </ul>
       </details>
-      <p className="pie"><Link href="/">Volver al inicio</Link> · <Link href="/cuenta">Mi cuenta</Link></p>
+      <p className="pie"><Link href="/">Volver al inicio</Link> · <Link href="/yo">Yo</Link></p>
     </main>
   );
 }

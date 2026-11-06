@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Boxscore } from "@/components/liga/Equipo";
@@ -133,16 +132,17 @@ export default async function PaginaPartido({ params }: { params: Promise<{ temp
 
   return (
     <article className="e-pt" data-testid="pagina-partido" data-partido={r.id}>
-      <div className="e-pt-volver"><Volver defecto={`/liga?g=${grupo}`} etiqueta={`Liga 26/27 · ${nombreGrupo(grupo)}`} /></div>
-      <div className="e-pt-cab">
-        <div className="e-pt-meta">Jornada {r.jornada} · {r.fecha ? diaLargo(r.fecha) : "fecha por confirmar"}{cal?.hora ? ` · ${cal.hora}` : ""}</div>
+      {/* Bloque 6: un único «‹» a su sección (la clasificación de su grupo), título compacto y el marcador primero. */}
+      <Link href={`/liga?g=${grupo}`} className="e-atras" prefetch={false} data-testid="volver">‹ Clasificación · {NUESTRO_DE[grupo]}</Link>
+      <div className="e-pt-cab e-pt-cab-compacta">
         {/* El cartel tal cual sale en el calendario oficial: primero el que figura en primer lugar (D129, sin «casa/fuera»). */}
         <div className="e-pt-cartel">
           <Equipo nombre={r.local} idEq={r.local_id} lado="l" />
           <span className="e-pt-marcador" data-testid="partido-marcador">{r.incomparecencia ? "incomp." : `${r.pl} – ${r.pv}`}</span>
           <Equipo nombre={r.visitante} idEq={r.visitante_id} lado="v" />
         </div>
-        <div className="e-pt-meta">{pista ?? "Pista: no consta en nuestros datos (el calendario oficial solo trae la de los partidos de MdA y MdL)"}</div>
+        <div className="e-pt-meta">Jornada {r.jornada} · {r.fecha ? diaLargo(r.fecha) : "fecha por confirmar"}{cal?.hora ? ` · ${cal.hora}` : ""}</div>
+        <div className="e-pt-meta">{pista ?? "Pista: no consta"}</div>
       </div>
 
       {!conHoja && (

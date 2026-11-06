@@ -5,8 +5,22 @@ import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
 import { cambiarMiEnlace } from "@/app/agenda/acciones";
 
 /** «Tu calendario en el móvil» (D120): suscribirse a SU calendario desde Google Calendar, el iPhone u Outlook. */
-export default function CalendarioMovil({ enlace }: { enlace: { https: string; webcal: string } | null }) {
+export default function CalendarioMovil({ enlace, compacto }: { enlace: { https: string; webcal: string } | null; /** D189: arriba del Calendario, una línea y los tres botones. */ compacto?: boolean }) {
   const [copiado, setCopiado] = useState(false);
+  const copiar = async () => { if (!enlace) return; try { await navigator.clipboard.writeText(enlace.https); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { setCopiado(false); } };
+  if (compacto) {
+    if (!enlace) return <section className="in-cal-compacto" data-testid="tu-calendario"><p className="suave" style={{ margin: 0 }}>Tu calendario en el móvil aún no está disponible.</p></section>;
+    return (
+      <section className="in-cal-compacto" aria-labelledby="t-calendario" data-testid="tu-calendario">
+        <h2 id="t-calendario">Tenlo en el calendario de tu móvil <span className="suave">· se actualiza solo</span></h2>
+        <div className="in-cal-botones">
+          <a className="boton boton-claro" href={`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(enlace.webcal)}`} target="_blank" rel="noopener noreferrer">Google</a>
+          <a className="boton boton-claro" href={enlace.webcal}>iPhone</a>
+          <button type="button" className="boton boton-claro" onClick={copiar}>{copiado ? "Copiado" : "Copiar enlace"}</button>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="in-sec in-calendario" aria-labelledby="t-calendario" data-testid="tu-calendario">
       <h2 id="t-calendario">Tu calendario en el móvil</h2>
@@ -16,7 +30,7 @@ export default function CalendarioMovil({ enlace }: { enlace: { https: string; w
           <div className="in-cal-botones">
             <a className="boton boton-amarillo" href={`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(enlace.webcal)}`} target="_blank" rel="noopener noreferrer">Añadir a Google Calendar</a>
             <a className="boton boton-claro" href={enlace.webcal}>Añadir al iPhone</a>
-            <button type="button" className="boton boton-claro" onClick={async () => { try { await navigator.clipboard.writeText(enlace.https); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { setCopiado(false); } }}>
+            <button type="button" className="boton boton-claro" onClick={copiar}>
               {copiado ? "Enlace copiado" : "Copiar enlace"}
             </button>
           </div>

@@ -176,3 +176,35 @@
 /* D129: equipos y partidos enlazados (a su ficha y a la página del partido) */
 .in-enlace-equipo, .in-enlace-partido { color: inherit; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; } /* objetivo tactil de 44 px */
 .in-enlace-equipo:hover, .in-enlace-equipo:focus-visible, .in-enlace-partido:hover, .in-enlace-partido:focus-visible { color: var(--c-amarillo); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ===== Semana (D189): cabecera, «✓ Lo tienes todo respondido», la línea de Gestión y las tarjetas de los próximos días ===== */
+.sm { max-width: 760px; }
+.sm-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.sm-cab h1 { margin: 0; font-size: 2rem; text-transform: none; }
+.sm-cab p { margin: 0; }
+.sm-todo { margin: 0; font-weight: 700; color: var(--ok); }
+.sm-faltan h2 { margin: 0; }
+.sm-banda { padding: 10px 14px; }
+.sm-banda-cab { margin: 0; }
+.sm-banda-cab a { display: inline-flex; align-items: center; min-height: var(--toque); color: #fff6d6; text-decoration: none; }
+.sm-banda-lista summary { cursor: pointer; min-height: var(--toque); display: flex; align-items: center; color: #e9e2c6; }
+.sm-lista { display: flex; flex-direction: column; gap: 10px; }
+.sm-tarjeta { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--radio-grande); border: 1px solid var(--borde); background: var(--panel-2); min-width: 0; }
+.sm-t-cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.sm-t-cuando { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; color: var(--tinta); text-decoration: none; min-height: var(--toque); }
+.sm-t-cuando b { font-family: var(--f-titulos); font-weight: 800; font-size: 1.35rem; line-height: 1.1; }
+.sm-t-cuando span { color: var(--amarillo-tinta); font-size: 0.85rem; }
+.sm-t-que { display: flex; flex-direction: column; gap: 2px; color: var(--tinta); text-decoration: none; }
+.sm-t-que:hover { color: var(--tinta); }
+.sm-t-etqs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sm-t-etq { font-family: var(--f-cifras); font-size: 0.8rem; color: var(--tinta-suave); }
+.sm-t-linea { margin: 0; font-size: 0.9rem; color: var(--tinta-suave); }
+.sm-t-avisos summary { cursor: pointer; min-height: var(--toque); display: flex; align-items: center; font-size: 0.9rem; color: var(--amarillo-tinta); }
+.sm-t-avisos p { margin: 4px 0 0; }
+.sm-gestion { display: flex; flex-direction: column; gap: 6px; margin: 2px -12px -12px; padding: 10px 12px; border-top: 1px solid #4a3f1a; border-radius: 0 0 var(--radio-grande) var(--radio-grande); background: var(--gestion-fondo); }
+.sm-gestion-etq { font-family: var(--f-cifras); font-size: 0.75rem; letter-spacing: 0.12em; color: var(--c-amarillo); }
+.sm-gestion-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sm-gestion-ir { align-self: flex-end; display: inline-flex; align-items: center; min-height: var(--toque); font-weight: 700; color: var(--c-amarillo); }
+.sm-abajo { display: flex; flex-direction: column; gap: 10px; }
+.sm-abajo .botones { margin: 0; }
+.sm-temporada { display: inline-flex; align-items: center; gap: 6px; min-height: var(--toque); color: var(--tinta-suave); }

@@ -72,7 +72,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <Volver defecto="/gestion" etiqueta="Panel" />
+      <Volver defecto="/gestion" etiqueta="Gestión" />
       <div className="gs-titulo">
         <div>
           <div className="gs-eyebrow">Temporada 26/27</div>

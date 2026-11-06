@@ -16,6 +16,7 @@ import { cargarAusencias } from "./defecto";
 import { calibrar, correccionSesgo, estadisticasGrupo, historiales, resumenCalibracion, tasasPorLetra, TEMPORADA_PROYECCION, type DatosProyeccion, type DificultadRival, type HistorialRival, type LigaJson, type Letra, type SeasonJson } from "./proyeccion";
 import { domingosFueraDe, proponerDificultad, type DatosPrivados, type Equipo, type RespuestaPartido } from "./motor";
 import type { Cambio, Contexto, FilaConvocatoria, FilaPrivada, JugadorVista, PartidoVista } from "./vista";
+import { desempateEncendido, registroNoConvocados, type DomingoReg, type JugadorReg, type RegistroJugador, type RespuestaReg } from "./noConvocados";
 
 // Lectura de todo lo que necesita la convocatoria de un domingo (D107), con la sesion del GESTOR: la base (RLS +
 // is_gestor) decide quien lee. Los datos privados (jugadores_privado) solo los devuelve la base a los gestores.
@@ -90,6 +91,64 @@ export function datosProyeccion(jugadores: { person_id: string; nombre: string }
   };
 }
 
+// ---------------------------------------------------------------- registro de no convocados (regla 4.3), solo gestores
+type FilaRespuestaReg = { evento_id: string; person_id: string; respuesta: string; cambiado_en: string | null; origen: string | null };
+type Aprobada = { fecha: string; equipos: Record<string, { person_id: string }[]> };
+
+/** Los domingos ya jugados con su cierre (martes 12:00, D173) y quién entró: la convocatoria aprobada y las hojas de
+ *  estadística de ese día (si no hay ninguna de las dos, null: ese domingo no cuenta). */
+function domingosRegistro(pasados: EventoFila[], aprobadas: Aprobada[], stats: ReturnType<typeof estadisticasTemporada>): DomingoReg[] {
+  const enHojas = new Map<string, Set<string>>();
+  for (const [pid, s] of stats) for (const f of s.fechas) enHojas.set(f, new Set([...(enHojas.get(f) ?? []), pid]));
+  const porFecha = new Map<string, EventoFila[]>();
+  for (const e of pasados) porFecha.set(e.fecha, [...(porFecha.get(e.fecha) ?? []), e]);
+  return [...porFecha.entries()].map(([fecha, es]) => {
+    const conv = aprobadas.find((c) => c.fecha === fecha);
+    const deConv = conv ? Object.values(conv.equipos ?? {}).flat().map((x) => x.person_id) : null;
+    const deHojas = enHojas.has(fecha) ? [...enHojas.get(fecha)!] : null;
+    const primero = [...es].sort((a, b) => ((a.inicio ?? "") < (b.inicio ?? "") ? -1 : 1))[0];
+    return {
+      fecha, jornada: primero.jornada,
+      cierre: limiteDudas({ tipo: "liga", fecha, inicio: primero.inicio, oficial: true }).toISOString(),
+      convocados: deConv || deHojas ? [...new Set([...(deConv ?? []), ...(deHojas ?? [])])] : null,
+      fuente: deConv && deHojas ? "convocatoria y hojas" : deConv ? "convocatoria" : deHojas ? "hojas" : null,
+    };
+  });
+}
+function respuestasRegistro(filas: FilaRespuestaReg[], eventos: Map<string, EventoFila>): RespuestaReg[] {
+  return filas.flatMap((r) => {
+    const e = eventos.get(r.evento_id);
+    return e && (e.equipo === "MdA" || e.equipo === "MdL") ? [{ fecha: e.fecha, equipo: e.equipo, person_id: r.person_id, respuesta: r.respuesta, cambiado_en: r.cambiado_en, origen: r.origen }] : [];
+  });
+}
+function jugadorRegistro(j: { person_id: string; ficha_mda: boolean; ficha_mdl: boolean; rol: string }, p: FilaPrivada | undefined): JugadorReg {
+  return { person_id: j.person_id, ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, soloEntreno: j.rol === "solo_entreno" || !!p?.nunca_partidos, sancionadoHasta: p?.sancionado_hasta_jornada ?? null };
+}
+
+export type FilaRegistro = { person_id: string; nombre: string; fichas: string; reg: RegistroJugador };
+/** Gestión › No convocados: el registro de toda la plantilla activa con los domingos de liga ya jugados (antes de hoy). Con
+ *  la sesión del GESTOR: la base solo devuelve respuestas, convocatorias y datos privados a los gestores (RLS). */
+export async function cargarRegistro(sb: Cliente): Promise<{ filas: FilaRegistro[]; domingos: DomingoReg[]; desempate: boolean }> {
+  const hoy = hoyMadrid();
+  const eventos = await cargarEventos(sb);
+  const pasados = eventos.filter((e) => e.tipo === "liga" && e.estado === "programado" && (e.equipo === "MdA" || e.equipo === "MdL") && e.fecha < hoy);
+  const [jug, resp, priv, conv] = await Promise.all([
+    sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, activo, rol").order("nombre_visible"),
+    pasados.length ? sb.from("respuestas").select("evento_id, person_id, respuesta, cambiado_en, origen").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
+    sb.from("jugadores_privado").select("person_id, nunca_partidos, sancionado_hasta_jornada"),
+    sb.from("convocatorias").select("fecha, equipos").eq("estado", "aprobada").lt("fecha", hoy),
+  ]);
+  if (jug.error) throw new Error(`jugadores: ${jug.error.message}`);
+  if (resp.error) throw new Error(`respuestas: ${resp.error.message}`);
+  const privados = new Map((((faltaTabla(priv.error) ? [] : priv.data) ?? []) as FilaPrivada[]).map((p) => [p.person_id, p]));
+  const activos = ((jug.data ?? []) as { person_id: string; nombre_visible: string; ficha_mda: boolean; ficha_mdl: boolean; activo: boolean; rol: string }[]).filter((j) => j.activo && j.rol !== "entrenador");
+  const domingos = domingosRegistro(pasados, (faltaTabla(conv.error) ? [] : conv.data ?? []) as Aprobada[], estadisticasTemporada());
+  const reg = registroNoConvocados(domingos, respuestasRegistro((resp.data ?? []) as FilaRespuestaReg[], new Map(pasados.map((e) => [e.id, e]))),
+    activos.map((j) => jugadorRegistro(j, privados.get(j.person_id) as FilaPrivada | undefined)));
+  const filas = activos.map((j) => ({ person_id: j.person_id, nombre: j.nombre_visible, fichas: [j.ficha_mda && "MdA", j.ficha_mdl && "MdL"].filter(Boolean).join(" + ") || "sin ficha", reg: reg.get(j.person_id)! }));
+  return { filas, domingos: [...domingos].sort((a, b) => (a.fecha < b.fecha ? 1 : -1)), desempate: desempateEncendido(process.env.CONVOCATORIA_DESEMPATE_NO_CONVOCADOS) };
+}
+
 const faltaTabla = (e: { code?: string; message?: string } | null) => !!e && (e.code === "42P01" || e.code === "PGRST205" || /does not exist|schema cache/.test(e.message ?? ""));
 
 export function sitioDe(e: EventoFila, pistas: Pista[]) {
@@ -128,7 +187,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
       : sb.from("jugadores_privado").select("person_id, posicion, base_reserva, nivel, dobla, regla, regla_equipo, sancionado_hasta_jornada, nota, nota_ataque, no_suele_entrenar, nunca_partidos, reserva"),
     // «*»: así vale antes y después de la migración de D173 (automatica_en), también en la vista previa contra el real.
     sb.from("convocatorias").select("*").eq("fecha", fecha).maybeSingle(),
-    pasados.length ? sb.from("respuestas").select("evento_id, person_id").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
+    // Con la hora y el origen: el registro de no convocados (regla 4.3) solo suma los «voy» dados a tiempo.
+    pasados.length ? sb.from("respuestas").select("evento_id, person_id, respuesta, cambiado_en, origen").in("evento_id", pasados.map((e) => e.id)).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
     // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D133).
     sb.from("convocatorias").select("fecha, equipos, dificultad").eq("estado", "aprobada"),
     cargarAusencias(sb),
@@ -168,6 +228,14 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
     disponible: [...(disponibleEl.get(f) ?? [])].some((k) => k === `${j.person_id}|MdA` ? j.ficha_mda : k === `${j.person_id}|MdL` ? j.ficha_mdl : false),
     convocado: !!stats.get(j.person_id)?.fechas.has(f) || !!convocadoEl.get(f)?.has(j.person_id),
   })));
+
+  // Registro de no convocados (regla 4.3, solo gestores): de los mismos domingos ya jugados, respuestas y convocatorias.
+  const activosReg = ((jug.data ?? []) as { person_id: string; ficha_mda: boolean; ficha_mdl: boolean; activo: boolean; rol: string }[]).filter((j) => j.activo && j.rol !== "entrenador");
+  const registro = registroNoConvocados(
+    domingosRegistro(pasados, aprobadas.filter((x) => x.fecha < fecha), stats),
+    respuestasRegistro((respPas.data ?? []) as FilaRespuestaReg[], eventoPasado),
+    activosReg.map((j) => jugadorRegistro(j, privados.get(j.person_id) as FilaPrivada | undefined)),
+  );
 
   const partidos: PartidoVista[] = delDia.map((e) => {
     const eq = e.equipo as Equipo;
@@ -217,6 +285,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
       person_id: j.person_id, nombre: j.nombre_visible, ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, solo_entreno: j.rol === "solo_entreno",
       respuesta, privado, sancionado: !!(p?.sancionado_hasta_jornada && jornada != null && p.sancionado_hasta_jornada >= jornada),
       convocados: st?.convocados ?? 0, doblajes: st?.doblajes ?? 0, entrenos4: entrenosDe.get(j.person_id) ?? 0, domingosFuera: domingosFuera(j),
+      rachaFuera: registro.get(j.person_id)?.racha ?? 0,
+      fuera: { racha: registro.get(j.person_id)?.racha ?? 0, total: registro.get(j.person_id)?.total ?? 0, soloEntreno: !!registro.get(j.person_id)?.soloEntreno },
       // D146: un «nunca a partidos» sin responder no cuenta como invitado (ni en «sin responder» ni en los contadores).
       invitado: invitadoA(j, p).length > 0, invitadoA: invitadoA(j, p),
       motivoNo, sancionHasta: p?.sancionado_hasta_jornada ?? null, respondioTarde: tarde,
@@ -242,6 +312,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
     limiteDudas: limiteDe?.toISOString() ?? null, dudasAbiertas: limiteDe ? ahora.getTime() < limiteDe.getTime() : false,
     ultimaPropuesta,
     eventoRespuestas: delDia[0]?.id ?? null, sinMigracion,
+    desempateNoConvocados: desempateEncendido(process.env.CONVOCATORIA_DESEMPATE_NO_CONVOCADOS),
     proyeccion: datosProyeccion(jugadores.map((j) => ({ person_id: j.person_id, nombre: j.nombre })), new Map(jugadores.map((j) => [j.person_id, ((privados.get(j.person_id) as FilaPrivada | undefined)?.nota_ataque ?? null) as Letra | null])),
       delDia.map((e) => ({ equipo: e.equipo as Equipo, rival: e.rival, jornada: e.jornada })), dificultades),
     sinDatosPrivados: jugadores.filter((j) => j.invitado && (!j.privado || !j.privado.posicion || !j.privado.nivel)).length,

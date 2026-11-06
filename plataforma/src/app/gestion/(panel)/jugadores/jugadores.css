@@ -1,0 +1,19 @@
+/* Gestión › Jugadores (bloque 4): lista compacta con buscador y fila desplegable. Solo tokens de globals.css. */
+.jg-buscar { margin: 0 0 8px; }
+.jg-buscar input { min-height: var(--toque); width: 100%; }
+.jg-fila { padding: 0; }
+.jg-fila > details > summary.jg-cab {
+  display: flex; flex-direction: column; gap: 2px; min-height: var(--toque); padding: 8px 0; cursor: pointer; list-style: none;
+}
+.jg-fila > details > summary.jg-cab::-webkit-details-marker { display: none; }
+.jg-fila > details[open] > summary.jg-cab { border-bottom: 1px solid var(--linea-suave); margin-bottom: 8px; }
+.jg-nombre b { font-size: 17px; }
+.jg-linea { overflow-wrap: anywhere; }
+.jg-acceso { display: flex; flex-wrap: wrap; gap: 6px; }
+.jg-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 6px 16px; margin: 0; }
+.jg-datos div { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.jg-datos dt { color: var(--tinta-tenue); font-size: 13px; flex: none; min-width: 92px; }
+.jg-datos dd { margin: 0; overflow-wrap: anywhere; }
+.jg-editar { margin: 8px 0 4px; font-size: 15px; }
+.jg-fila .botones .boton { min-height: var(--toque); }
+.jg-plegado > summary { min-height: var(--toque); display: flex; align-items: center; cursor: pointer; font-weight: 600; }

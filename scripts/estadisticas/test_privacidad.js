@@ -262,11 +262,12 @@ console.log('\n== Página de partido de la liga (D129): por equipo en público; 
   const clavesEst = new Set(res.filter((r) => r.est).flatMap((r) => [r.est.local, r.est.visitante].flatMap((e) => Object.keys(e))));
   ok(res.length > 0 && res.every((r) => r.id) && [...clavesEst].every((k) => ['pts', 't2', 't3', 'tl', 'tl_int', 'faltas'].includes(k)),
     `cada partido del JSON público lleva su id y solo totales por equipo (${[...clavesEst].join(', ')})`);
-  // D174: las «claves del partido» solo las usan las tres pantallas con sesion (Scouting, Panel e inicio personal).
+  // D174: las «claves del partido» solo las usan las tres pantallas con sesion (Scouting, Panel y, desde D189, el evento del
+  // jugador, «El rival»; antes el inicio personal).
   const usanClaves = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && /scouting\/(datos|claves)|liga\/Claves/.test(fs.readFileSync(f, 'utf8')))
     .map((f) => path.relative(PLAT, f).split(path.sep).join('/')).filter((f) => !/^src\/(lib\/scouting|components\/liga\/Claves)/.test(f)).sort();
-  ok(JSON.stringify(usanClaves) === JSON.stringify(['src/app/gestion/(panel)/page.tsx', 'src/app/liga/scouting/page.tsx', 'src/components/inicio/InicioPersonal.tsx']),
-    'las claves del partido solo se calculan en Scouting, el Panel de gestión y el inicio personal (todas con sesión)', usanClaves.join(', '));
+  ok(JSON.stringify(usanClaves) === JSON.stringify(['src/app/evento/[id]/ElRival.tsx', 'src/app/gestion/(panel)/page.tsx', 'src/app/liga/scouting/page.tsx']),
+    'las claves del partido solo se calculan en Scouting, el Panel de gestión y el evento (todas con sesión)', usanClaves.join(', '));
   const pruebaPt = leer('pruebas', 'liga_partidos.mjs');
   ok(/rival-por-jugador-seccion/.test(pruebaPt) && /anonimo/.test(pruebaPt) && /jugador/.test(pruebaPt), 'la prueba de pantallas de la página de partido comprueba que ni anónimos ni jugadores ven «Rival por jugador» (npm run pruebas:liga-partidos)');
 }

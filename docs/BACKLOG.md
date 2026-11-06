@@ -9,11 +9,15 @@
 
 > Lo que se hace ahora, en este orden. Sustituye al «Orden vigente» del 26/09/2026 (en el «Histórico»).
 
-**0. Estructura nueva de la web (Iván, 06/11/2026; diseño aprobado el 05/11, especificación en `docs/ESTRUCTURA_NUEVA.md`).** Por fases; **cada fase se mergea con el OK de Iván**, con el protocolo (a)–(h) de la especificación el día del merge.
+**0. Estructura nueva de la web (Iván, 06/11/2026; diseño aprobado el 05/11, especificación en `docs/ESTRUCTURA_NUEVA.md`).** Por fases; **cada fase se mergea con el OK de Iván**, con el protocolo (a)–(h) de la especificación el día del merge. **Cambio del 06/11/2026 (Iván): las fases 2, 3 y 4 van juntas el mismo día, con merge sin su OK y las barreras (a)–(h) (D189).**
 - [x] **Fase 1 · guardia, analítica y especificación** (`chore/guardia-y-analitica`, D187 y D188): la norma 19 aplicada en todos los scripts que escriben, revierten o crean cuentas; `db:revertir`; `d111_liga.mjs` en el repositorio; la analítica lista **sin activar** (bloque 0); `ESTRUCTURA_NUEVA.md`. **Mergeada (PR #59, `731cc80`, OK de Iván, 06/11/2026).**
-- [ ] **Fase 2 · bloques 1, 2 y 3** (navegación, Semana, Calendario y Evento): **después de la J4 del domingo 08/11/2026** y con el OK de Iván a las capturas a 390 px.
-- [ ] **Fase 3 · bloques 4 y 5** (Gestión, convocatoria del domingo, registro de no convocados y pedido de ropa activable): **después del martes 10/11/2026** (primera propuesta automática real de la rutina C, D173). El desempate por no convocados del motor va detrás de un interruptor apagado que Iván enciende tras esa propuesta.
-- [ ] **Fase 4 · bloque 6** (Yo, Liga y Club).
+- [x] **Fases 2, 3 y 4 · bloques 1 a 6 y «Yo»** (`feat/estructura-nueva`, D189, 06/11/2026): navegación, Semana, Calendario y Evento, Gestión, convocatoria con el registro de no convocados (desempate APAGADO) y el pedido de ropa activable (cerrado), Yo, Liga y Club. Estado del merge y de producción en `ESTADO.md`.
+- [ ] **Lo que no entró de la especificación (D189):**
+  - [ ] **Pase de lista** en la vista de gestor del evento (D50; guardar en `asistencia_eventos` con `origen = 'plataforma'`): necesita una función nueva con su migración aditiva y la vuelta atrás ensayada, y revisar que «Asistencia y motivos» no lo cuente dos veces (hoy suma en vivo las respuestas de la plataforma).
+  - [ ] **«Mensaje a los que faltan»** también para los que siguen en duda (hoy, solo a quien no ha respondido; sin contar las ausencias por periodo, como pide la especificación).
+  - [ ] **Respuestas del gestor en el móvil**: la tabla sigue siendo la de antes (cada persona en una tarjeta larga); compactarla.
+  - [ ] Gestión a 412 px y en escritorio con los cuatro roles: la prueba nueva (`pruebas:gestion`) mira 360 y 390 px.
+  - [ ] «Últimos cambios del calendario» en Gestión: hoy, la última importación y hasta tres cambios avisados; no es un historial.
 
 **1. Bloque «Tablero, asistencias, convocatoria, scouting y migración» (31/10/2026, un PR por apartado)**
 - [x] **A. Marca «reserva»** (`feat/reserva`, D158; #9, mergeada y aplicada el 01/11): `jugadores_privado.reserva`; el motor solo mete a un reserva si sin él no se cubren los mínimos o el número compensado; casilla en Gestión → Jugadores. _Migración y carga (Fernando M. y Guillermo) con el OK de Iván._
@@ -61,7 +65,10 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ## Pendiente de Iván
 
 **Operativa de ahora**
-- [ ] **Rutina A sin navegador** (`fix/verificacion-sin-navegador`, nota en D179): revisar el PR y dar el OK para mergear **antes del lunes 09/11/2026 a las 9:30** (la rutina corre a las 9:45). Tras el merge, `git pull` en la copia `Maccabis-rutina-a` lo hace la propia rutina.
+- [x] **Rutina A sin navegador** (`fix/verificacion-sin-navegador`, nota en D179): mergeado con el OK de Iván (PR #60, 06/11/2026). Tras el merge, `git pull` en la copia `Maccabis-rutina-a` lo hace la propia rutina.
+- [ ] **Estructura nueva (D189): mirarla en el móvil** (qué mirar primero, en el informe de `ESTADO.md`).
+- [ ] **Encender el desempate por no convocados** tras la propuesta automática del martes 10/11/2026: variable `CONVOCATORIA_DESEMPATE_NO_CONVOCADOS=1` en Vercel (producción) y desplegar. Apagado, el motor propone igual que antes.
+- [ ] **Pedido de ropa:** la campaña «Ropa 2026/27» está en el real con el interruptor «abierto» y la fecha límite pasada (23/10): para los jugadores está cerrada por la fecha. Si se quiere dejar el interruptor también apagado, «Cerrar el pedido a los jugadores» en Gestión › Pedido de ropa.
 - [ ] **Analítica de Vercel (D188): se queda apagada; Iván la activa cuando el equipo pase a Hobby**, en este orden: 1) pasar el equipo «Web TCPC» a Hobby; 2) activar Web Analytics en el panel de Vercel (proyecto `maccabis`); 3) poner `NEXT_PUBLIC_ANALITICA=1` en producción (y desplegar). Al revés, cada página daría un error de consola.
 - [ ] **Asistente (D142), comprobación tuya en el móvil:** con sesión, que el botón flotante sale en Inicio, Agenda, Mi zona y Gestión. (Lo de «sin sesión» ya está comprobado en producción el 02/11/2026: no sale en portada, Liga, Historia, Plantilla, El club, Privacidad ni Entrar.)
 - [ ] **Retirar GitHub Pages del todo** (decide Iván; `docs/MIGRACION_WEB.md`): hoy solo redirige a la web nueva. Recomendación: mantenerla hasta final de temporada.

@@ -25,24 +25,13 @@
 .as-nota { margin-top: 8px; color: var(--tinta-tenue); font-size: 0.8rem; }
 
 
-/* --- Boton flotante y panel (AsistenteFlotante) --- */
+/* --- Icono de la cabecera y panel (AsistenteFlotante; D189: ya no flota) --- */
 .af-boton {
-  position: fixed; z-index: 41; right: calc(16px + env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom));
-  width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--c-sobre-acento); background: var(--c-amarillo); color: var(--c-sobre-acento);
-  display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; box-shadow: 0 8px 24px #000b;
+  width: var(--toque); height: var(--toque); border-radius: 50%; border: 1px solid var(--borde-fuerte); background: transparent; color: var(--c-amarillo);
+  display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; flex: none;
 }
-.af-boton:hover { background: var(--c-amarillo-vivo); }
+.af-boton:hover { border-color: var(--c-amarillo); }
 .af-boton:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
-.af-boton[aria-expanded="true"] { visibility: hidden; }
-/* Lo ultimo de cada pantalla no queda nunca debajo del boton: hueco al final para desplazarlo por encima. */
-body:has(.af-boton) { padding-bottom: 96px; }
-/* Convocatoria, Tablero y Grupos: su barra fija de acciones ocupa el ancho entero y cambia de alto (se parte en dos lineas
-   en el movil); encima de ella el boton taparia las casillas y botones de la lista. Mientras esta en pantalla, se esconde. */
-body:has(.tb-barra:not([hidden])) .af-boton { display: none; }
-@media (max-width: 768px) {
-  .af-boton { bottom: calc(var(--alto-barra) + 12px + env(safe-area-inset-bottom)); }
-  body:has(.af-boton) { padding-bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom) + 80px); }
-}
 
 .af-velo { position: fixed; inset: 0; z-index: 46; background: #000a; }
 .af-panel {

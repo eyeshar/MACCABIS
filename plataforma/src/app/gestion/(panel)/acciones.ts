@@ -81,15 +81,32 @@ export async function guardarCampana(campanaId: string, _prev: string | null, fo
       precios[p.id] = n;
     }
   }
+  // El estado (abierto o cerrado a los jugadores) ya no va aquí: lo cambia solo el interruptor (cambiarPedidoJugadores).
   const { error } = await supabase.from("campanas_ropa").update({
     nombre: String(form.get("nombre") ?? "").trim() || "Pedido de ropa",
-    estado: form.get("estado") === "abierta" ? "abierta" : "cerrada",
     fecha_limite: fecha ? finDeDiaMadrid(fecha) : null,
     precios,
   }).eq("id", campanaId);
   if (error) return `No se pudo guardar: ${error.message}`;
   revalidatePath("/gestion/ropa");
   return "Campaña guardada.";
+}
+
+/** Interruptor «Abrir el pedido a los jugadores» (bloque 5): `campanas_ropa.estado`, sin columnas nuevas. Al abrir se puede dar
+ *  la fecha límite (vacía = sin fecha); una fecha ya pasada no abriría nada, así que se rechaza. Cerrar no toca la fecha. */
+export async function cambiarPedidoJugadores(campanaId: string, abrir: boolean, _prev: string | null, form: FormData): Promise<string | null> {
+  const { supabase } = await exigirGestor();
+  const cambios: { estado: "abierta" | "cerrada"; fecha_limite?: string | null } = { estado: abrir ? "abierta" : "cerrada" };
+  if (abrir) {
+    const fecha = String(form.get("fecha_limite") ?? "").trim();
+    if (fecha && finDeDiaMadrid(fecha) < new Date().toISOString()) return "Esa fecha límite ya ha pasado: elige otra o déjala vacía.";
+    cambios.fecha_limite = fecha ? finDeDiaMadrid(fecha) : null;
+  }
+  const { error } = await supabase.from("campanas_ropa").update(cambios).eq("id", campanaId);
+  if (error) return `No se pudo cambiar: ${error.message}`;
+  revalidatePath("/gestion/ropa");
+  revalidatePath("/gestion");
+  return abrir ? "Abierto a los jugadores." : "Cerrado a los jugadores.";
 }
 
 export async function crearCampana(form: FormData) {
@@ -170,6 +187,6 @@ export async function cambiarPorDefecto(eventoId: string, personId: string, quit
   if (error) return { ok: false, error: `No se pudo guardar: ${error.message}` };
   revalidatePath("/gestion");
   revalidatePath("/gestion/eventos");
-  revalidatePath(`/gestion/eventos/${eventoId}/respuestas`);
+  revalidatePath(`/evento/${eventoId}`);
   return { ok: true };
 }

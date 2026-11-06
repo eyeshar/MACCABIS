@@ -24,7 +24,7 @@ export default async function NuevoPedido() {
           <h1>Pedido de ropa</h1>
         </div>
       </div>
-      <Volver defecto="/" etiqueta="Inicio" />
+      <Volver defecto="/" etiqueta="Semana" />
       <main className="pagina">
         {!campana || !campana.abierta_ahora ? (
           <section className="tarjeta">

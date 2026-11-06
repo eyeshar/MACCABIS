@@ -25,7 +25,7 @@ export default async function ModificarPedido({ params }: { params: Promise<{ pe
           <h1>Modificar pedido</h1>
         </div>
       </div>
-      <Volver defecto="/" etiqueta="Inicio" />
+      <Volver defecto="/" etiqueta="Semana" />
         <main className="pagina">
         {!pedido ? (
           <section className="tarjeta">

@@ -1,19 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { metricasDeRanking, nombreCorto, topRanking, type FiltroEq, type JugadorEst, type Metricas } from "@/lib/estadisticas/calculo";
 import { Control, Nota, OPCIONES_EQUIPO, Segmento } from "./Comunes";
 
 // Pestaña Rankings: top 5 / top 10 por métrica, con barras. Totales de la temporada (partidos con minutos).
-export default function RankingsPestana({ jugadores, M, multiEquipo, temporada }: {
-  jugadores: JugadorEst[]; M: Metricas; multiEquipo: boolean; temporada?: string;
+export default function RankingsPestana({ jugadores, M, multiEquipo, temporada, selector }: {
+  jugadores: JugadorEst[]; M: Metricas; multiEquipo: boolean; temporada?: string; selector?: ReactNode;
 }) {
   const [equipo, setEquipo] = useState<FiltroEq>("ALL");
   const [n, setN] = useState<5 | 10>(10);
   return (
     <>
       <div className="e-controles">
+        {selector}
         {multiEquipo && <Control etiqueta="Equipo"><Segmento etiqueta="Equipo" valor={equipo} opciones={OPCIONES_EQUIPO} onCambia={setEquipo} /></Control>}
         <Control etiqueta="Tamaño"><Segmento etiqueta="Tamaño" valor={n} opciones={[{ v: 5, t: "Top 5" }, { v: 10, t: "Top 10" }]} onCambia={(v) => setN(v as 5 | 10)} /></Control>
       </div>

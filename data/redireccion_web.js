@@ -25,8 +25,8 @@
     if (MIGRADAS.indexOf(p) < 0) return null;
     var extra = new URLSearchParams();
     if (DE_TEMPORADA.indexOf(p) >= 0) return '/liga/' + t + '/' + p;
-    if (p === 'historia') return '/historia';
-    if (p === 'jugadores') return '/plantilla?t=' + t;
+    if (p === 'historia') return '/club/historia';
+    if (p === 'jugadores') return '/club?t=' + t;
     if (p === 'jugador') return q.get('j') ? '/jugador/' + encodeURIComponent(q.get('j')) + '?t=' + t : '/jugador?t=' + t;
     if (p === 'liga') {
       if (q.get('g') === 'G1' || q.get('g') === 'G2') extra.set('g', q.get('g'));

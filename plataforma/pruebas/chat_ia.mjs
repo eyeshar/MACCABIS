@@ -65,8 +65,8 @@ console.log('\n== 2. Contexto (puro) con datos envenenados');
   const gestorSinFicha = C.construirContexto({ ...entrada, yo: { ...entrada.yo, tieneFicha: false } });
   ok(!gestorSinFicha.includes('MI-PROPIO-MOTIVO') && !gestorSinFicha.includes('Tus estadísticas'), 'sin ficha: sin bloque personal');
   ok(/NO tiene ficha de jugador: no digas «tu partido»/.test(gestorSinFicha) && /tiene ficha de jugador \(MdA y MdL\): sus partidos y entrenos son «tu partido»/.test(ctx), '«tu partido» solo con ficha: lo dice la línea del usuario');
-  ok(C.RUTAS.every(([r]) => ctx.includes(`https://maccabis.vercel.app${r} · `)) && ctx.includes('no enlaces ninguna otra') && /Inicio: [^\n]*«Cómo llegar»/.test(ctx) && /\/liga · [^\n]*no tiene «Cómo llegar»/.test(ctx), 'lista de páginas reales con lo que hay en cada una («Cómo llegar» en Inicio y en el evento, no en /liga)');
-  ok(/Página del evento \(responder, quién va, cómo llegar\): https:\/\/maccabis\.vercel\.app\/mi-zona\/evento\/e1/.test(ctx), 'cada evento lleva su página');
+  ok(C.RUTAS.every(([r]) => ctx.includes(`https://maccabis.vercel.app${r} · `)) && ctx.includes('no enlaces ninguna otra') && /maccabis\.vercel\.app\/ · Semana: /.test(ctx) && /\/liga · [^\n]*no tiene «Cómo llegar»/.test(ctx), 'lista de páginas reales con lo que hay en cada una (la Semana en «/»; «Cómo llegar» en el evento, no en /liga)');
+  ok(/Página del evento \(responder, quién va, cómo llegar\): https:\/\/maccabis\.vercel\.app\/evento\/e1/.test(ctx), 'cada evento lleva su página');
   ok(/quién va, duda, no va y no ha contestado se puede decir con nombres/.test(ctx), 'D141: deja claro que quién va / duda / no va / no ha contestado se puede decir con nombres');
 }
 
@@ -109,7 +109,7 @@ ok(A.modoChat('TODOS') === 'todos' && A.modoChat(' off ') === 'off', '«todos» 
 ok(A.puedeUsarChat({ esGestor: true }, 'gestores', true) && !A.puedeUsarChat({ esGestor: false }, 'gestores', true), '«gestores»: el gestor sí, el jugador no');
 ok(A.puedeUsarChat({ esGestor: false }, 'todos', true) && !A.puedeUsarChat({ esGestor: true }, 'off', true), '«todos»: todos; «off»: nadie');
 ok(!A.puedeUsarChat({ esGestor: true }, 'todos', false) && !A.puedeUsarChat(null, 'todos', true), 'sin Worker configurado o sin sesión: nadie');
-ok(['/', '/agenda', '/mi-zona/evento/x', '/gestion/convocatoria', '/cuenta', '/avisos', '/mis-numeros', '/planes/nuevo'].every(A.asistenteEnRuta), 'botón flotante en Inicio y en las pantallas con login');
+ok(['/', '/calendario', '/evento/x', '/yo', '/agenda', '/mi-zona/evento/x', '/gestion/convocatoria', '/cuenta', '/avisos', '/mis-numeros', '/planes/nuevo'].every(A.asistenteEnRuta), 'icono del asistente en la Semana y en las pantallas con login');
 ok(!['/entrar', '/asistente', '/liga', '/liga/estadisticas', '/plantilla', '/historia', '/club', '/jugador/x', '/privacidad', '/agendas'].some(A.asistenteEnRuta), 'y no en /entrar, /asistente ni la parte pública');
 
 console.log('\n== 4. De extremo a extremo');
@@ -185,12 +185,12 @@ try {
   const ivan = await e.sesion('gestor@pruebas.local', 375);
   await ivan.goto(`${APP}/`);
   ok(!(await visto(ivan.getByTestId('acceso-asistente'), 500)), 'Inicio ya no tiene el enlace pequeño bajo el saludo');
-  ok(await visto(FAB(ivan)), 'gestor: botón flotante «Pregunta al asistente» en Inicio');
-  const fab = await ivan.evaluate(() => { const r = document.querySelector('.af-boton').getBoundingClientRect(); const b = document.querySelector('.nv-barra').getBoundingClientRect(); return { r: [r.left, r.top, r.right, r.bottom], barra: b.top, W: innerWidth }; });
-  ok(fab.r[3] <= fab.barra - 11 && fab.r[2] <= fab.W - 15, 'en el móvil, abajo a la derecha y 12 px por encima de la barra inferior', JSON.stringify(fab));
-  for (const [r, sale] of [['/agenda', true], ['/gestion', true], ['/cuenta', true], ['/liga', false], ['/historia', false], ['/plantilla', false], ['/asistente', false]]) {
+  ok(await visto(FAB(ivan)), 'gestor: icono «Pregunta al asistente» en la Semana');
+  const fab = await ivan.evaluate(() => { const b = document.querySelector('.af-boton'); const r = b.getBoundingClientRect(); return { cab: Boolean(b.closest('header.nv-cab')), r: [r.width, r.height, r.top], fijo: getComputedStyle(b).position }; });
+  ok(fab.cab && fab.fijo !== 'fixed' && fab.r[0] >= 44 && fab.r[1] >= 44 && fab.r[2] < 80, 'en el móvil, un icono de 44 px en la cabecera (D189: ya no flota)', JSON.stringify(fab));
+  for (const [r, sale] of [['/calendario', true], ['/gestion', true], ['/yo', true], ['/liga', false], ['/historia', false], ['/plantilla', false], ['/asistente', false]]) {
     await ivan.goto(`${APP}${r}`);
-    ok((await visto(FAB(ivan), sale ? 8000 : 800)) === sale, `${r}: ${sale ? 'con' : 'sin'} botón flotante`);
+    ok((await visto(FAB(ivan), sale ? 8000 : 800)) === sale, `${r}: ${sale ? 'con' : 'sin'} icono del asistente`);
   }
   await ivan.goto(`${APP}/`);
   await FAB(ivan).click();
@@ -243,10 +243,10 @@ try {
   ok(await panel.isHidden(), 'tocar fuera cierra el panel');
 
   // La conversacion sigue al navegar (sin recargar), al recargar y en /asistente; nunca sale de la pestaña
-  await ivan.locator('.nv-barra').getByRole('link', { name: 'Agenda' }).click();
-  await ivan.waitForURL(/\/agenda$/);
+  await ivan.locator('.nv-barra').getByRole('link', { name: 'Calendario' }).click();
+  await ivan.waitForURL(/\/calendario$/);
   await FAB(ivan).click();
-  ok((await panel.getByTestId('msg-yo').count()) === 2 && (await panel.getByTestId('msg-asistente').count()) === 2, 'al navegar a Agenda la conversación sigue');
+  ok((await panel.getByTestId('msg-yo').count()) === 2 && (await panel.getByTestId('msg-asistente').count()) === 2, 'al navegar a Calendario la conversación sigue');
   await ivan.reload();
   await FAB(ivan).click();
   ok(await visto(panel.getByTestId('msg-yo').getByText('¿dónde está la ayuda?')), 'y también al recargar (sessionStorage)');
@@ -259,7 +259,7 @@ try {
   // Escritorio: panel lateral derecho de 400 px
   await ivan.setViewportSize({ width: 1280, height: 800 });
   await ivan.goto(`${APP}/`);
-  { const b = await ivan.locator('.af-boton').boundingBox(); ok(b && Math.round(1280 - (b.x + b.width)) === 16 && Math.round(800 - (b.y + b.height)) === 24, 'escritorio: botón abajo a la derecha', JSON.stringify(b)); }
+  { const b = await ivan.locator('.af-boton').boundingBox(); ok(b && b.y < 80 && b.width >= 44 && b.height >= 44 && (await ivan.locator('header.nv-cab .af-boton').count()) === 1, 'escritorio: el icono en la cabecera (D189)', JSON.stringify(b)); }
   await FAB(ivan).click();
   { const c = await panel.boundingBox(); ok(c.width === 400 && c.x + c.width === 1280 && c.y === 0 && c.height === 800, 'escritorio: panel lateral derecho de 400 px', JSON.stringify(c)); }
   ok(await pulsable('.af-panel .as-form button'), 'escritorio: «Preguntar» se puede pulsar');
@@ -305,8 +305,10 @@ try {
   // Al cerrar sesion se borra la conversacion de la pestaña
   await ivan.goto(`${APP}/`);
   ok(Boolean(await ivan.evaluate(() => sessionStorage.getItem('maccabis-asistente'))), 'antes de salir la conversación está en la pestaña');
-  await ivan.locator('.nv-barra .nv-barra-item').last().click();
-  await ivan.locator('.nv-hoja').getByRole('button', { name: 'Salir' }).click();
+  // D189: «Salir» está en Yo (el avatar de la cabecera).
+  await ivan.getByTestId('avatar').click();
+  await ivan.waitForURL(/\/yo$/);
+  await ivan.getByRole('button', { name: 'Salir' }).click();
   await ivan.waitForURL(/\/entrar/);
   ok((await ivan.evaluate(() => sessionStorage.getItem('maccabis-asistente'))) === null, 'al cerrar sesión se borra');
   ok(!(await visto(FAB(ivan), 800)), 'y en /entrar no hay botón');

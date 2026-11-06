@@ -416,10 +416,11 @@ try {
   await pj.goto(`${APP}/gestion/convocatoria/datos`);
   ok(!new URL(pj.url()).pathname.startsWith('/gestion'), 'ni en los datos de los jugadores');
   await pj.goto(`${APP}/mi-zona`);
-  // Desde D117, «Tu próximo partido» del inicio personal (/mi-zona redirige a «/»).
-  ok(suEquipo && (await pj.getByTestId('estado-partido').innerText()) === `Convocado · ${suEquipo}`, `inicio: «Convocado · ${suEquipo}»`, await pj.getByTestId('estado-partido').innerText().catch(() => ''));
-  const casillas = await pj.getByTestId('proximo-partido').locator('.in-partido-uno .in-casilla').allInnerTexts();
-  ok(casillas.length === 2 && /Quedada\s*\d\d:\d\d/i.test(casillas[0]) && /Partido\s*\d\d:\d\d/i.test(casillas[1]), 'con la hora y el encuentro (Quedada / Partido)', casillas.join(' | '));
+  // Desde D189, la tarjeta del domingo en la Semana (/mi-zona redirige a «/»).
+  const tarjetaDom = pj.locator('[data-testid="tarjeta-semana"][data-tipo="liga"]').first();
+  ok(suEquipo && (await tarjetaDom.getByTestId('estado-tarjeta').innerText()) === `Convocado · ${suEquipo}`, `Semana: «Convocado · ${suEquipo}»`, await tarjetaDom.getByTestId('estado-tarjeta').innerText().catch(() => ''));
+  const cuando = await tarjetaDom.locator('.sm-t-cuando').innerText();
+  ok(/\d\d:\d\d/.test(cuando) && /quedada\s*\d\d:\d\d/i.test(cuando), 'con la hora y la quedada', cuando);
   const texto = await pj.locator('main').innerText();
   ok(!/nivel|Nivel [A-E]|Dificultad|Base de reserva|Dobla|propuesta/i.test(texto.replace(/doblas/g, '')), 'sin niveles, dificultad, datos privados ni propuestas');
   ok(await sinDesbordar(pj), 'Mi zona a 375 px sin desbordar');

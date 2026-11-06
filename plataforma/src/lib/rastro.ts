@@ -9,9 +9,9 @@ const DE_PASO = /^\/(entrar|auth)(\/|$)|\/(nuevo|editar)(\/|$)|\/gestion\/evento
 const ETIQUETAS: [string, string][] = [
   ["/gestion/convocatoria/salida", "Salida de la convocatoria"], ["/gestion/convocatoria/datos", "Datos de los jugadores"], ["/gestion/convocatoria", "Convocatoria"],
   ["/gestion/eventos/pistas", "Pistas"], ["/gestion/eventos", "Eventos"], ["/gestion/tablero", "Tablero"], ["/gestion/grupos", "Entrenos y grupos"],
-  ["/gestion/jugadores", "Jugadores"], ["/gestion/ropa", "Pedido de ropa"], ["/gestion/asistencia", "Asistencia"],
+  ["/gestion/jugadores", "Jugadores"], ["/gestion/no-convocados", "No convocados"], ["/gestion/ropa", "Pedido de ropa"], ["/gestion/asistencia", "Asistencia"],
   ["/mi-zona/ausencias", "Mis ausencias"], ["/mi-zona/ropa", "Mi pedido de ropa"], ["/mi-zona", "Mi zona"], ["/agenda", "Agenda"], ["/planes", "Plan"],
-  ["/liga/scouting", "Scouting rivales"], ["/liga/consolidada", "Liga consolidada"], ["/liga/rivales", "Rivales"], ["/liga", "Liga"], ["/jugador", "Ficha del jugador"], ["/historia", "Historia"], ["/club", "El club"], ["/plantilla", "Plantilla"],
+  ["/liga/scouting", "Scouting rivales"], ["/liga/consolidada", "Jugadores de la liga"], ["/liga/rivales", "Rivales"], ["/liga", "Liga"], ["/jugador", "Ficha del jugador"], ["/club/historia", "Historia"], ["/club/el-club", "El club"], ["/club", "Plantilla"], ["/historia", "Historia"], ["/plantilla", "Plantilla"],
   ["/cuenta", "Mi cuenta"], ["/avisos", "Avisos"], ["/guia-tallas", "Guía de tallas"],
 ];
 
@@ -32,6 +32,18 @@ export function origenDe(rastro: string[], actual: string): { url: string; indic
     if (rutaDe(u) === aqui || DE_PASO.test(rutaDe(u))) continue;
     if (!u.startsWith("/") || u.startsWith("//")) continue;
     return { url: u, indice: i };
+  }
+  return null;
+}
+
+/** «‹» a su seccion (D189): la vuelta es siempre a `defecto` (la seccion o la pantalla madre), pero si en esta pestaña ya se
+ *  vio esa pantalla con su pestaña, filtro o jornada en la URL, se vuelve a la ultima vez que se vio (norma 13.4). */
+export function vueltaDe(rastro: string[], defecto: string): { url: string; indice: number } | null {
+  const base = rutaDe(defecto);
+  for (let i = rastro.length - 1; i >= 0; i--) {
+    const u = rastro[i];
+    if (!u.startsWith("/") || u.startsWith("//")) continue;
+    if (rutaDe(u) === base) return { url: u, indice: i };
   }
   return null;
 }

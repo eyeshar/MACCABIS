@@ -21,7 +21,7 @@ export default async function MisAusencias({ searchParams }: { searchParams: Pro
   const lista = (await cargarMisAusencias()).filter((a) => a.hasta == null || a.hasta >= hoy);
   return (
     <main className="pagina rw-ausencias">
-      <Volver defecto="/agenda" etiqueta="Agenda" />
+      <Volver defecto="/calendario" etiqueta="Calendario" />
       <h1>Mis ausencias</h1>
       <p className="suave">Los días que marques no te preguntaremos: tus eventos quedan en «no voy» con el motivo (solo lo ven los gestores).</p>
       {guardada && <p className="aviso aviso-ok" role="status">Ausencia guardada.</p>}

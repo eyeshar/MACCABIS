@@ -54,7 +54,10 @@ try {
   console.log('\n== Importar teléfonos (CSV con teléfonos FALSOS)');
   const pd = await e.sesion('gestor@pruebas.local', 1280);
   await pd.goto(`${APP}/gestion/jugadores`);
-  ok((await pd.locator('nav a[href="/gestion/telefonos"]').count()) > 0 && !(await pd.locator('.zb-gestion a[href="/gestion/telefonos"]').count()), 'el menú de Gestión enlaza «Importar teléfonos» (desplegable y hoja; no en la barra fija, que va llena)');
+  ok(!(await pd.locator('nav[aria-label="Gestión"]').count()), 'sin la barra de Gestión de antes (D189)');
+  await pd.goto(`${APP}/gestion`);
+  ok((await pd.locator('main a[href="/gestion/telefonos"]').count()) > 0, '/gestion enlaza «Importar teléfonos» (Plantilla y club, D189)');
+  await pd.goto(`${APP}/gestion/jugadores`);
   ok(await visto(pd.locator('main a[href="/gestion/telefonos"]')), 'y Jugadores también');
   await pd.goto(`${APP}/gestion/telefonos`);
   ok(await visto(pd.getByTestId('telefonos-ahora')) && /\+34 6\*\* \*\*\* 011/.test(await pd.getByTestId('telefonos-ahora').innerText()), '«Ahora»: Rai con su teléfono enmascarado');

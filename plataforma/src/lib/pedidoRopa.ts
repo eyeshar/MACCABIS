@@ -22,7 +22,9 @@ export type EstadoPedido = {
 export function estadoPedido(c: CampanaEstado, ahora: Date = new Date()): EstadoPedido {
   const interruptor = c.estado === "abierta";
   if (!interruptor) return { abierto: false, causa: "interruptor", interruptor, texto: "Cerrado a los jugadores", detalle: "interruptor apagado" };
-  if (!campanaAbiertaAhora(c, ahora)) return { abierto: false, causa: "fecha", interruptor, texto: "Cerrado a los jugadores", detalle: `pasó la fecha límite (${fechaCorta(c.fecha_limite)})` };
+  // Como la base (`_campana_abierta`): hasta el instante de la fecha límite (se guarda como las 23:59:59 de Madrid del día
+  // elegido). Comparar solo el día dejaba la página «abierta» y la base «cerrada» si la fecha pasaba ese mismo día.
+  if (!campanaAbiertaAhora(c, ahora) || (c.fecha_limite && new Date(c.fecha_limite).getTime() <= ahora.getTime())) return { abierto: false, causa: "fecha", interruptor, texto: "Cerrado a los jugadores", detalle: `pasó la fecha límite (${fechaCorta(c.fecha_limite)})` };
   return { abierto: true, causa: "abierto", interruptor, texto: "Abierto a los jugadores", detalle: c.fecha_limite ? `hasta el ${fechaCorta(c.fecha_limite)}` : "sin fecha límite" };
 }
 

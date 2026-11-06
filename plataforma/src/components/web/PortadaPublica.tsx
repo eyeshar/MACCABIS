@@ -138,7 +138,7 @@ export default async function PortadaPublica({ hoy }: { hoy: string }) {
       <section id="plantilla" className="w-dentro w-seccion" aria-labelledby="t-lideres">
         <div className="w-seccion-cab">
           <h2 id="t-lideres">Líderes Maccabis</h2>
-          <Link className="w-mas" href="/plantilla">Estadísticas de toda la plantilla →</Link>
+          <Link className="w-mas" href="/club">Estadísticas de toda la plantilla →</Link>
         </div>
         {lid.length ? (
           <div className="w-lideres">
@@ -172,7 +172,7 @@ export default async function PortadaPublica({ hoy }: { hoy: string }) {
             <span className="w-eyebrow w-naranja">Desde {FUNDACION}</span>
             <h2 id="t-historia">La historia del club</h2>
             <p>Cada temporada, cada partido con estadísticas y todos los que han vestido la camiseta.</p>
-            <Link className="w-mas" href="/historia">Explorar la historia →</Link>
+            <Link className="w-mas" href="/club/historia">Explorar la historia →</Link>
           </div>
           <div className="w-cifras" data-testid="cifras-historia">
             <div><b>{historia.partidos_con_estadisticas}</b><span>partidos con estadísticas</span></div>

@@ -55,6 +55,10 @@ try {
   const cal = conRivalesDeLiga(mapaRivales).partidos;
   const proximo = (eq) => cal.filter((x) => x.equipo === eq && !x.descansa && x.rival && x.fecha && x.fecha >= hoy).sort((a, b) => (a.fecha < b.fecha ? -1 : 1))[0];
   const PROX = { MDA: proximo('MDA'), MDL: proximo('MDL') };
+  // Bloque 6: sin ?v=, el Scouting abre en el partido más cercano (de MdA o de MdL, el que se juega antes).
+  const clave = (x) => (x ? `${x.fecha} ${x.hora ?? ''}` : '9999');
+  const CERCA = clave(PROX.MDL) < clave(PROX.MDA) ? 'MDL' : 'MDA';
+  const nCerca = CERCA === 'MDA' ? 'MdA' : 'MdL';
   const normal = (t) => String(t ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   const dm = (f) => `${+f.slice(8, 10)}/${+f.slice(5, 7)}`;
   const ligaJson = JSON.parse(fs.readFileSync(path.join(REPO, 'data', 'liga_2026-27.json'), 'utf8'));
@@ -107,13 +111,13 @@ try {
     const menuEntero = () => p.evaluate(() => { const f = document.querySelector('nav[aria-label="Liga"]'); return f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === 'auto'; });
 
     await p.goto(`${APP}/liga/scouting`);
-    ok(normal(await p.textContent('.lg-cab-equipo h2')).includes(normal(PROX.MDA.rival)), `scouting: por defecto, el proximo rival del MdA (${PROX.MDA.rival})`, await p.textContent('.lg-cab-equipo h2'));
+    ok(normal(await p.textContent('.lg-cab-equipo h2')).includes(normal(PROX[CERCA].rival)), `scouting: por defecto, el rival del partido más cercano (${nCerca}: ${PROX[CERCA].rival})`, await p.textContent('.lg-cab-equipo h2'));
     const prox = await p.textContent('.lg-prox');
     // D129: sin «en casa / fuera»; el cartel tal cual sale en el calendario oficial (primero el que figura primero).
     const cartel = await p.textContent('.lg-prox-f');
-    const [primero, segundo] = PROX.MDA.local === false ? [PROX.MDA.rival, 'MdA'] : ['MdA', PROX.MDA.rival];
-    ok(prox.includes(`J${PROX.MDA.jornada} ·`) && prox.includes(dm(PROX.MDA.fecha)) && !/en casa|fuera/i.test(prox) && normal(cartel).indexOf(normal(primero)) < normal(cartel).indexOf(normal(segundo)) && cartel.includes(' – '),
-      `scouting: proximo partido contra nosotros (J${PROX.MDA.jornada} · ${dm(PROX.MDA.fecha)}), «${primero} – ${segundo}» y sin «casa/fuera»`, prox);
+    const [primero, segundo] = PROX[CERCA].local === false ? [PROX[CERCA].rival, nCerca] : [nCerca, PROX[CERCA].rival];
+    ok(prox.includes(`J${PROX[CERCA].jornada} ·`) && prox.includes(dm(PROX[CERCA].fecha)) && !/en casa|fuera/i.test(prox) && normal(cartel).indexOf(normal(primero)) < normal(cartel).indexOf(normal(segundo)) && cartel.includes(' – '),
+      `scouting: proximo partido contra nosotros (J${PROX[CERCA].jornada} · ${dm(PROX[CERCA].fecha)}), «${primero} – ${segundo}» y sin «casa/fuera»`, prox);
     // D169: «Más peligrosos» por media, con un minimo de partidos; numero grande = media y debajo el detalle
     ok((await p.locator('.lg-max').count()) === 3 && (await p.locator('.lg-max-n').first().textContent()).includes('más peligroso'), 'scouting: 3 «más peligrosos»');
     const tarjetas = await p.$$eval('.lg-max', (ds) => ds.map((d) => ({ p: d.querySelector('.lg-max-p').textContent, x: d.querySelector('.lg-max-x').textContent })));
@@ -174,8 +178,10 @@ try {
     const orden = await p.evaluate(() => { const h = document.querySelector('.lg-lideres')?.getBoundingClientRect().top ?? 1e9; const d = document.querySelector('details.lg-ranking')?.getBoundingClientRect().top ?? -1; return h < d; });
     ok(orden, 'liga: primero los lideres individuales, el ranking de equipos mas abajo');
     ok((await p.locator('details.lg-ranking').getAttribute('open')) === null, 'liga: el ranking conjunto viene plegado');
-    ok((await p.locator('.lg-lider').count()) === 7, 'liga: por defecto, las 7 listas por partido (D169)');
-    ok((await p.locator('.lg-lider .etiqueta', { hasText: 'dobla' }).count()) > 0, 'liga: marca "dobla" en nuestros jugadores que salen con MdA y MdL');
+    // Bloque 6: UNA lista con chips (antes, 7 tarjetas): la de la estadística elegida, por partido por defecto (D169).
+    ok((await p.locator('.lg-lider').count()) === 1 && (await p.locator('[data-testid="chips-lideres"] button').count()) === 7, 'liga: una sola lista de líderes con 7 chips, por partido por defecto (D169)');
+    ok((await p.locator('.lg-lider .etiqueta', { hasText: 'dobla' }).count()) > 0 || (await p.locator('.lg-todos .etiqueta', { hasText: 'dobla' }).count()) > 0, 'liga: marca "dobla" en nuestros jugadores que salen con MdA y MdL');
+    ok((await p.locator('.lg-lider li.lg-nuestro').count()) > 0, 'liga: los de Maccabis, resaltados en la lista de líderes');
     ok(await menuEntero() && await sinDesbordar(), 'liga: menu entero y sin desbordamiento');
     await p.screenshot({ path: path.join(SALIDA, `real_c_liga_plegado_${etiqueta}.png`), fullPage: true });
     await p.locator('details.lg-ranking > summary').click();
@@ -201,9 +207,14 @@ try {
     await p.goto(`${APP}/liga/consolidada`);
 
     const L = p.locator('#lideres');
-    const titulos = () => L.locator('.lg-lider h3').allTextContents();
+    // Bloque 6: cada chip abre su lista (las 7 de siempre por partido; en Totales, también 2P, TL% y Minutos).
+    const chips = L.locator('[data-testid="chips-lideres"] button');
+    const titulos = async () => { const t = []; for (let i = 0; i < 7; i++) { await chips.nth(i).click(); t.push(await L.locator('.lg-lider h3').textContent()); } await chips.first().click(); return t; };
     ok((await L.locator('.lg-conmutador button.on').textContent()) === 'Por partido', 'lideres: por defecto, Por partido (D169)');
-    ok(JSON.stringify(await titulos()) === JSON.stringify(['Puntos por partido', '2P por partido', '3P por partido', 'TL anotados por partido', 'TL%', 'Faltas por partido', 'Minutos por partido']), 'lideres Por partido: las 7 listas', (await titulos()).join(','));
+    ok(JSON.stringify(await titulos()) === JSON.stringify(['Puntos por partido', '2P por partido', '3P por partido', 'TL anotados por partido', 'TL%', 'Faltas por partido', 'Minutos por partido']), 'lideres Por partido: las 7 listas, una por chip', (await titulos()).join(','));
+    await L.getByLabel('Buscar en los líderes').fill('esteban');
+    ok((await L.locator('.lg-lider li').count()) >= 1 && /esteban/i.test(await L.locator('.lg-lider li').first().textContent()), 'lideres: el buscador deja a quien se busca, con su puesto');
+    await L.getByLabel('Buscar en los líderes').fill('');
     const valores = await L.locator('.lg-lider li > b:last-child').allTextContents();
     ok(valores.length > 0 && valores.every((v) => /^\d+,\d$|^\d+%$/.test(v)), 'lideres Por partido: valores con una decimal (o %)', valores.slice(0, 6).join(' '));
     const ppp = (await L.locator('.lg-lider').first().locator('li > b:last-child').allTextContents()).map((v) => Number(v.replace(',', '.')));
@@ -213,7 +224,7 @@ try {
     await L.scrollIntoViewIfNeeded();
     await L.screenshot({ path: path.join(SALIDA, `real_c_lideres_por_partido_${etiqueta}.png`) });
     await L.getByRole('button', { name: 'Totales' }).click();
-    ok(JSON.stringify(await titulos()) === JSON.stringify(['Puntos', 'Triples', 'Tiros libres', 'Faltas']), 'lideres Totales: Puntos, Triples, Tiros libres y Faltas (sin "Media de puntos")', (await titulos()).join(','));
+    ok(JSON.stringify(await titulos()) === JSON.stringify(['Puntos', '2P anotados', 'Triples', 'Tiros libres', 'TL%', 'Faltas', 'Minutos']), 'lideres Totales: Puntos, 2P, Triples, Tiros libres, TL%, Faltas y Minutos (sin "Media de puntos")', (await titulos()).join(','));
     await L.getByRole('button', { name: 'Por partido' }).click();
 
     const T = p.locator('.lg-todos');

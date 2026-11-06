@@ -1,6 +1,6 @@
 import HistoriaVista, { metadata } from "./HistoriaVista";
 
-// «/historia» sin consulta (D175): ya hecha, desde la cache. Con ?persona=, next.config la manda a /historia/con-parametros.
+// «/club/historia» sin consulta (D175): ya hecha, desde la cache. Con ?persona=, next.config la manda a /club/historia/con-parametros.
 export const revalidate = 300;
 export { metadata };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { MdaResumen } from "@/lib/estadisticas/datos";
 import { CajaTabla, Dash, N1, N2, NInt, NPct, NSigned1, Nota, SecH } from "./Comunes";
 
@@ -16,7 +17,7 @@ function Crudo({ j, k }: { j: J; k: "pts" | "p3" | "tl" | "min" }) {
 }
 
 // Pestaña MdA (histórico, 23/24 y 24/25): resumen de temporada del MdA desde la hoja de Carlos, anomalías marcadas "?".
-export default function MdaPestana({ resumen: r }: { resumen: MdaResumen }) {
+export default function MdaPestana({ resumen: r, selector }: { resumen: MdaResumen; selector?: ReactNode }) {
   const sinCat = r.jugadores.filter((j) => j.catalogado === false && !j.no_jugador).length;
   const cuartos = r.cuartos && r.cuartos.length ? r.cuartos : null;
   const tot = cuartos ? [0, 1, 2, 3].map((k) => cuartos.reduce((a, c) => a + (c.q[k] || 0), 0)) : [];
@@ -24,6 +25,7 @@ export default function MdaPestana({ resumen: r }: { resumen: MdaResumen }) {
   const max = Math.max(...tot, 1);
   return (
     <>
+      {selector && <div className="e-controles">{selector}</div>}
       <SecH titulo="Maccabi de Acostar — resumen de temporada" tag={`${r.jugadores.filter((j) => !j.no_jugador).length} jugadores`} />
       <Nota>
         {r.nota}

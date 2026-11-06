@@ -220,7 +220,7 @@ try {
       ok(fuente.includes('Datos por equipo') && !fuente.includes('por jugador (solo con sesión)') && !/solo gestores/i.test(html), 'sin sesion: el pie dice «Datos por equipo» y la pagina no habla de «solo gestores»', fuente);
     }
     ok(!CASA_FUERA.test(await textoVisible(p)) && await sinDesbordar(), 'sin «casa/fuera» y sin desbordamiento horizontal');
-    ok((await p.locator('nav.e-nav a[aria-current="page"]').textContent()) === 'Liga 26/27' && (await p.locator('.e-temporada').count()) === 0, 'navegacion: «Liga 26/27» marcada, sin selector de temporada ni pestañas');
+    ok((await p.locator('nav.e-nav a[aria-current="page"]').textContent()) === 'Clasificación' && (await p.locator('nav[aria-label="Pestañas de la temporada"], #e-sel-temporada').count()) === 0, 'navegacion: «Clasificación» marcada, sin selector de temporada ni pestañas');
     await p.screenshot({ path: path.join(SALIDA, `partido_con_hoja_${etiqueta}.png`), fullPage: true });
 
     // ---- Pagina de partido CON hoja entre dos rivales: sin parciales ni boxscore (no hay acta ni jugadores nuestros)

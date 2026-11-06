@@ -6,8 +6,9 @@ import EquipoPestana from "@/components/liga/Equipo";
 import JugadoresPestana from "@/components/liga/Jugadores";
 import MdaPestana from "@/components/liga/Mda";
 import RankingsPestana from "@/components/liga/Rankings";
+import { SelectorTemporada } from "@/components/liga/NavLiga";
 import { metricasDe } from "@/lib/estadisticas/calculo";
-import { PESTANAS, TEMPORADA_POR_DEFECTO, TEXTO_PESTANA, cargarTemporada, equiposDe, pestanasDe, type Pestana } from "@/lib/estadisticas/datos";
+import { PESTANAS, TEMPORADAS, TEMPORADA_POR_DEFECTO, TEXTO_PESTANA, cargarTemporada, equiposDe, pestanasDe, type Pestana } from "@/lib/estadisticas/datos";
 import { TEMPORADA_LIGA, enlacesPartidosNuestros } from "@/lib/estadisticas/liga";
 
 export async function generateMetadata({ params }: { params: Promise<{ temporada: string; pestana: string }> }): Promise<Metadata> {
@@ -31,8 +32,6 @@ export default async function PestanaTemporada({ params, searchParams }: {
   const t = await cargarTemporada(temporada);
   if (!t && /^[0-9]{4}-[0-9]{2}$/.test(temporada)) redirect(`/liga/${TEMPORADA_POR_DEFECTO}/equipo`);
   if (!t) notFound();
-  // Jugadores es la Plantilla (una sola pagina, con enlace a la ficha de cada jugador).
-  if (pestana === "jugadores") redirect(`/plantilla?t=${temporada}`);
   if (!(PESTANAS as readonly string[]).includes(pestana)) notFound();
   // Una pestaña que esa temporada no tiene (p. ej. Por cuartos en 2013/14) lleva a Equipo, como la web anterior.
   if (!pestanasDe(t).includes(pestana as Pestana)) redirect(`/liga/${temporada}/equipo`);
@@ -46,19 +45,21 @@ export default async function PestanaTemporada({ params, searchParams }: {
     min_tot: p.min_tot, tot: p.tot, avg: p.avg, tl_pct: p.tl_pct, p2_pct: p.p2_pct, p3_pct: p.p3_pct, pm_total: p.pm_total, ppm: p.ppm,
   }));
 
+  // Bloque 6: temporada y equipo en una sola fila (el selector de temporada va dentro de los controles de cada pestaña).
+  const selector = <SelectorTemporada temporada={temporada} temporadas={TEMPORADAS.map((s) => ({ id: s.id, label: s.label }))} />;
   const contenido = (() => {
     switch (pestana as Pestana) {
       // ?eq=MDA|MDL abre la pestaña con ese equipo (es la ficha de MdA y MdL a la que enlazan /liga y las fichas, D129).
       case "equipo": return (
         <EquipoPestana key={temporada + (eq ?? "")} partidos={t.partidos} box={t.box} M={M} equipos={equipos}
-          equipoInicial={multi && (eq === "MDA" || eq === "MDL") ? eq : "ALL"}
+          equipoInicial={multi && (eq === "MDA" || eq === "MDL") ? eq : "ALL"} selector={selector}
           enlaces={temporada === TEMPORADA_LIGA ? enlacesPartidosNuestros(t.partidos) : undefined} />
       );
-      case "jugadores": return <JugadoresPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} />;
-      case "rankings": return <RankingsPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} temporada={temporada} />;
-      case "cuartos": return <CuartosPestana key={temporada} qstats={t.qstats!} multiEquipo={multi} />;
-      case "asistencia": return <AsistenciaPestana key={temporada} jugadores={t.players.map((p) => ({ person_id: p.person_id, nombre: p.nombre, display: p.display, asist_part: p.asist_part, asist_entr: p.asist_entr }))} />;
-      case "mda": return <MdaPestana key={temporada} resumen={t.mda_resumen!} />;
+      case "jugadores": return <JugadoresPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} temporada={temporada} selector={selector} />;
+      case "rankings": return <RankingsPestana key={temporada} jugadores={jugadores} M={M} multiEquipo={multi} temporada={temporada} selector={selector} />;
+      case "cuartos": return <CuartosPestana key={temporada} qstats={t.qstats!} multiEquipo={multi} selector={selector} />;
+      case "asistencia": return <AsistenciaPestana key={temporada} jugadores={t.players.map((p) => ({ person_id: p.person_id, nombre: p.nombre, display: p.display, asist_part: p.asist_part, asist_entr: p.asist_entr }))} selector={selector} />;
+      case "mda": return <MdaPestana key={temporada} resumen={t.mda_resumen!} selector={selector} />;
     }
   })();
 

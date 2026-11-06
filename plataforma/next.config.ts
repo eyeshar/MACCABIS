@@ -50,10 +50,18 @@ const nextConfig: NextConfig = {
       // D162: Scouting rivales y Liga consolidada salen de Gestión a la Liga, para cualquier jugador con sesión.
       { source: "/gestion/scouting", destination: "/liga/scouting", permanent: true },
       { source: "/gestion/liga", destination: "/liga/consolidada", permanent: true },
+      // Estructura nueva, bloque 6: Plantilla e Historia pasan a ser pestañas del Club (/club y /club/historia). La consulta
+      // (?t=, ?persona=) viaja sola con la redireccion y alli la recogen los rewrites de abajo (gemelas dinamicas, D175).
+      { source: "/plantilla", destination: "/club", permanent: true },
+      { source: "/historia", destination: "/club/historia", permanent: true },
+      // Las gemelas viejas, por si alguien tenia guardada la direccion interna.
+      { source: "/plantilla/con-parametros", destination: "/club", permanent: true },
+      { source: "/historia/con-parametros", destination: "/club/historia", permanent: true },
+      // Liga › Temporadas › Jugadores vuelve a ser su propia pestaña (antes llevaba a /plantilla?t=).
     ];
   },
   // D175: las paginas publicas se sirven ya hechas (cache), asi que no leen la consulta. Con una consulta que cambia lo que
-  // se ve (?hoy= en «/» y /liga, ?g= en /liga, ?persona= en /historia, ?t= en /plantilla), se reescriben a su pagina
+  // se ve (?hoy= en «/» y /liga, ?g= en /liga, ?persona= en /club/historia, ?t= en /club), se reescriben a su pagina
   // gemela, dinamica; la direccion que se ve no cambia. Es la misma regla de siempre, solo que ahora el caso normal es el rapido.
   async rewrites() {
     const conConsulta = (source: string, claves: string[], destination: string) => claves.map((key) => ({ source, has: [{ type: "query" as const, key }], destination }));
@@ -61,8 +69,9 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         ...conConsulta("/", ["hoy"], "/inicio"),
         ...conConsulta("/liga", ["g", "hoy"], "/liga/con-parametros"),
-        ...conConsulta("/historia", ["persona"], "/historia/con-parametros"),
-        ...conConsulta("/plantilla", ["t"], "/plantilla/con-parametros"),
+        // Bloque 6: Plantilla e Historia viven en el Club (antes /plantilla?t= y /historia?persona=, que redirigen con 308).
+        ...conConsulta("/club/historia", ["persona"], "/club/historia/con-parametros"),
+        ...conConsulta("/club", ["t"], "/club/con-parametros"),
       ],
       afterFiles: [],
       fallback: [],
@@ -71,7 +80,7 @@ const nextConfig: NextConfig = {
   async headers() {
     const NOINDEX = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
     const vistaPrevia = Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";
-    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal", "/asistente", "/liga/scouting", "/liga/consolidada", "/inicio", "/liga/con-parametros", "/historia/con-parametros", "/plantilla/con-parametros"];
+    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal", "/asistente", "/liga/scouting", "/liga/consolidada", "/inicio", "/liga/con-parametros", "/club/historia/con-parametros", "/club/con-parametros"];
     return [
       ...(vistaPrevia
         ? [{ source: "/:path*", headers: NOINDEX }]

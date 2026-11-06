@@ -169,7 +169,7 @@ try {
   ok(paginasPartido.length > 0 && paginasPartido.length === resultados && new Set(paginasPartido).size === paginasPartido.length, `sitemap: las ${resultados} paginas de partido de la liga, sin repetir (${paginasPartido.length})`);
   const unPartido = paginasPartido.length ? await fetch(`${APP}${paginasPartido[0].replaceAll('&amp;', '&')}`, { redirect: 'manual' }) : null;
   ok(unPartido && unPartido.status === 200, `sitemap: la pagina de partido ${paginasPartido[0] || '(ninguna)'} se abre sin sesion (${unPartido ? unPartido.status : '-'})`);
-  for (const ruta of ['/', '/club', '/privacidad']) {
+  for (const ruta of ['/', '/club', '/club/historia', '/club/el-club', '/privacidad']) {
     const x = await fetch(`${APP}${ruta}`);
     const cuerpo = await x.text();
     ok(!(x.headers.get('x-robots-tag') || '').includes('noindex') && /<meta name="robots" content="index, follow"/.test(cuerpo), `${ruta}: indexable (sin X-Robots-Tag noindex, meta robots index)`);
@@ -184,8 +184,9 @@ try {
   ok(lista(ncfg, /const privadas = \[([^\]]+)\]/) === lista(idxts, /RUTAS_PRIVADAS = \[([^\]]+)\]/), 'next.config.ts y src/lib/indexacion.ts tienen la misma lista de rutas privadas');
   ok(/VERCEL_ENV/.test(ncfg) && /VERCEL_ENV/.test(idxts), 'las vistas previas de Vercel (VERCEL_ENV distinto de production) llevan noindex en todo');
 
-  console.log('\n== /club (D86)');
-  r = await fetch(`${APP}/club`);
+  // Bloque 6: «El club» es ahora la pestaña /club/el-club del Club (/club es la Plantilla).
+  console.log('\n== /club/el-club (D86)');
+  r = await fetch(`${APP}/club/el-club`);
   const club = (await r.text()).replace(/<!-- -->/g, '');
   ok(r.status === 200, '/club: 200 (antes 404)', String(r.status));
   ok(club.includes('Desde 2013') && club.includes('Maccabi de Levantar') && club.includes('Maccabi de Acostar'), '/club: desde 2013, MdA y MdL');
@@ -193,7 +194,7 @@ try {
   ok(club.includes('Miércoles, 20:30–22:30') && club.includes('Valdebernardo') && club.includes('en obras'), '/club: entrenos (miercoles 20:30-22:30, Valdebernardo en obras)', (club.match(/.{0,120}Miércoles.{0,160}/) ?? [club.slice(club.indexOf('ntreno'), club.indexOf('ntreno') + 300)])[0]);
   ok(club.includes('Centro Deportivo Municipal Moratalaz') && club.includes('Calle de Valdebernardo, 2, 28030 Madrid') && club.includes('Pavones (L9)'), '/club: instalación de los partidos (CDM Moratalaz, calle de Valdebernardo 2, metro Pavones L9)');
   ok(club.includes('Valdebernardo (Faustina Valladolid)') && club.includes('son dos sitios distintos') && !club.includes('pendiente de confirmar'), '/club: entrenos en Valdebernardo (Faustina Valladolid), aclarado que no es la de los partidos, sin hueco');
-  ok(club.includes('href="/historia"'), '/club: enlace a la rejilla completa de Historia (/historia)');
+  ok(club.includes('href="/club/historia"'), '/club/el-club: enlace a la Historia del club (/club/historia)');
   const proxClub = (club.replace(/<[^>]+>/g, '').match(/Próximo:[^.]*\./) ?? [''])[0];
   ok(proxClub.includes('Ciudad de los Periodistas') && !proxClub.includes('por confirmar'), `/club: «${proxClub}» (ubicación libre, D138)`);
   ok(!/[\w.+-]+@[\w-]+\.[\w.]+/.test(club.replace(/<script[\s\S]*?<\/script>/g, '')), '/club: ningun correo ni dato personal');

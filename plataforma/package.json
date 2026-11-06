@@ -93,6 +93,7 @@
     "pruebas:seguridad-base": "node pruebas/seguridad_base.mjs",
     "pruebas:domingo": "node pruebas/domingo_jugador.mjs",
     "pruebas:liga-partidos": "node pruebas/liga_partidos.mjs",
+    "pruebas:liga-club": "node pruebas/liga_club.mjs",
     "pruebas:numeros": "node pruebas/numeros_pantallas.mjs",
     "pruebas:entrados": "node pruebas/entrados_reales.mjs",
     "pruebas:motivo-unico": "node pruebas/motivo_unico.mjs",

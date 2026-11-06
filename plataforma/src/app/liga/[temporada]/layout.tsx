@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { NavTemporada } from "@/components/liga/NavLiga";
-import { TEMPORADAS, TEMPORADA_POR_DEFECTO, TEXTO_PESTANA, cargarTemporada, pestanasDe } from "@/lib/estadisticas/datos";
+import { TEMPORADA_POR_DEFECTO, TEXTO_PESTANA, cargarTemporada, pestanasDe } from "@/lib/estadisticas/datos";
 
-// Estadísticas de una temporada: selector 2013/14 → 2026/27 y las pestañas que existen esa temporada (según lo que
-// recogía la liga: Por cuartos, Asistencia y MdA no están en todas).
+// Temporadas (bloque 6): las subpestañas que existen esa temporada (según lo que recogía la liga: Por cuartos, Asistencia y
+// MdA no están en todas). El selector de temporada va en la fila de controles de cada pestaña, junto al de equipo.
 export default async function TemporadaLayout({ children, params }: { children: React.ReactNode; params: Promise<{ temporada: string }> }) {
   const { temporada } = await params;
   const t = await cargarTemporada(temporada);
@@ -12,11 +12,7 @@ export default async function TemporadaLayout({ children, params }: { children: 
   if (!t) notFound();
   return (
     <>
-      <NavTemporada
-        temporada={temporada}
-        temporadas={TEMPORADAS.map((s) => ({ id: s.id, label: s.label }))}
-        pestanas={pestanasDe(t).map((p) => ({ id: p, t: TEXTO_PESTANA[p] }))}
-      />
+      <NavTemporada temporada={temporada} pestanas={pestanasDe(t).map((p) => ({ id: p, t: TEXTO_PESTANA[p] }))} />
       {children}
     </>
   );

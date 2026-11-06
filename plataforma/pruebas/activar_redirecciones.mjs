@@ -33,7 +33,7 @@ const base = `http://127.0.0.1:${srv.address().port}`;
 const nav = await abrirNavegador();
 const p = await nav.newPage();
 await p.route('**/maccabis.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: `<title>${r.request().url()}</title>` }));
-for (const [antigua, nueva] of [['?p=liga&g=G2', '/liga?g=G2'], ['?p=rivales&g=MdL', '/liga/rivales?g=MdL'], ['?t=2023-24&p=equipo', '/liga/2023-24/equipo'], ['?t=2023-24&p=jugadores', '/plantilla?t=2023-24'], ['?t=2025-26&p=jugador&j=esteban-jon', '/jugador/esteban-jon?t=2025-26'], ['?p=historia', '/historia'], ['#2013-14', '/liga/2013-14/equipo']]) {
+for (const [antigua, nueva] of [['?p=liga&g=G2', '/liga?g=G2'], ['?p=rivales&g=MdL', '/liga/rivales?g=MdL'], ['?t=2023-24&p=equipo', '/liga/2023-24/equipo'], ['?t=2023-24&p=jugadores', '/club?t=2023-24'], ['?t=2025-26&p=jugador&j=esteban-jon', '/jugador/esteban-jon?t=2025-26'], ['?p=historia', '/club/historia'], ['#2013-14', '/liga/2013-14/equipo']]) {
   await p.goto(`${base}/index.html${antigua}`, { waitUntil: 'commit' }).catch(() => {});
   await p.waitForURL(/maccabis\.vercel\.app/, { timeout: 8000 }).catch(() => {});
   ok(p.url() === `https://maccabis.vercel.app${nueva}`, `${antigua} -> ${nueva}`, p.url());

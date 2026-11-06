@@ -1,6 +1,6 @@
 import PlantillaVista, { metadata } from "../PlantillaVista";
 
-// /plantilla?t=<temporada> (D175): la misma pagina, dinamica porque lee la consulta (ver next.config).
+// /club?t=<temporada> (D175; antes /plantilla?t=): la misma pagina, dinamica porque lee la consulta (ver next.config).
 export const dynamic = "force-dynamic";
 export { metadata };
 

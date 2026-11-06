@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useSesion } from "@/components/nav/Sesion";
 import { textoColores } from "@/lib/colores";
 import { fechaCorta } from "@/lib/estadisticas/calculo";
 import type { Color, DatosRivales, Rival, TemporadaRival } from "@/lib/estadisticas/liga";
@@ -9,6 +10,9 @@ import { CajaTabla, Control, Nota, SecH, Segmento } from "./Comunes";
 
 // Rivales 26/27 (migrado de GitHub Pages): lo esencial del grupo, tarjetas de rivales y ficha con trayectoria y cara a cara.
 // Fuente: Ayuntamiento de Madrid, datos abiertos (datos.madrid.es), CC BY 4.0. Enlace directo: /liga/rivales?g=MdA&r=<id>.
+// Bloque 6: con sesión de jugador con ficha o de gestor (D162; la sesión llega del navegador, D175), cada rival lleva a su
+// Scouting (datos por jugador de terceros, nunca sin sesión) y arriba, el del próximo partido.
+const hrefScouting = (nombre?: string) => (nombre ? `/liga/scouting?e=${encodeURIComponent(nombre)}` : "/liga/scouting");
 type G = "MdA" | "MdL";
 const rvT = (t: string) => t.slice(2, 4) + "/" + t.slice(5, 7);
 const rvFecha = (f: string | null) => (f ? fechaCorta(f) : "");
@@ -130,7 +134,7 @@ function EstaTemporada({ t }: { t: TemporadaRival }) {
   );
 }
 
-function Ficha({ r, color, temporada, onCerrar }: { r: Rival; color: Color | null | undefined; temporada?: TemporadaRival; onCerrar: () => void }) {
+function Ficha({ r, color, temporada, onCerrar, scouting }: { r: Rival; color: Color | null | undefined; temporada?: TemporadaRival; onCerrar: () => void; scouting?: string }) {
   const h = r.h2h;
   const cerrar = useRef(onCerrar); cerrar.current = onCerrar;
   const boton = useRef<HTMLButtonElement>(null);
@@ -155,6 +159,7 @@ function Ficha({ r, color, temporada, onCerrar }: { r: Rival; color: Color | nul
           <button ref={boton} type="button" className="e-cerrar" aria-label="Cerrar" onClick={onCerrar}>✕</button>
         </div>
         <div className="e-modal-cuerpo">
+          {scouting && <Link href={scouting} className="e-boton-enlace e-rv-scout-ficha" data-testid="ficha-scouting">Scouting completo ›</Link>}
           <BalanceH2H h={h} />
           {temporada && <><SecH titulo="Liga 26/27" tag="clasificación calculada" /><EstaTemporada t={temporada} /></>}
           {!r.sin_rastro && <>
@@ -209,9 +214,11 @@ function Ficha({ r, color, temporada, onCerrar }: { r: Rival; color: Color | nul
   );
 }
 
-export default function RivalesPanel({ datos, colores, grupoInicial, rivalInicial, temporada }: {
+export default function RivalesPanel({ datos, colores, grupoInicial, rivalInicial, temporada, nombresLiga = {} }: {
   datos: DatosRivales; colores: Record<string, Color | null>; grupoInicial: G; rivalInicial: string | null; temporada: Record<string, TemporadaRival>;
+  nombresLiga?: Record<string, string>;   // id del rival -> su nombre en la liga (el que usa el Scouting)
 }) {
+  const verLiga = useSesion().verLiga;
   // D129: la ficha se abre para todos los rivales (tambien los que no tienen rastro en los JDM): ningun enlace lleva a ninguna parte.
   const inicial = rivalInicial ? datos.rivales.find((x) => x.id === rivalInicial) : undefined;
   const [grupo, setGrupo] = useState<G>(inicial ? inicial.grupo : grupoInicial);
@@ -228,14 +235,22 @@ export default function RivalesPanel({ datos, colores, grupoInicial, rivalInicia
           <Segmento etiqueta="Grupo" valor={grupo} opciones={[{ v: "MdA", t: "Grupo MdA" }, { v: "MdL", t: "Grupo MdL" }]} onCambia={(v) => { setGrupo(v); setAbierto(null); url(v); }} />
         </Control>
       </div>
+      {verLiga && <Link href={hrefScouting()} className="e-boton-enlace" data-testid="scouting-proximo">Scouting del próximo rival ›</Link>}
       <div className="e-esencial" data-testid="rivales-esencial">
         <h3>Lo esencial · grupo del {grupo}</h3>
         <ul>{(datos.lo_esencial[grupo] || []).map((l, i) => <li key={i}>{l}</li>)}</ul>
       </div>
       <SecH titulo="Rivales" tag={`${lista.length} equipos`} />
-      <div className="e-rvgrid" data-testid="rivales-lista">{lista.map((r) => <Tarjeta key={r.id} r={r} onAbrir={abrir} />)}</div>
-      <Nota>Ordenados por su porcentaje de victorias en partidos jugados en la liga de 2025/26 (si empatan, por su puesto oficial; los que no tienen rastro, al final). El puesto que se muestra es el de la clasificación oficial, que resta puntos por las incomparecencias. Pincha en una tarjeta para ver su trayectoria y el cara a cara completo. El cara a cara suma las dos fichas del club (MdL + MdA).</Nota>
-      {ficha && <Ficha r={ficha} color={colores[ficha.id]} temporada={temporada[ficha.id]} onCerrar={cerrar} />}
+      <div className="e-rvgrid" data-testid="rivales-lista">
+        {lista.map((r) => (
+          <div key={r.id} className="e-rv-celda">
+            <Tarjeta r={r} onAbrir={abrir} />
+            {verLiga && nombresLiga[r.id] && <Link href={hrefScouting(nombresLiga[r.id])} className="e-rv-scout" data-testid="rival-scouting">Scouting ›</Link>}
+          </div>
+        ))}
+      </div>
+      <Nota>Por % de victorias en 2025/26 (empate: puesto oficial). El cara a cara suma MdL + MdA.</Nota>
+      {ficha && <Ficha r={ficha} color={colores[ficha.id]} temporada={temporada[ficha.id]} onCerrar={cerrar} scouting={verLiga && nombresLiga[ficha.id] ? hrefScouting(nombresLiga[ficha.id]) : undefined} />}
       <div className="e-fuente">Fuente: Ayuntamiento de Madrid, datos abiertos (datos.madrid.es), CC BY 4.0</div>
     </>
   );

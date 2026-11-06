@@ -90,7 +90,8 @@ try {
     await p.goto(`${APP}/liga/consolidada`);
     ok(new URL(p.url()).pathname === '/liga/consolidada' && (await p.locator('#ranking').count()) === 1, `${quien}: entra en Liga consolidada`, p.url());
     const pestanas = await p.locator('nav[aria-label="Liga"] a').allTextContents();
-    ok(pestanas.includes('Scouting rivales') && pestanas.includes('Liga consolidada'), `${quien}: la navegación de la Liga enseña Scouting rivales y Liga consolidada`, pestanas.join(', '));
+    // Bloque 6: el Scouting va dentro de «Rivales» y la Liga consolidada es la pestaña «Jugadores de la liga» (solo con sesión).
+    ok(pestanas.includes('Rivales') && pestanas.includes('Jugadores de la liga'), `${quien}: la navegación de la Liga enseña Rivales (con el Scouting) y Jugadores de la liga`, pestanas.join(', '));
     await p.goto(`${APP}/gestion/scouting?e=${encodeURIComponent(rivalClas)}`);
     ok(new URL(p.url()).pathname === '/liga/scouting' && p.url().includes('e='), `${quien}: /gestion/scouting lleva a /liga/scouting (con el equipo)`, p.url());
     await p.goto(`${APP}/gestion/liga`);
@@ -107,7 +108,7 @@ try {
   const ligaTxt = (await p.locator('.e-eqp[data-eq="MDA"] .e-eqp-s').textContent().catch(() => '')).trim();
   ok(ligaTxt === `${diaLargo(nuevo.fecha)} · ${nuevo.hora} · pista ${nuevo.campo}`, `/liga: próximo MdA el ${diaLargo(nuevo.fecha)} a las ${nuevo.hora}, pista ${nuevo.campo}`, ligaTxt);
   const pestanasAnon = await p.locator('nav[aria-label="Liga"] a').allTextContents();
-  ok(!pestanasAnon.includes('Scouting rivales') && !pestanasAnon.includes('Liga consolidada'), 'sin sesión, la Liga no enseña Scouting ni Liga consolidada', pestanasAnon.join(', '));
+  ok(!pestanasAnon.includes('Jugadores de la liga') && !pestanasAnon.some((t) => /Scouting|consolidada/i.test(t)), 'sin sesión, la Liga no enseña Jugadores de la liga (Liga consolidada) ni Scouting', pestanasAnon.join(', '));
   await p.goto(`${APP}/?hoy=${dia}`);
   const portada = (await p.locator('article.w-partido[data-equipo="MDA"] .w-partido-cab .cifra').textContent().catch(() => '')).trim();
   ok(portada === `${diaMes(nuevo.fecha)} · ${nuevo.hora} · Pista ${nuevo.campo}`, `portada: «${diaMes(nuevo.fecha)} · ${nuevo.hora} · Pista ${nuevo.campo}»`, portada);

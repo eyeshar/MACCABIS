@@ -5,10 +5,11 @@ import { ALIAS, personasHistoria } from "@/lib/estadisticas/historiaDatos";
 export const metadata: Metadata = {
   title: "Historia del club · Maccabis",
   description: "Quién ha pasado por Maccabis desde 2013: rejilla de personas por temporada, altas y bajas de cada año y la ficha de cada persona.",
-  alternates: { canonical: "/historia" },
+  alternates: { canonical: "/club/historia" },
 };
 
-// Vista de la historia del club (D175: la comparten «/historia», ya hecha, y /historia/con-parametros, que lee ?persona=).
+// Club › Historia (bloque 6; antes /historia, que redirige aquí con 308). D175: la comparten «/club/historia», ya hecha, y
+// /club/historia/con-parametros, que lee ?persona=.
 // Historia del club (antes, la pestaña «El Club» de GitHub Pages ?p=historia). ?persona=<person_id> abre la ficha de una persona.
 export default async function HistoriaVista({ persona }: { persona?: string }) {
   const personas = await personasHistoria();

@@ -98,7 +98,7 @@ export default function EquipoPestana({ partidos, box, M, equipos, equipoInicial
                   >
                     <td className="e-mono">{cuando}{tieneBox && !p.incomp && <> <span className="e-flecha">{abierto === k ? "▾" : "▸"}</span></>}</td>
                     <td><ChipEquipo equipo={p.equipo} /></td>
-                    <td>
+                    <td className="e-envuelve">
                       {/* La fila entera abre el boxscore: el rival no es un enlace aqui (se enlaza desde la pagina del partido, D129). */}
                       {sinPO(p.rival)}
                       {esPO(p) && <span className="e-po">PO</span>}
@@ -106,7 +106,7 @@ export default function EquipoPestana({ partidos, box, M, equipos, equipoInicial
                       {p.pendiente_acta && <span className="e-po e-po-gris" title="Resultado según la hoja de estadística; faltan los parciales por cuarto, que llegarán con el acta oficial">pend. acta</span>}
                     </td>
                     <td className="e-c e-marcador">{p.incomp ? "—" : `${p.pf} : ${p.pc}`}</td>
-                    <td className="e-c">{p.incomp ? <span className="e-insignia e-insignia-eq">Inc.</span> : <span className={`e-insignia e-insignia-${p.res}`}>{p.res === "G" ? "Gana" : "Pierde"}</span>}</td>
+                    <td className="e-c">{p.incomp ? <span className="e-insignia e-insignia-eq">Inc.</span> : <span className={`e-insignia e-insignia-${p.res}`}><span className="e-solo-ancho">{p.res === "G" ? "Gana" : "Pierde"}</span><span className="e-solo-estrecho" aria-label={p.res === "G" ? "Gana" : "Pierde"}>{p.res}</span></span>}</td>
                     <td className={`e-c e-mono e-oculta-sm ${dif >= 0 ? "e-pos" : "e-neg"}`}>{p.incomp ? "—" : (dif >= 0 ? "+" : "") + dif}</td>
                   </tr>
                   {abierto === k && abrible && (

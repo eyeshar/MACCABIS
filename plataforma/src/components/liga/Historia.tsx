@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ANIOS, EN_CURSO, etiquetaAnio, filasRejilla, kpisHistoria, motivoSinStats, norm, temporadaDeAnio, tiraTemporal, type Filtros, type PersonaH } from "@/lib/estadisticas/historia";
+import { nombreBreve } from "@/lib/estadisticas/calculo";
 import { Control, Kpi, Nota, SecH, Segmento } from "./Comunes";
 
 // Historia del club («El Club»): rejilla de personas por temporada, dos modos de orden excluyentes (D22), tira temporal y ficha
@@ -28,7 +29,9 @@ export default function HistoriaClub({ personas, personaInicial }: { personas: P
       <td className="e-hname">
         <div className="e-hn">
           <span className="e-hnum">{n}</span>
-          <span className="e-hdisp" title={p.formal || p.display}>{p.display}</span>
+          {/* fix/visibilidad-movil: en el móvil, el nombre corto (nombre + primer apellido o el mote) */}
+          <span className="e-hdisp e-hdisp-largo" title={p.formal || p.display}>{p.display}</span>
+          <span className="e-hdisp e-hdisp-corto" title={p.formal || p.display} aria-hidden="true">{p.formal ? nombreBreve({ display: p.display, nombre: p.formal }) : p.display}</span>
           {(p.solo_mote || p.de_paso) && <span className="e-hchip e-hchip-mote">de paso</span>}
           {p.es_entrenador && <span className="e-hchip e-hchip-coach">entrenador</span>}
           <span className="e-hveter" title={orden === "debut" ? "Se incorporó en la temporada " + etiquetaAnio(p.temporadas_jugadas[0] || "") : p.n_temporadas + " temporadas en el club"}>

@@ -12,7 +12,7 @@ export default function CalendarioMovil({ enlace, compacto }: { enlace: { https:
     if (!enlace) return <section className="in-cal-compacto" data-testid="tu-calendario"><p className="suave" style={{ margin: 0 }}>Tu calendario en el móvil aún no está disponible.</p></section>;
     return (
       <section className="in-cal-compacto" aria-labelledby="t-calendario" data-testid="tu-calendario">
-        <h2 id="t-calendario">Tenlo en el calendario de tu móvil <span className="suave">· se actualiza solo</span></h2>
+        <h2 id="t-calendario">Tenlo en el calendario de tu móvil <span className="suave in-cal-sub">· se actualiza solo</span></h2>
         <div className="in-cal-botones">
           <a className="boton boton-claro" href={`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(enlace.webcal)}`} target="_blank" rel="noopener noreferrer">Google</a>
           <a className="boton boton-claro" href={enlace.webcal}>iPhone</a>

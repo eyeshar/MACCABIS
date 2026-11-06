@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { nombreCorto, ordenarAsistencia, pctAsistencia, type Asis, type ClaveAsis } from "@/lib/estadisticas/calculo";
+import { nombreBreve, ordenarAsistencia, pctAsistencia, type Asis, type ClaveAsis } from "@/lib/estadisticas/calculo";
 import { CajaTabla, Control, Nota, SecH, Segmento } from "./Comunes";
 
 type JugadorAsis = { person_id: string; nombre: string; display?: string; asist_part?: Asis | null; asist_entr?: Asis | null };
@@ -47,7 +47,7 @@ export default function AsistenciaPestana({ jugadores, selector }: { jugadores: 
               return (
                 <tr key={p.person_id + i}>
                   <td className="e-c e-mono e-tenue">{i + 1}</td>
-                  <td className="e-nombre">{p.display || nombreCorto(p.nombre)}</td>
+                  <td className="e-nombre" title={p.display || undefined}>{nombreBreve(p)}</td>
                   <td className="e-c e-mono">{d.fueron == null ? "—" : d.fueron}</td>
                   <td className="e-c e-mono">{d.total == null ? "—" : d.total}</td>
                   <td className="e-c e-mono">{pctAsistencia(d.pct)}</td>

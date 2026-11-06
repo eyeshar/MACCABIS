@@ -373,3 +373,40 @@ a.e-m-enlace:hover, a.e-m-enlace:focus-visible { color: var(--c-amarillo); text-
   .e-cab-compacta .e-nav { overflow-x: visible; }
   .e-cab-compacta .e-nav a { flex: 1 1 0; min-width: 0; justify-content: center; text-align: center; white-space: normal; line-height: 1.1; padding: 4px 6px; font-size: 15px; }
 }
+
+/* ===== fix/visibilidad-movil (06/11/2026): tablas a 360-412 px. Regla: o la tabla cabe entera, o la primera columna va fija
+   y estrecha (nombre corto, que puede partirse en dos líneas) y se ven al menos tres columnas de datos sin desplazar. Las
+   cabeceras que ordenan, con su zona de 44 px. ===== */
+.e-r { text-align: right; }
+.e-dorsal-bajo { display: block; line-height: 1.15; }
+.e-solo-estrecho { display: none; }
+@media (max-width: 640px) {
+  .e-solo-ancho { display: none; }
+  .e-solo-estrecho { display: inline; }
+  .e-tabla { font-size: 13.5px; }
+  .e-tabla td { padding: 9px 6px; }
+  .e-tabla th:not(:has(button)), .e-th-boton { padding: 11px 6px; }
+  .e-th-boton { min-width: 44px; }
+  .e-tabla td:first-child, .e-tabla th:first-child:not(:has(button)), .e-tabla th:first-child .e-th-boton { padding-left: 10px; }
+  .e-tabla td.e-nombre, .e-tabla td.e-eq, .e-tabla td.e-envuelve { white-space: normal; overflow-wrap: anywhere; }
+  .e-tabla td.e-nombre { min-width: 6.5em; line-height: 1.2; }
+  .e-tabla.e-fija2 td.e-nombre { min-width: 8.2em; }
+  .e-tabla td.e-eq { min-width: 7em; line-height: 1.2; }
+  .e-tabla-box td { padding: 7px 5px; }
+  .e-tabla-box th:not(:has(button)), .e-tabla-box .e-th-boton { padding: 8px 5px; }
+  .e-tabla-4 td.e-nombre { width: 100%; }
+  .e-clasificacion .e-chip-nos { margin-left: 4px; padding: 0 5px; font-size: 10.5px; }
+  .e-clasificacion th, .e-clasificacion td { padding: 9px 5px; }
+  .e-insignia { padding: 2px 7px; }
+}
+/* fix/visibilidad-movil: el título de sección nunca se parte por su etiqueta: si no caben juntos, la etiqueta baja */
+@media (max-width: 640px) {
+  .e-sec { flex-wrap: wrap; row-gap: 2px; column-gap: 10px; }
+  .e-sec .e-regla { min-width: 24px; }
+}
+/* Selector de grupo de la Clasificación con G3-G6 (con sesión): todos en una fila, desplazable si no cabe */
+.e-segmento-desliza { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.e-segmento-desliza::-webkit-scrollbar { display: none; }
+.e-segmento-desliza .e-segmento { width: max-content; min-width: 100%; }
+.e-segmento-desliza .e-segmento button { flex: 1 0 auto; min-width: 48px; padding: 0 12px; white-space: nowrap; }
+.e-m-hueco { color: var(--tinta-tenue); font-family: var(--f-texto) !important; font-size: 12.5px !important; }

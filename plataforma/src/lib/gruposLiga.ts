@@ -87,7 +87,9 @@ export function resultadosDeJornada(partidos: PartidoLiga[], equiposPorGrupo: Re
     const nombre = (n: string) => equipos.find((e) => claveEq(e) === claveEq(n)) ?? n;
     const filas: FilaResultado[] = [
       ...mios.map((p) => ({ tipo: "partido" as const, id: p.id, local: p.local, visitante: p.visitante, pl: p.pts_local, pv: p.pts_visitante, fecha: p.fecha })),
-      ...(info?.huecos ?? []).map((h) => ({ tipo: "hueco" as const, local: nombre(h.local), visitante: nombre(h.visitante), motivo: h.motivo })),
+      // Un hueco que ya tiene partido cargado (p. ej. un marcador sacado del acta) sale solo como partido.
+      ...(info?.huecos ?? []).filter((h) => !mios.some((p) => [claveEq(p.local), claveEq(p.visitante)].sort().join() === [claveEq(h.local), claveEq(h.visitante)].sort().join()))
+        .map((h) => ({ tipo: "hueco" as const, local: nombre(h.local), visitante: nombre(h.visitante), motivo: h.motivo })),
     ];
     const juegan = new Set(filas.flatMap((f) => [claveEq(f.local), claveEq(f.visitante)]));
     const descansa = info?.descansa ? [nombre(info.descansa)] : equipos.filter((e) => !juegan.has(claveEq(e)));

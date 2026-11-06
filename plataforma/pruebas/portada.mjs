@@ -376,7 +376,8 @@ try {
     await entrar(g, gestorEmail);
     ok(g.url().endsWith('/gestion'), 'un gestor entra en /gestion', g.url());
     ok((await g.textContent('.gs-eyebrow')).includes('Panel de gestión') && /Jornada \d+/.test(await g.textContent('h1')), 'panel: "Jornada N" de la semana');
-    ok((await g.locator('section[aria-label="Rutinas semanales"] .gs-caja').count()) === 3, 'panel: rutinas A, B y C');
+    // Estructura nueva (bloque 4): el estado de las rutinas va dentro de «3 · Pendiente».
+    ok((await g.locator('[data-testid="gp-rutinas"] li').count()) === 3, 'panel: rutinas A, B y C (en «Pendiente»)');
     ok((await g.locator('[aria-labelledby="t-prox"] .eq-partido').count()) >= 1, 'panel: partidos del domingo');
     ok(!(await g.locator('[data-testid="hueco-sporteasy"]').count()) && ((await g.locator('[data-testid="entreno-sin-respuestas"]').isVisible()) || (await g.locator('[data-testid="respuestas-entreno"]').isVisible())), 'panel: el entreno con sus respuestas o «Aún nadie ha respondido», sin el hueco de SportEasy');
     ok(!/SportEasy/i.test(await g.textContent('main')), 'panel: sin «SportEasy» en ninguna parte');

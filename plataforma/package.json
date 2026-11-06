@@ -74,6 +74,7 @@
     "avisos:programar": "node scripts/programar_tarea_avisos.mjs",
     "pruebas:convocatoria-motor": "node pruebas/convocatoria_motor.mjs",
     "pruebas:no-convocados": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/no_convocados.mjs",
+    "pruebas:gestion": "node pruebas/gestion_pantallas.mjs",
     "pruebas:convocatoria-rls": "node pruebas/rls_convocatoria.mjs",
     "pruebas:convocatoria-pantallas": "node pruebas/convocatoria_pantallas.mjs",
     "pruebas:convocatoria-real": "node pruebas/rls_convocatoria_real.mjs",

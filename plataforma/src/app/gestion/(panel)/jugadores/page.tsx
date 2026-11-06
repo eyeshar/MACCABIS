@@ -3,9 +3,16 @@ import Link from "next/link";
 import Volver from "@/components/nav/Volver";
 import { mensajeBienvenida } from "@/lib/mensajes";
 import FilaJugador, { type JugadorGestion } from "./FilaJugador";
+import ListaJugadores from "./ListaJugadores";
+import "../gestion.css";
+import "./jugadores.css";
 
 export const metadata = { title: "Jugadores · Gestión Maccabis" };
 
+type Privado = NonNullable<JugadorGestion["privado"]> & { person_id: string; reserva: boolean | null };
+
+// Plantilla (bloque 4): lista compacta con buscador y fila desplegable con posición, niveles, fichas, dobla, disponibilidad,
+// sanción, acceso y teléfono. Los datos privados (jugadores_privado) solo los devuelve la base a los gestores (RLS).
 export default async function Jugadores() {
   const { supabase } = await exigirGestor();
   const [{ data: jugadores, error }, { data: privados }] = await Promise.all([
@@ -13,45 +20,51 @@ export default async function Jugadores() {
       .from("jugadores")
       .select("id, person_id, nombre_oficial, nombre_visible, email, ficha_mda, ficha_mdl, entrena, rol, telefono, activo")
       .order("nombre_visible"),
-    // D158: la marca «Reserva» vive en jugadores_privado (solo gestores, RLS). Sin la migración, la casilla sale apagada.
-    supabase.from("jugadores_privado").select("person_id, reserva").eq("reserva", true),
+    supabase.from("jugadores_privado").select("person_id, posicion, nivel, nota_ataque, nota_defensa, dobla, no_suele_entrenar, nunca_partidos, sancionado_hasta_jornada, reserva"),
   ]);
   if (error) throw new Error(error.message);
-  const reservas = new Set(((privados ?? []) as { person_id: string }[]).map((p) => p.person_id));
+  const priv = new Map(((privados ?? []) as Privado[]).map((p) => [p.person_id, p]));
   const base = await origenMensajes();
   const urlEntrar = `${base}/entrar`;
-  const lista = ((jugadores ?? []) as Omit<JugadorGestion, "reserva">[]).map((j) => ({ ...j, reserva: reservas.has(j.person_id) }));
+  const lista: JugadorGestion[] = ((jugadores ?? []) as Omit<JugadorGestion, "reserva" | "privado">[]).map((j) => {
+    const p = priv.get(j.person_id);
+    return {
+      ...j, reserva: !!p?.reserva,
+      privado: p ? { posicion: p.posicion, nivel: p.nivel, nota_ataque: p.nota_ataque, nota_defensa: p.nota_defensa, dobla: !!p.dobla, no_suele_entrenar: !!p.no_suele_entrenar, nunca_partidos: !!p.nunca_partidos, sancionado_hasta_jornada: p.sancionado_hasta_jornada } : null,
+    };
+  });
+  const mensajes = Object.fromEntries(lista.map((j) => [j.id, j.email ? mensajeBienvenida(j.nombre_visible, j.email, urlEntrar) : null]));
   const activos = lista.filter((j) => j.activo);
   const inactivos = lista.filter((j) => !j.activo);
-
-  const fila = (j: JugadorGestion) => (
-    <FilaJugador
-      key={j.id}
-      jugador={j}
-      mensaje={j.email ? mensajeBienvenida(j.nombre_visible, j.email, urlEntrar) : null}
-    />
-  );
+  const sinCorreo = activos.filter((j) => !j.email).length;
 
   return (
-    <>
+    <div className="gp-panel">
       <Volver defecto="/gestion" etiqueta="Panel" />
-      <h1>Jugadores</h1>
-      <div className="aviso aviso-info">
-        Solo entra quien tiene aquí su correo (D68). Pon el correo exacto que usa en Google, o cualquiera al que
-        pueda recibir un código. Sin correo, esa persona no puede entrar. Con un correo que no es de Gmail
-        ("Entrará con código por correo"), pídele su Gmail si lo tiene: así podrá entrar también con Google.
+      <div className="gs-titulo">
+        <div>
+          <div className="gs-eyebrow">Plantilla y club</div>
+          <h1>Jugadores</h1>
+          <span className="suave">{activos.length} en la plantilla{sinCorreo ? ` · ${sinCorreo} sin correo` : ""}</span>
+        </div>
+        <div className="ev-botones">
+          <Link className="boton boton-contorno" href="/gestion/telefonos">Importar teléfonos</Link>
+        </div>
       </div>
       <section className="tarjeta">
         <h2>Plantilla 2026/27 ({activos.length})</h2>
-        <ul className="lista-limpia">{activos.map(fila)}</ul>
+        <ListaJugadores jugadores={activos} mensajes={mensajes} />
       </section>
       {inactivos.length > 0 && (
-        <section className="tarjeta">
-          <h2>Dados de baja ({inactivos.length})</h2>
-          <ul className="lista-limpia">{inactivos.map(fila)}</ul>
-        </section>
+        <details className="tarjeta jg-plegado">
+          <summary>Dados de baja ({inactivos.length})</summary>
+          <ul className="lista-limpia">{inactivos.map((j) => <FilaJugador key={j.id} jugador={j} mensaje={mensajes[j.id] ?? null} />)}</ul>
+        </details>
       )}
-      <p className="pie">El teléfono es opcional y solo lo ven los gestores. Sirve para abrir WhatsApp con el mensaje ya escrito. Para cargarlos todos de una vez, con el contacto de WhatsApp: <Link href="/gestion/telefonos">Importar teléfonos</Link>.</p>
-    </>
+      <details className="pie jg-plegado">
+        <summary>Acceso y teléfonos</summary>
+        <p className="pequeno">Solo entra quien tiene aquí su correo: el exacto de Google o cualquiera al que pueda recibir un código. Con un correo que no es de Gmail («Entrará con código por correo»), pídele su Gmail si lo tiene. El teléfono solo lo ven los gestores.</p>
+      </details>
+    </div>
   );
 }

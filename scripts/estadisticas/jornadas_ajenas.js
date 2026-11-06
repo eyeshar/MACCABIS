@@ -15,6 +15,9 @@
  * vacío y `motivo` «sin hoja» o «incomparecencia») y `npm run jornada` lo copia a `fuentes_fbm/<temporada>/resultados_sin_hoja.csv`
  * (fuera de git: `grupo;jornada;local;visitante;marcador;fecha;hora;motivo`), de donde lo leen liga.js y `db:liga`. En el
  * fichero de datos solo queda el hueco (emparejamiento y motivo, sin marcador). MACCABIS_SIN_HOJA: otro fichero (pruebas).
+ * Columna opcional `pts_no_presentado` (solo incomparecencias): los puntos que la clasificación OFICIAL le da por ese partido
+ * al que no se presentó (D74: nunca se suponen; la FBM puede contarlo como derrota normal, 1, si avisó a tiempo). Se rellena
+ * al contrastar con la oficial (rutina B); vacía, su casilla sigue «pendiente de la oficial».
  */
 const fs = require('fs');
 const path = require('path');
@@ -23,7 +26,8 @@ const { normEquipo } = require('./util');
 const ROOT = path.resolve(__dirname, '..', '..');
 const MANIFIESTO = 'jornadas_hojas.csv';
 const SIN_HOJA = 'resultados_sin_hoja.csv';
-const CAB_SIN_HOJA = 'grupo;jornada;local;visitante;marcador;fecha;hora;motivo';
+const CAB_SIN_HOJA = 'grupo;jornada;local;visitante;marcador;fecha;hora;motivo;pts_no_presentado';
+const CAB_SIN_HOJA_8 = 'grupo;jornada;local;visitante;marcador;fecha;hora;motivo';   // la de antes, sin la última columna
 
 const fichero = temporada => process.env.MACCABIS_JORNADAS_AJENAS || path.join(ROOT, 'data', `jornadas_grupos_ajenos_${temporada}.json`);
 
@@ -111,7 +115,11 @@ function resultadoSinHoja(e) {
   if (mk[0] === mk[1]) return { error: `marcador ${mk[0]}-${mk[1]}: en baloncesto no hay empates.` };
   if (motivo === 'incomparecencia' && !(Math.max(...mk) === 20 && Math.min(...mk) === 0)) return { error: `una incomparecencia es 20-0 (Bases 47 JDM, 2.10.1), no ${mk[0]}-${mk[1]}.` };
   const no_presentado = motivo === 'incomparecencia' ? (mk[0] === 0 ? e.local : e.visitante) : null;
-  return { grupo: e.grupo, jornada: e.jornada, local: e.local, visitante: e.visitante, pl: mk[0], pv: mk[1], fecha: fecha || null, hora: e.hora || null, motivo, no_presentado };
+  const ptsT = String(e.pts_no_presentado ?? '').trim();
+  if (ptsT && motivo !== 'incomparecencia') return { error: `pts_no_presentado solo va en una incomparecencia.` };
+  if (ptsT && !/^-?\d+$/.test(ptsT)) return { error: `pts_no_presentado «${ptsT}»: tiene que ser un número entero (los puntos de la oficial por ese partido).` };
+  return { grupo: e.grupo, jornada: e.jornada, local: e.local, visitante: e.visitante, pl: mk[0], pv: mk[1], fecha: fecha || null, hora: e.hora || null, motivo, no_presentado,
+    pts_no_presentado: ptsT ? +ptsT : null };
 }
 
 const ficheroSinHoja = temporada => {
@@ -126,16 +134,16 @@ function leerSinHoja(temporada, grupos, f = ficheroSinHoja(temporada)) {
   const entradas = [], errores = [];
   if (!f || !fs.existsSync(f)) return { entradas, errores };
   const lineas = fs.readFileSync(f, 'utf8').replace(/^﻿/, '').split(/\r?\n/);
-  if ((lineas[0] || '').split(';').map(c => c.trim().toLowerCase()).join(';') !== CAB_SIN_HOJA)
+  if (![CAB_SIN_HOJA, CAB_SIN_HOJA_8].includes((lineas[0] || '').split(';').map(c => c.trim().toLowerCase()).join(';')))
     return { entradas, errores: [`${SIN_HOJA}: la cabecera debe ser «${CAB_SIN_HOJA}».`] };
   lineas.slice(1).forEach((l, i) => {
     if (!l.trim() || l.trim().startsWith('#')) return;
-    const [grupoT, jornadaT, local, visitante, marcador, fecha, hora, motivo] = l.split(';').map(x => x.trim());
+    const [grupoT, jornadaT, local, visitante, marcador, fecha, hora, motivo, pts_no_presentado] = l.split(';').map(x => x.trim());
     const grupo = claveGrupo(grupoT, grupos), jornada = +String(jornadaT || '').replace(/^J/i, '');
     if (!grupo || !grupos[grupo]) { errores.push(`${SIN_HOJA}, línea ${i + 2}: grupo desconocido «${grupoT}».`); return; }
     if (!Number.isInteger(jornada) || jornada < 1) { errores.push(`${SIN_HOJA}, línea ${i + 2}: jornada «${jornadaT}» no es un número.`); return; }
     if (!local || !visitante) { errores.push(`${SIN_HOJA}, línea ${i + 2}: faltan el local o el visitante.`); return; }
-    const r = resultadoSinHoja({ grupo, jornada, local, visitante, marcador, fecha, hora, motivo });
+    const r = resultadoSinHoja({ grupo, jornada, local, visitante, marcador, fecha, hora, motivo, pts_no_presentado });
     if (r.error) errores.push(`${SIN_HOJA}, línea ${i + 2}: ${r.error}`); else entradas.push(r);
   });
   return { entradas, errores };
@@ -151,7 +159,7 @@ function anotarSinHoja(temporada, nuevos, grupos, f = ficheroSinHoja(temporada))
   const ya = leerSinHoja(temporada, grupos, f).entradas;
   const fecha = x => (x ? x.split('-').reverse().join('/') : '');
   const lineas = nuevos.filter(n => !ya.some(y => mismoCruce(y, n)))
-    .map(n => [n.grupo, n.jornada, n.local, n.visitante, `${n.pl}-${n.pv}`, fecha(n.fecha), n.hora || '', n.motivo === 'incomparecencia' ? 'incomparecencia' : 'sin hoja'].join(';'));
+    .map(n => [n.grupo, n.jornada, n.local, n.visitante, `${n.pl}-${n.pv}`, fecha(n.fecha), n.hora || '', n.motivo === 'incomparecencia' ? 'incomparecencia' : 'sin hoja', n.pts_no_presentado ?? ''].join(';'));
   if (!lineas.length) return { anotados: 0, fichero: f, previo };
   fs.mkdirSync(path.dirname(f), { recursive: true });
   fs.writeFileSync(f, (previo ? previo.replace(/\s*$/, '\n') : CAB_SIN_HOJA + '\n') + lineas.join('\n') + '\n', 'utf8');

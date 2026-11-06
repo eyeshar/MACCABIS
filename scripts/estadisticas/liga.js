@@ -193,7 +193,7 @@ function comprobarNoRetrocede(nuevo, temporada) {
 const cero = () => ({ pj: 0, g: 0, p: 0, pf: 0, pc: 0 });
 
 function clasificar(equipos, juegos, cfgLiga, oficiales) {
-  const t = new Map(equipos.map(e => [e.id, { ...e, ...cero(), pts: 0, np: 0, pts_pendiente: false, pts_fuente: null, casa: cero(), fuera: cero(), serie: [] }]));
+  const t = new Map(equipos.map(e => [e.id, { ...e, ...cero(), pts: 0, np: 0, np_of: 0, ajuste: 0, pts_pendiente: false, pts_fuente: null, casa: cero(), fuera: cero(), serie: [] }]));
   const sumar = (x, gana, pf, pc, donde) => {
     for (const o of [x, x[donde]]) { o.pj++; o[gana ? 'g' : 'p']++; o.pf += pf; o.pc += pc; }
   };
@@ -207,7 +207,10 @@ function clasificar(equipos, juegos, cfgLiga, oficiales) {
         for (const o of [x, x[donde]]) { o.pj++; o[gana ? 'g' : 'p']++; if (pf != null) { o.pf += pf; o.pc += pc; } }
         x.serie.push(gana ? 'G' : 'P');
       }
-      t.get(j.no_presentado).np++;
+      const np = t.get(j.no_presentado);
+      np.np++;
+      // Puntos de la oficial por ese partido (resultados sin hoja, columna pts_no_presentado): se usan en vez de suponer.
+      if (Number.isFinite(j.pts_np)) { np.np_of++; np.ajuste += j.pts_np - cfgLiga.puntos_derrota; }
       continue;
     }
     sumar(L, j.pl > j.pv, j.pl, j.pv, 'casa'); sumar(V, j.pv > j.pl, j.pv, j.pl, 'fuera');
@@ -219,6 +222,7 @@ function clasificar(equipos, juegos, cfgLiga, oficiales) {
     if (x.np) {
       const of = oficiales && oficiales[x.id];
       if (of && Number.isFinite(of.pts)) { x.pts = of.pts; x.pts_fuente = 'oficial'; }
+      else if (x.np_of === x.np) { x.pts += x.ajuste; x.pts_fuente = 'oficial'; }
       else x.pts_pendiente = true;
     }
   }
@@ -364,7 +368,7 @@ function construir(temporada) {
     for (const e of sinHoja.filter(x => x.g === g)) {
       const eq = n => g.equipos.get(normEquipo(n));
       const j = { jornada: e.jornada, fecha: e.fecha, local: eq(e.local), visitante: eq(e.visitante), pl: e.pl, pv: e.pv, nuestro: false, sinHoja: e.motivo };
-      if (e.motivo === 'incomparecencia') Object.assign(j, { incomp: true, no_presentado: eq(e.no_presentado).id });
+      if (e.motivo === 'incomparecencia') Object.assign(j, { incomp: true, no_presentado: eq(e.no_presentado).id, pts_np: e.pts_no_presentado });
       juegos.push(j);
       privado.push({ grupo: g.clave, jornada: e.jornada, fecha: e.fecha, local: j.local.nombre, visitante: j.visitante.nombre, pl: e.pl, pv: e.pv, fichero: null, sin_hoja: e.motivo, equipos: [] });
     }

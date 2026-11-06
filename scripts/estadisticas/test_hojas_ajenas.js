@@ -163,7 +163,7 @@ const escribe = (dir, nombre, bytes) => { fs.mkdirSync(dir, { recursive: true })
   const restaurar = [];
   ok(copiar(r.plan, { base: base15, temporada: '2026-27', restaurar, log: () => {} }) === 2, '8b. se anotan los dos');
   const csv = fs.readFileSync(path.join(base15, ja.SIN_HOJA), 'utf8');
-  ok(/^grupo;jornada;local;visitante;marcador;fecha;hora;motivo\n/.test(csv) && /G5;6;EQUIPO UNO;EQUIPO TRES;38-30;03\/10\/2026;15:15;sin hoja/.test(csv) && restaurar.length === 1 && restaurar[0].previo === null,
+  ok(/^grupo;jornada;local;visitante;marcador;fecha;hora;motivo;pts_no_presentado\n/.test(csv) && /G5;6;EQUIPO UNO;EQUIPO TRES;38-30;03\/10\/2026;15:15;sin hoja;\n/.test(csv) && restaurar.length === 1 && restaurar[0].previo === null,
     '8c. en resultados_sin_hoja.csv de fuentes_fbm (fuera de git), con su marcador; y se sabe cómo deshacerlo');
   ok(ja.anotarHuecos('2026-27', sh.map(p => p.sinHoja), contexto('2026-27').grupos) === 2, '8d. los dos huecos, al fichero de datos');
   reg = ja.leer('2026-27');

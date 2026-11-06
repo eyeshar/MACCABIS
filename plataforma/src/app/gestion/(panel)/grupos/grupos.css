@@ -41,7 +41,7 @@
   .ge-grupo { padding: 8px 9px; }
   .ge-grupo li { font-size: 0.88rem; }
 }
-body.gr-vista-equipo .nv-cab, body.gr-vista-equipo .nv-barra, body.gr-vista-equipo .nv-saltar, body.gr-vista-equipo .zb,
+body.gr-vista-equipo .nv-cab, body.gr-vista-equipo .nv-barra, body.gr-vista-equipo .nv-saltar,
 body.gr-vista-equipo .gs-titulo, body.gr-vista-equipo [data-testid="alarma-tarea"], body.gr-vista-equipo [data-asistente] { display: none !important; }
 body.gr-vista-equipo { padding-bottom: 0 !important; }
 body.gr-vista-equipo .gr { padding-bottom: 16px; }

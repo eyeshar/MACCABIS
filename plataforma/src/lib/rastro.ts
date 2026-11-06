@@ -36,6 +36,18 @@ export function origenDe(rastro: string[], actual: string): { url: string; indic
   return null;
 }
 
+/** «‹» a su seccion (D189): la vuelta es siempre a `defecto` (la seccion o la pantalla madre), pero si en esta pestaña ya se
+ *  vio esa pantalla con su pestaña, filtro o jornada en la URL, se vuelve a la ultima vez que se vio (norma 13.4). */
+export function vueltaDe(rastro: string[], defecto: string): { url: string; indice: number } | null {
+  const base = rutaDe(defecto);
+  for (let i = rastro.length - 1; i >= 0; i--) {
+    const u = rastro[i];
+    if (!u.startsWith("/") || u.startsWith("//")) continue;
+    if (rutaDe(u) === base) return { url: u, indice: i };
+  }
+  return null;
+}
+
 /** Anota la pantalla actual al final del rastro (sin repetir la ultima). */
 export function anotar(rastro: string[], actual: string): string[] {
   if (rastro[rastro.length - 1] === actual) return rastro;

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Contadores de personas desplegables y «← volver» (D139), de extremo a extremo: pila local, web compilada y Chrome.
+// Contadores de personas desplegables y «‹» a su sección (D139, D189), de extremo a extremo: pila local, web compilada y Chrome.
 //   - Cada contador es un botón con aria-expanded que despliega, en línea y debajo, los nombres de ese estado; otro toque lo cierra.
 //   - Gestores: nombre + motivo y detalle (Respuestas del evento, Eventos, Panel, Convocatoria); jugadores: solo el nombre, nunca el motivo (D46).
 //   - Los nombres con estadísticas son enlaces a su ficha; los que no, texto.
 //   - A 375 px: sin desbordar y con zona táctil de al menos 44 px.
-//   - «← volver» en las pantallas interiores, a la pantalla de origen con su filtro, su jornada y su pestaña; el botón atrás hace lo mismo.
+//   - «‹» en las pantallas interiores, a su sección con su filtro, su jornada y su pestaña; el botón atrás hace lo mismo.
 //
 //   npm run pruebas:numeros
 import { preparar, personas, sinteticos, contador, visto, sinDesbordar, pequenos } from './comun_e2e.mjs';
@@ -47,7 +47,7 @@ try {
   // ------------------------------------------------------------------ gestor, escritorio
   console.log('\n== Gestor: Respuestas del evento (escritorio)');
   const pg = await e.sesion('gestor@pruebas.local', 1280);
-  await pg.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
+  await pg.goto(`${APP}/evento/${ent.id}`);
   ok(await visto(pg.getByTestId('contadores-va')), 'las cajas de arriba son botones');
   ok(await estado(pg, 'contadores-va') === 'false' && !(await pg.getByTestId('contadores-lista').count()), 'cerradas al entrar (aria-expanded=false, sin lista)');
   await abrir(pg, 'contadores-no');
@@ -56,7 +56,7 @@ try {
   ok(/Noe/.test(lista) && /Lesión/.test(lista) && /rodilla/.test(lista), 'gestor: nombre, motivo y detalle («Noe · Lesión · rodilla»)', lista);
   const cajaY = await pg.getByTestId('contadores-no').boundingBox(), listaY = await pg.getByTestId('contadores-lista').boundingBox();
   ok(listaY.y > cajaY.y + cajaY.height - 2, 'la lista se despliega debajo de las cajas, en línea', JSON.stringify([cajaY, listaY]));
-  ok(new URL(pg.url()).pathname.endsWith('/respuestas'), 'sin salir de la página');
+  ok(new URL(pg.url()).pathname === `/evento/${ent.id}`, 'sin salir de la página');
   await abrir(pg, 'contadores-va');
   ok(await estado(pg, 'contadores-va') === 'true' && await estado(pg, 'contadores-no') === 'false' && /Jon/.test(await pg.getByTestId('contadores-lista').innerText()), 'abrir otro cierra el anterior: «van» muestra a Jon');
   const enlaceJon = pg.getByTestId('contadores-lista').getByRole('link', { name: 'Jon' });
@@ -77,7 +77,7 @@ try {
   const celda = pg.locator(`tr[data-evento] td[data-label=Respuestas]`).filter({ has: pg.locator(`[data-testid="respuestas-${ent.id}-no"]`) });
   await celda.getByTestId(`respuestas-${ent.id}-no`).click();
   ok(/Noe/.test(await celda.getByTestId(`respuestas-${ent.id}-lista`).innerText()) && /Lesión/.test(await celda.innerText()), 'Eventos: el desplegable se abre en la propia fila, con el motivo');
-  ok((await celda.getByTestId('enlace-respuestas').count()) === 1 && (await celda.getByTestId('enlace-respuestas').getAttribute('href')).endsWith('/respuestas'), 'y se conserva el enlace a las respuestas del evento');
+  ok((await celda.getByTestId('enlace-respuestas').count()) === 1 && (await celda.getByTestId('enlace-respuestas').getAttribute('href')).startsWith('/evento/'), 'y se conserva el enlace a las respuestas del evento');
   await celda.getByTestId(`respuestas-${ent.id}-no`).click();
   ok(!(await celda.getByTestId(`respuestas-${ent.id}-lista`).count()), 'se cierra con otro toque');
   await pg.goto(`${APP}/gestion`);
@@ -111,13 +111,13 @@ try {
   ok(/Jon/.test(await pg.getByTestId('cv-convocados-MdA-lista').innerText()), '…con los convocados');
   ok(await visto(pg.getByTestId('cv-casillas-MdA-bases')), 'y las casillas de bases / exteriores / interiores también');
 
-  // ------------------------------------------------------------------ «← volver»
-  console.log('\n== «← volver»: origen con filtro, jornada y pestaña');
+  // ------------------------------------------------------------------ «‹»
+  console.log('\n== «‹» a su sección (D189): con filtro, jornada y pestaña');
   await pg.goto(`${APP}/gestion/eventos?f=entrenos`);
   await pg.locator('.ev-titulo a').first().click();
   await pg.waitForURL(/\/gestion\/eventos\/[0-9a-f-]{36}$/);
   const v1 = pg.getByTestId('volver');
-  ok(await visto(v1.filter({ hasText: /← Eventos/i }), 15000), 'Evento: «← Eventos»', await pg.locator('[data-testid=volver]').evaluateAll((l) => l.map((x) => x.outerHTML).join(' | ')));
+  ok(await visto(v1.filter({ hasText: /‹ Eventos/i }), 15000), 'Evento: «‹ Eventos»', await pg.locator('[data-testid=volver]').evaluateAll((l) => l.map((x) => x.outerHTML).join(' | ')));
   await v1.click();
   await pg.waitForURL(/\/gestion\/eventos\?f=entrenos$/);
   ok(true, 'volver conserva el filtro (?f=entrenos)');
@@ -129,23 +129,23 @@ try {
   ok(true, 'Datos → volver: la convocatoria de la misma jornada');
   await pg.goto(`${APP}/gestion`);
   await pg.getByTestId('enlace-respuestas').first().click();
-  await pg.waitForURL(/\/respuestas$/);
-  ok(await visto(pg.getByTestId('volver').filter({ hasText: /← Panel/i }), 15000), 'Respuestas desde el Panel: «← Panel» (el origen real, no «Evento»)', await pg.locator('[data-testid=volver]').evaluateAll((l) => l.map((x) => x.outerHTML).join(' | ')) + ' ' + await pg.evaluate(() => sessionStorage.getItem('maccabis.rastro')));
+  await pg.waitForURL(/\/evento\/[0-9a-f-]{36}$/);
+  ok(await visto(pg.getByTestId('volver').filter({ hasText: /‹ Calendario/i }), 15000), 'Respuestas desde el Panel: un único «‹ Calendario» (su sección, D189)', await pg.locator('[data-testid=volver]').evaluateAll((l) => l.map((x) => x.outerHTML).join(' | ')) + ' ' + await pg.evaluate(() => sessionStorage.getItem('maccabis.rastro')));
   await pg.goBack();
   ok(new URL(pg.url()).pathname === '/gestion', 'y el botón atrás del navegador vuelve al mismo sitio');
 
-  console.log('\n== Todas las pantallas interiores llevan «← volver»');
+  console.log('\n== Todas las pantallas interiores llevan «‹»');
   const urls = [
     '/gestion/eventos', '/gestion/convocatoria', '/gestion/convocatoria/datos', `/gestion/convocatoria/salida?fecha=${J3}`, '/gestion/tablero', '/liga/scouting', '/liga/consolidada',
     '/gestion/jugadores', '/gestion/ropa', '/gestion/asistencia', '/gestion/grupos', '/gestion/eventos/nuevo', '/gestion/eventos/importar', '/gestion/eventos/pistas',
-    `/gestion/eventos/${ent.id}`, `/gestion/eventos/${ent.id}/respuestas`, '/jugador/esteban-jon', '/cuenta', '/avisos', '/mi-zona/ausencias', '/planes/nuevo',
+    `/gestion/eventos/${ent.id}`, `/evento/${ent.id}`, '/jugador/esteban-jon', '/avisos', '/mi-zona/ausencias', '/planes/nuevo',
   ];
   const sin = [];
   for (const u of urls) {
     await pg.goto(`${APP}${u}`);
     if (!(await visto(pg.getByTestId('volver'), 4000))) sin.push(u);
   }
-  ok(sin.length === 0, 'cada pantalla interior de Gestión, la ficha, Mi cuenta y Avisos tienen «← volver»', sin.join(', '));
+  ok(sin.length === 0, 'cada pantalla interior de Gestión, el evento, la ficha y Avisos tienen «‹»', sin.join(', '));
 
   // ------------------------------------------------------------------ jugador, móvil
   console.log('\n== Jugador (375 px): solo nombres, nunca motivos');
@@ -160,7 +160,7 @@ try {
   ok(await sinDesbordar(pj), '375 px sin desbordar (abierto)');
   const chicos = await pequenos(pj, '.num-boton');
   ok(chicos.length === 0, 'los botones de los contadores miden al menos 44 px', JSON.stringify(chicos));
-  ok(/← /.test(await pj.getByTestId('volver').innerText()), 'y lleva «← volver»');
+  ok(/‹ /.test(await pj.getByTestId('volver').textContent()), 'y lleva «‹»');
   await pj.goto(`${APP}/mi-zona/domingo/${J3}`);
   ok(await visto(pj.getByTestId('convocados-MdA-convocados')), 'Domingo: «N convocados» es un botón');
   await pj.getByTestId('convocados-MdA-convocados').click();

@@ -4,7 +4,7 @@
 // comprueba que las dos coinciden.
 // D117-D120: la agenda, los planes, «Mis números» y el calendario personal (/cal/<enlace secreto>.ics) tambien.
 // D162: Scouting rivales y Liga consolidada (dentro de la Liga, pero con sesion: datos de terceros).
-export const RUTAS_PRIVADAS = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal", "/asistente", "/liga/scouting", "/liga/consolidada", "/inicio", "/liga/con-parametros", "/historia/con-parametros", "/plantilla/con-parametros"];
+export const RUTAS_PRIVADAS = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/calendario", "/evento", "/yo", "/cal", "/asistente", "/liga/scouting", "/liga/consolidada", "/inicio", "/liga/con-parametros", "/historia/con-parametros", "/plantilla/con-parametros"];
 
 /** Despliegue de vista previa o desarrollo en Vercel (VERCEL_ENV lo pone Vercel; en local no existe). */
 export const esVistaPrevia = () => Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";

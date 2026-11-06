@@ -10,11 +10,10 @@ import { useSesion } from "@/components/nav/Sesion";
 
 const ENFOCABLES = 'a[href], button:not([disabled]), textarea:not([disabled]), [tabindex="0"]';
 
-/** Boton flotante «Pregunta al asistente» (D142) y su panel: hoja desde abajo en el movil (~85 % del alto), panel lateral
- *  de 400 px en escritorio. Solo con sesion y acceso (CHAT_IA_ABIERTO; lo decide /api/sesion: `chat` null =
- *  sin acceso) y solo en Inicio y las pantallas con login (asistenteEnRuta). Se cierra con ✕, Escape, tocando fuera o al
- *  cambiar de pantalla; la conversacion sigue (sessionStorage) y se borra al cerrar sesion. En Convocatoria, Tablero y
- *  Grupos el boton se esconde mientras su barra fija de acciones esta en pantalla (CSS). */
+/** «Pregunta al asistente» (D142) y su panel: desde D189, un icono de la cabecera (antes, un boton flotante). Panel: hoja
+ *  desde abajo en el movil (~85 % del alto), lateral de 400 px en escritorio. Solo con sesion y acceso (CHAT_IA_ABIERTO; lo
+ *  decide /api/sesion: `chat` null = sin acceso) y solo en Inicio y las pantallas con login (asistenteEnRuta). Se cierra
+ *  con ✕, Escape, tocando fuera o al cambiar de pantalla; la conversacion sigue (sessionStorage) y se borra al cerrar sesion. */
 export default function AsistenteFlotante() {
   const { chat, listo } = useSesion();
   const ruta = useRuta();
@@ -56,7 +55,7 @@ export default function AsistenteFlotante() {
         ref={boton} type="button" className="af-boton" aria-label="Pregunta al asistente" aria-haspopup="dialog" aria-expanded={abierto}
         aria-controls="af-panel" data-testid="boton-asistente" onClick={() => { setMontado(true); setAbierto(true); }}
       >
-        <Bocadillo />
+        <Bocadillo size={24} />
       </button>
       {abierto && <div className="af-velo" aria-hidden="true" data-testid="velo-asistente" onClick={cerrar} />}
       <div ref={panel} id="af-panel" className="af-panel" role="dialog" aria-modal="true" aria-labelledby="af-titulo" hidden={!abierto} data-testid="panel-asistente">

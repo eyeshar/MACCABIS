@@ -1,3 +1,4 @@
-/* «← volver» (D139): una linea al principio de toda pantalla interior; zona tactil >= 44 px. */
+/* «‹» a su seccion (D189, antes «← volver» de D139): una linea al principio de toda pantalla interior; zona tactil >= 44 px. */
 .volver { margin: 0 0 8px; }
-.volver a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+.volver a { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-weight: 600; }
+.volver a span, a[data-testid="volver"] span { font-size: 1.4em; line-height: 1; }

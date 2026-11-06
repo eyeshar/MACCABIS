@@ -63,7 +63,7 @@ try {
   }
 
   const PANTALLAS = [
-    ['inicio', '/', null], ['entrar', '/entrar', null], ['agenda', '/agenda', 'jugador'],
+    ['inicio', '/', null], ['entrar', '/entrar', null], ['calendario', '/calendario', 'jugador'],
     ['gestion', '/gestion', 'gestor'], ['liga', '/liga', null], ['estadisticas', '/liga/estadisticas', null],
     ['inicio-gestor', '/', 'gestor'], ['convocatoria', '/gestion/convocatoria', 'gestor'], ['tablero', '/gestion/tablero', 'gestor'],
   ];
@@ -99,7 +99,9 @@ try {
       ok(malos.n > 0 && malos.out.length === 0, `${nombre} (${forma}): ${malos.n} botones dentro de la zona segura y pulsables`, malos.out.join(' | ') || 'no hay botones');
       // Cabecera: el fondo llega hasta arriba del todo (sin franja) y la fila empieza por debajo de la barra de estado.
       const cab = await p.evaluate(() => { const c = document.querySelector('header.nv-cab'); const r = c.getBoundingClientRect(); return { top: r.top, h: r.height }; });
-      ok(cab.top === 0 && cab.h >= insets.top + 14 + 44, `${nombre} (${forma}): la cabecera empieza en 0 y mide ${Math.round(cab.h)}px`);
+      // D189: en el movil la fila de la cabecera es mas baja (titulo de la seccion), pero sigue entera por debajo de la barra de
+      // estado y con sitio para objetivos de 44 px.
+      ok(cab.top === 0 && cab.h >= insets.top + 44, `${nombre} (${forma}): la cabecera empieza en 0 y mide ${Math.round(cab.h)}px`);
       if (rol === 'gestor') {
         // Boton flotante del asistente (D142): nunca tapa un boton. Cada elemento pulsable se lleva al centro de la pantalla
         // (o lo mas cerca que deje el scroll: lo ultimo de la pagina queda abajo, junto al boton) y en su centro tiene que
@@ -130,25 +132,25 @@ try {
     }
   }
 
-  // Hoja «Mas» de la barra inferior y avisos: debajo de la barra de inicio y dentro de los laterales (vertical y horizontal estrecho)
-  console.log('\n== Hoja «Mas»');
+  // D189: ya no hay hoja «Más». La hoja que queda es el panel del asistente: deja el margen de la barra de inicio y no sube
+  // bajo la barra de estado.
+  console.log('\n== Panel del asistente');
   {
     const { viewport, insets } = FORMAS.vertical;
     const ctx = await nav.newContext({ ...iphone, viewport, locale: 'es-ES', storageState: estados.gestor });
     await ctx.route('**/*.css', reescribir(insets));
     const p = await ctx.newPage();
-    await p.goto(`${APP}/agenda`, { waitUntil: 'networkidle' });
-    const mas = p.locator('.nv-barra .nv-barra-item').last();
-    await mas.click();
-    await visto(p.locator('.nv-hoja:not([hidden])'));
-    await p.screenshot({ path: path.join(SALIDA, 'hoja-mas-vertical.png') });
-    const h = await p.evaluate(() => { const r = document.querySelector('.nv-hoja:not([hidden])')?.getBoundingClientRect(); return r && { bottom: r.bottom, top: r.top, pb: getComputedStyle(document.querySelector('.nv-hoja:not([hidden])')).paddingBottom }; });
-    ok(Boolean(h) && h.top >= insets.top && parseFloat(h.pb) >= 16 + insets.bottom, 'la hoja deja el margen de la barra de inicio y no sube bajo la barra de estado', JSON.stringify(h));
+    await p.goto(`${APP}/calendario`, { waitUntil: 'networkidle' });
+    await p.locator('.af-boton').click();
+    await visto(p.locator('.af-panel:not([hidden])'));
+    await p.screenshot({ path: path.join(SALIDA, 'panel-asistente-vertical.png') });
+    const h = await p.evaluate(() => { const e = document.querySelector('.af-panel:not([hidden])'); const r = e?.getBoundingClientRect(); return r && { top: r.top, pt: getComputedStyle(e).paddingTop, pb: getComputedStyle(e).paddingBottom }; });
+    ok(Boolean(h) && h.top >= insets.top && parseFloat(h.pb) >= insets.bottom, 'el panel deja el margen de la barra de inicio y no sube bajo la barra de estado', JSON.stringify(h));
     await ctx.close();
   }
 
-  // Tablero con algo seleccionado: su barra fija de acciones ocupa el ancho entero; el boton del asistente se esconde mientras
-  // tanto (decision D142: encima de esa barra taparia las casillas de la lista).
+  // Tablero con algo seleccionado: su barra fija de acciones ocupa el ancho entero. Desde D189 el asistente es un icono de la
+  // cabecera: sigue a la vista y nunca se solapa con esa barra (antes, el boton flotante se escondia, D142).
   console.log('\n== Asistente y barras fijas de Convocatoria y Tablero');
   for (const [forma, { viewport, insets }] of Object.entries(FORMAS)) {
     const ctx = await nav.newContext({ ...iphone, viewport, locale: 'es-ES', storageState: estados.gestor });
@@ -160,8 +162,12 @@ try {
     ok(await visto(p.locator('.af-boton')), `tablero (${forma}): sin selección, botón del asistente`);
     await casilla.check();
     await visto(p.getByTestId('barra-acciones'));
-    const b = await p.evaluate(() => ({ barra: !!document.querySelector('.tb-barra:not([hidden])'), fab: getComputedStyle(document.querySelector('.af-boton')).display }));
-    ok(b.barra && b.fab === 'none', `tablero (${forma}): con la barra de acciones en pantalla, el botón se esconde`, JSON.stringify(b));
+    const b = await p.evaluate(() => {
+      const t = document.querySelector('.tb-barra:not([hidden])'); const f = document.querySelector('.af-boton');
+      const r = t?.getBoundingClientRect(), q = f.getBoundingClientRect();
+      return { barra: Boolean(t), solapa: Boolean(r) && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top, enCabecera: Boolean(f.closest('header.nv-cab')) };
+    });
+    ok(b.barra && !b.solapa && b.enCabecera, `tablero (${forma}): con la barra de acciones en pantalla, el icono del asistente (en la cabecera) no la toca`, JSON.stringify(b));
     await p.screenshot({ path: path.join(SALIDA, `tablero-barra-${forma}.png`) });
     await ctx.close();
   }

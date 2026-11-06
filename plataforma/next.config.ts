@@ -39,11 +39,18 @@ const nextConfig: NextConfig = {
   },
   // forbidden() (403) en /asistente para quien no tiene abierto el asistente (D142).
   experimental: { authInterrupts: true },
-  // Una sola pagina de cuenta para jugadores y gestores (D90): la antigua de gestion lleva a la nueva.
+  // Una sola pagina de cuenta para jugadores y gestores (D90; desde D189, «Yo»): la antigua de gestion lleva a la nueva.
   // D117: /mi-zona es ahora el inicio personal («/» con sesion); sus paginas (evento, domingo, ausencias, ropa) siguen.
   async redirects() {
     return [
-      { source: "/gestion/cuenta", destination: "/cuenta", permanent: true },
+      { source: "/gestion/cuenta", destination: "/yo", permanent: true },
+      // D189 (estructura nueva): las rutas viejas van con 308 a su sitio nuevo; los enlaces ya enviados (avisos push,
+      // WhatsApp, calendario) siguen valiendo. La consulta (?f=, ?fecha=…) se conserva.
+      { source: "/agenda", destination: "/calendario", permanent: true },
+      { source: "/mi-zona/evento/:id", destination: "/evento/:id", permanent: true },
+      { source: "/gestion/eventos/:id/respuestas", destination: "/evento/:id", permanent: true },
+      { source: "/cuenta", destination: "/yo", permanent: true },
+      { source: "/mis-numeros", destination: "/yo", permanent: true },
       { source: "/mi-zona", destination: "/", permanent: true },
       // Un solo manifiesto, sin sesion: el de Mi zona (que leia mi_zona y fallaba) lleva al de toda la web.
       { source: "/mi-zona/manifest.webmanifest", destination: "/manifest.webmanifest", permanent: true },
@@ -71,7 +78,7 @@ const nextConfig: NextConfig = {
   async headers() {
     const NOINDEX = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
     const vistaPrevia = Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== "production";
-    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/cal", "/asistente", "/liga/scouting", "/liga/consolidada", "/inicio", "/liga/con-parametros", "/historia/con-parametros", "/plantilla/con-parametros"];
+    const privadas = ["/entrar", "/mi-zona", "/gestion", "/cuenta", "/auth", "/avisos", "/api", "/agenda", "/planes", "/mis-numeros", "/calendario", "/evento", "/yo", "/cal", "/asistente", "/liga/scouting", "/liga/consolidada", "/inicio", "/liga/con-parametros", "/historia/con-parametros", "/plantilla/con-parametros"];
     return [
       ...(vistaPrevia
         ? [{ source: "/:path*", headers: NOINDEX }]

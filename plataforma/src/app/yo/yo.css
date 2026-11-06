@@ -1,0 +1,17 @@
+/* «Yo» (D189): nombre y papel arriba, «Tu temporada», una lista de filas grandes y las tarjetas de siempre. */
+.yo { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; }
+.yo-quien { display: flex; align-items: center; gap: 14px; }
+.yo-quien i { width: 56px; height: 56px; border-radius: 50%; background: var(--c-amarillo); color: var(--c-sobre-acento); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-style: normal; font-size: 26px; flex: none; }
+.yo-quien h1 { margin: 0; font-size: 1.8rem; line-height: 1.1; }
+.yo-quien p { margin: 2px 0 0; }
+.yo-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.yo-cab h2 { margin: 0; }
+.yo-temporada { display: flex; flex-direction: column; gap: 10px; }
+.yo-lista { display: flex; flex-direction: column; border: 1px solid var(--borde); border-radius: var(--radio-grande); overflow: hidden; background: var(--tarjeta); }
+.yo-fila { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 16px; color: var(--tinta); text-decoration: none; border-top: 1px solid var(--borde); }
+.yo-fila:first-child { border-top: 0; }
+.yo-fila:hover { background: var(--panel-3); color: var(--tinta); }
+.yo-pasos { margin: 8px 0 0; padding-left: 20px; color: var(--tinta-suave); }
+.yo-pasos li { margin: 4px 0; }
+.yo-salir { margin-top: 12px; min-height: var(--toque); }
+.yo .tarjeta h2 { font-size: 1.3rem; }

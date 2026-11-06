@@ -4,35 +4,50 @@
  *  Un solo sitio: el escudo (imagen) tambien dice "since 2013". */
 export const FUNDACION = 2013;
 
-export type Seccion = { id: string; texto: string; href: string; externo: boolean };
+/** Secciones de la navegacion (D189, estructura nueva; sustituye a los menus de D89, D90 y D117). */
+export type IdSeccion = "inicio" | "semana" | "calendario" | "liga" | "club" | "gestion" | "acceso";
+export type Seccion = { id: IdSeccion; texto: string; href: string };
 
-/** Menu principal de la cabecera unica (D89). Todas las secciones son rutas de esta app (Liga, Plantilla e Historia ya
- *  estan migradas); externo = no es una ruta de esta app, para usar <a> en vez de <Link>. */
-export const MENU: Seccion[] = [
-  { id: "inicio", texto: "Inicio", href: "/", externo: false },
-  { id: "partidos", texto: "Partidos", href: "/#calendario", externo: false },
-  { id: "liga", texto: "Liga", href: "/liga", externo: false },
-  { id: "plantilla", texto: "Plantilla", href: "/plantilla", externo: false },
-  { id: "historia", texto: "Historia", href: "/historia", externo: false },
-  { id: "club", texto: "El club", href: "/club", externo: false },
-];
+const S: Record<IdSeccion, Seccion> = {
+  inicio: { id: "inicio", texto: "Inicio", href: "/" },
+  semana: { id: "semana", texto: "Semana", href: "/" },
+  calendario: { id: "calendario", texto: "Calendario", href: "/calendario" },
+  liga: { id: "liga", texto: "Liga", href: "/liga" },
+  club: { id: "club", texto: "Club", href: "/club" },
+  gestion: { id: "gestion", texto: "Gestión", href: "/gestion" },
+  acceso: { id: "acceso", texto: "Acceso", href: "/entrar" },
+};
 
-/** Menu con sesion (D117): lo de cada persona primero. Escritorio: Inicio · Agenda · Mis números · Liga · Historia (y el
- *  menu GESTIÓN de los gestores). «Mis números» son sus estadisticas (/mis-numeros lleva a su ficha). */
-export const MENU_SESION: Seccion[] = [
-  { id: "inicio", texto: "Inicio", href: "/", externo: false },
-  { id: "agenda", texto: "Agenda", href: "/agenda", externo: false },
-  { id: "numeros", texto: "Mis números", href: "/mis-numeros", externo: false },
-  { id: "liga", texto: "Liga", href: "/liga", externo: false },
-  { id: "historia", texto: "Historia", href: "/historia", externo: false },
-];
+/** La barra (y el menu de escritorio) de cada persona: jugador Semana · Calendario · Liga · Club; gestor, con o sin ficha,
+ *  ademas Gestión; sin sesion, Inicio (la portada publica) · Liga · Club · Acceso. */
+export function seccionesDe(u: { esGestor: boolean } | null): Seccion[] {
+  if (!u) return [S.inicio, S.liga, S.club, S.acceso];
+  return [S.semana, S.calendario, S.liga, S.club, ...(u.esGestor ? [S.gestion] : [])];
+}
+
+/** Titulo de la seccion en la cabecera del movil. */
+export const TITULO_SECCION: Record<IdSeccion, string> = {
+  inicio: "Inicio", semana: "Semana", calendario: "Calendario", liga: "Liga", club: "Club", gestion: "Gestión", acceso: "Acceso",
+};
+
+/** La seccion de una pantalla (la que se marca en la barra). Yo (/yo, /avisos) no es de ninguna: se marca el avatar. */
+export function seccionDe(ruta: string, conSesion: boolean): IdSeccion | null {
+  const en = (...rs: string[]) => rs.some((r) => ruta === r || ruta.startsWith(`${r}/`));
+  if (ruta === "/" || ruta === "/inicio") return conSesion ? "semana" : "inicio";
+  if (en("/calendario", "/evento", "/agenda", "/planes", "/mi-zona", "/guia-tallas")) return "calendario";
+  if (en("/gestion")) return "gestion";
+  if (en("/liga")) return "liga";
+  if (en("/club", "/plantilla", "/historia", "/jugador", "/privacidad")) return "club";
+  if (en("/entrar", "/auth")) return "acceso";
+  return null;
+}
 
 /** Entrada del menu de Gestion. Sin href = aun no existe (llega en el paso 2): se ve en gris, sin enlace. */
 /** `enBarra: false`: solo en el desplegable y la hoja «Más», no en la barra fija de Gestión (que en escritorio ya va llena). */
 export type EntradaGestion = { texto: string; corto: string; descripcion: string; href?: string; enBarra?: false };
 export type GrupoGestion = { grupo: string; entradas: EntradaGestion[] };
 
-/** Menu de Gestion (D90): el desplegable de la cabecera, la hoja "Mas" del movil y la barra de la zona. */
+/** Pantallas de Gestion por grupos (D90). Desde D189 ya no hay desplegable, hoja «Más» ni barra de Gestión: /gestion lleva a todas. */
 export const MENU_GESTION: GrupoGestion[] = [
   {
     grupo: "La semana",
@@ -62,8 +77,8 @@ export const MENU_GESTION: GrupoGestion[] = [
   },
 ];
 
-/** Pagina de la cuenta, una para jugadores y gestores (D90). */
-export const RUTA_CUENTA = "/cuenta";
+/** «Yo» (D189): la pagina de cada persona, que sustituye a Mi cuenta (D90) y a Mis números (D117). */
+export const RUTA_CUENTA = "/yo";
 
 export const NOMBRE_EQUIPO = { MDA: "MdA", MDL: "MdL" } as const;
 export const GRUPO_EQUIPO = { MDA: "G1", MDL: "G2" } as const;

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// Navegacion unica (D89, D90), de extremo a extremo: la misma cabecera en toda la web y por rol (sin sesion, jugador,
-// gestor), desplegables accesibles, barra inferior y hoja "Mas" en movil, barras propias de Mi zona y Gestion, Mi zona a
-// dos columnas, Gestion en el tema oscuro, "Mi cuenta" unica, y la barra de vuelta de la web de estadisticas (GitHub
-// Pages). Pila local (Postgres + PostgREST con nuestras migraciones) + app compilada + Chrome.
+// Navegacion unica (D89; desde D189 la de la estructura nueva), de extremo a extremo: la misma cabecera en toda la web y
+// por rol (sin sesion, jugador, gestor con y sin ficha), barra inferior en movil (Semana · Calendario · Liga · Club, y
+// Gestión para los gestores; sin sesion Inicio · Liga · Club · Acceso), sin hoja «Más», sin desplegables ni barra de
+// Gestión, el avatar a «Yo», Gestion en el tema oscuro, y la barra de vuelta de la web de estadisticas (GitHub Pages).
+// Pila local (Postgres + PostgREST con nuestras migraciones) + app compilada + Chrome.
 //
 //   npm run pruebas:navegacion
 //
@@ -52,8 +53,8 @@ const GESTION = ['/gestion', '/gestion/jugadores', '/gestion/ropa', '/gestion/ro
 const LIGA_SESION = ['/liga/scouting', '/liga/consolidada'];
 const ROLES = {
   anon: { paginas: PUBLICAS },
-  jugador: { email: 'jugador@pruebas.local', paginas: [...PUBLICAS, '/agenda', '/cuenta', ...LIGA_SESION] },
-  gestor: { email: 'gestor@pruebas.local', paginas: [...PUBLICAS, '/agenda', '/cuenta', ...LIGA_SESION, ...GESTION] },
+  jugador: { email: 'jugador@pruebas.local', paginas: [...PUBLICAS, '/calendario', '/yo', ...LIGA_SESION] },
+  gestor: { email: 'gestor@pruebas.local', paginas: [...PUBLICAS, '/calendario', '/yo', ...LIGA_SESION, ...GESTION] },
 };
 const TAMANOS = [['375', 375, 812, true], ['escritorio', 1440, 900, false]];
 
@@ -83,11 +84,13 @@ try {
 
   console.log('\n== HTTP');
   let r = await fetch(`${APP}/gestion/cuenta`, { redirect: 'manual' });
-  ok(r.status >= 300 && r.status < 400 && new URL(r.headers.get('location'), APP).pathname === '/cuenta', '/gestion/cuenta redirige a /cuenta (una sola pagina de cuenta)', `${r.status} ${r.headers.get('location')}`);
+  ok(r.status === 308 && new URL(r.headers.get('location'), APP).pathname === '/yo', '/gestion/cuenta redirige a /yo (una sola pagina de cada persona, D189)', `${r.status} ${r.headers.get('location')}`);
   r = await fetch(`${APP}/cuenta`, { redirect: 'manual' });
-  ok(r.status >= 300 && r.status < 400 && (r.headers.get('location') || '').includes('/entrar'), '/cuenta sin sesion redirige a /entrar');
-  ok((r.headers.get('x-robots-tag') || '').includes('noindex'), '/cuenta: X-Robots-Tag noindex (exige login, D85)');
-  ok((await (await fetch(`${APP}/robots.txt`)).text()).includes('Disallow: /cuenta'), 'robots.txt: Disallow /cuenta');
+  ok(r.status === 308 && new URL(r.headers.get('location'), APP).pathname === '/yo', '/cuenta redirige a /yo (308)', `${r.status} ${r.headers.get('location')}`);
+  r = await fetch(`${APP}/yo`, { redirect: 'manual' });
+  ok(r.status >= 300 && r.status < 400 && (r.headers.get('location') || '').includes('/entrar'), '/yo sin sesion redirige a /entrar');
+  ok((r.headers.get('x-robots-tag') || '').includes('noindex'), '/yo: X-Robots-Tag noindex (exige login, D85)');
+  ok((await (await fetch(`${APP}/robots.txt`)).text()).includes('Disallow: /yo'), 'robots.txt: Disallow /yo');
 
   nav = await abrirNavegador();
   const foto = (p, n, completa = true) => p.screenshot({ path: path.join(SALIDA, `${n}.png`), fullPage: completa });
@@ -125,7 +128,7 @@ try {
       p.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
       if (conf.email) {
         await entrar(p, conf.email);
-        if (rol === 'gestor') ok(new URL(p.url()).pathname === '/', 'gestor que tambien es jugador: entra en su inicio (con la banda de gestion, D117)', p.url());
+        if (rol === 'gestor') ok(new URL(p.url()).pathname === '/', 'gestor que tambien es jugador: entra en su Semana (con «Gestión · N pendientes», D189)', p.url());
       }
 
       const firmas = new Map();
@@ -138,7 +141,7 @@ try {
           cabeceras: document.querySelectorAll('header.nv-cab').length,
           viejas: document.querySelectorAll('.gs-cab, .mz-cab, .w-cab, .w-barra, .mz-barra, .gs-lateral, .w-menu-movil').length,
           desborda: document.documentElement.scrollWidth > window.innerWidth + 1,
-          blank: [...document.querySelectorAll('header a, nav a, .zb a')].filter((a) => a.target === '_blank').length,
+          blank: [...document.querySelectorAll('header a, nav a')].filter((a) => a.target === '_blank').length,
           inicio: [...document.querySelectorAll('header a[href="/"], nav[aria-label="Secciones"] a[href="/"]')].some((a) => a.getBoundingClientRect().height > 0),
           externos: [...document.querySelectorAll('nav[aria-label="Principal"] a[href^="https://eyeshar.github.io/"]')].map((a) => ({ svg: a.querySelectorAll('svg').length, t: a.target })),
         }));
@@ -159,7 +162,7 @@ try {
           if (t.fija !== 'fixed' || t.contenido > t.barra + 1) problemas.tapa.push(`${ruta}: contenido hasta ${Math.round(t.contenido)}, barra en ${Math.round(t.barra)}`);
           await p.evaluate(() => window.scrollTo(0, 0));
         }
-        const peq = await p.evaluate(() => [...document.querySelectorAll('header.nv-cab a, header.nv-cab button, nav[aria-label="Secciones"] a, nav[aria-label="Secciones"] button, .zb a')]
+        const peq = await p.evaluate(() => [...document.querySelectorAll('header.nv-cab a, header.nv-cab button, nav[aria-label="Secciones"] a, nav[aria-label="Secciones"] button')]
           .filter((e) => !e.closest('[hidden]') && getComputedStyle(e).display !== 'none').map((e) => { const r = e.getBoundingClientRect(); return { t: e.textContent.trim().slice(0, 24), h: Math.round(r.height), w: Math.round(r.width) }; })
           .filter((x) => x.h > 0 && (x.h < 44 || x.w < 44)));
         if (peq.length) problemas.pequenos.push(`${ruta}: ${JSON.stringify(peq.slice(0, 3))}`);
@@ -172,220 +175,100 @@ try {
       ok(problemas.pequenos.length === 0, 'objetivos tactiles de la navegacion de al menos 44 px', problemas.pequenos.join(' | '));
       if (movil) ok(problemas.tapa.length === 0, 'la barra inferior (fija) no tapa el contenido', problemas.tapa.join(' | '));
 
-      // ---- Lo que ve cada rol
-      // Con sesion, «/» es el inicio personal (sin pie): el pie de la web publica se mira en /club.
+      // ---- Lo que ve cada rol (D189: barra Semana · Calendario · Liga · Club [· Gestión]; sin sesion Inicio · Liga · Club · Acceso)
+      // Con sesion, «/» es la Semana (sin pie): el pie de la web publica se mira en /club.
       await p.goto(`${APP}/club`);
       const pie = await p.locator('footer#pie a').evaluateAll((a) => a.map((x) => `${x.textContent.trim()}|${x.getAttribute('href')}`));
-      const piePrevisto = { anon: ['Acceso jugadores y gestores|/entrar'], jugador: ['Tu agenda|/agenda'], gestor: ['Tu agenda|/agenda', 'Gestión|/gestion'] }[rol];
-      const pieZonas = pie.filter((x) => /\|\/(entrar|agenda|gestion)$/.test(x));
+      const piePrevisto = { anon: ['Acceso jugadores y gestores|/entrar'], jugador: ['Tu calendario|/calendario'], gestor: ['Tu calendario|/calendario', 'Gestión|/gestion'] }[rol];
+      const pieZonas = pie.filter((x) => /\|\/(entrar|calendario|gestion)$/.test(x));
       await p.goto(`${APP}/`);
       ok(JSON.stringify(pieZonas) === JSON.stringify(piePrevisto), `pie de la portada con la misma sesion que la cabecera (${rol}): ${piePrevisto.map((x) => x.split('|')[0]).join(' y ')}`, pie.join(', '));
       const cab = p.locator('header.nv-cab');
       const barra = p.locator('nav[aria-label="Secciones"]');
-      const acceso = cab.getByRole('link', { name: 'Acceso' });
-      // D117: con sesion de jugador, «Agenda» y «Mis números» (lo de cada persona) en la cabecera y en la barra.
-      const miZonaVisible = movil ? await barra.getByRole('link', { name: 'Agenda' }).isVisible() : await cab.getByRole('link', { name: 'Agenda' }).isVisible();
-      const botonGestion = cab.getByRole('button', { name: /GESTIÓN/ });
-      const botonUsuario = cab.locator('button.nv-avatar');
+      const avatar = cab.getByTestId('avatar');
+      const previsto = { anon: ['Inicio', 'Liga', 'Club', 'Acceso'], jugador: ['Semana', 'Calendario', 'Liga', 'Club'], gestor: ['Semana', 'Calendario', 'Liga', 'Club', 'Gestión'] }[rol];
+      const items = movil ? await barra.locator(':scope > a').allTextContents() : await p.$$eval('nav[aria-label="Principal"] a', (a) => a.map((x) => x.textContent));
+      ok(JSON.stringify(items.map((t) => t.trim())) === JSON.stringify(previsto), `${movil ? 'barra inferior' : 'cabecera'}: ${previsto.join(' · ')} (D189)`, items.join(','));
+      const marcado = async () => (movil ? barra.locator('a[aria-current="page"]') : p.locator('nav[aria-label="Principal"] a[aria-current="page"]')).allTextContents();
+      ok((await marcado()).map((t) => t.trim()).join() === previsto[0], `en «/», «${previsto[0]}» marcado (aria-current)`);
+      ok((await p.locator('.nv-hoja, #nv-hoja-mas, #nv-menu-gestion, #nv-menu-usuario, nav[aria-label="Gestión"]').count()) === 0 && (await p.getByRole('button', { name: 'Más' }).count()) === 0, 'sin hoja «Más», sin desplegables y sin barra de Gestión (D189)');
       if (rol === 'anon') {
-        ok(await acceso.isVisible() && (await acceso.getAttribute('href')) === '/entrar', 'sin sesion: boton "Acceso" a /entrar');
-        ok(!miZonaVisible && (await p.getByRole('link', { name: 'Agenda' }).count()) === 0 && (await p.getByRole('link', { name: 'Mis números' }).count()) === 0, 'sin sesion: no ve Agenda ni Mis números');
-        ok((await botonGestion.count()) === 0 && (await p.locator('#nv-menu-gestion, .nv-hoja-gestion').count()) === 0, 'sin sesion: no ve Gestion');
-        if (movil) ok(await barra.getByRole('link', { name: 'Acceso' }).isVisible(), 'movil sin sesion: "Acceso" en la barra inferior');
+        ok((await avatar.count()) === 0 && (await p.locator('a[href="/entrar"]').count()) > 0, 'sin sesion: sin avatar, con «Acceso» a /entrar');
       } else {
-        ok((await acceso.count()) === 0, `${rol}: la portada reconoce la sesion (sin "Acceso")`);
-        ok(miZonaVisible, `${rol}: ve Agenda (y Mis números)`);
-        ok(await botonUsuario.isVisible() && (await botonUsuario.textContent()).includes(rol === 'jugador' ? 'J' : 'E'), `${rol}: boton con su inicial${movil ? '' : ' y nombre'}`);
-        if (!movil) ok((await botonUsuario.textContent()).includes(rol === 'jugador' ? 'Jon' : 'Edu'), `${rol}: su nombre en la cabecera`);
-        if (rol === 'jugador') ok((await botonGestion.count()) === 0 && (await p.locator('#nv-menu-gestion, .nv-hoja-gestion').count()) === 0, 'jugador: no ve Gestion');
-        else ok(movil ? (await p.locator('.nv-hoja-gestion').count()) === 1 : await botonGestion.isVisible(), 'gestor: ve Gestion');
+        ok(await avatar.isVisible() && (await avatar.getAttribute('href')) === '/yo' && (await avatar.textContent()).includes(rol === 'jugador' ? 'J' : 'E'), `${rol}: avatar con su inicial, a «Yo»`);
+        if (!movil) ok((await avatar.textContent()).includes(rol === 'jugador' ? 'Jon' : 'Edu'), `${rol}: su nombre en la cabecera`);
+        ok((await p.locator('a[href="/entrar"]').count()) === 0, `${rol}: la portada reconoce la sesion (sin «Acceso»)`);
       }
-      if (!movil) {
-        const menu = await p.$$eval('nav[aria-label="Principal"] a', (a) => a.map((x) => x.textContent.trim()));
-        const previsto = rol === 'anon' ? ['Inicio', 'Partidos', 'Liga', 'Plantilla', 'Historia', 'El club'] : ['Inicio', 'Agenda', 'Mis números', 'Liga', 'Historia'];
-        ok(JSON.stringify(menu) === JSON.stringify(previsto), `menu: ${previsto.join(' · ')}`, menu.join(','));
-        ok((await p.locator('nav[aria-label="Principal"] a[href="/"]').getAttribute('aria-current')) === 'page', 'en «/», "Inicio" marcado (aria-current)');
-        if (rol === 'anon') {
-          await p.goto(`${APP}/club`);
-          ok((await p.locator('nav[aria-label="Principal"] a[href="/club"]').getAttribute('aria-current')) === 'page', 'en /club, "El club" marcado');
-        } else {
-          await p.goto(`${APP}/agenda`);
-          ok((await p.locator('nav[aria-label="Principal"] a[href="/agenda"]').getAttribute('aria-current')) === 'page', 'en /agenda, "Agenda" marcado');
-        }
-        await p.goto(`${APP}/`);
-      }
-
-      // ---- Menu de usuario (teclado: Enter abre, flechas recorren, Esc cierra y devuelve el foco)
+      await p.goto(`${APP}/club`);
+      ok((await marcado()).map((t) => t.trim()).join() === 'Club', 'en /club, «Club» marcado');
       if (rol !== 'anon') {
-        await botonUsuario.focus();
-        await p.keyboard.press('Enter');
-        const panel = p.locator('#nv-menu-usuario');
-        ok(await panel.isVisible() && (await botonUsuario.getAttribute('aria-expanded')) === 'true', 'menu de usuario: abre con el teclado (aria-expanded)');
-        const txt = await panel.textContent();
-        ok(txt.includes(rol === 'jugador' ? 'Jon Esteban' : 'Eduardo Martín-Ortega Rico') && txt.includes(rol === 'jugador' ? 'Jugador · MdA y MdL' : 'Gestor · Jugador · MdA y MdL'), 'menu de usuario: nombre completo y "Jugador · MdA y MdL" (segun sus fichas)', txt);
-        ok(['Mi cuenta', 'Instalar en el móvil', 'Salir'].every((t) => txt.includes(t)), 'menu de usuario: Mi cuenta, Instalar en el móvil y Salir');
-        await p.keyboard.press('ArrowDown');
-        const enMenu = () => p.waitForFunction(() => document.activeElement?.closest('#nv-menu-usuario') !== null, null, { timeout: 2000 }).then(() => true, () => false);
-        const primera = await enMenu() && await p.evaluate(() => document.activeElement.textContent.trim());
-        await p.keyboard.press('ArrowDown');
-        const segunda = await p.evaluate(() => document.activeElement?.textContent.trim());
-        ok(primera === 'Mi cuenta' && segunda === 'Instalar en el móvil', 'menu de usuario: las flechas recorren sus entradas', `${primera} -> ${segunda}`);
-        if (!movil && rol === 'jugador') await foto(p, `cabecera_jugador_menu_usuario_${etiqueta}`, false);
-        if (movil && rol === 'gestor') await foto(p, `cabecera_gestor_menu_usuario_${etiqueta}`, false);
-        await p.keyboard.press('Escape');
-        ok(await panel.isHidden() && await botonUsuario.evaluate((b) => b === document.activeElement), 'menu de usuario: Esc lo cierra y devuelve el foco al boton');
-        await botonUsuario.click();
-        await p.locator('main').first().click({ position: { x: 5, y: 5 } });
-        ok(await panel.isHidden(), 'menu de usuario: se cierra con clic fuera');
+        await p.goto(`${APP}/calendario`);
+        ok((await marcado()).map((t) => t.trim()).join() === 'Calendario', 'en /calendario, «Calendario» marcado');
+        if (movil) ok((await p.getByTestId('titulo-seccion').textContent()).trim() === 'Calendario', 'movil: el titulo de la seccion en la cabecera');
       }
+      await p.goto(`${APP}/`);
+      await foto(p, `cabecera_${rol}_${etiqueta}`, false);
 
-      // ---- Desplegable de Gestion (escritorio)
-      if (rol === 'gestor' && !movil) {
-        await botonGestion.focus();
-        await p.keyboard.press('ArrowDown');
-        const pg = p.locator('#nv-menu-gestion');
-        ok(await pg.isVisible() && await p.waitForFunction(() => document.activeElement?.closest('#nv-menu-gestion') !== null, null, { timeout: 2000 }).then(() => true, () => false), 'menu de Gestion: abre con el teclado y lleva el foco dentro');
-        const grupos = await pg.locator('.nv-grupo-titulo').allTextContents();
-        ok(JSON.stringify(grupos.map((g) => g.toUpperCase())) === JSON.stringify(['LA SEMANA', 'PLANTILLA', 'COMPETICIÓN']), 'menu de Gestion: tres columnas (La semana, Plantilla, Competición)', grupos.join(','));
-        const columnas = await pg.locator('.nv-grupo').evaluateAll((g) => g.map((x) => Math.round(x.getBoundingClientRect().left)));
-        ok(new Set(columnas).size === 3, 'menu de Gestion: los tres grupos en columnas', columnas.join(','));
-        const enlaces = await pg.locator('a.nv-entrada').evaluateAll((a) => a.map((x) => [x.querySelector('b').textContent.trim(), x.getAttribute('href'), x.querySelector('span')?.textContent.trim()]));
-        ok(JSON.stringify(enlaces.map((e) => e[0])) === JSON.stringify(['Panel de la semana', 'Eventos y pistas', 'Convocatoria', 'Tablero', 'Grupos', 'Jugadores', 'Importar teléfonos', 'Asistencia y motivos', 'Pedido de ropa', 'Scouting rivales', 'Liga consolidada']) && enlaces.every((e) => e[2]) && enlaces.find((e) => e[0] === 'Eventos y pistas')[1] === '/gestion/eventos' && enlaces.find((e) => e[0] === 'Asistencia y motivos')[1] === '/gestion/asistencia' && enlaces.find((e) => e[0] === 'Convocatoria')[1] === '/gestion/convocatoria', 'menu de Gestion: todas las entradas con enlace y una linea de descripcion (Convocatoria ya enlazada, D107)', JSON.stringify(enlaces));
-        const paso2 = await pg.locator('.nv-paso2').evaluateAll((s) => s.map((x) => ({ t: x.textContent, a: x.getAttribute('aria-disabled'), tag: x.tagName, href: x.getAttribute('href') })));
-        ok(paso2.length === 0, 'menu de Gestion: ninguna entrada lleva ya "paso 2" (Convocatoria enlazada, D107)', JSON.stringify(paso2));
-        ok((await pg.textContent()).includes('Mi cuenta') === false, '"Mi cuenta" ya no esta en el menu de Gestion (solo en el de usuario)');
-        await foto(p, `cabecera_gestor_menu_gestion_${etiqueta}`, false);
-        await p.keyboard.press('Escape');
-        ok(await pg.isHidden() && await botonGestion.evaluate((b) => b === document.activeElement), 'menu de Gestion: Esc lo cierra y devuelve el foco');
-        await botonGestion.click();
-        await botonUsuario.click();
-        ok(await pg.isHidden() && await p.locator('#nv-menu-usuario').isVisible(), 'abrir un menu cierra el otro (clic fuera)');
-        await p.keyboard.press('Escape');
-        await p.goto(`${APP}/gestion/jugadores`);
-        ok((await botonGestion.getAttribute('data-dentro')) !== null && (await botonGestion.evaluate((b) => getComputedStyle(b).backgroundColor)) === 'rgb(243, 197, 25)', 'dentro de /gestion, el boton GESTIÓN va relleno de amarillo');
-        await p.goto(`${APP}/`);
-        ok((await botonGestion.evaluate((b) => getComputedStyle(b).backgroundColor)) !== 'rgb(243, 197, 25)', 'fuera de /gestion, el boton GESTIÓN va con borde, sin relleno');
-        // Contraste de la clasificación con la oficial (D164, rutina B): pegar y «Contrastar», sin guardar nada.
-        await p.goto(`${APP}/gestion/clasificacion`);
-        await p.fill('#oficial', 'G1;MACCABI DE ACOSTAR;99;3;3;0;192;71;0');
-        await p.getByRole('button', { name: 'Contrastar' }).click();
-        const res = p.locator('[data-testid="contraste-resultado"]');
-        ok(await hasta(async () => (await res.count()) === 1) && /DIFIERE/.test(await res.textContent()) && (await res.textContent()).includes('G1 MdA: puntos calculada'), '/gestion/clasificacion: lo pegado se contrasta solo y dice «DIFIERE» con la diferencia', await res.textContent().catch(() => ''));
-        await p.goto(`${APP}/`);
-      }
-
-      // ---- Hoja "Mas" (movil)
-      if (movil) {
-        const mas = barra.getByRole('button', { name: 'Más' });
-        const textos = await barra.locator(':scope > a, :scope > button').allTextContents();
-        const barraPrevista = { anon: ['Inicio', 'Partidos', 'Liga', 'Acceso', 'Más'], jugador: ['Inicio', 'Agenda', 'Mis números', 'Liga', 'Más'], gestor: ['Inicio', 'Agenda', 'Mis números', 'Gestión', 'Más'] }[rol];
-        ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(barraPrevista), `barra inferior: ${barraPrevista.join(' · ')} (D117)`, textos.join(','));
-        if (rol === 'anon') ok((await barra.getByRole('link', { name: 'Partidos' }).getAttribute('aria-current')) === null, 'barra inferior: «Partidos» (ancla de la portada) sin estado activo hasta que tenga página propia');
-        await mas.click();
-        const hoja = p.getByRole('dialog', { name: 'Más' });
-        ok(await hoja.isVisible() && (await mas.getAttribute('aria-expanded')) === 'true', '"Más" abre la hoja desde abajo');
-        ok(await p.waitForFunction(() => document.activeElement?.closest('#nv-hoja-mas') !== null, null, { timeout: 2000 }).then(() => true, () => false), 'la hoja recibe el foco');
-        const ht = await hoja.textContent();
-        ok(['Plantilla', 'Historia', 'El club'].every((t) => ht.includes(t)) && /la web/i.test(ht), 'hoja: LA WEB con Plantilla, Historia y El club');
-        if (rol === 'gestor') {
-          const g = hoja.locator('.nv-hoja-gestion');
-          ok(await g.isVisible() && (await g.locator('a.nv-entrada').count()) === 11 && (await g.locator('.nv-paso2').count()) === 0, 'hoja (gestor): GESTIÓN con las mismas 11 entradas (con Tablero, Grupos e Importar teléfonos), todas enlazadas');
-          ok(ht.includes('Liga'), 'hoja (gestor): Liga pasa a «Más»');
-        } else ok((await hoja.locator('.nv-hoja-gestion').count()) === 0, `hoja (${rol}): sin Gestion`);
-        if (rol !== 'anon') ok(ht.includes('Mi cuenta') && ht.includes('Salir'), 'hoja: Mi cuenta y Salir');
-        else ok(!ht.includes('Salir'), 'hoja sin sesion: sin Mi cuenta ni Salir');
-        if (rol !== 'anon') await foto(p, `hoja_mas_${rol}_${etiqueta}`, false);
-        await p.keyboard.press('Escape');
-        ok(await hoja.isHidden() && await mas.evaluate((b) => b === document.activeElement), 'hoja: Esc la cierra y devuelve el foco');
-        await mas.click();
-        await p.locator('.nv-velo').click({ position: { x: 10, y: 10 } });
-        ok(await hoja.isHidden(), 'hoja: se cierra tocando fuera');
-        await foto(p, `cabecera_${rol}_${etiqueta}`, false);
-      } else if (rol !== 'gestor') await foto(p, `cabecera_${rol}_${etiqueta}`, false);
-
-      // ---- Inicio personal (D117): «/» con sesion; /mi-zona redirige ahi y ya no hay barra propia de Mi zona
-      if (rol !== 'anon') {
-        await p.goto(`${APP}/mi-zona`);
-        ok(new URL(p.url()).pathname === '/' && (await p.locator('nav[aria-label="Mi zona"]').count()) === 0, 'inicio: /mi-zona lleva a «/» y no hay barra propia de Mi zona (Inicio · Agenda · Mis números están en la navegación)');
-        const pos = await p.evaluate(() => Object.fromEntries(['.in-hola', '#pendientes', '#proximo-partido', '#agenda', '#temporada'].map((s) => { const r = document.querySelector(s).getBoundingClientRect(); return [s, { x: Math.round(r.left), y: Math.round(r.top + scrollY) }]; })));
-        if (movil) ok(pos['.in-hola'].y < pos['#pendientes'].y && pos['#pendientes'].y < pos['#proximo-partido'].y && pos['#proximo-partido'].y < pos['#agenda'].y && pos['#agenda'].y < pos['#temporada'].y, 'inicio movil: una columna (saludo, pendientes, próximo partido, agenda, temporada)', JSON.stringify(pos));
-        else ok(pos['#proximo-partido'].x < pos['#agenda'].x && pos['#agenda'].x < pos['#temporada'].x && pos['#proximo-partido'].y === pos['#agenda'].y, 'inicio escritorio: tres columnas (próximo partido | agenda | temporada)', JSON.stringify(pos));
-        const ancho = await p.evaluate(() => document.querySelector('.in').getBoundingClientRect().width);
-        if (!movil) ok(ancho > 1100, 'inicio escritorio: dentro del ancho máximo, no una columna de móvil', String(ancho));
-        ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(14, 13, 18)', 'inicio: tema oscuro');
-        await p.goto(`${APP}/mis-numeros`);
-        ok(/\/jugador\/[a-z-]+$/.test(new URL(p.url()).pathname) && (await (movil ? barra : cab).getByRole('link', { name: 'Mis números' }).getAttribute('aria-current')) === 'page', '«Mis números» lleva a su ficha y queda marcado', p.url());
-        await p.goto(`${APP}/`);
-        await fotoEstatica(p, `inicio_${rol}_${etiqueta}`);
-      }
-
-      // ---- Gestion
+      // ---- Gestion: sin barra propia; todas sus pantallas desde /gestion y de vuelta con «‹»
       if (rol === 'gestor') {
         for (const ruta of GESTION) {
           await p.goto(`${APP}${ruta}`);
-          const bg = p.locator('nav[aria-label="Gestión"]');
-          const d = await bg.evaluate((b) => ({ fondo: getComputedStyle(b).backgroundColor, etq: b.querySelector('.zb-etq')?.textContent, grupos: b.querySelectorAll('.zb-grupo').length, paso2: [...b.querySelectorAll('.zb-paso2')].map((x) => [x.textContent.trim(), x.getAttribute('aria-disabled'), x.tagName]) }));
-          const actual = await bg.locator('a[aria-current="page"]').allTextContents();
-          ok(d.fondo === 'rgb(42, 36, 16)' && d.etq === 'GESTIÓN' && d.grupos === 3 && d.paso2.length === 0 && actual.length === 1, `${ruta}: barra de Gestion (#2A2410, GESTIÓN, 3 grupos, todo enlazado, la actual marcada: ${actual[0]})`, JSON.stringify(d));
+          ok((await marcado()).map((t) => t.trim()).join() === 'Gestión', `${ruta}: «Gestión» marcado`);
           const claro = await p.evaluate(() => [...document.querySelectorAll('main *')].filter((e) => e.offsetParent !== null && !e.closest('.foto'))
             // Superficies claras (tarjetas, tablas, campos): las del tema claro antiguo. Los botones primarios y la
             // etiqueta "Cerrado" van en tinta clara a proposito, como "Ver calendario" en la portada.
             .filter((e) => !e.matches('.boton, .etiqueta-cerrada'))
             .filter((e) => /^rgb\((2[0-5]\d), (2[0-5]\d), (2[0-5]\d)\)$/.test(getComputedStyle(e).backgroundColor)).map((e) => `${e.tagName}.${e.className}`));
           ok(claro.length === 0 && await p.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(14, 13, 18)', `${ruta}: tema oscuro (ningun fondo blanco o claro)`, [...new Set(claro)].join(', '));
-          if (!movil) {
-            const f = await bg.locator('.zb-fila').evaluate((x) => x.scrollWidth <= x.clientWidth + 1);
-            ok(f, `${ruta}: en escritorio la barra de Gestion cabe entera (sin cortar "Liga consolidada")`);
-          }
-          if (movil) {
-            const f = await bg.locator('.zb-fila').evaluate((x) => ({ desplaza: getComputedStyle(x).overflowX, sw: x.scrollWidth, cw: x.clientWidth }));
-            ok(f.desplaza === 'auto' && f.sw > f.cw, `${ruta}: en movil la barra de Gestion es una fila con scroll horizontal`, JSON.stringify(f));
-          }
+          if (ruta !== '/gestion') ok(await p.getByTestId('volver').first().isVisible(), `${ruta}: un «‹» de vuelta`);
+        }
+        if (!movil) {
+          // Contraste de la clasificación con la oficial (D164, rutina B): pegar y «Contrastar», sin guardar nada.
+          await p.goto(`${APP}/gestion/clasificacion`);
+          await p.fill('#oficial', 'G1;MACCABI DE ACOSTAR;99;3;3;0;192;71;0');
+          await p.getByRole('button', { name: 'Contrastar' }).click();
+          const res = p.locator('[data-testid="contraste-resultado"]');
+          ok(await hasta(async () => (await res.count()) === 1) && /DIFIERE/.test(await res.textContent()) && (await res.textContent()).includes('G1 MdA: puntos calculada'), '/gestion/clasificacion: lo pegado se contrasta solo y dice «DIFIERE» con la diferencia', await res.textContent().catch(() => ''));
         }
         await p.goto(`${APP}/gestion`);
-        await p.evaluate(() => window.scrollTo(0, 600));
-        await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-        ok(Math.abs(await p.locator('nav[aria-label="Gestión"]').evaluate((b) => b.getBoundingClientRect().top)) < 1, 'Gestion: la barra queda fija arriba al hacer scroll');
-        await p.evaluate(() => window.scrollTo(0, 0));
         await fotoEstatica(p, `gestion_${etiqueta}`);
-        await p.goto(`${APP}/liga/consolidada`);
-        await fotoEstatica(p, `gestion_liga_${etiqueta}`);
         await p.goto(`${APP}/gestion/jugadores`);
         await fotoEstatica(p, `gestion_jugadores_${etiqueta}`);
       }
 
-      // ---- Mi cuenta y Salir
+      // ---- Yo (D189: sustituye a Mi cuenta) y Salir
       if (rol !== 'anon') {
-        if (movil) { await barra.getByRole('button', { name: 'Más' }).click(); await p.getByRole('dialog', { name: 'Más' }).getByRole('link', { name: 'Mi cuenta' }).click(); }
-        else { await botonUsuario.click(); await p.locator('#nv-menu-usuario').getByRole('link', { name: 'Mi cuenta' }).click(); }
-        await p.waitForURL((u) => u.pathname === '/cuenta');
+        await p.goto(`${APP}/mi-zona`);
+        ok(new URL(p.url()).pathname === '/' && (await p.locator('nav[aria-label="Mi zona"]').count()) === 0, '/mi-zona lleva a «/» (la Semana) y no hay barra propia de Mi zona');
+        ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(14, 13, 18)', 'Semana: tema oscuro');
+        await fotoEstatica(p, `inicio_${rol}_${etiqueta}`);
+        await avatar.click();
+        await p.waitForURL((u) => u.pathname === '/yo');
         const t = await p.textContent('main');
-        ok(t.includes(conf.email) && t.includes('Instalar en el móvil') && (rol === 'gestor' ? t.includes('Gestor') : !t.includes('Gestor')), `Mi cuenta: una pagina para ${rol} (correo, papel e instalar en el movil)`);
-        if (rol === 'gestor') await fotoEstatica(p, `cuenta_${etiqueta}`);
-        if (movil) { await barra.getByRole('button', { name: 'Más' }).click(); await p.getByRole('dialog', { name: 'Más' }).getByRole('button', { name: 'Salir' }).click(); }
-        else { await botonUsuario.click(); await p.locator('#nv-menu-usuario').getByRole('button', { name: 'Salir' }).click(); }
+        ok(t.includes(conf.email) && t.includes('Instalar en el móvil') && (rol === 'gestor' ? t.includes('Gestor') : !t.includes('Gestor')), `Yo: una pagina para ${rol} (correo, papel e instalar en el movil)`);
+        ok((await avatar.getAttribute('aria-current')) === 'page', 'Yo: el avatar queda marcado');
+        if (rol === 'gestor') await fotoEstatica(p, `yo_${etiqueta}`);
+        await p.getByRole('button', { name: 'Salir' }).click();
         await p.waitForURL((u) => u.pathname === '/entrar');
         await p.goto(`${APP}/`);
-        ok(await p.locator('header.nv-cab').getByRole('link', { name: 'Acceso' }).isVisible(), 'Salir (menu de usuario): la cabecera vuelve a "Acceso"');
+        ok(await hasta(() => p.locator(movil ? 'nav.nv-barra a[href="/entrar"]' : 'nav.nv-menu a[href="/entrar"]').isVisible()), 'Salir (en Yo): la cabecera vuelve a «Acceso»');
       }
       ok(errores.length === 0, 'sin errores de JavaScript', errores.join(' | '));
       await ctx.close();
     }
   }
 
-  // Gestor sin ficha de jugador: Gestion sin Mi zona.
+  // Gestor sin ficha de jugador: la misma barra que un gestor (D189), sin respuestas propias.
   console.log('\n== Gestor sin ficha de jugador');
   {
     const ctx = await nav.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, locale: 'es-ES' });
     const p = gotoConSesion(await ctx.newPage());
     await entrar(p, soloGestor);
-    ok(p.url().endsWith('/gestion'), 'entra en /gestion', p.url());
-    const textos = await p.locator('nav[aria-label="Secciones"] > a, nav[aria-label="Secciones"] > button').allTextContents();
-    await p.goto(`${APP}/`);
     await p.goto(`${APP}/club`);
-    const pie = await p.locator('footer#pie a').evaluateAll((a) => a.map((x) => `${x.textContent.trim()}|${x.getAttribute('href')}`).filter((x) => /\|\/(entrar|agenda|gestion)$/.test(x)));
+    const pie = await p.locator('footer#pie a').evaluateAll((a) => a.map((x) => `${x.textContent.trim()}|${x.getAttribute('href')}`).filter((x) => /\|\/(entrar|calendario|gestion)$/.test(x)));
     ok(JSON.stringify(pie) === JSON.stringify(['Gestión|/gestion']), 'pie de la portada (gestor sin ficha): solo "Gestión"', pie.join(', '));
-    ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(['Inicio', 'Partidos', 'Liga', 'Gestión', 'Más']) && (await p.getByRole('link', { name: 'Agenda' }).count()) === 0, 'barra inferior con "Gestión"; sin Agenda ni Mis números (no tiene ficha)', textos.join(','));
+    const textos = await p.locator('nav[aria-label="Secciones"] > a').allTextContents();
+    ok(JSON.stringify(textos.map((t) => t.trim())) === JSON.stringify(['Semana', 'Calendario', 'Liga', 'Club', 'Gestión']), 'barra inferior: Semana · Calendario · Liga · Club · Gestión', textos.join(','));
     await ctx.close();
   }
 

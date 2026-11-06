@@ -102,7 +102,8 @@ try {
       const b = vieja.locator(`.tab[data-p="${pestana}"]`);
       if (await b.isVisible()) await b.click();
     };
-    const abrirNueva = (t, pestana) => nueva.goto(pestana === 'jugadores' ? `${APP}/plantilla?t=${t}` : `${APP}/liga/${t}/${pestana}`, { waitUntil: 'networkidle' });
+    // Bloque 6: Jugadores es otra vez su pestaña de Temporadas, con la tabla completa (Club › Plantilla va a 4 columnas).
+    const abrirNueva = (t, pestana) => nueva.goto(`${APP}/liga/${t}/${pestana}`, { waitUntil: 'networkidle' });
     return { ctx, nueva, vieja, abrirVieja, abrirNueva };
   };
   const clic = async (page, sel, texto) => { await page.locator(sel, { hasText: new RegExp(`^${texto}$`, 'i') }).first().click(); };
@@ -232,9 +233,11 @@ try {
     // comparan el rival, el dia, la hora y la pista.
     const rivalVieja = (t) => t.replace(/^md[al] (vs|en) /, '');
     const rivalNueva = (t) => t.split(' – ').find((x) => !/^md[al]$/.test(x)) ?? t;
-    igual((await textos(vieja, '#lgProx .eqp .v')).map(rivalVieja), (await textos(nueva, '[data-testid="liga-proximos"] .e-eqp-v')).map(rivalNueva), 'proximos partidos: rival');
-    igual((await textos(vieja, '#lgProx .eqp .s')).map((t) => t.replace(/ · (en casa|fuera)$/, '')), await textos(nueva, '[data-testid="liga-proximos"] .e-eqp-s'), 'proximos partidos: dia, hora y pista (sin «casa/fuera», D129)');
-    igual(await textos(vieja, '#lgProx .eqp .eqcol'), await textos(nueva, '[data-testid="liga-proximos"] .e-eqcol'), 'proximos partidos: colores');
+    // Bloque 6: los proximos van ordenados por fecha; se leen equipo a equipo (MdA y luego MdL, el orden de la web anterior).
+    const proxNueva = async (sel) => [...await textos(nueva, `[data-testid="liga-proximos"] .e-eqp[data-eq="MDA"] ${sel}`), ...await textos(nueva, `[data-testid="liga-proximos"] .e-eqp[data-eq="MDL"] ${sel}`)];
+    igual((await textos(vieja, '#lgProx .eqp .v')).map(rivalVieja), (await proxNueva('.e-eqp-v')).map(rivalNueva), 'proximos partidos: rival');
+    igual((await textos(vieja, '#lgProx .eqp .s')).map((t) => t.replace(/ · (en casa|fuera)$/, '')), await proxNueva('.e-eqp-s'), 'proximos partidos: dia, hora y pista (sin «casa/fuera», D129)');
+    igual(await textos(vieja, '#lgProx .eqp .eqcol'), await proxNueva('.e-eqcol'), 'proximos partidos: colores');
     for (const g of ['G1', 'G2']) {
       if (g === 'G2') { await vieja.click('#segLgGrupo button[data-g="G2"]'); await clic(nueva, '.e-segmento button', 'G2 · MdL'); }
       igual(await filas(vieja, '#lgTabla'), await filas(nueva, '[data-testid="liga-clasificacion"]'), `${g}: clasificacion`);
@@ -296,7 +299,7 @@ try {
   }
   // enlace por person_id
   tarea('Ficha de jugador: enlace', async ({ vieja, nueva, abrirVieja, abrirNueva }) => {
-    await nueva.goto(`${APP}/plantilla?t=2025-26`, { waitUntil: 'networkidle' });
+    await nueva.goto(`${APP}/club?t=2025-26`, { waitUntil: 'networkidle' });
     ok((await nueva.locator('[data-testid="jugadores-tabla"] tbody a[href^="/jugador/"]').count()) === 24, 'plantilla 25/26: los 24 nombres enlazan a su ficha');
     await nueva.locator('[data-testid="jugadores-tabla"] tbody a').first().click();
     await nueva.waitForURL(/\/jugador\/esteban-jon\?t=2025-26/);
@@ -311,7 +314,9 @@ try {
     // «prevista»: ya no se compara fila a fila con la web antigua. El cuadre de la rejilla con season_2026-27.json y la
     // plantilla con ficha lo hace npm run check:historia (scripts/test_historia_en_curso.js).
     seccion('Historia del club: tramos, tira temporal y enlaces de la ficha de cada persona (D137: ya no se compara con GitHub Pages)');
-    await nueva.goto(`${APP}/historia`, { waitUntil: 'networkidle' });
+    await nueva.goto(`${APP}/club/historia`, { waitUntil: 'networkidle' });
+    // Bloque 6: vista, orden y quién van en «Filtros», plegados.
+    await nueva.locator('[data-testid="historia-filtros"] summary').click();
     const kp = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].map((e) => e.innerText.replace(/\s+/g, ' ').trim().toLowerCase()), sel);
     const seps = await kp(nueva, '[data-testid="historia-rejilla"] tr.e-hsep');
     ok(seps.length === 5 && seps.some((x) => /^cuerpo técnico/.test(x)) && !seps.some((x) => /llegan/.test(x)), 'D22/D137: 4 tramos de veteranía y el cuerpo técnico aparte, sin «Llegan en 26/27»', seps.join(' | '));
@@ -336,7 +341,7 @@ try {
     await Promise.all(Array.from({ length: TROZOS }, async (_, k) => {
       const extra = k ? await paginas() : null;
       const pag = extra ? extra.nueva : nueva;
-      if (extra) { await pag.goto(`${APP}/historia`, { waitUntil: 'networkidle' }); await pag.locator('[data-testid="historia-rejilla"] tr[data-pid]').first().waitFor(); }
+      if (extra) { await pag.goto(`${APP}/club/historia`, { waitUntil: 'networkidle' }); await pag.locator('[data-testid="historia-rejilla"] tr[data-pid]').first().waitFor(); }
       for (const pid of pids.filter((_, n) => n % TROZOS === k)) {
         await pag.locator(`[data-testid="historia-rejilla"] tr[data-pid="${pid}"]`).click();
         // cada anio con estadisticas enlaza a una pagina que existe; los de solo presencia no son enlaces
@@ -364,7 +369,7 @@ try {
     ok(sinEnlace === 0, 'historia: toda temporada con estadisticas tiene destino (ficha o resumen MdA)', String(sinEnlace));
     // casos pedidos por Ivan: Eric y Pupo (solo mote), Barreiro (cuerpo tecnico), Lonchas (fila sin ficha en un boxscore)
     for (const [pid, dice] of [['eric', /de paso/i], ['pupo', /de paso/i], ['cardoza-jaylin', /de paso/i], ['barreiro-carballal-carlos-jose', /entrenador/i]]) {
-      await nueva.goto(`${APP}/historia?persona=${pid}`, { waitUntil: 'networkidle' });
+      await nueva.goto(`${APP}/club/historia?persona=${pid}`, { waitUntil: 'networkidle' });
       ok(dice.test(await nueva.locator('[data-testid="historia-ficha"]').innerText()) && (await nueva.locator('[data-testid="historia-ficha"] a.e-hy').count()) === 0, `${pid}: ficha de persona sin estadisticas y sin enlaces`);
     }
     await abrirVieja('2019-20', 'equipo'); await abrirNueva('2019-20', 'equipo');
@@ -398,8 +403,8 @@ try {
       const d = R.nuevaUrl(`?t=2024-25&p=jugador&j=${a}`, '');
       ok(d === `/jugador/${a}?t=2024-25`, `enlace antiguo de GitHub Pages con el alias ${a} tiene destino`, String(d));
     }
-    const rh = await fetch(`${APP}/historia?persona=castro-mayo-henry-luis`);
-    ok(rh.status === 200 && (await rh.text()).includes('Henry Luis Castro Moya'), '/historia?persona=<alias> abre la ficha de la identidad canonica');
+    const rh = await fetch(`${APP}/club/historia?persona=castro-mayo-henry-luis`);
+    ok(rh.status === 200 && (await rh.text()).includes('Henry Luis Castro Moya'), '/club/historia?persona=<alias> abre la ficha de la identidad canonica');
   });
 
   // ------------------------------------------------------------------------------------------ redirecciones
@@ -425,15 +430,15 @@ try {
     await vieja.waitForURL(`${APP}/liga/2023-24/rankings`, { timeout: 15000 }).catch(() => {});
     ok(vieja.url() === `${APP}/liga/2023-24/rankings`, 'activada: ?t=2023-24&p=rankings salta a /liga/2023-24/rankings', vieja.url());
     await vieja.goto(`${PAGES}/index.html?p=historia`, { waitUntil: 'commit' });
-    await vieja.waitForURL(`${APP}/historia`, { timeout: 15000 }).catch(() => {});
-    ok(vieja.url() === `${APP}/historia`, 'activada: ?p=historia salta a /historia', vieja.url());
+    await vieja.waitForURL(`${APP}/club/historia`, { timeout: 15000 }).catch(() => {});
+    ok(vieja.url() === `${APP}/club/historia`, 'activada: ?p=historia salta a /club/historia (bloque 6)', vieja.url());
     await vieja.unroute('**/data/redireccion_web.js');
   });
 
   // ------------------------------------------------------------------------------------------ movil, consola y capturas
   tarea('movil, consola y capturas', async ({ vieja, nueva, abrirVieja, abrirNueva }) => {
     seccion('Movil a 375 px, errores de consola y capturas');
-    const rutas = ['/liga', '/liga/rivales', `/liga/rivales?g=MdL&r=${conFicha('MdL')}`, ...TEMPORADAS.flatMap((t) => ['equipo', 'rankings', 'cuartos', 'asistencia', 'mda'].map((p) => `/liga/${t}/${p}`)), '/historia', '/historia?persona=eric', ...TEMPORADAS.map((t) => `/plantilla?t=${t}`), ...TEMPORADAS.map((t) => `/jugador/${PRIMERO[t]}?t=${t}`)];
+    const rutas = ['/liga', '/liga/rivales', `/liga/rivales?g=MdL&r=${conFicha('MdL')}`, ...TEMPORADAS.flatMap((t) => ['equipo', 'jugadores', 'rankings', 'cuartos', 'asistencia', 'mda'].map((p) => `/liga/${t}/${p}`)), '/club/historia', '/club/historia?persona=eric', '/club/el-club', ...TEMPORADAS.map((t) => `/club?t=${t}`), ...TEMPORADAS.map((t) => `/jugador/${PRIMERO[t]}?t=${t}`)];
     const movil = await nav.newPage({ viewport: { width: 375, height: 800 } });
     movil.on('pageerror', (e) => errores.push(String(e)));
     movil.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource/.test(m.text())) errores.push(m.text()); });
@@ -457,7 +462,7 @@ try {
     await movil.locator('tr.e-fila-click').first().click();
     ok((await movil.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0, 'boxscore abierto a 375 px sin desbordamiento');
     // solo capturas (sin comprobaciones): fuera de las tandas y de Actions
-    if (conCapturas()) for (const [r, n] of [['/liga', 'liga'], ['/liga/rivales', 'rivales'], ['/liga/2025-26/equipo', 'equipo'], ['/liga/2025-26/rankings', 'rankings'], ['/liga/2025-26/cuartos', 'cuartos'], ['/liga/2025-26/asistencia', 'asistencia'], ['/liga/2023-24/mda', 'mda'], ['/plantilla?t=2013-14', 'plantilla_2013'], ['/plantilla', 'plantilla'], ['/jugador/esteban-jon?t=2025-26', 'ficha'], ['/jugador/esteban-jon?t=2023-24', 'ficha_2324']]) {
+    if (conCapturas()) for (const [r, n] of [['/liga', 'liga'], ['/liga/rivales', 'rivales'], ['/liga/2025-26/equipo', 'equipo'], ['/liga/2025-26/rankings', 'rankings'], ['/liga/2025-26/cuartos', 'cuartos'], ['/liga/2025-26/asistencia', 'asistencia'], ['/liga/2023-24/mda', 'mda'], ['/club?t=2013-14', 'plantilla_2013'], ['/club', 'plantilla'], ['/jugador/esteban-jon?t=2025-26', 'ficha'], ['/jugador/esteban-jon?t=2023-24', 'ficha_2324']]) {
       await movil.goto(APP + r + (r === '/liga' ? '?hoy=' + HOY : ''), { waitUntil: 'networkidle' });
       await movil.screenshot({ path: path.join(SALIDA, `${n}_375.png`), fullPage: true });
       await nueva.setViewportSize({ width: 1280, height: 900 });

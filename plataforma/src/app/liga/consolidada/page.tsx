@@ -1,5 +1,4 @@
 import { SecH } from "@/components/liga/Comunes";
-import Volver from "@/components/nav/Volver";
 import type { Metadata } from "next";
 import { exigirLiga } from "@/lib/sesion";
 import { cargarClasificacion, cargarLiga, cargarPartidos, dec, esGrupoNuestro, etiquetaGrupo, GRUPOS_NUESTROS, type FilaClasificacion } from "@/lib/liga";
@@ -30,11 +29,7 @@ export default async function LigaConsolidada({ searchParams }: { searchParams: 
   const vista = params.vista === "resultados" ? "resultados" : "jugadores";
   const cabecera = (
     <>
-      <Volver defecto="/liga" etiqueta="Liga" />
-      <SecH titulo="Liga consolidada" tag="Con sesión" />
-      <div className="aviso aviso-info">
-        <b>Solo con sesión.</b> Datos por jugador de otros equipos: son de terceros; los ves por ser del equipo, no se publican (D73, D162).
-      </div>
+      <SecH titulo="Jugadores de la liga" tag="con sesión · no se publica" />
       <SelectorGrupos key={sel.join()} sel={sel} vista={vista} />
       <nav className="lg-pestanas" aria-label="Liga consolidada" data-testid="pestanas-consolidada">
         <Link href={hrefConsolidada(sel)} aria-current={vista === "jugadores" ? "page" : undefined} className={vista === "jugadores" ? "on" : ""}>Jugadores y equipos</Link>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import {
   esPO, minutos, nombreCorto, ordenarPartidos, partidosFiltrados, resumenEquipo, sinPO,
   type ClavePartido, type Eq, type FilaBox, type FiltroEq, type Metricas, type PartidoEst,
@@ -9,9 +9,10 @@ import {
 import { ChipEquipo, CajaTabla, Control, Dash, Kpi, NInt, NSigned, Nota, OPCIONES_EQUIPO, SecH, Segmento, Tiros } from "./Comunes";
 
 // Pestaña Equipo: balance, puntos a favor y en contra, racha y tabla de partidos ordenable con boxscore desplegable.
-export default function EquipoPestana({ partidos, box, M, equipos, equipoInicial = "ALL", enlaces }: {
+export default function EquipoPestana({ partidos, box, M, equipos, equipoInicial = "ALL", enlaces, selector }: {
   partidos: PartidoEst[]; box: Record<string, FilaBox[]>; M: Metricas; equipos: Eq[]; equipoInicial?: FiltroEq;
   enlaces?: Record<string, { partido: string; rival: string | null }>;
+  selector?: ReactNode;   // el selector de temporada, en la misma fila que el de equipo (bloque 6)
 }) {
   const [equipo, setEquipo] = useState<FiltroEq>(equipoInicial);
   const [comp, setComp] = useState<"ALL" | "LIGA" | "PO">("ALL");
@@ -35,8 +36,9 @@ export default function EquipoPestana({ partidos, box, M, equipos, equipoInicial
 
   return (
     <>
-      {(multi || hayPO) && (
+      {(multi || hayPO || selector) && (
         <div className="e-controles">
+          {selector}
           {multi && <Control etiqueta="Equipo"><Segmento etiqueta="Equipo" valor={equipo} opciones={OPCIONES_EQUIPO} onCambia={(v) => { setEquipo(v); setAbierto(null); }} /></Control>}
           {hayPO && (
             <Control etiqueta="Competición">

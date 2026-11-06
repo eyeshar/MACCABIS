@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { resumenCuartos, type FiltroEq, type QStats } from "@/lib/estadisticas/calculo";
 import { Control, Kpi, Nota, OPCIONES_EQUIPO, SecH, Segmento, Vacio } from "./Comunes";
 
 // Pestaña Por cuartos: media de puntos por cuarto a nivel de equipo (dato de las actas).
-export default function CuartosPestana({ qstats, multiEquipo }: { qstats: Record<string, QStats>; multiEquipo: boolean }) {
+export default function CuartosPestana({ qstats, multiEquipo, selector }: { qstats: Record<string, QStats>; multiEquipo: boolean; selector?: ReactNode }) {
   const [equipo, setEquipo] = useState<FiltroEq>("ALL");
   const d = qstats[equipo];
   const r = d ? resumenCuartos(d) : null;
   const nombre = equipo === "ALL" ? "Maccabis" : equipo;
   return (
     <>
-      {multiEquipo && <div className="e-controles"><Control etiqueta="Equipo"><Segmento etiqueta="Equipo" valor={equipo} opciones={OPCIONES_EQUIPO} onCambia={setEquipo} /></Control></div>}
+      {(multiEquipo || selector) && <div className="e-controles">{selector}{multiEquipo && <Control etiqueta="Equipo"><Segmento etiqueta="Equipo" valor={equipo} opciones={OPCIONES_EQUIPO} onCambia={setEquipo} /></Control>}</div>}
       <SecH titulo="Rendimiento por cuartos" tag={d ? `${d.n} partidos` : undefined} />
       {!d || !r ? <Vacio>Sin datos.</Vacio> : (
         <>

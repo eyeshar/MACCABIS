@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { jugadoresFiltrados, nombreCorto, type ClaveJugador, type Eq, type FiltroEq, type JugadorEst, type Metricas } from "@/lib/estadisticas/calculo";
 import { CajaTabla, ChipEquipo, Control, N1, N2, NInt, NPct, NSigned, NSigned1, Nota, OPCIONES_EQUIPO, SecH, Segmento, Nz } from "./Comunes";
 
 // Pestaña Jugadores: la plantilla de la temporada, ordenable por cualquier columna. PJ = partidos con minutos (los DNP no
-// cuentan en las medias). `fichaHref`, si se da, enlaza el nombre con la ficha del jugador (por person_id).
-export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada }: {
-  jugadores: JugadorEst[]; M: Metricas; multiEquipo: boolean; temporada?: string;
+// cuentan en las medias). Con `temporada`, el nombre enlaza con la ficha del jugador (por person_id).
+// `compacta` (Club › Plantilla, bloque 6): ranking a 4 columnas (Jugador, PJ, Pts, Med) y «Más columnas» para el resto;
+// en Temporadas › Jugadores, la tabla completa de siempre. Los números son los mismos en las dos.
+export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada, selector, compacta = false }: {
+  jugadores: JugadorEst[]; M: Metricas; multiEquipo: boolean; temporada?: string; selector?: ReactNode; compacta?: boolean;
 }) {
+  const [mas, setMas] = useState(!compacta);
   const [equipo, setEquipo] = useState<FiltroEq>("ALL");
   const [minpj, setMinpj] = useState(1);
   const [orden, setOrden] = useState<{ k: ClaveJugador; d: 1 | -1 }>({ k: "pts", d: -1 });
@@ -24,11 +27,12 @@ export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada 
       <button type="button" className="e-th-boton" onClick={() => ordenaPor(k)}>{texto}</button>
     </th>
   );
-  const columnas = 4 + (multiEquipo ? 1 : 0) + (M.min ? 2 : 0) + (M.p2 ? 1 : 0) + (M.p3 ? 1 : 0) + (M.tl ? 1 : 0) + (M.fc ? 1 : 0) + (M.val ? 1 : 0) + (M.pm ? 2 : 0) + 1;
+  const columnas = !mas ? 4 : 4 + (multiEquipo ? 1 : 0) + (M.min ? 2 : 0) + (M.p2 ? 1 : 0) + (M.p3 ? 1 : 0) + (M.tl ? 1 : 0) + (M.fc ? 1 : 0) + (M.val ? 1 : 0) + (M.pm ? 2 : 0) + 1;
 
   return (
     <>
       <div className="e-controles">
+        {selector}
         {multiEquipo && <Control etiqueta="Equipo"><Segmento etiqueta="Equipo" valor={equipo} opciones={OPCIONES_EQUIPO} onCambia={setEquipo} /></Control>}
         <Control etiqueta="Mínimo de partidos jugados">
           <div className="e-rango">
@@ -39,16 +43,22 @@ export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada 
       </div>
 
       <SecH titulo="Ranking de plantilla" tag={`${a.length} jugadores`} />
+      {compacta && (
+        <button type="button" className="e-boton-mas" aria-expanded={mas} aria-controls="e-tabla-plantilla" onClick={() => setMas((v) => !v)} data-testid="mas-columnas">
+          {mas ? "Menos columnas" : "Más columnas"}
+        </button>
+      )}
       <CajaTabla>
-        <table className="e-tabla" data-testid="jugadores-tabla">
+        <table className={`e-tabla${mas ? " e-fija2" : ""}`} id="e-tabla-plantilla" data-testid="jugadores-tabla" data-columnas={mas ? "todas" : "4"}>
           <thead>
             <tr>
-              <th scope="col" className="e-c">#</th>
+              {mas && <th scope="col" className="e-c">#</th>}
               {th("nombre", "Jugador")}
-              {multiEquipo && <th scope="col" className="e-oculta-sm">Eq</th>}
+              {mas && multiEquipo && <th scope="col" className="e-oculta-sm">Eq</th>}
               {th("pj", "PJ", "e-c")}
               {th("pts", "Pts", "e-c")}
               {th("ppg", "Med", "e-c")}
+              {mas && <>
               {M.min && th("min", "Min", "e-c")}
               {M.min && th("ppm", "P/min", "e-c")}
               {M.p2 && th("p2", M.p2_intentos ? "2P%" : "2P", "e-c")}
@@ -58,6 +68,7 @@ export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada 
               {M.val && th("val", "VAL", "e-c")}
               {M.pm && th("pmt", "+/- ac", "e-c")}
               {M.pm && th("pm", "+/- md", "e-c")}
+              </>}
             </tr>
           </thead>
           <tbody>
@@ -67,15 +78,17 @@ export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada 
               const nombre = p.display || nombreCorto(p.nombre);
               return (
                 <tr key={p.person_id + i}>
-                  <td className="e-c e-mono e-tenue">{i + 1}</td>
+                  {mas && <td className="e-c e-mono e-tenue">{i + 1}</td>}
                   <td className="e-nombre">
+                    {!mas && <span className="e-mono e-tenue e-pos-num">{i + 1}</span>}
                     {temporada ? <Link href={`/jugador/${p.person_id}?t=${temporada}`} className="e-enlace-nombre">{nombre}</Link> : nombre}
                     {p.dorsales && p.dorsales.length > 0 && <> <span className="e-completo">#{p.dorsales.join("/")}</span></>}
                   </td>
-                  {multiEquipo && <td className="e-oculta-sm">{p.equipos.map((e: Eq, k) => <Fragment key={e}>{k > 0 && " "}<ChipEquipo equipo={e} corto /></Fragment>)}</td>}
+                  {mas && multiEquipo && <td className="e-oculta-sm">{p.equipos.map((e: Eq, k) => <Fragment key={e}>{k > 0 && " "}<ChipEquipo equipo={e} corto /></Fragment>)}</td>}
                   <td className="e-c e-mono">{p.pj}</td>
                   <td className="e-c e-mono">{p.tot.pts}</td>
                   <td className="e-c e-mono"><N1 v={a2.pts} /></td>
+                  {mas && <>
                   {M.min && <td className="e-c e-mono"><Nz v={a2.min} f={(x) => x.toFixed(1) + "'"} /></td>}
                   {M.min && <td className="e-c e-mono"><N2 v={p.ppm} /></td>}
                   {M.p2 && <td className="e-c e-mono">{M.p2_intentos ? <NPct v={p.p2_pct} /> : <NInt v={p.tot.p2a} />}</td>}
@@ -85,6 +98,7 @@ export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada 
                   {M.val && <td className="e-c e-mono"><NInt v={p.tot.val} /></td>}
                   {M.pm && <td className="e-c e-mono"><NSigned v={p.pm_total} /></td>}
                   {M.pm && <td className="e-c e-mono"><NSigned1 v={a2.pm} /></td>}
+                  </>}
                 </tr>
               );
             })}

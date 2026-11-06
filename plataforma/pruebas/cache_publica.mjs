@@ -5,7 +5,8 @@
 //   - el orden no importa: pedirlas con sesion antes no contamina lo que ve un anonimo despues;
 //   - «/» con sesion es otra pagina (el inicio personal, reescrita por el proxy) y va SIN cache; sin sesion, la portada
 //     publica cacheable; lo dinamico con sesion (agenda, scouting…) tampoco se cachea;
-//   - ?hoy=, ?g=, ?persona=, ?t= van a su pagina gemela dinamica (sin cache) y se ven igual que siempre;
+//   - ?hoy=, ?g=, ?persona=, ?t= van a su pagina gemela dinamica (sin cache) y se ven igual que siempre (desde el bloque 6,
+//     ?persona= en /club/historia y ?t= en /club; /plantilla y /historia redirigen alli con 308);
 //   - /api/sesion: sin cookie, nadie; con cookie, la persona, y nunca en cache;
 //   - en Chrome: la cabecera y el pie con y sin sesion, sin parpadeo de «Acceso» para quien ya ha entrado;
 //   - el matcher del proxy lleva el nombre de la cookie del proyecto de Supabase de .env.local (si no, la web publica
@@ -54,7 +55,7 @@ try {
   // Las paginas prerenderizadas de ESTA compilacion.
   const manifiesto = JSON.parse(fs.readFileSync(path.join(RAIZ, '.next', 'prerender-manifest.json'), 'utf8'));
   const rutas = Object.keys(manifiesto.routes).filter((r) => !/^\/_/.test(r));
-  ok(['/', '/liga', '/club', '/historia', '/plantilla'].every((r) => rutas.includes(r)), `cacheadas: ${rutas.join(' ')}`);
+  ok(['/', '/liga', '/club', '/club/historia', '/club/el-club'].every((r) => rutas.includes(r)), `cacheadas: ${rutas.join(' ')}`);
 
   console.log('\n== Anónimo, antes que nadie');
   const anonimo = {};
@@ -98,7 +99,7 @@ try {
   ok(x.status === 200 && t.includes('Dos equipos.') && !MARCAS.some((m) => t.includes(m)), '/inicio sin sesión: la portada pública, sin datos de nadie');
 
   console.log('\n== Con consulta: gemelas dinámicas, sin cache, con lo de siempre');
-  for (const [r, texto] of [['/liga?g=G2', 'G2 · MdL'], ['/historia?persona=eric', 'Historia del'], ['/plantilla?t=2025-26', '2025'], ['/liga?hoy=2026-10-06', 'Próximos partidos']]) {
+  for (const [r, texto] of [['/liga?g=G2', 'G2 · MdL'], ['/club/historia?persona=eric', 'historia-ficha'], ['/club?t=2025-26', '2025'], ['/liga?hoy=2026-10-06', 'Próximos partidos']]) {
     x = await fetch(`${APP}${r}`);
     t = await x.text();
     ok(x.status === 200 && t.includes(texto) && !/s-maxage/.test(cc(x)), `${r}: 200 y sin cache`, `${x.status} ${cc(x)}`);
@@ -131,21 +132,21 @@ try {
   ok(await visto(anon.locator('header .nv-acceso')), 'sin sesión: «Acceso» en la cabecera');
   ok(await anon.evaluate(() => document.documentElement.dataset.sesion === undefined || document.documentElement.dataset.sesion === 'listo'), 'sin cookie la cabecera no espera a nada');
   ok(await visto(anon.getByRole('link', { name: 'Acceso jugadores y gestores' })), 'sin sesión: el pie lleva el acceso');
-  ok((await anon.locator('.e-nav a').allInnerTexts()).every((s) => !/Scouting|consolidada/.test(s)), 'sin sesión: la liga no enseña Scouting ni Liga consolidada');
+  ok((await anon.locator('.e-nav a').allInnerTexts()).every((s) => !/Jugadores de la liga|Scouting|consolidada/i.test(s)), 'sin sesión: la liga no enseña «Jugadores de la liga» (Liga consolidada) ni Scouting');
 
   // Las gemelas dinamicas (rewrite) se ven bajo la direccion de siempre: la navegacion marca la pestaña de siempre.
   await anon.goto(`${APP}/liga?g=G2`);
   ok((await anon.locator('.e-nav a[href="/liga"]').getAttribute('aria-current')) === 'page' && new URL(anon.url()).pathname === '/liga', '/liga?g=G2 (gemela dinámica): sigue siendo /liga y su pestaña está marcada');
 
   // Con sesion, en paginas cacheadas (la cookie la puso entrar()).
-  for (const ruta of ['/liga', '/club', '/historia']) {
+  for (const ruta of ['/liga', '/club', '/club/historia']) {
     await p.goto(`${APP}${ruta}`);
     ok(await visto(p.locator('header .nv-avatar'), 10000) && (await p.locator('header .nv-avatar-nombre').innerText()) === NOMBRE, `${ruta} con sesión: su nombre en la cabecera`);
     ok((await p.locator('header .nv-acceso').count()) === 0, `${ruta} con sesión: ni rastro de «Acceso»`);
     ok(await visto(p.getByRole('link', { name: 'Tu agenda' }), 5000), `${ruta} con sesión: el pie lleva «Tu agenda»`);
   }
   await p.goto(`${APP}/liga`);
-  ok(await visto(p.getByRole('link', { name: 'Scouting rivales' }), 8000), '/liga con sesión: aparece Scouting rivales');
+  ok(await visto(p.locator('nav[aria-label="Liga"]').getByRole('link', { name: 'Jugadores de la liga' }), 8000), '/liga con sesión: aparece la pestaña «Jugadores de la liga»');
   ok(await p.evaluate(() => document.documentElement.dataset.sesion === 'listo'), 'la cabecera ya no está escondida');
   // «/» con sesion, cargada de golpe: el proxy la reescribe a /inicio y la navegacion sigue viendo «/».
   await p.goto(`${APP}/`);

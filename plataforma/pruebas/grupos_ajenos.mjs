@@ -122,7 +122,7 @@ try {
     const res = await fetch(`${APP}${r}`, { redirect: 'manual' });
     ok(res.status >= 300 && res.status < 400 && /\/entrar/.test(res.headers.get('location') ?? ''), `anónimo en ${r}: manda a Entrar`, `${res.status} ${res.headers.get('location')}`);
   }
-  for (const r of ['/', '/liga', '/liga/2026-27', '/club', '/historia', '/plantilla', '/liga/consolidada?grupo=G3', '/liga/consolidada?grupos=G3,G4&vista=resultados', `/liga/consolidada/partido/${idG4}`, '/liga/scouting']) {
+  for (const r of ['/', '/liga', '/liga/2026-27', '/club', '/club/historia', '/club/el-club', '/liga/consolidada?grupo=G3', '/liga/consolidada?grupos=G3,G4&vista=resultados', `/liga/consolidada/partido/${idG4}`, '/liga/scouting']) {
     const html = await (await fetch(`${APP}${r}`, { redirect: 'follow' })).text();
     const f = fugas(html, ['G3', 'G4']);
     ok(f.length === 0, `anónimo en ${r}: ni un jugador ni un equipo de G3-G6`, f.join(', '));

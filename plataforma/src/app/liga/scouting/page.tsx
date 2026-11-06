@@ -1,5 +1,4 @@
 import { SecH } from "@/components/liga/Comunes";
-import Volver from "@/components/nav/Volver";
 import Link from "next/link";
 import { Fragment } from "react";
 import type { Metadata } from "next";
@@ -67,12 +66,14 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
   const liga = await cargarLiga(supabase, grupoPedido && !esGrupoNuestro(grupoPedido) ? [grupoPedido] : GRUPOS_NUESTROS, { clasificacion: todas });
   const { clasificacion, calendario, hoy } = liga;
   if (!clasificacion.length) {
-    return (<><Volver defecto="/liga" etiqueta="Liga" /><SecH titulo="Scouting rivales" tag="Con sesión" /><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
+    return (<><SecH titulo="Scouting rivales" tag="con sesión" /><div className="aviso aviso-info">Todavía no hay datos de liga cargados (<code>npm run db:liga</code>).</div></>);
   }
 
   const proxMdA = proximoPartido(calendario, hoy, "MDA");
   const proxMdL = proximoPartido(calendario, hoy, "MDL");
-  const vista = v === "mdl" ? "mdl" : "mda";
+  // Bloque 6: sin ?v=, abre en el partido más cercano (de MdA o de MdL, el que se juega antes).
+  const clave = (p: typeof proxMdA) => (p?.fecha ? `${p.fecha} ${p.hora ?? ""}` : "9999");
+  const vista = v === "mdl" ? "mdl" : v === "mda" ? "mda" : clave(proxMdL) < clave(proxMdA) ? "mdl" : "mda";
   const porDefecto = (vista === "mdl" ? proxMdL : proxMdA)?.rival ?? null;
   const elegido = clasificacion.find((c) => c.equipo === (e ?? porDefecto)) ?? clasificacion.find((c) => c.equipo === porDefecto) ?? clasificacion[0];
   const grupo = elegido.grupo;
@@ -96,11 +97,7 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <Volver defecto="/liga" etiqueta="Liga" />
-      <SecH titulo="Scouting rivales" tag="Con sesión" />
-      <div className="aviso aviso-info">
-        <b>Solo con sesión.</b> Datos por jugador de otros equipos: son de terceros; los ves por ser del equipo, no se publican (D73, D162).
-      </div>
+      <SecH titulo="Scouting rivales" tag="con sesión · no se publica" />
 
       <section className="tarjeta">
         <p className="lg-etq">Próximo rival</p>

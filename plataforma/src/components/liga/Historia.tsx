@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ANIOS, ANIOS_TERMINADOS, EN_CURSO, etiquetaAnio, filasRejilla, kpisHistoria, motivoSinStats, norm, temporadaDeAnio, tiraTemporal, type Filtros, type PersonaH } from "@/lib/estadisticas/historia";
+import { ANIOS, EN_CURSO, etiquetaAnio, filasRejilla, kpisHistoria, motivoSinStats, norm, temporadaDeAnio, tiraTemporal, type Filtros, type PersonaH } from "@/lib/estadisticas/historia";
 import { Control, Kpi, Nota, SecH, Segmento } from "./Comunes";
 
 // Historia del club («El Club»): rejilla de personas por temporada, dos modos de orden excluyentes (D22), tira temporal y ficha
 // de persona con puente a sus estadísticas. Solo enlaza a las temporadas que tienen página (nunca un 404).
+// Bloque 6 (Club › Historia): 2 cifras, el buscador a la vista y «Filtros» (vista, orden, quién) plegados; la rejilla, con
+// los nombres fijos al desplazar.
 export default function HistoriaClub({ personas, personaInicial }: { personas: PersonaH[]; personaInicial: string | null }) {
   const [vista, setVista] = useState<"rejilla" | "tira">("rejilla");
   const [buscar, setBuscar] = useState("");
@@ -53,26 +55,24 @@ export default function HistoriaClub({ personas, personaInicial }: { personas: P
 
   return (
     <>
-      <div className="e-controles">
-        <Control etiqueta="Vista"><Segmento etiqueta="Vista" valor={vista} opciones={[{ v: "rejilla", t: "Rejilla" }, { v: "tira", t: "Por temporada" }]} onCambia={setVista} /></Control>
+      <div className="e-kpis e-kpis-2" data-testid="historia-kpis">
+        <Kpi tono="accent" lab="Personas" val={k.personas} foot="han vestido la camiseta" />
+        <Kpi tono="grape" lab="Temporadas" val={ANIOS.length} foot={`2013/14 → ${etiquetaAnio(ANIOS[ANIOS.length - 1])}`} />
+      </div>
+
+      <div className="e-controles e-controles-historia">
         <Control etiqueta="Buscar persona">
           <input type="search" className="e-select e-buscar" placeholder="nombre o apellido…" value={buscar} onChange={(e) => setBuscar(e.target.value)} aria-label="Buscar persona" />
         </Control>
-        <Control etiqueta="Ordenar por"><Segmento etiqueta="Orden" valor={orden} opciones={[{ v: "veterania", t: "Veteranía" }, { v: "debut", t: "Año de incorporación" }]} onCambia={setOrden} /></Control>
-        <Control etiqueta="Quién"><Segmento etiqueta="Quién" valor={quien} opciones={[{ v: "ALL", t: "Todos" }, { v: "STATS", t: "Con estadísticas" }, { v: "NOSTATS", t: "Sólo presencia" }]} onCambia={setQuien} /></Control>
+        <details className="e-filtros" data-testid="historia-filtros">
+          <summary>Filtros{orden !== "veterania" || quien !== "ALL" || vista !== "rejilla" ? " · activos" : ""}</summary>
+          <div className="e-filtros-cuerpo">
+            <Control etiqueta="Vista"><Segmento etiqueta="Vista" valor={vista} opciones={[{ v: "rejilla", t: "Rejilla" }, { v: "tira", t: "Por temporada" }]} onCambia={setVista} /></Control>
+            <Control etiqueta="Ordenar por"><Segmento etiqueta="Orden" valor={orden} opciones={[{ v: "veterania", t: "Veteranía" }, { v: "debut", t: "Año de incorporación" }]} onCambia={setOrden} /></Control>
+            <Control etiqueta="Quién"><Segmento etiqueta="Quién" valor={quien} opciones={[{ v: "ALL", t: "Todos" }, { v: "STATS", t: "Con estadísticas" }, { v: "NOSTATS", t: "Sólo presencia" }]} onCambia={setQuien} /></Control>
+          </div>
+        </details>
       </div>
-
-      <div className="e-kpis" data-testid="historia-kpis">
-        <Kpi tono="accent" lab="Personas" val={k.personas} foot="han vestido la camiseta" />
-        <Kpi tono="grape" lab="Temporadas" val={ANIOS.length} foot={`2013/14 → ${etiquetaAnio(ANIOS[ANIOS.length - 1])}`} />
-        <Kpi tono="gold" lab="Más veterano" val={k.top ? k.top.n_temporadas : "—"} foot={k.top ? k.top.display : ""} />
-        <Kpi lab="Plantilla media" val={k.media} foot="jugadores por temporada ¹" />
-        <Kpi lab="De paso" val={k.fugaces} foot="una sola temporada ¹" />
-        <Kpi tono="win" lab="Con estadísticas" val={k.conStats} foot={`de ${k.personas} tienen ficha`} />
-      </div>
-      <p className="e-nota" data-testid="historia-nota-curso">
-        ¹ La {etiquetaAnio(EN_CURSO)} está en curso: cuenta en las temporadas de cada persona, pero no en la plantilla media (solo las {ANIOS_TERMINADOS.length} terminadas) ni en «De paso» (quien solo lleva la {etiquetaAnio(EN_CURSO)} aún no se ha ido).
-      </p>
 
       {vista === "rejilla" ? (
         <div data-testid="historia-rejilla">
@@ -105,14 +105,8 @@ export default function HistoriaClub({ personas, personaInicial }: { personas: P
             <span><i className="e-hl-stats" />Temporada con estadísticas</span>
             <span><i className="e-hl-sin" />En el club, sin estadísticas de ese año</span>
           </div>
-          <p className="e-nota" data-testid="historia-nota-encurso">
-            La {etiquetaAnio(EN_CURSO)} está <b>en curso</b>: salen todos los jugadores con ficha del MdA o del MdL y el cuerpo técnico. Quien aún no ha jugado ningún partido va en amarillo y pasa a naranja con el primero.
-          </p>
           <p className="e-nota" data-testid="historia-nota-orden">
-            {orden === "debut"
-              ? <>Ordenado por <b>año de incorporación</b>, del más antiguo al más reciente: la cifra dorada es la temporada de debut. Lista plana, sin tramos de veteranía.</>
-              : <>Ordenado por <b>veteranía</b> y agrupado por tramos: la cifra dorada es el número de temporadas.</>}
-            {" "}El cuerpo técnico va siempre en su propia sección. Pincha en cualquier fila para ver su ficha y saltar a sus estadísticas.
+            {orden === "debut" ? "Por año de incorporación (cifra dorada: temporada de debut)." : "Por veteranía (cifra dorada: temporadas)."} La {etiquetaAnio(EN_CURSO)}, en curso.
           </p>
         </div>
       ) : (

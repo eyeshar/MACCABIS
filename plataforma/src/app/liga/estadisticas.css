@@ -286,3 +286,90 @@ a.e-m-enlace:hover, a.e-m-enlace:focus-visible { color: var(--c-amarillo); text-
 .e-rv-racha { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .e-rv-racha > b { font-family: var(--f-titulos); font-size: 20px; }
 .e-pt-enlaces { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; margin: 0; }
+
+/* ---------------------------------------------------------------- Estructura nueva, bloque 6 (Liga y Club) */
+/* Títulos de frase en minúscula normal; cabecera de una línea (el primer dato, sin desplazar en 390 × 844). */
+.e-sec h2, .e-h1 { text-transform: none; letter-spacing: 0.01em; }
+.e-cab.e-cab-compacta { padding-top: 14px; padding-bottom: 0; gap: 8px; }
+.e-h1.e-h1-compacto { font-size: 30px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.e-cab-compacta + .e-cuerpo { padding-top: 0; }
+.e-cab-compacta + .e-cuerpo > .e-sec:first-child, .e-cuerpo > .e-controles:first-child { margin-top: 10px; }
+/* Pestañas en una fila fija: si no caben, se desplazan en su fila (nunca saltan de línea). */
+.e-cab-compacta .e-nav { flex-wrap: nowrap; overflow-x: auto; margin-top: 0; padding-bottom: 10px; gap: 6px; scrollbar-width: none; }
+.e-cab-compacta .e-nav::-webkit-scrollbar { display: none; }
+.e-cab-compacta .e-nav a { flex: 0 0 auto; text-transform: none; letter-spacing: 0.01em; padding: 0 14px; font-size: 16px; white-space: nowrap; }
+.e-pestanas { margin: 12px 0 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 6px; }
+.e-pestanas::-webkit-scrollbar { display: none; }
+.e-pestanas a { flex: 0 0 auto; min-height: var(--toque); text-transform: none; letter-spacing: 0.01em; white-space: nowrap; }
+.e-select-temporada { min-width: 130px; }
+/* Aviso de una línea, desplegable */
+.e-aviso-plegable { padding: 0; }
+.e-aviso-plegable > summary { min-height: var(--toque); display: flex; align-items: center; gap: 6px; padding: 0 14px; cursor: pointer; list-style: none; font-size: 13.5px; }
+.e-aviso-plegable > summary::-webkit-details-marker { display: none; }
+.e-aviso-plegable > p { margin: 0; padding: 0 14px 10px; font-size: 13.5px; }
+.e-clasificacion tbody tr.e-fila-click:hover td { background-color: var(--panel-3); }
+.e-clasificacion tbody tr.e-nos.e-fila-click:hover td { background-color: var(--amarillo-claro); }
+/* Club › Plantilla: ranking a 4 columnas y «Más columnas» */
+.e-boton-mas { min-height: var(--toque); padding: 0 16px; margin: 0 0 10px; border-radius: 9px; border: 1px solid var(--borde-fuerte); background: transparent; color: var(--tinta); font-family: var(--f-titulos); font-weight: 700; font-size: 16px; cursor: pointer; }
+.e-boton-mas:hover, .e-boton-mas[aria-expanded="true"] { background: var(--panel-3); }
+.e-pos-num { display: inline-block; min-width: 1.6em; margin-right: 6px; font-weight: 400; }
+/* Rivales: el Scouting de cada rival (con sesión) */
+.e-rv-celda { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.e-rv-celda > .e-rv { flex: 1 1 auto; }
+.e-rv-scout { align-self: flex-end; display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 14px; border-radius: 9px; border: 1px solid var(--borde-fuerte); color: var(--c-amarillo); text-decoration: none; font-family: var(--f-titulos); font-weight: 700; }
+.e-rv-scout:hover { background: var(--panel-3); }
+.e-rv-scout-ficha { margin: 0 0 14px; }
+[data-testid="scouting-proximo"] { margin: 0 0 14px; }
+/* Un único «‹» a su sección */
+.e-atras { display: inline-flex; align-items: center; min-height: var(--toque); margin: 0 0 6px; color: var(--tinta-suave); text-decoration: none; font-family: var(--f-titulos); font-weight: 600; font-size: 16px; }
+.e-atras:hover, .e-atras:focus-visible { color: var(--c-amarillo); }
+.e-pt-cab-compacta { padding: 12px 14px; gap: 6px; margin-bottom: 14px; }
+/* Líderes de la liga: una lista con chips */
+.lg-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 10px 0 0; }
+.lg-chips::-webkit-scrollbar { display: none; }
+.lg-chips button { flex: 0 0 auto; min-height: var(--toque); padding: 0 14px; border-radius: 22px; border: 1px solid var(--borde-fuerte); background: transparent; color: var(--tinta-suave); font: inherit; font-weight: 700; cursor: pointer; }
+.lg-chips button.on { background: var(--c-amarillo); border-color: var(--c-amarillo); color: var(--c-sobre-acento); }
+.lg-buscar input { min-height: var(--toque); width: 100%; max-width: 280px; box-sizing: border-box; }
+.lg-lider li.lg-nuestro { background: var(--resalte); }
+#lideres .lg-lideres { grid-template-columns: 1fr; margin-top: 12px; }
+#lideres .lg-conmutador button { min-height: var(--toque); }
+
+/* Club › Historia: 2 cifras, buscador y «Filtros» plegados */
+.e-kpis.e-kpis-2 { grid-template-columns: 1fr 1fr; margin-bottom: 14px; }
+.e-controles-historia { align-items: flex-start; }
+.e-filtros { min-width: 0; flex: 1 1 260px; }
+.e-filtros > summary { min-height: var(--toque); display: inline-flex; align-items: center; padding: 0 16px; border: 1px solid var(--borde-fuerte); border-radius: 9px; cursor: pointer; font-family: var(--f-titulos); font-weight: 700; font-size: 16px; list-style: none; }
+.e-filtros > summary::-webkit-details-marker { display: none; }
+.e-filtros > summary::after { content: " ▾"; margin-left: 6px; }
+.e-filtros[open] > summary::after { content: " ▴"; }
+.e-filtros-cuerpo { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 12px; }
+/* Club › El club: compacto */
+.e-club { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); margin: 12px 0; }
+.e-club-tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 13px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
+.e-club-tarjeta h2, .e-club-tarjeta h3 { margin: 0; font-size: 20px; }
+.e-club-tarjeta p { margin: 0; color: var(--tinta-suave); font-size: 14.5px; }
+.e-club-tarjeta a { display: inline-flex; align-items: center; min-height: var(--toque); }
+.e-club-cifras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.e-club-cifras div { display: grid; }
+.e-club-cifras b { font-family: var(--f-titulos); font-size: 30px; line-height: 1; }
+.e-club-cifras span { font-size: 12.5px; color: var(--tinta-tenue); }
+
+/* En TODAS las tablas anchas, la primera columna fija al desplazar en horizontal (fondo opaco para tapar lo que pasa
+   por debajo). En las tablas que empiezan con «#» (e-fija2), también la segunda: el nombre. */
+.e-caja > table > * > tr:not(.e-fila-box) > :first-child { position: sticky; left: 0; z-index: 1; background-color: var(--tarjeta); box-shadow: 1px 0 0 var(--borde); }
+.e-caja > table > * > tr.e-nos > :first-child { background-color: var(--amarillo-claro); }
+.e-caja > table.e-fija2 > * > tr:not(.e-fila-box) > :first-child:not([colspan]) { width: 38px; min-width: 38px; max-width: 38px; box-sizing: border-box; padding-left: 6px; padding-right: 6px; box-shadow: none; }
+.e-caja > table.e-fija2 > * > tr:not(.e-fila-box) > :nth-child(2) { position: sticky; left: 38px; z-index: 1; background-color: var(--tarjeta); box-shadow: 1px 0 0 var(--borde); }
+.e-caja > table.e-fija2 > * > tr.e-nos > :nth-child(2) { background-color: var(--amarillo-claro); }
+/* Temporadas: temporada y equipo en la misma fila también en el móvil */
+@media (max-width: 640px) {
+  .e-controles > .e-selector { flex: 0 0 96px; width: auto; }
+  .e-controles > .e-selector + .e-ctl { flex: 1 1 0; width: auto; min-width: 0; }
+  .e-controles > .e-selector + .e-ctl .e-segmento button { padding: 0 2px; font-size: 13px; text-transform: none; min-width: 0; }
+  .e-controles > .e-selector .e-select { min-width: 0; padding: 0 4px; font-size: 14px; }
+}
+/* Pestanas de la Liga y del Club en el movil: todas a la vista, a partes iguales (el texto largo, en dos lineas) */
+@media (max-width: 640px) {
+  .e-cab-compacta .e-nav { overflow-x: visible; }
+  .e-cab-compacta .e-nav a { flex: 1 1 0; min-width: 0; justify-content: center; text-align: center; white-space: normal; line-height: 1.1; padding: 4px 6px; font-size: 15px; }
+}

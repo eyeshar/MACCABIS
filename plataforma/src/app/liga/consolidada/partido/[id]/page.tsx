@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Volver from "@/components/nav/Volver";
-import { CajaTabla, SecH } from "@/components/liga/Comunes";
+import Link from "next/link";
+import { CajaTabla } from "@/components/liga/Comunes";
 import { exigirLiga } from "@/lib/sesion";
 import { TEMPORADA, etiquetaGrupo, fechaCorta } from "@/lib/liga";
 import { bonito, mmss } from "@/lib/jugadoresLiga";
@@ -36,13 +36,16 @@ export default async function PartidoConsolidada({ params, searchParams }: {
 
   return (
     <article data-testid="partido-consolidada">
-      <Volver defecto={volver} etiqueta="Resultados" />
-      <SecH titulo={`${p.local} – ${p.visitante}`} tag="Con sesión" />
-      <p className="lg-sub">
-        {etiquetaGrupo(p.grupo)}{p.jornada ? ` · jornada ${p.jornada}` : " · sin jornada"}{p.fecha ? ` · ${fechaCorta(p.fecha)}` : ""} ·{" "}
-        <b data-testid="marcador">{p.pts_local ?? "–"}–{p.pts_visitante ?? "–"}</b>
-      </p>
-      <div className="aviso aviso-info"><b>Solo con sesión.</b> Datos por jugador de otros equipos: son de terceros; no se publican (D73, D162).</div>
+      {/* Bloque 6: un único «‹» a su sección (Resultados, con los mismos grupos y jornada) y el marcador primero. */}
+      <Link href={volver} className="e-atras" prefetch={false} data-testid="volver">‹ Resultados</Link>
+      <div className="e-pt-cab e-pt-cab-compacta">
+        <div className="e-pt-cartel">
+          <span className="e-pt-eq">{p.local}</span>
+          <b className="e-pt-marcador" data-testid="marcador">{p.pts_local ?? "–"}–{p.pts_visitante ?? "–"}</b>
+          <span className="e-pt-eq">{p.visitante}</span>
+        </div>
+        <div className="e-pt-meta">{etiquetaGrupo(p.grupo)}{p.jornada ? ` · jornada ${p.jornada}` : " · sin jornada"}{p.fecha ? ` · ${fechaCorta(p.fecha)}` : ""} · con sesión, no se publica</div>
+      </div>
       {[p.local, p.visitante].map((eq) => {
         const suyas = filas.filter((f) => f.equipo === eq);
         return (

@@ -210,6 +210,13 @@ th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--bord
 th { font-family: var(--f-titulos); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.95rem; }
 td.falta { color: var(--error); font-weight: 700; }
 .tabla-desplazable { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* Estructura nueva, bloque 6: en TODAS las tablas anchas, la primera columna fija al desplazar en horizontal, con fondo
+   opaco (el de la tarjeta si la tabla va en una, el de la página si no). Las de la Liga (.e-caja), en liga/estadisticas.css. */
+.tabla-desplazable > table > * > tr > :first-child:not([colspan]), .lg-tabla-scroll > table > * > tr > :first-child:not([colspan]) { position: sticky; left: 0; z-index: 1; background-color: var(--fondo); box-shadow: 1px 0 0 var(--borde); }
+.tarjeta .tabla-desplazable > table > * > tr > :first-child:not([colspan]), .lg-tabla-scroll > table > * > tr > :first-child:not([colspan]) { background-color: var(--tarjeta); }
+.lg-tabla-scroll > table > thead > tr > :first-child { z-index: 3; }
+.tarjeta .tabla-desplazable > table > * > tr.lg-nuestro > :first-child:not([colspan]), .tabla-desplazable > table > * > tr.lg-nuestro > :first-child:not([colspan]), .lg-tabla-scroll > table > * > tr.lg-nuestro > :first-child:not([colspan]) { background-color: var(--resalte); }
+.tarjeta .tabla-desplazable > table > * > tr.lg-top > :first-child:not([colspan]), .tabla-desplazable > table > * > tr.lg-top > :first-child:not([colspan]) { background-color: var(--amarillo-claro); }
 
 .lista-limpia { list-style: none; padding: 0; margin: 0; }
 .fila-jugador { border-top: 1px solid var(--borde); padding: 12px 0; }

@@ -1,6 +1,6 @@
 import HistoriaVista, { metadata } from "../HistoriaVista";
 
-// /historia?persona=<person_id> (D175): la misma pagina, dinamica porque lee la consulta (ver next.config).
+// /club/historia?persona=<person_id> (D175; antes /historia?persona=): la misma pagina, dinamica porque lee la consulta (ver next.config).
 export const dynamic = "force-dynamic";
 export { metadata };
 

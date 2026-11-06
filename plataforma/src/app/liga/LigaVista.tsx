@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 };
 
 // Vista de Liga 26/27 (D175: la comparten «/liga», que se sirve ya hecha, y /liga/con-parametros, que lee la consulta).
-// Liga 26/27 (antes, la pestaña «Liga 26/27» de GitHub Pages): próximos partidos con aviso de equipación, clasificación
-// calculada, resultados por jornada y ficha por equipo. ?g=G1|G2 elige grupo y ?hoy=AAAA-MM-DD fija la fecha (revisiones).
+// Clasificación (bloque 6; antes, la pestaña «Liga 26/27» de GitHub Pages): clasificación calculada, resultados por jornada,
+// próximos partidos con aviso de equipación (por fecha) y ficha por equipo. ?g=G1|G2 elige grupo y ?hoy=AAAA-MM-DD fija la fecha (revisiones).
 export default async function LigaVista({ g, hoy: hoyPrueba }: { g?: string; hoy?: string }) {
   const hoy = hoyPrueba && /^\d{4}-\d{2}-\d{2}$/.test(hoyPrueba) ? hoyPrueba : hoyMadrid();
   const { liga, colores, contra, proximos } = datosLiga(hoy, await cargarFuente()); // tabla de eventos (D151)
@@ -28,12 +28,15 @@ export default async function LigaVista({ g, hoy: hoyPrueba }: { g?: string; hoy
     G2: Object.fromEntries(Object.keys(liga.grupos.G2.equipos).map((id) => [id, hrefEquipo("G2", id)])),
   };
   const partidos = Object.fromEntries((["G1", "G2"] as const).flatMap((k) => liga.grupos[k].resultados.map((r) => [r.id, hrefPartido(r.id)])));
-  return (
+  // Bloque 6: los próximos van debajo de la clasificación y los resultados, ordenados por fecha (el primero, el más cercano).
+  const orden = (["MDA", "MDL"] as const).map((eq, i) => ({ eq, p: proximos[i] }))
+    .sort((a, b) => (a.p?.fecha ?? "9999").localeCompare(b.p?.fecha ?? "9999") || (a.p?.hora ?? "").localeCompare(b.p?.hora ?? ""));
+  const bloqueProximos = (
     <>
-      <SecH titulo="Próximos partidos" tag="MdA y MdL" />
+      <SecH titulo="Próximos partidos" tag="por fecha" />
       <div className="e-proximos" data-testid="liga-proximos">
-        {(["MDA", "MDL"] as const).map((eq, i) => {
-          const p = proximos[i], n = eq === "MDA" ? "MdA" : "MdL";
+        {orden.map(({ eq, p }) => {
+          const n = eq === "MDA" ? "MdA" : "MdL";
           if (!p) return <div key={eq} className="e-eqp"><div className="e-eqp-t">{n}</div><div className="e-eqp-s">No quedan partidos en el calendario.</div></div>;
           // D129: en esta liga todos juegan en Moratalaz. Sin «en casa / fuera»: el cartel tal cual sale en el calendario oficial.
           const fichaRival = fichas[`${eq === "MDA" ? "G1" : "G2"}|${p.rival}`];
@@ -50,11 +53,13 @@ export default async function LigaVista({ g, hoy: hoyPrueba }: { g?: string; hoy
           );
         })}
       </div>
-      <LigaGrupoPanel
-        grupos={{ G1: grupoParaPantalla(liga.grupos.G1), G2: grupoParaPantalla(liga.grupos.G2) }} generado={liga.generado} colores={colores} contra={contra} grupoInicial={grupo}
-        enlaces={enlaces} partidos={partidos}
-        sinRastro={RIVALES.rivales.filter((r) => r.sin_rastro).map((r) => r.id)}
-      />
     </>
+  );
+  return (
+    <LigaGrupoPanel
+      grupos={{ G1: grupoParaPantalla(liga.grupos.G1), G2: grupoParaPantalla(liga.grupos.G2) }} generado={liga.generado} colores={colores} contra={contra} grupoInicial={grupo}
+      enlaces={enlaces} partidos={partidos} proximos={bloqueProximos}
+      sinRastro={RIVALES.rivales.filter((r) => r.sin_rastro).map((r) => r.id)}
+    />
   );
 }

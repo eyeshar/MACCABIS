@@ -27,7 +27,10 @@ export function personasHistoria(): Promise<PersonaH[]> {
       mda.set(s.id, new Set((t?.mda_resumen?.jugadores ?? []).map((j) => j.person_id).filter((x): x is string => !!x)));
     }
     // Quien no tiene ninguna temporada (un «solo entreno» sin ficha que nunca ha jugado, D137) no sale en la Historia.
-    return (HIST.personas as unknown as (PersonaH & { display?: string; formal?: string })[]).filter((p) => p.temporadas_jugadas.length).map((p) => {
+    // La «nota» de cada persona es interna (de dónde sale el dato, con su decisión): no llega a la página (bloque 6: nada de
+    // códigos «(Dnn)» en el HTML).
+    return (HIST.personas as unknown as (PersonaH & { display?: string; formal?: string; nota?: string })[]).filter((p) => p.temporadas_jugadas.length).map(({ nota: _nota, ...p }) => {
+      void _nota;
       const r = reg.get(p.person_id);
       const stats = REG.indice_stats[p.person_id] ?? [];
       return {

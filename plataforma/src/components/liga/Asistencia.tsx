@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { nombreCorto, ordenarAsistencia, pctAsistencia, type Asis, type ClaveAsis } from "@/lib/estadisticas/calculo";
 import { CajaTabla, Control, Nota, SecH, Segmento } from "./Comunes";
 
@@ -8,7 +8,7 @@ type JugadorAsis = { person_id: string; nombre: string; display?: string; asist_
 
 // Pestaña Asistencia: por jugador, solo asistidos, total y % (los motivos de ausencia no son públicos, D82; los ven los
 // gestores en la plataforma).
-export default function AsistenciaPestana({ jugadores }: { jugadores: JugadorAsis[] }) {
+export default function AsistenciaPestana({ jugadores, selector }: { jugadores: JugadorAsis[]; selector?: ReactNode }) {
   const [vista, setVista] = useState<"part" | "entr">("part");
   const [orden, setOrden] = useState<{ k: ClaveAsis | null; d: 1 | -1 }>({ k: null, d: -1 });
   const esPart = vista === "part";
@@ -21,6 +21,7 @@ export default function AsistenciaPestana({ jugadores }: { jugadores: JugadorAsi
   return (
     <>
       <div className="e-controles">
+        {selector}
         <Control etiqueta="Vista">
           <Segmento etiqueta="Vista" valor={vista} opciones={[{ v: "part", t: "Partidos" }, { v: "entr", t: "Entrenamientos" }]} onCambia={(v) => { setVista(v); setOrden({ k: null, d: -1 }); }} />
         </Control>

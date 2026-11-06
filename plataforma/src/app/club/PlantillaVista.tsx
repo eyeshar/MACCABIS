@@ -7,11 +7,12 @@ import { TEMPORADAS, TEMPORADA_POR_DEFECTO, cargarTemporada, equiposDe, esTempor
 export const metadata: Metadata = {
   title: "Plantilla · Maccabis",
   description: "La plantilla de Maccabis temporada a temporada: partidos, puntos, medias, porcentajes de tiro y valoración de cada jugador.",
-  alternates: { canonical: "/plantilla" },
+  alternates: { canonical: "/club" },
 };
 
-// Vista de la plantilla (D175: la comparten «/plantilla», ya hecha, y /plantilla/con-parametros, que lee ?t=).
-// Plantilla (antes, la pestaña «Jugadores» de GitHub Pages): ranking de la plantilla de una temporada (?t=), con enlace a la ficha.
+// Club › Plantilla (bloque 6; antes /plantilla, que redirige aquí con 308). D175: la comparten «/club», ya hecha, y
+// /club/con-parametros, que lee ?t=. Ranking de la plantilla de una temporada a 4 columnas, con «Más columnas» y enlace a
+// la ficha de cada jugador. La tabla completa está también en Liga › Temporadas › Jugadores.
 export default async function PlantillaVista({ t }: { t?: string }) {
   const id = t && esTemporada(t) ? t : TEMPORADA_POR_DEFECTO;
   const temporada = (await cargarTemporada(id))!;
@@ -22,10 +23,8 @@ export default async function PlantillaVista({ t }: { t?: string }) {
   }));
   return (
     <>
-      <div className="e-temporada">
-        <SelectorTemporadaRuta ruta="/plantilla" temporada={id} temporadas={TEMPORADAS.map((s) => ({ id: s.id, label: s.label }))} />
-      </div>
-      <JugadoresPestana key={id} jugadores={jugadores} M={M} multiEquipo={equiposDe(temporada).length > 1} temporada={id} />
+      <JugadoresPestana key={id} jugadores={jugadores} M={M} multiEquipo={equiposDe(temporada).length > 1} temporada={id} compacta
+        selector={<SelectorTemporadaRuta ruta="/club" temporada={id} temporadas={TEMPORADAS.map((s) => ({ id: s.id, label: s.label }))} />} />
       <div className="e-fuente">{(temporada.fuente || "Fuente: actas y hojas de estadistica oficiales") + " · temporada " + (temporada.label || temporada.season)}</div>
     </>
   );

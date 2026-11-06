@@ -12,6 +12,10 @@
 //   - un jugador no ve motivos, niveles ni las pestañas de gestor (barrera (h)).
 //   - /gestion y /gestion/convocatoria, como gestor con ficha y sin ficha (390 px y escritorio): sin la barra de
 //     subsecciones de Gestión ni la hoja «Más» de antes; solo la barra (o el menú) del rol.
+//   - visibilidad en el móvil (fix/visibilidad-movil), a 360 px: Plantilla (Jugador, PJ, PTS, MED), la Clasificación (las 7) y
+//     Temporadas › Equipo y Asistencia caben enteras sin desplazar; en Temporadas › Jugadores, jugador fijo y PJ, PTS y MED a la
+//     vista; con sesión, G3-G6 en el selector de la Clasificación y sus casillas a la vista en Jugadores de la liga, sin tocar
+//     nada (sin sesión, solo G1 y G2).
 // Capturas a 390 px (solo en local) en privado/mockups_liga/rediseno/estructura_nueva/.
 //
 //   npm run pruebas:estructura
@@ -186,6 +190,66 @@ try {
       await ctx.close();
     }
   }
+
+  console.log('\n== Visibilidad en el móvil a 360 px: tablas sin desplazar y G3-G6 a la vista (fix/visibilidad-movil)');
+  // De una tabla: las cabeceras que se ven ENTERAS sin desplazar (dentro de su caja y de la pantalla), si la caja desplaza y
+  // cuántas de las primeras columnas van fijas.
+  const columnas = (p, testid) => p.getByTestId(testid).first().evaluate((t) => {
+    let caja = t.parentElement;
+    while (caja && !['auto', 'scroll'].includes(getComputedStyle(caja).overflowX)) caja = caja.parentElement;
+    const c = (caja ?? document.documentElement).getBoundingClientRect();
+    const der = Math.min(c.right, window.innerWidth), izq = Math.max(c.left, 0);
+    const celdas = [...t.tHead.rows[t.tHead.rows.length - 1].cells].filter((x) => x.getClientRects().length);
+    const enteras = celdas.filter((x) => { const r = x.getBoundingClientRect(); return r.left >= izq - 1 && r.right <= der + 1; });
+    return {
+      todas: celdas.map((x) => x.textContent.trim()), enteras: enteras.map((x) => x.textContent.trim()),
+      desplaza: caja ? caja.scrollWidth > caja.clientWidth + 1 : false,
+      fijas: celdas.slice(0, 2).filter((x) => getComputedStyle(x).position === 'sticky').length,
+    };
+  });
+  const enteraSinDesplazar = (c) => !c.desplaza && c.enteras.length === c.todas.length;
+  const ctxM = await e.contexto(360);
+  const pm = await e.nuevaPagina(ctxM);
+  await e.entrar(pm, 'jon@pruebas.local');
+  await pm.goto(`${APP}/club`);
+  const plantilla = await columnas(pm, 'jugadores-tabla');
+  ok(enteraSinDesplazar(plantilla) && plantilla.todas.join() === 'Jugador,PJ,Pts,Med', 'Club › Plantilla a 360 px: Jugador, PJ, PTS y MED enteras, sin desplazar', JSON.stringify(plantilla));
+  ok(!/#\d/.test(await pm.getByTestId('jugadores-tabla').innerText()), 'Club › Plantilla: sin dorsales a 4 columnas');
+  await pm.getByTestId('mas-columnas').click();
+  const todas = await columnas(pm, 'jugadores-tabla');
+  ok(todas.fijas === 2 && ['PJ', 'Pts', 'Med'].every((x) => todas.enteras.includes(x)), '«Más columnas»: # y jugador fijos, y PJ, PTS y MED a la vista sin desplazar', JSON.stringify(todas));
+  await pm.goto(`${APP}/liga`);
+  const clas = await columnas(pm, 'liga-clasificacion');
+  ok(enteraSinDesplazar(clas) && clas.todas.length === 7, 'Liga › Clasificación a 360 px: #, Equipo, PJ, G, P, Dif y Pts enteras, sin desplazar', JSON.stringify(clas));
+  await hasta(async () => (await pm.getByTestId('selector-grupo-liga').locator('button').count()) === 6);
+  const botonesGrupo = await pm.getByTestId('selector-grupo-liga').locator('button').evaluateAll((bs) => bs.map((b) => ({ t: b.textContent.trim(), w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height })));
+  ok(botonesGrupo.map((b) => b.t).join() === 'G1 · MdA,G2 · MdL,G3,G4,G5,G6' && botonesGrupo.every((b) => b.w >= 44 && b.h >= 44), 'Clasificación con sesión: G1 · MdA | G2 · MdL | G3 | G4 | G5 | G6, de 44 px', JSON.stringify(botonesGrupo));
+  for (const [ruta, testid] of [['/liga/2026-27/equipo', 'equipo-partidos'], ['/liga/2026-27/asistencia', 'asistencia-tabla']]) {
+    await pm.goto(`${APP}${ruta}`);
+    const c = await columnas(pm, testid);
+    ok(enteraSinDesplazar(c), `${ruta} a 360 px: la tabla cabe entera sin desplazar`, JSON.stringify(c));
+  }
+  await pm.goto(`${APP}/liga/2026-27/jugadores`);
+  const jt = await columnas(pm, 'jugadores-tabla');
+  ok(jt.fijas === 2 && ['PJ', 'Pts', 'Med'].every((x) => jt.enteras.includes(x)), 'Temporadas › Jugadores a 360 px: # y jugador fijos, y PJ, PTS y MED a la vista sin desplazar', JSON.stringify(jt));
+  await pm.goto(`${APP}/liga/consolidada`);
+  const casillas = await pm.getByTestId('selector-grupos').locator('label.lg-check').evaluateAll((ls) => ls.map((l) => {
+    const r = l.getBoundingClientRect();
+    return { g: l.dataset.grupo, t: l.innerText.trim(), visible: r.width > 0 && r.left >= 0 && r.right <= window.innerWidth, h: r.height, marcada: l.querySelector('input').checked };
+  }));
+  const ajenas = casillas.filter((x) => ['G3', 'G4', 'G5', 'G6'].includes(x.g));
+  ok(ajenas.length === 4 && ajenas.every((x) => x.visible && x.h >= 44 && !x.marcada && x.t === x.g), 'Jugadores de la liga a 360 px: las casillas G3, G4, G5 y G6 a la vista sin tocar nada, desmarcadas y de 44 px', JSON.stringify(casillas));
+  ok((await pm.getByTestId('selector-grupos').locator('details').count()) === 0 && !(await pm.getByTestId('selector-grupos').innerText()).includes('Cada casilla se aplica'), 'Jugadores de la liga: sin «Otros grupos» plegado ni el párrafo explicativo');
+  ok(await sinDesbordar(pm), 'Jugadores de la liga a 360 px: sin desbordar');
+  await ctxM.close();
+  const ctxA = await e.contexto(360);
+  const pa = await e.nuevaPagina(ctxA);
+  await pa.goto(`${APP}/liga`);
+  await hasta(async () => (await pa.locator('html').getAttribute('data-sesion')) !== 'pendiente');
+  ok((await pa.getByTestId('selector-grupo-liga').locator('button').allTextContents()).map((x) => x.trim()).join() === 'G1 · MdA,G2 · MdL', 'sin sesión, la Clasificación solo ofrece G1 y G2 (D184/D186)');
+  await pa.goto(`${APP}/liga?g=G5`);
+  ok((await pa.getByTestId('selector-grupo-liga').locator('button[aria-pressed="true"]').textContent())?.trim() === 'G1 · MdA', 'sin sesión, /liga?g=G5 enseña G1');
+  await ctxA.close();
 
   ok(e.errores.length === 0, 'sin errores de JavaScript ni de consola', e.errores.slice(0, 3).join(' | '));
 } finally {

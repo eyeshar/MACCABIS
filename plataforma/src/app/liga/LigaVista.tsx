@@ -7,6 +7,10 @@ import { SecH } from "@/components/liga/Comunes";
 import { datosLiga, fichasPorNombre, grupoParaPantalla, hrefEquipo, hrefPartido, RIVALES, type Grupo } from "@/lib/estadisticas/liga";
 import { diaLargo, hoyMadrid } from "@/lib/dias";
 import { cargarFuente } from "@/lib/eventos/fuente";
+import { GRUPOS_AJENOS, etiquetaGrupo } from "@/lib/gruposLiga";
+import { cargarGrupoAjeno } from "@/lib/ligaAjena";
+import { puedeVerLigaActual } from "@/lib/sesion";
+import { clienteSesion } from "@/lib/supabase";
 
 export const metadata: Metadata = {
   title: "Liga 26/27 · Maccabis",
@@ -17,10 +21,16 @@ export const metadata: Metadata = {
 // Vista de Liga 26/27 (D175: la comparten «/liga», que se sirve ya hecha, y /liga/con-parametros, que lee la consulta).
 // Clasificación (bloque 6; antes, la pestaña «Liga 26/27» de GitHub Pages): clasificación calculada, resultados por jornada,
 // próximos partidos con aviso de equipación (por fecha) y ficha por equipo. ?g=G1|G2 elige grupo y ?hoy=AAAA-MM-DD fija la fecha (revisiones).
+// ?g=G3…G6 (fix/visibilidad-movil): un grupo ajeno, SOLO con sesión de jugador con ficha o de gestor (D184/D186): sus datos
+// salen de Supabase con la sesión (RLS) y solo en la gemela dinámica; la página ya hecha («/liga») nunca los lleva. Sin
+// sesión, ?g=G5 es G1.
 export default async function LigaVista({ g, hoy: hoyPrueba }: { g?: string; hoy?: string }) {
   const hoy = hoyPrueba && /^\d{4}-\d{2}-\d{2}$/.test(hoyPrueba) ? hoyPrueba : hoyMadrid();
   const { liga, colores, contra, proximos } = datosLiga(hoy, await cargarFuente()); // tabla de eventos (D151)
-  const grupo: Grupo = g === "G2" ? "G2" : "G1";
+  const pedido = g?.toUpperCase();
+  const ajeno = pedido && (GRUPOS_AJENOS as readonly string[]).includes(pedido) && (await puedeVerLigaActual().catch(() => false))
+    ? await cargarGrupoAjeno(await clienteSesion(), pedido, etiquetaGrupo(pedido)).catch(() => null) : null;
+  const grupo: Grupo = pedido === "G2" ? "G2" : "G1";
   const fichas = fichasPorNombre();
   // Enlaces de cada equipo y de cada partido (D129), calculados aqui para que el panel no lleve la logica.
   const enlaces = {
@@ -57,7 +67,9 @@ export default async function LigaVista({ g, hoy: hoyPrueba }: { g?: string; hoy
   );
   return (
     <LigaGrupoPanel
-      grupos={{ G1: grupoParaPantalla(liga.grupos.G1), G2: grupoParaPantalla(liga.grupos.G2) }} generado={liga.generado} colores={colores} contra={contra} grupoInicial={grupo}
+      key={ajeno ? ajeno.grupo : grupo /* de un grupo a otro por la URL (G4 → G5), el panel empieza de cero */}
+      grupos={{ G1: grupoParaPantalla(liga.grupos.G1), G2: grupoParaPantalla(liga.grupos.G2) }} generado={liga.generado} colores={colores} contra={contra} grupoInicial={ajeno ? ajeno.grupo : grupo}
+      ajeno={ajeno}
       enlaces={enlaces} partidos={partidos} proximos={bloqueProximos}
       sinRastro={RIVALES.rivales.filter((r) => r.sin_rastro).map((r) => r.id)}
     />

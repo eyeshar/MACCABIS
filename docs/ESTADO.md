@@ -2,6 +2,13 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Visibilidad en el móvil (06/11/2026; D190) — `fix/visibilidad-movil`, PR pendiente del OK de Iván
+- **Jugadores de la liga:** G3–G6 siempre a la vista como casillas junto a MdA y MdL (sin «Otros grupos» ni el párrafo).
+- **Clasificación:** con sesión, G1 · MdA | G2 · MdL | G3 | G4 | G5 | G6, con su clasificación, resultados por jornada y ficha (sin sesión, solo G1 y G2).
+- **Tablas a 360 px:** Plantilla, Clasificación, Temporadas › Equipo y Asistencia, la hoja de un partido y el Tablero caben enteras; Temporadas › Jugadores, Historia, Scouting y la ficha del jugador, con la primera columna fija y al menos tres columnas de datos a la vista.
+- **Botones de 44 px:** «Cambiar a mano» del evento (antes «Va» medía 26 px), los índices y conmutadores de Jugadores de la liga, las jornadas y las cabeceras que ordenan. Las pestañas del evento ya no se salen por la derecha.
+- Capturas a 390 px en `privado/mockups_liga/rediseno/visibilidad/`. Sin migraciones.
+
 ## INFORME PARA IVÁN · 06/11/2026 · estructura nueva de la web (D189), en producción
 
 **Qué está en producción:** todo lo que pediste, en un solo merge (`eafcf42`, PR #62), desplegado y comprobado:

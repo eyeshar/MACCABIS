@@ -61,7 +61,12 @@ const salir = async (code) => { try { await nav?.close(); } catch {} app.parar()
 // ---------------------------------------------------------------------------------------------- lectura de celdas visibles
 const norm = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 /** Filas de una tabla como listas de celdas visibles (las columnas que la web anterior oculta con CSS no cuentan). */
-const filas = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s + ' tr')].map((tr) =>
+// D190: la web nueva enseña el nombre corto (nombre + primer apellido) y lleva el completo en su `title`; el cuadre compara el
+// completo, como lo da la web anterior.
+const filas = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s + ' td.e-nombre')].forEach((td) => {
+  const t = td.matches('[title]') ? td : td.querySelector('a[title], span[title]');
+  if (t?.title) t.textContent = t.title;
+}) || [...document.querySelectorAll(s + ' tr')].map((tr) =>
   [...tr.children].filter((c) => c.getClientRects().length).map((c) => c.innerText.replace(/\s+/g, ' ').trim().toLowerCase())).filter((r) => r.length), sel);
 const textos = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].filter((e) => e.getClientRects().length).map((e) => e.innerText.replace(/\s+/g, ' ').trim().toLowerCase()), sel);
 function igual(a, b, que) {

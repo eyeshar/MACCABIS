@@ -82,6 +82,7 @@
     "pruebas:planes": "node pruebas/rls_planes.mjs",
     "pruebas:inicio-personal": "node pruebas/inicio_personal.mjs",
     "pruebas:estructura": "node pruebas/estructura_nueva.mjs",
+    "repaso:movil": "node pruebas/repaso_movil.mjs",
     "pruebas:ubicacion": "node pruebas/ubicacion.mjs",
     "pruebas:calendario-personal": "node pruebas/calendario_personal.mjs",
     "pruebas:tablero": "node pruebas/tablero.mjs",

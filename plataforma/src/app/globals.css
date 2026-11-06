@@ -305,7 +305,7 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 .lg-filtros select, .lg-filtros input[type="search"] { min-height: 40px; font-size: 0.95rem; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 8px; background: var(--campo); color: var(--tinta); max-width: 100%; }
 .lg-filtros .lg-check { flex-direction: row; align-items: center; gap: 6px; min-height: 40px; font-size: 0.95rem; color: var(--tinta); }
 .lg-conmutador { display: inline-flex; border: 1px solid var(--borde-fuerte); border-radius: 8px; overflow: hidden; }
-.lg-conmutador button { min-height: 40px; padding: 0 14px; border: 0; background: transparent; color: var(--tinta-suave); font: inherit; font-weight: 700; cursor: pointer; }
+.lg-conmutador button { min-height: var(--toque); padding: 0 14px; border: 0; background: transparent; color: var(--tinta-suave); font: inherit; font-weight: 700; cursor: pointer; }
 .lg-conmutador button.on { background: var(--c-amarillo); color: var(--c-sobre-acento); }
 .solo-movil-bloque { display: none !important; }
 .lg-ordenar-fila { display: flex; gap: 6px; }
@@ -344,7 +344,7 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 
 /* ===== Liga consolidada: indice, lideres por partido, filtros plegables en movil, fichas de dobladores ===== */
 .lg-indice { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
-.lg-indice a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--borde-fuerte); border-radius: 999px; color: var(--tinta); text-decoration: none; font-weight: 700; background: var(--tarjeta); }
+.lg-indice a { display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 14px; border: 1px solid var(--borde-fuerte); border-radius: 999px; color: var(--tinta); text-decoration: none; font-weight: 700; background: var(--tarjeta); }
 .lg-indice a:hover, .lg-indice a:focus-visible { background: var(--amarillo-claro); }
 .lg-seccion { scroll-margin-top: 12px; margin-bottom: 8px; }
 .lg-ancla { scroll-margin-top: 12px; }
@@ -790,8 +790,8 @@ html[data-sesion="pendiente"] :is(.nv-menu, .nv-derecha, .nv-barra, .nv-titulo, 
 .lg-grupos { border: 0; margin: 0; padding: 0; min-width: 0; }
 .lg-grupos .lg-check, .lg-form > .lg-form-fila .lg-check { display: inline-flex; align-items: center; gap: 6px; min-height: var(--toque); padding: 0 12px; border: 1px solid var(--borde-fuerte); border-radius: 8px; background: var(--campo); font-weight: 600; cursor: pointer; }
 .lg-grupos .lg-check:has(input:checked) { background: var(--amarillo-claro); border-color: var(--c-amarillo); }
-.lg-otros { margin-top: 8px; }
-.lg-otros > summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; font-weight: 700; }
+.lg-grupos-fila { gap: 6px; }
+@media (max-width: 420px) { .lg-grupos .lg-check { padding: 0 9px; gap: 5px; } }
 .lg-form button[disabled] { opacity: 0.5; cursor: not-allowed; }
 .lg-pestanas { display: flex; gap: 0; margin: 14px 0 6px; border-bottom: 2px solid var(--borde); flex-wrap: wrap; }
 .lg-pestanas a { display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 16px; color: var(--tinta-suave); text-decoration: none; font-weight: 700; border-bottom: 3px solid transparent; margin-bottom: -2px; }
@@ -800,7 +800,7 @@ html[data-sesion="pendiente"] :is(.nv-menu, .nv-derecha, .nv-barra, .nv-titulo, 
 .lg-ranking-grupo { margin-top: 12px; }
 .lg-ranking-grupo h3 { margin: 0 0 6px; font-size: 1rem; }
 .lg-jornadas { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
-.lg-jornadas a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 40px; padding: 0 10px; border: 1px solid var(--borde-fuerte); border-radius: 999px; color: var(--tinta); text-decoration: none; font-weight: 700; background: var(--tarjeta); }
+.lg-jornadas a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: var(--toque); padding: 0 10px; border: 1px solid var(--borde-fuerte); border-radius: 999px; color: var(--tinta); text-decoration: none; font-weight: 700; background: var(--tarjeta); }
 .lg-jornadas a.on { background: var(--c-amarillo); color: var(--c-sobre-acento); border-color: var(--c-amarillo); }
 .lg-res-grupo { margin-bottom: 10px; }
 .lg-res-grupo h3 { margin: 0 0 8px; font-size: 1rem; }

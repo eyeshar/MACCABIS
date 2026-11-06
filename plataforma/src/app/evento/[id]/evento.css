@@ -17,5 +17,7 @@
 .ev2-pestanas { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--borde); }
 .ev2-pestanas a { display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 14px; color: var(--tinta-suave); text-decoration: none; font-weight: 600; white-space: nowrap; flex: none; border-bottom: 2px solid transparent; }
 .ev2-pestanas a[aria-current] { color: var(--tinta); border-bottom-color: var(--c-amarillo); }
+/* fix/visibilidad-movil: en el móvil, todas las pestañas a la vista (antes «Mi respuesta» se salía por la derecha); un texto largo, en dos líneas */
+@media (max-width: 480px) { .ev2-pestanas { gap: 2px; } .ev2-pestanas a { flex: 1 1 auto; justify-content: center; text-align: center; padding: 0 6px; white-space: normal; line-height: 1.1; font-size: 15px; } }
 .ev2-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .ev2-gestor { max-width: 1240px; }

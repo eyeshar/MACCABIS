@@ -53,7 +53,7 @@ export default async function PartidoConsolidada({ params, searchParams }: {
             <h3 className="e-pt-h3">{eq}</h3>
             {suyas.length === 0 ? <p className="lg-nota">Sin datos por jugador de este equipo.</p> : (
               <CajaTabla>
-                <table className="e-tabla e-tabla-box" data-testid="hoja-por-jugador">
+                <table className="e-tabla e-tabla-box e-fija2" data-testid="hoja-por-jugador">
                   <thead><tr><th scope="col">#</th><th scope="col">Jugador</th><th scope="col" className="e-c">Min</th><th scope="col" className="e-c">Pts</th><th scope="col" className="e-c">2P</th><th scope="col" className="e-c">3P</th><th scope="col" className="e-c">TL</th><th scope="col" className="e-c">FC</th></tr></thead>
                   <tbody>
                     {suyas.map((j, i) => {

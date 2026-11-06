@@ -137,7 +137,7 @@ try {
     ok(JSON.stringify(await marcada(p, 'nav[aria-label="Liga"]')) === '["Clasificación"]', '/liga: «Clasificación» marcada');
     ok((await p.locator('.e-cab .w-eyebrow, .e-sub').count()) === 0 && (await p.locator('h1').innerText()).trim().split('\n').length === 1, 'liga: título de una línea, sin el bloque «Maccabis · desde 2013… Estadísticas Maccabis»');
     ok(!(await p.locator('main').innerText()).includes('JDM MOR DOM'), 'liga: sin la cadena «JDM MOR DOM MAÑ BC SEN MAS G1»');
-    ok((await p.locator('[data-testid="liga-aviso"]').getAttribute('open')) === null && /Calculada con las hojas de la FBM · pendiente de contrastar con la oficial/.test(await p.locator('[data-testid="liga-aviso"] summary').innerText()), 'liga: el aviso de la clasificación, una línea plegada');
+    ok((await p.locator('[data-testid="liga-aviso"]').getAttribute('open')) === null && /Calculada (con las hojas de la FBM )?· pendiente de (contrastar con )?la oficial/.test(await p.locator('[data-testid="liga-aviso"] summary').innerText()), 'liga: el aviso de la clasificación, una línea plegada');
     if (ancho === 390) {
       const v = await aLaVista(p, '[data-testid="liga-clasificacion"] tbody tr');
       ok(v === true, 'liga 390×844: la primera fila de la clasificación se ve sin desplazar', String(v));
@@ -184,7 +184,8 @@ try {
       ok(v === true, 'temporadas 390×844: la primera cifra (Balance) se ve sin desplazar', String(v));
     }
     let f = await columnaFija(p, '[data-testid="equipo-partidos"]');
-    ok(f === true, 'temporadas › equipo: la primera columna fija al desplazar', String(f));
+    // fix/visibilidad-movil (D190): a 360/390 px la tabla de partidos cabe entera; si un día no cabe, la primera columna va fija.
+    ok(f === true || f === 'sin desplazamiento', 'temporadas › equipo: cabe entera o la primera columna va fija al desplazar', String(f));
     const opciones = await p.locator('#e-sel-temporada option').allTextContents();
     ok(opciones.at(-1)?.includes('2013') || opciones[0]?.includes('2013'), 'temporadas: desde 2013/14', opciones.join(','));
     ok(await sinDesbordar(p), 'temporadas: sin desbordamiento horizontal');
@@ -206,9 +207,10 @@ try {
     ok(await fila(p, 'nav[aria-label="Club"] a'), 'club: las pestañas en una sola fila');
     const cabs = await p.$$eval('[data-testid="jugadores-tabla"] thead th', (ths) => ths.map((t) => t.textContent.trim()));
     ok(JSON.stringify(cabs) === JSON.stringify(['Jugador', 'PJ', 'Pts', 'Med']), 'plantilla: ranking a 4 columnas (Jugador, PJ, Pts, Med)', cabs.join(','));
-    // Los mismos números que Temporadas › Jugadores (nombre, PJ, Pts y Med de cada fila, en el mismo orden).
+    // Los mismos números que Temporadas › Jugadores (nombre, PJ, Pts y Med de cada fila, en el mismo orden). Allí el dorsal va
+    // en pequeño debajo del nombre (D190): se compara el nombre sin él.
     const compacta = await p.$$eval('[data-testid="jugadores-tabla"] tbody tr', (trs) => trs.map((tr) => [...tr.children].map((c) => c.textContent.trim())));
-    const iguales = compacta.length > 0 && compacta.length === completa.length && compacta.every((r, i) => r[0].replace(/^\d+/, '') === completa[i][iNom] && r.slice(1).join('|') === completa[i].slice(iPJ, iPJ + 3).join('|'));
+    const iguales = compacta.length > 0 && compacta.length === completa.length && compacta.every((r, i) => r[0].replace(/^\d+/, '') === completa[i][iNom].replace(/#[\d/]+$/, '') && r.slice(1).join('|') === completa[i].slice(iPJ, iPJ + 3).join('|'));
     ok(iguales, `plantilla: los ${compacta.length} jugadores con los mismos números que Liga › Temporadas › Jugadores`);
     await p.getByTestId('mas-columnas').click();
     ok((await p.locator('[data-testid="jugadores-tabla"] thead th').count()) > 4 && (await p.getByTestId('mas-columnas').innerText()) === 'Menos columnas', 'plantilla: «Más columnas» enseña el resto');

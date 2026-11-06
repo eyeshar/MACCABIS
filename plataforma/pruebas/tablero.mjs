@@ -188,13 +188,15 @@ try {
   await pg.getByTestId('barra-acciones').getByRole('button', { name: 'Quitar selección' }).click();
   await pg.evaluate(() => window.scrollTo(0, 0));
 
-  console.log('\n== 375 px: la tabla se desplaza dentro de su caja, con el jugador fijo');
+  console.log('\n== 375 px: la tabla cabe entera en su caja (D190), con el jugador fijo');
   const p375 = await e.nuevaPagina(await e.contexto(375));
   await p375.context().addCookies(await pg.context().cookies());
   await p375.goto(`${APP}/gestion/tablero?domingo=${J3}`);
   await p375.locator('tr[data-person="sint-flor"] input[type=checkbox]').check();
   const caja = await p375.getByTestId('tabla-juegan').evaluate((x) => ({ sw: x.scrollWidth, cw: x.clientWidth, fija: getComputedStyle(x.querySelector('.tb-fijo')).position }));
-  ok(await sinDesbordar(p375) && caja.sw > caja.cw && caja.fija === 'sticky', 'sin desbordar la página; desplazamiento horizontal dentro de la caja y la columna del jugador fija', JSON.stringify(caja));
+  // D190 (fix/visibilidad-movil): en el móvil, el jugador y las tres columnas de datos a la vista sin desplazar; el jugador
+  // sigue fijo por si una tabla más ancha tuviera que desplazarse.
+  ok(await sinDesbordar(p375) && caja.sw <= caja.cw + 1 && caja.fija === 'sticky', 'sin desbordar la página; la tabla cabe entera en su caja y la columna del jugador va fija', JSON.stringify(caja));
   await foto(p375, 'tablero_domingo_posicion_seleccion_375');
   ok(await sinDesbordar(pg), '1280 px sin desbordamiento');
 

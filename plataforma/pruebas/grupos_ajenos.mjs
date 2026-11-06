@@ -3,7 +3,7 @@
 // compilada y Chrome. Datos SINTETICOS (equipos y jugadores «Sint…», nunca de terceros: va a GitHub Actions): G1 y G2 con un
 // jugador que dobla y dos grupos ajenos (G3, G4) cuyos lideres superan a los nuestros, para que cualquier mezcla se note.
 // Comprueba: sin sesion no se ve nada de G3-G6 (API y paginas, tambien Resultados y la hoja de un partido); el selector de
-// varios grupos (D186: MdA y MdL marcados por defecto, «Otros grupos», como minimo uno, ?grupos= en la URL y el enlace
+// varios grupos (D186: MdA y MdL marcados por defecto, G3-G6 a la vista y desmarcados, como minimo uno, ?grupos= en la URL y el enlace
 // antiguo ?grupo= de D184); con cualquier combinacion no sale nadie de un grupo no marcado; el que dobla suma sus dos
 // fichas solo con MdA y MdL marcados; el ranking va por grupo, sin mezclar equipos; la pestaña Resultados (jornada, descanso
 // y huecos del fichero de jornadas de prueba, pruebas/fixtures/jornadas_ajenas_prueba.json) y la hoja de cada partido;
@@ -12,7 +12,7 @@
 //   npm run pruebas:grupos-ajenos
 import fs from 'node:fs';
 import path from 'node:path';
-import { preparar, personas, sinteticos, contador, visto, sinDesbordar, REPO } from './comun_e2e.mjs';
+import { preparar, personas, sinteticos, contador, visto, sinDesbordar, REPO, hasta } from './comun_e2e.mjs';
 import { cargarLiga } from '../scripts/cargar_liga.mjs';
 import { filasTabla } from '../src/lib/jugadoresLiga.ts';
 import { gruposDeUrl, hrefConsolidada, resultadosDeJornada } from '../src/lib/gruposLiga.ts';
@@ -75,6 +75,10 @@ ok(hrefConsolidada(['G1', 'G2']) === '/liga/consolidada' && hrefConsolidada(['G1
   ok(b.filas.length === 2 && b.filas[1].tipo === 'hueco' && b.descansa.join() === 'E', 'un bloque: el partido, el hueco sin marcador y quien descansa');
   const [c] = resultadosDeJornada(P, { G9: ['A', 'B', 'C'] }, ['G9'], 1);
   ok(c.descansa.join() === 'C', 'sin fichero de jornadas, descansa el único sin partido');
+  // Un hueco del fichero que ya tiene partido cargado (p. ej. el marcador sacado del acta, fix/g5-y-rutina-s21): solo el partido
+  const P2 = [...P, { id: 'y', grupo: 'G9', jornada: 1, fecha: null, local: 'D', visitante: 'C', pts_local: 38, pts_visitante: 30 }];
+  const [d] = resultadosDeJornada(P2, { G9: ['A', 'B', 'C', 'D', 'E'] }, ['G9'], 1, { jornadas: [{ grupo: 'G9', jornada: 1, descansa: 'E', huecos: [{ local: 'C', visitante: 'D', motivo: 'sin_hoja' }] }] });
+  ok(d.filas.length === 2 && d.filas.every((f) => f.tipo === 'partido'), 'un hueco ya cargado sale solo como partido, con su marcador (fix/visibilidad-movil)');
 }
 
 const e = await preparar();
@@ -122,7 +126,7 @@ try {
     const res = await fetch(`${APP}${r}`, { redirect: 'manual' });
     ok(res.status >= 300 && res.status < 400 && /\/entrar/.test(res.headers.get('location') ?? ''), `anónimo en ${r}: manda a Entrar`, `${res.status} ${res.headers.get('location')}`);
   }
-  for (const r of ['/', '/liga', '/liga/2026-27', '/club', '/club/historia', '/club/el-club', '/liga/consolidada?grupo=G3', '/liga/consolidada?grupos=G3,G4&vista=resultados', `/liga/consolidada/partido/${idG4}`, '/liga/scouting']) {
+  for (const r of ['/', '/liga', '/liga?g=G3', '/liga?g=G4', '/liga/2026-27', '/club', '/club/historia', '/club/el-club', '/liga/consolidada?grupo=G3', '/liga/consolidada?grupos=G3,G4&vista=resultados', `/liga/consolidada/partido/${idG4}`, '/liga/scouting']) {
     const html = await (await fetch(`${APP}${r}`, { redirect: 'follow' })).text();
     const f = fugas(html, ['G3', 'G4']);
     ok(f.length === 0, `anónimo en ${r}: ni un jugador ni un equipo de G3-G6`, f.join(', '));
@@ -165,9 +169,10 @@ try {
   const esperado = `${sumadas.length} personas de los ${clasN.filter((c) => c.pj > 0).length} equipos con partidos jugados, hasta la jornada ${Math.max(...clasN.map((c) => c.pj))}. «dobla» = sale con MdA y con MdL (sus dos fichas se suman).`;
   ok((await resumen()) === esperado, `cabecera de siempre: «${esperado}»`, await resumen());
   ok((await marcadas()) === 'G1,G2', 'el selector marca MdA (G1) y MdL (G2), y ningún otro', await marcadas());
-  const etiquetas = await selector().locator('label.lg-check').allTextContents();   // las de «Otros grupos», plegadas: textContent
-  ok(JSON.stringify(etiquetas.map((x) => x.trim())) === JSON.stringify(['MdA (G1)', 'MdL (G2)', 'G3 · DOM MAÑ G3', 'G4 · DOM TAR', 'G5 · SAB TAR G1', 'G6 · SAB TAR G2']), 'casillas: MdA y MdL arriba y los cuatro grupos ajenos en «Otros grupos», con su nombre', etiquetas.join(' | '));
-  ok((await selector().locator('details.lg-otros').getAttribute('open')) === null, '«Otros grupos» viene plegado si no hay ninguno marcado');
+  const etiquetas = await selector().locator('label.lg-check').allInnerTexts();   // innerText: solo lo que se ve
+  ok(JSON.stringify(etiquetas.map((x) => x.trim())) === JSON.stringify(['MdA (G1)', 'MdL (G2)', 'G3', 'G4', 'G5', 'G6']), 'casillas: MdA y MdL y, a su lado, los cuatro grupos ajenos, todas a la vista', etiquetas.join(' | '));
+  ok((await selector().locator('label.lg-check[data-grupo="G5"]').getAttribute('title')) === 'G5 · SAB TAR G1', 'cada grupo ajeno lleva su nombre al pasar por encima (G5 · SAB TAR G1)');
+  ok((await selector().locator('details').count()) === 0, 'sin desplegable «Otros grupos» (fix/visibilidad-movil)');
   ok(fugas(await texto(), ['G3', 'G4']).length === 0, 'ni un jugador ni un equipo de G3-G6', fugas(await texto(), ['G3', 'G4']).join(', '));
   const htmlDefecto = await texto();
   for (const r of ['?grupo=nuestros', '?grupos=G1,G2', '?grupo=Todos', '?grupos=nada']) {
@@ -205,11 +210,10 @@ try {
 
   console.log('\n== MdA + MdL + G4: todo sale solo de esos tres grupos');
   await p.goto(`${APP}/liga/consolidada`);
-  await selector().locator('details.lg-otros > summary').click();
   await casilla('G4').click();
   await aplicada(/[?&]grupos=G1,G2,G4/);
   ok(new URL(p.url()).search === '?grupos=G1,G2,G4', 'la selección queda en la URL tal cual: ?grupos=G1,G2,G4', p.url());
-  ok((await marcadas()) === 'G1,G2,G4' && (await selector().locator('details.lg-otros').getAttribute('open')) !== null, 'el selector la recuerda y «Otros grupos» viene abierto');
+  ok((await marcadas()) === 'G1,G2,G4', 'el selector la recuerda');
   const t124 = await texto();
   ok(fugas(t124, ['G3'], ['G1', 'G2', 'G4']).length === 0, 'G1 + G2 + G4: nadie del G3', fugas(t124, ['G3'], ['G1', 'G2', 'G4']).join(', '));
   ok(nombresDe(['G4']).every((n) => norm(t124).includes(norm(n.split(',')[0]))) && /Sint Solomda/i.test(t124), 'salen los jugadores del G4 y los nuestros');
@@ -288,6 +292,33 @@ try {
   await p.getByTestId('pestanas-consolidada').getByRole('link', { name: 'Jugadores y equipos' }).click();
   await p.waitForURL((x) => !/vista=resultados/.test(x.toString()));
   ok(new URL(p.url()).searchParams.get('grupos') === 'G3' && (await marcadas()) === 'G3', 'volver a Jugadores mantiene los grupos', p.url());
+
+  console.log('\n== Liga › Clasificación: G3-G6 en el selector de grupo, solo con sesión (fix/visibilidad-movil)');
+  const selGrupo = () => p.getByTestId('selector-grupo-liga');
+  await p.goto(`${APP}/liga`);
+  await hasta(async () => (await selGrupo().locator('button').count()) === 6);
+  ok((await selGrupo().locator('button').allTextContents()).map((x) => x.trim()).join(',') === 'G1 · MdA,G2 · MdL,G3,G4,G5,G6', 'con sesión: G1 · MdA | G2 · MdL | G3 | G4 | G5 | G6');
+  await selGrupo().getByRole('button', { name: 'G4', exact: true }).click();
+  await p.waitForURL(/\/liga\?g=G4$/);
+  await hasta(async () => (await selGrupo().locator('button[aria-pressed="true"]').textContent())?.trim() === 'G4');
+  const clasG4 = await p.getByTestId('liga-clasificacion').innerText();
+  ok(['Sint Ajeno Cuatro A', 'Sint Ajeno Cuatro B', 'Sint Ajeno Cuatro C'].every((x) => clasG4.includes(x)) && fugas(clasG4, ['G3'], ['G4']).length === 0 && !/Sint Rival/.test(clasG4),
+    'G4: su clasificación calculada (de Supabase, con sesión), sin equipos de otro grupo', clasG4);
+  ok((await p.getByTestId('liga-clasificacion').locator('a').first().getAttribute('href')).startsWith('/liga/scouting?e=Sint'), 'G4: cada equipo enlaza a su Scouting');
+  await p.locator('.e-jornadas button', { hasText: 'J2' }).click();
+  const res = p.getByTestId('liga-resultados');
+  ok((await res.locator('[data-hueco="sin_hoja"]').count()) === 1 && (await res.locator('[data-hueco="sin_hoja"] a.e-m-enlace').count()) === 0 && /sin hoja/.test(await res.locator('[data-hueco="sin_hoja"]').innerText()),
+    'G4 · J2: el partido sin hoja sale como «sin hoja», sin marcador ni enlace');
+  ok((await res.locator('a.e-m-enlace').first().getAttribute('href') ?? '').startsWith('/liga/consolidada/partido/'), 'G4 · J2: cada partido abre su hoja en Jugadores de la liga');
+  ok(/no tiene calendario/.test(await p.getByTestId('liga-proximos').innerText()), 'G4: Próximos dice que el grupo no tiene calendario cargado');
+  await selGrupo().getByRole('button', { name: 'G3', exact: true }).click();
+  await p.waitForURL(/\/liga\?g=G3$/);
+  ok(await hasta(async () => (await p.getByTestId('liga-clasificacion').innerText()).includes('Sint Ajeno Tres A')) && (await selGrupo().locator('button[aria-pressed="true"]').textContent())?.trim() === 'G3'
+    && !(await p.getByTestId('liga-clasificacion').innerText()).includes('Sint Ajeno Cuatro'), 'de G4 a G3: la clasificación del G3, sin nada del G4');
+  await selGrupo().getByRole('button', { name: 'G1 · MdA', exact: true }).click();
+  await p.waitForURL((u) => u.pathname === '/liga' && !u.search);
+  await hasta(async () => !(await p.getByTestId('liga-clasificacion').innerText()).includes('Sint Ajeno'));
+  ok((await selGrupo().locator('button[aria-pressed="true"]').textContent())?.trim() === 'G1 · MdA', 'volver a G1 deja /liga sin ?g= y la clasificación de siempre');
 
   console.log('\n== Scouting rivales: cualquier equipo de G3-G6, con sesión');
   await p.goto(`${APP}/liga/scouting?e=${encodeURIComponent('Sint Ajeno Tres A')}`);

@@ -63,8 +63,15 @@ a.e-hy-stats:hover { background: #e8722c29; color: #f4954f; }
 .e-hestado { font-size: 13px; color: var(--tinta-tenue); margin: 0; }
 .e-hestado b { color: #f4954f; }
 @media (max-width: 640px) {
-  .e-hgrid thead th.e-hname, .e-hgrid td.e-hname { min-width: 170px; width: 170px; }
-  .e-hdisp { max-width: 120px; }
+  /* fix/visibilidad-movil: primera columna más estrecha con el nombre corto: se ven más temporadas sin desplazar */
+  .e-hgrid thead th.e-hname, .e-hgrid td.e-hname { min-width: 138px; width: 138px; }
+  .e-hgrid thead th.e-hname { padding-left: 8px; }
+  .e-hn { padding: 3px 6px; gap: 6px; }
+  .e-hgrid .e-hmodo, .e-hdisp-largo { display: none; }
+  .e-hdisp-corto { display: inline; }
+  .e-hdisp { max-width: none; white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
   .e-hveter { display: none; }
   .e-buscar { min-width: 0; width: 100%; }
 }
+.e-hdisp-corto { display: none; }
+@media (max-width: 640px) { .e-hdisp-corto { display: inline; } }

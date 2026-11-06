@@ -47,6 +47,23 @@ export function nombreCorto(n: string) {
 export const nombrePropio = (n: string) => n.split(" ").map((w) => (w.length > 2 ? w.charAt(0) + w.slice(1).toLowerCase() : w)).join(" ");
 export const nombreDe = (p: { display?: string; nombre: string }) => p.display || nombreCorto(p.nombre);
 
+const PARTICULAS = new Set(["de", "del", "la", "las", "los", "da", "das", "do", "dos", "di", "van", "von", "y"]);
+const sinTildes = (t: string) => t.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+/**
+ * Nombre corto para las tablas del movil (fix/visibilidad-movil): nombre + primer apellido («Andres Martinez», «Julio De
+ * Carvalho», con sus tildes del display) o el mote tal cual si lo tiene (un display que no empieza por su nombre).
+ */
+export function nombreBreve(p: { display?: string; nombre: string }) {
+  const d = p.display?.trim();
+  if (!d) return nombreCorto(p.nombre);
+  const nombre = (p.nombre.split(",")[1] ?? "").trim().split(/\s+/).filter(Boolean);
+  const w = d.split(/\s+/);
+  if (!nombre.length || w.length <= nombre.length || sinTildes(w[0]) !== sinTildes(nombre[0])) return d;
+  const apellido: string[] = [];
+  for (let i = nombre.length; i < w.length; i++) { apellido.push(w[i]); if (!PARTICULAS.has(sinTildes(w[i]))) break; }
+  return `${w[0]} ${apellido.join(" ")}`;
+}
+
 /** Numero de valor o null -> texto (null/NaN/Infinity = null, que la pantalla pinta como "—"). */
 export const esNum = (v: unknown): v is number => typeof v === "number" && isFinite(v);
 

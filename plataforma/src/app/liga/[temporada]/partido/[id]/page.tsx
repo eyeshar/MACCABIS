@@ -78,7 +78,7 @@ function TablaRival({ equipo, filas }: { equipo: string; filas: FilaRival[] }) {
     <>
       <h3 className="e-pt-h3">{equipo}</h3>
       <CajaTabla>
-        <table className="e-tabla e-tabla-box" data-testid="rival-por-jugador">
+        <table className="e-tabla e-tabla-box e-fija2" data-testid="rival-por-jugador">
           <thead><tr><th scope="col">#</th><th scope="col">Jugador</th><th scope="col" className="e-c">Min</th><th scope="col" className="e-c">Pts</th><th scope="col" className="e-c">2P</th><th scope="col" className="e-c">3P</th><th scope="col" className="e-c">TL</th><th scope="col" className="e-c">FC</th></tr></thead>
           <tbody>
             {filas.map((j, i) => {

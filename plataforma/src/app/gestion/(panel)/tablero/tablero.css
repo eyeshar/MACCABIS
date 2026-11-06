@@ -109,3 +109,15 @@ button.tb-celda:not(:disabled) { cursor: pointer; }
 .tb-proyeccion p { margin: 0; }
 .tb-proyeccion summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
 .tb-proyeccion ul { margin: 0; padding-left: 18px; }
+/* fix/visibilidad-movil: a 360-412 px la tabla del domingo cabe entera (jugador fijo y estrecho, las tres columnas de datos a
+   la vista): las celdas parten su texto en dos líneas en vez de ensanchar la tabla. */
+@media (max-width: 640px) {
+  .tb-tabla { min-width: 0; }
+  .tb-tabla th, .tb-tabla td { padding: 5px 3px; }
+  .tb-tabla thead th { white-space: normal; font-size: 0.68rem; letter-spacing: 0.04em; }
+  .tb-fijo { min-width: 0; width: 118px; max-width: 118px; }
+  .tb-fijo .tb-casilla { margin-right: 0; }
+  .tb-jugador { max-width: 70px; overflow-wrap: anywhere; }
+  .tb-celda { min-width: 58px; width: 100%; padding: 2px 4px; font-size: 0.78rem; white-space: normal; line-height: 1.15; text-align: center; }
+  .tb-bloque th { white-space: normal; }
+}

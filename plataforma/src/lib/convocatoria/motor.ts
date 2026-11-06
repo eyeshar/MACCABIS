@@ -98,8 +98,16 @@ export type JugadorEntrada = {
   /** De sus ultimos domingos en que estuvo disponible, cuantos seguidos (del mas reciente hacia atras) se quedo sin
    *  convocar. Con 2 o mas entra por rotacion (regla 4.2). Lo calcula domingosFueraDe. */
   domingosFuera: number;
+  /** Registro de no convocados (regla 4.3): domingos seguidos en que dijo «voy» a tiempo, con ficha, y no entró en ningún
+   *  equipo. Solo desempata a igual línea y nivel, y solo con `Entrada.desempateNoConvocados` encendido. */
+  rachaFuera?: number;
 };
-export type Entrada = { partidos: PartidoEntrada[]; jugadores: JugadorEntrada[] };
+export type Entrada = {
+  partidos: PartidoEntrada[]; jugadores: JugadorEntrada[];
+  /** Interruptor del desempate por no convocados (regla 4.3; la variable CONVOCATORIA_DESEMPATE_NO_CONVOCADOS = "1" en el
+   *  servidor). Apagado (o sin dar), `rachaFuera` no cuenta para nada: la propuesta es la de siempre. */
+  desempateNoConvocados?: boolean;
+};
 
 /** Un convocado. `posicion` solo si se cambio a mano para este partido (si no, manda la de sus datos privados). */
 export type Convocado = { person_id: string; posicion?: Posicion };
@@ -183,6 +191,26 @@ export function domingosFueraDe(historial: { disponible: boolean; convocado: boo
 }
 /** Para elegir dentro de una linea al repartir niveles: primero el nivel y despues la prioridad. */
 const compararNivel = (a: JugadorEntrada, b: JugadorEntrada) => nivelDe(b) - nivelDe(a) || compararPrioridad(a, b);
+
+/** Regla 4.3 (desempate por no convocados): la racha que cuenta en el motor. 0 para todos con el interruptor apagado. */
+const rachaDe = (j: JugadorEntrada, encendido: boolean) => (encendido ? Math.max(0, j.rachaFuera ?? 0) : 0);
+/** Prioridad DENTRO DE UNA LINEA con el desempate: igual que compararPrioridad, pero a igual nivel entra antes quien lleva
+ *  mas domingos seguidos fuera (regla 4.3). Solo se usa para comparar jugadores de la misma linea (asi el orden es total);
+ *  con el interruptor apagado es exactamente compararPrioridad. */
+function compararEnLinea(encendido: boolean) {
+  return (a: JugadorEntrada, b: JugadorEntrada) => Number(a.solo_entreno) - Number(b.solo_entreno)
+    || Number(tieneDeuda(b)) - Number(tieneDeuda(a))
+    || nivelDe(b) - nivelDe(a)
+    || rachaDe(b, encendido) - rachaDe(a, encendido)
+    || a.convocados - b.convocados
+    || b.entrenos4 - a.entrenos4
+    || porId(a, b);
+}
+/** compararNivel con el desempate de la regla 4.3 (para repartir una linea). Apagado, igual que compararNivel. */
+const compararNivelEnLinea = (encendido: boolean) => {
+  const c = compararEnLinea(encendido);
+  return (a: JugadorEntrada, b: JugadorEntrada) => nivelDe(b) - nivelDe(a) || c(a, b);
+};
 
 /** Orden de los partidos: el mas dificil primero; si estan igualados, el MdA (pregunta 2). */
 export function ordenPartidos(partidos: PartidoEntrada[]) {
@@ -368,6 +396,11 @@ export function proponer(entrada: Entrada): Propuesta {
   const fuera = (j: JugadorEntrada, motivo: string, regla: CodigoRegla) => sinConvocar.push({ person_id: j.person_id, motivo, regla });
   const jugadores = [...entrada.jugadores].sort(compararPrioridad);
   const mapa = new Map(entrada.jugadores.map((j) => [j.person_id, j]));
+  // Regla 4.3: desempate por no convocados, solo dentro de una linea y solo con el interruptor encendido. Apagado, estos
+  // dos comparadores son exactamente compararNivel y compararPrioridad (la propuesta de siempre).
+  const desempate = !!entrada.desempateNoConvocados;
+  const nivelEnLinea = compararNivelEnLinea(desempate);
+  const enLinea = compararEnLinea(desempate);
 
   // 1. Quien puede ir y a donde.
   const flexibles: JugadorEntrada[] = [];
@@ -411,11 +444,11 @@ export function proponer(entrada: Entrada): Propuesta {
       const primero = distintos || ronda % 2 === 0 ? P : S;
       return i % 2 === 0 ? primero : otro(primero);
     };
-    const repartir = (lista: JugadorEntrada[], l: Linea) => lista.sort(compararNivel).forEach((j, i) => conv[elegir(l, Math.floor(i / 2), i)].push(j));
+    const repartir = (lista: JugadorEntrada[], l: Linea) => lista.sort(nivelEnLinea).forEach((j, i) => conv[elegir(l, Math.floor(i / 2), i)].push(j));
     repartir(flexibles.filter((j) => lineaDe(j) === "base"), "base");
     repartir(flexibles.filter((j) => lineaDe(j) === "interior"), "interior");
     // Exteriores: primero un base de reserva para cada equipo que se quede sin 2 bases puros.
-    const exteriores = flexibles.filter((j) => lineaDe(j) === "exterior").sort(compararNivel);
+    const exteriores = flexibles.filter((j) => lineaDe(j) === "exterior").sort(nivelEnLinea);
     for (const e of eqs) {
       const faltan = Math.max(0, LIMITES.ideal.base - cuenta(e, "base") - conv[e].filter((j) => lineaDe(j) === "exterior" && datos(j).base_reserva).length);
       for (let k = 0; k < faltan && !lleno(e); k++) {
@@ -470,7 +503,10 @@ export function proponer(entrada: Entrada): Propuesta {
     while (conv[e].length > maximo) {
       const sobrante = (l: Linea) => conv[e].filter((j) => lineaDe(j) === l).length > LIMITES.ideal[l];
       const candidatos = [...conv[e]].filter((j) => datos(j).regla?.tipo !== "fijo").sort((a, b) => compararPrioridad(b, a));
-      const sale = candidatos.find((j) => sobrante(lineaDe(j))) ?? candidatos[0] ?? [...conv[e]].sort((a, b) => compararPrioridad(b, a))[0];
+      const primero = candidatos.find((j) => sobrante(lineaDe(j))) ?? candidatos[0] ?? [...conv[e]].sort((a, b) => compararPrioridad(b, a))[0];
+      // Regla 4.3: dentro de la linea de ese jugador, sale el de menos prioridad con el desempate (apagado: el mismo).
+      const deSuLinea = (candidatos.includes(primero) ? candidatos : [primero]).filter((j) => lineaDe(j) === lineaDe(primero));
+      const sale = [...deSuLinea].sort((a, b) => enLinea(b, a))[0] ?? primero;
       conv[e].splice(conv[e].indexOf(sale), 1);
       const alOtro = eqs.find((x) => x !== e && disponibleEn(sale, x) && sale.ficha[x] && conv[x].length < maximo && datos(sale).regla?.tipo !== "fijo");
       if (alOtro) conv[alOtro].push(sale);

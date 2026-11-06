@@ -40,6 +40,8 @@ export type JugadorVista = JugadorEntrada & {
   sancionHasta: number | null;
   /** D173: dijo «voy» después de la última propuesta (sale en «Respondió después de la propuesta»). */
   respondioTarde?: boolean;
+  /** Registro de no convocados (regla 4.3, solo gestores): racha seguida, total de la temporada y si es «solo entreno». */
+  fuera?: { racha: number; total: number; soloEntreno: boolean };
 };
 export type Contexto = {
   fecha: string; jornada: number | null; partidos: PartidoVista[]; jugadores: JugadorVista[];
@@ -55,15 +57,18 @@ export type Contexto = {
   proyeccion: DatosProyeccion;
   /** La migracion de la convocatoria aun no esta aplicada en esta base: se ve la propuesta, no se guarda nada. */
   sinMigracion: boolean;
+  /** Interruptor del desempate por no convocados (regla 4.3): CONVOCATORIA_DESEMPATE_NO_CONVOCADOS = "1" en el servidor. */
+  desempateNoConvocados?: boolean;
   sinDatosPrivados: number;
   /** Proximos domingos con partido (para cambiar de jornada). */
   domingos: { fecha: string; jornada: number | null }[];
 };
 
 /** La entrada del motor para este domingo. */
-export const entradaDe = (ctx: Pick<Contexto, "partidos" | "jugadores">): Entrada => ({
+export const entradaDe = (ctx: Pick<Contexto, "partidos" | "jugadores"> & Partial<Pick<Contexto, "desempateNoConvocados">>): Entrada => ({
   partidos: ctx.partidos.map((p) => ({ evento_id: p.evento_id, equipo: p.equipo, inicio: p.inicio, dificultad: p.dificultad.valor })),
-  jugadores: ctx.jugadores.map(({ invitado: _i, invitadoA: _a, motivoNo: _m, sancionHasta: _s, respondioTarde: _t, ...j }) => j),
+  jugadores: ctx.jugadores.map(({ invitado: _i, invitadoA: _a, motivoNo: _m, sancionHasta: _s, respondioTarde: _t, fuera: _f, ...j }) => j),
+  desempateNoConvocados: !!ctx.desempateNoConvocados,
 });
 
 // ---------------------------------------------------------------- modo rapido (D125): arrastrar o «Mover a…»

@@ -1,0 +1,19 @@
+/* Gestión › No convocados (regla 4.3): lista compacta con fila desplegable. Solo tokens de globals.css. */
+.nc-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.nc-fila { border: 1px solid var(--borde); border-radius: var(--radio); background: var(--tarjeta); }
+.nc-fila > summary {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px;
+  min-height: var(--toque); padding: 6px 12px; cursor: pointer; list-style: none;
+}
+.nc-fila > summary::-webkit-details-marker { display: none; }
+.nc-nombre { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.nc-cifras { display: flex; flex-direction: column; align-items: center; min-width: 64px; line-height: 1.1; }
+.nc-cifras b { font-size: 20px; }
+.nc-cifras small { color: var(--tinta-tenue); font-size: 12px; }
+.nc-domingos { list-style: none; margin: 0; padding: 0 12px 8px; display: flex; flex-direction: column; gap: 4px; }
+.nc-dom { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 4px 0; border-top: 1px solid var(--linea-suave); font-size: 14px; }
+.nc-suma b { color: var(--error); }
+.nc-convocado b { color: var(--ok); }
+.nc-ficha { display: inline-flex; align-items: center; min-height: var(--toque); padding: 0 12px 6px; font-weight: 600; }
+.nc-como > summary { min-height: var(--toque); display: flex; align-items: center; cursor: pointer; }
+.nc-como ul { margin: 6px 0 0; padding-left: 20px; }

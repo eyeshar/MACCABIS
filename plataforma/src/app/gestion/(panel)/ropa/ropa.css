@@ -1,0 +1,9 @@
+/* Gestión › Pedido de ropa (bloque 5): un solo estado con su causa, el interruptor y la edición plegada. */
+.rp-interruptor { display: flex; flex-direction: column; gap: 10px; }
+.rp-estado { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.rp-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.rp-form .boton { min-height: var(--toque); }
+.rp-form input[type="date"] { min-height: var(--toque); }
+.rp-plegado > summary { min-height: var(--toque); display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.rp-tabla td, .rp-tabla th { text-align: center; }
+.rp-tabla td:first-child, .rp-tabla th:first-child { text-align: left; position: sticky; left: 0; background: var(--tarjeta); }

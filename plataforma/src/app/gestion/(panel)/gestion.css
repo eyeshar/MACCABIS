@@ -1,0 +1,28 @@
+/* Gestión (/gestion), estructura nueva (bloque 4): secciones por lo que se hace cada semana. Solo tokens de globals.css;
+   títulos de frase en minúscula normal; objetivos táctiles de al menos 44 px. */
+.gp-panel .gs-titulo h1, .gp-panel .gs-bloque h2 { text-transform: none; }
+.gp-panel .gs-bloque h2 { font-size: 24px; }
+.gp-panel h3 { margin: 0; font-size: 18px; }
+.gp-evento { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--linea-suave); min-width: 0; }
+.gp-evento:first-of-type { padding-top: 0; border-top: 0; }
+.gp-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.gp-acciones .boton { min-height: var(--toque); }
+.gp-enlace { display: inline-flex; align-items: center; min-height: var(--toque); font-weight: 600; }
+.gp-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.gp-lista > li { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.gp-sub { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--linea-suave); }
+.gp-sub a, .gp-filas a { display: inline-flex; align-items: center; min-height: var(--toque); }
+.gp-filas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.gp-filas > li { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: var(--toque); border-bottom: 1px solid var(--linea-suave); }
+.gp-filas > li > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.gp-fila-sub { padding-left: 14px; }
+.gp-rutinas { display: flex; flex-direction: column; gap: 6px; }
+.gp-menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.gp-menu > li > a, .gp-menu > li > .gp-desactivada {
+  display: flex; flex-direction: column; justify-content: center; min-height: 52px; padding: 6px 0;
+  border-bottom: 1px solid var(--linea-suave); color: var(--tinta); text-decoration: none;
+}
+.gp-menu > li > a b { color: var(--enlace); }
+.gp-menu > li > a small, .gp-menu > li > .gp-desactivada small { color: var(--tinta-tenue); font-size: 13px; }
+.gp-desactivada { opacity: .55; cursor: not-allowed; }
+.gp-panel .pastilla { white-space: nowrap; }

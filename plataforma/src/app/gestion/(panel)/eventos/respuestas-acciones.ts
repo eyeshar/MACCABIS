@@ -10,7 +10,7 @@ import { textoSale } from "@/lib/avisos/horario";
 // ahora». Todo con la sesion del gestor: la base (is_gestor) decide.
 
 export type R = { ok: true; texto?: string } | { ok: false; error: string };
-const refrescar = (id?: string) => { revalidatePath("/gestion"); if (id) revalidatePath(`/gestion/eventos/${id}/respuestas`); revalidatePath("/inicio"); };
+const refrescar = (id?: string) => { revalidatePath("/gestion"); if (id) revalidatePath(`/evento/${id}`); revalidatePath("/inicio"); };
 
 export async function responderPor(eventoId: string, personId: string, respuesta: "va" | "duda" | "no", motivo: string | null, detalle: string | null): Promise<R> {
   const { supabase } = await exigirGestor();

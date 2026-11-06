@@ -1,12 +1,11 @@
 import { mensajeSinAvisos } from "@/lib/gestion/mensajesActivacion";
-import Volver from "@/components/nav/Volver";
 import { notFound } from "next/navigation";
 import { exigirGestor, origenMensajes as origenWeb } from "@/lib/sesion";
 import { diaYNumero, hoyMadrid, sumarDias } from "@/lib/dias";
 import { fechaHora } from "@/lib/fechas";
 import { cargarEvento, cargarEventos, cargarJugadores, cargarPistas } from "@/lib/eventos/datos";
 import {
-  convocadosDe, diaCorto, fechaDMA, hhmm, pistaEfectiva, rangoHoras, TEXTO_MOTIVO, tituloEvento,
+  convocadosDe, diaCorto, fechaDMA, hhmm, TEXTO_MOTIVO, tituloEvento,
   type EventoFila, type Motivo, type Respuesta,
 } from "@/lib/eventos/dominio";
 import { calendarioRecordatorios, TEXTO_HUECO, urlDomingo, urlEvento } from "@/lib/avisos/planificador";
@@ -14,18 +13,17 @@ import { enlaceWa, mensajeGrupo, mensajeIndividual, type EventoMensaje } from "@
 import { sitioAviso } from "@/lib/avisos/servidor";
 import { dudaAbierta, enMadrid, limiteDudas } from "@/lib/avisos/horario";
 import { MOTIVOS_JUGADOR } from "@/lib/respuestas/dominio";
-import CopiarTexto from "../../CopiarTexto";
+import CopiarTexto from "@/app/gestion/(panel)/eventos/CopiarTexto";
 import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
 import NombreJugador from "@/components/numeros/Nombre";
 import { hrefJugador } from "@/lib/numeros/enlaces";
 import { sinFichaQueVan } from "@/lib/numeros/respuestas";
 import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
-import { BotonRecordatorio, BotonVisto, ResponderPor } from "./ResponderPor";
-import CambiarAMano from "../../CambiarAMano";
+import { BotonRecordatorio, BotonVisto, ResponderPor } from "@/app/gestion/(panel)/eventos/[id]/respuestas/ResponderPor";
+import CambiarAMano from "@/app/gestion/(panel)/eventos/CambiarAMano";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { ausenciaQueCubre, efectivaEn, NOTA_POR_DEFECTO, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
-export const metadata = { title: "Respuestas y motivos · Gestión Maccabis" };
 const SEMANAS = 12;
 
 type Fila = {
@@ -39,9 +37,10 @@ const textoMotivo = (m: Fila["motivo"]) => (m === "horario" ? "Horario" : m === 
 const ddmm = (f: string) => fechaDMA(f).slice(0, 5);
 const franja = (p: { desde: string; hasta: string | null }) => (p.hasta ? `ausencia del ${ddmm(p.desde)} al ${ddmm(p.hasta)}` : `ausencia desde el ${ddmm(p.desde)}, sin fecha de vuelta`);
 
-/** Respuestas del evento (D99, 4.1). Para un domingo con dos partidos, una vista de dia que los junta. */
-export default async function RespuestasEvento({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+/** Pestaña «Respuestas» del evento, solo gestores (D99 4.1; desde D189 dentro de /evento/<id>, antes
+ *  /gestion/eventos/<id>/respuestas, que redirige aqui). Para un domingo con dos partidos, una vista de dia que los junta.
+ *  Cada persona con «Cambiar a mano» (gestor_responder, D159: queda quien lo cambio y cuando, y se avisa al jugador). */
+export default async function RespuestasGestor({ id }: { id: string }) {
   const { supabase } = await exigirGestor();
   const [evento, pistas, jugadores, todos] = await Promise.all([cargarEvento(supabase, id), cargarPistas(supabase), cargarJugadores(supabase), cargarEventos(supabase)]);
   if (!evento) notFound();
@@ -141,7 +140,6 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
   const dudasN = lineas.filter((l) => l.clase === "duda").length;
   const noConfirmaron = filasR.filter((r) => r.evento_id === evento.id && r.respuesta === "no" && r.motivo === "no_confirmo").length;
 
-  const pe = pistaEfectiva(evento, pistas);
   const sinAvisos = lineas.filter((l) => !l.avisos);
   const web = await origenWeb();
   const msgSinAvisos = mensajeSinAvisos(sinAvisos.map((l) => l.nombre), web);
@@ -179,16 +177,10 @@ export default async function RespuestasEvento({ params }: { params: Promise<{ i
 
   return (
     <>
-      <div className="gs-titulo">
-        <div>
-          <div className="gs-eyebrow"><Volver enLinea defecto={`/gestion/eventos/${evento.id}`} etiqueta="Evento" /> · Respuestas y motivos{dia ? " · vista del domingo" : ""}</div>
-          <h1 style={{ fontSize: 44 }}>{dia ? `Domingo ${diaYNumero(evento.fecha).split(" ")[1]} · J${evento.jornada ?? ""}` : tituloEvento(evento)}</h1>
-          <span className="suave">{dia ? dia.map((e) => `${hhmm(e.inicio)} ${tituloEvento(e)}`).join(" · ") : `${diaCorto(evento.fecha)} · ${rangoHoras(evento)} · ${pe.porConfirmar ? `pista por confirmar${pe.motivo ? ` (${pe.motivo})` : ""}` : pe.texto}`}</span>
-        </div>
-        <div className="ev-botones">
-          <span className="pastilla pastilla-ok" data-testid="origen-respuestas">Respuestas en la web</span>
-        </div>
-      </div>
+      <p className="pequeno suave" style={{ margin: "0 0 12px" }}>
+        <span className="pastilla pastilla-ok" data-testid="origen-respuestas">Respuestas en la web</span>
+        {dia && <> · vista del domingo: {dia.map((e) => `${hhmm(e.inicio)} ${tituloEvento(e)}`).join(" · ")}</>}
+      </p>
 
       {alertasL.length > 0 && (
         <div className="ev-banda-roja" role="alert" data-testid="banda-roja">

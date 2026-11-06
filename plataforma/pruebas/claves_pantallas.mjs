@@ -84,11 +84,15 @@ try {
     await p.context().close();
   }
 
-  console.log('\n== 3) «Tu proximo partido» del jugador (375 px): las 2 primeras, con enlace al scouting');
+  console.log('\n== 3) «El rival» del partido del jugador (375 px, D189): las 2 primeras, con enlace al scouting');
   {
     const p = await e.sesion('ana@pruebas.local', 375);
-    const tarjeta = p.getByTestId('proximo-partido');
-    ok(await visto(tarjeta), '«Tu próximo partido» se ve');
+    // Desde la Semana, la tarjeta del domingo lleva a su partido (o al domingo, si juega los dos): ahí, «El rival».
+    await p.goto(`${APP}/`);
+    await p.getByTestId('tarjeta-semana').filter({ has: p.locator('.chip-eq') }).first().locator('a.sm-t-que').click();
+    await p.waitForURL((u) => /^\/(evento|mi-zona\/domingo)\//.test(u.pathname));
+    const tarjeta = p.locator('main');
+    ok(await visto(p.getByTestId('el-rival')), '«El rival» se ve');
     const cs = tarjeta.getByTestId('claves-tarjeta');
     ok((await cs.count()) === 2, `una por rival (MdA y MdL): ${await cs.count()}`);
     for (let i = 0; i < await cs.count(); i++) {

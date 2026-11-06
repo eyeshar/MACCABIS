@@ -65,7 +65,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
           <span className="suave">{tituloEvento(evento)} · {pe.porConfirmar ? "pista por confirmar" : pe.texto}</span>
         </div>
         <div className="ev-botones">
-          <Link className="boton boton-contorno" href={`/gestion/eventos/${evento.id}/respuestas`}>Respuestas y motivos</Link>
+          <Link className="boton boton-contorno" href={`/evento/${evento.id}`}>Respuestas y motivos</Link>
           {/* D121 y D122: el tablero (quien va y ajustes a mano) y, en un entreno, los grupos. */}
           <Link className="boton boton-contorno" href={evento.tipo === "liga" ? `/gestion/tablero?domingo=${evento.fecha}` : `/gestion/tablero?evento=${evento.id}`}>Abrir tablero</Link>
           {evento.tipo === "entreno" && <Link className="boton boton-contorno" href={`/gestion/grupos/${evento.id}`}>Grupos</Link>}
@@ -100,7 +100,7 @@ export default async function EditarEvento({ params, searchParams }: { params: P
       {evento.estado === "programado" && (
         <section className="gs-bloque" style={{ marginTop: 16, maxWidth: 960 }} aria-labelledby="t-mano" data-testid="respuestas-a-mano">
           <h2 id="t-mano" style={{ fontSize: 22 }}>Respuestas · cambiar a mano</h2>
-          <p className="pequeno suave" style={{ margin: 0 }}>Un toque cambia la respuesta de cada invitado (va, duda, no va o sin responder); con «No va», el motivo es opcional. Queda «puesto por» ti y en el registro del tablero. Motivos y detalle: <Link href={`/gestion/eventos/${evento.id}/respuestas`}>Respuestas y motivos</Link>.</p>
+          <p className="pequeno suave" style={{ margin: 0 }}>Un toque cambia la respuesta de cada invitado (va, duda, no va o sin responder); con «No va», el motivo es opcional. Queda «puesto por» ti y en el registro del tablero. Motivos y detalle: <Link href={`/evento/${evento.id}`}>Respuestas y motivos</Link>.</p>
           {invitados.length ? (
             <ul className="ev-mano-lista">
               {invitados.map((j) => {

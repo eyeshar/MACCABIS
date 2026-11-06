@@ -27,7 +27,7 @@ export default async function FichaPlan({ params, searchParams }: { params: Prom
   const v = await cargarPlan(id);
   if (!v || v.borrado) notFound();
   const e = v.evento;
-  if (e.oficial !== false) redirect(`/mi-zona/evento/${id}`);
+  if (e.oficial !== false) redirect(`/evento/${id}`);
   const hoy = hoyMadrid();
   const [respuestas, quien] = await Promise.all([v.invitado ? cargarMisRespuestas() : Promise.resolve([]), quienVaPlan(v)]);
   const mia = respuestas.find((r) => r.evento_id === e.id);
@@ -41,7 +41,7 @@ export default async function FichaPlan({ params, searchParams }: { params: Prom
 
   return (
     <main className="pagina pl-pagina pl-ficha" data-testid="ficha-plan">
-      <Volver defecto="/agenda" etiqueta="Agenda" />
+      <Volver defecto="/calendario" etiqueta="Calendario" />
       {nuevo && <div className="aviso aviso-ok" role="status">Plan publicado. Ya lo ven los invitados en su agenda.</div>}
       {guardado && <div className="aviso aviso-ok" role="status">Cambios guardados.</div>}
       <div className="pl-etiquetas"><span className="pl-etq-plan">Plan no oficial</span><span className="pl-etq-tipo">{TEXTO_TIPO[e.tipo]}</span>{e.estado === "cancelado" && <span className="pastilla pastilla-cancelado">Cancelado</span>}</div>

@@ -170,6 +170,6 @@ export async function cambiarPorDefecto(eventoId: string, personId: string, quit
   if (error) return { ok: false, error: `No se pudo guardar: ${error.message}` };
   revalidatePath("/gestion");
   revalidatePath("/gestion/eventos");
-  revalidatePath(`/gestion/eventos/${eventoId}/respuestas`);
+  revalidatePath(`/evento/${eventoId}`);
   return { ok: true };
 }

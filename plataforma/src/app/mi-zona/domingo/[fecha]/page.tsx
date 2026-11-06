@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Volver from "@/components/nav/Volver";
+import ElRival from "@/app/evento/[id]/ElRival";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirSesion } from "@/lib/sesion";
@@ -77,7 +78,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
 
   return (
     <main className="pagina rw-evento rw-domingo">
-      <Volver defecto="/agenda" etiqueta="Agenda" />
+      <Volver defecto="/calendario" etiqueta="Calendario" />
       <header className="rw-ev-cab" data-tipo="liga">
         <span className="rw-ev-tipo">Partidos de liga{partidos[0].jornada ? ` · J${partidos[0].jornada}` : ""}</span>
         <h1>{fechaLarga(fecha).replace(/^./, (c) => c.toUpperCase())}</h1>
@@ -123,6 +124,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
           );
         })}
       </div>
+      {partidos.map((e) => <ElRival key={`rival-${e.id}`} e={e} conColores={false} titulo={`El rival del ${e.equipo}`} />)}
       {u?.modo === "misma" && <p className="suave">Los dos partidos son a la misma hora: esta jornada no se puede doblar.</p>}
       <section className="tarjeta rw-pista" aria-labelledby="t-inst">
         <h2 id="t-inst" className="solo-lectores">Instalación</h2>

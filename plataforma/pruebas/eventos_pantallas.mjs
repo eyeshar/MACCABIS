@@ -132,8 +132,9 @@ try {
   }
   await p.goto(`${APP}/gestion/eventos`);
   const idSinPista = (await sql`select id from public.eventos where clave = ${'entreno-semanal-' + proximo.fecha.toISOString().slice(0, 10)}`)[0].id;
+  // D189: las respuestas son la pestaña por defecto del evento (/evento/<id>); la ruta vieja redirige ahí.
   await p.goto(`${APP}/gestion/eventos/${idSinPista}/respuestas`);
-  ok(new URL(p.url()).pathname === `/gestion/eventos/${idSinPista}/respuestas` && (await p.getByTestId('contadores').count()) === 1, 'las respuestas se abren también en un entreno con la pista por confirmar (no redirige a la ficha)', p.url());
+  ok(new URL(p.url()).pathname === `/evento/${idSinPista}` && (await p.getByTestId('contadores').count()) === 1, 'las respuestas se abren también en un entreno con la pista por confirmar (no redirige a la ficha)', p.url());
   await p.goto(`${APP}/gestion/eventos?f=pasados`);
   const pasados = (await sql`select count(*)::int n from public.eventos where fecha < ${hoy}`)[0].n;
   ok((await p.locator('[data-testid=tabla-eventos] tbody tr').count()) === pasados, `filtro «Pasados»: ${pasados}`);
@@ -423,15 +424,15 @@ try {
       titulo: tr.querySelector('.ev-titulo a')?.getAttribute('href') ?? null,
     })));
     const conCuentas = filasR.filter((x) => x.celda);
-    const mal = conCuentas.filter((x) => !x.resp || !/^\/gestion\/eventos\/[0-9a-f-]{36}\/respuestas$/.test(x.resp) || x.titulo !== x.resp.replace(/\/respuestas$/, ''));
+    const mal = conCuentas.filter((x) => !x.resp || !/^\/evento\/[0-9a-f-]{36}$/.test(x.resp) || x.titulo !== x.resp.replace(/^\/evento\//, '/gestion/eventos/'));
     enlazadas += conCuentas.length;
-    ok(!mal.length, `pestaña «${f}»: las ${conCuentas.length} celdas de respuestas enlazan a /gestion/eventos/<id>/respuestas y el nombre sigue llevando a editar`, JSON.stringify(mal.slice(0, 2)));
+    ok(!mal.length, `pestaña «${f}»: las ${conCuentas.length} celdas de respuestas enlazan a /evento/<id> (D189) y el nombre sigue llevando a editar`, JSON.stringify(mal.slice(0, 2)));
   }
   ok(enlazadas >= 3, `hay celdas de respuestas enlazadas en las pestañas (${enlazadas})`);
   await p.goto(`${APP}/gestion/eventos`);
   await p.locator(`tr[data-evento="entreno-semanal-${fEnt}"] td.ev-celda-resp`).click({ position: { x: 4, y: 4 } });
-  await p.waitForURL(/\/respuestas$/);
-  ok(new URL(p.url()).pathname === `/gestion/eventos/${idR}/respuestas`, 'pulsar en cualquier punto de la celda (aquí, su esquina) abre las respuestas de ese evento');
+  await p.waitForURL(/\/evento\/[0-9a-f-]{36}$/);
+  ok(new URL(p.url()).pathname === `/evento/${idR}`, 'pulsar en cualquier punto de la celda (aquí, su esquina) abre las respuestas de ese evento');
 
   // El próximo entreno con ubicación libre (D119), como el del 28/10/2026 en Ciudad de los Periodistas.
   await sql`update public.eventos set pista_id = null, ubicacion_nombre = 'Ciudad de los Periodistas' where id = ${entP.id}`;
@@ -441,7 +442,7 @@ try {
   ok(!(await p.locator('.gs-pendientes').textContent().catch(() => '')).includes('Fijar la pista del entreno'), '«Pendiente esta semana» ya no pide fijar la pista de ese entreno');
   ok(await p.getByTestId('respuestas-entreno').getByTestId('enlace-respuestas').getAttribute('href') === `/gestion/eventos/${entP.id}/respuestas`, '«Entreno del miércoles»: las respuestas enlazan a las de ese evento');
   const enlaceDomingo = await p.locator('tr.eq-partido td.ev-celda-resp a').first().getAttribute('href').catch(() => null);
-  ok(enlaceDomingo === `/gestion/eventos/${liga1.id}/respuestas`, `«Partidos del domingo»: columna Respuestas enlazada a las del partido (${liga1.clave})`, String(enlaceDomingo));
+  ok(enlaceDomingo === `/evento/${liga1.id}`, `«Partidos del domingo»: columna Respuestas enlazada a las del partido (${liga1.clave})`, String(enlaceDomingo));
   await sql`update public.eventos set ubicacion_nombre = null where id = ${entP.id}`;
   await p.goto(`${APP}/gestion`);
   ok(/pista por confirmar \(Valdebernardo en obras\)/.test(await p.getByTestId('entreno-pista').textContent()), 'sin pista ni ubicación: «pista por confirmar (Valdebernardo en obras)»');
@@ -498,9 +499,9 @@ try {
       const q = td.getBoundingClientRect();
       // D139: en el centro puede haber un contador desplegable (boton), que va por encima del enlace.
       const centro = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
-      return { alto: Math.round(r.height), puntos: [en(q.left + 3, q.top + 3), en(q.right - 3, q.bottom - 3), centro?.closest('.num-boton') ? '/respuestas' : en(q.left + q.width / 2, q.top + q.height / 2)] };
+      return { alto: Math.round(r.height), puntos: [en(q.left + 3, q.top + 3), en(q.right - 3, q.bottom - 3), centro?.closest('.num-boton') ? 'contador' : en(q.left + q.width / 2, q.top + q.height / 2)] };
     });
-    ok(zona.alto >= 44 && zona.puntos.every((h) => h && h.endsWith('/respuestas')), `${ruta} a 375 px: toda la celda de respuestas abre las respuestas (${zona.alto} px)`, JSON.stringify(zona));
+    ok(zona.alto >= 44 && zona.puntos.every((h) => h === 'contador' || /^\/evento\/[0-9a-f-]{36}$/.test(h ?? '')), `${ruta} a 375 px: toda la celda de respuestas abre las respuestas (${zona.alto} px)`, JSON.stringify(zona));
   }
   await m.goto(`${APP}/gestion/eventos`);
   const disp = await m.locator('[data-testid=tabla-eventos] tbody tr').first().evaluate((tr) => getComputedStyle(tr).display);

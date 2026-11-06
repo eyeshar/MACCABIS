@@ -39,19 +39,18 @@ export const WEB = "https://maccabis.vercel.app";
 
 /** Las paginas reales de la web a las que puede enlazar el asistente, con lo que hay en cada una (D142). Es la lista que
  *  ve el modelo y la que usa limpiarRespuesta (respuesta.ts) para quitar cualquier otro enlace. Las de cada evento
- *  (/mi-zona/evento/<id>) van en el propio evento. */
+ *  (/evento/<id>) van en el propio evento. */
 export const RUTAS: readonly (readonly [string, string])[] = [
-  ["/", "Inicio: lo que te falta responder, tu próximo partido (hora, quedada, pista, botón «Cómo llegar» y equipación), tu agenda, tu temporada y los avisos del club"],
-  ["/agenda", "Agenda: todos los entrenos, partidos y planes por meses con tu respuesta; «Marcar días que no estoy»; «Tu calendario en el móvil»"],
+  ["/", "Semana: lo que te falta responder y los próximos días (hora, quedada, pista, equipación y avisos), con Voy · Duda · No voy en cada tarjeta"],
+  ["/calendario", "Calendario: todos los entrenos, partidos y planes por meses con tu respuesta; «Días que no estoy»; «Tenlo en el calendario de tu móvil»"],
   ["/mi-zona/ausencias", "Tus ausencias por periodo: verlas, «Ya puedo volver» y borrarlas"],
   ["/mi-zona/ausencias/nueva", "Marcar una ausencia nueva (desde, hasta y motivo)"],
   ["/avisos", "Activar los avisos en el móvil y «Mandarme un aviso de prueba»"],
-  ["/mis-numeros", "Mis números: tu ficha de estadísticas de la temporada"],
+  ["/yo", "Yo: tu temporada, tu ficha completa, días que no estoy, avisos en este móvil, tu calendario, instalar en el móvil, tu cuenta y salir"],
   ["/liga", "Liga: resultados y clasificación de MdA y MdL (no tiene «Cómo llegar»)"],
   ["/plantilla", "Plantilla: los jugadores de la temporada con sus estadísticas"],
   ["/historia", "Historia del club desde 2013"],
   ["/planes/nuevo", "Proponer un plan (pachanga, quedada o amistoso)"],
-  ["/cuenta", "Mi cuenta: tus datos y salir"],
   ["/entrar", "Entrar en la web (Google o código por correo)"],
   ["/guia-tallas", "Guía de tallas de la ropa del club"],
 ];
@@ -79,7 +78,7 @@ function textoEvento(e: EventoCtx, quien: QuienCtx | undefined, mia: MiRespuesta
     `  Lugar: ${linea(e.lugar) || "por confirmar"}${e.mapa ? ` · cómo llegar: ${linea(e.mapa, 300)}` : ""}`,
   ];
   if (conAgenda) {
-    partes.push(`  Página del evento (responder, quién va, cómo llegar): ${WEB}/mi-zona/evento/${encodeURIComponent(e.id)}`);
+    partes.push(`  Página del evento (responder, quién va, cómo llegar): ${WEB}/evento/${encodeURIComponent(e.id)}`);
     partes.push(`  Tu respuesta: ${mia ? TEXTO_RESP[mia.respuesta] ?? "sin responder" : "sin responder"}${mia?.respuesta === "no" && mia.motivo ? ` (tu motivo: ${MOTIVO[mia.motivo] ?? "otro"}${mia.detalle ? `, ${linea(mia.detalle, 120)}` : ""})` : ""}`);
   }
   if (quien) {
@@ -130,7 +129,7 @@ export function construirContexto(d: EntradaContexto): string {
       s.push(`- Partidos: ${d.stats.pj}${d.stats.dorsales.length ? ` · dorsal ${d.stats.dorsales.map((x) => linea(String(x), 4)).join(" y ")}` : ""}${d.stats.minutos != null ? ` · minutos: ${Math.round(d.stats.minutos)}` : ""}${num(t.pts) != null ? ` · puntos: ${num(t.pts)}` : ""}${par(t.p2a, t.p2i) ? ` · tiros de 2: ${par(t.p2a, t.p2i)}` : ""}${par(t.p3a, t.p3i) ? ` · triples: ${par(t.p3a, t.p3i)}` : ""}${par(t.tla, t.tli) ? ` · tiros libres: ${par(t.tla, t.tli)}` : ""}${num(t.fc) != null ? ` · faltas: ${num(t.fc)}` : ""}${d.stats.masMenos != null ? ` · +/-: ${d.stats.masMenos}` : ""}`);
       if (d.stats.entrenos) s.push(`- Entrenos: fue a ${d.stats.entrenos.fueron} de ${d.stats.entrenos.total}${d.stats.entrenos.pct != null ? ` (${Math.round(d.stats.entrenos.pct * 100)} %)` : ""}`);
       for (const p of d.stats.partidos) s.push(`- ${p.fecha ? dia(p.fecha) : "fecha ?"}${p.jornada ? ` (J${p.jornada})` : ""} ${linea(p.equipo, 10)} contra ${linea(p.rival, 80)}: ${p.pts ?? 0} puntos${p.minutos != null ? `, ${p.minutos} min` : ""}${p.pf != null && p.pc != null ? ` · resultado ${p.pf}-${p.pc}` : ""}`);
-      s.push(`- Ficha completa: ${WEB}/mis-numeros`);
+      s.push(`- Ficha completa: ${WEB}/yo`);
     }
   }
 

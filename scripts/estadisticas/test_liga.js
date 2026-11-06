@@ -80,13 +80,43 @@ ok(/pendiente de contrastar con la oficial/.test(pub.clasificacion_estado), 'la 
 {
   const ja = require('./jornadas_ajenas');
   const reg = ja.leer(T);
-  const aj = r.privado.filter(p => /^G[3-6]$/.test(p.grupo));
+  const aj = r.privado.filter(p => /^G[3-6]$/.test(p.grupo) && p.fichero);
   const porHoja = ja.porHoja(reg);
   const mal = aj.filter(p => p.jornada == null || (porHoja.get(p.fichero) && porHoja.get(p.fichero).jornada !== p.jornada));
   ok(aj.length > 0 && mal.length === 0, `G3-G6: los ${aj.length} partidos con hoja tienen jornada y coincide con ${path.basename(ja.fichero(T))}`);
   const hojas = new Set(aj.map(p => p.fichero));
   const sinHoja = reg.partidos.filter(p => !hojas.has(p.hoja));
   ok(sinHoja.length === 0, `G3-G6: las ${reg.partidos.length} hojas del fichero de datos están en fuentes_fbm/ (${sinHoja.map(p => `${p.grupo} J${p.jornada}`).join(', ')})`);
+  // Resultados sin hoja (fuentes_fbm/<T>/resultados_sin_hoja.csv): cada uno es un hueco del fichero de datos, con su motivo, y
+  // no lleva filas por jugador (solo grupo, jornada, equipos y marcador; nada por consola).
+  const sh = r.privado.filter(p => !p.fichero);
+  const huecoDe = p => (reg.jornadas.find(j => j.grupo === p.grupo && j.jornada === p.jornada) || { huecos: [] }).huecos
+    .find(h => ja.mismoCruce({ ...h, grupo: p.grupo, jornada: p.jornada }, p));
+  ok(sh.every(p => p.equipos.length === 0 && huecoDe(p) && huecoDe(p).motivo === p.sin_hoja), `G3-G6: los ${sh.length} resultados sin hoja son huecos del fichero de datos con el mismo motivo y sin filas por jugador`);
+}
+// 6. Clasificación con una incomparecencia de marcador conocido (20-0): cuenta como victoria del que se presenta, con el 20-0
+//    en puntos a favor y en contra, y los puntos del que no se presenta, pendientes de la oficial (D74).
+{
+  const E = [{ id: 'a', nombre: 'A' }, { id: 'b', nombre: 'B' }];
+  const t = clasificar(E, [{ jornada: 1, local: E[0], visitante: E[1], pl: 20, pv: 0, incomp: true, no_presentado: 'b' }], { puntos_victoria: 2, puntos_derrota: 1 }, undefined);
+  const a = t.find(x => x.id === 'a'), b = t.find(x => x.id === 'b');
+  ok(a.g === 1 && a.pf === 20 && a.pc === 0 && a.pts === 2 && b.p === 1 && b.pc === 20 && b.np === 1 && b.pts_pendiente, 'incomparecencia 20-0: victoria con el 20-0 y los puntos del que no se presenta, pendientes de la oficial');
+  // Con los puntos de la oficial por ese partido (columna pts_no_presentado): se usan, no se suponen (D74). Dos casos: la FBM lo
+  // cuenta como derrota normal (1) o con sanción (0); con otro partido perdido de por medio, el total suma bien.
+  for (const ptsNp of [1, 0]) {
+    const t2 = clasificar(E, [{ jornada: 1, local: E[0], visitante: E[1], pl: 20, pv: 0, incomp: true, no_presentado: 'b', pts_np: ptsNp },
+      { jornada: 2, local: E[0], visitante: E[1], pl: 50, pv: 40 }], { puntos_victoria: 2, puntos_derrota: 1 }, undefined);
+    const b2 = t2.find(x => x.id === 'b');
+    ok(!b2.pts_pendiente && b2.pts_fuente === 'oficial' && b2.pts === 1 + ptsNp && b2.p === 2, `incomparecencia con ${ptsNp} punto(s) de la oficial: total ${1 + ptsNp}, sin «pendiente»`);
+  }
+}
+// 7. resultados_sin_hoja.csv: pts_no_presentado solo en una incomparecencia y entero; la cabecera de 8 columnas sigue valiendo.
+{
+  const { resultadoSinHoja } = require('./jornadas_ajenas');
+  const base = { grupo: 'G5', jornada: 2, local: 'A', visitante: 'B', marcador: '20-0', fecha: '', hora: '', motivo: 'incomparecencia' };
+  ok(resultadoSinHoja({ ...base, pts_no_presentado: '1' }).pts_no_presentado === 1, 'pts_no_presentado: se lee');
+  ok(resultadoSinHoja(base).pts_no_presentado === null, 'pts_no_presentado: vacío = pendiente de la oficial');
+  ok(resultadoSinHoja({ ...base, pts_no_presentado: 'x' }).error && resultadoSinHoja({ ...base, marcador: '38-30', motivo: 'sin hoja', pts_no_presentado: '1' }).error, 'pts_no_presentado: no numérico o fuera de una incomparecencia = error');
 }
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

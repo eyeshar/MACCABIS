@@ -264,6 +264,8 @@ export type ResultadoCalendario = {
   lineas: number; nuestras: number; ajenas: number; iguales: number;
   errores: { n: number; crudo: string; error: string }[];
   cambios: CambioCalendario[]; senales: Senal[];
+  /** «0 cambios» limpio (sin errores ni señales) registrado como revisión de la rutina B (aceptadas = 0). */
+  revisionRegistrada?: boolean;
   aplicado?: {
     aceptadas: number; ignoradas: number; cambiosEn: string[]; avisados?: number | null;
     /** Si el aviso espera a la franja de noche (22:30-08:00, D155): cuando sale (ISO). Sin esto, ha salido ya. */
@@ -285,10 +287,25 @@ const aResultado = (c: Awaited<ReturnType<typeof compararConLaBase>>["comp"]): R
   errores: c.errores.map((e) => ({ n: e.n, crudo: e.crudo, error: e.error })), cambios: c.cambios, senales: c.senales,
 });
 
-/** Solo compara y ensena: no escribe nada. */
+/** Compara y ensena; no cambia ningun evento. Si sale «0 cambios» limpio (sin lineas con error ni señales, con partidos
+ *  nuestros), lo registra como revision del calendario (importacion con 0 aceptadas): asi la rutina B del jueves deja
+ *  rastro aunque no haya nada que aplicar (antes, Gestion seguia diciendo «Ultima importacion» de la semana anterior).
+ *  Una misma revision repetida en menos de 30 minutos no se registra dos veces. */
 export async function analizarCalendario(textoPegado: string): Promise<ResultadoCalendario> {
-  const { comp } = await compararConLaBase(textoPegado);
-  return aResultado(comp);
+  const { supabase, nombre, user, comp } = await compararConLaBase(textoPegado);
+  const limpia = comp.cambios.length === 0 && comp.errores.length === 0 && comp.senales.length === 0 && comp.nuestras > 0;
+  if (!limpia) return aResultado(comp);
+  const desde = new Date(Date.now() - 30 * 60e3).toISOString();
+  const { data: reciente } = await supabase.from("importaciones").select("id").eq("tipo", "calendario").eq("aceptadas", 0).eq("lineas", comp.lineas).gte("en", desde).limit(1);
+  if (!(reciente ?? []).length) {
+    const { error } = await supabase.from("importaciones").insert({
+      tipo: "calendario", por_user_id: user.id, por_nombre: nombre, lineas: comp.lineas, validas: comp.nuestras,
+      aceptadas: 0, ignoradas: 0, bloqueadas: 0, detalle: { revision: true, cambios: [], senales: 0 },
+    });
+    if (error) return aResultado(comp);
+    revalidatePath("/gestion"); revalidatePath("/gestion/eventos");   // no cambia nada publico: sin refrescar() (D175)
+  }
+  return { ...aResultado(comp), revisionRegistrada: true };
 }
 
 /** Aplica SOLO los cambios aceptados (por su id) y registra la importacion. «Aplicar y avisar» (D103, D155) avisa de

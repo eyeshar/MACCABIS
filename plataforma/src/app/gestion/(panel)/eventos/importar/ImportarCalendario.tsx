@@ -8,7 +8,8 @@ const EJEMPLO = `G1;1;Enfermos del Aro;Maccabi de Acostar;04/10/2026;14:00;2
 G1;4;Maccabi de Acostar descansa;;08/11/2026;;
 G2;2;Quinto Tiempo;Maccabi de Levantar;18/10/2026;10:15;1`;
 
-/** Importar el calendario del Ayuntamiento: pegar, comparar y aceptar/ignorar cada cambio. Nada se aplica sin OK. */
+/** Importar el calendario del Ayuntamiento: pegar, comparar y aceptar/ignorar cada cambio. Nada se aplica sin OK; un
+ *  «0 cambios» limpio queda registrado como revisión (rutina B). */
 export default function ImportarCalendario() {
   const [texto, setTexto] = useState("");
   const [res, setRes] = useState<ResultadoCalendario | null>(null);
@@ -57,6 +58,12 @@ export default function ImportarCalendario() {
               {res.aplicado.avisados != null && (
                 <span data-testid="aviso-movil"> Aviso al móvil para {res.aplicado.avisados} {res.aplicado.avisados === 1 ? "jugador" : "jugadores"}{res.aplicado.sale ? ` (${textoSale(new Date(res.aplicado.sale))})` : res.aplicado.avisados ? " (enviado ya)" : ""}.{res.aplicado.sinAviso?.length ? ` Sin aviso: ${res.aplicado.sinAviso.join(", ")}.` : ""}</span>
               )}
+            </div>
+          )}
+
+          {res.revisionRegistrada && !res.aplicado && (
+            <div className="aviso aviso-ok" role="status" style={{ margin: 0 }} data-testid="revision-registrada">
+              Sin cambios: revisión del calendario registrada (no se ha tocado ningún partido).
             </div>
           )}
 

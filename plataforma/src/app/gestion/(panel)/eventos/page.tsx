@@ -140,7 +140,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
             {(importaciones ?? []).length === 0 ? <p className="pequeno suave" style={{ margin: 0 }}>Todavía no se ha importado el calendario del Ayuntamiento.</p> : (
               <ul className="gs-pendientes">
                 {(importaciones ?? []).map((i) => (
-                  <li key={i.id}><span>{fechaHora(i.en)} · {i.por_nombre}<br /><span className="suave">{i.lineas} líneas, {i.aceptadas} {i.aceptadas === 1 ? "cambio aplicado" : "cambios aplicados"}{i.bloqueadas ? `, ${i.bloqueadas} con error` : ""}</span></span></li>
+                  <li key={i.id}><span>{fechaHora(i.en)} · {i.por_nombre}<br /><span className="suave">{i.lineas} líneas, {i.aceptadas ? `${i.aceptadas} ${i.aceptadas === 1 ? "cambio aplicado" : "cambios aplicados"}` : "revisado sin cambios"}{i.bloqueadas ? `, ${i.bloqueadas} con error` : ""}</span></span></li>
                 ))}
               </ul>
             )}

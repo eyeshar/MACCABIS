@@ -83,7 +83,7 @@ export default async function RopaGestion({ searchParams }: { searchParams: Prom
 
       <section className="tarjeta" aria-labelledby="t-campana">
         <h2 id="t-campana">{campana.nombre}</h2>
-        <InterruptorPedido key={String(estado.abierto)} campanaId={campana.id} estado={estado} fechaLimite={campana.fecha_limite} />
+        <InterruptorPedido key={`${estado.abierto}-${estado.causa}`} campanaId={campana.id} estado={estado} fechaLimite={campana.fecha_limite} />
       </section>
 
       <section className="tarjeta" aria-labelledby="t-recuento">

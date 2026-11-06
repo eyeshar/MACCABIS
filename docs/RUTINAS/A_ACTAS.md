@@ -66,6 +66,15 @@ El script crea lo que falte (enlaces, `.env.local`, `npm ci`) al empezar; todo e
 
 **Dispositivo:** un **Samsung S21 dedicado al club**, siempre encendido y con Afición FBM abierta, manejado por Claude con **Enlace Móvil de Windows**. La ventana «Pantalla del teléfono» va en el **segundo monitor**. Sustituye al móvil personal de Iván (D70): ya no depende de que esté encendido, con wifi y cerca del PC. Probado el 04/11/2026.
 
+**Manejar el S21 desde el PC (aprendido el 06/11/2026):**
+- **Siempre en la ventana «Pantalla del teléfono»** (Enlace Móvil → «Abrir la pantalla del teléfono»). La ventana suelta de la app («Afición FBM» abierta desde Enlace Móvil → Aplicaciones) **Claude no la ve: sale tapada en las capturas**. Si está abierta, cerrarla.
+- **Si la pantalla del teléfono se ve pero no responde a los toques** (tampoco a los de Iván): cerrar la conexión con el teléfono en Enlace Móvil y volver a abrirla (es lo que lo arregló el 06/11). Antes de seguir, comprobarlo con un toque que cambie algo visible (p. ej. abrir el cajón de apps). Si sigue sin responder tras reconectar, **avisar a Iván y parar**, sin reintentar en bucle.
+- **Anuncio «Navega sin interrupciones»** (hoja blanca que sube desde abajo): se cierra **arrastrando hacia abajo la rayita gris de arriba**. **Nunca pulsar «Saber más».**
+- **Abrir la app:** cajón de apps → buscador → escribir «fbm» (las letras pueden perderse al escribir: comprobar el texto en la captura) → **Afición FBM**.
+- **Ruta a los partidos de cualquier grupo:** **Mis Equipos** → **MDL** (la tarjeta, no «Ver estadísticas categoría») → pestaña **PARTIDOS** → Fases **MORATALAZ** → **Grupos** (desplegable) → pestañas **JORNADA 1, 2, 3…**
+- **Desplazarse:** arrastrar con el ratón **no** desplaza; la **rueda** sí. Con el puntero en la mitad de arriba de la pantalla desplaza la página entera y rápido; dentro de la lista va muy lento. Al bajar, las pestañas de jornada se van de la pantalla: **antes de pulsar una, comprobar en la captura que es la pestaña y no una tarjeta de partido** (pulsar una tarjeta abre el partido; se vuelve con la flecha de arriba a la izquierda).
+- **La lista de partidos de cada jornada** trae local, visitante, marcador, fecha, hora y pista, y quién descansa: **es la fuente para apuntar la jornada en `jornadas_hojas.csv` al descargar** (D186, abajo). Un partido puede tener **resultado oficial y no tener hoja** (le pasó a G5 J1): se apunta igual, con su marcador y «sin hoja». Una **incomparecencia** sale como **20-0 con todo a cero**: se apunta con el 20-0 y «incomparecencia».
+
 **Descargar una hoja (en la app):** equipo → **Partidos** → (desplegable **Grupos**) → el partido → **Estadísticas** → **EXCEL**. Sale «Abrir con»: se cierra con **Atrás**; el fichero queda en la carpeta Descargas del S21. En el buscador de la app, el texto se escribe letra a letra y llega en MAYÚSCULAS.
 
 **Llegada al PC:** **FolderSync** (en el S21) copia Descargas → Google Drive, carpeta «Descargas aficion fbm» (un solo sentido, cada 10 minutos). En el PC, Google Drive para Windows la deja en `I:\Mi unidad\Descargas aficion fbm\`. Hay ficheros ocultos (`.exmu-cfg1.data`, `.thumbcache_*`) que se ignoran. Los nombres son `estadisticaPartido_<fecha de DESCARGA>.xlsx` con sufijos de duplicado (« (1)»…): **no dicen nada del partido**.
@@ -82,6 +91,18 @@ estadisticaPartido_10112026 (3).xlsx;G5;4;NUSOTROS;TAURUS
 - `archivo`: el nombre con que queda el fichero en Drive, si se conoce. Si va vacío, cuenta el partido (grupo + local + visitante), que no se repite en la fase.
 - Las descargas se hacen **jornada a jornada y en orden** (así se dedujo la jornada de las 58 primeras, D186).
 - Las actas no van a ese registro; G1 y G2 tampoco (su jornada sale del calendario).
+- **Partido sin hoja o incomparecencia** (fix/g5-rutina-s21-y-repaso): la cabecera lleva además `marcador;fecha;hora;motivo` (columnas opcionales; las líneas de siempre las dejan vacías). Se apunta con `archivo` vacío, el marcador oficial de la lista de la jornada y `motivo` «sin hoja» o «incomparecencia» (siempre 20-0; no se presentó el del 0):
+
+```
+archivo;grupo;jornada;local;visitante;marcador;fecha;hora;motivo
+estadisticaPartido_10112026 (3).xlsx;G5;4;NUSOTROS;TAURUS;;;;
+;G5;5;EQUIPO A;EQUIPO B;41-37;07/11/2026;15:15;sin hoja
+;G5;5;EQUIPO C;EQUIPO D;20-0;07/11/2026;19:00;incomparecencia
+```
+
+  **Una incomparecencia: leer también la clasificación oficial de ese grupo** en la app (los puntos que la FBM le da al que no se presenta dependen de si avisó a tiempo: derrota normal, 1, o sanción; D74) y escribir en `fuentes_fbm/2026-27/resultados_sin_hoja.csv`, columna `pts_no_presentado` de ese partido, los puntos **de ese partido**: total oficial − 2·G − 1·(P − incomparecencias). Si aún no sale, se deja vacía: su casilla dice «pendiente de la oficial» y el orden del grupo es provisional.
+
+  `npm run jornada` copia el marcador a `fuentes_fbm/2026-27/resultados_sin_hoja.csv` (**fuera de git**: los marcadores de G3–G6 son privados, D184/D186) y deja en `data/jornadas_grupos_ajenos_2026-27.json` solo el hueco (emparejamiento y motivo, sin marcador). `db:liga` lo carga como partido con marcador y sin filas por jugador: cuenta en la clasificación calculada del grupo (la incomparecencia, como D74: gana el que se presenta, con el 20-0, y los puntos del que no se presenta quedan «pendiente de la oficial») y en Resultados sale con su marcador y «sin hoja» o «incomparecencia de <equipo>». Para (con `--no-interactivo`): una incomparecencia que no sea 20-0, un marcador o una fecha que no se entienden, o un partido que ya tiene hoja.
 
 `npm run jornada` lee el registro: copia la hoja como `liga_J04_G5_…` y **anota el partido** en `data/jornadas_grupos_ajenos_2026-27.json` (público: solo grupo, jornada, local, visitante, hoja y comprobado, nunca marcadores, D186); de ahí lo toma `db:liga`. **Si una hoja de G3–G6 llega sin jornada, se carga igual (`liga_J--_…`) y se avisa**: no para la rutina; la jornada se apunta a mano en ese fichero (con el nombre de la copia en `hoja`). Lo que **sí para** (con `--no-interactivo`): una línea del registro mal escrita (grupo o jornada que no existen), un registro que dice otro partido para ese fichero, una jornada distinta de la que ya tenía ese partido en el fichero de datos o un equipo que ya juega esa jornada.
 

@@ -31,7 +31,7 @@ export default async function Importar() {
                   <tr key={r.id}>
                     <td data-label="Cuándo">{fechaHora(r.en)}</td>
                     <td data-label="Quién">{r.por_nombre}</td>
-                    <td data-label="Qué">{r.tipo === "calendario" ? "Calendario" : "Respuestas (SportEasy)"}</td>
+                    <td data-label="Qué">{r.tipo === "calendario" ? (r.aceptadas ? "Calendario" : "Calendario · revisión sin cambios") : "Respuestas (SportEasy)"}</td>
                     <td data-label="Líneas" className="cifra">{r.lineas} ({r.validas} válidas{r.bloqueadas ? `, ${r.bloqueadas} bloqueadas` : ""})</td>
                     <td data-label="Aceptadas" className="cifra">{r.aceptadas}{r.ignoradas ? ` · ${r.ignoradas} ignoradas` : ""}</td>
                   </tr>

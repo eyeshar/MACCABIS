@@ -283,12 +283,17 @@ try {
   await p.getByTestId('titulo-resultado').waitFor();
   ok((await p.getByTestId('titulo-resultado').textContent()) === '0 cambios', 'bloque oficial -> «0 cambios»', await p.getByTestId('titulo-resultado').textContent());
   ok((await p.getByTestId('resumen-lineas').textContent()).includes('44 líneas leídas'), '44 líneas leídas');
+  // Un «0 cambios» limpio queda como revisión del calendario (rutina B): 0 aceptadas, una sola vez aunque se repita.
+  ok(await hasta(async () => (await p.getByTestId('revision-registrada').count()) === 1), '«0 cambios» limpio: «revisión del calendario registrada»');
+  const revisiones = async () => (await sql`select count(*)::int n from public.importaciones where tipo = 'calendario' and aceptadas = 0`)[0].n;
+  ok(await revisiones() === 1, 'y queda en importaciones con 0 aceptadas');
   // La pista como la escribe Deportes en su web («Baloncesto 2 Moratalaz», «Pabellón baloncesto 3 Moratalaz»): lo mismo.
   const comoDeportes = bloque.split('\n').map((l, i) => l.replace(/;(\d)$/, i % 2 ? ';Baloncesto $1 Moratalaz' : ';Pabellón baloncesto $1 Moratalaz')).join('\n');
   await p.locator('#cal-texto').fill(comoDeportes);
   await p.getByRole('button', { name: 'Comparar' }).click();
   await p.waitForFunction(() => document.querySelector('[data-testid=resumen-lineas]')?.textContent?.includes('44 líneas leídas'));
   ok((await p.getByTestId('titulo-resultado').textContent()) === '0 cambios' && !(await p.getByTestId('resumen-lineas').textContent()).includes('con error'), 'con la pista como «Baloncesto 2 Moratalaz» / «Pabellón baloncesto 3 Moratalaz»: «0 cambios» y ninguna línea con error', await p.getByTestId('resumen-lineas').textContent());
+  ok(await revisiones() === 1, 'la misma revisión repetida enseguida no se registra dos veces');
   await p.screenshot({ path: path.join(SALIDA, 'real_eventos_importar_escritorio.png'), fullPage: true });
   const modif = bloque.split('\n').map((l) => (l.startsWith('G1;2;') ? l.replace(';10:15;', ';11:30;') : l)).join('\n');
   await p.locator('#cal-texto').fill(modif);
@@ -304,7 +309,7 @@ try {
   const j2c = (await sql`select inicio, quedada from public.eventos where clave = 'mda-j2'`)[0];
   ok(j2c.inicio.startsWith('11:30') && String(j2c.quedada).startsWith('11:10'), 'aceptado: hora 11:30 (encuentro 11:10)', JSON.stringify(j2c));
   ok((await p.getByTestId('titulo-resultado').textContent()) === '0 cambios', 'tras aplicar, la misma importación da «0 cambios»');
-  const imp = (await sql`select tipo, por_nombre, lineas, validas, aceptadas, ignoradas from public.importaciones where tipo = 'calendario'`);
+  const imp = (await sql`select tipo, por_nombre, lineas, validas, aceptadas, ignoradas from public.importaciones where tipo = 'calendario' and aceptadas > 0`);
   ok(imp.length === 1 && imp[0].aceptadas === 1 && imp[0].lineas === 44 && imp[0].por_nombre === 'Gestor de pruebas', 'la importación queda registrada: quién, cuántas líneas y qué se aceptó', JSON.stringify(imp));
   // varios cambios: aceptar todos / ignorar
   const varios = modif.split('\n').map((l) => (l.startsWith('G2;5;') ? l.replace(';12:45;', ';13:00;') : l.startsWith('G1;3;') ? l.replace(/;1$/, ';2') : l.startsWith('G1;5;') ? l.replace('09:00', '09:30') : l)).join('\n');

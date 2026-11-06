@@ -120,10 +120,11 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
                 <span className={`e-pl${(r.pl ?? 0) > (r.pv ?? 0) ? " e-gan" : ""}`}><Link href={hrefEq(r.local_id)} className="e-enlace-eq">{r.local}</Link></span>
                 {hp ? (
                   <Link href={hp} className="e-m e-m-enlace" aria-label={`Ver el partido ${r.local} – ${r.visitante}`} title={r.incomparecencia ? "Incomparecencia" : "Ver el partido"}>{marcador}</Link>
-                ) : <span className="e-m e-m-hueco" title="Sin hoja de estadística: no hay marcador">{marcador}</span>}
+                ) : <span className="e-m e-m-hueco" title={r.pl == null ? "Sin hoja de estadística: no hay marcador" : "Resultado oficial, sin hoja de estadística"}>{marcador}</span>}
                 <span className={(r.pv ?? 0) > (r.pl ?? 0) ? "e-gan" : ""}><Link href={hrefEq(r.visitante_id)} className="e-enlace-eq">{r.visitante}</Link></span>
               </div>
-              {r.incomparecencia && r.no_presentado && <div className="e-desc">No se presentó: {r.no_presentado}.</div>}
+              {r.hueco && r.pl != null ? <div className="e-desc" data-testid="marca-sin-hoja">{textoHueco(r.hueco, r.no_presentado)}</div>
+                : r.incomparecencia && r.no_presentado && <div className="e-desc">No se presentó: {r.no_presentado}.</div>}
             </div>
           );
         })}

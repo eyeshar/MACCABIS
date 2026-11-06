@@ -151,6 +151,35 @@ const escribe = (dir, nombre, bytes) => { fs.mkdirSync(dir, { recursive: true })
   r = await recoger({ temporada: '2026-27', desde: d11, recursivo: [d11], base: tmp('base14'), sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
   ok(r instanceof Error && /grupo desconocido/.test(r.message), '7i. una línea del registro con un grupo desconocido: duda');
 
+  // 8. Partidos SIN HOJA con resultado oficial (fix/g5-rutina-s21-y-repaso): en el registro, con marcador y motivo y sin archivo.
+  //    El marcador va a <base>/resultados_sin_hoja.csv (fuera de git) y en el fichero de datos queda solo el hueco.
+  const CAB2 = 'archivo;grupo;jornada;local;visitante;marcador;fecha;hora;motivo\n';
+  const d12 = tmp('drive-sinhoja'), base15 = tmp('base15');
+  fs.writeFileSync(path.join(d12, ja.MANIFIESTO), CAB2 + ';G5;6;EQUIPO UNO;EQUIPO TRES;38-30;03/10/2026;15:15;sin hoja\n;G5;6;EQUIPO DOS;EQUIPO CUATRO;20-0;17/10/2026;19:00;incomparecencia\n');
+  r = await recoger({ temporada: '2026-27', desde: d12, recursivo: [d12], base: base15, sinAsistencia: true, estricto: true, log: () => {} });
+  const sh = r.plan.filter(p => p.destino === 'sin_hoja');
+  ok(sh.length === 2 && sh[0].sinHoja.pl === 38 && sh[0].sinHoja.motivo === 'sin_hoja' && sh[1].sinHoja.no_presentado === 'EQUIPO CUATRO',
+    '8. dos partidos sin hoja del registro: marcador, motivo y quién no se presentó (el del 0)');
+  const restaurar = [];
+  ok(copiar(r.plan, { base: base15, temporada: '2026-27', restaurar, log: () => {} }) === 2, '8b. se anotan los dos');
+  const csv = fs.readFileSync(path.join(base15, ja.SIN_HOJA), 'utf8');
+  ok(/^grupo;jornada;local;visitante;marcador;fecha;hora;motivo;pts_no_presentado\n/.test(csv) && /G5;6;EQUIPO UNO;EQUIPO TRES;38-30;03\/10\/2026;15:15;sin hoja;\n/.test(csv) && restaurar.length === 1 && restaurar[0].previo === null,
+    '8c. en resultados_sin_hoja.csv de fuentes_fbm (fuera de git), con su marcador; y se sabe cómo deshacerlo');
+  ok(ja.anotarHuecos('2026-27', sh.map(p => p.sinHoja), contexto('2026-27').grupos) === 2, '8d. los dos huecos, al fichero de datos');
+  reg = ja.leer('2026-27');
+  const j6 = reg.jornadas.find(j => j.jornada === 6);
+  ok(j6 && j6.huecos.length === 2 && !JSON.stringify(reg).includes('38') && !JSON.stringify(reg).includes('20-0') && j6.huecos[1].nota.includes('incomparecencia de EQUIPO CUATRO'),
+    '8e. en el fichero de datos, el hueco con su motivo y SIN marcador');
+  r = await recoger({ temporada: '2026-27', desde: d12, recursivo: [d12], base: base15, sinAsistencia: true, estricto: true, log: () => {} });
+  ok(!r.plan.some(p => p.destino === 'sin_hoja'), '8f. ya anotados: la siguiente vez no se repiten');
+  fs.writeFileSync(path.join(d12, ja.MANIFIESTO), CAB2 + ';G5;7;EQUIPO UNO;EQUIPO DOS;20-3;;;incomparecencia\n');
+  r = await recoger({ temporada: '2026-27', desde: d12, recursivo: [d12], base: tmp('base16'), sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
+  ok(r instanceof Error && /una incomparecencia es 20-0/.test(r.message), '8g. una incomparecencia que no es 20-0: duda');
+  process.env.MACCABIS_SIN_HOJA = path.join(base15, ja.SIN_HOJA);
+  const leidos = ja.leerSinHoja('2026-27', contexto('2026-27').grupos);
+  ok(leidos.errores.length === 0 && leidos.entradas.length === 2 && leidos.entradas[1].pl === 20 && leidos.entradas[1].fecha === '2026-10-17', '8h. liga.js y db:liga leen el fichero (fecha en ISO)');
+  delete process.env.MACCABIS_SIN_HOJA;
+
   delete process.env.MACCABIS_JORNADAS_AJENAS;
   delete process.env.MACCABIS_GRUPOS_FASE;
   console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo bien.');

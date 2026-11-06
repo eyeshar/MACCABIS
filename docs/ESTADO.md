@@ -2,7 +2,10 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-## Visibilidad en el móvil (06/11/2026; D190) — `fix/visibilidad-movil`, PR pendiente del OK de Iván
+## Liga y Club sin párrafos (06/11/2026; D191) — `fix/liga-sin-parrafos`
+- Jugadores de la liga: arriba solo «N jugadores · N equipos · hasta Jn»; las explicaciones, tras «Cómo se cuenta ⓘ» (plegado). Lo mismo en Scouting, Temporadas, Plantilla, ficha del jugador, Rivales, partido e Historia. Capturas en `privado/mockups_liga/rediseno/sin-parrafos/`.
+
+## Visibilidad en el móvil (06/11/2026; D190) — `fix/visibilidad-movil`, PR #64 MERGEADO (OK de Iván, Actions en verde)
 - **Jugadores de la liga:** G3–G6 siempre a la vista como casillas junto a MdA y MdL (sin «Otros grupos» ni el párrafo).
 - **Clasificación:** con sesión, G1 · MdA | G2 · MdL | G3 | G4 | G5 | G6, con su clasificación, resultados por jornada y ficha (sin sesión, solo G1 y G2).
 - **Tablas a 360 px:** Plantilla, Clasificación, Temporadas › Equipo y Asistencia, la hoja de un partido y el Tablero caben enteras; Temporadas › Jugadores, Historia, Scouting y la ficha del jugador, con la primera columna fija y al menos tres columnas de datos a la vista.

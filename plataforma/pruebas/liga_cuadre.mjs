@@ -69,6 +69,8 @@ const filas = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(
 }) || [...document.querySelectorAll(s + ' tr')].map((tr) =>
   [...tr.children].filter((c) => c.getClientRects().length).map((c) => c.innerText.replace(/\s+/g, ' ').trim().toLowerCase())).filter((r) => r.length), sel);
 const textos = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].filter((e) => e.getClientRects().length).map((e) => e.innerText.replace(/\s+/g, ' ').trim().toLowerCase()), sel);
+// D191: las aclaraciones van plegadas tras un ⓘ (componente Info): se compara su texto aunque no estén abiertas.
+const aclaraciones = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s + ' .e-info-cuerpo')].map((e) => e.textContent.replace(/\s+/g, ' ').trim().toLowerCase()), sel);
 function igual(a, b, que) {
   elementos += Array.isArray(a) ? a.length : 1;
   const sa = JSON.stringify(a), sb = JSON.stringify(b);
@@ -224,7 +226,8 @@ try {
       if (!hay) { ok(/\/equipo$/.test(nueva.url()), `${t} mda: no existe, la web nueva lleva a Equipo`); continue; }
       igual(await filas(vieja, '#mdaBody'), await filas(nueva, '[data-testid="mda-tabla"] tbody'), `${t} MdA: resumen`);
       igual(await textos(vieja, '#mdaCuartos .qbar'), await textos(nueva, '[data-testid="mda-cuartos"] .e-qbar'), `${t} MdA: cuartos`);
-      igual((await textos(vieja, '#mdaNota'))[0], (await textos(nueva, '.e-nota'))[0], `${t} MdA: nota`);
+      // D191: la nota va plegada tras el ⓘ (se compara su texto aunque no esté abierta)
+      igual((await textos(vieja, '#mdaNota'))[0], (await aclaraciones(nueva, '[data-testid="aclaraciones"]'))[0], `${t} MdA: nota`);
     }
   });
 
@@ -296,7 +299,7 @@ try {
         await vieja.selectOption('#selPlayer', { index: i });
         await nueva.goto(`${APP}/jugador/${orden[i].person_id}?t=${t}`, { waitUntil: 'domcontentloaded' });
         const a = [await textos(vieja, '#playerCard .playerhead'), await textos(vieja, '#playerCard .kpi'), await filas(vieja, '#playerCard tbody'), await textos(vieja, '#playerCard .note')];
-        const b = [await textos(nueva, '.e-cabjugador'), await textos(nueva, '[data-testid="ficha"] .e-kpi'), await filas(nueva, '[data-testid="ficha-partidos"] tbody'), await textos(nueva, '[data-testid="ficha"] > .e-nota')];
+        const b = [await textos(nueva, '.e-cabjugador'), await textos(nueva, '[data-testid="ficha"] .e-kpi'), await filas(nueva, '[data-testid="ficha-partidos"] tbody'), await aclaraciones(nueva, '[data-testid="ficha"] > [data-testid="aclaraciones"]')];
         fichas++;
         igual(a, b, `${t} ficha de ${orden[i].person_id}`);
       }

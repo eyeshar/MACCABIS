@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ETIQUETA, lineaClave, primerasClaves, type Clave, type ResultadoClaves } from "@/lib/scouting/claves";
+import { Info } from "./Comunes";
 
 // «Claves del partido» (D174): lo que hay que saber del rival, en frases cortas calculadas con reglas fijas. Solo con sesion.
 
@@ -30,11 +31,11 @@ export function CajaClaves({ res, equipo }: { res: ResultadoClaves; equipo: stri
             : <p className="lg-sub" data-testid="claves-ninguna-jugadores">Ningún jugador de {equipo} destaca todavía entre los del grupo.</p>}
         </>
       )}
-      <p className="lg-nota">
-        Calculadas con reglas fijas a partir de las hojas de la FBM de esta temporada. «Del equipo»: frente a la media de los equipos de su grupo (sin contarlo a él),
+      <Info testid="aclaraciones-claves" titulo="Cómo se calculan">
+        <p>Calculadas con reglas fijas a partir de las hojas de la FBM de esta temporada. «Del equipo»: frente a la media de los equipos de su grupo (sin contarlo a él),
         solo lo que se aparta un 20 % o más. «Jugadores a vigilar»: cada jugador frente a los jugadores del grupo, con su mínimo de partidos. No hay rebotes,
-        asistencias ni pérdidas en esas hojas.
-      </p>
+        asistencias ni pérdidas en esas hojas.</p>
+      </Info>
     </section>
   );
 }

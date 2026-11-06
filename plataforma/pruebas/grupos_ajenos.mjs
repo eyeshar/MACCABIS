@@ -142,7 +142,9 @@ try {
 
   const p = await e.sesion('ana@pruebas.local', 1280);
   const texto = () => p.evaluate(() => document.querySelector('main')?.innerText ?? document.body.innerText);
-  const resumen = () => p.locator('#lideres .lg-sub').first().innerText();
+  // D191: arriba solo el recuento («N jugadores · N equipos · hasta Jn»); lo de «dobla», tras el ⓘ de los líderes.
+  const resumen = () => p.getByTestId('recuento').innerText();
+  const aclaraLideres = () => p.getByTestId('aclaraciones-lideres').textContent();
   const filaDe = (nombre) => p.locator('.lg-tabla-todos tbody tr', { hasText: new RegExp(nombre.split(',')[0], 'i') }).filter({ hasText: new RegExp(nombre.split(', ')[1], 'i') });
   const selector = () => p.getByTestId('selector-grupos');
   const casilla = (gr) => selector().locator(`input[type="checkbox"][value="${gr}"]`);
@@ -166,8 +168,10 @@ try {
   const filasHoja = nuestros.flatMap((x, i) => x.equipos.flatMap((q) => q.jugadores.map((j) => ({ partido_id: `p${i}`, grupo: x.grupo, jornada: x.jornada, equipo: q.equipo, dorsal: j.num, nombre: j.nombre, segundos: j.sec, pts: j.pts, p2a: j.p2a, p3a: j.p3a, tla: j.tla, tli: j.tli, faltas: j.fc }))));
   const clasN = [...liga.publico.grupos.G1.clasificacion.map((c) => ({ ...c, grupo: 'G1' })), ...liga.publico.grupos.G2.clasificacion.map((c) => ({ ...c, grupo: 'G2' }))];
   const sumadas = filasTabla(agruparJugadores(filasHoja).jugadores, new Map(clasN.map((c) => [`${c.grupo}|${c.equipo}`, c.pj])));
-  const esperado = `${sumadas.length} personas de los ${clasN.filter((c) => c.pj > 0).length} equipos con partidos jugados, hasta la jornada ${Math.max(...clasN.map((c) => c.pj))}. «dobla» = sale con MdA y con MdL (sus dos fichas se suman).`;
-  ok((await resumen()) === esperado, `cabecera de siempre: «${esperado}»`, await resumen());
+  const esperado = `${sumadas.length} jugadores · ${clasN.filter((c) => c.pj > 0).length} equipos · hasta J${Math.max(...clasN.map((c) => c.pj))}`;
+  ok((await resumen()) === esperado, `recuento de siempre: «${esperado}»`, await resumen());
+  ok((await aclaraLideres()).includes('«dobla» = sale con MdA y con MdL: una sola fila con sus dos fichas sumadas.') && !(await p.getByTestId('aclaraciones-lideres').getAttribute('open')),
+    'la aclaración de «dobla», plegada tras el ⓘ');
   ok((await marcadas()) === 'G1,G2', 'el selector marca MdA (G1) y MdL (G2), y ningún otro', await marcadas());
   const etiquetas = await selector().locator('label.lg-check').allInnerTexts();   // innerText: solo lo que se ve
   ok(JSON.stringify(etiquetas.map((x) => x.trim())) === JSON.stringify(['MdA (G1)', 'MdL (G2)', 'G3', 'G4', 'G5', 'G6']), 'casillas: MdA y MdL y, a su lado, los cuatro grupos ajenos, todas a la vista', etiquetas.join(' | '));
@@ -182,7 +186,7 @@ try {
   await p.locator('#lideres .lg-conmutador button', { hasText: 'Totales' }).click();
   const lider = await p.locator('#lideres .lg-lider').first().locator('li').first().textContent();
   ok(/Sint Dobla, Pepe/i.test(lider) && /36\s*$/.test(lider) && /dobla/.test(lider), 'líder en puntos: el que dobla, con sus dos fichas sumadas (36 = 10 + 6 + 20)', lider);
-  ok((await p.locator('details.lg-ranking summary').innerText()).includes('G1 y G2 (5 equipos)'), 'ranking: G1 y G2, 5 equipos');
+  ok((await p.locator('details.lg-ranking > summary').innerText()).includes('G1 y G2 (5 equipos)'), 'ranking: G1 y G2, 5 equipos');
   await p.locator('details.lg-ranking > summary').click();
   ok((await rankingSinMezcla(['G1', 'G2'])) === '', 'ranking: una clasificación del G1 y otra del G2, sin mezclar equipos', await rankingSinMezcla(['G1', 'G2']));
   const fDobla = await filaDe(DOBLA).first().innerText();
@@ -195,8 +199,8 @@ try {
   const g1 = await filaDe(DOBLA).first().innerText();
   ok(/\t2\t/.test(g1) && /\t16\t/.test(g1) && !/MdL/.test(g1), 'G1: el que dobla, 2 PJ y 16 puntos (10 + 6), solo la ficha del MdA', g1);
   ok(/dobla/.test(g1), 'G1: la etiqueta «dobla» se sigue viendo', g1);
-  ok(/hasta la jornada 2\./.test(await resumen()) && /3 equipos/.test(await resumen()) && /solo cuentan sus partidos con MdA/.test(await resumen()), 'G1: cabecera con los 3 equipos del G1, la jornada 2 y que solo cuentan sus partidos con MdA', await resumen());
-  ok((await p.locator('details.lg-ranking summary').innerText()).includes('G1 · MdA (3 equipos)'), 'G1: ranking solo del G1');
+  ok(/ · 3 equipos · hasta J2$/.test(await resumen()) && /solo cuentan sus partidos con MdA/.test(await aclaraLideres()), 'G1: recuento con los 3 equipos del G1 y la jornada 2; tras el ⓘ, que solo cuentan sus partidos con MdA', await resumen());
+  ok((await p.locator('details.lg-ranking > summary').innerText()).includes('G1 · MdA (3 equipos)'), 'G1: ranking solo del G1');
   await p.goto(`${APP}/liga/consolidada`);
   ok((await selector().getByRole('button', { name: 'Ver' }).count()) === 0, 'no hay botón «Ver» que pulsar (con JavaScript)');
   await casilla('G1').click();
@@ -217,7 +221,7 @@ try {
   const t124 = await texto();
   ok(fugas(t124, ['G3'], ['G1', 'G2', 'G4']).length === 0, 'G1 + G2 + G4: nadie del G3', fugas(t124, ['G3'], ['G1', 'G2', 'G4']).join(', '));
   ok(nombresDe(['G4']).every((n) => norm(t124).includes(norm(n.split(',')[0]))) && /Sint Solomda/i.test(t124), 'salen los jugadores del G4 y los nuestros');
-  ok(/\(G1, G2 y G4\), hasta la jornada 2\./.test(await resumen()), 'la cabecera dice qué grupos', await resumen());
+  ok(/ · hasta J2$/.test(await resumen()), 'el recuento, con la jornada (los grupos los dice el selector)', await resumen());
   await p.locator('#lideres .lg-conmutador button', { hasText: 'Totales' }).click();
   const lider124 = await p.locator('#lideres .lg-lider').first().locator('li').first().textContent();
   ok(/Sint Gcuatro, Zeta/i.test(lider124) && /71\s*$/.test(lider124), 'líder en puntos: Zeta (G4, 71 = 41 + 30), por encima de los nuestros', lider124);
@@ -241,10 +245,10 @@ try {
   ok((await marcadas()) === 'G3', '?grupo=G3 (D184) marca solo el G3');
   const t3 = await texto();
   ok(fugas(t3, ['G1', 'G2', 'G4']).length === 0, 'G3: ni un jugador ni un equipo de G1, G2 o G4', fugas(t3, ['G1', 'G2', 'G4']).join(', '));
-  ok((await resumen()) === '4 personas de los 3 equipos con partidos jugados, hasta la jornada 2.', 'G3: cabecera con sus 4 personas, 3 equipos y su jornada', await resumen());
+  ok((await resumen()) === '4 jugadores · 3 equipos · hasta J2', 'G3: recuento con sus 4 jugadores, 3 equipos y su jornada', await resumen());
   const lider3 = await p.locator('#lideres .lg-lider').first().locator('li').first().textContent();
   ok(/Sint Gtres, Alfa/i.test(lider3) && /50,0/.test(lider3), 'G3: el líder en puntos por partido es del G3 (Alfa, 50,0), no el del G4 (60)', lider3);
-  ok((await p.locator('details.lg-ranking summary').innerText()).includes('G3 · DOM MAÑ G3 (3 equipos)'), 'G3: ranking de sus 3 equipos', await p.locator('details.lg-ranking summary').innerText());
+  ok((await p.locator('details.lg-ranking > summary').innerText()).includes('G3 · DOM MAÑ G3 (3 equipos)'), 'G3: ranking de sus 3 equipos', await p.locator('details.lg-ranking > summary').innerText());
   ok((await p.locator('.lg-todos label', { hasText: /^Grupo/ }).count()) === 0 && (await p.locator('.lg-todos .lg-check').count()) === 0, 'G3: la tabla no ofrece otro grupo ni «Solo Maccabis»');
   const equiposSel = await p.locator('.lg-todos label', { hasText: /^Equipo/ }).locator('option').allInnerTexts();
   ok(equiposSel.slice(1).every((x) => equiposDe(['G3']).includes(x)) && equiposSel.length === 4, 'G3: el filtro de equipo solo lista los del G3', equiposSel.join(' | '));

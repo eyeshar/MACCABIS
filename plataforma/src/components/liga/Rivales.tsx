@@ -6,7 +6,7 @@ import { useSesion } from "@/components/nav/Sesion";
 import { textoColores } from "@/lib/colores";
 import { fechaCorta } from "@/lib/estadisticas/calculo";
 import type { Color, DatosRivales, Rival, TemporadaRival } from "@/lib/estadisticas/liga";
-import { CajaTabla, Control, Nota, SecH, Segmento } from "./Comunes";
+import { CajaTabla, Control, Info, Nota, SecH, Segmento } from "./Comunes";
 
 // Rivales 26/27 (migrado de GitHub Pages): lo esencial del grupo, tarjetas de rivales y ficha con trayectoria y cara a cara.
 // Fuente: Ayuntamiento de Madrid, datos abiertos (datos.madrid.es), CC BY 4.0. Enlace directo: /liga/rivales?g=MdA&r=<id>.
@@ -165,7 +165,7 @@ function Ficha({ r, color, temporada, onCerrar, scouting }: { r: Rival; color: C
           {!r.sin_rastro && <>
           <SecH titulo="Trayectoria en liga" tag="puesto relativo · 1º arriba" />
           <div className="e-grafico"><Grafico r={r} /></div>
-          <Nota>Primera fase de liga de cada temporada, normalizada por el tamaño del grupo. Las temporadas sin datos quedan vacías: 2019/20 no está en el portal.</Nota>
+          <Info>Primera fase de liga de cada temporada, normalizada por el tamaño del grupo. Las temporadas sin datos quedan vacías: 2019/20 no está en el portal.</Info>
           <SecH titulo="Temporada a temporada" />
           <CajaTabla>
             <table className="e-tabla">

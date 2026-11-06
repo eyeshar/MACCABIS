@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Info } from "@/components/liga/Comunes";
 import { bonito, dec, mmss, type FilaTabla } from "@/lib/jugadoresLiga";
 import { cumpleMinimoPP, porFaltas, porPartido, porPuntos, porTirosLibres, porTriples, valorPP, type ClavePP } from "@/lib/ordenLideres";
 
@@ -45,7 +46,7 @@ function ranking(filas: FilaTabla[], k: ClavePP, pp: boolean): { f: FilaTabla; v
   return [];
 }
 
-export default function Lideres({ filas, resumen, sumaDobla = true }: { filas: FilaTabla[]; resumen: string; sumaDobla?: boolean }) {
+export default function Lideres({ filas, recuento, notaDobla, sumaDobla = true }: { filas: FilaTabla[]; recuento: string; notaDobla?: string; sumaDobla?: boolean }) {
   // D169: lo que importa es lo que hace por partido; los totales, a un toque.
   const [pp, setPp] = useState(true);
   const [chip, setChip] = useState<ClavePP>("pts");
@@ -60,7 +61,7 @@ export default function Lideres({ filas, resumen, sumaDobla = true }: { filas: F
   return (
     <section id="lideres" className="lg-seccion">
       <h2>Líderes de la liga</h2>
-      <p className="lg-sub">{resumen}</p>
+      <p className="lg-recuento" data-testid="recuento">{recuento}</p>
       <div className="lg-chips" role="group" aria-label="Estadística" data-testid="chips-lideres">
         {CHIPS.map((x) => (
           <button key={x.k} type="button" className={x.k === chip ? "on" : ""} aria-pressed={x.k === chip} onClick={() => setChip(x.k)}>{x.t}</button>
@@ -94,12 +95,11 @@ export default function Lideres({ filas, resumen, sumaDobla = true }: { filas: F
           {nota && <p className="lg-nota">{nota}</p>}
         </section>
       </div>
-      {pp && (
-        <p className="lg-nota">
-          Mínimo de partidos «Automático»: la mitad de los partidos jugados por su equipo, redondeando hacia arriba, o 2, lo que sea menor; en TL%, además, 3 tiros libres
-          intentados. {sumaDobla ? "Quien dobla cuenta con los partidos sumados de sus dos fichas." : "Quien dobla cuenta solo con los partidos de este grupo."}
-        </p>
-      )}
+      <Info testid="aclaraciones-lideres">
+        {notaDobla && <p>{notaDobla}</p>}
+        <p>Por partido, mínimo de partidos «Automático»: la mitad de los partidos jugados por su equipo, redondeando hacia arriba, o 2, lo que sea menor; en TL%, además, 3 tiros libres
+          intentados. {sumaDobla ? "Quien dobla cuenta con los partidos sumados de sus dos fichas." : "Quien dobla cuenta solo con los partidos de este grupo."}</p>
+      </Info>
     </section>
   );
 }

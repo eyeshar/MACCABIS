@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { jugadoresFiltrados, nombreBreve, type ClaveJugador, type Eq, type FiltroEq, type JugadorEst, type Metricas } from "@/lib/estadisticas/calculo";
-import { CajaTabla, ChipEquipo, Control, N1, N2, NInt, NPct, NSigned, NSigned1, Nota, OPCIONES_EQUIPO, SecH, Segmento, Nz } from "./Comunes";
+import { CajaTabla, ChipEquipo, Control, Info, N1, N2, NInt, NPct, NSigned, NSigned1, Nz, OPCIONES_EQUIPO, SecH, Segmento } from "./Comunes";
 
 // Pestaña Jugadores: la plantilla de la temporada, ordenable por cualquier columna. PJ = partidos con minutos (los DNP no
 // cuentan en las medias). Con `temporada`, el nombre enlaza con la ficha del jugador (por person_id).
@@ -109,9 +109,9 @@ export default function JugadoresPestana({ jugadores, M, multiEquipo, temporada,
         </table>
       </CajaTabla>
       {M.min ? (
-        <Nota>Pincha en cualquier cabecera para ordenar por esa columna. PJ = partidos con minutos (los DNP no cuentan en las medias). +/- ac = acumulado (suma) · +/- md = medio por partido · P/min = puntos por minuto.</Nota>
+        <Info>Pincha en cualquier cabecera para ordenar por esa columna. PJ = partidos con minutos (los DNP no cuentan en las medias). +/- ac = acumulado (suma) · +/- md = medio por partido · P/min = puntos por minuto.</Info>
       ) : (
-        <Nota>Pincha en cualquier cabecera para ordenar por esa columna. En esta temporada no hay minutos registrados: <b>las medias son por partido jugado</b> y los &quot;NJ&quot; (No Jugó) no entran en el denominador.</Nota>
+        <Info>Pincha en cualquier cabecera para ordenar por esa columna. En esta temporada no hay minutos registrados: <b>las medias son por partido jugado</b> y los &quot;NJ&quot; (No Jugó) no entran en el denominador.</Info>
       )}
     </>
   );

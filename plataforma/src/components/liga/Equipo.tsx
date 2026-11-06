@@ -6,7 +6,7 @@ import {
   esPO, minutos, nombreCorto, ordenarPartidos, partidosFiltrados, resumenEquipo, sinPO,
   type ClavePartido, type Eq, type FilaBox, type FiltroEq, type Metricas, type PartidoEst,
 } from "@/lib/estadisticas/calculo";
-import { ChipEquipo, CajaTabla, Control, Dash, Kpi, NInt, NSigned, Nota, OPCIONES_EQUIPO, SecH, Segmento, Tiros } from "./Comunes";
+import { CajaTabla, ChipEquipo, Control, Dash, Info, Kpi, NInt, Nota, NSigned, OPCIONES_EQUIPO, SecH, Segmento, Tiros } from "./Comunes";
 
 // Pestaña Equipo: balance, puntos a favor y en contra, racha y tabla de partidos ordenable con boxscore desplegable.
 export default function EquipoPestana({ partidos, box, M, equipos, equipoInicial = "ALL", enlaces, selector }: {
@@ -174,7 +174,7 @@ export function Boxscore({ filas, M }: { filas: FilaBox[]; M: Metricas }) {
           </tbody>
         </table>
       </CajaTabla>
-      {noCat.length > 0 && <Nota>Filas sin ficha: sus puntos cuentan en el marcador del equipo, pero no en rankings ni en fichas individuales.</Nota>}
+      {noCat.length > 0 && <Info>Filas sin ficha: sus puntos cuentan en el marcador del equipo, pero no en rankings ni en fichas individuales.</Info>}
     </div>
   );
 }

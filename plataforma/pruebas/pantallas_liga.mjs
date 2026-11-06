@@ -194,8 +194,8 @@ try {
     ok(sinScroll, 'ranking: la tabla cabe, sin scroll horizontal');
     const celdasEnPantalla = await p.evaluate(() => [...document.querySelectorAll('details.lg-ranking tr')].every((tr) => [...tr.children].filter((c) => c.getBoundingClientRect().width > 0).every((c) => c.getBoundingClientRect().right <= window.innerWidth + 1)));
     ok(celdasEnPantalla, 'ranking: ninguna celda visible se sale de la pantalla');
-    const textoLideres = await p.textContent('.lg-sub');
-    ok(textoLideres.includes(`de los ${CON_PARTIDOS} equipos con partidos jugados`), `liga: el texto de lideres cuenta los equipos con partidos (${CON_PARTIDOS}), igual que el ranking`, textoLideres);
+    const textoLideres = await p.textContent('[data-testid="recuento"]');   // D191: «N jugadores · N equipos · hasta Jn»
+    ok(textoLideres.includes(` · ${CON_PARTIDOS} equipos · `), `liga: el texto de lideres cuenta los equipos con partidos (${CON_PARTIDOS}), igual que el ranking`, textoLideres);
     await p.screenshot({ path: path.join(SALIDA, `real_c_liga_desplegado_${etiqueta}.png`), fullPage: true });
 
     // ---- Indice, lideres (totales / por partido) y tabla "Todos los jugadores"
@@ -219,7 +219,8 @@ try {
     ok(valores.length > 0 && valores.every((v) => /^\d+,\d$|^\d+%$/.test(v)), 'lideres Por partido: valores con una decimal (o %)', valores.slice(0, 6).join(' '));
     const ppp = (await L.locator('.lg-lider').first().locator('li > b:last-child').allTextContents()).map((v) => Number(v.replace(',', '.')));
     ok(ppp.length > 0 && ppp.every((v, i) => i === 0 || ppp[i - 1] >= v), `lideres Por partido: Puntos por partido de mayor a menor (arranca en ${String(ppp[0]).replace('.', ',')})`, ppp.join(' '));
-    ok((await L.locator('.lg-nota').last().textContent()).includes('Mínimo de partidos «Automático»') && (await L.locator('.lg-nota').last().textContent()).includes('o 2, lo que sea menor'), 'lideres Por partido: la nota explica el minimo (mitad de los de su equipo o 2, lo que sea menor)');
+    const aclaraL = await p.getByTestId('aclaraciones-lideres').textContent();   // D191: tras el ⓘ
+    ok(aclaraL.includes('mínimo de partidos «Automático»') && aclaraL.includes('o 2, lo que sea menor'), 'lideres Por partido: la aclaración (tras el ⓘ) explica el minimo (mitad de los de su equipo o 2, lo que sea menor)');
     ok((await p.locator('.lg-todos .lg-conmutador button.on').textContent()) === 'Totales', 'el interruptor de los lideres es independiente del de la tabla');
     await L.scrollIntoViewIfNeeded();
     await L.screenshot({ path: path.join(SALIDA, `real_c_lideres_por_partido_${etiqueta}.png`) });
@@ -248,8 +249,9 @@ try {
     await T.getByRole('button', { name: /Ver 25 más/ }).click();
     ok((await filasVisibles()) === 50, 'tabla: "ver 25 mas" carga otras 25');
     ok(/Mostrando 50 de \d+/.test(await T.locator('.lg-nota').first().textContent()), 'tabla: indica cuantas filas muestra');
-    ok((await T.locator('.lg-nota').last().textContent()).includes('no hay faltas recibidas ni intentos de campo'), 'tabla: la nota al pie dice que no hay faltas recibidas ni intentos de campo');
-    ok((await T.locator('.lg-nota').last().textContent()).includes('solo ficha MdA'), 'tabla: la nota al pie explica la «solo ficha» de los dobladores');
+    const aclaraT = await p.getByTestId('aclaraciones-tabla').textContent();   // D191: tras el ⓘ
+    ok(aclaraT.includes('no hay faltas recibidas ni intentos de campo'), 'tabla: la aclaración dice que no hay faltas recibidas ni intentos de campo');
+    ok(aclaraT.includes('solo ficha MdA'), 'tabla: la aclaración explica la «solo ficha» de los dobladores');
     const primerPts = async () => Number(await (movil ? T.locator('.lg-fila-pts b').first() : T.locator('tbody tr').first().locator('td').nth(4)).textContent());
     await L.getByRole('button', { name: 'Totales' }).click(); // los lideres abren «Por partido» (D169): el maximo anotador esta en Totales
     const maxPts = await p.evaluate(() => Math.max(...[...document.querySelectorAll('.lg-lider')[0].querySelectorAll('li b:last-child')].map((b) => Number(b.textContent))));
@@ -347,7 +349,7 @@ try {
     await p.goto(`${APP}/liga/scouting`);
     const enlaceTodos = p.getByRole('link', { name: 'Ver todos los jugadores de la liga' });
     ok(await enlaceTodos.isVisible(), 'scouting: boton "Ver todos los jugadores de la liga" junto al selector');
-    ok((await p.locator('.lg-nota', { hasText: 'Solo aparecen' }).first().textContent()).includes('Solo aparecen los jugadores que han jugado algún minuto según las hojas de la FBM'), 'scouting: nota «solo aparecen los jugadores que han jugado algún minuto»');
+    ok((await p.getByTestId('aclaraciones-scouting').textContent()).includes('Solo aparecen los jugadores que han jugado algún minuto según las hojas de la FBM'), 'scouting: aclaración (tras el ⓘ) «solo aparecen los jugadores que han jugado algún minuto»');
     await enlaceTodos.click();
     await p.waitForURL(/\/liga\/consolidada#todos/);
     ok(await p.locator('#todos .lg-todos').isVisible(), 'scouting: el boton lleva a Liga consolidada, seccion Todos los jugadores');

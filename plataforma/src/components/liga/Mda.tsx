@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { MdaResumen } from "@/lib/estadisticas/datos";
-import { CajaTabla, Dash, N1, N2, NInt, NPct, NSigned1, Nota, SecH } from "./Comunes";
+import { CajaTabla, Dash, Info, N1, N2, NInt, NPct, NSigned1, SecH } from "./Comunes";
 
 type J = MdaResumen["jugadores"][number];
 
@@ -27,10 +27,10 @@ export default function MdaPestana({ resumen: r, selector }: { resumen: MdaResum
     <>
       {selector && <div className="e-controles">{selector}</div>}
       <SecH titulo="Maccabi de Acostar — resumen de temporada" tag={`${r.jugadores.filter((j) => !j.no_jugador).length} jugadores`} />
-      <Nota>
+      <Info>
         {r.nota}
         {sinCat > 0 && <> <b>{sinCat} nombres siguen sin catalogar</b>: el diccionario de nombres del club solo cubre el MdL, asi que se muestra el mote tal cual, sin asignarle una persona.</>}
-      </Nota>
+      </Info>
       <CajaTabla>
         <table className="e-tabla" data-testid="mda-tabla">
           <thead>
@@ -76,11 +76,11 @@ export default function MdaPestana({ resumen: r, selector }: { resumen: MdaResum
               </div>
             ))}
           </div>
-          <Nota>Media de puntos por cuarto del MdA. La fuente no recoge el rival ni el desglose por jugador.</Nota>
+          <Info>Media de puntos por cuarto del MdA. La fuente no recoge el rival ni el desglose por jugador.</Info>
         </>
       )}
       {r.anomalias && r.anomalias.length > 0 && (
-        <Nota><b className="e-naranja">{r.anomalias.length} celda(s) marcadas con &quot;?&quot;</b>: la hoja de origen trae un valor decimal donde debería haber un entero. Se transcriben tal cual, sin corregir, pendientes de revisar contra las actas.</Nota>
+        <Info><b className="e-naranja">{r.anomalias.length} celda(s) marcadas con &quot;?&quot;</b>: la hoja de origen trae un valor decimal donde debería haber un entero. Se transcriben tal cual, sin corregir, pendientes de revisar contra las actas.</Info>
       )}
     </>
   );

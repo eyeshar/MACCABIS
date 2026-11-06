@@ -1,4 +1,4 @@
-import { SecH } from "@/components/liga/Comunes";
+import { Info, SecH } from "@/components/liga/Comunes";
 import type { Metadata } from "next";
 import { exigirLiga } from "@/lib/sesion";
 import { cargarClasificacion, cargarLiga, cargarPartidos, dec, esGrupoNuestro, etiquetaGrupo, GRUPOS_NUESTROS, type FilaClasificacion } from "@/lib/liga";
@@ -57,11 +57,10 @@ export default async function LigaConsolidada({ searchParams }: { searchParams: 
   const conPartidos = clasificacion.filter((c) => c.pj > 0);
   const fichasEquipo = fichasPorNombreSolo(); // D129: cada equipo enlaza a su ficha
   const nuestro = sel.find(esGrupoNuestro);
-  const notaDobla = ambos ? " «dobla» = sale con MdA y con MdL (sus dos fichas se suman)."
-    : nuestro ? ` «dobla» = sale con MdA y con MdL; aquí solo cuentan sus partidos con ${nuestro === "G1" ? "MdA" : "MdL"}.` : "";
-  // La cabecera de siempre con G1 + G2 o un solo grupo; con otra combinacion, dice cuales.
-  const deQue = sel.length > 1 && !sonLosNuestros(sel) ? ` (${textoGrupos(sel)})` : "";
-  const resumen = `${sumadas.length} personas de los ${conPartidos.length} equipos con partidos jugados${deQue}, hasta la jornada ${jornadas}.${notaDobla}`;
+  const notaDobla = ambos ? "«dobla» = sale con MdA y con MdL: una sola fila con sus dos fichas sumadas."
+    : nuestro ? `«dobla» = sale con MdA y con MdL; aquí solo cuentan sus partidos con ${nuestro === "G1" ? "MdA" : "MdL"}.` : "";
+  // D191: una línea corta con el recuento (los grupos ya los dice el selector); lo demás, tras el ⓘ.
+  const recuento = `${sumadas.length} jugadores · ${conPartidos.length} equipos · hasta J${jornadas}`;
 
   return (
     <>
@@ -72,7 +71,7 @@ export default async function LigaConsolidada({ searchParams }: { searchParams: 
         <a href="#ranking">Ranking de equipos</a>
       </nav>
 
-      <Lideres filas={sumadas} resumen={resumen} sumaDobla={ambos} />
+      <Lideres filas={sumadas} recuento={recuento} notaDobla={notaDobla} sumaDobla={ambos} />
 
       <div id="todos" className="lg-ancla">
         <TablaJugadores
@@ -81,17 +80,19 @@ export default async function LigaConsolidada({ searchParams }: { searchParams: 
           fichasEquipo={fichasEquipo}
           equipos={clasificacion.map((c) => ({ grupo: c.grupo, equipo: c.equipo }))}
           grupos={sel}
+          notaDobla={notaDobla}
         />
       </div>
 
       <details id="ranking" className="tarjeta lg-ranking">
         <summary>Ranking de equipos · {sonLosNuestros(sel) ? "G1 y G2" : sel.length === 1 ? etiquetaGrupo(sel[0]) : textoGrupos(sel)} ({conPartidos.length} equipos)</summary>
-        <p className="lg-sub">
-          {sel.length > 1 ? "Una clasificación por grupo: los grupos tienen rivales distintos, así que sus equipos no se mezclan ni se comparan. " : ""}Cada una, por
-          puntos de la clasificación calculada; con % de victorias, diferencia y puntos a favor por partido.
-        </p>
+
         {sel.map((g) => <RankingGrupo key={g} grupo={g} filas={conPartidos.filter((c) => c.grupo === g)} fichasEquipo={fichasEquipo} />)}
-        <p className="lg-nota">Solo equipos con partidos jugados. Los puntos son los de la clasificación calculada (pendiente de contrastar con la oficial).</p>
+        <Info testid="aclaraciones-ranking">
+          <p>{sel.length > 1 ? "Una clasificación por grupo: los grupos tienen rivales distintos, así que sus equipos no se mezclan ni se comparan. " : ""}Cada una, por
+            puntos de la clasificación calculada; con % de victorias, diferencia y puntos a favor por partido.</p>
+          <p>Solo equipos con partidos jugados. Los puntos son los de la clasificación calculada (pendiente de contrastar con la oficial).</p>
+        </Info>
       </details>
     </>
   );
@@ -170,10 +171,10 @@ function Resultados({ sel, partidos, clasificacion, pedida }: { sel: string[]; p
           {b.descansa.length > 1 && !b.sinPartidos && <p className="lg-nota">Sin partido cargado esta jornada: {b.descansa.join(", ")}.</p>}
         </section>
       ))}
-      <p className="lg-nota">
-        Pulsa un partido para ver su hoja (datos por jugador, solo con sesión). Los huecos son partidos sin hoja de estadística (la app no la
-        tiene) o incomparecencias: no tienen marcador.{sinJornada ? ` ${sinJornada} ${sinJornada === 1 ? "hoja llegó" : "hojas llegaron"} sin jornada y no salen aquí.` : ""}
-      </p>
+      <Info testid="aclaraciones-resultados">
+        <p>Pulsa un partido para ver su hoja (datos por jugador, solo con sesión). Los huecos son partidos sin hoja de estadística (la app no la
+          tiene) o incomparecencias: no tienen marcador.{sinJornada ? ` ${sinJornada} ${sinJornada === 1 ? "hoja llegó" : "hojas llegaron"} sin jornada y no salen aquí.` : ""}</p>
+      </Info>
     </section>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Boxscore } from "@/components/liga/Equipo";
-import { CajaTabla, Nota, SecH } from "@/components/liga/Comunes";
+import { CajaTabla, Info, Nota, SecH } from "@/components/liga/Comunes";
 import { metricasDe } from "@/lib/estadisticas/calculo";
 import { cargarTemporada } from "@/lib/estadisticas/datos";
 import { LIGA, NUESTRO_DE, TEMPORADA_LIGA, hrefEquipo, partidoPorId, type EstEquipo, type Grupo, type ResultadoLiga } from "@/lib/estadisticas/liga";
@@ -171,7 +171,7 @@ export default async function PaginaPartido({ params }: { params: Promise<{ temp
           )}
           <SecH titulo="Estadísticas por equipo" tag="hoja de la FBM" />
           <EstadisticasEquipo r={r} est={r.est!} />
-          <Nota>La hoja de la liga solo registra los tiros de 2 y de 3 anotados (no los intentados); los tiros libres llevan anotados e intentados.</Nota>
+          <Info>La hoja de la liga solo registra los tiros de 2 y de 3 anotados (no los intentados); los tiros libres llevan anotados e intentados.</Info>
 
           {box && t && (
             <>

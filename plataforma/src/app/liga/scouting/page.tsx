@@ -1,4 +1,4 @@
-import { SecH } from "@/components/liga/Comunes";
+import { Info, SecH } from "@/components/liga/Comunes";
 import Link from "next/link";
 import { Fragment } from "react";
 import type { Metadata } from "next";
@@ -201,13 +201,13 @@ export default async function Scouting({ searchParams }: { searchParams: Promise
                 </tbody>
               </table>
             </div>
-            <p className="lg-nota">
-              2P y 3P: canastas anotadas (la hoja de la FBM no recoge los intentos de campo). TL: anotados/intentados. Los minutos son los de la
+            <Info testid="aclaraciones-scouting">
+              <p>2P y 3P: canastas anotadas (la hoja de la FBM no recoge los intentos de campo). TL: anotados/intentados. Los minutos son los de la
               hoja y pueden no cuadrar con el reloj. MEDIA = puntos por partido jugado; la tabla va por la media (toca un encabezado para ordenar por otra
               columna). «Más peligrosos»: los de más media entre quienes han jugado al menos {minimo} {minimo === 1 ? "partido" : "partidos"} (la mitad de los de su equipo,
               redondeando hacia arriba, o 2, lo que sea menor); ordenando por una media, los que no llegan van debajo, tras «{textoMenos([minimo])}». Solo aparecen los jugadores que han jugado algún minuto según las hojas de la FBM; si alguien
-              cambia de dorsal o su nombre viene escrito distinto, sale una vez, con todos sus dorsales.
-            </p>
+              cambia de dorsal o su nombre viene escrito distinto, sale una vez, con todos sus dorsales.</p>
+            </Info>
           </>
         )}
       </section>

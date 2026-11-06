@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ANIOS, EN_CURSO, etiquetaAnio, filasRejilla, kpisHistoria, motivoSinStats, norm, temporadaDeAnio, tiraTemporal, type Filtros, type PersonaH } from "@/lib/estadisticas/historia";
 import { nombreBreve } from "@/lib/estadisticas/calculo";
-import { Control, Kpi, Nota, SecH, Segmento } from "./Comunes";
+import { Control, Info, Kpi, Nota, SecH, Segmento } from "./Comunes";
 
 // Historia del club («El Club»): rejilla de personas por temporada, dos modos de orden excluyentes (D22), tira temporal y ficha
 // de persona con puente a sus estadísticas. Solo enlaza a las temporadas que tienen página (nunca un 404).
@@ -131,7 +131,7 @@ export default function HistoriaClub({ personas, personaInicial }: { personas: P
               </div>
             ))}
           </div>
-          <Nota>Altas = quien no estaba la temporada anterior. Bajas = quien estaba y no siguió. En la {etiquetaAnio(EN_CURSO)}, en curso, cuenta la plantilla con ficha.</Nota>
+          <Info>Altas = quien no estaba la temporada anterior. Bajas = quien estaba y no siguió. En la {etiquetaAnio(EN_CURSO)}, en curso, cuenta la plantilla con ficha.</Info>
         </div>
       )}
 

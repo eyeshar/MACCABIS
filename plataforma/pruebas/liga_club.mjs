@@ -30,6 +30,26 @@ const e = await preparar();
 const { sql, APP } = e;
 try {
   await cargarLiga(sql, ligaParaPruebas('2026-27'), '2026-27', { log: () => {} });
+  // En Actions no hay hojas (datos por jugador de terceros, fuera de git): sin ellas el Scouting no tiene tabla que
+  // desplazar. Se cargan partidos con jugadores SINTETICOS a partir de los resultados publicados (solo marcadores).
+  if (!(await sql`select count(*)::int n from public.liga_estadisticas_jugador`)[0].n) {
+    const pub = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'liga.json'), 'utf8'));
+    for (const g of ['G1', 'G2']) {
+      for (const r of pub.grupos[g].resultados.filter((x) => x.pl != null && x.pv != null)) {
+        const [pt] = await sql`insert into public.liga_partidos (temporada, grupo, jornada, fecha, local, visitante, pts_local, pts_visitante, nuestro)
+          values ('2026-27', ${g}, ${r.jornada}, ${r.fecha}, ${r.local}, ${r.visitante}, ${r.pl}, ${r.pv}, ${['MdA', 'MdL'].includes(r.local) || ['MdA', 'MdL'].includes(r.visitante)})
+          on conflict do nothing returning id`;
+        if (!pt) continue;
+        for (const [eq, pts] of [[r.local, r.pl], [r.visitante, r.pv]]) {
+          for (let i = 0; i < 6; i++) {
+            const p = Math.floor(pts / 6) + (i < pts % 6 ? 1 : 0);
+            await sql`insert into public.liga_estadisticas_jugador (partido_id, equipo, dorsal, nombre, segundos, pts, p2a, p3a, tla, tli, faltas)
+              values (${pt.id}, ${eq}, ${String(i + 4)}, ${`SINT, JUGADOR ${i + 1}`}, 1200, ${p}, ${Math.floor(p / 2)}, 0, ${p % 2}, ${p % 2}, 1)`;
+          }
+        }
+      }
+    }
+  }
   await sinteticos(sql, [['sint-liga', 'Ligera', true, true]]);
   const CORREO = 'ligera@pruebas.local';
   await personas(e.pila, { jugadores: [['sint-liga', CORREO]] });

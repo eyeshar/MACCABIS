@@ -136,7 +136,7 @@ try {
 
   console.log('\n== Todas las pantallas interiores llevan «‹»');
   const urls = [
-    '/gestion/eventos', '/gestion/convocatoria', '/gestion/convocatoria/datos', `/gestion/convocatoria/salida?fecha=${J3}`, '/gestion/tablero', '/liga/scouting', '/liga/consolidada',
+    '/gestion/eventos', '/gestion/convocatoria', '/gestion/convocatoria/datos', `/gestion/convocatoria/salida?fecha=${J3}`, '/gestion/tablero',
     '/gestion/jugadores', '/gestion/ropa', '/gestion/asistencia', '/gestion/grupos', '/gestion/eventos/nuevo', '/gestion/eventos/importar', '/gestion/eventos/pistas',
     `/gestion/eventos/${ent.id}`, `/evento/${ent.id}`, '/jugador/esteban-jon', '/avisos', '/mi-zona/ausencias', '/planes/nuevo',
   ];

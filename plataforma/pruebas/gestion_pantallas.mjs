@@ -143,8 +143,9 @@ try {
   // ---------------------------------------------------------------- Jugadores
   console.log('\n== Gestión › Jugadores: buscador y fila desplegable');
   await pg.goto(`${APP}/gestion/jugadores`);
-  await pg.getByTestId('jg-buscar').fill('teo');
-  ok(await hasta(async () => (await pg.locator('section.tarjeta li.fila-jugador[data-person]').count()) === 1) && /q=teo/.test(pg.url()), 'buscar «teo»: una fila, y lo buscado en la URL');
+  // «teo» también está en «Mateos» (plantilla real de data/): se busca por su nombre oficial, que es único.
+  await pg.getByTestId('jg-buscar').fill('prueba, teo');
+  ok(await hasta(async () => (await pg.locator('section.tarjeta li.fila-jugador[data-person]').count()) === 1) && /q=prueba/.test(pg.url()), 'buscar «prueba, teo»: una fila, y lo buscado en la URL', String(await pg.locator('section.tarjeta li.fila-jugador[data-person]').count()));
   await pg.locator('li[data-person="sint-teo"] summary').click();
   const dt = await pg.locator('li[data-person="sint-teo"]').getByTestId('jg-datos').innerText();
   ok(/Pívot/.test(dt) && /C global/.test(dt) && /Dobla/.test(dt) && /sin teléfono|Teléfono/.test(dt), 'fila desplegada: posición, niveles, dobla, acceso y teléfono', dt.replace(/\s+/g, ' ').slice(0, 160));
@@ -165,7 +166,7 @@ try {
   await pj.goto(`${APP}/`);
   ok(!(await pj.locator('#ropa').count()) && !/Hacer mi pedido/.test(await pj.content()), 'y su inicio no enseña el pedido');
   await pg.goto(`${APP}/gestion/ropa`);
-  ok((await pg.getByTestId('ropa-estado').getAttribute('data-causa')) === 'interruptor' && /^Cerrado a los jugadores · interruptor apagado/i.test((await pg.getByTestId('ropa-estado').innerText()).trim()), '«Cerrado a los jugadores · interruptor apagado»');
+  ok((await pg.getByTestId('ropa-estado').getAttribute('data-causa')) === 'interruptor' && /^Cerrado a los jugadores · interruptor apagado/i.test((await pg.getByTestId('ropa-estado').innerText()).replace(/\s+/g, ' ').trim()), '«Cerrado a los jugadores · interruptor apagado»');
   ok(!(await pg.getByTestId('ropa-editar').evaluate((d) => d.open)), 'la edición de la campaña, plegada');
   const orden = await pg.locator('main h2').allInnerTexts();
   ok(orden.findIndex((t) => /Recuento/i.test(t)) < orden.findIndex((t) => /Dorsales/i.test(t)) && orden.findIndex((t) => /Pedidos/i.test(t)) < orden.findIndex((t) => /Dorsales/i.test(t)), 'primero el recuento y los pedidos', orden.join(' | '));

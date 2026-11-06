@@ -60,8 +60,8 @@ try {
   const portada = (await (await fetch(`${APP}/?hoy=${hoy}`)).text()).toLowerCase();
   ok(portada.includes('entrenamiento') && !portada.includes('nota-privada') && !ahora.toLowerCase().includes('nota-privada'),
     'una nota escrita en un entreno no sale ni en la portada de ese día ni en /calendario.ics');
-  const club = await (await fetch(`${APP}/club`)).text();
-  ok(club.includes('Valdebernardo') && club.includes('en obras'), '/club: Valdebernardo (Faustina Valladolid) en obras, desde la tabla de pistas');
+  const club = await (await fetch(`${APP}/club/el-club`)).text();
+  ok(club.includes('Valdebernardo') && club.includes('en obras'), '/club/el-club (D189): Valdebernardo (Faustina Valladolid) en obras, desde la tabla de pistas');
 
   console.log('\n== Cambios oficiales (lo que acepta la rutina B): aplazamiento, hora y pista, local a visitante');
   const tocados = await aplicarCambiosEnBase(sql);

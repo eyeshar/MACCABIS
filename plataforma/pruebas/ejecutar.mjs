@@ -244,7 +244,7 @@ try {
   seccion('Entrar con código por correo (jugador A)');
   await entrarPorCodigo(pA, A.email);
   await pA.waitForURL(`${APP}/`);
-  ok(await pA.getByRole('heading', { name: `Hola, ${A.nombre_visible}` }).isVisible(), 'codigo correcto: entra y abre su inicio');
+  ok((await pA.getByRole('heading', { name: 'Esta semana' }).isVisible() && (await pA.getByTestId('avatar').getAttribute('aria-label')).includes(A.nombre_visible.split(' ')[0])), 'codigo correcto: entra y abre su inicio');
   ok(await sinDesbordar(pA), 'zona personal sin desbordamiento horizontal a 375 px');
   await captura(pA, '01-zona-jugador');
 
@@ -265,7 +265,7 @@ try {
   const contextoLimpio = async () => { const c = await navegador.newContext(movil); const pg = await c.newPage(); pg.on('pageerror', (e) => erroresJS.push(String(e))); return { c, pg }; };
   // Un código de 6 dígitos vale en cualquier dispositivo (no depende del navegador donde se pidió el enlace): otro contexto sin nada previo.
   { const { c, pg } = await contextoLimpio(); await entrarPorCodigo(pg, B.email); await pg.waitForURL(`${APP}/`, { timeout: 15000 }).catch(() => {});
-    ok(await pg.getByRole('heading', { name: `Hola, ${B.nombre_visible}` }).isVisible().catch(() => false), 'el código de 6 dígitos del correo entra desde un navegador sin sesión previa', pg.url()); await c.close(); }
+    ok(await (async () => (await pg.getByRole('heading', { name: 'Esta semana' }).isVisible()) && (await pg.getByTestId('avatar').getAttribute('aria-label')).includes(B.nombre_visible.split(' ')[0]))().catch(() => false), 'el código de 6 dígitos del correo entra desde un navegador sin sesión previa', pg.url()); await c.close(); }
   await ctxAnon.clearCookies();
 
   seccion('Enlace del correo (D157): token_hash, botón «Entrar» y un solo uso');
@@ -286,7 +286,7 @@ try {
   await pN.goto(urlEnlace);
   await pN.getByTestId('confirmar-enlace').getByRole('button', { name: 'Entrar' }).click();
   await pN.waitForURL(`${APP}/`, { timeout: 15000 }).catch(() => {});
-  ok(await pN.getByRole('heading', { name: `Hola, ${B.nombre_visible}` }).isVisible().catch(() => false), 'enlace abierto en un navegador SIN sesión previa (sin code_verifier): pulsa «Entrar» y entra', pN.url());
+  ok(await (async () => (await pN.getByRole('heading', { name: 'Esta semana' }).isVisible()) && (await pN.getByTestId('avatar').getAttribute('aria-label')).includes(B.nombre_visible.split(' ')[0]))().catch(() => false), 'enlace abierto en un navegador SIN sesión previa (sin code_verifier): pulsa «Entrar» y entra', pN.url());
   ok((await cN.cookies()).some((x) => x.name.startsWith('sb-')), 'la sesión queda en cookies');
   await cN.close();
   const { c: cR, pg: pR } = await contextoLimpio();
@@ -329,7 +329,7 @@ try {
   ok((await sql`select estado from public.campanas_ropa where id = ${campana.id}`)[0].estado === 'cerrada', 'guardar la campaña (nombre, fecha, precios) no la abre');
   await pG.getByRole('button', { name: 'Abrir el pedido a los jugadores' }).click();
   await pG.getByTestId('ropa-estado').and(pG.locator('[data-abierto="si"]')).waitFor();
-  ok(/Abierto a los jugadores · hasta el 31 de diciembre/i.test(await pG.getByTestId('ropa-estado').innerText()), 'con el interruptor: «Abierto a los jugadores · hasta el 31 de diciembre»', await pG.getByTestId('ropa-estado').innerText());
+  ok(/Abierto a los jugadores · hasta el 31 de diciembre/i.test((await pG.getByTestId('ropa-estado').innerText()).replace(/\s+/g, ' ')), 'con el interruptor: «Abierto a los jugadores · hasta el 31 de diciembre»', await pG.getByTestId('ropa-estado').innerText());
   const [cam] = await sql`select estado, fecha_limite from public.campanas_ropa where id = ${campana.id}`;
   ok(cam.estado === 'abierta' && new Date(cam.fecha_limite).toISOString() === '2026-12-31T22:59:59.000Z', 'campana abierta con fecha limite 31/12 a las 23:59 de Madrid', `${cam.estado} ${cam.fecha_limite?.toISOString?.()}`);
 
@@ -598,7 +598,7 @@ try {
   r = await rpc('guardar_pedido', { p_pedido: { campana_id: campana.id, nombre_completo: 'Sergi Jorba', nombre_ropa: 'SERGI', dorsal: 30, tallas: { sudadera: 'M' } } }, jwtB);
   ok(r.datos?.error === 'campana_cerrada', 'con la fecha limite pasada tambien se rechaza', JSON.stringify(r.datos));
   await pG.goto(`${APP}/gestion/ropa`);
-  ok((await pG.getByTestId('ropa-estado').getAttribute('data-causa')) === 'fecha' && /Cerrado a los jugadores · pasó la fecha límite/i.test(await pG.getByTestId('ropa-estado').innerText()) && !/Abiert/i.test(await pG.getByTestId('ropa-estado').innerText()),
+  ok((await pG.getByTestId('ropa-estado').getAttribute('data-causa')) === 'fecha' && /Cerrado a los jugadores · pasó la fecha límite/i.test((await pG.getByTestId('ropa-estado').innerText()).replace(/\s+/g, ' ')) && !/Abiert/i.test(await pG.getByTestId('ropa-estado').innerText()),
     'un solo estado con su causa: «Cerrado a los jugadores · pasó la fecha límite (…)», sin ningún «Abierta» al lado', await pG.getByTestId('ropa-estado').innerText());
 
   seccion('Excel para VIVE (estructura celda a celda con la plantilla)');

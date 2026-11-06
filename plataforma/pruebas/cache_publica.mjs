@@ -86,14 +86,14 @@ try {
   console.log('\n== «/» con y sin sesión');
   let x = await fetch(`${APP}/`, { headers: { cookie } });
   let t = await x.text();
-  ok(x.status === 200 && t.includes('Hola,') && t.includes(NOMBRE) && !/s-maxage/.test(cc(x)) && /no-store|private/.test(cc(x)), '«/» con sesión: el inicio personal, sin cache', `${x.status} ${cc(x)}`);
+  ok(x.status === 200 && t.includes('Esta semana') && !t.includes('Dos equipos.') && !/s-maxage/.test(cc(x)) && /no-store|private/.test(cc(x)), '«/» con sesión: la Semana (D189), sin cache', `${x.status} ${cc(x)}`);
   x = await fetch(`${APP}/`);
   t = await x.text();
-  ok(!MARCAS.some((m) => t.includes(m)) && t.includes('Dos equipos.') && !t.includes('Hola,'), '«/» sin sesión, después: sigue siendo la portada pública (nada contaminado)');
+  ok(!MARCAS.some((m) => t.includes(m)) && t.includes('Dos equipos.') && !t.includes('Esta semana'), '«/» sin sesión, después: sigue siendo la portada pública (nada contaminado)');
   x = await fetch(`${APP}/?hoy=2026-10-06`);
   ok(x.status === 200 && (await x.text()).includes('Dos equipos.') && !/s-maxage/.test(cc(x)), '/?hoy=…: la portada pública, dinámica (gemela)', cc(x));
   x = await fetch(`${APP}/?hoy=2026-10-06`, { headers: { cookie } });
-  ok(x.status === 200 && (await x.text()).includes(NOMBRE), '/?hoy=… con sesión: el inicio personal');
+  ok(x.status === 200 && (await x.text()).includes('Esta semana'), '/?hoy=… con sesión: la Semana');
   x = await fetch(`${APP}/inicio`);
   t = await x.text();
   ok(x.status === 200 && t.includes('Dos equipos.') && !MARCAS.some((m) => t.includes(m)), '/inicio sin sesión: la portada pública, sin datos de nadie');
@@ -143,7 +143,7 @@ try {
     await p.goto(`${APP}${ruta}`);
     ok(await visto(p.locator('header .nv-avatar'), 10000) && (await p.locator('header .nv-avatar-nombre').innerText()) === NOMBRE, `${ruta} con sesión: su nombre en la cabecera`);
     ok((await p.locator('header .nv-acceso').count()) === 0, `${ruta} con sesión: ni rastro de «Acceso»`);
-    ok(await visto(p.getByRole('link', { name: 'Tu agenda' }), 5000), `${ruta} con sesión: el pie lleva «Tu agenda»`);
+    ok(await visto(p.getByRole('link', { name: 'Tu calendario' }), 5000), `${ruta} con sesión: el pie lleva «Tu calendario»`);
   }
   await p.goto(`${APP}/liga`);
   ok(await visto(p.locator('nav[aria-label="Liga"]').getByRole('link', { name: 'Jugadores de la liga' }), 8000), '/liga con sesión: aparece la pestaña «Jugadores de la liga»');

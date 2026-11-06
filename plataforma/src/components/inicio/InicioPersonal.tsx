@@ -11,7 +11,6 @@ import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
 import { avisosDelFichero } from "@/lib/inicio/avisos";
 import { cuentasDeLaSemana, type CuentaGestion } from "@/lib/inicio/semanaGestor";
 import { temporadaDe } from "@/lib/publico";
-import { pedidoVisibleParaJugadores } from "@/lib/pedidoRopa";
 import {
   cargarAvisosPersonales, cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisGrupos, cargarMisRespuestas,
   cargarQuienVa, misEntrenosPorDefecto,
@@ -41,6 +40,8 @@ type DatosTarjeta = {
   clave: string; fecha: string; url: string; tipo: string; titulo: string; etiquetas: { texto: string; equipo?: "MdA" | "MdL" }[];
   inicio: string | null; quedada: string | null; pista: string; equipacion: string | null; avisos: { id: string; texto: string }[];
   nota?: string | null;
+  /** D122: en un entreno con grupos publicados, SU grupo y sus compañeros (nada más). */
+  grupo?: { grupo: string; companeros: string[] } | null;
 };
 
 /** Una tarjeta de los próximos días (D189): fecha y hora con la quedada, MdA/MdL y jornada, rival o tipo y pista; la
@@ -60,6 +61,7 @@ function TarjetaSemana({ t, estado, responder, gestion }: { t: DatosTarjeta; est
       </Link>
       {t.equipacion && <p className="sm-t-linea" data-testid="linea-equipacion">{t.equipacion}</p>}
       {t.nota && <p className="sm-t-linea">{t.nota}</p>}
+      {t.grupo && <p className="sm-t-linea" data-testid="tu-grupo">Tu grupo: <b>{t.grupo.grupo}</b>{t.grupo.companeros.length ? ` · con ${t.grupo.companeros.join(", ")}` : ""}</p>}
       {t.avisos.length > 0 && (
         <details className="sm-t-avisos" data-testid="avisos-dia">
           <summary>⚠ {t.avisos[0].texto.split(/[.:]/)[0]}{t.avisos.length > 1 ? ` y ${t.avisos.length - 1} más` : ""} · ver</summary>
@@ -196,7 +198,8 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
   const proximos = todas.filter((u) => u.fecha <= hasta && (abierta(u) || u.eventos.every((e) => e.estado === "cancelado")));
   const grupoDe = (u: Unidad) => (u.eventos[0].tipo === "entreno" ? misGrupos.find((g) => g.evento_id === u.eventos[0].id) ?? null : null);
   // La tarjeta del pedido de ropa, SOLO si un gestor lo ha abierto a los jugadores (bloque 5: interruptor y fecha límite).
-  const ropa = pedidoVisibleParaJugadores(campana) || pedidos.some((p) => p.campana_abierta);
+  // `abierta_ahora` la calcula la base (mi_zona, _campana_abierta) con la misma regla que pedidoVisibleParaJugadores.
+  const ropa = Boolean(campana?.abierta_ahora) || pedidos.some((p) => p.campana_abierta);
 
   const tarjetaUnidad = (u: Unidad): DatosTarjeta => {
     const e = u.eventos[0];
@@ -211,7 +214,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
     return {
       clave: u.clave, fecha: u.fecha, url: u.url, tipo: e.tipo, titulo: tituloUnidad(u),
       etiquetas: [...equipo.map((x) => ({ texto: x, equipo: x })), ...(e.tipo === "liga" && e.jornada ? [{ texto: `J${e.jornada}` }] : []), ...(esPlan(e) ? [{ texto: "Plan no oficial" }] : [])],
-      inicio: h.inicio, quedada: h.quedada, pista: `${lugarTexto(e)}${g ? ` · tu grupo: ${g.grupo}` : ""}`,
+      inicio: h.inicio, quedada: h.quedada, pista: lugarTexto(e), grupo: g,
       equipacion: liga.length ? `${aviso?.tipo === "nos_toca" ? "Amarilla" : "Negra"}${liga.length === 1 && dorsalDe(liga[0].equipo) ? ` con tu dorsal ${dorsalDe(liga[0].equipo)}` : ""}. ${lineas.join(" · ")} Lleva la amarilla por si acaso.` : null,
       avisos: avisosDelFichero(u.fecha, equipo.length ? equipo : [...equiposJugador]).map((x) => ({ id: x.id, texto: x.texto })),
       nota: u.modo === "misma" ? "MdA y MdL a la misma hora: esta jornada no se puede doblar." : null,

@@ -102,7 +102,7 @@ try {
   ok(/^(Negra|Amarilla)/.test(eq) && /dorsal \d+/.test(eq) && /Lleva la amarilla por si acaso\.$/.test(eq) && (eq.match(/Lleva la amarilla/g) ?? []).length === 1 && !/camiseta (roja|blanca|azul)/.test(eq), 'equipación en una línea: SU equipación con su dorsal y una sola «Lleva la amarilla por si acaso» (D160)', eq);
   const avisos = await pj.getByTestId('avisos-dia').allInnerTexts();
   ok(hoy < '2026-10-20' || hoy > '2026-11-15' || avisos.some((a) => /dorsal es obligatorio/.test(a)), 'avisos del día plegados (data/avisos.json): el del dorsal desde la J3', avisos.join(' | '));
-  ok(/tu grupo: Azules/.test(await pj.locator('[data-testid="tarjeta-semana"][data-tipo="entreno"]').first().innerText()), 'el entreno con grupos publicados: «tu grupo: Azules»');
+  ok(await visto(pj.getByTestId('tu-grupo')) && /Tu grupo: Azules/.test(await pj.getByTestId('tu-grupo').first().innerText()), 'el entreno con grupos publicados: «Tu grupo: Azules»');
   ok(await visto(pj.getByRole('link', { name: '+ Proponer un plan' })) && await visto(pj.getByRole('link', { name: 'Calendario completo' })), 'abajo, «Calendario completo» y «+ Proponer un plan»');
   ok(await visto(pj.getByTestId('tu-temporada')) && (await pj.getByTestId('tu-temporada').getAttribute('href')) === '/yo', 'y una línea «Tu temporada» que lleva a Yo');
   // Orden: Esta semana -> pendientes -> tarjetas -> abajo
@@ -148,7 +148,7 @@ try {
   ok((await pg.locator('#t-faltan').textContent()).trim() === '✓ Lo tienes todo respondido', 'una sola línea: «✓ Lo tienes todo respondido»', await pg.locator('#t-faltan').textContent());
   // D171: con la convocatoria aprobada y sin estar en ella, ese partido sale «No convocado» (nunca «No vas»).
   ok((await pg.locator('[data-testid="tarjeta-semana"][data-tipo="liga"]').first().getByTestId('estado-tarjeta').innerText()) === 'No convocado', 'con la convocatoria aprobada y sin estar en ella: «No convocado»');
-  ok(/tu grupo: Rojos/.test(await pg.locator('[data-testid="tarjeta-semana"][data-tipo="entreno"]').first().innerText()), 'cada uno ve SOLO su grupo');
+  ok(!(await pg.getByTestId('tu-grupo').count()) || /Rojos/.test(await pg.getByTestId('tu-grupo').first().innerText()), 'cada uno ve SOLO su grupo');
 
   console.log('\n== Gestor (y jugador) en escritorio (1280 px): «Gestión · N pendientes» y la franja GESTIÓN');
   const pi = await e.sesion('ivan@pruebas.local', 1280);

@@ -457,7 +457,8 @@ try {
 
   const filaSinCorreo = pG.locator(`li[data-person="de-maria-sanchez-jaime"]`);
   ok(await filaSinCorreo.getByText('Sin correo: no puede entrar').isVisible(), 'un jugador sin correo se marca "Sin correo: no puede entrar"');
-  await filaSinCorreo.getByText('Editar datos').click();
+  // La fila de Jugadores es desplegable (bloque 4): se abre para editar sus datos.
+  if (!(await filaSinCorreo.getByLabel('Correo (para entrar)').isVisible())) await filaSinCorreo.locator('summary').first().click();
   // El correo de un gestor no se le puede dar a un jugador (cambiar_correo_jugador, D135). (Un correo con cuenta pero
   // sin ficha SI se puede dar a quien no tenia cuenta: queda enlazado; lo prueba la seccion de D135, mas abajo.)
   await filaSinCorreo.getByLabel('Correo (para entrar)').fill(gestorEmail);
@@ -474,7 +475,7 @@ try {
   await captura(pG, '07-gestion-jugadores');
 
   const filaDup = pG.locator(`li[data-person="esteban-jon"]`);
-  await filaDup.getByText('Editar datos').click();
+  if (!(await filaDup.getByLabel('Correo (para entrar)').isVisible())) await filaDup.locator('summary').first().click();
   await filaDup.getByLabel('Correo (para entrar)').fill('jaime@pruebas.local'); // ya es el de jaime
   await filaDup.getByRole('button', { name: 'Guardar datos' }).click();
   await filaDup.getByText('Ese correo ya está en uso por otro jugador.').waitFor({ timeout: 5000 }).catch(() => {});

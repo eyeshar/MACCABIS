@@ -145,7 +145,7 @@ try {
   await pg.goto(`${APP}/gestion/jugadores`);
   // «teo» también está en «Mateos» (plantilla real de data/): se busca por su nombre oficial, que es único.
   await pg.getByTestId('jg-buscar').fill('prueba, teo');
-  ok(await hasta(async () => (await pg.locator('section.tarjeta li.fila-jugador[data-person]').count()) === 1) && /q=prueba/.test(pg.url()), 'buscar «prueba, teo»: una fila, y lo buscado en la URL', String(await pg.locator('section.tarjeta li.fila-jugador[data-person]').count()));
+  ok(await hasta(async () => (await pg.locator('section.tarjeta li.fila-jugador[data-person]').count()) === 1 && /q=prueba/.test(pg.url())), 'buscar «prueba, teo»: una fila, y lo buscado en la URL', String(await pg.locator('section.tarjeta li.fila-jugador[data-person]').count()));
   await pg.locator('li[data-person="sint-teo"] summary').click();
   const dt = await pg.locator('li[data-person="sint-teo"]').getByTestId('jg-datos').innerText();
   ok(/Pívot/.test(dt) && /C global/.test(dt) && /Dobla/.test(dt) && /sin teléfono|Teléfono/.test(dt), 'fila desplegada: posición, niveles, dobla, acceso y teléfono', dt.replace(/\s+/g, ' ').slice(0, 160));

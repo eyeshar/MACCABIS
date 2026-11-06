@@ -150,15 +150,17 @@ try {
   ok(await p.evaluate(() => document.documentElement.dataset.sesion === 'listo'), 'la cabecera ya no está escondida');
   // «/» con sesion, cargada de golpe: el proxy la reescribe a /inicio y la navegacion sigue viendo «/».
   await p.goto(`${APP}/`);
-  ok(new URL(p.url()).pathname === '/' && (await p.locator('nav[aria-label="Principal"] a[href="/"]').getAttribute('aria-current')) === 'page', '«/» con sesión (reescrita a /inicio): sigue siendo «/» y "Inicio" está marcado', p.url());
+  ok(new URL(p.url()).pathname === '/' && (await p.locator('nav[aria-label="Principal"] a[href="/"]').getAttribute('aria-current')) === 'page', '«/» con sesión (reescrita a /inicio): sigue siendo «/» y «Semana» está marcado', p.url());
   await p.goto(`${APP}/liga`);
   // Navegar sin recargar no vuelve a pedir la sesion; «Salir» la quita.
   let pedidas = 0;
   p.on('request', (r) => { if (r.url().endsWith('/api/sesion')) pedidas++; });
-  await p.locator('header .nv-menu').getByRole('link', { name: 'Historia', exact: true }).click();
-  await p.waitForURL(/\/historia/);
+  await p.locator('header .nv-menu').getByRole('link', { name: 'Club', exact: true }).click();
+  await p.waitForURL(/\/club$/);
   ok(await visto(p.locator('header .nv-avatar')) && pedidas === 0, 'navegar dentro de la web no vuelve a pedir la sesión', `pedidas ${pedidas}`);
+  // D189: el avatar lleva a «Yo», donde está «Salir».
   await p.locator('header .nv-avatar').click();
+  await p.waitForURL(/\/yo$/);
   await p.getByRole('button', { name: 'Salir' }).first().click();
   await p.waitForURL(/\/entrar/);
   ok(await visto(p.locator('header .nv-acceso')), 'tras «Salir», la cabecera vuelve a «Acceso»');

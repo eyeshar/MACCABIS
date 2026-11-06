@@ -3,7 +3,8 @@
 // NUESTRAS migraciones, ver pila.mjs). Los datos por jugador de otros equipos son de terceros: los leen los
 // gestores y, desde D162, los jugadores con sesion y ficha; anon y una cuenta sin ficha, nada. liga_calendario
 // sigue solo para gestores. Tambien prueba el .revertir.sql de D162 (vuelve a solo gestores) y que se reaplica, y los
-// grupos ajenos de la fase (G3-G6, D184): se cargan con su grupo y sin jornada, con la misma RLS, y su .revertir.sql.
+// grupos ajenos de la fase (G3-G6, D184): se cargan con su grupo, con la misma RLS, y su .revertir.sql; desde D186, con la
+// jornada de data/jornadas_grupos_ajenos_<temporada>.json (los huecos de ese fichero, sin partido).
 //
 //   npm run pruebas:liga
 //
@@ -46,7 +47,7 @@ try {
   // Cifras leidas de los datos (crecen cada jornada): partidos cargados, jornadas y partidos nuestros (MdA o MdL).
   const N = partidos.length;
   const jornadas = [...new Set(partidos.filter((p) => p.grupo === 'G1' || p.grupo === 'G2').map((p) => p.jornada))].sort((a, b) => a - b);
-  const AJENOS = partidos.filter((p) => p.grupo !== 'G1' && p.grupo !== 'G2').length;   // G3-G6, sin jornada (D184)
+  const AJENOS = partidos.filter((p) => p.grupo !== 'G1' && p.grupo !== 'G2').length;   // G3-G6 (D184), con jornada desde D186
   const FILAS_CLAS = Object.values(liga.publico.grupos).reduce((n, g) => n + g.clasificacion.length, 0) + Object.values(liga.ajenos).reduce((n, g) => n + g.clasificacion.length, 0);
   const NUESTROS = partidos.filter((p) => ['MdA', 'MdL'].some((n) => n === p.local || n === p.visitante)).length;
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
@@ -56,9 +57,24 @@ try {
   });
   let c = await cuenta();
   ok(c.p === N && N > 0, `${N} partidos cargados (J${jornadas.join(', J')} de G1 y G2 y ${AJENOS} de G3-G6)`, String(c.p));
-  const sinJornada = await sql`select grupo, count(*)::int n from public.liga_partidos where jornada is null group by grupo order by grupo`;
-  ok(AJENOS > 0 && sinJornada.every((x) => x.grupo !== 'G1' && x.grupo !== 'G2') && sinJornada.reduce((n, x) => n + x.n, 0) === AJENOS,
-    `los ${AJENOS} partidos de G3-G6 van sin jornada (${sinJornada.map((x) => `${x.grupo} ${x.n}`).join(', ')}); G1 y G2, todos con jornada`);
+  // D186: cada partido de G3-G6 con la jornada del fichero de jornadas (mismo grupo, local y visitante); G1 y G2, todos
+  // con jornada; y los huecos del fichero (sin hoja o incomparecencia) no tienen partido.
+  const fichJ = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'data', 'jornadas_grupos_ajenos_2026-27.json'), 'utf8'));
+  const clave = (t) => String(t).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const par = (g, l, v) => `${g}|${clave(l)}|${clave(v)}`;
+  const jornadaFich = new Map(fichJ.partidos.map((p) => [par(p.grupo, p.local, p.visitante), p.jornada]));
+  const ajenosBase = await sql`select grupo, jornada, local, visitante from public.liga_partidos where grupo not in ('G1', 'G2')`;
+  const malJ = ajenosBase.filter((p) => p.jornada == null || jornadaFich.get(par(p.grupo, p.local, p.visitante)) !== p.jornada);
+  ok(AJENOS > 0 && ajenosBase.length === AJENOS && fichJ.partidos.length === AJENOS && malJ.length === 0,
+    `los ${AJENOS} partidos de G3-G6, cada uno con la jornada del fichero de jornadas (D186)`,
+    `${ajenosBase.length} en la base, ${fichJ.partidos.length} en el fichero, ${malJ.length} con otra jornada o sin ella (${malJ.slice(0, 3).map((p) => `${p.grupo} J${p.jornada ?? '-'} ${p.local}-${p.visitante}`).join('; ')})`);
+  const [{ n: g12SinJ }] = await sql`select count(*)::int n from public.liga_partidos where grupo in ('G1', 'G2') and jornada is null`;
+  ok(g12SinJ === 0, 'G1 y G2, todos con jornada', String(g12SinJ));
+  const huecos = fichJ.jornadas.flatMap((j) => j.huecos.map((h) => ({ ...h, grupo: j.grupo, jornada: j.jornada })));
+  const conPartido = huecos.filter((h) => ajenosBase.some((p) => p.grupo === h.grupo && [par(h.grupo, h.local, h.visitante), par(h.grupo, h.visitante, h.local)].includes(par(p.grupo, p.local, p.visitante))));
+  ok(huecos.length === 2 && huecos.every((h) => h.grupo === 'G5') && conPartido.length === 0,
+    `los ${huecos.length} huecos de G5 (sin hoja o incomparecencia) no tienen partido (${huecos.map((h) => `J${h.jornada} ${h.motivo}`).join(', ')})`,
+    conPartido.map((h) => `J${h.jornada} ${h.local}-${h.visitante}`).join('; '));
   ok(c.j === esperadoJug, `${esperadoJug} filas de jugador cargadas`, String(c.j));
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   c = await cuenta();

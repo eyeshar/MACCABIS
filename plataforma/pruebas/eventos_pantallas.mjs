@@ -440,7 +440,7 @@ try {
   const pistaPanel = await p.getByTestId('entreno-pista').textContent();
   ok(pistaPanel.includes('Ciudad de los Periodistas') && !/por confirmar \(/.test(pistaPanel.split('(lo habitual')[0]), `Panel, «Entreno del miércoles»: la pista del evento de la tabla («${pistaPanel.trim().slice(0, 70)}…»), no «pista por confirmar»`);
   ok(!(await p.locator('.gs-pendientes').textContent().catch(() => '')).includes('Fijar la pista del entreno'), '«Pendiente esta semana» ya no pide fijar la pista de ese entreno');
-  ok(await p.getByTestId('respuestas-entreno').getByTestId('enlace-respuestas').getAttribute('href') === `/gestion/eventos/${entP.id}/respuestas`, '«Entreno del miércoles»: las respuestas enlazan a las de ese evento');
+  ok(await p.getByTestId('respuestas-entreno').getByTestId('enlace-respuestas').getAttribute('href') === `/evento/${entP.id}`, '«Entreno del miércoles»: las respuestas enlazan a las de ese evento');
   const enlaceDomingo = await p.locator('tr.eq-partido td.ev-celda-resp a').first().getAttribute('href').catch(() => null);
   ok(enlaceDomingo === `/evento/${liga1.id}`, `«Partidos del domingo»: columna Respuestas enlazada a las del partido (${liga1.clave})`, String(enlaceDomingo));
   await sql`update public.eventos set ubicacion_nombre = null where id = ${entP.id}`;

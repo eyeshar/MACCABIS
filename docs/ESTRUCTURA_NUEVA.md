@@ -5,6 +5,8 @@
 > 06/11/2026** (marcadas «Corrección»). **Solo especificación: nada de esto está construido** salvo el bloque 0
 > (analítica, hecha en la fase 1 y **sin activar**, D188). Calendario de fases: `BACKLOG.md`, «Orden vigente».
 > Cuando se construya cada bloque, su decisión va a `DECISIONS.md` (la navegación nueva sustituye a D89 y D90).
+>
+> **Construida el 06/11/2026 (D189, `feat/estructura-nueva`): bloques 1 a 6 y «Yo».** Merge sin el OK de Iván, con las barreras (a)–(h) (norma de Iván de ese día). Lo que no se hizo de la especificación está en D189 («No se ha hecho») y en `BACKLOG.md`: el «Pase de lista» del evento y «Mensaje a los que faltan» para los que siguen en duda.
 
 ## Cómo se trabaja
 

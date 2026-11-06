@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { resumenCuartos, type FiltroEq, type QStats } from "@/lib/estadisticas/calculo";
-import { Control, Kpi, Nota, OPCIONES_EQUIPO, SecH, Segmento, Vacio } from "./Comunes";
+import { Control, Info, Kpi, OPCIONES_EQUIPO, SecH, Segmento, Vacio } from "./Comunes";
 
 // Pestaña Por cuartos: media de puntos por cuarto a nivel de equipo (dato de las actas).
 export default function CuartosPestana({ qstats, multiEquipo, selector }: { qstats: Record<string, QStats>; multiEquipo: boolean; selector?: ReactNode }) {
@@ -40,7 +40,7 @@ export default function CuartosPestana({ qstats, multiEquipo, selector }: { qsta
           </div>
         </>
       )}
-      <Nota>Media de puntos por cuarto a nivel de equipo (dato de las actas). No existe desglose por jugador y cuarto en ninguna fuente.</Nota>
+      <Info>Media de puntos por cuarto a nivel de equipo (dato de las actas). No existe desglose por jugador y cuarto en ninguna fuente.</Info>
     </>
   );
 }

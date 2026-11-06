@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { nombreBreve, ordenarAsistencia, pctAsistencia, type Asis, type ClaveAsis } from "@/lib/estadisticas/calculo";
-import { CajaTabla, Control, Nota, SecH, Segmento } from "./Comunes";
+import { CajaTabla, Control, Info, SecH, Segmento } from "./Comunes";
 
 type JugadorAsis = { person_id: string; nombre: string; display?: string; asist_part?: Asis | null; asist_entr?: Asis | null };
 
@@ -57,11 +57,11 @@ export default function AsistenciaPestana({ jugadores, selector }: { jugadores: 
           </tbody>
         </table>
       </CajaTabla>
-      <Nota>
+      <Info>
         {esPart
           ? "Partidos = partidos de liga a los que asistió a tiempo, de los de su equipo en la temporada. % Asist. = asistió / total. Datos de la app de asistencia del equipo."
           : "Entrenos = entrenamientos a los que asistió a tiempo, de los registrados. % Asist. = asistió / total. Algunos jugadores no tienen registro de entrenamientos."}
-      </Nota>
+      </Info>
     </>
   );
 }

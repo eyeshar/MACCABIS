@@ -1,7 +1,7 @@
 import type { Metricas } from "@/lib/estadisticas/calculo";
 import { nombrePropio } from "@/lib/estadisticas/calculo";
 import type { Temporada } from "@/lib/estadisticas/datos";
-import { CajaTabla, ChipEquipo, Dash, Kpi, N1, N2, NInt, NPct, NSigned, NSigned1, Nota, SecH, Tiros } from "./Comunes";
+import { CajaTabla, ChipEquipo, Dash, Info, Kpi, N1, N2, NInt, NPct, NSigned, NSigned1, SecH, Tiros } from "./Comunes";
 
 type Jugador = Temporada["players"][number];
 
@@ -83,7 +83,7 @@ export default function FichaJugador({ p, M, multiEquipo }: { p: Jugador; M: Met
           </tbody>
         </table>
       </CajaTabla>
-      <Nota>{M.min ? "DNP = convocado sin minutos (no computa en las medias)." : "Las filas atenuadas son \"No Jugó\" (NJ): convocatoria sin participación. No entran en el denominador de las medias."}</Nota>
+      <Info>{M.min ? "DNP = convocado sin minutos (no computa en las medias)." : "Las filas atenuadas son \"No Jugó\" (NJ): convocatoria sin participación. No entran en el denominador de las medias."}</Info>
     </div>
   );
 }

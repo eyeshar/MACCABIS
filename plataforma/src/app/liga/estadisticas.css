@@ -410,3 +410,12 @@ a.e-m-enlace:hover, a.e-m-enlace:focus-visible { color: var(--c-amarillo); text-
 .e-segmento-desliza .e-segmento { width: max-content; min-width: 100%; }
 .e-segmento-desliza .e-segmento button { flex: 1 0 auto; min-width: 48px; padding: 0 12px; white-space: nowrap; }
 .e-m-hueco { color: var(--tinta-tenue); font-family: var(--f-texto) !important; font-size: 12.5px !important; }
+/* D191: aclaraciones plegadas tras un ⓘ (componente Info), como el aviso de la Clasificación pero en gris */
+.e-info { margin: 10px 0 0; border: 1px solid var(--borde); border-radius: 10px; background: var(--tarjeta); color: var(--tinta-suave); }
+.e-info > summary { min-height: var(--toque); display: flex; align-items: center; gap: 6px; padding: 0 14px; cursor: pointer; list-style: none; font-size: 13.5px; color: var(--tinta-tenue); }
+.e-info > summary::-webkit-details-marker { display: none; }
+.e-info[open] > summary { color: var(--tinta); }
+.e-info-cuerpo { padding: 0 14px 10px; font-size: 13.5px; line-height: 1.45; }
+.e-info-cuerpo p { margin: 0 0 6px; }
+.e-info-cuerpo p:last-child { margin-bottom: 0; }
+.lg-recuento { margin: 2px 0 10px; color: var(--tinta-suave); font-size: 0.9rem; }

@@ -5,6 +5,7 @@ import { Fragment, useMemo, useState } from "react";
 import { bonito, dec, mmss, textoDorsales, type FilaTabla } from "@/lib/jugadoresLiga";
 import { comparadorTabla, pasaMinimo, separarPorMinimo, textoMenos, type Columna, type Minimo } from "@/lib/ordenLideres";
 import { etiquetaGrupo, textoGrupos } from "@/lib/gruposLiga";
+import { Info } from "@/components/liga/Comunes";
 
 // Tabla "Todos los jugadores" de los grupos marcados en Liga consolidada (D186; por defecto G1 + G2, con MdA y MdL). Con sesion de jugador o gestor (D73, D162): son datos de terceros.
 // Solo lo que trae la hoja de la FBM; nada estimado.
@@ -48,9 +49,10 @@ function celda(j: FilaTabla, k: Columna, pp: boolean): string {
 const sinTildes = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const clave = (j: FilaTabla) => `${j.grupo}|${j.equipo}|${j.nombre}`;
 
-export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo, grupos }: {
+export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo, grupos, notaDobla }: {
   sumadas: FilaTabla[]; fichas: FilaTabla[]; equipos: { grupo: string; equipo: string }[]; fichasEquipo: Record<string, string>;
   grupos: string[];   // D186: los grupos marcados arriba (G1…G6, como minimo uno)
+  notaDobla?: string; // D191: va con las aclaraciones, tras el ⓘ
 }) {
   const ambos = grupos.includes("G1") && grupos.includes("G2");   // quien dobla suma sus dos fichas
   const hayNuestro = grupos.includes("G1") || grupos.includes("G2");
@@ -112,13 +114,6 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo,
   return (
     <section className="tarjeta lg-todos" aria-label="Todos los jugadores">
       <h2 style={{ marginTop: 0 }}>Todos los jugadores</h2>
-      {ambos && grupos.length === 2 ? (
-        <p className="lg-sub">{sumadas.length} personas de la liga (G1 + G2, con MdA y MdL). «dobla» = sale con MdA y con MdL: una sola fila con las dos fichas sumadas; si filtras por grupo o equipo, solo la ficha de ese grupo o equipo.</p>
-      ) : ambos ? (
-        <p className="lg-sub">{sumadas.length} personas de {textoGrupos(grupos)}. «dobla» = sale con MdA y con MdL: una sola fila con las dos fichas sumadas; si filtras por grupo o equipo, solo la ficha de ese grupo o equipo.</p>
-      ) : (
-        <p className="lg-sub">{sumadas.length} personas {varios ? "de" : "del"} {textoGrupos(grupos)}.{hayNuestro && ` «dobla» = sale con MdA y con MdL: aquí, solo su ficha del ${grupos.includes("G1") ? "G1" : "G2"}.`}</p>
-      )}
 
       <div className="lg-barra">
         <div className="lg-conmutador" role="group" aria-label="Totales o por partido">
@@ -166,9 +161,9 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo,
       </div>
 
       <p className="lg-nota" role="status">
-        Mostrando {Math.min(visibles, lista.length)} de {lista.length} · orden: {nombreCol.largo} ({dir === 1 ? "de menor a mayor" : "de mayor a menor"}){porPartido ? ", por partido" : ""}.
-        {ocultosPorMinimo > 0 && ` ${ocultosPorMinimo} ${ocultosPorMinimo === 1 ? "persona oculta" : "personas ocultas"} por el mínimo de partidos.`}
-        {debajo.length > 0 && ` ${debajo.length} debajo, en «${separador}» (al ordenar por una media: la mitad de los partidos de su equipo, redondeando hacia arriba, o 2, lo que sea menor; y 3 TL intentados para el %).`}
+        Mostrando {Math.min(visibles, lista.length)} de {lista.length} · {nombreCol.largo} {dir === 1 ? "↑" : "↓"}{porPartido ? " · por partido" : ""}
+        {ocultosPorMinimo > 0 && ` · ${ocultosPorMinimo} ${ocultosPorMinimo === 1 ? "persona oculta" : "personas ocultas"} por el mínimo`}
+        {debajo.length > 0 && ` · ${debajo.length} debajo, en «${separador}»`}
       </p>
 
       {/* Escritorio: tabla completa, cabeceras pulsables y cabecera fija al desplazar */}
@@ -242,13 +237,16 @@ export default function TablaJugadores({ sumadas, fichas, equipos, fichasEquipo,
         </div>
       )}
 
-      <p className="lg-nota">
-        Solo datos que trae la hoja de la FBM: <b>no hay faltas recibidas ni intentos de campo</b> (2P y 3P son canastas anotadas), y los tiros
+      <Info testid="aclaraciones-tabla">
+        {notaDobla && <p>{notaDobla}</p>}
+        <p>Al ordenar por una media, los que no llegan al mínimo van debajo, tras «Menos de…»: la mitad de los partidos de su equipo, redondeando hacia
+          arriba, o 2, lo que sea menor; y 3 TL intentados para el %.</p>
+        <p>Solo datos que trae la hoja de la FBM: <b>no hay faltas recibidas ni intentos de campo</b> (2P y 3P son canastas anotadas), y los tiros
         libres son anotados/intentados. Los minutos son los de la hoja y pueden no cuadrar con el reloj. Nada está estimado. «Por partido»
         divide minutos, 2P, 3P, TL y faltas entre los partidos jugados (PJ); PTS, Media, TL% y F/P no cambian. Quien dobla sale en una sola fila
         con las dos fichas sumadas; si filtras por grupo o por equipo (sin «Solo Maccabis»), solo con la ficha de ese grupo o equipo («solo
-        ficha MdA» / «solo ficha MdL»). A igualdad en la columna elegida, el orden es siempre el mismo: puntos, media, nombre y equipo.
-      </p>
+        ficha MdA» / «solo ficha MdL»). A igualdad en la columna elegida, el orden es siempre el mismo: puntos, media, nombre y equipo.</p>
+      </Info>
     </section>
   );
 }

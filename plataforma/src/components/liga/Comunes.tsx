@@ -78,4 +78,15 @@ export function CajaTabla({ children, className = "" }: { children: ReactNode; c
 }
 
 export const Nota = ({ children }: { children: ReactNode }) => <p className="e-nota">{children}</p>;
+
+/** Aclaraciones de una pantalla (cómo se cuenta, qué significa cada columna), plegadas tras un ⓘ como el aviso de la
+ *  Clasificación (D191): la pantalla enseña los datos y, como mucho, una línea corta; lo demás, al abrirlo. */
+export function Info({ children, titulo = "Cómo se cuenta", testid = "aclaraciones" }: { children: ReactNode; titulo?: string; testid?: string }) {
+  return (
+    <details className="e-info" data-testid={testid}>
+      <summary>{titulo} <span aria-hidden="true">ⓘ</span></summary>
+      <div className="e-info-cuerpo">{children}</div>
+    </details>
+  );
+}
 export const Vacio = ({ children }: { children: ReactNode }) => <p className="e-vacio">{children}</p>;

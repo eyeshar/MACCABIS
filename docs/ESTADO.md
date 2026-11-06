@@ -2,6 +2,81 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## INFORME PARA IVÁN · 06/11/2026 · estructura nueva de la web (D189), en producción
+
+**Qué está en producción:** todo lo que pediste, en un solo merge (`eafcf42`, PR #62), desplegado y comprobado:
+- **Navegación nueva.** Abajo, en el móvil:
+  - Jugadores: Semana · Calendario · Liga · Club.
+  - Gestores: además, Gestión.
+  - Sin sesión: Inicio · Liga · Club · Acceso.
+  - Arriba, el nombre de la sección, el icono del asistente (ya no flota) y tu inicial, que abre **«Yo»**. Ya no están la hoja «Más», los menús desplegables ni la barra de Gestión: cada pantalla vuelve con un único «‹».
+- **Semana** (lo que ves al entrar):
+  - Lo que te falta responder.
+  - A los gestores, «Gestión · N pendientes».
+  - Una tarjeta por cada evento de los próximos 10 días, con hora, quedada, equipación, avisos y Voy · Duda · No voy.
+  - A los gestores, debajo de cada tarjeta, quién va y «Preparar ›» o «Grupos ›».
+- **Calendario.** Arriba, el calendario del móvil y «Días que no estoy». Luego, filtros (Todo, Partidos, Entrenos, Planes, MdA, MdL, Pasados) y la lista por meses.
+- **Evento** (`/evento/…`):
+  - El jugador ve una sola pantalla con todo, incluido «El rival».
+  - El gestor ve pestañas: Respuestas (con «Cambiar a mano»), Convocatoria o Grupos, WhatsApp y Mi respuesta.
+- **Gestión**, ordenada por lo que se hace cada semana:
+  1. Quién va.
+  2. Convocatoria del domingo.
+  3. Pendiente.
+  4. Plantilla y club, con enlace a todas sus pantallas.
+- **Convocatoria.** Jugadores agrupados por líneas, «Ocultar niveles» y «Quién lleva más tiempo fuera».
+- **Registro de no convocados.** Página nueva en Gestión, con la regla 4.3 de REGLAS_CONVOCATORIA.
+- **Pedido de ropa.** Interruptor «Abrir el pedido a los jugadores», con un solo estado y su causa.
+- **Liga:** cuatro pestañas (Clasificación, Rivales, Jugadores de la liga, Temporadas).
+- **Club:** tres pestañas (Plantilla, Historia, El club).
+- **Yo.**
+
+**Lo que entra apagado o cerrado, como pediste:**
+- **Desempate por no convocados: APAGADO.** El motor propone igual que antes, y la rutina C del martes 10/11 sigue igual (sus pruebas en verde). Para encenderlo después de esa propuesta: en Vercel (producción), poner la variable `CONVOCATORIA_DESEMPATE_NO_CONVOCADOS` a `1` y volver a desplegar.
+- **Pedido de ropa: CERRADO para los jugadores.** La campaña «Ropa 2026/27» sigue en el real con el interruptor encendido, pero su fecha límite (23/10) ya pasó, así que los jugadores no la ven. No he tocado el dato. Si quieres apagar también el interruptor: Gestión › Pedido de ropa › «Cerrar el pedido a los jugadores».
+
+**Revert:** no ha hecho falta. Tras el despliegue hice una sola carga de cada ruta principal (`/`, `/calendario`, `/evento/<uno>`, `/liga`, `/club`, `/gestion`, `/gestion/convocatoria`, `/yo`), sin navegador. Todas responden bien: lo público da 200 y lo privado manda a «Entrar».
+
+**Migraciones:** ninguna. No hay nada que deshacer en la base. Si hubiera que volver a la web anterior: `git revert -m 1 eafcf42` y push.
+
+**Enlaces que ya se enviaron** (avisos push, WhatsApp, el calendario del móvil): siguen funcionando. Las direcciones viejas redirigen con 308 a las nuevas:
+- `/agenda` → `/calendario`
+- `/mi-zona/evento/…` → `/evento/…`
+- `/cuenta` y `/mis-numeros` → `/yo`
+- `/plantilla` → `/club`
+- `/historia` → `/club/historia`
+
+Los avisos siguen saliendo con las direcciones de siempre; no he tocado su lógica.
+
+**Qué mirar primero en el móvil:**
+1. Al entrar, la **Semana**: tus tarjetas, y como gestor la franja de abajo con quién va.
+2. Toca un **entreno**: arriba las pestañas de gestor. Prueba «Cambiar a mano» con alguien de confianza; avisa al jugador, salvo de 22:30 a 08:00.
+3. **Gestión**: que llegas a todo desde ahí (Jugadores, Convocatoria, No convocados, Ropa, Eventos…).
+4. **Liga** y **Club**: las pestañas y que las cifras son las de siempre.
+5. Tu **inicial arriba a la derecha** → «Yo».
+
+**Lo que no entró de la especificación** (está en BACKLOG):
+- El «Pase de lista» del evento. Hace falta una función nueva en la base con su migración, y no la he hecho hoy.
+- «Mensaje a los que faltan» también para los que siguen en duda: hoy solo va a quien no ha respondido.
+- Las Respuestas del gestor en el móvil siguen siendo la lista larga de antes.
+
+**Lo que manda una decisión vigente sobre la especificación:**
+- **D162:** «Jugadores de la liga» solo se ve con sesión.
+- **D88:** las dos instalaciones siguen sin mezclarse.
+- **D173:** el texto del aviso y el botón «Aprobar y avisar» siguen igual. No pongo «la próxima tiene prioridad», porque con el desempate apagado no sería verdad.
+- **D171:** «Tu próximo partido» deja de existir. Cada tarjeta dice ahora su estado (Convocado, No convocado, No vas…).
+
+**Pruebas:**
+- **En local** (lo que pediste): typecheck, `pruebas:estructura`, `eventos-pantallas` y las lógicas y de permisos (no convocados, motor, campaña, privacidad, destino…). Todo en verde.
+- **En Actions**, la batería completa en 4 grupos:
+  - La primera pasada dio 8 suites en rojo y la segunda, 3. Todas eran pruebas que seguían esperando la navegación vieja, más un fallo real que arreglé: el pedido de ropa salía «abierto» en la página aunque la base ya lo cerraba ese mismo día.
+  - La cuarta pasada, en verde, con los 4 grupos (`3899a90`).
+  - Pruebas nuevas: `pruebas:estructura`, `pruebas:gestion`, `pruebas:no-convocados` y `pruebas:liga-club`.
+  - No se ha borrado, saltado ni ablandado ninguna. Solo cambian las comprobaciones de piezas que ya no existen.
+- **Capturas a 390 px** en `privado/mockups_liga/rediseno/estructura_nueva/`: las barras de cada rol, Semana, Calendario, Evento, Yo, Liga, Club, Gestión, Convocatoria y Ropa.
+
+_Antes, 06/11/2026, mañana: rutina A sin navegador (PR #60), prueba de la liga con la jornada de G3–G6 (PR #61), y la fase 1 (PR #59)._
+
 _Última actualización: 06/11/2026, noche (2): **fase 1 mergeada** (PR #59, `731cc80`, OK de Iván, Actions en verde). **Rama `fix/verificacion-sin-navegador`** (nota en D179; **PR abierto, espera el OK de Iván antes del lunes 09/11 a las 9:30**): la rutina A ya no lanza `verificar_produccion` (Chrome sin ventana contra producción); en su lugar, `pruebas/verificar_jornada.mjs`: la jornada en la base real **en solo lectura** (partidos de G1 y G2 de la última jornada de `liga.json` con su marcador y sus filas por jugador, las que da `db:liga` con las hojas) y, cuando GitHub dice que Vercel ha desplegado el commit, **una sola petición** (`fetch`) a `/liga` (200 y los marcadores en el HTML). `verificar_produccion.mjs` queda solo para uso manual. Pruebas: `pruebas:jornada-sin-navegador` (nueva; la pila con partidos sintéticos y cada fallo, una sola petición a un servidor local, la espera con un GitHub falso), `pruebas:cache-publica` (la lectura del HTML con la `/liga` compilada) y `pruebas:destino`; de extremo a extremo en la pila con las hojas de verdad (`db:liga --pila` y `base --pila`: los 10 partidos de la J3 OK, y un marcador cambiado, FALLO). Sin tocar el real ni producción. **Analítica (D188): apagada hasta que el equipo pase a Hobby** (orden en BACKLOG, «Pendiente de Iván»)._
 
 _Antes, 06/11/2026, noche: **fase 1 de la estructura nueva** (`chore/guardia-y-analitica`, D187 y D188; mergeada después en PR #59). Sin tocar el Supabase real, sin navegador contra producción ni vistas previas (D179) y sin enviar nada a nadie. **Lo que trae:** (1) **la norma 19 aplicada** (D187): un módulo único, `plataforma/scripts/lib/destino.mjs`; todo script que escribe, revierte o crea cuentas (`db:migrar`, `db:semilla`, `db:gestor`, `db:correo`, `db:liga`, `db:privado`, `db:asistencia`, `db:asistencia-eventos`, `db:asistencia-vincular`, `db:eventos`, `cargar_reserva`, `avisos:programar --aplicar/--quitar`, `verificar_real`, `verificar_produccion`, `verificar_chat_preview`) exige `--pila` (solo `127.0.0.1`, sin leer `.env.local`) o `--confirmar pqbjnxmknhawlkszwmln` (el real, escrito en el repositorio) y, si no cuadra, para **sin conectarse** (código 3). La rutina A lleva el ref escrito (`$RefReal`) y no pregunta. `pila.mjs` comprueba que es local y `arrancar()` devuelve `dbUrl`. **Nuevos:** `npm run db:revertir -- <migración> --confirmar <ref>` (aplica su `.revertir.sql` con la misma comprobación) y `npm run db:d111-liga` (el `d111_liga.mjs` del incidente, ya en git, con foto y volcado en solo lectura). (2) **La analítica de Vercel lista y SIN activar** (D188): `@vercel/analytics` 2.0.1 en el layout raíz, solo con `NEXT_PUBLIC_ANALITICA=1` al compilar; `beforeSend` sin consulta, sin fragmento y con `/cal/[enlace]`; ningún evento propio; CSP sin cambios. **El equipo de Vercel está hoy en Pro** (comprobado en la facturación por la API: licencia de Pro el 03/11), el paso a Hobby es **previsto**: corregidos D179 y `CLAUDE.md`. Web Analytics: en Pro, 0,03 $ por 1.000 eventos sin incluidos; en Hobby, 50.000 al mes para todo el equipo y después deja de recoger (no cobra ni pausa). Otro proyecto del equipo ya manda eventos (≈ 192 el 03/11). (3) **`docs/ESTRUCTURA_NUEVA.md`**: la especificación del diseño aprobado el 05/11 por bloques, con las correcciones de Iván (dudas con el plazo de D173; «Días que no estoy» = ausencias de D87; pase de lista en `asistencia_eventos`; cambio de respuesta desde `gestor_responder`; sin «Copia a SportEasy»; recuentos de cuentas calculados en el momento; desempate por no convocados detrás de un interruptor apagado; merge de cada fase con el OK de Iván). Calendario de fases en BACKLOG («Orden vigente», punto 0). **Pruebas en local:** `typecheck`, `pruebas:humo`, `pruebas:destino` (los 20 casos de uso × 8 o 9 destinos que no cuadran: paran sin intentar ninguna conexión; con la pila, siguen), `pruebas:destino-pila`, `pruebas:analitica`, en verde; `pruebas:cache-publica` **con la analítica encendida**: las 57 comprobaciones de caché en verde y un solo fallo esperado (fuera de Vercel no existe `/_vercel/insights/script.js`: por eso, para encenderla, primero el panel de Vercel y después la variable; apagada la pasa Actions); no se han pasado las `-real` (no se toca el real) ni la batería completa (la pasa Actions)._

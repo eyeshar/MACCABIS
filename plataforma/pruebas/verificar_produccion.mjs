@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// SOLO USO MANUAL. Abre un navegador automatico contra produccion, y D179 lo prohibe salvo que Iván lo pida. La rutina
+// A ya no lo lanza: comprueba la jornada sin navegador con verificar_jornada.mjs (la base en solo lectura y una sola
+// peticion a /liga).
+//
 // Verificacion del despliegue de PRODUCCION (https://maccabis.vercel.app) con una sesion de gestor temporal.
 // No toca la configuracion de Vercel ni de Supabase. Crea un usuario temporal (como verificar_real.mjs), entra con su
 // contrasena por la API de Supabase, pasa la sesion al navegador como cookies y recorre /entrar, /gestion, Scouting y (D162: en /liga/…)

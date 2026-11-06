@@ -90,7 +90,8 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
 | `pruebas:solo-ficha-real` | ídem, y la foto previa de `privado/backups/` (prueba de la migración de D148) |
 
 `pruebas:rapidas` las incluye cuando toca (estadísticas, o escribir en producción o tocar permisos). Las de `verificar_*`
-(producción, vista previa) siguen siendo manuales.
+(producción, vista previa) siguen siendo manuales, salvo `verificar_jornada.mjs`, que lanza la rutina A sin navegador (la
+base en solo lectura y una sola petición a `/liga`; nota en D179).
 
 ### Reglas de las pruebas
 

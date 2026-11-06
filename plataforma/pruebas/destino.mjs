@@ -52,7 +52,9 @@ console.log('\n== Rutina A y pila');
 const rutina = fs.readFileSync(path.join(REPO, 'scripts', 'rutina_a_publicar.ps1'), 'utf8');
 ok(rutina.match(/^\$RefReal = '([a-z0-9]+)'/m)?.[1] === REAL.ref, 'la rutina A lleva escrito el mismo ref del real que destino.mjs');
 const llamadas = [...rutina.matchAll(/\$Plataforma ["']([^"']+)["']/g)].map((m) => m[1]).filter((c) => /^(npm|node) /.test(c));   // lo que lanza en plataforma/
-ok(llamadas.length === 3 && llamadas.every((l) => l.includes('--confirmar $RefReal')), 'la rutina A confirma el real en db:liga, db:asistencia y verificar_produccion', llamadas.join(' | '));
+const aLaBase = llamadas.filter((l) => !/verificar_jornada\.mjs web/.test(l));   // la parte web no se conecta a la base
+ok(llamadas.length === 3 && aLaBase.length === 2 && aLaBase.every((l) => l.includes('--confirmar $RefReal')), 'la rutina A confirma el real en db:liga, db:asistencia y la comprobación de la base', llamadas.join(' | '));
+ok(!/verificar_produccion/.test(rutina.replace(/^\s*#.*$/gm, '')), 'la rutina A no lanza verificar_produccion (navegador contra producción, D179)');
 const pilaSrc = fs.readFileSync(path.join(PLAT, 'pruebas', 'pila.mjs'), 'utf8');
 ok(/comprobarDestino\(\{ pila: true[\s\S]*?\);\s*const sql = postgres\(url/.test(pilaSrc), 'pila.mjs comprueba que es local antes de conectarse');
 ok(/return \{[^}]*dbUrl: url/.test(pilaSrc), 'la pila devuelve su conexión de Postgres (dbUrl)');
@@ -78,6 +80,7 @@ const SCRIPTS = [
   { id: 'db:d111-liga revertir', f: 'scripts/d111_liga.mjs', a: ['revertir', 'volcado.json'] },
   { id: 'verificar_real', f: 'pruebas/verificar_real.mjs', a: [], api: true },
   { id: 'verificar_produccion', f: 'pruebas/verificar_produccion.mjs', a: [], api: true },
+  { id: 'verificar_jornada base', f: 'pruebas/verificar_jornada.mjs', a: ['base'] },
   { id: 'verificar_chat_preview', f: 'pruebas/verificar_chat_preview.mjs', a: ['https://maccabis-abc123-web-tcpc.vercel.app'], api: true },
 ];
 // Casos que tienen que parar (ninguno combina --confirmar <ref del real> con la conexión del real: ese seguiría).

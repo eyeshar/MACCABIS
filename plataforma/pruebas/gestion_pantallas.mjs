@@ -11,6 +11,8 @@
 //   - Pedido de ropa: entra cerrado; un solo estado con su causa; el interruptor lo abre y lo cierra; invisible para el
 //     jugador con el interruptor apagado (y se deja apagado al terminar).
 //   - Barrera (h): jugador y anónimo sin acceso a niveles, motivos ni contador de no convocados.
+// Capturas a 390 px (solo en local, con capturas), como gestor sin ficha y con ficha (`<pantalla>-sin-ficha.png`,
+// `<pantalla>-con-ficha.png`), en privado/mockups_liga/rediseno/estructura_nueva/.
 //
 //   npm run pruebas:gestion
 import fs from 'node:fs';
@@ -21,7 +23,25 @@ import { hoyMadrid } from './fechas_prueba.mjs';
 
 const SALIDA = path.join(REPO, 'privado', 'mockups_liga', 'rediseno', 'estructura_nueva');
 if (conCapturas()) fs.mkdirSync(SALIDA, { recursive: true });
-const foto = (p, n) => (conCapturas() ? p.screenshot({ path: path.join(SALIDA, `${n}.png`), fullPage: true }).catch(() => {}) : Promise.resolve());
+// Página entera con la ventana tan alta como la página: la barra fija sale abajo, no a media captura.
+const foto1 = async (p, n) => {
+  const v = p.viewportSize();
+  await p.setViewportSize({ width: v.width, height: await p.evaluate(() => document.documentElement.scrollHeight) });
+  await p.screenshot({ path: path.join(SALIDA, `${n}.png`) }).catch(() => {});
+  await p.setViewportSize(v);
+};
+// Cada captura, como gestor sin ficha (la página de la prueba) y como gestor con ficha (Beto), en la misma URL y con
+// los mismos desplegables abiertos.
+let conFicha = null;
+const foto = async (p, n) => {
+  if (!conCapturas()) return;
+  await foto1(p, `${n}-sin-ficha`);
+  conFicha ??= await e.sesion('beto@pruebas.local', 390);
+  await conFicha.goto(p.url());
+  const abiertos = await p.locator('main details').evaluateAll((ds) => ds.map((d) => d.open));
+  await conFicha.locator('main details').evaluateAll((ds, a) => ds.forEach((d, i) => { if (a[i]) d.open = true; }), abiertos);
+  await foto1(conFicha, `${n}-con-ficha`);
+};
 const { ok, fallos, sumar } = contador();
 const e = await preparar();
 const { sql, APP } = e;
@@ -65,7 +85,7 @@ try {
     for (const p of ev.equipo === 'MdA' ? ['sint-ana', 'sint-beto', 'sint-teo'] : ['sint-teo'])
       await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen) values (${ev.id}, ${p}, 'va', 'jugador') on conflict do nothing`;
   }
-  const yo = await personas(e.pila, { jugadores: [['sint-ana', 'ana@pruebas.local']], gestores: [['Gestor', 'gestor@pruebas.local']] });
+  const yo = await personas(e.pila, { jugadores: [['sint-ana', 'ana@pruebas.local']], gestores: [['Gestor', 'gestor@pruebas.local'], ['Beto', 'beto@pruebas.local', 'sint-beto']] });
   const [campana] = await sql`select id, estado from public.campanas_ropa order by creado_en limit 1`;
 
   // ---------------------------------------------------------------- /gestion

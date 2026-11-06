@@ -10,6 +10,8 @@
 //   - Semana (respuestas que faltan, «Gestión · N pendientes», tarjetas con la franja GESTIÓN solo para gestores), Calendario
 //     (chips en la URL, «Días que no estoy»), Evento (vista de jugador sin motivos; pestañas solo para gestores) y Yo;
 //   - un jugador no ve motivos, niveles ni las pestañas de gestor (barrera (h)).
+//   - /gestion y /gestion/convocatoria, como gestor con ficha y sin ficha (390 px y escritorio): sin la barra de
+//     subsecciones de Gestión ni la hoja «Más» de antes; solo la barra (o el menú) del rol.
 // Capturas a 390 px (solo en local) en privado/mockups_liga/rediseno/estructura_nueva/.
 //
 //   npm run pruebas:estructura
@@ -159,6 +161,31 @@ try {
   const pestC = (await pc.getByTestId('pestanas-evento').locator('a').allTextContents()).map((t) => t.trim());
   ok(pestC.join() === 'Respuestas,Convocatoria,WhatsApp', `Evento (sin ficha, partido): ${pestC.join(' · ')} (sin «Mi respuesta»)`);
   await ctxC.close();
+
+  console.log('\n== Gestión sin la barra de subsecciones ni la hoja «Más» (gestor con ficha y sin ficha)');
+  // Lo de antes de D189: la barra «GESTIÓN» bajo la cabecera (nav.zb-gestion), el desplegable de Gestión de escritorio
+  // (.nv-boton-gestion, #nv-menu-gestion) y la hoja «Más» de la barra inferior (#nv-hoja-mas, .nv-hoja).
+  const VIEJO = 'nav.zb, nav.zb-gestion, .zb-fila, nav[aria-label="Gestión"], .nv-boton-gestion, #nv-menu-gestion, .nv-panel-gestion, #nv-hoja-mas, .nv-hoja, [aria-controls="nv-hoja-mas"]';
+  for (const [quien, email] of [['con ficha', 'ivan@pruebas.local'], ['sin ficha', 'carlos@pruebas.local']]) {
+    for (const ancho of [390, 1280]) {
+      const ctx = await e.contexto(ancho);
+      const p = await e.nuevaPagina(ctx);
+      await e.entrar(p, email);
+      for (const ruta of ['/gestion', '/gestion/convocatoria']) {
+        await p.goto(`${APP}${ruta}`);
+        await hasta(async () => (await p.locator('html').getAttribute('data-sesion')) !== 'pendiente');
+        const et = `${ruta}, gestor ${quien} a ${ancho} px`;
+        ok(new URL(p.url()).pathname === ruta, `${et}: se abre`, p.url());
+        ok((await p.locator(VIEJO).count()) === 0, `${et}: sin la barra de subsecciones ni la hoja «Más»`);
+        const mas = await p.locator('header, nav').getByText('Más', { exact: true }).count() + await p.getByRole('button', { name: 'Más', exact: true }).count();
+        ok(mas === 0, `${et}: ningún «Más» en la cabecera ni en la barra`);
+        const nav = (await p.locator(ancho < 769 ? 'nav.nv-barra a' : 'nav.nv-menu a').allTextContents()).map((t) => t.trim());
+        ok(nav.join() === 'Semana,Calendario,Liga,Club,Gestión', `${et}: solo ${ancho < 769 ? 'la barra' : 'el menú'} del gestor`, nav.join(' · '));
+        ok((await p.locator(`nav.${ancho < 769 ? 'nv-barra' : 'nv-menu'} a[aria-current="page"]`).allTextContents()).map((t) => t.trim()).join() === 'Gestión', `${et}: «Gestión» marcada`);
+      }
+      await ctx.close();
+    }
+  }
 
   ok(e.errores.length === 0, 'sin errores de JavaScript ni de consola', e.errores.slice(0, 3).join(' | '));
 } finally {

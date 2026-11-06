@@ -3,9 +3,10 @@
 // (fuera de git), a la tabla jugadores_privado de Supabase (solo gestores). Por defecto es un SIMULACRO: comprueba y
 // cuenta, no escribe.
 //
-//   npm run db:privado                                simulacro con privado/jugadores_2026-27.xlsx
-//   npm run db:privado -- --aplicar                   escribe (conexion de .env.local: SUPABASE_DB_URL)
-//   npm run db:privado -- --fichero <ruta.xlsx> [--aplicar]
+//   npm run db:privado -- --confirmar <ref>           simulacro con privado/jugadores_2026-27.xlsx (lee el real)
+//   npm run db:privado -- --aplicar --confirmar <ref> escribe (conexion de .env.local: SUPABASE_DB_URL)
+//   npm run db:privado -- --fichero <ruta.xlsx> [--aplicar] --confirmar <ref>
+// Norma 19: sin --confirmar <ref> (el real) ni --pila (la pila local) no lee ni se conecta (lib/destino.mjs).
 //
 // Pestaña «Jugadores» (cabecera en la fila 1) y pestaña «Parametros» (minutos minimos y cortes de pts/min). Columnas:
 //   Mote, Nombre, Apellido 1, Apellido 2   -> el jugador (por nombre completo; si no, por el mote = nombre visible)
@@ -25,6 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
 import { conectar } from './db.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LETRAS = ['A', 'B', 'C', 'D', 'E'];
@@ -127,9 +129,7 @@ export async function cargarPrivado(sql, filas, { aplicar = false, fuente = 'jug
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const dotenv = await import('dotenv');
-  dotenv.config({ path: path.join(RAIZ, '.env.local') });
-  const args = process.argv.slice(2);
+  const { args } = await exigirDestino(process.argv.slice(2));
   const i = args.indexOf('--fichero');
   const fichero = i >= 0 ? args[i + 1] : path.join(RAIZ, '..', 'privado', 'jugadores_2026-27.xlsx');
   const { filas, errores } = await leerHoja(fichero);

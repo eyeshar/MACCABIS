@@ -22,6 +22,7 @@ import EmbeddedPostgres from 'embedded-postgres';
 import postgres from 'postgres';
 import { SignJWT, jwtVerify } from 'jose';
 import { migrar, semilla } from '../scripts/db.mjs';
+import { comprobarDestino } from '../scripts/lib/destino.mjs';
 import { fijarRelojBase } from './infra/reloj.mjs';
 import { PUERTOS as P, exigirLibres } from './infra/puertos.mjs';
 import { lanzar, apuntarProceso, apuntarCarpeta, olvidarCarpeta, apuntarPostgres, olvidarPostgres, matarArbol, conVentanasOcultas } from './infra/procesos.mjs';
@@ -102,6 +103,8 @@ export async function arrancar({ log = () => {} } = {}) {
   await conVentanasOcultas(() => pg.start());
   apuntarProceso(pg.process);
   const url = `postgres://postgres:postgres@127.0.0.1:${PUERTOS.pg}/postgres`;
+  // Norma 19: esta pila solo puede ser local (base y API en 127.0.0.1); si no, para antes de conectarse.
+  comprobarDestino({ pila: true, confirmado: null }, { url, api: (await entornoPila()).NEXT_PUBLIC_SUPABASE_URL, conApi: true });
   const sql = postgres(url, { onnotice: () => {}, max: 2 });
   await sql.unsafe(fs.readFileSync(path.join(AQUI, 'supabase_local.sql'), 'utf8'));
   await migrar(sql, { log });
@@ -265,7 +268,9 @@ export async function arrancar({ log = () => {} } = {}) {
     olvidarCarpeta(dir);
   }
 
-  return { sql, url: (await entornoPila()).NEXT_PUBLIC_SUPABASE_URL, anonKey, crearUsuario, parar, firmar };
+  // dbUrl: la conexion de Postgres de esta pila, para pasarsela a un script hijo (`SUPABASE_DB_URL` + `--pila`). Su
+  // falta hizo que el 06/11/2026 una prueba le pasara `undefined` y el hijo cargara la del real de .env.local.
+  return { sql, url: (await entornoPila()).NEXT_PUBLIC_SUPABASE_URL, dbUrl: url, anonKey, crearUsuario, parar, firmar };
 }
 
 // Modo manual: arranca y deja la pila encendida para `npm run dev`.

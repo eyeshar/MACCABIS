@@ -109,3 +109,10 @@ El repositorio es **público** y su historial no se reescribe (decisión de Ivá
 ## 18. Un push por rama, salvo para corregir un fallo (Iván, 03/11/2026)
 - Cada push a una rama lanza la batería completa en GitHub Actions: se sube **una vez**, con el trabajo terminado y probado en local, para **no lanzarla varias veces por descuido**.
 - **Si Actions falla y hay que corregirlo, se corrige en la misma rama y se hace un segundo push.** No hace falta cerrar el PR ni abrir otro.
+
+## 19. El destino de una conexión se comprueba antes de conectarse (Iván, 06/11/2026, incidente de D186)
+- **Todo script de prueba o de vuelta atrás comprueba el servidor de destino antes de conectarse y se niega a seguir si no es la pila local** (`127.0.0.1` / `localhost`). Nunca toma la conexión «por defecto» de `plataforma/.env.local`: si no le llega la de la pila, para. **Excepción:** las suites `-real`, que leen el real a propósito y solo en transacciones de solo lectura.
+- **Todo script que escriba o revierta en el real exige confirmar el servidor por nombre** (el host, p. ej. con un argumento o una variable de confirmación) y se niega si no coincide con el de la conexión. Imprimir «Destino: …» no basta.
+- **Cómo (D187):** un solo módulo, `plataforma/scripts/lib/destino.mjs`: `--pila` (solo `127.0.0.1`, sin leer `.env.local`) o `--confirmar <ref>` (el real, escrito en el repositorio); si no cuadra, para sin conectarse. Lo prueba `pruebas:destino` (Actions). Un script nuevo que escriba, revierta o cree cuentas lo usa (`exigirDestino`).
+- Motivo: el 06/11/2026 una prueba de la vuelta atrás de D186, pensada para la pila local, se conectó al Supabase real porque le llegó vacía la conexión de la pila y cargó la de `.env.local` (ESTADO, «Incidente durante la carga de D186»). Solo leyó, pero el siguiente paso era revertir.
+

@@ -2,8 +2,9 @@
 // Carga en Supabase la asistencia CON MOTIVOS (D82) desde privado/asistencia/asistencia_<temporada>.json (fuera de
 // git; lo escribe `npm run jornada`). Solo la leen los gestores (RLS).
 //
-//   npm run db:asistencia                 todas las temporadas de privado/asistencia/ (conexion de .env.local)
-//   npm run db:asistencia -- 2026-27      una temporada
+//   npm run db:asistencia -- --confirmar <ref>           todas las temporadas de privado/asistencia/ (en el real)
+//   npm run db:asistencia -- 2026-27 --confirmar <ref>   una temporada
+// Norma 19: sin --confirmar <ref> (el real) ni --pila (la pila local) no se conecta (lib/destino.mjs).
 //   npm run db:asistencia -- --dry        lee y cuenta, sin escribir
 //
 // Cada temporada se REEMPLAZA entera dentro de una transaccion: es repetible.
@@ -12,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { conectar } from './db.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DIR = path.join(RAIZ, '..', 'privado', 'asistencia');
@@ -51,10 +53,8 @@ export async function cargarAsistencia(sql, temporada, filas, { log = console.lo
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { config } = await import('dotenv');
-  config({ path: path.join(RAIZ, '.env.local') });
-  const args = process.argv.slice(2);
-  const dry = args.includes('--dry');
+  const dry = process.argv.includes('--dry');
+  const args = dry ? process.argv.slice(2) : (await exigirDestino(process.argv.slice(2))).args;
   const pedidas = args.filter((a) => !a.startsWith('--'));
   const temporadas = pedidas.length ? pedidas : temporadasDisponibles();
   if (!temporadas.length) { console.error(`No hay ficheros en ${DIR}.`); process.exit(1); }

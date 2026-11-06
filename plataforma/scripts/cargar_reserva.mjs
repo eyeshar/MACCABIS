@@ -3,13 +3,15 @@
 // migracion 20261031180000_reserva aplicada. (El paso de Fernando M. de «solo entreno» a «jugador» ya estaba hecho en el
 // real antes de esta carga: aqui solo se comprueba.)
 //
-//   node scripts/cargar_reserva.mjs            SOLO LEE: enseña el estado actual y lo que cambiaria (no escribe)
-//   node scripts/cargar_reserva.mjs --aplicar  escribe, en una transaccion, y comprueba el resultado
+//   node scripts/cargar_reserva.mjs --confirmar <ref>            SOLO LEE: enseña el estado actual y lo que cambiaria
+//   node scripts/cargar_reserva.mjs --aplicar --confirmar <ref>  escribe, en una transaccion, y comprueba el resultado
+// Norma 19: sin --confirmar <ref> (el real) ni --pila (la pila local) no se conecta (lib/destino.mjs).
 //
 // Repetible. Si algo no cuadra (falta una persona, la columna no existe), no escribe nada. No imprime niveles ni notas.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { conectar } from './db.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const FERNANDO_M = 'mendez-escandon-fernando';
@@ -25,8 +27,7 @@ async function estado(sql) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { config } = await import('dotenv');
-  config({ path: path.join(RAIZ, '.env.local') });
+  await exigirDestino(process.argv.slice(2));
   const aplicar = process.argv.includes('--aplicar');
   const sql = conectar();
   try {

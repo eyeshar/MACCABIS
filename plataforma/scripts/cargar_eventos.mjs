@@ -3,7 +3,8 @@
 // el calendario publico (data/calendario_2026-27.json), las 4 jornadas de descanso, la serie de entrenos de los
 // miercoles (data/entrenos_2026-27.json).
 //
-//   npm run db:eventos            carga (conexion de .env.local)
+//   npm run db:eventos -- --confirmar <ref>   carga en el real (conexion de .env.local; norma 19: o --pila,
+//                                             lib/destino.mjs)
 //   npm run db:eventos -- --dry   solo cuenta, sin escribir
 //
 // SOLO INSERTA (D94): `on conflict do nothing`. Nunca borra ni actualiza: repetirlo no duplica ni pisa lo que se haya
@@ -14,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { conectar } from './db.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.join(RAIZ, '..');
@@ -90,13 +92,12 @@ export async function cargarEventos(sql, { log = console.log, calendario, entren
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { config } = await import('dotenv');
-  config({ path: path.join(RAIZ, '.env.local') });
   if (process.argv.includes('--dry')) {
     const { partidos, descansos } = partidosIniciales();
     console.log(`[dry] ${partidos.length} partidos, ${descansos.length} descansos, ${entrenosIniciales().length} entrenos, ${diccionarioInicial().length} nombres`);
     process.exit(0);
   }
+  await exigirDestino(process.argv.slice(2));
   const sql = conectar();
   try { await cargarEventos(sql); } finally { await sql.end(); }
 }

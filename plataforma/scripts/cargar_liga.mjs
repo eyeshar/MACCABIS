@@ -4,7 +4,8 @@
 // (G3-G6, D184): sus partidos (con la jornada de data/jornadas_grupos_ajenos_<temporada>.json, D186) y su clasificacion
 // calculada, que nunca van a data/liga_<temporada>.json.
 //
-//   npm run db:liga                    carga fuentes_fbm/2026-27/{liga,hojas}/*.xlsx (conexion de .env.local)
+//   npm run db:liga -- --confirmar <ref>   carga fuentes_fbm/2026-27/{liga,hojas}/*.xlsx en el real (conexion de
+//                                      .env.local; norma 19: --pila para la pila local, ver lib/destino.mjs)
 //   npm run db:liga -- --dry           lee, valida y cuenta, sin escribir
 //   npm run db:liga -- 2026-27         otra temporada
 //
@@ -17,6 +18,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { conectar } from './db.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -75,7 +77,8 @@ export async function cargarLiga(sql, liga, temporada, { log = console.log } = {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const args = process.argv.slice(2);
+  // norma 19: el destino, antes de leer ni conectarse a nada (con --dry no se conecta)
+  const args = process.argv.includes('--dry') ? process.argv.slice(2) : (await exigirDestino(process.argv.slice(2))).args;
   const temporada = args.find((a) => /^\d{4}-\d{2}$/.test(a)) || '2026-27';
   try {
     const liga = leerLiga(temporada);
@@ -83,12 +86,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (args.includes('--dry')) {
       console.log(`[dry] ${liga.privado.length} partidos, ${n} filas de jugador, ${liga.calendario.length} de calendario. No se escribe nada.`);
     } else {
-      const dotenv = await import('dotenv');
-      dotenv.config({ path: path.join(RAIZ, '.env.local') });
       const sql = conectar();
       try {
-        const host = (() => { try { return new URL(process.env.SUPABASE_DB_URL).hostname; } catch { return '?'; } })();
-        console.log(`Destino: ${host}`);
         await cargarLiga(sql, liga, temporada);
       } finally { await sql.end(); }
     }

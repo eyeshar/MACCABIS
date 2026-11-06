@@ -7,7 +7,9 @@
 //   npm run db:asistencia-eventos -- --dry      calcula y cuenta, sin tocar la base
 //   npm run db:asistencia-eventos -- --cuadre   compara con asistencia_motivos (solo lectura) y escribe el informe
 //                                               privado/sporteasy/cuadre_eventos_<fecha>.md
-//   npm run db:asistencia-eventos               carga (cada temporada se REEMPLAZA entera en una transacción: repetible)
+//   npm run db:asistencia-eventos -- --confirmar <ref>   carga en el real (cada temporada se REEMPLAZA entera en una
+//                                               transacción: repetible). --cuadre también pide el destino. Norma 19:
+//                                               sin --confirmar <ref> ni --pila no se conecta (lib/destino.mjs).
 //   npm run db:asistencia-eventos -- 2025-26    solo esa temporada
 //
 // Con D111: volcado previo, huella de permisos y cuentas de auth antes y después (ver docs/DECISIONS.md, D170).
@@ -18,6 +20,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { conectar } from './db.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -59,10 +62,8 @@ export function informe(c, nombres) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { config } = await import('dotenv');
-  config({ path: path.join(RAIZ, '.env.local') });
-  const args = process.argv.slice(2);
-  const dry = args.includes('--dry');
+  const dry = process.argv.includes('--dry');
+  const args = dry ? process.argv.slice(2) : (await exigirDestino(process.argv.slice(2))).args;
   const cuadre = args.includes('--cuadre');
   const pedidas = args.filter((a) => !a.startsWith('--'));
   const calc = E.calcular(E.cargarEntradas());

@@ -4,18 +4,18 @@
 // Crea datos temporales (2 usuarios de prueba, 1 campana "PRUEBA" y sus pedidos) y los BORRA
 // al final, pase lo que pase. No imprime claves ni correos reales de jugadores.
 //
-//   node pruebas/verificar_real.mjs
+//   node pruebas/verificar_real.mjs --confirmar <ref>   (norma 19: sin el ref del real, o --pila, no se conecta)
 
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { conectar } from '../scripts/db.mjs';
 import { volcar, huella, TABLAS } from '../scripts/backup_public.mjs';
+import { exigirDestino } from '../scripts/lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-dotenv.config({ path: path.join(RAIZ, '.env.local') });
+await exigirDestino(process.argv.slice(2), { conApi: true });   // crea cuentas temporales: destino comprobado antes
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const sql = conectar();

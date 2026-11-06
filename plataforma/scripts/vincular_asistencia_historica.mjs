@@ -9,7 +9,8 @@
 // afectadas: la histórica `sporteasy-<id>` desaparece y la del club recibe sus eventos (si dos perfiles coinciden en un
 // evento, cuenta una vez). Una transacción por temporada. Repetible: rehace siempre las filas de todo lo decidido.
 //
-//   npm run db:asistencia-vincular                       (conexión de .env.local)
+//   npm run db:asistencia-vincular -- --confirmar <ref>  en el real (conexión de .env.local; norma 19: sin
+//                                                        --confirmar <ref> ni --pila no escribe nada, lib/destino.mjs)
 //   npm run db:asistencia-vincular -- --dry              dice qué haría, sin escribir nada
 //   npm run db:asistencia-vincular -- --fichero <ruta>   otro .md de decisiones
 // Por consola, solo recuentos e ids de perfil: nunca nombres.
@@ -19,6 +20,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { conectar } from './db.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 import { filasDeJugadores } from './cargar_asistencia.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,10 +48,8 @@ export function decidir(dec, previas, descartesPrevios) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { config } = await import('dotenv');
-  config({ path: path.join(RAIZ, '.env.local') });
-  const args = process.argv.slice(2);
-  const dry = args.includes('--dry');
+  const dry = process.argv.includes('--dry');
+  const args = dry ? process.argv.slice(2) : (await exigirDestino(process.argv.slice(2))).args;
   const iF = args.indexOf('--fichero');
   const md = iF >= 0 ? path.resolve(args[iF + 1]) : path.join(RAIZ, '..', 'privado', 'sporteasy', 'propuestas_para_ivan.md');
   const entradas = H.cargarEntradas();

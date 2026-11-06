@@ -18,7 +18,9 @@
     3. test:regresion, test:liga, test:privacidad, check:historia (la temporada en curso de la Historia, D137) y
        check:copias.
     4. Commit de data/ y plataforma/src/data/ («datos(2026-27): jornada N (automático)») y push.
-    5. En plataforma/: npm run db:liga, npm run db:asistencia y verificar_produccion (tras esperar al despliegue).
+    5. En plataforma/: npm run db:liga, npm run db:asistencia y verificar_produccion (tras esperar al despliegue), con
+       el Supabase real confirmado por su ref ($RefReal, norma 19): si la conexión de .env.local no es la de ese
+       proyecto, paran sin conectarse (plataforma/scripts/lib/destino.mjs). No pregunta nada.
 
   Si algo falla antes del push no se publica nada: deja el repositorio como estaba (git reset al commit de partida)
   y borra las copias que hizo en fuentes_fbm/, para que la siguiente ejecución las vuelva a ver como nuevas.
@@ -45,6 +47,9 @@ $Plataforma = Join-Path $Repo 'plataforma'
 # copia antes de enlazar crearía allí un privado/ normal que impediría el enlace.
 $Log = Join-Path $Principal 'privado\registro_rutina_a.log'
 $Resumen = Join-Path $env:TEMP "rutina_a_resumen_$PID.json"
+# Norma 19 (D187): el Supabase real en el que escribe. Es el mismo que REAL.ref de plataforma/scripts/lib/destino.mjs
+# (pruebas:destino comprueba que coinciden); los scripts lo comparan con la conexión de .env.local y paran si no cuadra.
+$RefReal = 'pqbjnxmknhawlkszwmln'
 $EsperaDespliegue = 240          # segundos que se deja a Vercel desplegar el push antes de verificar producción
 
 $script:inicio = $null           # commit de partida (para dejarlo todo como estaba si falla)
@@ -218,14 +223,14 @@ try {
   # 5. Supabase y verificación de producción (lo publicado ya no se deshace: los fallos se avisan)
   $fallos = @()
   foreach ($t in 'db:liga', 'db:asistencia') {
-    if ((Ejecutar "npm run $t (plataforma)" $Plataforma "npm run $t") -ne 0) { $fallos += $t }
+    if ((Ejecutar "npm run $t (plataforma)" $Plataforma "npm run $t -- --confirmar $RefReal") -ne 0) { $fallos += $t }
   }
   Linea "== esperando $EsperaDespliegue s al despliegue de Vercel"
   Start-Sleep -Seconds $EsperaDespliegue
-  if ((Ejecutar 'verificar_produccion' $Plataforma 'node pruebas/verificar_produccion.mjs') -ne 0) {
+  if ((Ejecutar 'verificar_produccion' $Plataforma "node pruebas/verificar_produccion.mjs --confirmar $RefReal") -ne 0) {
     Linea "== segundo intento de verificar_produccion dentro de $EsperaDespliegue s"
     Start-Sleep -Seconds $EsperaDespliegue
-    if ((Ejecutar 'verificar_produccion (2º intento)' $Plataforma 'node pruebas/verificar_produccion.mjs') -ne 0) { $fallos += 'verificar_produccion' }
+    if ((Ejecutar 'verificar_produccion (2º intento)' $Plataforma "node pruebas/verificar_produccion.mjs --confirmar $RefReal") -ne 0) { $fallos += 'verificar_produccion' }
   }
   # Avisos que no paran la jornada (p. ej. una hoja con fecha de descarga antigua): van en el aviso a Iván.
   $avisos = @($res.avisos | Where-Object { $_ })

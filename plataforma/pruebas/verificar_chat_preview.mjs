@@ -4,20 +4,21 @@
 // Atraviesa la proteccion de Vercel con `vercel curl` (sesion de la CLI). Hace las preguntas de prueba, imprime las
 // respuestas literales y el gasto (tokens y neuronas estimadas). Gasta tantas preguntas del dia como preguntas haga.
 //
-//   node pruebas/verificar_chat_preview.mjs <url-del-despliegue>
+//   node pruebas/verificar_chat_preview.mjs <url-del-despliegue> --confirmar <ref>   (norma 19: sin el ref del real, o
+//                                                                                 --pila, no se conecta)
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
 import { createServerClient } from '@supabase/ssr';
 import { conectar } from '../scripts/db.mjs';
+import { exigirDestino } from '../scripts/lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-dotenv.config({ path: path.join(RAIZ, '.env.local') });
-const BASE = (process.argv[2] || '').replace(/\/$/, '');
+const { args } = await exigirDestino(process.argv.slice(2), { conApi: true });
+const BASE = (args[0] || '').replace(/\/$/, '');
 if (!/^https:\/\/maccabis-[a-z0-9]+-web-tcpc\.vercel\.app$/.test(BASE)) { console.error('Uso: node pruebas/verificar_chat_preview.mjs https://maccabis-<id>-web-tcpc.vercel.app'); process.exit(2); }
 const PREGUNTAS = [
   '¿cómo activo los avisos en iPhone?',

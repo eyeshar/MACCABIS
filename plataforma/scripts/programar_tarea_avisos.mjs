@@ -4,8 +4,10 @@
 // (no aparece en el texto del trabajo de pg_cron ni en este repositorio).
 //
 //   npm run avisos:programar              enseña lo que haría (sin el secreto) y no toca nada
-//   npm run avisos:programar -- --aplicar lo aplica (SOLO con el OK de Ivan, D94)
-//   npm run avisos:programar -- --quitar  quita el trabajo programado (los avisos dejan de salir solos)
+//   npm run avisos:programar -- --aplicar --confirmar <ref>   lo aplica (SOLO con el OK de Ivan, D94)
+//   npm run avisos:programar -- --quitar --confirmar <ref>    quita el trabajo programado (los avisos dejan de salir solos)
+// Norma 19: --aplicar y --quitar exigen el destino (--confirmar <ref> para el real, --pila para la pila local) y sin
+// el no se conectan (lib/destino.mjs).
 //
 // Reintento (fix/tarea-avisos-500, 04/11/2026): un segundo trabajo, cada 5 minutos (:02, :07, :12…), vuelve a llamar SOLO
 // si la ultima respuesta que ha recibido pg_net (de menos de 14 minutos) no es un 200: Vercel a veces corta la peticion
@@ -20,15 +22,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { conectar } from './db.mjs';
+import { exigirDestino } from './lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-dotenv.config({ path: path.join(RAIZ, '.env.local') });
+const aplicar = process.argv.includes('--aplicar');
+const quitar = process.argv.includes('--quitar');
+// Lo que escribe, con el destino comprobado antes de nada (y .env.local solo si es el real); lo que solo enseña, como antes.
+if (aplicar || quitar) await exigirDestino(process.argv.slice(2));
+else dotenv.config({ path: path.join(RAIZ, '.env.local') });
 const URL_TAREA = process.env.AVISOS_URL_TAREA || 'https://maccabis.vercel.app/api/avisos/tarea';
 const NOMBRE = 'maccabis-avisos';
 const NOMBRE_REINTENTO = 'maccabis-avisos-reintento';
 const CADA_REINTENTO = '2-59/5 * * * *';
-const aplicar = process.argv.includes('--aplicar');
-const quitar = process.argv.includes('--quitar');
 
 const ORDEN = `select net.http_post(
     url := '${URL_TAREA}',

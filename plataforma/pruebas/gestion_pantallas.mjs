@@ -9,7 +9,8 @@
 //   - Convocatoria: «Quién lleva más tiempo fuera», «Ocultar niveles» (en la URL), líneas con nivel y «dobla».
 //   - Gestión › Jugadores: buscador (en la URL) y fila desplegable con los datos privados.
 //   - Pedido de ropa: entra cerrado; un solo estado con su causa; el interruptor lo abre y lo cierra; invisible para el
-//     jugador con el interruptor apagado (y se deja apagado al terminar).
+//     jugador con el interruptor apagado (y se deja apagado al terminar); con la fecha límite pasada se puede cerrar.
+//   - 3 · Pendiente: la convocatoria se va al aprobarla y la rutina B solo sale si el jueves pasó sin revisión registrada.
 //   - Barrera (h): jugador y anónimo sin acceso a niveles, motivos ni contador de no convocados.
 // Capturas a 390 px (solo en local, con capturas), como gestor sin ficha y con ficha (`<pantalla>-sin-ficha.png`,
 // `<pantalla>-con-ficha.png`), en privado/mockups_liga/rediseno/estructura_nueva/.
@@ -128,6 +129,24 @@ try {
     await p.context().close();
   }
 
+  // ---------------------------------------------------------------- 3 · Pendiente: nada caducado
+  console.log('\n== 3 · Pendiente: ninguna tarea caducada');
+  const pp = await e.sesion('gestor@pruebas.local', 390);
+  const pendiente = async () => { await pp.goto(`${APP}/gestion`); return (await pp.getByTestId('gp-pendiente').innerText()).replace(/\s+/g, ' '); };
+  let tp = await pendiente();
+  ok(/Convocatoria de la J\d+: reparto/.test(tp), 'con la convocatoria del domingo sin aprobar, sale en Pendiente', tp.slice(0, 200));
+  ok(/Rutina B del jue 15 oct sin registrar/.test(tp), 'el jueves 15/10 pasó sin revisión del calendario: «Rutina B del jue 15 oct sin registrar»', tp.slice(0, 300));
+  ok(!/Contrastar la clasificación calculada/.test(tp), 'la tarea fija «Contrastar la clasificación…» ya no sale siempre');
+  const jJ3 = (await sql`select jornada from public.eventos where tipo = 'liga' and fecha = ${J3} limit 1`)[0].jornada;
+  await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, aprobada_en, aprobada_por_nombre) values (${J3}, ${jJ3}, 'aprobada', 'propuesta', ${sql.json({ MdA: [{ person_id: 'sint-ana' }] })}, '2026-10-19T08:00:00Z', 'Gestor')`;
+  await sql`insert into public.importaciones (tipo, por_nombre, en, lineas, validas, aceptadas, ignoradas, bloqueadas) values ('calendario', 'Gestor', '2026-10-15T18:25:00Z', 44, 26, 0, 0, 0)`;
+  tp = await pendiente();
+  ok(!/Convocatoria de la J/.test(tp), 'aprobada la convocatoria, su tarea desaparece de Pendiente', tp.slice(0, 200));
+  ok(!/Rutina B del/.test(tp) && /Revisado 15\/10, sin cambios/.test(await pp.getByTestId('gp-calendario').innerText()), 'con la revisión del jueves registrada (0 cambios): sin tarea y «Revisado 15/10, sin cambios»', await pp.getByTestId('gp-calendario').innerText());
+  await sql`delete from public.convocatorias where fecha = ${J3}`;
+  await sql`delete from public.importaciones where tipo = 'calendario'`;
+  await pp.context().close();
+
   const pg = await e.sesion('gestor@pruebas.local', 390);
   // ---------------------------------------------------------------- No convocados
   console.log('\n== Gestión › No convocados');
@@ -200,6 +219,13 @@ try {
   await trasAccion(pg, () => pg.getByRole('button', { name: 'Cerrar el pedido a los jugadores' }).click());
   ok(await hasta(async () => (await pg.getByTestId('ropa-estado').getAttribute('data-abierto')) === 'no'), 'se vuelve a cerrar');
   ok((await zona())?.abierta_ahora === false && (await sql`select estado from public.campanas_ropa where id = ${campana.id}`)[0].estado === 'cerrada', 'y queda apagado al terminar (invisible para el jugador)');
+  // Interruptor encendido y fecha límite pasada («Ropa 2026/27» el 06/11): cerrado a los jugadores, pero «abierta» en la base.
+  // Tiene que poder cerrarse (antes solo salía «Abrir»).
+  await sql`update public.campanas_ropa set estado = 'abierta', fecha_limite = '2026-10-10T21:59:59Z' where id = ${campana.id}`;
+  await pg.goto(`${APP}/gestion/ropa`);
+  ok((await pg.getByTestId('ropa-estado').getAttribute('data-causa')) === 'fecha' && await visto(pg.getByTestId('ropa-cerrar')), 'con la fecha límite pasada: «Cerrar el pedido a los jugadores» a la vista');
+  await trasAccion(pg, () => pg.getByTestId('ropa-cerrar').click());
+  ok(await hasta(async () => (await pg.getByTestId('ropa-estado').getAttribute('data-causa')) === 'interruptor') && (await sql`select estado from public.campanas_ropa where id = ${campana.id}`)[0].estado === 'cerrada', 'y al pulsarlo la campaña queda «cerrada» en la base');
   ok(!conD(await pg.content()), 'pedido de ropa sin «(D» en el HTML');
 
   // ---------------------------------------------------------------- Barrera (h)

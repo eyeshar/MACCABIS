@@ -1,6 +1,6 @@
 {
   "temporada": "2026-27",
-  "nota": "Jornada de las hojas de los grupos ajenos G3–G6 (D183, D184, D186). Deducida el 05/11/2026 por el orden de exportación de cada hoja: la hora de generación y el contador de imágenes que guarda el servidor dentro del .xlsx dan el mismo orden. Duplicados por contenido quitados. Una jornada empieza cuando un equipo aparece por segunda vez y ningún equipo juega dos veces en la misma jornada. «comprobado»: true si cuadra por las dos vías; false en los casos dudosos (pendientes de contrastar con la app). Sin marcadores ni datos por jugador: salen de la hoja y van a Supabase con sesión (D184). «hoja» es el nombre del fichero en fuentes_fbm/2026-27/liga/.",
+  "nota": "Jornada de las hojas de los grupos ajenos G3–G6 (D183, D184, D186). Deducida el 05/11/2026 por el orden de exportación de cada hoja: la hora de generación y el contador de imágenes que guarda el servidor dentro del .xlsx dan el mismo orden. Duplicados por contenido quitados. Una jornada empieza cuando un equipo aparece por segunda vez y ningún equipo juega dos veces en la misma jornada. «comprobado»: true si cuadra por las dos vías o se ha contrastado con la app (los dudosos de G3 J1 y los huecos de G5, el 06/11/2026); false si sigue dudoso. Sin marcadores ni datos por jugador: salen de la hoja y van a Supabase con sesión (D184). «hoja» es el nombre del fichero en fuentes_fbm/2026-27/liga/.",
   "partidos": [
     {
       "grupo": "G3",
@@ -32,7 +32,7 @@
       "local": "ESTRELLA NEGRA",
       "visitante": "SPV",
       "hoja": "liga_J--_G3_estrella-negra_vs_spv_7daa4faa.xlsx",
-      "comprobado": false
+      "comprobado": true
     },
     {
       "grupo": "G3",
@@ -40,7 +40,7 @@
       "local": "CAFÉ HNOS. VELASCO SETTAS",
       "visitante": "SUPERLOSERS",
       "hoja": "liga_J--_G3_cafe-hnos-velasco-settas_vs_superlosers_2ff5a6ed.xlsx",
-      "comprobado": false
+      "comprobado": true
     },
     {
       "grupo": "G3",
@@ -513,8 +513,8 @@
           "local": "ESTUDIABANTES",
           "visitante": "LLORONES FUERA",
           "motivo": "sin_hoja",
-          "nota": "«Partido no encontrado» en la app (D183)",
-          "comprobado": false
+          "nota": "resultado oficial en la app, sin hoja de estadística (comprobado el 06/11/2026)",
+          "comprobado": true
         }
       ]
     },
@@ -527,8 +527,8 @@
           "local": "TROTAMUNDOS",
           "visitante": "BARTEAM OSBORNE",
           "motivo": "incomparecencia",
-          "nota": "incomparecencia: no genera hoja (D29, D183); local/visitante sin confirmar",
-          "comprobado": false
+          "nota": "incomparecencia de BARTEAM OSBORNE: no genera hoja (D29); local y visitante comprobados en la app (06/11/2026)",
+          "comprobado": true
         }
       ]
     },

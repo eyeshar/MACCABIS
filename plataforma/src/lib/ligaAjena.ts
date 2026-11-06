@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import jornadasAjenas from "@/data/jornadasAjenas.json";
 import { claveEquipo, cargarClasificacion, cargarPartidos } from "./liga";
 import type { EquipoLiga, FilaClasificacion, GrupoLiga, ResultadoLiga } from "./estadisticas/liga";
-import type { JornadasAjenas } from "./gruposLiga";
+import { marcaSinHoja, type JornadasAjenas } from "./gruposLiga";
 
 // Liga › Clasificacion de un grupo ajeno (G3-G6, fix/visibilidad-movil): la misma pantalla que G1/G2, pero SOLO con sesion
 // (D184/D186): sus marcadores y su clasificacion salen de Supabase (RLS, puede_ver_liga()), nunca de data/ ni de la pagina
@@ -27,10 +27,17 @@ export async function cargarGrupoAjeno(supabase: SupabaseClient, grupo: string, 
     pos: c.pos, id: id(c.equipo), equipo: c.equipo, nuestro: false, pj: c.pj, g: c.g, p: c.p, pf: c.pf, pc: c.pc, dif: c.pf - c.pc, pts: c.pts,
   }));
   const conJornada = partidos.filter((p) => p.jornada != null);
-  const resultados: ResultadoAjeno[] = conJornada.map((p) => ({
-    id: p.id, jornada: p.jornada as number, fecha: p.fecha, local: nombreDe(p.local), local_id: id(p.local), visitante: nombreDe(p.visitante), visitante_id: id(p.visitante),
-    pl: p.pts_local, pv: p.pts_visitante,
-  }));
+  const huecosDe = (j: number | null) => AJENAS.jornadas.find((x) => x.grupo === grupo && x.jornada === j)?.huecos ?? [];
+  // Un partido cargado sin hoja (resultado oficial o incomparecencia 20-0) sale con su marcador y su marca (`hueco`), sin enlace.
+  const marca = (p: (typeof partidos)[number]) => marcaSinHoja(p, huecosDe(p.jornada));
+  const resultados: ResultadoAjeno[] = conJornada.map((p) => {
+    const m = marca(p);
+    return {
+      id: p.id, jornada: p.jornada as number, fecha: p.fecha, local: nombreDe(p.local), local_id: id(p.local), visitante: nombreDe(p.visitante), visitante_id: id(p.visitante),
+      pl: p.pts_local, pv: p.pts_visitante,
+      ...(m.sinHoja ? { hueco: m.sinHoja, incomparecencia: m.sinHoja === "incomparecencia", ...(m.noPresentado ? { no_presentado: nombreDe(m.noPresentado) } : {}) } : {}),
+    };
+  });
   const par = (a: string, b: string) => [claveEquipo(a), claveEquipo(b)].sort().join("|");
   const cargados = new Set(resultados.map((r) => `${r.jornada}:${par(r.local, r.visitante)}`));
   const descansan: Record<string, string[]> = {};
@@ -45,11 +52,12 @@ export async function cargarGrupoAjeno(supabase: SupabaseClient, grupo: string, 
     }
   }
   const jornadas = [...new Set(resultados.map((r) => r.jornada))].sort((a, b) => a - b);
-  // Ficha por equipo: medias, racha y ultimos con los partidos con marcador (tambien los que llegaron sin jornada).
+  // Ficha por equipo: medias, racha y ultimos con los partidos con marcador (tambien los que llegaron sin jornada), sin las
+  // incomparecencias (su 20-0 no es juego en pista: D29).
   const equipos: Record<string, EquipoLiga> = {};
   for (const c of clasificacion) {
     const suyos = partidos
-      .filter((p) => p.pts_local != null && p.pts_visitante != null && (claveEquipo(p.local) === c.id || claveEquipo(p.visitante) === c.id))
+      .filter((p) => p.pts_local != null && p.pts_visitante != null && marca(p).sinHoja !== "incomparecencia" && (claveEquipo(p.local) === c.id || claveEquipo(p.visitante) === c.id))
       .sort((a, b) => (a.jornada ?? 99) - (b.jornada ?? 99) || (a.fecha ?? "").localeCompare(b.fecha ?? ""));
     const lineas = suyos.map((p) => (claveEquipo(p.local) === c.id ? { f: p.pts_local!, e: p.pts_visitante! } : { f: p.pts_visitante!, e: p.pts_local! }));
     const n = lineas.length;

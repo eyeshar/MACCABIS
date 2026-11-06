@@ -150,7 +150,16 @@ function Resultados({ sel, partidos, clasificacion, pedida }: { sel: string[]; p
           <h3>{etiquetaGrupo(b.grupo)}</h3>
           {b.sinPartidos ? <p className="lg-nota">Sin partidos cargados de la jornada {jornada}.</p> : (
             <ul className="lista-limpia lg-res-lista">
-              {b.filas.map((f) => f.tipo === "partido" ? (
+              {b.filas.map((f) => f.tipo === "partido" && f.sinHoja ? (
+                // Cargado sin hoja: marcador oficial y su marca; sin enlace (no hay datos por jugador que ver).
+                <li key={f.id} className="lg-res-hueco" data-testid="sin-hoja">
+                  <span className={f.pl != null && f.pv != null && f.pl > f.pv ? "gana" : ""}>{f.local}</span>
+                  <b className="lg-res-marcador">{f.pl ?? "–"}–{f.pv ?? "–"}</b>
+                  <span className={f.pl != null && f.pv != null && f.pv > f.pl ? "gana" : ""}>{f.visitante}</span>
+                  <span className="etiqueta etiqueta-cerrada">{textoHueco(f.sinHoja, f.noPresentado)}</span>
+                  {f.fecha && <small>{fechaCorta(f.fecha)}</small>}
+                </li>
+              ) : f.tipo === "partido" ? (
                 <li key={f.id}>
                   <Link href={`/liga/consolidada/partido/${f.id}?${new URLSearchParams({ grupos: sel.join(","), j: String(jornada) }).toString().replace(/%2C/g, ",")}`} className="lg-res-partido">
                     <span className={f.pl != null && f.pv != null && f.pl > f.pv ? "gana" : ""}>{f.local}</span>
@@ -173,7 +182,8 @@ function Resultados({ sel, partidos, clasificacion, pedida }: { sel: string[]; p
       ))}
       <Info testid="aclaraciones-resultados">
         <p>Pulsa un partido para ver su hoja (datos por jugador, solo con sesión). Los huecos son partidos sin hoja de estadística (la app no la
-          tiene) o incomparecencias: no tienen marcador.{sinJornada ? ` ${sinJornada} ${sinJornada === 1 ? "hoja llegó" : "hojas llegaron"} sin jornada y no salen aquí.` : ""}</p>
+          tiene) o incomparecencias: sin marcador hasta que se cargue el oficial; con él, salen con su marcador y la marca «sin hoja» o
+          «incomparecencia», sin enlace a la hoja.{sinJornada ? ` ${sinJornada} ${sinJornada === 1 ? "hoja llegó" : "hojas llegaron"} sin jornada y no salen aquí.` : ""}</p>
       </Info>
     </section>
   );

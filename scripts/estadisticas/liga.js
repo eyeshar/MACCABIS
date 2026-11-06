@@ -200,9 +200,13 @@ function clasificar(equipos, juegos, cfgLiga, oficiales) {
   for (const j of [...juegos].sort((a, b) => a.jornada - b.jornada)) {
     const L = t.get(j.local.id), V = t.get(j.visitante.id);
     if (j.incomp) {
-      // Sin hoja: ganado para el que se presentó, perdido para el otro, sin puntos a favor ni en contra.
+      // Sin hoja: ganado para el que se presentó, perdido para el otro, sin puntos a favor ni en contra (D74); si se conoce
+      // el 20-0 oficial (resultados sin hoja de los grupos ajenos), con él.
       const ganaL = j.no_presentado !== j.local.id;
-      for (const [x, gana, donde] of [[L, ganaL, 'casa'], [V, !ganaL, 'fuera']]) { for (const o of [x, x[donde]]) { o.pj++; o[gana ? 'g' : 'p']++; } x.serie.push(gana ? 'G' : 'P'); }
+      for (const [x, gana, donde, pf, pc] of [[L, ganaL, 'casa', j.pl, j.pv], [V, !ganaL, 'fuera', j.pv, j.pl]]) {
+        for (const o of [x, x[donde]]) { o.pj++; o[gana ? 'g' : 'p']++; if (pf != null) { o.pf += pf; o.pc += pc; } }
+        x.serie.push(gana ? 'G' : 'P');
+      }
       t.get(j.no_presentado).np++;
       continue;
     }
@@ -310,12 +314,26 @@ function construir(temporada) {
   const v = validarPartidos(partidos);
   errores.push(...v.errores); avisos.push(...v.avisos);
 
+  // Resultados oficiales SIN HOJA de los grupos ajenos (fuentes_fbm/<temporada>/resultados_sin_hoja.csv, fuera de git): un
+  // partido con marcador y sin filas por jugador, o una incomparecencia (20-0). Solo van a lo privado (Supabase, con sesión).
+  const sh = jornadasAjenas.leerSinHoja(temporada, ctx.grupos);
+  errores.push(...sh.errores);
+  const sinHoja = [];
+  for (const e of sh.entradas) {
+    const g = ctx.grupos[e.grupo], eq = n => g.equipos.get(normEquipo(n));
+    if (!g.ajeno) { errores.push(`${jornadasAjenas.SIN_HOJA}: ${e.grupo} ${e.local} - ${e.visitante} es de un grupo nuestro; sus incomparecencias van en temporadas.json (D74).`); continue; }
+    if (!eq(e.local) || !eq(e.visitante)) { errores.push(`${jornadasAjenas.SIN_HOJA}: ${e.local} - ${e.visitante} no son equipos del ${e.grupo}.`); continue; }
+    sinHoja.push({ ...e, g });
+  }
+
   // Un equipo no puede jugar dos veces en la misma jornada, ni un partido repetirse.
   const vistos = new Map();
-  for (const p of partidos.filter(p => p.jornada != null)) for (const n of [p.hoja.local, p.hoja.visitante]) {
-    const k = `${p.grupo.clave}|${p.jornada}|${normEquipo(n)}`;
-    if (vistos.has(k)) errores.push(`${n} aparece dos veces en la jornada ${p.jornada} del ${p.grupo.clave} (${vistos.get(k)} y ${p.hoja.fichero}).`);
-    vistos.set(k, p.hoja.fichero);
+  const jugados = [...partidos.filter(p => p.jornada != null).map(p => ({ g: p.grupo.clave, j: p.jornada, eqs: [p.hoja.local, p.hoja.visitante], f: p.hoja.fichero })),
+    ...sinHoja.map(e => ({ g: e.grupo, j: e.jornada, eqs: [e.local, e.visitante], f: `${jornadasAjenas.SIN_HOJA} (${e.local} - ${e.visitante})` }))];
+  for (const p of jugados) for (const n of p.eqs) {
+    const k = `${p.g}|${p.j}|${normEquipo(n)}`;
+    if (vistos.has(k)) errores.push(`${n} aparece dos veces en la jornada ${p.j} del ${p.g} (${vistos.get(k)} y ${p.f}).`);
+    vistos.set(k, p.f);
   }
 
   const publico = {
@@ -340,6 +358,16 @@ function construir(temporada) {
       privado.push({ grupo: g.clave, jornada: p.jornada, fecha: j.fecha, local: j.local.nombre, visitante: j.visitante.nombre, pl: j.pl, pv: j.pv, fichero: h.fichero, equipos: h.equipos.map((e, i) => ({ equipo: (i ? j.visitante : j.local).nombre, jugadores: e.jugadores, totales: e.totales })) });
       return j;
     }).sort((a, b) => a.jornada - b.jornada || a.local.nombre.localeCompare(b.local.nombre, 'es'));
+
+    // Sin hoja (solo grupos ajenos): cuenta con su marcador oficial; la incomparecencia, como en D74 (gana el que se presenta y
+    // los puntos del que no, de la oficial), pero con el 20-0 oficial en los puntos a favor y en contra.
+    for (const e of sinHoja.filter(x => x.g === g)) {
+      const eq = n => g.equipos.get(normEquipo(n));
+      const j = { jornada: e.jornada, fecha: e.fecha, local: eq(e.local), visitante: eq(e.visitante), pl: e.pl, pv: e.pv, nuestro: false, sinHoja: e.motivo };
+      if (e.motivo === 'incomparecencia') Object.assign(j, { incomp: true, no_presentado: eq(e.no_presentado).id });
+      juegos.push(j);
+      privado.push({ grupo: g.clave, jornada: e.jornada, fecha: e.fecha, local: j.local.nombre, visitante: j.visitante.nombre, pl: e.pl, pv: e.pv, fichero: null, sin_hoja: e.motivo, equipos: [] });
+    }
 
     for (const ic of (cfgLiga.incomparecencias || []).filter(i => i.grupo === g.clave)) {
       const eq = n => g.equipos.get(normEquipo(n));

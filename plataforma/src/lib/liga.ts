@@ -71,9 +71,10 @@ export async function cargarClasificacion(supabase: SupabaseClient, grupos: read
   return (c.data ?? []) as FilaClasificacion[];
 }
 
-/** Partidos de esos grupos (liga_partidos, con sesion: RLS), con marcador, jornada y fecha si se conoce (D186). */
+/** Partidos de esos grupos (liga_partidos, con sesion: RLS), con marcador, jornada y fecha si se conoce (D186), y su hoja
+ *  (null: resultado oficial sin hoja o incomparecencia). */
 export async function cargarPartidos(supabase: SupabaseClient, grupos: readonly string[]): Promise<PartidoLiga[]> {
-  const r = await supabase.from("liga_partidos").select("id, grupo, jornada, fecha, local, visitante, pts_local, pts_visitante")
+  const r = await supabase.from("liga_partidos").select("id, grupo, jornada, fecha, local, visitante, pts_local, pts_visitante, hoja")
     .eq("temporada", TEMPORADA).in("grupo", grupos).order("grupo").order("jornada").order("local");
   if (r.error) throw new Error(r.error.message);
   return (r.data ?? []) as PartidoLiga[];

@@ -48,6 +48,8 @@ try {
   const N = partidos.length;
   const jornadas = [...new Set(partidos.filter((p) => p.grupo === 'G1' || p.grupo === 'G2').map((p) => p.jornada))].sort((a, b) => a - b);
   const AJENOS = partidos.filter((p) => p.grupo !== 'G1' && p.grupo !== 'G2').length;   // G3-G6 (D184), con jornada desde D186
+  // Resultados oficiales SIN hoja (fuentes_fbm/<T>/resultados_sin_hoja.csv, fix/g5-rutina-s21-y-repaso): marcador sin filas por jugador.
+  const SIN_HOJA = partidos.filter((p) => !p.fichero);
   const FILAS_CLAS = Object.values(liga.publico.grupos).reduce((n, g) => n + g.clasificacion.length, 0) + Object.values(liga.ajenos).reduce((n, g) => n + g.clasificacion.length, 0);
   const NUESTROS = partidos.filter((p) => ['MdA', 'MdL'].some((n) => n === p.local || n === p.visitante)).length;
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
@@ -63,18 +65,21 @@ try {
   const clave = (t) => String(t).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
   const par = (g, l, v) => `${g}|${clave(l)}|${clave(v)}`;
   const jornadaFich = new Map(fichJ.partidos.map((p) => [par(p.grupo, p.local, p.visitante), p.jornada]));
-  const ajenosBase = await sql`select grupo, jornada, local, visitante from public.liga_partidos where grupo not in ('G1', 'G2')`;
-  const malJ = ajenosBase.filter((p) => p.jornada == null || jornadaFich.get(par(p.grupo, p.local, p.visitante)) !== p.jornada);
-  ok(AJENOS > 0 && ajenosBase.length === AJENOS && fichJ.partidos.length === AJENOS && malJ.length === 0,
-    `los ${AJENOS} partidos de G3-G6, cada uno con la jornada del fichero de jornadas (D186)`,
+  const ajenosBase = await sql`select grupo, jornada, local, visitante, hoja from public.liga_partidos where grupo not in ('G1', 'G2')`;
+  const malJ = ajenosBase.filter((p) => p.hoja != null && (p.jornada == null || jornadaFich.get(par(p.grupo, p.local, p.visitante)) !== p.jornada));
+  ok(AJENOS > 0 && ajenosBase.length === AJENOS && fichJ.partidos.length === AJENOS - SIN_HOJA.length && malJ.length === 0,
+    `los ${AJENOS - SIN_HOJA.length} partidos de G3-G6 con hoja, cada uno con la jornada del fichero de jornadas (D186)`,
     `${ajenosBase.length} en la base, ${fichJ.partidos.length} en el fichero, ${malJ.length} con otra jornada o sin ella (${malJ.slice(0, 3).map((p) => `${p.grupo} J${p.jornada ?? '-'} ${p.local}-${p.visitante}`).join('; ')})`);
   const [{ n: g12SinJ }] = await sql`select count(*)::int n from public.liga_partidos where grupo in ('G1', 'G2') and jornada is null`;
   ok(g12SinJ === 0, 'G1 y G2, todos con jornada', String(g12SinJ));
   const huecos = fichJ.jornadas.flatMap((j) => j.huecos.map((h) => ({ ...h, grupo: j.grupo, jornada: j.jornada })));
-  const conPartido = huecos.filter((h) => ajenosBase.some((p) => p.grupo === h.grupo && [par(h.grupo, h.local, h.visitante), par(h.grupo, h.visitante, h.local)].includes(par(p.grupo, p.local, p.visitante))));
-  ok(huecos.length === 2 && huecos.every((h) => h.grupo === 'G5') && conPartido.length === 0,
-    `los ${huecos.length} huecos de G5 (sin hoja o incomparecencia) no tienen partido (${huecos.map((h) => `J${h.jornada} ${h.motivo}`).join(', ')})`,
-    conPartido.map((h) => `J${h.jornada} ${h.local}-${h.visitante}`).join('; '));
+  // Un hueco solo tiene partido si es un resultado sin hoja (hoja null) de esa misma jornada; nunca una hoja.
+  const mismo = (h, p) => p.grupo === h.grupo && [par(h.grupo, h.local, h.visitante), par(h.grupo, h.visitante, h.local)].includes(par(p.grupo, p.local, p.visitante));
+  const conHoja = huecos.filter((h) => ajenosBase.some((p) => mismo(h, p) && (p.hoja != null || p.jornada !== h.jornada)));
+  const sinHojaSinHueco = ajenosBase.filter((p) => p.hoja == null && !huecos.some((h) => mismo(h, p) && h.jornada === p.jornada));
+  ok(huecos.length === 2 && huecos.every((h) => h.grupo === 'G5') && conHoja.length === 0 && sinHojaSinHueco.length === 0,
+    `los ${huecos.length} huecos de G5 (sin hoja o incomparecencia) no tienen hoja; ${SIN_HOJA.length} cargados con su resultado oficial, cada uno en su hueco (${huecos.map((h) => `J${h.jornada} ${h.motivo}`).join(', ')})`,
+    [...conHoja, ...sinHojaSinHueco].map((h) => `J${h.jornada} ${h.local}-${h.visitante}`).join('; '));
   ok(c.j === esperadoJug, `${esperadoJug} filas de jugador cargadas`, String(c.j));
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   c = await cuenta();
@@ -83,7 +88,9 @@ try {
     select count(*)::int n from public.liga_partidos p
     where p.pts_local = (select sum(pts) from public.liga_estadisticas_jugador e where e.partido_id = p.id and e.equipo = p.local)
       and p.pts_visitante = (select sum(pts) from public.liga_estadisticas_jugador e where e.partido_id = p.id and e.equipo = p.visitante)`;
-  ok(sumas === N, `en los ${N} partidos, la suma de puntos por jugador = marcador de cada equipo`, String(sumas));
+  ok(sumas === N - SIN_HOJA.length, `en los ${N - SIN_HOJA.length} partidos con hoja, la suma de puntos por jugador = marcador de cada equipo`, String(sumas));
+  const [{ n: filasSinHoja }] = await sql`select count(*)::int n from public.liga_estadisticas_jugador e join public.liga_partidos p on p.id = e.partido_id where p.hoja is null`;
+  ok(filasSinHoja === 0, `los ${SIN_HOJA.length} resultados sin hoja, sin filas por jugador`, String(filasSinHoja));
   const [{ nuestros }] = await sql`select count(*)::int nuestros from public.liga_partidos where nuestro`;
   ok(nuestros === NUESTROS && NUESTROS === 2 * jornadas.length, `solo ${NUESTROS} partidos marcados como nuestros (MdA y MdL, ${jornadas.length} jornadas)`, String(nuestros));
 
@@ -107,7 +114,11 @@ try {
   ok(new Set(filas.map((f) => f.nombre.concat('|', f.equipos.join()))).size === filas.length, 'ninguna persona aparece dos veces en la tabla');
   const porEquipo = new Map();
   for (const j of jug) porEquipo.set(`${j.grupo}|${j.equipo}`, (porEquipo.get(`${j.grupo}|${j.equipo}`) ?? 0) + j.pts);
-  ok(clas.filter((c) => c.pj > 0).every((c) => porEquipo.get(`${c.grupo}|${c.equipo}`) === c.pf), `la suma de PTS por jugador de cada equipo = sus puntos a favor en la clasificacion calculada (${clas.filter((c) => c.pj > 0).length} equipos con partidos, G1-G6)`);
+  // Los puntos de los resultados sin hoja estan en la clasificacion y no en las fichas: se descuentan para comparar.
+  const pfSinHoja = new Map();
+  for (const p of SIN_HOJA) for (const [eq, pts] of [[p.local, p.pl], [p.visitante, p.pv]]) pfSinHoja.set(`${p.grupo}|${eq}`, (pfSinHoja.get(`${p.grupo}|${eq}`) ?? 0) + pts);
+  for (const c of clas) c.pf -= pfSinHoja.get(`${c.grupo}|${c.equipo}`) ?? 0;
+  ok(clas.filter((c) => c.pj > 0).every((c) => (porEquipo.get(`${c.grupo}|${c.equipo}`) ?? 0) === c.pf), `la suma de PTS por jugador de cada equipo = sus puntos a favor en la clasificacion calculada (${clas.filter((c) => c.pj > 0).length} equipos con partidos, G1-G6)`);
   const sumaTabla = filas.reduce((n, f) => n + f.pts, 0), sumaFichas = jug.reduce((n, j) => n + j.pts, 0), sumaPF = clas.reduce((n, c) => n + c.pf, 0);
   ok(sumaTabla === sumaFichas && sumaFichas === sumaPF, `los dobladores no se cuentan dos veces: PTS de la tabla (${sumaTabla}) = PTS de las fichas (${sumaFichas}) = puntos a favor de toda la liga (${sumaPF})`);
   for (const f of dobles) {

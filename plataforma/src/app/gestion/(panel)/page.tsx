@@ -369,7 +369,7 @@ export default async function InicioGestion() {
               </li>
               <li data-testid="gp-calendario">
                 <span>Cambios del calendario</span>
-                <Link href="/gestion/eventos/importar">{ultimaImportacion ? `Última importación ${ddmm(ultimaImportacion.en)}` : "Importar"} ›</Link>
+                <Link href="/gestion/eventos/importar">{ultimaImportacion ? (ultimaImportacion.aceptadas ? `Última importación ${ddmm(ultimaImportacion.en)}` : `Revisado ${ddmm(ultimaImportacion.en)}, sin cambios`) : "Importar"} ›</Link>
               </li>
               {cambiosCal.map((e) => (
                 <li key={e.id} className="gp-fila-sub"><span className="pequeno">{diaYNumero(e.fecha)} · {tituloEvento(e)}</span><Link href={`/gestion/eventos/${e.id}`} className="pequeno">cambiado {ddmm(e.cambio_visible_en!)} ›</Link></li>

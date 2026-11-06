@@ -79,6 +79,12 @@ ok(hrefConsolidada(['G1', 'G2']) === '/liga/consolidada' && hrefConsolidada(['G1
   const P2 = [...P, { id: 'y', grupo: 'G9', jornada: 1, fecha: null, local: 'D', visitante: 'C', pts_local: 38, pts_visitante: 30 }];
   const [d] = resultadosDeJornada(P2, { G9: ['A', 'B', 'C', 'D', 'E'] }, ['G9'], 1, { jornadas: [{ grupo: 'G9', jornada: 1, descansa: 'E', huecos: [{ local: 'C', visitante: 'D', motivo: 'sin_hoja' }] }] });
   ok(d.filas.length === 2 && d.filas.every((f) => f.tipo === 'partido'), 'un hueco ya cargado sale solo como partido, con su marcador (fix/visibilidad-movil)');
+  // Cargado SIN hoja (hoja null): sale como partido con su marca; la incomparecencia dice quién no se presentó (el del 0).
+  const P3 = [...P, { id: 'z', grupo: 'G9', jornada: 1, fecha: null, local: 'C', visitante: 'D', pts_local: 20, pts_visitante: 0, hoja: null }];
+  const [z] = resultadosDeJornada(P3, { G9: ['A', 'B', 'C', 'D', 'E'] }, ['G9'], 1, { jornadas: [{ grupo: 'G9', jornada: 1, descansa: 'E', huecos: [{ local: 'C', visitante: 'D', motivo: 'incomparecencia' }] }] });
+  ok(z.filas.length === 2 && z.filas[1].sinHoja === 'incomparecencia' && z.filas[1].noPresentado === 'D' && z.filas[0].sinHoja === undefined, 'cargado sin hoja: partido con «incomparecencia» y quién no se presentó; con hoja, sin marca');
+  const [w] = resultadosDeJornada([{ ...P3[1], pts_local: 38, pts_visitante: 30 }], { G9: ['C', 'D'] }, ['G9'], 1);
+  ok(w.filas[0].sinHoja === 'sin_hoja' && !w.filas[0].noPresentado, 'sin hueco en el fichero: «sin hoja»');
 }
 
 const e = await preparar();
@@ -340,6 +346,29 @@ try {
   ok(/Sint Gcuatro, Zeta/i.test(await p.getByTestId('tabla-scouting').innerText()), 'el desplegable abre un equipo del G4');
   await p.goto(`${APP}/liga/scouting?e=MdA`);
   ok(/dobla/.test(await p.getByTestId('tabla-scouting').innerText()) && fugas(await texto(), ['G3', 'G4']).filter((x) => !equiposDe(['G3', 'G4']).map(norm).includes(x)).length === 0, 'nuestro equipo, como siempre (con «dobla»), sin jugadores ajenos');
+
+  console.log('\n== Partidos cargados SIN hoja: resultado oficial y incomparecencia 20-0 (fix/g5-rutina-s21-y-repaso)');
+  // Como los dos de G5 (J1 jugado sin hoja; J2, incomparecencia 20-0), con datos sintéticos:
+  // los dos huecos del fichero de prueba del G4, ya con su marcador en liga_partidos (hoja null, sin filas por jugador).
+  await sql`insert into public.liga_partidos (temporada, grupo, jornada, fecha, local, visitante, pts_local, pts_visitante, hoja) values
+    ('2026-27', 'G4', 2, '2026-10-03', 'Sint Ajeno Cuatro A', 'Sint Ajeno Cuatro D', 38, 30, null),
+    ('2026-27', 'G4', 1, null, 'Sint Ajeno Cuatro C', 'Sint Ajeno Cuatro D', 20, 0, null)`;
+  await p.goto(`${APP}/liga/consolidada?grupos=G4&vista=resultados&j=2`);
+  const sh2 = p.getByTestId('resultados-G4');
+  ok(/Sint Ajeno Cuatro A\s*38–30\s*Sint Ajeno Cuatro D\s*sin hoja/i.test(await sh2.innerText()) && (await sh2.getByTestId('hueco').count()) === 0 && (await sh2.getByTestId('sin-hoja').locator('a').count()) === 0,
+    'Resultados, G4 · J2: el partido sin hoja con su marcador y «sin hoja», sin enlace a una hoja que no existe', await sh2.innerText());
+  await p.goto(`${APP}/liga/consolidada?grupos=G4&vista=resultados&j=1`);
+  ok(/Sint Ajeno Cuatro C\s*20–0\s*Sint Ajeno Cuatro D\s*incomparecencia de Sint Ajeno Cuatro D/i.test(await p.getByTestId('resultados-G4').innerText()),
+    'Resultados, G4 · J1: «20–0» e «incomparecencia de» quien no se presentó', await p.getByTestId('resultados-G4').innerText());
+  await p.goto(`${APP}/liga?g=G4`);
+  await hasta(async () => (await p.getByTestId('liga-resultados').count()) === 1);
+  await p.locator('.e-jornadas button', { hasText: 'J1' }).click();
+  const rj1 = p.getByTestId('liga-resultados');
+  ok(await hasta(async () => /20 – 0/.test(await rj1.innerText())) && /incomparecencia de Sint Ajeno Cuatro D/i.test(await rj1.getByTestId('marca-sin-hoja').innerText()) && (await rj1.locator('[data-hueco="incomparecencia"] a.e-m-enlace').count()) === 0,
+    'Liga › Clasificación del G4 con sesión, J1: el 20–0 con «incomparecencia de …», sin enlace', await rj1.innerText());
+  await p.locator('.e-jornadas button', { hasText: 'J2' }).click();
+  ok(await hasta(async () => /38 – 30/.test(await rj1.innerText())) && /sin hoja/.test(await rj1.getByTestId('marca-sin-hoja').innerText()), 'y en la J2, el 38–30 con «sin hoja»', await rj1.innerText());
+  await sql`delete from public.liga_partidos where grupo = 'G4' and hoja is null`;
   await p.context().close();
 
   ok(e.errores.length === 0, 'sin errores de JavaScript', e.errores.join(' | '));

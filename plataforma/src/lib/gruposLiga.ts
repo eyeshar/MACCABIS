@@ -51,6 +51,8 @@ export function textoGrupos(gs: readonly string[]) {
 export type PartidoLiga = {
   id: string; grupo: string; jornada: number | null; fecha: string | null;
   local: string; visitante: string; pts_local: number | null; pts_visitante: number | null;
+  /** La hoja de origen; null = resultado oficial sin hoja (marcador sin filas por jugador) o incomparecencia (20-0). */
+  hoja?: string | null;
 };
 
 /** Jornadas de los grupos ajenos (data/jornadas_grupos_ajenos_<temporada>.json, D186): quien descansa y los huecos. */
@@ -59,7 +61,9 @@ export type JornadasAjenas = {
 };
 
 export type FilaResultado =
-  | { tipo: "partido"; id: string; local: string; visitante: string; pl: number | null; pv: number | null; fecha: string | null }
+  | { tipo: "partido"; id: string; local: string; visitante: string; pl: number | null; pv: number | null; fecha: string | null;
+      /** Partido cargado SIN hoja: «sin_hoja» o «incomparecencia» (con quien no se presento, el del 0). */
+      sinHoja?: string; noPresentado?: string }
   | { tipo: "hueco"; local: string; visitante: string; motivo: string };
 
 export type BloqueResultados = { grupo: string; jornada: number; filas: FilaResultado[]; descansa: string[]; sinPartidos: boolean };
@@ -86,7 +90,7 @@ export function resultadosDeJornada(partidos: PartidoLiga[], equiposPorGrupo: Re
     const equipos = equiposPorGrupo[g] ?? [];
     const nombre = (n: string) => equipos.find((e) => claveEq(e) === claveEq(n)) ?? n;
     const filas: FilaResultado[] = [
-      ...mios.map((p) => ({ tipo: "partido" as const, id: p.id, local: p.local, visitante: p.visitante, pl: p.pts_local, pv: p.pts_visitante, fecha: p.fecha })),
+      ...mios.map((p) => ({ tipo: "partido" as const, id: p.id, local: p.local, visitante: p.visitante, pl: p.pts_local, pv: p.pts_visitante, fecha: p.fecha, ...marcaSinHoja(p, info?.huecos) })),
       // Un hueco que ya tiene partido cargado (p. ej. un marcador sacado del acta) sale solo como partido.
       ...(info?.huecos ?? []).filter((h) => !mios.some((p) => [claveEq(p.local), claveEq(p.visitante)].sort().join() === [claveEq(h.local), claveEq(h.visitante)].sort().join()))
         .map((h) => ({ tipo: "hueco" as const, local: nombre(h.local), visitante: nombre(h.visitante), motivo: h.motivo })),
@@ -97,5 +101,18 @@ export function resultadosDeJornada(partidos: PartidoLiga[], equiposPorGrupo: Re
   });
 }
 
-/** «sin hoja» / «incomparecencia». */
-export const textoHueco = (motivo: string) => (motivo === "incomparecencia" ? "incomparecencia" : motivo === "sin_hoja" ? "sin hoja" : motivo.replace(/_/g, " "));
+/** «sin hoja» / «incomparecencia» (o «incomparecencia de <equipo>» si se sabe quien no se presento). */
+export const textoHueco = (motivo: string, noPresentado?: string | null) =>
+  (motivo === "incomparecencia" ? (noPresentado ? `incomparecencia de ${noPresentado}` : "incomparecencia") : motivo === "sin_hoja" ? "sin hoja" : motivo.replace(/_/g, " "));
+
+/** Un partido cargado sin hoja (`hoja` null, fix/g5-rutina-s21-y-repaso): su motivo, del hueco del fichero de jornadas
+ *  («sin hoja» si no lo hay) y, en una incomparecencia, quien no se presento (el del 0 del 20-0). Con hoja, nada. */
+export function marcaSinHoja(p: Pick<PartidoLiga, "local" | "visitante" | "pts_local" | "pts_visitante" | "hoja">,
+  huecos: { local: string; visitante: string; motivo: string }[] = []): { sinHoja?: string; noPresentado?: string } {
+  if (p.hoja !== null) return {};
+  const par = (a: string, b: string) => [claveEq(a), claveEq(b)].sort().join("|");
+  const motivo = huecos.find((h) => par(h.local, h.visitante) === par(p.local, p.visitante))?.motivo ?? "sin_hoja";
+  if (motivo !== "incomparecencia") return { sinHoja: motivo };
+  const noPresentado = p.pts_local === 0 ? p.local : p.pts_visitante === 0 ? p.visitante : undefined;
+  return { sinHoja: motivo, ...(noPresentado ? { noPresentado } : {}) };
+}

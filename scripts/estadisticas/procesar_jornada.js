@@ -297,6 +297,31 @@ async function recoger(o) {
     .sort((a, b) => b.t - a.t)[0];
   if (bilan && !repetido(bilan.f, 'asistencia de SportEasy'))
     plan.push({ origen: bilan.f, ruta: ruta(bilan.f), destino: 'asistencia', nombre: `bilan_presence_${bilan.t.toISOString().slice(0, 10)}_${md5(ruta(bilan.f)).slice(0, 8)}.xlsx`, que: 'asistencia de SportEasy' });
+
+  // Partidos SIN HOJA con resultado oficial (G3-G6): las líneas del registro de descargas con marcador y motivo («sin hoja» o
+  // «incomparecencia») que aún no están en fuentes_fbm/<temporada>/resultados_sin_hoja.csv. El marcador va solo ahí (fuera
+  // de git) y a Supabase; en data/ queda el hueco, sin marcador (D186).
+  if (ruta(jornadasAjenas.MANIFIESTO)) {
+    const grupos = liga.contexto(o.temporada).grupos;
+    if (!ajenas.manifiesto) {
+      ajenas.manifiesto = jornadasAjenas.leerManifiesto(ruta(jornadasAjenas.MANIFIESTO), grupos);
+      ajenas.manifiesto.errores.forEach(duda);
+      ajenas.datos = jornadasAjenas.leer(o.temporada);
+    }
+    const ya = jornadasAjenas.leerSinHoja(o.temporada, grupos, path.join(BASE, jornadasAjenas.SIN_HOJA));
+    ya.errores.forEach(duda);
+    for (const e of ajenas.manifiesto.entradas.filter(x => x.sinHoja)) {
+      const s = e.sinHoja;
+      if (!grupos[s.grupo] || !grupos[s.grupo].ajeno) { duda(`${jornadasAjenas.MANIFIESTO} (línea ${e.linea}): ${s.grupo} es un grupo nuestro; un partido sin hoja de G1/G2 no se apunta aquí.`); continue; }
+      if (ya.entradas.some(y => jornadasAjenas.mismoCruce(y, s))) continue;
+      const conHoja = ajenas.datos.partidos.find(p => jornadasAjenas.mismoCruce(p, s));
+      if (conHoja) { duda(`${jornadasAjenas.MANIFIESTO} (línea ${e.linea}): ${s.local} - ${s.visitante} (${s.grupo} ${J(s.jornada)}) ya tiene hoja (${conHoja.hoja}).`); continue; }
+      const choca = [...ajenas.datos.partidos, ...ajenas.nuevos].find(p => p.grupo === s.grupo && p.jornada === s.jornada && [p.local, p.visitante].some(n => [s.local, s.visitante].some(m => normEquipo(n) === normEquipo(m))));
+      if (choca) { duda(`${jornadasAjenas.MANIFIESTO} (línea ${e.linea}): ${s.local} - ${s.visitante} no puede ser de la ${J(s.jornada)}: ${choca.local} - ${choca.visitante} ya es de esa jornada.`); continue; }
+      plan.push({ origen: jornadasAjenas.MANIFIESTO, destino: 'sin_hoja', sinHoja: s,
+        que: `liga ${s.grupo} ${J(s.jornada)}: ${s.local} - ${s.visitante}, ${s.motivo === 'incomparecencia' ? `incomparecencia de ${s.no_presentado}` : 'sin hoja'} (marcador oficial, solo a Supabase)` });
+    }
+  }
   return { plan, descartes, avisos, cfg, base: BASE };
 }
 
@@ -307,11 +332,21 @@ async function recoger(o) {
 function copiar(plan, o) {
   const log = o.log || console.log;
   let nuevos = 0;
-  for (const p of plan) {
+  const sinHoja = plan.filter(p => p.destino === 'sin_hoja');
+  for (const p of plan.filter(x => x.destino !== 'sin_hoja')) {
     const base = o.base;
     if (o.dry) { log(`  [dry] ${p.que}: ${p.origen} -> ${path.basename(base)}/${p.destino}/${p.nombre}`); continue; }
     const r = copiaSegura(p.ruta || path.join(o.desde, p.origen), path.join(base, p.destino), p.nombre);
     if (r.copiado) { nuevos++; log(`  + ${p.que}  (${p.nombre})`); if (o.copiados) o.copiados.push(r.destino); }
+  }
+  // Los resultados sin hoja, a fuentes_fbm/<temporada>/resultados_sin_hoja.csv (fuera de git). o.restaurar recibe el
+  // contenido previo para deshacerlo si la jornada para (--no-interactivo).
+  if (sinHoja.length) {
+    if (o.dry) sinHoja.forEach(p => log(`  [dry] ${p.que} -> ${path.basename(o.base)}/${jornadasAjenas.SIN_HOJA}`));
+    else {
+      const r = jornadasAjenas.anotarSinHoja(o.temporada, sinHoja.map(p => p.sinHoja), liga.contexto(o.temporada).grupos, path.join(o.base, jornadasAjenas.SIN_HOJA));
+      if (r.anotados) { nuevos += r.anotados; sinHoja.forEach(p => log(`  + ${p.que}`)); if (o.restaurar) o.restaurar.push({ fichero: r.fichero, previo: r.previo }); }
+    }
   }
   return nuevos;
 }
@@ -335,6 +370,7 @@ if (require.main === module) {
   const RESUMEN = argVal('--resumen', null);
   const JORNADA_FORZADA = +argVal('--jornada', 0) || null;   // jornada de las hojas de liga donde no jugamos (si no, la última con fecha <= hoy)
   const copiados = [];                                       // copias nuevas de esta ejecución (se deshacen si para)
+  const restaurar = [];                                      // ficheros de fuentes_fbm/ a los que se añadió algo ({ fichero, previo })
   // estado: 'nada' (sin ficheros nuevos), 'dry', 'lista' (escrita y lista para publicar) o 'parada' (con motivo).
   // avisos: lo que no para la jornada pero conviene que Iván vea (p. ej. una hoja con fecha de descarga antigua).
   const resumen = { temporada: TEMPORADA, dry: DRY, estado: null, nuevos: 0, jornada: null, texto: null, motivo: null, avisos: [], copiados };
@@ -347,6 +383,10 @@ if (require.main === module) {
     if (texto) console.error(texto);
     if (NOINT) for (const f of copiados.splice(0)) {
       try { fs.unlinkSync(f); console.error(`  (deshecha la copia ${path.relative(ROOT, f)})`); } catch (e) { console.error(`  NO se ha podido deshacer ${f}: ${e.message}`); }
+    }
+    if (NOINT) for (const r of restaurar.splice(0)) {
+      try { if (r.previo == null) fs.unlinkSync(r.fichero); else fs.writeFileSync(r.fichero, r.previo, 'utf8'); console.error(`  (deshecho ${path.relative(ROOT, r.fichero)})`); }
+      catch (e) { console.error(`  NO se ha podido deshacer ${r.fichero}: ${e.message}`); }
     }
     Object.assign(resumen, { estado: 'parada', motivo }); escribeResumen();
     process.exit(1);
@@ -380,7 +420,7 @@ if (require.main === module) {
       resumen.estado = 'nada'; escribeResumen(); return;
     }
     let nuevos = 0;
-    try { nuevos = copiar(plan, { base: BASE, dry: DRY, copiados }); }
+    try { nuevos = copiar(plan, { base: BASE, dry: DRY, copiados, restaurar, temporada: TEMPORADA }); }
     catch (e) { para(e.message, `\nERROR: ${e.message}\nNo se ha tocado nada más.`); }
     if (!DRY) console.log(nuevos ? `${nuevos} fichero(s) nuevo(s) copiados a ${cfg.carpeta}/.` : 'No hay ficheros nuevos (ya estaban todos copiados).');
     // D186: la jornada de cada hoja nueva de G3-G6 queda en data/jornadas_grupos_ajenos_<temporada>.json (se publica con data/).
@@ -389,6 +429,9 @@ if (require.main === module) {
       if (DRY) console.log(`  [dry] ${registros.length} partido(s) de G3-G6 irían a ${path.relative(ROOT, jornadasAjenas.fichero(TEMPORADA))}.`);
       else console.log(`${jornadasAjenas.anotar(TEMPORADA, registros, liga.contexto(TEMPORADA).grupos)} partido(s) de G3-G6 anotados en ${path.relative(ROOT, jornadasAjenas.fichero(TEMPORADA))}.`);
     }
+    // Y el hueco (sin marcador) de cada resultado sin hoja nuevo.
+    const huecos = plan.filter(p => p.sinHoja).map(p => p.sinHoja);
+    if (huecos.length && !DRY) console.log(`${jornadasAjenas.anotarHuecos(TEMPORADA, huecos, liga.contexto(TEMPORADA).grupos)} hueco(s) sin hoja anotados en ${path.relative(ROOT, jornadasAjenas.fichero(TEMPORADA))} (sin marcador).`);
 
     const antes = fs.existsSync(path.join(ROOT, 'data', `season_${TEMPORADA}.json`))
       ? JSON.parse(fs.readFileSync(path.join(ROOT, 'data', `season_${TEMPORADA}.json`), 'utf8')) : { partidos: [], box: {} };

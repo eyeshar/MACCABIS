@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { preparar, personas, sinteticos, contador, visto, RAIZ } from './comun_e2e.mjs';
+import { jornadaPublicada, comprobarHtml } from './verificar_jornada.mjs';
 
 const { ok, fallos } = contador();
 const e = await preparar();
@@ -102,6 +103,12 @@ try {
     t = await x.text();
     ok(x.status === 200 && t.includes(texto) && !/s-maxage/.test(cc(x)), `${r}: 200 y sin cache`, `${x.status} ${cc(x)}`);
   }
+
+  // La rutina A comprueba la jornada con una sola peticion a /liga (verificar_jornada.mjs web, D179): su lectura del HTML
+  // tiene que valer con la pagina de verdad.
+  console.log('\n== /liga trae la última jornada publicada (lo que mira la rutina A sin navegador)');
+  const lj = comprobarHtml(await (await fetch(`${APP}/liga`)).text(), jornadaPublicada(JSON.parse(fs.readFileSync(path.join(RAIZ, 'src', 'data', 'liga.json'), 'utf8'))));
+  ok(lj.length > 2 && lj.every((x) => x.ok), `/liga: ${lj.length} comprobaciones de verificar_jornada`, lj.filter((x) => !x.ok).map((x) => x.texto).join(' / '));
 
   console.log('\n== Lo dinámico con sesión no se cachea');
   for (const r of ['/agenda', '/cuenta', '/liga/scouting', '/mis-numeros']) {

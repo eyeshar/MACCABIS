@@ -61,6 +61,7 @@
     "pruebas:destino": "node pruebas/destino.mjs",
     "pruebas:destino-pila": "node pruebas/destino_pila.mjs",
     "pruebas:analitica": "node pruebas/analitica.mjs",
+    "pruebas:jornada-sin-navegador": "node pruebas/jornada_sin_navegador.mjs",
     "pruebas:sin-correos": "node pruebas/sin_correos.mjs",
     "pruebas:eventos-pantallas": "node pruebas/eventos_pantallas.mjs",
     "pruebas:fuente-eventos": "node pruebas/fuente_eventos.mjs",

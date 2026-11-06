@@ -10,7 +10,7 @@
 > Lo que se hace ahora, en este orden. Sustituye al «Orden vigente» del 26/09/2026 (en el «Histórico»).
 
 **0. Estructura nueva de la web (Iván, 06/11/2026; diseño aprobado el 05/11, especificación en `docs/ESTRUCTURA_NUEVA.md`).** Por fases; **cada fase se mergea con el OK de Iván**, con el protocolo (a)–(h) de la especificación el día del merge.
-- [ ] **Fase 1 · guardia, analítica y especificación** (`chore/guardia-y-analitica`, D187 y D188): la norma 19 aplicada en todos los scripts que escriben, revierten o crean cuentas; `db:revertir`; `d111_liga.mjs` en el repositorio; la analítica lista **sin activar** (bloque 0); `ESTRUCTURA_NUEVA.md`. **PR listo con Actions en verde; pendiente del OK de Iván para mergear.**
+- [x] **Fase 1 · guardia, analítica y especificación** (`chore/guardia-y-analitica`, D187 y D188): la norma 19 aplicada en todos los scripts que escriben, revierten o crean cuentas; `db:revertir`; `d111_liga.mjs` en el repositorio; la analítica lista **sin activar** (bloque 0); `ESTRUCTURA_NUEVA.md`. **Mergeada (PR #59, `731cc80`, OK de Iván, 06/11/2026).**
 - [ ] **Fase 2 · bloques 1, 2 y 3** (navegación, Semana, Calendario y Evento): **después de la J4 del domingo 08/11/2026** y con el OK de Iván a las capturas a 390 px.
 - [ ] **Fase 3 · bloques 4 y 5** (Gestión, convocatoria del domingo, registro de no convocados y pedido de ropa activable): **después del martes 10/11/2026** (primera propuesta automática real de la rutina C, D173). El desempate por no convocados del motor va detrás de un interruptor apagado que Iván enciende tras esa propuesta.
 - [ ] **Fase 4 · bloque 6** (Yo, Liga y Club).
@@ -61,8 +61,8 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ## Pendiente de Iván
 
 **Operativa de ahora**
-- [ ] **Fase 1 de la estructura nueva** (`chore/guardia-y-analitica`): revisar el PR y dar el OK para mergear (D187, D188, `docs/ESTRUCTURA_NUEVA.md`). Tras el merge, los comandos que escriben en el real llevan `--confirmar pqbjnxmknhawlkszwmln` (la rutina A ya lo lleva escrito).
-- [ ] **Analítica de Vercel (D188):** decidir si se activa y cuándo (hoy el equipo está en Pro: 0,03 $ por cada 1.000 visitas de página, sin incluidas; en Hobby, 50.000 al mes para todo el equipo y luego deja de recoger). Para encenderla, en este orden: activar Web Analytics en el proyecto `maccabis` de Vercel; después, `NEXT_PUBLIC_ANALITICA=1` en producción y desplegar.
+- [ ] **Rutina A sin navegador** (`fix/verificacion-sin-navegador`, nota en D179): revisar el PR y dar el OK para mergear **antes del lunes 09/11/2026 a las 9:30** (la rutina corre a las 9:45). Tras el merge, `git pull` en la copia `Maccabis-rutina-a` lo hace la propia rutina.
+- [ ] **Analítica de Vercel (D188): se queda apagada; Iván la activa cuando el equipo pase a Hobby**, en este orden: 1) pasar el equipo «Web TCPC» a Hobby; 2) activar Web Analytics en el panel de Vercel (proyecto `maccabis`); 3) poner `NEXT_PUBLIC_ANALITICA=1` en producción (y desplegar). Al revés, cada página daría un error de consola.
 - [ ] **Asistente (D142), comprobación tuya en el móvil:** con sesión, que el botón flotante sale en Inicio, Agenda, Mi zona y Gestión. (Lo de «sin sesión» ya está comprobado en producción el 02/11/2026: no sale en portada, Liga, Historia, Plantilla, El club, Privacidad ni Entrar.)
 - [ ] **Retirar GitHub Pages del todo** (decide Iván; `docs/MIGRACION_WEB.md`): hoy solo redirige a la web nueva. Recomendación: mantenerla hasta final de temporada.
 - [x] **D173 (rutina C automática):** OK de Iván («todo hoy»); migración aplicada en el real con D111 y PR #32 mergeado el 02/11/2026 a las 20:12.

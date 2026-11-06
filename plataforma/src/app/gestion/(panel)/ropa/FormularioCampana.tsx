@@ -25,16 +25,9 @@ export default function FormularioCampana({ campana }: { campana: Campana }) {
           <input id="nombre-campana" name="nombre" type="text" defaultValue={campana.nombre} />
         </div>
         <div className="campo">
-          <label htmlFor="estado-campana">Estado</label>
-          <select id="estado-campana" name="estado" defaultValue={campana.estado}>
-            <option value="abierta">Abierta</option>
-            <option value="cerrada">Cerrada</option>
-          </select>
-        </div>
-        <div className="campo">
           <label htmlFor="fecha-campana">Fecha límite (incluida)</label>
           <input id="fecha-campana" name="fecha_limite" type="date" defaultValue={ymd(campana.fecha_limite)} />
-          <p className="ayuda">Vacía = sin fecha: abierta hasta que la cierres.</p>
+          <p className="ayuda">Vacía = sin fecha.</p>
         </div>
       </div>
       <fieldset style={{ border: 0, padding: 0, margin: 0 }}>

@@ -57,7 +57,7 @@ function ListaAvisos({ avisos, nombre }: { avisos: Aviso[]; nombre?: string }) {
   return (
     <ul className="cv-avisos" aria-label={nombre ? `Avisos del ${nombre}` : "Avisos"}>
       {avisos.map((a, i) => (
-        <li key={`${a.regla}-${a.person_id ?? ""}-${i}`} className={`cv-aviso cv-aviso-${a.gravedad}`}>
+        <li key={`${a.regla}-${a.person_id ?? ""}-${i}`} className={`cv-aviso cv-aviso-${a.gravedad}${a.regla === "3.1" || a.regla === "3.2" ? " cv-con-nivel" : ""}`}>
           <span>{a.texto}</span>
           <small title={REGLAS[a.regla]}>Regla {a.regla} · {REGLAS[a.regla]}</small>
         </li>
@@ -97,7 +97,7 @@ function gruposDomingo(jugadores: JugadorVista[], enlaces: Record<string, string
 
 type Hoja = { tipo: "cambiar"; person_id: string; equipo: Equipo } | { tipo: "anadir"; equipo: Equipo; person_id?: string } | null;
 
-export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enlaces?: Record<string, string> }) {
+export default function Convocatoria({ ctx, enlaces = {}, ocultarNiveles = false }: { ctx: Contexto; enlaces?: Record<string, string>; ocultarNiveles?: boolean }) {
   const router = useRouter();
   const [pendiente, empezarTransicion] = useTransition();
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
@@ -213,8 +213,13 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
     </div>
   );
 
+  // «Quién lleva más tiempo fuera» (regla 4.3, solo gestores): los invitados con domingos fuera, por racha; «solo entreno» detrás.
+  const masFuera = ctx.jugadores.filter((j) => j.invitado && j.fuera && (j.fuera.racha > 0 || j.fuera.total > 0))
+    .sort((a, b) => Number(a.fuera!.soloEntreno) - Number(b.fuera!.soloEntreno) || b.fuera!.racha - a.fuera!.racha || b.fuera!.total - a.fuera!.total || a.nombre.localeCompare(b.nombre, "es"));
+  const hrefNiveles = `/gestion/convocatoria?fecha=${ctx.fecha}${ocultarNiveles ? "" : "&niveles=no"}`;
+
   return (
-    <>
+    <div className={ocultarNiveles ? "cv-sin-niveles" : undefined} data-testid="cv-pantalla" data-niveles={ocultarNiveles ? "ocultos" : "visibles"}>
       <div className="gs-titulo">
         <div>
           <div className="gs-eyebrow">Convocatoria · <Link href="/gestion/convocatoria/datos">Datos de los jugadores</Link></div>
@@ -226,7 +231,9 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
             <span className={`pastilla ${fila.estado === "aprobada" ? "pastilla-ok" : "pastilla-pendiente"}`} data-testid="cv-estado">{fila.estado === "aprobada" ? "Aprobada" : "Borrador"}</span>
           )}
           {/* D121: el tablero, para ver de un vistazo quién va y ajustar a mano. */}
-          <Link className="boton boton-contorno" href={`/gestion/tablero?domingo=${ctx.fecha}`}>Abrir tablero</Link>
+          <Link className="boton boton-contorno" href={`/gestion/tablero?domingo=${ctx.fecha}`}>Ajustar en el tablero</Link>
+          {/* Para pantallazos: sin niveles (en la URL, como los filtros; norma 13.4). */}
+          <Link className="boton boton-claro" href={hrefNiveles} data-testid="cv-ocultar-niveles" replace scroll={false}>{ocultarNiveles ? "Mostrar niveles" : "Ocultar niveles"}</Link>
         </div>
       </div>
 
@@ -334,6 +341,21 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
         </section>
       )}
 
+      <section className="gs-bloque" aria-labelledby="t-masfuera" data-testid="cv-mas-fuera" style={{ marginTop: 16 }}>
+        <h2 id="t-masfuera">Quién lleva más tiempo fuera · {masFuera.length}</h2>
+        {masFuera.length ? (
+          <ul className="cv-fuera-lista">
+            {masFuera.map((j) => (
+              <li key={j.person_id} data-person={j.person_id}>
+                <span><NombreCv id={j.person_id} nombre={j.nombre} enlaces={enlaces} />{j.fuera!.soloEntreno && <small className="suave"> · solo entreno</small>}</span>
+                <span className="pequeno"><b className="cifra">{j.fuera!.racha}</b> seguidos · <b className="cifra">{j.fuera!.total}</b> en la temporada</span>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="suave" style={{ margin: 0 }}>Nadie se ha quedado fuera estando disponible.</p>}
+        <Link href="/gestion/no-convocados" className="cv-enlace">Registro completo de no convocados →</Link>
+      </section>
+
       {ctx.cambios.length > 0 && (
         <details className="gs-bloque cv-historial" style={{ marginTop: 16 }}>
           <summary><b>Historial de cambios · {ctx.cambios.length}</b></summary>
@@ -355,7 +377,7 @@ export default function Convocatoria({ ctx, enlaces = {} }: { ctx: Contexto; enl
           error={mensaje && !mensaje.ok ? mensaje.texto : null} />
       )}
       {barra}
-    </>
+    </div>
   );
 }
 
@@ -406,8 +428,9 @@ function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, 
   const delOtro = ids(conv, otro(p.equipo));
   const orden = { base: 0, exterior: 1, interior: 2 } as const;
   const filas = lista.map((c) => ({ c, j: porId.get(c.person_id) })).sort((a, b) => {
-    const la = a.j?.privado?.posicion || a.c.posicion ? LINEA_DE[(a.c.posicion ?? a.j!.privado!.posicion)!] : "exterior";
-    const lb = b.j?.privado?.posicion || b.c.posicion ? LINEA_DE[(b.c.posicion ?? b.j!.privado!.posicion)!] : "exterior";
+    // Los bases de reserva que hacen de base van con los bases (como en las casillas).
+    const la = r.basesDeReserva.includes(a.c.person_id) ? "base" : a.j?.privado?.posicion || a.c.posicion ? LINEA_DE[(a.c.posicion ?? a.j!.privado!.posicion)!] : "exterior";
+    const lb = r.basesDeReserva.includes(b.c.person_id) ? "base" : b.j?.privado?.posicion || b.c.posicion ? LINEA_DE[(b.c.posicion ?? b.j!.privado!.posicion)!] : "exterior";
     return orden[la] - orden[lb] || nombre(a.c.person_id).localeCompare(nombre(b.c.person_id), "es");
   });
   // Quienes forman cada linea (D139): los mismos que cuenta el motor, con los bases de reserva y los que cuentan de exterior marcados.
@@ -448,18 +471,23 @@ function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, 
       <Casillas r={r} testid={`cv-casillas-${p.equipo}`} personas={personasLinea} />
       <div className="cv-total" data-testid={`cv-total-${p.equipo}`}>
         <Numeros variante="linea" prueba={`cv-convocados-${p.equipo}`} etiqueta={`Convocados del ${p.equipo}`} grupos={convocados} />
-        <span className="pequeno suave">(máximo {maximo}) · nivel medio {textoNivelMedio(r.nivelMedio)}</span>
+        <span className="pequeno suave">(máximo {maximo})<span className="cv-nivel-medio"> · nivel medio {textoNivelMedio(r.nivelMedio)}</span></span>
       </div>
       <ListaAvisos avisos={avisos} nombre={p.equipo} />
 
       {previa && <p className="pequeno cv-previa">Vista previa de la propuesta: elige «Usar propuesta» para editarla.</p>}
-      <ul className="cv-lista" aria-label={`Convocados del ${p.equipo}`}>
-        {filas.map(({ c, j }) => {
+      <ul className="cv-lista cv-por-lineas" aria-label={`Convocados del ${p.equipo}`}>
+        {filas.map(({ c, j }, i) => {
           const pos = c.posicion ?? j?.privado?.posicion ?? null;
+          // Por líneas (bases, exteriores, interiores): una cabecera cuando cambia la línea; los bases de reserva, en bases.
+          const linea = (f: (typeof filas)[number]) => (r.basesDeReserva.includes(f.c.person_id) ? "base" : lineaDe(f));
+          const cab = i === 0 || linea(filas[i - 1]) !== linea(filas[i])
+            ? <li key={`cab-${linea(filas[i])}`} className="cv-linea-cab" aria-hidden="true">{linea(filas[i]) === "base" ? `Bases · ${r.bases.texto}` : linea(filas[i]) === "exterior" ? `Exteriores · ${r.exteriores.texto}` : `Interiores · ${r.interiores.texto}`}</li>
+            : null;
           const dobla = delOtro.has(c.person_id);
           const reserva = r.basesDeReserva.includes(c.person_id);
-          return (
-            <li key={c.person_id} className={`cv-fila${rapido?.sel.has(c.person_id) ? " cv-sel" : ""}`} data-person={c.person_id} draggable={!!rapido}
+          return [cab,
+            <li key={c.person_id} className={`cv-fila cv-fila-grande${rapido?.sel.has(c.person_id) ? " cv-sel" : ""}`} data-person={c.person_id} draggable={!!rapido}
               onDragStart={rapido ? (e) => { const ids = rapido.sel.has(c.person_id) ? [...rapido.sel].filter((x) => lista.some((y) => y.person_id === x)) : [c.person_id]; e.dataTransfer.setData("text/plain", ids.join(",")); e.dataTransfer.effectAllowed = "move"; rapido.setArrastre({ ids, desde: p.equipo }); } : undefined}
               onDragEnd={rapido ? () => rapido.setArrastre(null) : undefined}>
               {rapido && <label className="cv-casilla-sel"><input type="checkbox" checked={rapido.sel.has(c.person_id)} onChange={() => rapido.alternar(c.person_id, p.equipo)} aria-label={`Seleccionar a ${nombre(c.person_id)} (${p.equipo})`} /></label>}
@@ -473,8 +501,8 @@ function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, 
               </div>
               <span className="cv-nivel" title="Nivel (solo gestores)">{j?.privado?.nivel ?? "–"}</span>
               {!previa && <button type="button" className="boton boton-claro cv-boton" disabled={bloqueado} onClick={() => onCambiar(c.person_id)} aria-label={`Cambiar a ${nombre(c.person_id)}`}>Cambiar</button>}
-            </li>
-          );
+            </li>,
+          ];
         })}
         {!filas.length && <li className="suave">Nadie convocado todavía.</li>}
       </ul>
@@ -584,9 +612,9 @@ function HojaCambio({ hoja, ctx, conv, porId, mismaHora, pendiente, onCerrar, on
         {persona && j && (
           <div className="cv-hoja-cuerpo">
             <p className="pequeno" style={{ margin: 0 }}>
-              <b>{j.nombre}</b> · {j.privado?.posicion ? TEXTO_POSICION[j.privado.posicion] : "sin posición"} · nivel {j.privado?.nivel ?? "–"} · {j.privado ? (j.privado.dobla ? "Dobla" : "No dobla") : "sin datos"}<br />
+              <b>{j.nombre}</b> · {j.privado?.posicion ? TEXTO_POSICION[j.privado.posicion] : "sin posición"}<span className="cv-nivel-txt"> · nivel {j.privado?.nivel ?? "–"}</span> · {j.privado ? (j.privado.dobla ? "Dobla" : "No dobla") : "sin datos"}<br />
               {juegan.map((x) => <span key={x} className="suave">{x}: {estadoPara(j, x).texto}. </span>)}
-              <span className="suave">{j.convocados} partidos convocado · {j.entrenos4} entrenos en 4 semanas{j.domingosFuera ? ` · ${j.domingosFuera} domingo${j.domingosFuera === 1 ? "" : "s"} disponible y fuera` : ""}.</span>
+              <span className="suave">{j.convocados} partidos convocado · {j.entrenos4} entrenos en 4 semanas{j.domingosFuera ? ` · ${j.domingosFuera} domingo${j.domingosFuera === 1 ? "" : "s"} disponible y fuera` : ""}{j.fuera?.racha ? ` · ${j.fuera.racha} seguido${j.fuera.racha === 1 ? "" : "s"} sin convocar` : ""}.</span>
             </p>
             {hoja.tipo === "cambiar" && (
               <fieldset className="cv-opciones">

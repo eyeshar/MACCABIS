@@ -9,7 +9,7 @@ const DE_PASO = /^\/(entrar|auth)(\/|$)|\/(nuevo|editar)(\/|$)|\/gestion\/evento
 const ETIQUETAS: [string, string][] = [
   ["/gestion/convocatoria/salida", "Salida de la convocatoria"], ["/gestion/convocatoria/datos", "Datos de los jugadores"], ["/gestion/convocatoria", "Convocatoria"],
   ["/gestion/eventos/pistas", "Pistas"], ["/gestion/eventos", "Eventos"], ["/gestion/tablero", "Tablero"], ["/gestion/grupos", "Entrenos y grupos"],
-  ["/gestion/jugadores", "Jugadores"], ["/gestion/ropa", "Pedido de ropa"], ["/gestion/asistencia", "Asistencia"],
+  ["/gestion/jugadores", "Jugadores"], ["/gestion/no-convocados", "No convocados"], ["/gestion/ropa", "Pedido de ropa"], ["/gestion/asistencia", "Asistencia"],
   ["/mi-zona/ausencias", "Mis ausencias"], ["/mi-zona/ropa", "Mi pedido de ropa"], ["/mi-zona", "Mi zona"], ["/agenda", "Agenda"], ["/planes", "Plan"],
   ["/liga/scouting", "Scouting rivales"], ["/liga/consolidada", "Liga consolidada"], ["/liga/rivales", "Rivales"], ["/liga", "Liga"], ["/jugador", "Ficha del jugador"], ["/historia", "Historia"], ["/club", "El club"], ["/plantilla", "Plantilla"],
   ["/cuenta", "Mi cuenta"], ["/avisos", "Avisos"], ["/guia-tallas", "Guía de tallas"],

@@ -64,7 +64,7 @@ El script crea lo que falte (enlaces, `.env.local`, `npm ci`) al empezar; todo e
 
 ## Hojas: S21 dedicado al club + FolderSync → Drive (D182, matiza D70)
 
-**Dispositivo:** un **Samsung S21 dedicado al club**, siempre encendido y con Afición FBM abierta, manejado por Claude con **Enlace Móvil de Windows**. La ventana «Pantalla del teléfono» va en el **segundo monitor**. Sustituye al móvil personal de Iván (D70): ya no depende de que esté encendido, con wifi y cerca del PC. Probado el 04/11/2026.
+**Dispositivo:** un **Samsung S21 dedicado al club**, siempre encendido y con Afición FBM abierta, manejado por Claude con **Enlace Móvil de Windows**. La ventana «Pantalla del teléfono» va en la **mitad derecha del monitor principal** (desde el 09/11/2026; antes, en el segundo monitor: ver abajo). Sustituye al móvil personal de Iván (D70): ya no depende de que esté encendido, con wifi y cerca del PC. Probado el 04/11/2026.
 
 **Manejar el S21 desde el PC (aprendido el 06/11/2026):**
 - **Siempre en la ventana «Pantalla del teléfono»** (Enlace Móvil → «Abrir la pantalla del teléfono»). La ventana suelta de la app («Afición FBM» abierta desde Enlace Móvil → Aplicaciones) **Claude no la ve: sale tapada en las capturas**. Si está abierta, cerrarla.
@@ -74,6 +74,15 @@ El script crea lo que falte (enlaces, `.env.local`, `npm ci`) al empezar; todo e
 - **Ruta a los partidos de cualquier grupo:** **Mis Equipos** → **MDL** (la tarjeta, no «Ver estadísticas categoría») → pestaña **PARTIDOS** → Fases **MORATALAZ** → **Grupos** (desplegable) → pestañas **JORNADA 1, 2, 3…**
 - **Desplazarse:** arrastrar con el ratón **no** desplaza; la **rueda** sí. Con el puntero en la mitad de arriba de la pantalla desplaza la página entera y rápido; dentro de la lista va muy lento. Al bajar, las pestañas de jornada se van de la pantalla: **antes de pulsar una, comprobar en la captura que es la pestaña y no una tarjeta de partido** (pulsar una tarjeta abre el partido; se vuelve con la flecha de arriba a la izquierda).
 - **La lista de partidos de cada jornada** trae local, visitante, marcador, fecha, hora y pista, y quién descansa: **es la fuente para apuntar la jornada en `jornadas_hojas.csv` al descargar** (D186, abajo). Un partido puede tener **resultado oficial y no tener hoja** (le pasó a G5 J1): se apunta igual, con su marcador y «sin hoja». Una **incomparecencia** sale como **20-0 con todo a cero**: se apunta con el 20-0 y «incomparecencia».
+
+**Aprendido el 09/11/2026** (descarga a mano de la J4 por la tarde, 24 hojas):
+- **Dónde va la ventana:** «Pantalla del teléfono» en la **mitad derecha del monitor principal**. El **monitor BenQ sale vacío en las capturas de Claude desde el 09/11** (antes funcionaba): no usarlo. El **centro del monitor principal** tiene una ventana que Claude ve en negro: no poner el teléfono encima.
+- **Abrir el espejo siempre con Enlace Móvil → «Abrir la pantalla del teléfono»**; nunca la ventana suelta «Afición FBM» (no se ve).
+- **Permisos:** basta con el de **«Enlace Móvil»** (el de `msedgewebview2` no hizo falta). Los permisos **caducan a los 30 minutos sin uso**: pedirlos todos de una vez.
+- **Navegación probada:** Mis Equipos → MDL → PARTIDOS → Grupos (desplegable) → pestañas de jornada → el partido → ESTADÍSTICAS → EXCEL → «Abrir con» se cierra con **Atrás** → la **flecha de la app** para volver a la lista. **La jornada de cada grupo se comprueba por la FECHA del partido, no por el número** de la pestaña.
+- **Desplazarse:** la rueda del ratón desplaza poco (lotes de ~100 pasos sobre la lista). **Una notificación del móvil puede tapar un toque: comprobar con captura cada pantalla antes de pulsar.** Tocar demasiado arriba abre el panel de notificaciones (se cierra con Atrás).
+- **Anuncio «Navega sin interrupciones»:** arrastrar hacia abajo la barra gris; **nunca «Saber más»**.
+- **Al desplazarse hay saltos y puede quedarse un partido sin ver:** al acabar, contar los partidos de cada grupo contra la lista de la jornada (con 11 equipos, 5 partidos y un descanso) y anotar en `jornadas_hojas.csv` lo bajado. El 09/11 el registro no existía y lo escribió después la sesión que procesó la jornada.
 
 **Descargar una hoja (en la app):** equipo → **Partidos** → (desplegable **Grupos**) → el partido → **Estadísticas** → **EXCEL**. Sale «Abrir con»: se cierra con **Atrás**; el fichero queda en la carpeta Descargas del S21. En el buscador de la app, el texto se escribe letra a letra y llega en MAYÚSCULAS.
 

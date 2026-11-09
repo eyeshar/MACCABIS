@@ -40,6 +40,8 @@
 
 ## Pendiente de Code
 
+- [ ] **Rutina A: avisar cuando no llega nuestra hoja** (09/11/2026): el lunes de una jornada jugada, «NADA NUEVO» sin la hoja de MdA o MdL sale callado y nadie se entera (le pasó a la J4). Que avise («Rutina A: falta la hoja de MdL J4») si el calendario dice que jugamos el domingo.
+- [ ] **Partidos aplazados de G1/G2** (09/11/2026): RIF–Chupitimanguis (G1 J4) sale «No comenzado» con fecha 01/08/2027. Hoy cuenta como «faltan hojas»; si se quiere distinguir de una hoja sin bajar, anotarlo como aplazado (p. ej. en `resultados_sin_hoja.csv` o en `temporadas.json`).
 - [ ] **D178, más adelante:** editar el contacto de WhatsApp desde Gestión → Jugadores (hoy solo con «Importar teléfonos»; el teléfono sí se edita allí). Y, si Iván lo quiere, el aviso push del «no vas por defecto» (D152) con el mismo texto que la pantalla (D177: «Te hemos marcado como «no voy» porque normalmente no entrenas…»; el push dice aún «Te hemos puesto que no vas…»).
 
 > Ordenado por lo que más trabajo manual le quita a Iván. Lo que necesita su OK (esquema, datos del real) lo dice.
@@ -65,6 +67,7 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ## Pendiente de Iván
 
 **Operativa de ahora**
+- [ ] **J4 (09/11/2026), lo que falta:** el **acta de MdL–Trascendedores** (publicado con la hoja, «pend. acta», D71; al dejarla en Descargas se completa con `npm run jornada` o en la pasada del jueves) y las **5 hojas de G6 (SAB TAR G2) J4**, que no se bajaron (se cargan con el S21 y su línea en `jornadas_hojas.csv`).
 - [x] **Rutina A sin navegador** (`fix/verificacion-sin-navegador`, nota en D179): mergeado con el OK de Iván (PR #60, 06/11/2026). Tras el merge, `git pull` en la copia `Maccabis-rutina-a` lo hace la propia rutina.
 - [ ] **Estructura nueva (D189): mirarla en el móvil** (qué mirar primero, en el informe de `ESTADO.md`).
 - [ ] **Encender el desempate por no convocados** tras la propuesta automática del martes 10/11/2026: variable `CONVOCATORIA_DESEMPATE_NO_CONVOCADOS=1` en Vercel (producción) y desplegar. Apagado, el motor propone igual que antes.

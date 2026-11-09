@@ -52,6 +52,8 @@ try {
   const SIN_HOJA = partidos.filter((p) => !p.fichero);
   const FILAS_CLAS = Object.values(liga.publico.grupos).reduce((n, g) => n + g.clasificacion.length, 0) + Object.values(liga.ajenos).reduce((n, g) => n + g.clasificacion.length, 0);
   const NUESTROS = partidos.filter((p) => ['MdA', 'MdL'].some((n) => n === p.local || n === p.visitante)).length;
+  // Jornadas en que MdA o MdL descansan (la J4 de MdA, 08/11/2026): no tienen partido nuestro.
+  const DESCANSOS_NUESTROS = Object.values(liga.publico.grupos).reduce((n, g) => n + jornadas.filter((j) => (g.descansan?.[j] ?? []).some((e) => e === 'MdA' || e === 'MdL')).length, 0);
   await cargarLiga(sql, liga, '2026-27', { log: () => {} });
   const cuenta = async () => ({
     p: (await sql`select count(*)::int n from public.liga_partidos`)[0].n,
@@ -92,7 +94,7 @@ try {
   const [{ n: filasSinHoja }] = await sql`select count(*)::int n from public.liga_estadisticas_jugador e join public.liga_partidos p on p.id = e.partido_id where p.hoja is null`;
   ok(filasSinHoja === 0, `los ${SIN_HOJA.length} resultados sin hoja, sin filas por jugador`, String(filasSinHoja));
   const [{ nuestros }] = await sql`select count(*)::int nuestros from public.liga_partidos where nuestro`;
-  ok(nuestros === NUESTROS && NUESTROS === 2 * jornadas.length, `solo ${NUESTROS} partidos marcados como nuestros (MdA y MdL, ${jornadas.length} jornadas)`, String(nuestros));
+  ok(nuestros === NUESTROS && NUESTROS === 2 * jornadas.length - DESCANSOS_NUESTROS, `solo ${NUESTROS} partidos marcados como nuestros (MdA y MdL, ${jornadas.length} jornadas, ${DESCANSOS_NUESTROS} descanso(s))`, String(nuestros));
 
   // Usuarios: un gestor, un jugador (con correo en la lista blanca) y un intruso sin ninguna ficha.
   await sql`update public.jugadores set email = 'jugador@pruebas.local' where person_id = 'esteban-jon'`;

@@ -67,7 +67,6 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ## Pendiente de Iván
 
 **Operativa de ahora**
-- [ ] **J4 (09/11/2026), lo que falta:** el **acta de MdL–Trascendedores** (publicado con la hoja, «pend. acta», D71; al dejarla en Descargas se completa con `npm run jornada` o en la pasada del jueves) y las **5 hojas de G6 (SAB TAR G2) J4**, que no se bajaron (se cargan con el S21 y su línea en `jornadas_hojas.csv`).
 - [x] **Rutina A sin navegador** (`fix/verificacion-sin-navegador`, nota en D179): mergeado con el OK de Iván (PR #60, 06/11/2026). Tras el merge, `git pull` en la copia `Maccabis-rutina-a` lo hace la propia rutina.
 - [ ] **Estructura nueva (D189): mirarla en el móvil** (qué mirar primero, en el informe de `ESTADO.md`).
 - [ ] **Encender el desempate por no convocados** tras la propuesta automática del martes 10/11/2026: variable `CONVOCATORIA_DESEMPATE_NO_CONVOCADOS=1` en Vercel (producción) y desplegar. Apagado, el motor propone igual que antes.
@@ -150,6 +149,10 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ---
 
 ## Histórico
+
+### Cerrado el 09/11/2026 (`datos/jornada-4-acta-g6`)
+
+- [x] **J4: acta de MdL–Trascendedores y hojas de G6** (Pendiente de Iván, 09/11/2026): el acta 393043 cuadra con la hoja (50-57 y los parciales) y quita el «pend. acta»; G6 J4 con 5 de 5 y el descanso de Per C.B. Ver ESTADO del 09/11.
 
 ### Cerrado el 03/11/2026 (`docs/backlog-03-11`)
 

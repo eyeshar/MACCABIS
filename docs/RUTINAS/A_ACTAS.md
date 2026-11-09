@@ -6,7 +6,7 @@
 | Quién | Qué | Cuándo |
 |---|---|---|
 | **Claude** (tarea programada «Maccabis · actas del lunes», en el Chrome de Iván) | Baja de gesdeportiva.fbm.es las **actas** que falten a Descargas | Lunes y jueves, 9:30 |
-| **Claude** (con el **S21 dedicado al club**, D182) | Baja las **hojas de estadística** (las nuestras y las de los grupos de la fase, D183) de la app **Afición FBM**; FolderSync las lleva a Google Drive y de ahí al PC | Domingo noche o lunes por la mañana (FolderSync, cada 10 minutos) |
+| **Claude** (con el **S21 dedicado al club**, D182; desde el 09/11/2026, tarea programada **«Maccabis · hojas del lunes (S21)»**) | Baja las **hojas de estadística** (las nuestras y las de los grupos de la fase, D183) de la app **Afición FBM** y apunta las de G3–G6 en `jornadas_hojas.csv`; FolderSync las lleva a Google Drive y de ahí al PC | Lunes, 9:04 (antes de la pasada de las 9:45; FolderSync, cada 10 minutos) |
 | **`scripts/rutina_a_publicar.ps1`** (Programador de tareas de Windows, sin agentes) | Procesa (`npm run jornada -- --no-interactivo`) y, **si todo cuadra, publica solo** (D66); si no, para sin publicar nada | Lunes y jueves, 9:45 y 13:00 |
 
 **Reparto de fuentes (D106, 23/10/2026):**
@@ -65,6 +65,8 @@ El script crea lo que falte (enlaces, `.env.local`, `npm ci`) al empezar; todo e
 ## Hojas: S21 dedicado al club + FolderSync → Drive (D182, matiza D70)
 
 **Dispositivo:** un **Samsung S21 dedicado al club**, siempre encendido y con Afición FBM abierta, manejado por Claude con **Enlace Móvil de Windows**. La ventana «Pantalla del teléfono» va en la **mitad derecha del monitor principal** (desde el 09/11/2026; antes, en el segundo monitor: ver abajo). Sustituye al móvil personal de Iván (D70): ya no depende de que esté encendido, con wifi y cerca del PC. Probado el 04/11/2026.
+
+**Tarea programada «Maccabis · hojas del lunes (S21)»** (creada el 09/11/2026; lunes a las 9:04): hace la descarga de abajo sin nadie delante. **Lo que necesita de Iván cada lunes, antes de las 9:04** (en «Pendiente de Iván» del BACKLOG; la primera vez, el **lunes 16/11/2026**): el PC encendido con su sesión, la ventana **«Pantalla del teléfono»** abierta en la **mitad derecha del monitor principal** (ver «Aprendido el 09/11/2026») y **aprobar el acceso a «Enlace Móvil»** cuando la tarea lo pida (caduca a los 30 minutos sin uso). Si no llega nuestra hoja, la pasada de las 9:45 lo avisa (ver «Aviso», arriba).
 
 **Manejar el S21 desde el PC (aprendido el 06/11/2026):**
 - **Siempre en la ventana «Pantalla del teléfono»** (Enlace Móvil → «Abrir la pantalla del teléfono»). La ventana suelta de la app («Afición FBM» abierta desde Enlace Móvil → Aplicaciones) **Claude no la ve: sale tapada en las capturas**. Si está abierta, cerrarla.

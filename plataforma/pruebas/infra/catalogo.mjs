@@ -32,7 +32,7 @@ export const ESTADISTICAS = new Set(['test:regresion', 'test:liga', 'test:privac
 const SEGUNDOS = { 'pruebas:cuadre': 75 };
 
 /** Comprobaciones de la raiz (estadisticas y datos), en el orden de siempre. */
-const RAIZ = ['check:copias', 'check:personas', 'check:historia', 'check:datos', 'test:datos', 'test:duplicados', 'test:hojas-ajenas', 'test:privacidad', 'test:liga', 'test:regresion'];
+const RAIZ = ['check:copias', 'check:personas', 'check:historia', 'check:datos', 'test:datos', 'test:duplicados', 'test:hojas-ajenas', 'test:rutina-a', 'test:privacidad', 'test:liga', 'test:regresion'];
 
 /** Rutas de la web que visita una suite (lo que va tras `${APP}`), recortadas a dos tramos y sin tramos de datos. */
 export function claveRuta(r) {

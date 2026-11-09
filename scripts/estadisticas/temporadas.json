@@ -76,7 +76,18 @@
    "puntos_victoria": 2,
    "puntos_derrota": 1,
    "incomparecencias": [],
-   "puntos_oficiales": {}
+   "puntos_oficiales": {},
+   "_nota_aplazados": "Partidos de G1/G2 que la app lista «No comenzado» con fecha futura o sin fecha ({grupo, jornada, local, visitante, fecha: 'aaaa-mm-dd' o null, nota}). Mientras no tengan hoja y su fecha no haya pasado salen como «aplazado»: no cuentan como «faltan hojas» ni como descanso. Su hoja, cuando llegue, va a su jornada, no a la última jugada.",
+   "aplazados": [
+    {
+     "grupo": "G1",
+     "jornada": 4,
+     "local": "RIF",
+     "visitante": "Chupitimanguis",
+     "fecha": "2027-08-01",
+     "nota": "Afición FBM, 09/11/2026: «No comenzado», 01/08/2027 (después del final de la temporada: parece una fecha de relleno)."
+    }
+   ]
   }
  }
 }

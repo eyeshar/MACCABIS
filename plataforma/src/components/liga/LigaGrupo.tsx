@@ -50,6 +50,7 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
   const rs = G.resultados.filter((r) => r.jornada === jActual);
   const fecha = rs[0] && rs[0].fecha ? " · " + fechaCorta(rs[0].fecha).slice(0, 5) : "";
   const descansan = G.descansan[String(jActual)];
+  const aplazados = G.aplazados?.[String(jActual)] ?? [];
   const cont = contra[`${g}:${e.id}`];
   const cambiaGrupo = (nuevo: string) => {
     // Un grupo ajeno se pide al servidor (con la sesión); de un ajeno a G1/G2, también por la URL (que no se quede ?g=G5).
@@ -128,6 +129,13 @@ export default function LigaGrupoPanel({ grupos, generado, colores, contra, grup
             </div>
           );
         })}
+        {aplazados.map((a, i) => (
+          <div key={`ap${i}`} className="e-partido" data-testid="liga-aplazado">
+            <span className="e-pl"><Link href={hrefEq(a.local_id)} className="e-enlace-eq">{a.local}</Link></span>
+            <span className="e-m e-m-hueco" title="«No comenzado» en la app: se jugará más adelante">aplazado</span>
+            <span><Link href={hrefEq(a.visitante_id)} className="e-enlace-eq">{a.visitante}</Link></span>
+          </div>
+        ))}
         {descansan && <div className="e-desc">Descansa: {descansan.join(", ")}</div>}
       </div>
 

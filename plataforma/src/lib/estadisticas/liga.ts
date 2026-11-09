@@ -28,7 +28,10 @@ export type EquipoLiga = {
 export type GrupoLiga = {
   nombre: string; nuestro: "MDA" | "MDL"; jornadas_cargadas: number[]; orden_provisional?: boolean;
   clasificacion: FilaClasificacion[]; resultados: ResultadoLiga[]; descansan: Record<string, string[]>; equipos: Record<string, EquipoLiga>;
+  // Aplazados de cada jornada («No comenzado» en la app, liga.aplazados): ni descansan ni les falta la hoja.
+  aplazados?: Record<string, AplazadoLiga[]>;
 };
+export type AplazadoLiga = { local: string; local_id: string; visitante: string; visitante_id: string; fecha: string | null };
 export const LIGA = ligaJson as unknown as { temporada: string; generado: string; grupos: Record<Grupo, GrupoLiga> };
 export const TEMPORADA_LIGA = LIGA.temporada;
 export const NUESTRO_DE: Record<Grupo, "MdA" | "MdL"> = { G1: "MdA", G2: "MdL" };

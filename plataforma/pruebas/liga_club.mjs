@@ -157,6 +157,19 @@ try {
     const peq = await pequenos(p, 'nav[aria-label="Liga"] a, [data-testid="liga-aviso"] summary, .e-segmento button, .e-jornadas button');
     ok(peq.length === 0, 'liga: pestañas, aviso, grupos y jornadas de al menos 44 px', JSON.stringify(peq.slice(0, 4)));
     if (cap) await foto(p, 'liga-clasificacion');
+    // Aplazados (liga.aplazados, 09/11/2026): en su jornada, una fila «aplazado» y sus equipos fuera de «Descansa».
+    const aplazadosG1 = Object.entries(liga.grupos.G1.aplazados ?? {});
+    if (cap && aplazadosG1.length) {
+      const [jAp, [ap]] = aplazadosG1[0];
+      await p.locator('.e-jornadas button', { hasText: new RegExp(`^J${jAp}$`) }).click();
+      const filaAp = p.locator('[data-testid="liga-aplazado"]').first();
+      await filaAp.waitFor({ timeout: 10000 }).catch(() => {});
+      const texto = (await filaAp.innerText().catch(() => '')).replace(/\s+/g, ' ');
+      ok(texto.includes(ap.local) && texto.includes('aplazado') && texto.includes(ap.visitante), `liga G1 J${jAp}: ${ap.local} – ${ap.visitante} sale «aplazado»`, texto);
+      const desc = (await p.locator('[data-testid="liga-resultados"] .e-desc', { hasText: 'Descansa' }).innerText().catch(() => ''));
+      ok(![ap.local, ap.visitante].some((n) => desc.includes(n)), `liga G1 J${jAp}: los del aplazado no «descansan»`, desc);
+      await p.goto(`${APP}/liga`);
+    }
 
     await p.goto(`${APP}/liga?g=G2`);
     ok(JSON.stringify(await marcada(p, 'nav[aria-label="Liga"]')) === '["Clasificación"]' && new URL(p.url()).pathname === '/liga', '/liga?g=G2 (gemela): sigue en /liga con «Clasificación» marcada');

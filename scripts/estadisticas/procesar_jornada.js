@@ -15,7 +15,11 @@
  *   npm run jornada -- --no-interactivo  (para la rutina A automática, D66: ante cualquier duda PARA con código
  *                                        distinto de 0, deshace las copias y no escribe nada; sin ficheros
  *                                        nuevos dice «Nada nuevo» y sale con 0 sin regenerar)
- *   npm run jornada -- --resumen <f.json> (deja el resultado en un JSON: estado, jornada, texto, motivo)
+ *   npm run jornada -- --resumen <f.json> (deja el resultado en un JSON: estado, jornada, texto, motivo, faltan_nuestras)
+ *   npm run jornada -- --hoy aaaa-mm-dd  (otro «hoy» para el aviso del lunes de hoja_nuestra.js; solo para ensayarlo)
+ *   (Con --no-interactivo y «Nada nuevo», un lunes: si MdA o MdL jugaron el fin de semana y no hay su hoja, lo dice y lo deja
+ *    en faltan_nuestras; la rutina A avisa a Iván. Un aplazado de G1/G2 apuntado en liga.aplazados sale «aplazado», no
+ *    «faltan hojas».)
  *
  * Qué hace:
  *   0. Regenera data/calendario_<temporada>.json desde la tabla de eventos (D151: es una copia generada; la fuente es la
@@ -55,6 +59,7 @@ const { leerActa } = require('./leer_acta');
 const { leerHoja } = require('./leer_hoja');
 const liga = require('./liga');
 const jornadasAjenas = require('./jornadas_ajenas');
+const hojaNuestra = require('./hoja_nuestra');
 const { normEquipo } = require('./util');
 const CONFIG = require('./temporadas.json');
 
@@ -239,7 +244,9 @@ async function recoger(o) {
           que: `liga ${g} (${id.grupo.nombre})${jor ? ' ' + jorA : ', jornada sin asignar'}: ${local} - ${visitante}` });
         continue;
       }
-      const jor = o.jornadaForzada || liga.jornadaPorFecha(id.grupo, o.hoy);
+      // La hoja de un aplazado (liga.aplazados) es de su jornada, no de la última jugada.
+      const aplazado = liga.aplazadoDe(cfg, id.grupo, id.hoja.local, id.hoja.visitante);
+      const jor = o.jornadaForzada || (aplazado && aplazado.jornada) || liga.jornadaPorFecha(id.grupo, o.hoy);
       if (!jor) { duda(`${f}: no sé de qué jornada es (usa --jornada N).`); continue; }
       const como = o.jornadaForzada ? `--jornada ${jor}` : `la jornada ${jor}, la última jugada del ${id.grupo.clave}`;
       // La hoja no puede ser de esa jornada si: uno de los dos juega contra nosotros esa jornada (calendario),
@@ -369,11 +376,13 @@ if (require.main === module) {
   const NOINT = args.includes('--no-interactivo');          // rutina A automática (D66): ante cualquier duda, para
   const RESUMEN = argVal('--resumen', null);
   const JORNADA_FORZADA = +argVal('--jornada', 0) || null;   // jornada de las hojas de liga donde no jugamos (si no, la última con fecha <= hoy)
+  const HOY = argVal('--hoy', null) || hojaNuestra.hoyMadrid();   // aaaa-mm-dd; --hoy solo para ensayar el aviso del lunes
   const copiados = [];                                       // copias nuevas de esta ejecución (se deshacen si para)
   const restaurar = [];                                      // ficheros de fuentes_fbm/ a los que se añadió algo ({ fichero, previo })
   // estado: 'nada' (sin ficheros nuevos), 'dry', 'lista' (escrita y lista para publicar) o 'parada' (con motivo).
   // avisos: lo que no para la jornada pero conviene que Iván vea (p. ej. una hoja con fecha de descarga antigua).
-  const resumen = { temporada: TEMPORADA, dry: DRY, estado: null, nuevos: 0, jornada: null, texto: null, motivo: null, avisos: [], copiados };
+  // faltan_nuestras: con «Nada nuevo» un lunes, los partidos nuestros del fin de semana sin hoja (hoja_nuestra.js): la rutina avisa.
+  const resumen = { temporada: TEMPORADA, dry: DRY, estado: null, nuevos: 0, jornada: null, texto: null, motivo: null, avisos: [], faltan_nuestras: [], copiados };
   const escribeResumen = () => { if (RESUMEN) fs.writeFileSync(RESUMEN, JSON.stringify(resumen, null, 1) + '\n', 'utf8'); };
   /**
    * Para con código 1. Con --no-interactivo deshace las copias de esta ejecución en fuentes_fbm/, para que la siguiente
@@ -417,6 +426,12 @@ if (require.main === module) {
     if (NOINT && !plan.length) {
       restaurarCalendario();
       console.log('\nNada nuevo: no hay ficheros nuevos de la temporada; no se regenera nada.');
+      // Un lunes, ¿jugamos el fin de semana y falta nuestra hoja? (sin aviso si descansamos o el partido está aplazado)
+      const cal = cfg.calendario.filter(c => c.formato === 'json' && fs.existsSync(path.join(ROOT, c.fichero)))
+        .flatMap(c => JSON.parse(fs.readFileSync(path.join(ROOT, c.fichero), 'utf8')).partidos);
+      const sf = path.join(ROOT, 'data', `season_${TEMPORADA}.json`);
+      resumen.faltan_nuestras = hojaNuestra.faltanNuestras({ calendario: cal, season: fs.existsSync(sf) ? JSON.parse(fs.readFileSync(sf, 'utf8')) : null, hoy: HOY, nombres: cfg.nombres_club });
+      resumen.faltan_nuestras.forEach(f => console.log(`AVISO: ${f.texto}.`));
       resumen.estado = 'nada'; escribeResumen(); return;
     }
     let nuevos = 0;
@@ -495,6 +510,8 @@ if (require.main === module) {
     if (cfg.liga) {
       const l = liga.construir(TEMPORADA);
       l.avisos.forEach(a => console.log('  ! ' + a));
+      // Aplazados (liga.aplazados): no son hojas que faltan.
+      l.aplazados.forEach(a => console.log('  · ' + a));
       // D168: un mismo nombre con dos dorsales en un partido va también en el aviso a Iván (rutina A).
       resumen.avisos.push(...l.avisos.filter(a => /sale dos veces en .* con dorsales/.test(a)));
       if (l.errores.length) { console.log(`\nERRORES DE LIGA — no se ha escrito data/liga_${TEMPORADA}.json:`); l.errores.forEach(e => console.log('  X ' + e)); para(`Liga: ${l.errores[0]}`, ''); }

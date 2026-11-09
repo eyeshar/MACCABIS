@@ -28,6 +28,11 @@
  * los puntos del equipo que no se presentó se toman de la clasificación oficial de Deportes/web (rutina B de los jueves),
  * anotados en `liga.puntos_oficiales` ({ G1: { <id-equipo>: { pts, fecha } } }). Hasta entonces su casilla dice
  * "pendiente de la oficial" y el orden es provisional.
+ *
+ * Aplazados (09/11/2026): un partido de G1/G2 que la app lista «No comenzado» con fecha futura o sin fecha se anota en
+ * `liga.aplazados` ({grupo, jornada, local, visitante, fecha: 'aaaa-mm-dd' | null, nota}). Mientras no tenga hoja y su fecha
+ * no haya pasado, sale como «aplazado» (en la liga, `aplazados` por jornada; en el resumen, «aplazado») y NO cuenta como
+ * «faltan hojas» ni como descanso. Con la fecha ya pasada y sin hoja, vuelve a ser una hoja que falta.
  */
 const fs = require('fs');
 const path = require('path');
@@ -86,6 +91,13 @@ function grupoDe(ctx, a, b) {
 function jornadaPorFecha(g, hoy = new Date().toISOString().slice(0, 10)) {
   const js = Object.entries(g.fechas).filter(([, f]) => f <= hoy).map(([j]) => +j);
   return js.length ? Math.max(...js) : null;
+}
+
+/** La entrada de `liga.aplazados` de ese grupo con esos dos equipos (en cualquier orden), o null: la hoja de un aplazado es
+ *  de SU jornada, no de la última jugada. */
+function aplazadoDe(cfg, g, a, b) {
+  const par = [normEquipo(a), normEquipo(b)].sort().join('|');
+  return ((cfg.liga || {}).aplazados || []).find(x => x.grupo === g.clave && [normEquipo(x.local), normEquipo(x.visitante)].sort().join('|') === par) || null;
 }
 
 /** Identifica una hoja de partido en que NO jugamos (para procesar_jornada). */
@@ -299,6 +311,49 @@ function nombresRepetidos(p) {
   return out;
 }
 
+const hoyMadrid = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Madrid' }).format(new Date());
+
+/**
+ * Descansos, aplazados y hojas que faltan de las jornadas de un grupo nuestro. `equipos`: [{id, nombre}]; `juegos`: los partidos
+ * con hoja o incomparecencia ({jornada, local, visitante}); `aplazados`: los de `liga.aplazados` de ese grupo; `hoy`: aaaa-mm-dd.
+ * Un aplazado sin hoja y con fecha futura (o sin fecha) no es descanso ni «faltan hojas»; con la fecha pasada, sí falta su hoja.
+ * Devuelve { jornadas, descansan, aplazados: {jornada: [{local, local_id, visitante, visitante_id, fecha}]}, avisos, errores, textos }.
+ */
+function jornadasDelGrupo({ clave, equipos, juegos, aplazados = [], hoy = hoyMadrid() }) {
+  const avisos = [], errores = [], textos = [];
+  const eq = n => equipos.find(e => normEquipo(e.nombre) === normEquipo(n) || e.id === slug(n));
+  const fechaEs = f => f.split('-').reverse().join('/');
+  const vivos = {};
+  for (const a of aplazados) {
+    const L = eq(a.local), V = eq(a.visitante);
+    if (!L || !V) { errores.push(`liga.aplazados: ${a.local} - ${a.visitante} no son equipos del ${clave}.`); continue; }
+    if (!Number.isInteger(a.jornada) || a.jornada < 1) { errores.push(`liga.aplazados: ${clave} ${a.local} - ${a.visitante} sin jornada válida.`); continue; }
+    if (a.fecha != null && !/^\d{4}-\d{2}-\d{2}$/.test(a.fecha)) { errores.push(`liga.aplazados: ${clave} ${a.local} - ${a.visitante}: fecha «${a.fecha}» (aaaa-mm-dd o null).`); continue; }
+    const par = [L.id, V.id].sort().join('|');
+    if (juegos.some(j => j.jornada === a.jornada && [j.local.id, j.visitante.id].sort().join('|') === par)) {
+      avisos.push(`${clave} J${a.jornada}: ${L.nombre} - ${V.nombre} ya tiene hoja; se puede quitar de liga.aplazados.`);
+      continue;
+    }
+    if (a.fecha && a.fecha <= hoy) continue;   // su fecha ya pasó y no hay hoja: falta su hoja, como la de cualquier otro
+    (vivos[a.jornada] || (vivos[a.jornada] = [])).push({ local: L.nombre, local_id: L.id, visitante: V.nombre, visitante_id: V.id, fecha: a.fecha || null });
+    textos.push(`${clave} J${a.jornada}: ${L.nombre} - ${V.nombre}, aplazado (${a.fecha ? `nueva fecha ${fechaEs(a.fecha)}` : 'sin fecha'}).`);
+  }
+  const jornadas = [...new Set(juegos.map(j => j.jornada))].sort((a, b) => a - b);
+  const descansan = {}, enJornada = {};
+  const plazas = Math.floor(equipos.length / 2) * 2;
+  for (const jn of jornadas) {
+    const ap = vivos[jn] || [];
+    const juegan = new Set(juegos.filter(j => j.jornada === jn).flatMap(j => [j.local.id, j.visitante.id]));
+    const aplazan = new Set(ap.flatMap(a => [a.local_id, a.visitante_id]));
+    const fuera = equipos.filter(e => !juegan.has(e.id) && !aplazan.has(e.id)).map(e => e.nombre);
+    if (juegan.size + aplazan.size !== plazas)
+      avisos.push(`${clave} J${jn}: faltan hojas (juegan ${juegan.size} de ${plazas - aplazan.size} equipos${ap.length ? `; ${ap.length} partido(s) aplazado(s) aparte` : ''}).`);
+    if (fuera.length) descansan[jn] = fuera;
+    if (ap.length) enJornada[jn] = ap;
+  }
+  return { jornadas, descansan, aplazados: enJornada, avisos, errores, textos };
+}
+
 /** Validación de sumas de las hojas leídas: error en los grupos nuestros (G1/G2), aviso en los ajenos (D183). */
 function validarPartidos(partidos) {
   const errores = [], avisos = [];
@@ -306,10 +361,10 @@ function validarPartidos(partidos) {
   return { errores, avisos };
 }
 
-function construir(temporada) {
+function construir(temporada, { hoy = hoyMadrid() } = {}) {
   const ctx = contexto(temporada);
   const cfgLiga = ctx.cfg.liga;
-  const errores = [], avisos = [];
+  const errores = [], avisos = [], aplazadosTexto = [];
   if (!cfgLiga) throw new Error(`temporadas.json no tiene "liga" para ${temporada}.`);
 
   const { partidos, errores: eLectura } = leerFuentes(temporada, ctx);
@@ -388,14 +443,9 @@ function construir(temporada) {
         pts: x.pts_pendiente ? null : x.pts, ...(x.np ? { pts_fuente: x.pts_fuente || 'pendiente de la oficial' } : {}) })) };
       continue;
     }
-    const jornadas = [...new Set(juegos.map(j => j.jornada))].sort((a, b) => a - b);
-    const descansan = {};
-    for (const jn of jornadas) {
-      const juegan = new Set(juegos.filter(j => j.jornada === jn).flatMap(j => [j.local.id, j.visitante.id]));
-      const fuera = equipos.filter(e => !juegan.has(e.id)).map(e => e.nombre);
-      if (equipos.length - fuera.length !== (Math.floor(equipos.length / 2) * 2)) avisos.push(`${g.clave} J${jn}: faltan hojas (juegan ${juegan.size} de ${Math.floor(equipos.length / 2) * 2} equipos).`);
-      if (fuera.length) descansan[jn] = fuera;
-    }
+    const jg = jornadasDelGrupo({ clave: g.clave, equipos, juegos, aplazados: (cfgLiga.aplazados || []).filter(a => a.grupo === g.clave), hoy });
+    errores.push(...jg.errores); avisos.push(...jg.avisos); aplazadosTexto.push(...jg.textos);
+    const { jornadas, descansan, aplazados } = jg;
     publico.grupos[g.clave] = {
       nombre: g.nombre, nuestro: g.nuestro, jornadas_cargadas: jornadas,
       clasificacion: tabla.map((x, i) => ({ pos: i + 1, id: x.id, equipo: x.nombre, nuestro: x.nuestro, pj: x.pj, g: x.g, p: x.p, pf: x.pf, pc: x.pc, dif: x.dif,
@@ -409,16 +459,19 @@ function construir(temporada) {
           : { ...base, pl: j.pl, pv: j.pv, ...(j.est ? { est: j.est } : {}) };
       }),
       descansan,
+      ...(Object.keys(aplazados).length ? { aplazados } : {}),
       equipos: Object.fromEntries(tabla.map(x => [x.id, { nombre: x.nombre, nuestro: x.nuestro, ...estadisticasEquipo(x) }])),
     };
   }
   for (const p of privado) avisos.push(...nombresRepetidos(p));
   // D132: nunca menos jornadas, hojas ni partidos que lo ya publicado (vale para liga.js, npm run jornada y db:liga).
   errores.push(...comprobarNoRetrocede(publico, temporada));
-  return { publico, privado, ajenos, errores, avisos, fuentes: partidos.length };
+  // G3-G6 no son públicos: un aplazado suyo no tiene dónde salir.
+  for (const a of (cfgLiga.aplazados || []).filter(a => !publico.grupos[a.grupo])) errores.push(`liga.aplazados: ${a.grupo} no es G1 ni G2 (${a.local} - ${a.visitante}).`);
+  return { publico, privado, ajenos, errores, avisos, aplazados: aplazadosTexto, fuentes: partidos.length };
 }
 
-module.exports = { construir, validarPartidos, nombresRepetidos, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
+module.exports = { construir, jornadasDelGrupo, aplazadoDe, validarPartidos, nombresRepetidos, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
 
 if (require.main === module) {
   const args = process.argv.slice(2);
@@ -426,6 +479,7 @@ if (require.main === module) {
   const r = construir(temporada);
   console.log(`Liga ${temporada}: ${r.fuentes} hojas.`);
   r.avisos.forEach(a => console.log('  ! ' + a));
+  r.aplazados.forEach(a => console.log('  · ' + a));
   if (r.errores.length) { console.log('\nERRORES — no se ha escrito nada:'); r.errores.forEach(e => console.log('  X ' + e)); process.exit(1); }
   for (const [k, g] of Object.entries(r.publico.grupos)) {
     console.log(`\n${k} — ${g.nombre}`);

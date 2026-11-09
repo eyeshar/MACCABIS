@@ -585,6 +585,46 @@
       "visitante": "PER C.B.",
       "hoja": "liga_J--_G6_mafia-del-alcohol_vs_per-c-b_70ca77f1.xlsx",
       "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 4,
+      "local": "CACIQUES",
+      "visitante": "DRINK TEAM",
+      "hoja": "liga_J04_G6_caciques_vs_drink-team_6eda7220.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 4,
+      "local": "CB MADRID",
+      "visitante": "CLUB AGUIRRE",
+      "hoja": "liga_J04_G6_cb-madrid_vs_club-aguirre_808eb638.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 4,
+      "local": "TOTEM BLUE",
+      "visitante": "TRIFASIC BLUNTERS",
+      "hoja": "liga_J04_G6_totem-blue_vs_trifasic-blunters_e0714cf9.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 4,
+      "local": "ROMA BASKET",
+      "visitante": "MAFIA DEL ALCOHOL",
+      "hoja": "liga_J04_G6_roma-basket_vs_mafia-del-alcohol_27984d12.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 4,
+      "local": "UTURBU",
+      "visitante": "FAKIN PANZAS",
+      "hoja": "liga_J04_G6_uturbu_vs_fakin-panzas_7afd0601.xlsx",
+      "comprobado": true
     }
   ],
   "jornadas": [
@@ -692,6 +732,12 @@
       "grupo": "G6",
       "jornada": 3,
       "descansa": "CB MADRID",
+      "huecos": []
+    },
+    {
+      "grupo": "G6",
+      "jornada": 4,
+      "descansa": "PER C.B.",
       "huecos": []
     }
   ]

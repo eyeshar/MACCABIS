@@ -2,6 +2,17 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Rutina A: aviso si falta nuestra hoja y aplazados (09/11/2026, noche) — `mejora/rutina-a-avisos`
+- **Aviso si falta nuestra hoja.** Un lunes en que la pasada de las 9:45 o la de las 13:00 sale «Nada nuevo», si el calendario dice que MdA o MdL jugaron el sábado o el domingo y no hay su hoja en `data/season_2026-27.json`, la rutina avisa con la notificación de Windows de siempre (no hay otro canal): «Iván, no hay hoja de MdL de la J4: revisa la tarea "hojas del lunes" o bájala del S21». También lo apunta en `privado/registro_rutina_a.log`, en la línea de «NADA NUEVO». No avisa si nuestro equipo descansó o su partido está aplazado (otra fecha o estado «aplazado» en el calendario), ni otro día que no sea lunes.
+  - La lógica está en `scripts/estadisticas/hoja_nuestra.js`. `npm run jornada` la deja en `faltan_nuestras` de su resumen y `rutina_a_publicar.ps1` lanza el aviso; `--hoy aaaa-mm-dd` sirve para ensayarla.
+  - Ensayado en seco con los datos reales del lunes 09/11: sin aviso (la hoja de MdL está y MdA descansó). Quitando a propósito la hoja de MdL de la J4 (y dejándola después como estaba), da el aviso con el texto exacto. La rutina entera con `-Dry`: «NADA NUEVO (en seco)», sin aviso.
+- **Aplazado ≠ hoja que falta.** Los partidos de G1/G2 que la app da «No comenzado» con fecha futura o sin fecha se apuntan en `temporadas.json` → `liga.aplazados`. El primero es RIF–Chupitimanguis, G1 J4, con fecha 01/08/2027.
+  - En el resumen de `npm run jornada` (y de `npm run liga`) sale «G1 J4: RIF - Chupitimanguis, aplazado (nueva fecha 01/08/2027)», y ya no «faltan hojas (juegan 8 de 10)».
+  - En `liga.json`, la J4 de G1 queda con `descansan` solo MdA (antes MdA, RIF y Chupitimanguis) y `aplazados` con ese partido. La web nueva (`LigaGrupo`) y la antigua (`index.html`) lo enseñan como una fila con «aplazado» en lugar del marcador, sin la fecha de relleno.
+  - Cuando llegue su hoja, irá a la J4 y no a la última jornada jugada, y se avisará para quitarlo de la lista. Si su fecha pasa sin hoja, vuelve a contar como hoja que falta.
+  - Solo cambia la parte pública de la liga: `db:liga` no carga descansos, así que no hace falta recargar el real.
+- **Pruebas:** `test:rutina-a` (nueva, 23 comprobaciones, datos sintéticos que copian la J4) entra en `pruebas:rapidas` y en Actions. En local, `pruebas:rapidas` (ver el PR).
+
 ## Jornada 4 (09/11/2026) — `datos/jornada-4`
 - **Rutina de la mañana:** la rutina A corrió a las 9:47 y a las 13:00 y las dos veces salió «NADA NUEVO» (`privado/registro_rutina_a.log`). **Causa:** a esas horas no había ninguna hoja de la J4 en Drive (no se bajaron el domingo por la noche ni el lunes por la mañana) y la tarea «actas del lunes» no dejó el acta de la J4 en Descargas. Con «Nada nuevo» la rutina no avisa: nadie se enteró hasta la tarde (BACKLOG).
 - **Descarga a mano por la tarde:** Claude bajó del S21 (Afición FBM, Enlace Móvil) 24 hojas entre las 16:10 y las 16:30 (`estadisticaPartido_09112026*.xlsx` en `I:\Mi unidad\Descargas aficion fbm\`). Lo aprendido con el S21, en `RUTINAS/A_ACTAS.md` (monitor principal, permisos, navegación). El registro `jornadas_hojas.csv` no existía: lo escribió la sesión que procesó la jornada (15 líneas de G3–G5, con el fichero de cada partido, contrastado con el título de la hoja).

@@ -14,7 +14,8 @@
        o si el pull ha cambiado un package-lock.json.
     1. main al día: para si hay commits sin subir.
     2. npm run jornada -- --no-interactivo: ante cualquier duda para (código distinto de 0); sin ficheros nuevos,
-       sale sin hacer nada.
+       sale sin hacer nada, salvo un lunes en que MdA o MdL jugaron el fin de semana y no está su hoja: entonces avisa
+       («Iván, no hay hoja de MdL de la J4: …»; nada si descansamos o el partido está aplazado).
     3. test:regresion, test:liga, test:privacidad, check:historia (la temporada en curso de la Historia, D137) y
        check:copias.
     4. Commit de data/ y plataforma/src/data/ («datos(2026-27): jornada N (automático)») y push.
@@ -192,7 +193,13 @@ try {
   if (-not $res) { Parar 'npm run jornada no ha dejado su resumen.' }
   if ($res.estado -eq 'nada') {
     Linea 'Nada nuevo: no hay ficheros nuevos de la temporada.'
-    Registrar 'NADA NUEVO' 'no hay ficheros nuevos.'
+    # Un lunes, si MdA o MdL jugaron el fin de semana y no está su hoja, se avisa (hoja_nuestra.js; nada si descansamos o
+    # el partido está aplazado). El aviso es la notificación de Windows de siempre, también en seco.
+    $faltan = @($res.faltan_nuestras | Where-Object { $_ } | ForEach-Object { $_.texto })
+    if ($faltan.Count) {
+      Registrar 'NADA NUEVO' "no hay ficheros nuevos. Aviso: $($faltan -join ' / ')"
+      Avisar ($faltan -join "`n")
+    } else { Registrar 'NADA NUEVO' 'no hay ficheros nuevos.' }
     exit 0
   }
   if ($Dry) {

@@ -40,8 +40,6 @@
 
 ## Pendiente de Code
 
-- [ ] **Rutina A: avisar cuando no llega nuestra hoja** (09/11/2026): el lunes de una jornada jugada, «NADA NUEVO» sin la hoja de MdA o MdL sale callado y nadie se entera (le pasó a la J4). Que avise («Rutina A: falta la hoja de MdL J4») si el calendario dice que jugamos el domingo.
-- [ ] **Partidos aplazados de G1/G2** (09/11/2026): RIF–Chupitimanguis (G1 J4) sale «No comenzado» con fecha 01/08/2027. Hoy cuenta como «faltan hojas»; si se quiere distinguir de una hoja sin bajar, anotarlo como aplazado (p. ej. en `resultados_sin_hoja.csv` o en `temporadas.json`).
 - [ ] **D178, más adelante:** editar el contacto de WhatsApp desde Gestión → Jugadores (hoy solo con «Importar teléfonos»; el teléfono sí se edita allí). Y, si Iván lo quiere, el aviso push del «no vas por defecto» (D152) con el mismo texto que la pantalla (D177: «Te hemos marcado como «no voy» porque normalmente no entrenas…»; el push dice aún «Te hemos puesto que no vas…»).
 
 > Ordenado por lo que más trabajo manual le quita a Iván. Lo que necesita su OK (esquema, datos del real) lo dice.
@@ -149,6 +147,11 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ---
 
 ## Histórico
+
+### Cerrado el 09/11/2026 (`mejora/rutina-a-avisos`)
+
+- [x] **Rutina A: avisar cuando no llega nuestra hoja** (09/11/2026): un lunes con «Nada nuevo», si MdA o MdL jugaron el fin de semana sin hoja publicada, la notificación de Windows de la rutina dice «Iván, no hay hoja de <equipo> de la J<N>: revisa la tarea "hojas del lunes" o bájala del S21». Nada si descansamos o el partido está aplazado. `hoja_nuestra.js`, `test:rutina-a`.
+- [x] **Partidos aplazados de G1/G2** (09/11/2026): `liga.aplazados` en `temporadas.json` (RIF–Chupitimanguis, G1 J4). Sale «aplazado» en el resumen de `npm run jornada` y en la liga (web nueva y `index.html`), sin contar como «faltan hojas» ni como descanso; su hoja irá a su jornada. `test:rutina-a`.
 
 ### Cerrado el 09/11/2026 (`datos/jornada-4-acta-g6`)
 

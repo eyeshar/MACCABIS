@@ -1137,7 +1137,7 @@ function lgRender(){
     const nos=r.local===nuestro||r.visitante===nuestro;
     const m=r.incomparecencia?'<span class="m" title="Incomparecencia">incomp.</span>':'<span class="m">'+r.pl+' – '+r.pv+'</span>';
     return '<div class="lgpart'+(nos?' nos':'')+'"><span class="l'+(r.pl>r.pv?' gan':'')+'">'+rvEsc(r.local)+'</span>'+m+'<span class="'+(r.pv>r.pl?'gan':'')+'">'+rvEsc(r.visitante)+'</span></div>'+(r.incomparecencia?'<div class="lgdesc">No se presentó: '+rvEsc(r.no_presentado)+'.</div>':'');
-  }).join('')+(G.descansan[lgs.jornada]?'<div class="lgdesc">Descansa: '+G.descansan[lgs.jornada].map(rvEsc).join(', ')+'</div>':'');
+  }).join('')+((G.aplazados||{})[lgs.jornada]||[]).map(a=>'<div class="lgpart"><span class="l">'+rvEsc(a.local)+'</span><span class="m" title="«No comenzado» en la app: se jugará más adelante">aplazado</span><span>'+rvEsc(a.visitante)+'</span></div>').join('')+(G.descansan[lgs.jornada]?'<div class="lgdesc">Descansa: '+G.descansan[lgs.jornada].map(rvEsc).join(', ')+'</div>':'');
   // ficha
   const eqs=Object.values(G.equipos).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
   const sel=document.getElementById('lgSel');

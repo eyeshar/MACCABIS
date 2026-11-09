@@ -729,9 +729,18 @@
      "Tropicaleros"
     ],
     "4": [
-     "MdA",
-     "RIF",
-     "Chupitimanguis"
+     "MdA"
+    ]
+   },
+   "aplazados": {
+    "4": [
+     {
+      "local": "RIF",
+      "local_id": "rif",
+      "visitante": "Chupitimanguis",
+      "visitante_id": "chupitimanguis",
+      "fecha": "2027-08-01"
+     }
     ]
    },
    "equipos": {

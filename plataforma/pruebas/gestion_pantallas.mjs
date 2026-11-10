@@ -144,6 +144,19 @@ try {
   ok(!/Convocatoria de la J/.test(tp), 'aprobada la convocatoria, su tarea desaparece de Pendiente', tp.slice(0, 200));
   ok(!/Rutina B del/.test(tp) && /Revisado 15\/10, sin cambios/.test(await pp.getByTestId('gp-calendario').innerText()), 'con la revisión del jueves registrada (0 cambios): sin tarea y «Revisado 15/10, sin cambios»', await pp.getByTestId('gp-calendario').innerText());
   await sql`delete from public.convocatorias where fecha = ${J3}`;
+
+  console.log('\n== Cambios del calendario: el historial, con fecha (D189)');
+  await sql`insert into public.importaciones (tipo, por_nombre, en, lineas, validas, aceptadas, ignoradas, bloqueadas, detalle) values ('calendario', 'Gestor', '2026-10-08T18:20:00Z', 44, 26, 1, 0, 0, ${sql.json({ cambios: [{ evento: 'no-existe-j9', campo: 'hora', de: '09:00', a: '13:30' }] })})`;
+  const [cam] = await sql`select id from public.eventos where tipo = 'liga' and fecha >= ${hoyMadrid()} order by fecha limit 1`;
+  await sql`update public.eventos set cambio_visible_en = '2026-10-12T09:00:00Z', cambio_visible = ${sql.json({ antes: '15/11/2026, 09:00', campos: ['fecha', 'hora'] })} where id = ${cam.id}`;
+  ok(await visto(pp.getByTestId('gp-historial-calendario').getByRole('link', { name: 'Historial ›' })), 'Gestión › Pendiente: «Historial ›» de los cambios del calendario');
+  await pp.goto(`${APP}/gestion/eventos/historial`);
+  const hist = pp.getByTestId('historial-calendario');
+  const filasH = await hist.locator('li[data-tipo]').evaluateAll((l) => l.map((x) => `${x.getAttribute('data-tipo')}|${x.innerText.replace(/\s+/g, ' ')}`));
+  ok(filasH.length === 3 && /^importacion[|]15 oct/.test(filasH[0]) && /Calendario revisado, sin cambios/.test(filasH[0]) && /^aviso[|]12 oct/.test(filasH[1]) && /cambia fecha, hora \(antes: 15\/11\/2026, 09:00\)/.test(filasH[1]) && /^importacion[|]8 oct/.test(filasH[2]) && /1 cambio aplicado/.test(filasH[2]) && /no-existe-j9: hora 09:00 → 13:30/.test(filasH[2]),
+    'el historial: las dos importaciones (con y sin cambios) y el aviso, de lo más reciente a lo más antiguo y con su fecha', filasH.join(' || '));
+  ok(await sinDesbordar(pp), 'el historial a 390 px, sin desbordar');
+  await sql`update public.eventos set cambio_visible_en = null, cambio_visible = null where id = ${cam.id}`;
   await sql`delete from public.importaciones where tipo = 'calendario'`;
   await pp.context().close();
 

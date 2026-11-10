@@ -136,7 +136,7 @@ export default async function Eventos({ searchParams }: { searchParams: Promise<
           </section>
 
           <section className="gs-bloque" aria-labelledby="t-importaciones" data-testid="ultimas-importaciones">
-            <div className="gs-bloque-cab"><h2 id="t-importaciones" style={{ fontSize: 22 }}>Calendario importado</h2><Link href="/gestion/eventos/importar" style={{ fontWeight: 600, fontSize: 14 }}>Importar</Link></div>
+            <div className="gs-bloque-cab"><h2 id="t-importaciones" style={{ fontSize: 22 }}>Calendario importado</h2><span style={{ display: "flex", gap: 12 }}><Link href="/gestion/eventos/historial" style={{ fontWeight: 600, fontSize: 14 }}>Historial</Link><Link href="/gestion/eventos/importar" style={{ fontWeight: 600, fontSize: 14 }}>Importar</Link></span></div>
             {(importaciones ?? []).length === 0 ? <p className="pequeno suave" style={{ margin: 0 }}>Todavía no se ha importado el calendario del Ayuntamiento.</p> : (
               <ul className="gs-pendientes">
                 {(importaciones ?? []).map((i) => (

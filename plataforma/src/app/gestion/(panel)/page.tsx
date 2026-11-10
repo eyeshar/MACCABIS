@@ -378,6 +378,8 @@ export default async function InicioGestion() {
               {cambiosCal.map((e) => (
                 <li key={e.id} className="gp-fila-sub"><span className="pequeno">{diaYNumero(e.fecha)} · {tituloEvento(e)}</span><Link href={`/gestion/eventos/${e.id}`} className="pequeno">cambiado {ddmm(e.cambio_visible_en!)} ›</Link></li>
               ))}
+              {/* D189: el historial entero, con fecha (importaciones y cambios avisados), en su pantalla. */}
+              <li className="gp-fila-sub" data-testid="gp-historial-calendario"><span className="pequeno suave">Todas las importaciones y los cambios avisados</span><Link href="/gestion/eventos/historial" className="pequeno">Historial ›</Link></li>
               <li data-testid="gp-planes">
                 <span>Planes de jugadores</span>
                 <Link href="/gestion/eventos?f=planes">{planes.length} {planes.length === 1 ? "plan" : "planes"} ›</Link>

@@ -21,6 +21,7 @@ import { sinFichaQueVan } from "@/lib/numeros/respuestas";
 import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "@/app/gestion/(panel)/eventos/[id]/respuestas/ResponderPor";
 import CambiarAMano from "@/app/gestion/(panel)/eventos/CambiarAMano";
+import FilaRespuesta from "./FilaRespuesta";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { ausenciaQueCubre, efectivaEn, NOTA_POR_DEFECTO, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
@@ -211,18 +212,18 @@ export default async function RespuestasGestor({ id }: { id: string }) {
         <section className="gs-bloque gs-izq" style={{ flex: "3 1 560px" }} aria-labelledby="t-resp">
           <h2 id="t-resp">Respuestas</h2>
           <div className="tabla-desplazable">
-            <table className="gs-tabla ev-tabla" data-testid="tabla-respuestas">
+            <table className="gs-tabla ev-tabla ev-tabla-resp" data-testid="tabla-respuestas">
               <thead><tr><th>Jugador</th><th>Respuesta</th><th>Motivo y detalle</th><th>Avisos</th><th>Cambiar a mano</th><th><span className="solo-lectores">Responder por él</span></th></tr></thead>
               <tbody>
                 {lineas.map((l) => (
-                  <tr key={l.person_id} data-respuesta={l.clase}>
-                    <td data-label="Jugador"><span className={`ev-resp ev-resp-${l.clase === "sin_responder" ? "sin" : l.clase}`}><NombreJugador nombre={l.nombre} personId={l.person_id} negrita /></span></td>
+                  <FilaRespuesta key={l.person_id} clase={l.clase} etiqueta={l.nombre} nombre={<NombreJugador nombre={l.nombre} personId={l.person_id} negrita />}
+                    estado={<span className={l.clase === "no" ? "ev-no" : l.clase === "va" ? "ev-ok" : l.clase === "duda" ? "ev-duda" : "suave"}>{l.texto}</span>} motivo={l.motivo}>
                     <td data-label="Respuesta"><span className={l.clase === "no" ? "ev-no" : l.clase === "va" ? "ev-ok" : l.clase === "duda" ? "ev-duda" : "suave"}>{l.texto}</span>{l.origenTxt && <span className="ev-sub" style={{ color: "var(--tinta-tenue)" }}>{l.origenTxt}</span>}</td>
                     <td data-label="Motivo y detalle">{l.motivo ?? <span className="suave">—</span>}</td>
                     <td data-label="Avisos">{l.avisos ? <span className="ev-ok">Sí</span> : <span className="suave">No</span>}</td>
                     <td data-label="Cambiar a mano">{evento.estado === "programado" ? <div>{l.mano.map((m) => <CambiarAMano key={`${m.evento}-${m.actual}-${m.motivo}`} eventoId={m.evento} personId={l.person_id} nombre={l.nombre} actual={m.actual} motivo={m.motivo} etiqueta={m.etiqueta} conDuda={conDuda} />)}</div> : <span className="suave">—</span>}</td>
                     <td data-label="">{(l.clase === "sin_responder" || l.defecto) && <ResponderPor eventoId={evento.id} personId={l.person_id} nombre={l.nombre} fecha={evento.fecha} domingo={!!dia} opciones={opcionesPor(l)} />}</td>
-                  </tr>
+                  </FilaRespuesta>
                 ))}
               </tbody>
             </table>

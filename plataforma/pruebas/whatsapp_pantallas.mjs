@@ -63,6 +63,21 @@ try {
   await pg.getByTestId('mensaje-grupo').getByRole('button', { name: 'Mensaje al grupo' }).click();
   ok(await visto(pg.getByTestId('mensaje-grupo').getByRole('button', { name: 'Copiado' })), '«Mensaje al grupo» copia el texto («Copiado»)');
   ok(await sinDesbordar(pg), 'a 375 px, sin desbordar');
+
+  console.log('\n== Respuestas en el móvil (D189): una línea por persona, el detalle al tocar');
+  const filaBea = pg.getByTestId('tabla-respuestas').locator('tr[data-respuesta]').filter({ hasText: 'Bea' });
+  const alto = (await filaBea.boundingBox())?.height ?? 999;
+  ok(alto <= 64 && /Va/.test(await filaBea.locator('.ev-fila-resumen').innerText()), `Bea: una sola línea con su estado («Va»), ${Math.round(alto)} px de alto`);
+  ok(!(await filaBea.getByTestId('cambiar-a-mano').isVisible()), 'cerrada: sin «Cambiar a mano» a la vista');
+  const det = filaBea.getByRole('button', { name: 'Detalle de Bea' });
+  ok((await det.getAttribute('aria-expanded')) === 'false' && !(await pequenos(pg, '.ev-fila-detalle')).length, '«Detalle» de 44 px, con aria-expanded');
+  await det.click();
+  ok((await det.getAttribute('aria-expanded')) === 'true' && await visto(filaBea.getByTestId('cambiar-a-mano')) && /en la web/.test(await filaBea.innerText()), 'al tocar: el detalle (origen y «Cambiar a mano»)');
+  await det.click();
+  ok(!(await filaBea.getByTestId('cambiar-a-mano').isVisible()), 'otro toque lo cierra');
+  const pw = await e.sesion('gestor@pruebas.local', 1280);
+  await pw.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
+  ok(await visto(pw.getByTestId('tabla-respuestas').locator('tr', { hasText: 'Bea' }).getByTestId('cambiar-a-mano')) && !(await pw.getByRole('button', { name: 'Detalle de Bea' }).isVisible()), 'en el escritorio, la tabla de siempre (sin «Detalle»)');
   ok(!(await pequenos(pg, '[data-testid="boton-whatsapp"]')).length, 'los botones «WhatsApp» con al menos 44 px', JSON.stringify(await pequenos(pg, '[data-testid="boton-whatsapp"]')));
 
   console.log('\n== Importar teléfonos (CSV con teléfonos FALSOS)');

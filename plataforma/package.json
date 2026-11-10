@@ -102,6 +102,7 @@
     "pruebas:numeros": "node pruebas/numeros_pantallas.mjs",
     "pruebas:entrados": "node pruebas/entrados_reales.mjs",
     "pruebas:motivo-unico": "node pruebas/motivo_unico.mjs",
+    "pruebas:no-voy-primer-toque": "node pruebas/no_voy_primer_toque.mjs",
     "pruebas:aviso-entreno": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/aviso_entreno.mjs",
     "pruebas:dudas": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/dudas_limite.mjs",
     "pruebas:disponibilidad": "node pruebas/disponibilidad_defecto.mjs",

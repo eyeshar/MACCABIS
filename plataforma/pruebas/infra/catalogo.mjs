@@ -55,6 +55,9 @@ export function catalogo() {
     const tipo = web ? 'web' : /arrancar\(\)|preparar\(/.test(src) || id.endsWith('-real') ? 'pila' : 'logica';
     const rutas = [...new Set([...src.matchAll(/\bAPP\}?\s*\+?\s*['`]?(\/[a-z][\w\-/.]*)/gi)].map((m) => claveRuta(m[1])))];
     const importa = [...src.matchAll(/from '\.\.\/(src\/(?:lib|components)\/[\w/.-]+|scripts\/[\w/.-]+)'/g)].map((m) => m[1]);
+    // `// vigila: src/components/…` en la cabecera: la suite cuenta como si importara ese fichero (componentes .tsx que
+    // la suite no puede importar y que llegan a demasiadas pantallas para el límite de 4; p. ej. HojaNoVoy).
+    importa.push(...[...src.matchAll(/^\/\/ vigila: ((?:src|scripts)\/[\w/.-]+)\s*$/gm)].map((m) => m[1]));
     lista.push({ id, dir: PLAT, tipo, fuente: `plataforma/${fuente}`, rutas, importa });
   }
   for (const s of lista) {

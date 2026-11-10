@@ -70,6 +70,14 @@ export function filasDePlataforma(
   }));
 }
 
+/** Las dos fuentes sin contar dos veces (D192): lo guardado en asistencia_eventos (SportEasy y, desde D192, el pase de
+ *  lista: origen «plataforma», evento_ref = id del evento) y la plataforma en vivo (las respuestas de los eventos pasados,
+ *  evento_ref = id del evento). Para una persona y un evento con pase de lista, manda el pase. */
+export function unirAsistencia(guardadas: FilaEvento[], enVivo: FilaEvento[]): FilaEvento[] {
+  const pase = new Set(guardadas.filter((f) => f.origen === "plataforma").map((f) => `${f.person_id}|${f.evento_ref}`));
+  return [...guardadas, ...enVivo.filter((f) => !pase.has(`${f.person_id}|${f.evento_ref}`))];
+}
+
 type Ctx = { filas: FilaEvento[]; totales: TotalTemporada[]; hoy: string };
 type Acum = { nombre: string; entrenos: Cuenta; partidos: Cuenta; aprox: boolean; segunSportEasy: boolean };
 

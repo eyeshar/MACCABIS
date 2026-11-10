@@ -6,7 +6,7 @@ import "../asistencia.css";
 import { exigirGestor } from "@/lib/sesion";
 import { hoyMadrid } from "@/lib/dias";
 import { cargarFilasGuardadas, cargarFilasPlataforma, cargarTotales } from "@/lib/eventos/asistenciaDatos";
-import { eventosDe, fichaJugador, PRIMERA_PRECISA, textoEstado, textoPct, type Cuenta } from "@/lib/eventos/asistenciaPantalla";
+import { eventosDe, fichaJugador, PRIMERA_PRECISA, textoEstado, textoPct, unirAsistencia, type Cuenta } from "@/lib/eventos/asistenciaPantalla";
 
 export const metadata = { title: "Ficha de asistencia · Gestión Maccabis" };
 
@@ -18,7 +18,7 @@ export default async function FichaAsistencia({ params }: { params: Promise<{ pe
   const id = decodeURIComponent(persona);
   const { supabase } = await exigirGestor();
   const [guardadas, totales, plat] = await Promise.all([cargarFilasGuardadas(supabase, { persona: id }), cargarTotales(supabase), cargarFilasPlataforma(supabase)]);
-  const ficha = fichaJugador({ filas: [...guardadas, ...plat.filas.filter((f) => f.person_id === id)], totales, hoy: hoyMadrid() }, id);
+  const ficha = fichaJugador({ filas: unirAsistencia(guardadas, plat.filas.filter((f) => f.person_id === id)), totales, hoy: hoyMadrid() }, id);
   if (!ficha) notFound();
   const celda = (c: Cuenta) => {
     const n = eventosDe(c);

@@ -7,7 +7,7 @@ import { exigirGestor } from "@/lib/sesion";
 import { hoyMadrid } from "@/lib/dias";
 import { cargarFilasGuardadas, cargarFilasPlataforma, cargarTotales, TEMPORADA } from "@/lib/eventos/asistenciaDatos";
 import {
-  calcularJugadores, colorPct, COLUMNAS, DIR_DEFECTO, eventosDe, MINIMO_EVENTOS, ordenar, PRIMERA_GUARDADA, PRIMERA_PRECISA, separar, temporadasDesde, textoPct,
+  calcularJugadores, colorPct, COLUMNAS, DIR_DEFECTO, eventosDe, MINIMO_EVENTOS, ordenar, PRIMERA_GUARDADA, PRIMERA_PRECISA, separar, temporadasDesde, textoPct, unirAsistencia,
   type Columna, type Cuenta, type FilaJugador, type Filtros,
 } from "@/lib/eventos/asistenciaPantalla";
 
@@ -34,7 +34,8 @@ export default async function Asistencia({ searchParams }: { searchParams: Promi
   const dir: "asc" | "desc" = q.d === "asc" || q.d === "desc" ? q.d : DIR_DEFECTO[col];
 
   const guardadas = await cargarFilasGuardadas(supabase, { temporadas });
-  const filas = [...guardadas, ...(temporadas.includes(TEMPORADA) ? plat.filas : [])];
+  // D192: con pase de lista, su fila manda sobre la de la respuesta (no se cuenta dos veces).
+  const filas = unirAsistencia(guardadas, temporadas.includes(TEMPORADA) ? plat.filas : []);
   const js = ordenar(calcularJugadores({ filas, totales, hoy }, f, f.ver === "actual" ? plat.actuales : null), col, dir);
   const { ranking, pocos } = separar(js);
 

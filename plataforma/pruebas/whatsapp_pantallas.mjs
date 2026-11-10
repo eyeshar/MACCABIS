@@ -113,6 +113,19 @@ try {
   await pg.goto(`${APP}/gestion/eventos/${ent.id}/respuestas`);
   ok((await fila('Sol').getByTestId('boton-whatsapp').getAttribute('href'))?.startsWith('https://wa.me/34600000012?text='), 'y el botón «WhatsApp» de Sol ya funciona');
 
+  console.log('\n== Gestión › Jugadores: el contacto de WhatsApp también se edita aquí (D178)');
+  await pd.goto(`${APP}/gestion/jugadores`);
+  const filaSol = pd.locator('li[data-person="sint-sol"]');
+  await filaSol.locator('summary').first().click();
+  ok(/Contacto de WhatsApp\s*Sol Baloncesto/.test(await filaSol.innerText()), 'la fila de Sol enseña su contacto de WhatsApp');
+  await filaSol.getByLabel('Contacto de WhatsApp (como está en el móvil, solo gestores)').fill('  Sol   Pívot  ');
+  await trasAccion(pd, () => filaSol.getByRole('button', { name: 'Guardar datos' }).click());
+  ok(await hasta(async () => (await sql`select whatsapp_contacto from public.jugadores where person_id = 'sint-sol'`)[0].whatsapp_contacto === 'Sol Pívot'), 'al guardar: «Sol Pívot» (sin espacios de más) en la base');
+  ok((await sql`select telefono from public.jugadores where person_id = 'sint-sol'`)[0].telefono === '+34600000012', 'y el teléfono, igual');
+  await filaSol.getByLabel('Contacto de WhatsApp (como está en el móvil, solo gestores)').fill('');
+  await trasAccion(pd, () => filaSol.getByRole('button', { name: 'Guardar datos' }).click());
+  ok(await hasta(async () => (await sql`select whatsapp_contacto from public.jugadores where person_id = 'sint-sol'`)[0].whatsapp_contacto === null), 'vacío: se quita (null)');
+
   console.log('\n== Un jugador no entra');
   const pj = await e.sesion('luz@pruebas.local', 375);
   for (const ruta of ['/gestion/telefonos', `/gestion/eventos/${ent.id}/respuestas`]) {

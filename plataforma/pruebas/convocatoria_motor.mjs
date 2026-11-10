@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import { mensajeConvocatoria } from '../src/lib/convocatoria/mensajes.ts';
 import { vigentes } from '../src/lib/inicio/avisosFichero.ts';
+import { partidosConvocado } from '../src/lib/convocatoria/partidosConvocado.ts';
 import { proponer, revisar, proponerDificultad, diferencias, recuentoDe, maximoPorEquipo, domingosFueraDe, LINEA_DE, sugerirRecambio, roturas, faltasMinimo } from '../src/lib/convocatoria/motor.ts';
 
 let fallos = 0;
@@ -649,6 +650,25 @@ console.log('\n== Recambio tras aprobar (D173): sugerirRecambio sigue las reglas
   const mismaH = proponer({ partidos: [P('MdA', '12:45'), P('MdL', '12:45')], jugadores: dieciocho() });
   const a = ids(mismaH.convocatoria, 'MdA'), l = ids(mismaH.convocatoria, 'MdL');
   ok(!a.some((x) => l.includes(x)) && a.length + l.length === 18, 'los dos a la misma hora: nadie dobla y se reparten los 18');
+}
+
+console.log('\n== «Partidos convocado»: las hojas y, sin hoja todavía, la convocatoria aprobada (las hojas mandan, D72)');
+{
+  const hojas = new Map([
+    ['ana', { convocados: 2, porFecha: new Map([['2026-10-04', new Set(['MDA'])], ['2026-10-18', new Set(['MDA'])]]) }],
+    ['beto', { convocados: 1, porFecha: new Map([['2026-10-18', new Set(['MDL'])]]) }],
+  ]);
+  const conHoja = new Set(['2026-10-04|MDA', '2026-10-18|MDA', '2026-10-18|MDL']);
+  const aprobadas = [
+    { fecha: '2026-10-18', equipos: { MdA: [{ person_id: 'ana' }, { person_id: 'cira' }], MdL: [{ person_id: 'beto' }] } }, // con hoja: manda la hoja (Cira no jugó)
+    { fecha: '2026-11-08', equipos: { MdL: [{ person_id: 'ana' }, { person_id: 'beto' }, { person_id: 'dani' }] } },       // sin hoja todavía
+  ];
+  const r = partidosConvocado(hojas, conHoja, aprobadas);
+  ok(r.get('ana').convocados === 3 && r.get('beto').convocados === 2 && r.get('dani').convocados === 1, 'Ana 2 de hojas + 1 de la aprobada sin hoja; Beto 1 + 1; Dani 1 (solo la aprobada)', JSON.stringify([...r].map(([p, x]) => [p, x.convocados])));
+  ok(!r.has('cira') || r.get('cira').convocados === 0, 'Cira, convocada el 18/10 pero sin salir en la hoja de ese partido: 0 (manda la hoja)');
+  ok(partidosConvocado(hojas, conHoja, [...aprobadas, aprobadas[1]]).get('ana').convocados === 3, 'una convocatoria repetida no suma dos veces');
+  const dobl = partidosConvocado(new Map(), new Set(), [{ fecha: '2026-11-15', equipos: { MdA: [{ person_id: 'eva' }], MdL: [{ person_id: 'eva' }] } }]);
+  ok(dobl.get('eva').convocados === 2 && dobl.get('eva').doblajes === 1, 'convocada con los dos el mismo domingo: 2 partidos y 1 doblaje');
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

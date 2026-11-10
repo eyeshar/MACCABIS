@@ -363,10 +363,12 @@ console.log('\n== Aviso «no va (por defecto)» al propio jugador (D152)');
   const pd = (d) => P.avisosPorDefecto(d);
   let r = pd(conMarcas(lunes));
   const suyo = de(r, 'nse');
-  ok(suyo.length === 1 && suyo[0].titulo === 'Entreno del miércoles 14: no vas' && suyo[0].cuerpo === 'Te hemos puesto que no vas al entreno del miércoles 14. Si vienes, cámbialo aquí.', 'lunes 19:00: UN aviso «Te hemos puesto que no vas al entreno del miércoles 14. Si vienes, cámbialo aquí.»', JSON.stringify(suyo));
+  ok(suyo.length === 1 && suyo[0].titulo === 'Entreno del miércoles 14: «no voy»' && suyo[0].cuerpo === 'Te hemos marcado como «no voy» en el entreno del miércoles 14 porque normalmente no entrenas. Si vienes, cámbialo aquí.', 'lunes 19:00: UN aviso con el texto de la pantalla (D177): «Te hemos marcado como «no voy» en el entreno del miércoles 14 porque normalmente no entrenas. Si vienes, cámbialo aquí.»', JSON.stringify(suyo));
   ok(suyo[0]?.clave === 'rec:defecto:e14:nse' && suyo[0].url === '/mi-zona/evento/e14' && suyo[0].eventos.join() === 'e14' && iso(suyo[0].programado_para) === '2026-10-12T17:00:00.000Z', 'clave única por entreno y persona, abre el entreno y sale a las 19:00 de Madrid');
   ok(de(r, 'jon').length === 0 && de(r, 'edimil').length === 0 && r.every((x) => x.person_id.startsWith('nse')), 'a quien no tiene la marca no le llega este aviso');
-  ok(!/suele|marca|defecto/i.test(r.map((x) => x.titulo + x.cuerpo).join(' ')), 'el texto no nombra la marca (lo ve la pantalla de bloqueo)');
+  // Desde el 10/11/2026 el push dice lo mismo que la pantalla (D177, pedido por Iván): «porque normalmente no entrenas».
+  // Sigue sin nombrar la marca interna («no suele entrenar», «por defecto») ni ninguna otra cosa de la ficha.
+  ok(!/suele|\bmarca\b|defecto/i.test(r.map((x) => x.titulo + x.cuerpo).join(' ')), 'el texto no nombra la marca interna («no suele entrenar», «por defecto»)');
   ok(pd(conMarcas(M('2026-10-12', '18:55'))).length === 0 && pd(conMarcas(M('2026-10-12', '22:05'))).length === 0, 'antes de las 19:00 nada, y pasado el margen tampoco');
   ok(pd(conMarcas(M('2026-10-14', '09:05'))).length === 0, 'el día del entreno no se repite (solo el lunes)');
   const otraVez = pd(conMarcas(M('2026-10-12', '19:20')));
@@ -482,6 +484,24 @@ console.log('\n== «Mensaje a los que faltan» (D189): sin responder y en duda, 
   ok(f.sinResponder.map((j) => j.person_id).join() === 'jon', 'sin responder: Jon (Leo tiene una ausencia: cuenta como «no»; Eva va)', f.sinResponder.map((j) => j.person_id).join());
   ok(f.enDuda.map((j) => j.person_id).join() === 'guille', 'en duda: Guille; Ana no (su ausencia cubre el día, aunque la duda gane en las pantallas)', f.enDuda.map((j) => j.person_id).join());
   ok(!P.enDudaDe(jug('eva', true, true), entreno28, { respuestas: resp, ausencias: [], quitados: [] }), 'quien va no está «en duda»');
+}
+
+console.log('\n== Plan creado con menos de un día de margen: 2 horas antes, nunca de 22:30 a 08:00');
+{
+  const iso = (t) => t?.toISOString() ?? null;
+  ok(iso(H.avisoPlanCorto(M('2026-11-12', '10:00'), M('2026-11-12', '21:00'))) === iso(M('2026-11-12', '19:00')), 'plan a las 21:00 creado por la mañana: a las 19:00');
+  ok(iso(H.avisoPlanCorto(M('2026-11-12', '20:00'), M('2026-11-13', '00:45'))) === iso(M('2026-11-12', '22:00')), 'a las 00:45: las 22:45 caen en la franja; las 08:00 ya es tarde: a las 22:00 de la víspera');
+  ok(iso(H.avisoPlanCorto(M('2026-11-12', '20:00'), M('2026-11-13', '09:30'))) === iso(M('2026-11-13', '08:00')), 'a las 09:30: las 07:30 caen en la franja: a las 08:00 (quedan más de 30 minutos)');
+  ok(iso(H.avisoPlanCorto(M('2026-11-12', '20:00'), M('2026-11-13', '08:15'))) === iso(M('2026-11-12', '22:00')), 'a las 08:15: ni las 06:15 ni las 08:00 valen: a las 22:00 de la víspera');
+  ok(H.avisoPlanCorto(M('2026-11-12', '22:10'), M('2026-11-13', '08:15')) === null, 'creado a las 22:10 para las 08:15: no cabe ningún aviso fuera de la franja (no sale)');
+  ok(H.avisoPlanCorto(M('2026-11-12', '19:30'), M('2026-11-12', '21:00')) === null, 'creado con menos de 2 horas: no sale (nunca antes de crearlo)');
+  const plan = { ...ev('pc', 'quedada', 'ambos', '2026-11-12', '21:00', null), titulo: 'Cañas', oficial: false, recordar_un_dia_antes: true, creado_en: M('2026-11-12', '10:00').toISOString() };
+  const dp = (h) => P.planificarPlanes({ ahora: M('2026-11-12', h), eventos: [plan], jugadores: JUG, respuestas: [{ evento_id: 'pc', person_id: 'guille', respuesta: 'va' }], ausencias: [] });
+  ok(dp('18:59').length === 0, 'a las 18:59, todavía nada');
+  const a = dp('19:01');
+  ok(a.length === 2 && a.every((x) => x.titulo === 'Hoy a las 21:00: Cañas. ¿Te apuntas?' && x.clave === `rec:plan:pc:${x.person_id}`) && !a.some((x) => x.person_id === 'guille'), 'a las 19:01: a quien no ha respondido (Jon y Edimil, no Guille), «Hoy a las 21:00: Cañas. ¿Te apuntas?»', JSON.stringify(a.map((x) => [x.person_id, x.titulo])));
+  const largo = { ...plan, id: 'pl2', fecha: '2026-11-14', creado_en: M('2026-11-10', '10:00').toISOString() };
+  ok(P.planificarPlanes({ ahora: M('2026-11-13', '21:01'), eventos: [largo], jugadores: JUG, respuestas: [], ausencias: [] }).every((x) => /^Mañana: Cañas/.test(x.titulo)), 'con más de un día de margen, el de siempre («Mañana: …», 24 h antes)');
 }
 
 console.log('\n== Riesgo por equipo (D173): solo gestores; nivel con dos partidos de dificultad distinta, proyección siempre');

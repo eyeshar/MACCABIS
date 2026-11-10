@@ -1,7 +1,7 @@
 // Textos de los avisos al movil (D99.8, lienzo «Paso 3»): funciones PURAS. Sin motivos, niveles ni posiciones: lo que
 // sale aqui lo ve la pantalla de bloqueo del movil (test:privacidad lo comprueba).
 
-import { textoLimite } from "./horario.ts";
+import { enMadrid, textoLimite } from "./horario.ts";
 
 export type EventoTexto = {
   id: string; tipo: "entreno" | "liga" | "amistoso" | "torneo" | "interno" | "quedada" | "pachanga" | "otro"; equipo: "MdA" | "MdL" | "ambos";
@@ -107,7 +107,8 @@ export function textoPasoNoVa(unidades: string[]): Texto {
 /** (a) D152, el lunes a las 19:00: a quien le hemos puesto «no va (por defecto)» en un entreno. Habla de SU respuesta:
  *  nunca nombra la marca. */
 export function textoNoVaPorDefecto(e: Pick<EventoTexto, "tipo" | "fecha">): Texto {
-  return { titulo: `${mayus(queEs(e))}: no vas`, cuerpo: `Te hemos puesto que no vas al ${queEs(e)}. Si vienes, cámbialo aquí.` };
+  // D177: el mismo texto que la pantalla (TEXTO_POR_DEFECTO_EXPLICACION), con el entreno del que se trata.
+  return { titulo: `${mayus(queEs(e))}: «no voy»`, cuerpo: `Te hemos marcado como «no voy» en el ${queEs(e)} porque normalmente no entrenas. Si vienes, cámbialo aquí.` };
 }
 
 /** (a) El mismo dia del entreno a las 10:00. */
@@ -128,6 +129,16 @@ export function textoOtro(e: EventoTexto, cuando: "creado" | "24h"): Texto {
 export function textoPlanManana(e: EventoTexto): Texto {
   return {
     titulo: `Mañana: ${e.titulo ?? "plan"}. ¿Te apuntas?`,
+    cuerpo: `${mayus(nombreDia(e.fecha))}, ${horas(e)}${e.sitio && e.sitio !== "pista por confirmar" ? ` en ${e.sitio}` : ""}. Plan no oficial: aún no has respondido.`,
+  };
+}
+
+/** El mismo plan con poco margen (creado con menos de un día): «Hoy a las 20:30» o «Mañana a las 09:00», según cuándo sale. */
+export function textoPlanPronto(e: EventoTexto, envio: Date): Texto {
+  const dia = enMadrid(envio).fecha === e.fecha ? "Hoy" : "Mañana";
+  const h = hh(e.inicio);
+  return {
+    titulo: `${dia}${h ? ` a las ${h}` : ""}: ${e.titulo ?? "plan"}. ¿Te apuntas?`,
     cuerpo: `${mayus(nombreDia(e.fecha))}, ${horas(e)}${e.sitio && e.sitio !== "pista por confirmar" ? ` en ${e.sitio}` : ""}. Plan no oficial: aún no has respondido.`,
   };
 }

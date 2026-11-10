@@ -17,6 +17,9 @@ export async function guardarJugador(jugadorId: string, _prev: string | null, fo
   if (telefono && !/^\+?[0-9 ]{9,16}$/.test(telefono)) return "El teléfono solo puede llevar números, espacios y un + delante.";
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return "Ese correo no tiene forma de correo.";
+  // D178: el contacto de WhatsApp también se edita aquí (antes, solo con «Importar teléfonos»).
+  const contacto = String(form.get("whatsapp_contacto") ?? "").replace(/\s+/g, " ").trim();
+  if (contacto.length > 60) return "El contacto de WhatsApp no puede pasar de 60 letras.";
   const nombre = String(form.get("nombre_visible") ?? "").trim();
   if (!nombre) return "El nombre visible no puede quedar vacío.";
 
@@ -43,6 +46,7 @@ export async function guardarJugador(jugadorId: string, _prev: string | null, fo
   const { error } = await supabase.from("jugadores").update({
     nombre_visible: nombre,
     telefono: telefono || null,
+    whatsapp_contacto: contacto || null,
     entrena: form.get("entrena") === "on",
     ficha_mda: form.get("ficha_mda") === "on",
     ficha_mdl: form.get("ficha_mdl") === "on",

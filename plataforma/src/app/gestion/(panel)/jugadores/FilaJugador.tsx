@@ -16,6 +16,8 @@ export type JugadorGestion = {
   entrena: boolean;
   rol: "jugador" | "solo_entreno" | "entrenador";
   telefono: string | null;
+  /** D178: cómo está guardado en el móvil de Iván (para la mención @ de WhatsApp). Solo gestores. */
+  whatsapp_contacto: string | null;
   activo: boolean;
   /** D158: reserva (de jugadores_privado; solo gestores). */
   reserva: boolean;
@@ -86,6 +88,7 @@ export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorG
         <div><dt>Sanción</dt><dd>{p?.sancionado_hasta_jornada ? `sancionado hasta la J${p.sancionado_hasta_jornada}` : "no"}</dd></div>
         <div><dt>Acceso</dt><dd>{j.email ?? "sin correo"}</dd></div>
         <div><dt>Teléfono</dt><dd>{j.telefono ?? "sin teléfono"}</dd></div>
+        <div><dt>Contacto de WhatsApp</dt><dd>{j.whatsapp_contacto ?? "sin contacto guardado"}</dd></div>
       </dl>
       <p className="pequeno" style={{ margin: "4px 0 0" }}><Link href="/gestion/convocatoria/datos">Cambiar posición, nivel, dobla o sanción ›</Link></p>
 
@@ -116,6 +119,10 @@ export default function FilaJugador({ jugador: j, mensaje }: { jugador: JugadorG
           <div className="campo">
             <label htmlFor={`tel-${j.id}`}>Teléfono (opcional, solo gestores)</label>
             <input id={`tel-${j.id}`} name="telefono" type="tel" inputMode="tel" defaultValue={j.telefono ?? ""} placeholder="600 000 000" />
+          </div>
+          <div className="campo">
+            <label htmlFor={`wa-${j.id}`}>Contacto de WhatsApp (como está en el móvil, solo gestores)</label>
+            <input id={`wa-${j.id}`} name="whatsapp_contacto" type="text" defaultValue={j.whatsapp_contacto ?? ""} maxLength={60} placeholder="Nombre Baloncesto" />
           </div>
           <div className="campo">
             <label htmlFor={`rol-${j.id}`}>Rol</label>

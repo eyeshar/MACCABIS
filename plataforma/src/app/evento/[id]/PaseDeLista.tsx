@@ -2,6 +2,7 @@ import { exigirGestor } from "@/lib/sesion";
 import { cargarJugadores } from "@/lib/eventos/datos";
 import { convocadosDe, diaCorto, TEXTO_MOTIVO, type EventoFila, type Motivo, type Respuesta } from "@/lib/eventos/dominio";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
+import { convocadosAprobados } from "@/lib/convocatoria/resumen";
 import { efectivaEn, NOTA_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 import { enMadrid } from "@/lib/avisos/horario";
 import { fechaHora } from "@/lib/fechas";
@@ -28,12 +29,12 @@ export default async function PaseDeLista({ ev }: { ev: EventoFila }) {
     );
   }
   const ambito = partido ? "partidos" : "entrenos";
-  const [jugadores, defecto, { data: resp }, { data: guardadasDB }, { data: deSportEasy }, { data: conv }] = await Promise.all([
+  const [jugadores, defecto, { data: resp }, { data: guardadasDB }, { data: deSportEasy }, convocados] = await Promise.all([
     cargarJugadores(supabase), cargarDefecto(supabase, [ev.id]),
     supabase.from("respuestas").select("person_id, respuesta, motivo").eq("evento_id", ev.id),
     supabase.from("asistencia_eventos").select("person_id, estado, motivo, cargado_en, pasado_por_nombre").eq("evento_ref", ev.id).eq("origen", "plataforma"),
     supabase.from("asistencia_eventos").select("person_id").eq("origen", "sporteasy").eq("fecha", ev.fecha).eq("ambito", ambito).limit(1),
-    partido ? supabase.from("convocatorias").select("estado, equipos").eq("fecha", ev.fecha).eq("estado", "aprobada").maybeSingle() : Promise.resolve({ data: null }),
+    partido ? convocadosAprobados(supabase, ev.fecha, ev.equipo) : Promise.resolve(null),
   ]);
   if ((deSportEasy ?? []).length) {
     return (
@@ -46,8 +47,6 @@ export default async function PaseDeLista({ ev }: { ev: EventoFila }) {
   const respDe = new Map(((resp ?? []) as { person_id: string; respuesta: Respuesta; motivo: Motivo | null }[]).map((r) => [r.person_id, r]));
   const guardadas = (guardadasDB ?? []) as { person_id: string; estado: string; motivo: string | null; cargado_en: string; pasado_por_nombre: string | null }[];
   const guardadaDe = new Map(guardadas.map((g) => [g.person_id, g]));
-  const equipos = (conv as { equipos?: Record<string, { person_id: string }[]> } | null)?.equipos ?? null;
-  const convocados = equipos ? new Set((equipos[ev.equipo] ?? []).map((c) => c.person_id)) : null;
 
   const filas: FilaPase[] = convocadosDe(ev, jugadores)
     .map((j) => {

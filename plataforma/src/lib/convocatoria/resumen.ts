@@ -14,3 +14,11 @@ export async function resumenConvocatorias(sb: Cliente, fechas: string[]): Promi
     .filter((c) => c.origen)
     .map((c) => ({ fecha: c.fecha, estado: c.estado === "aprobada" ? "aprobada" : "borrador", equipos: c.equipos ?? {} }));
 }
+
+/** Los convocados de un equipo en la convocatoria APROBADA de ese domingo, o null si no está aprobada (pase de lista del
+ *  partido, D192: quien no está sale «no convocado» por defecto). Solo gestores (RLS). */
+export async function convocadosAprobados(sb: Cliente, fecha: string, equipo: string): Promise<Set<string> | null> {
+  const { data } = await sb.from("convocatorias").select("equipos").eq("fecha", fecha).eq("estado", "aprobada").maybeSingle();
+  const equipos = (data as { equipos?: Record<string, { person_id: string }[]> } | null)?.equipos;
+  return equipos ? new Set((equipos[equipo] ?? []).map((c) => c.person_id)) : null;
+}

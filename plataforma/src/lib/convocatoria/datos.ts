@@ -16,6 +16,7 @@ import { cargarAusencias } from "./defecto";
 import { calibrar, correccionSesgo, estadisticasGrupo, historiales, resumenCalibracion, tasasPorLetra, TEMPORADA_PROYECCION, type DatosProyeccion, type DificultadRival, type HistorialRival, type LigaJson, type Letra, type SeasonJson } from "./proyeccion";
 import { domingosFueraDe, proponerDificultad, type DatosPrivados, type Equipo, type RespuestaPartido } from "./motor";
 import type { Cambio, Contexto, FilaConvocatoria, FilaPrivada, JugadorVista, PartidoVista } from "./vista";
+import { partidosConvocado } from "./partidosConvocado";
 import { desempateEncendido, registroNoConvocados, type DomingoReg, type JugadorReg, type RegistroJugador, type RespuestaReg } from "./noConvocados";
 
 // Lectura de todo lo que necesita la convocatoria de un domingo (D107), con la sesion del GESTOR: la base (RLS +
@@ -32,7 +33,7 @@ type Season = { partidos: { pn: number; equipo: string; fecha: string }[]; playe
 export function estadisticasTemporada() {
   const s = seasonJson as unknown as Season;
   const fechaDe = new Map(s.partidos.map((p) => [`${p.pn}-${p.equipo}`, p.fecha]));
-  const out = new Map<string, { convocados: number; doblajes: number; fechas: Set<string> }>();
+  const out = new Map<string, { convocados: number; doblajes: number; fechas: Set<string>; porFecha: Map<string, Set<string>> }>();
   for (const p of s.players) {
     if (!p.person_id) continue;
     const porFecha = new Map<string, Set<string>>();
@@ -40,9 +41,14 @@ export function estadisticasTemporada() {
       const f = fechaDe.get(`${g.pn}-${g.eq}`);
       if (f) porFecha.set(f, new Set([...(porFecha.get(f) ?? []), g.eq]));
     }
-    out.set(p.person_id, { convocados: p.conv ?? 0, doblajes: [...porFecha.values()].filter((x) => x.size === 2).length, fechas: new Set(porFecha.keys()) });
+    out.set(p.person_id, { convocados: p.conv ?? 0, doblajes: [...porFecha.values()].filter((x) => x.size === 2).length, fechas: new Set(porFecha.keys()), porFecha });
   }
   return out;
+}
+
+/** Los partidos de la temporada que ya tienen hoja («2026-11-08|MDL»): ahí mandan las hojas (D72). */
+export function partidosConHoja() {
+  return new Set((seasonJson as unknown as Season).partidos.map((p) => `${p.fecha}|${p.equipo.toUpperCase()}`));
 }
 
 /** Dificultad propuesta de un partido con la clasificacion de la liga en curso. */
@@ -222,6 +228,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
   const aprobadas = (sinMigracion ? [] : convPas.data ?? []) as { fecha: string; equipos: Record<string, { person_id: string }[]>; dificultad: Partial<Record<Equipo, { valor: DificultadRival }>> | null }[];
   for (const c of aprobadas.filter((x) => x.fecha < fecha))
     convocadoEl.set(c.fecha, new Set(Object.values(c.equipos ?? {}).flat().map((x) => x.person_id)));
+  // «Partidos convocado» para la rotación: las hojas y, de los domingos ya pasados sin hoja todavía, la convocatoria aprobada.
+  const rotacion = partidosConvocado(stats, partidosConHoja(), aprobadas.filter((x) => x.fecha < fecha));
   const dificultades = new Map(aprobadas.map((c) => [c.fecha, Object.fromEntries(Object.entries(c.dificultad ?? {}).map(([eq, d]) => [eq, d?.valor]).filter(([, v]) => !!v)) as Partial<Record<Equipo, DificultadRival>>]));
   const fechasPasadas = [...new Set(pasados.map((e) => e.fecha))].sort().reverse();
   const domingosFuera = (j: { person_id: string; ficha_mda: boolean; ficha_mdl: boolean }) => domingosFueraDe(fechasPasadas.map((f) => ({
@@ -279,12 +287,11 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
       respuesta[e.equipo as Equipo] = ef.respuesta;
       if (ef.respuesta === "no") motivoNo[e.equipo as Equipo] = r?.motivo ?? ef.ausencia?.motivo ?? null;
     }
-    const st = stats.get(j.person_id);
     const tarde = !!ultimaPropuesta && delDia.some((e) => respuesta[e.equipo as Equipo] === "va" && (respDe.get(`${e.id}|${j.person_id}`)?.cambiado_en ?? "") > ultimaPropuesta);
     return {
       person_id: j.person_id, nombre: j.nombre_visible, ficha: { MdA: j.ficha_mda, MdL: j.ficha_mdl }, solo_entreno: j.rol === "solo_entreno",
       respuesta, privado, sancionado: !!(p?.sancionado_hasta_jornada && jornada != null && p.sancionado_hasta_jornada >= jornada),
-      convocados: st?.convocados ?? 0, doblajes: st?.doblajes ?? 0, entrenos4: entrenosDe.get(j.person_id) ?? 0, domingosFuera: domingosFuera(j),
+      convocados: rotacion.get(j.person_id)?.convocados ?? 0, doblajes: rotacion.get(j.person_id)?.doblajes ?? 0, entrenos4: entrenosDe.get(j.person_id) ?? 0, domingosFuera: domingosFuera(j),
       rachaFuera: registro.get(j.person_id)?.racha ?? 0,
       fuera: { racha: registro.get(j.person_id)?.racha ?? 0, total: registro.get(j.person_id)?.total ?? 0, soloEntreno: !!registro.get(j.person_id)?.soloEntreno },
       // D146: un «nunca a partidos» sin responder no cuenta como invitado (ni en «sin responder» ni en los contadores).

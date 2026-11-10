@@ -58,6 +58,23 @@ export function horaDeEnvio(t: Date, inicioEvento: Date | null) {
   return finDelSilencio(t);
 }
 
+/** Recordatorio de un plan creado con MENOS de un dia de margen (no tiene «un dia antes»): 2 horas antes de empezar y,
+ *  aqui sin la excepcion de «menos de 12 horas», NUNCA de 22:30 a 08:00: si las 2 horas antes caen en la franja, a las
+ *  08:00 si aun quedan 30 minutos para empezar y, si no, a las 22:00 de la vispera. Nunca antes de crearse el plan: si no
+ *  cabe, null (no sale). */
+export function avisoPlanCorto(creado: Date, inicio: Date): Date | null {
+  let t = new Date(inicio.getTime() - 2 * 3600 * 1000);
+  if (enSilencio(t)) {
+    const ocho = finDelSilencio(t);
+    if (ocho.getTime() <= inicio.getTime() - 30 * 60 * 1000) t = ocho;
+    else {
+      const m = enMadrid(t);
+      t = madrid(m.minutos >= SILENCIO_DESDE ? m.fecha : sumarDias(m.fecha, -1), "22:00");
+    }
+  }
+  return t.getTime() > creado.getTime() ? t : null;
+}
+
 /** Para las pantallas de gestion, cuando un aviso espera a la franja de noche: "de noche: sale el 01/11 a las 08:00". */
 export function textoSale(t: Date) {
   const m = enMadrid(t);

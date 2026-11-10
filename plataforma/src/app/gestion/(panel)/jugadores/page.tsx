@@ -18,7 +18,7 @@ export default async function Jugadores() {
   const [{ data: jugadores, error }, { data: privados }] = await Promise.all([
     supabase
       .from("jugadores")
-      .select("id, person_id, nombre_oficial, nombre_visible, email, ficha_mda, ficha_mdl, entrena, rol, telefono, activo")
+      .select("id, person_id, nombre_oficial, nombre_visible, email, ficha_mda, ficha_mdl, entrena, rol, telefono, whatsapp_contacto, activo")
       .order("nombre_visible"),
     supabase.from("jugadores_privado").select("person_id, posicion, nivel, nota_ataque, nota_defensa, dobla, no_suele_entrenar, nunca_partidos, sancionado_hasta_jornada, reserva"),
   ]);

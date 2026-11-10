@@ -223,7 +223,7 @@ export async function ejecutarTarea(ahora = new Date()) {
       // con el que ya salga ese dia a esa persona.
       sumar(await paso("recordatorios", () => encolar(sb, conAvisosDeDudas([...planificar(datos), ...planificarPlanes(datos)], datos).map((p) => ({ ...p, person_id: p.person_id })))));
     }
-    // D152: «Te hemos puesto que no vas al entreno…», uno por entreno (aparte: no se junta con el de las dudas).
+    // D152: «Te hemos marcado como «no voy» en el entreno…» (texto de D177), uno por entreno (aparte: no se junta con el de las dudas).
     sumar(await paso("avisos de no va por defecto", () => encolar(sb, avisosPorDefecto(datos))));
     sumar(await paso("avisos de paso a no va", () => encolar(sb, avisosPasoNoVa({ eventos, respuestas: base.respuestas, jugadores: base.jugadores }, ahora))));
     // D173: al cierre del partido, a quien sigue sin responder (su respuesta no se toca).

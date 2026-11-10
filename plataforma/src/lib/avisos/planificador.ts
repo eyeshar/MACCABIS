@@ -15,12 +15,12 @@
 //   - Nada si el evento lleva «Sin recordatorios», esta cancelado o ya empezo.
 //   - Horas de silencio (22:30–8:00, D155): sale a las 8:00 salvo que el evento empiece en menos de 12 h.
 //   - D152: el lunes a las 19:00, a quien le sale un entreno como «no va (por defecto)», UN aviso por entreno
-//     («Te hemos puesto que no vas…»; avisosPorDefecto). Nunca se repite (clave por entreno y persona).
+//     («Te hemos marcado como «no voy»…», D177; avisosPorDefecto). Nunca se repite (clave por entreno y persona).
 
 import { fueraPorFicha, quienResponde, type PersonaResponde } from "../respuestas/dominio.ts";
 import { ausenciaQueCubre, claveQuitado, esEntreno, respuestaEfectiva, type MarcasDisponibilidad } from "../disponibilidad/porDefecto.ts";
-import { avisoDeDudas, avisoDePlazo, enMadrid, horaDeEnvio, limiteDudas, lunesDe, madrid, plazoSemanal } from "./horario.ts";
-import { queEs, textoCierre, textoDudas, textoNoVaPorDefecto, textoPasoNoVa, textoPlazo, textoEntrenoHoy, textoLunes, textoOtro, textoPlanManana, type EventoTexto, type Texto } from "./textos.ts";
+import { avisoDeDudas, avisoDePlazo, avisoPlanCorto, enMadrid, horaDeEnvio, limiteDudas, lunesDe, madrid, plazoSemanal } from "./horario.ts";
+import { queEs, textoCierre, textoDudas, textoNoVaPorDefecto, textoPasoNoVa, textoPlazo, textoEntrenoHoy, textoLunes, textoOtro, textoPlanManana, textoPlanPronto, type EventoTexto, type Texto } from "./textos.ts";
 
 /** `oficial = false`: plan no oficial de un jugador (D118). No entra en ningun recordatorio del club: solo, si el
  *  organizador lo marco, un aviso un dia antes (planificarPlanes). */
@@ -213,14 +213,18 @@ export function planificarPlanes(d: DatosPlan): AvisoPlan[] {
   for (const e of d.eventos) {
     if (e.oficial !== false || !e.recordar_un_dia_antes || e.estado !== "programado" || e.borrado_en) continue;
     const ini = inicioDe(e);
-    const toca = new Date(ini.getTime() - 24 * 3600 * 1000);
-    const envio = horaDeEnvio(toca, ini);
-    // Un plan creado con menos de un dia de margen no tiene «un dia antes»: no sale nada.
-    if (new Date(e.creado_en).getTime() > toca.getTime()) continue;
+    const dia = new Date(ini.getTime() - 24 * 3600 * 1000);
+    // Creado con menos de un dia de margen: no tiene «un dia antes»; sale 2 horas antes, nunca de 22:30 a 08:00
+    // (avisoPlanCorto). Si ni eso cabe tras crearlo, no sale nada.
+    const corto = new Date(e.creado_en).getTime() > dia.getTime();
+    const envio = corto ? avisoPlanCorto(new Date(e.creado_en), ini) : horaDeEnvio(dia, ini);
+    if (!envio) continue;
+    const toca = corto ? envio : dia;
     if (!(envio.getTime() <= ahora && ahora < envio.getTime() + MARGEN_MS && ahora < ini.getTime())) continue;
+    const texto = corto ? textoPlanPronto(e, envio) : textoPlanManana(e);
     for (const j of invitados(e, d.jugadores)) {
       if (estadoPara(j.person_id, e, d.respuestas, d.ausencias) !== "sin_responder") continue;
-      salida.push({ clave: `rec:plan:${e.id}:${j.person_id}`, tipo: "recordatorio", person_id: j.person_id, eventos: [e.id], ...textoPlanManana(e), url: urlEvento(e), toca, programado_para: envio });
+      salida.push({ clave: `rec:plan:${e.id}:${j.person_id}`, tipo: "recordatorio", person_id: j.person_id, eventos: [e.id], ...texto, url: urlEvento(e), toca, programado_para: envio });
     }
   }
   return salida;

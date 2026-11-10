@@ -5,14 +5,16 @@ import { enSilencio, horaDeEnvio, limiteDudas, lunesDe, madrid, sumarDias } from
 import type { Cliente } from "@/lib/eventos/datos";
 import { cargarContexto } from "./datos";
 import { faltasMinimo, ordenPartidos, proponer, revisar, roturas, sugerirRecambio, type Convocatoria, type Equipo } from "./motor";
-import { firmaConvocatoria, problemasEquipo, textoBaja, textoCalendarioRompe, textoPropuestaLista, textoSinAprobar, textoVoyTardio } from "./mensajes";
+import { firmaConvocatoria, problemasEquipo, textoBaja, textoCalendarioRompe, textoPropuestaLista, textoSinAprobar, textoVoyTardio, textoBorradorAMano } from "./mensajes";
 import { entradaDe, type Contexto } from "./vista";
 import { proyeccionDe } from "./proyeccion";
 import { riesgos, textoRiesgoPush } from "./riesgo";
 
 // La rutina C la hace la plataforma sola (D173), dentro de la tarea de avisos de cada 15 minutos (pg_cron -> /api/avisos/tarea):
 //   - tras el cierre del martes a las 12:00, la PROPUESTA AUTOMATICA como borrador (nunca aprueba; no pisa una aprobada ni un
-//     borrador tocado a mano) y un push solo a Ivan (gestores.recibe_propuesta) con lo que trae;
+//     borrador tocado a mano) y un push solo a Ivan (gestores.recibe_propuesta) con lo que trae; si NO la hace porque hay un
+//     borrador tocado a mano, se lo dice a Ivan (una vez) en vez de callarse (J5, 10/11/2026). Un borrador sin jugadores no
+//     cuenta como tocado (migracion 20261110140000): se propone encima;
 //   - martes 19:00 sin aprobar: recordatorio a Ivan; 21:00: a los tres gestores (horas de silencio de D155);
 //   - con la convocatoria aprobada: la baja de un convocado («Sale Jon (MdA). Propuesta: entra Fernando M.») y el «voy»
 //     tardio de alguien sin convocar, este solo si un equipo esta por debajo de un minimo (si no, queda en el registro).
@@ -75,8 +77,14 @@ export async function tareaConvocatoria(sb: SupabaseClient, ahora: Date, eventos
     }
     // ---- propuesta automatica: una sola vez (automatica_en) y solo si la migracion de D173 esta (la columna existe)
     const sinColumna = !!c && !("automatica_en" in c);
+    let aMano = false;
     if (!sinColumna && !c?.automatica_en) {
-      const r = await proponerAuto(sb, d.fecha, ahora);
+      const r = await proponerAuto(sb, d.fecha, ahora, c);
+      if (r?.estado === "tocada") {
+        aMano = true;
+        filas.push(...aGestores(responsables, { ...textoBorradorAMano(d.fecha, r.recuentosBorrador), tipo: "gestores", eventos: d.partidos.map((e) => e.id), url: URL_CONV(d.fecha), programado_para: horaDeEnvio(ahora, d.inicio) },
+          (u) => `conv-mano:${d.fecha}:${u}`));
+      }
       if (r?.estado === "guardada") {
         propuestas.push(d.fecha);
         const txt = textoPropuestaLista(d.fecha, r.recuentos, r.riesgo);
@@ -90,7 +98,7 @@ export async function tareaConvocatoria(sb: SupabaseClient, ahora: Date, eventos
     for (const [hora, a] of [["19:00", responsables], ["21:00", gestores]] as const) {
       const toca = madrid(martes, hora).getTime();
       if (t < toca || t >= toca + MARGEN || enSilencio(ahora)) continue;
-      filas.push(...aGestores(a, { ...textoSinAprobar(d.fecha, hora === "21:00"), tipo: "gestores", eventos: d.partidos.map((e) => e.id), url: URL_CONV(d.fecha), programado_para: ahora },
+      filas.push(...aGestores(a, { ...textoSinAprobar(d.fecha, hora === "21:00", aMano), tipo: "gestores", eventos: d.partidos.map((e) => e.id), url: URL_CONV(d.fecha), programado_para: ahora },
         (u) => `conv-pend:${hora.slice(0, 2)}:${d.fecha}:${u}`));
     }
   }
@@ -107,7 +115,7 @@ export async function fechasAprobadas(sb: SupabaseClient, fechas: string[]) {
 }
 
 /** Propone y guarda (convocatoria_propuesta_auto: la base vuelve a comprobar que no esta aprobada ni tocada a mano). */
-async function proponerAuto(sb: SupabaseClient, fecha: string, ahora: Date) {
+async function proponerAuto(sb: SupabaseClient, fecha: string, ahora: Date, actual: FilaConv | null) {
   const ctx = await cargarContexto(sb as unknown as Cliente, fecha, { servicio: true, ahora });
   if (!ctx || ctx.fecha !== fecha || ctx.sinMigracion) return null;
   const prop = proponer(entradaDe(ctx));
@@ -120,7 +128,11 @@ async function proponerAuto(sb: SupabaseClient, fecha: string, ahora: Date) {
     if (faltaFuncion(error)) { console.warn("convocatoria_propuesta_auto: migracion 20261103100000 sin aplicar; sin propuesta automatica"); return null; }
     throw new Error(`propuesta automatica: ${error.message}`);
   }
-  return { estado: data as "guardada" | "aprobada" | "tocada", conv: prop.convocatoria, recuentos: recuentos(ctx, prop.convocatoria), riesgo: textoRiesgoPush(riesgosDe(ctx, prop.convocatoria)) };
+  return {
+    estado: data as "guardada" | "aprobada" | "tocada", conv: prop.convocatoria, recuentos: recuentos(ctx, prop.convocatoria), riesgo: textoRiesgoPush(riesgosDe(ctx, prop.convocatoria)),
+    // El borrador que hay (el que no se pisa), para el aviso a Iván.
+    recuentosBorrador: recuentos(ctx, actual?.equipos ?? {}),
+  };
 }
 
 /** Riesgo por equipo de una convocatoria (D173), como en la pantalla. */

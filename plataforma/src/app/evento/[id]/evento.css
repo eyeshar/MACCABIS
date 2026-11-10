@@ -21,3 +21,12 @@
 @media (max-width: 480px) { .ev2-pestanas { gap: 2px; } .ev2-pestanas a { flex: 1 1 auto; justify-content: center; text-align: center; padding: 0 6px; white-space: normal; line-height: 1.1; font-size: 15px; } }
 .ev2-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .ev2-gestor { max-width: 1240px; }
+
+/* Pase de lista (D192): una fila por persona, nombre a la izquierda y su estado a la derecha; en el móvil, debajo. */
+.pl-form { display: flex; flex-direction: column; gap: 10px; }
+.pl-lista { display: flex; flex-direction: column; gap: 0; }
+.pl-fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: var(--toque); padding: 6px 0; border-bottom: 1px solid var(--borde); }
+.pl-nombre { display: flex; flex-direction: column; min-width: 0; }
+.pl-nombre small { font-size: 0.8rem; }
+.pl-select { min-height: var(--toque); min-width: 11.5rem; max-width: 100%; }
+@media (max-width: 420px) { .pl-fila { flex-wrap: wrap; } .pl-select { flex: 1 1 100%; } }

@@ -6,10 +6,13 @@
 //   - Equipo, periodo «últimas 4 semanas», tendencia (±10 puntos), plantilla actual, orden por cada columna.
 //   - 2025/26: mandan los totales corregidos a mano (D72); el detalle de SportEasy solo en «últimos 10 eventos».
 //   - Ficha: % por temporada, motivos y últimos 10 eventos.
+//   - Pase de lista (D192): manda sobre la respuesta de la plataforma en vivo para esa persona y ese evento (no suma dos
+//     veces); estado por defecto (copia la respuesta) y hora de apertura (al terminar el evento).
 //
 //   npm run pruebas:asistencia-calculo
 import * as P from '../src/lib/eventos/asistenciaPantalla.ts';
 import * as A from '../src/lib/eventos/asistencia.ts';
+import * as PL from '../src/lib/eventos/paseDeLista.ts';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -191,6 +194,33 @@ console.log('\n== La plataforma desde el 24/10 (D161) con los estados de la tabl
   const filas = P.filasDePlataforma(a, { a: 'Ana' });
   const l = filas.find((x) => x.ambito === 'partidos');
   ok(l.equipo === 'MdL' && l.temporada === '2026-27' && l.origen === 'plataforma' && l.nombre === 'Ana' && filas.find((x) => x.ambito === 'entrenos').equipo === null, 'filas con equipo (solo partidos), temporada, origen y nombre');
+}
+
+console.log('\n== Pase de lista (D192): manda sobre la respuesta en vivo, sin contar dos veces');
+{
+  const fila = (person_id, evento_ref, estado, origen, o = {}) => ({ person_id, nombre: person_id, temporada: '2026-27', evento_ref, fecha: '2026-10-28', ambito: 'entrenos', equipo: null, titulo: null, estado, motivo: o.motivo ?? null, origen });
+  const guardadas = [fila('a', 'se-1', 'fue', 'sporteasy'), fila('a', 'ev-1', 'fue', 'plataforma', { motivo: 'retraso' }), fila('b', 'ev-1', 'sin_excusa', 'plataforma')];
+  const enVivo = [fila('a', 'ev-1', 'sin_excusa', 'plataforma'), fila('b', 'ev-1', 'con_excusa', 'plataforma'), fila('c', 'ev-1', 'fue', 'plataforma'), fila('a', 'ev-2', 'fue', 'plataforma')];
+  const u = P.unirAsistencia(guardadas, enVivo);
+  const de = (p, ev) => u.filter((x) => x.person_id === p && x.evento_ref === ev);
+  ok(de('a', 'ev-1').length === 1 && de('a', 'ev-1')[0].estado === 'fue' && de('a', 'ev-1')[0].motivo === 'retraso', 'Ana en ev-1: una sola fila, la del pase (fue, con retraso), no la respuesta (sin excusa)', JSON.stringify(de('a', 'ev-1')));
+  ok(de('b', 'ev-1').length === 1 && de('b', 'ev-1')[0].estado === 'sin_excusa', 'Beto: manda el pase (sin excusa) sobre su «no va» con motivo');
+  ok(de('c', 'ev-1').length === 1 && de('a', 'ev-2').length === 1 && de('a', 'se-1').length === 1, 'quien no está en el pase y los demás eventos, de la respuesta; SportEasy, igual');
+  const fi = P.fichaJugador({ filas: u, totales: [], hoy: '2026-11-02' }, 'a');
+  ok(fi.temporadas.find((t) => t.temporada === '2026-27').entrenos.fue === 3, 'en la ficha de Ana: 3 entrenos (SportEasy, el pase y ev-2), sin duplicar ev-1', JSON.stringify(fi.temporadas.map((t) => [t.temporada, t.entrenos])));
+
+  ok(PL.estadoPorDefecto({ respuesta: 'va', lesion: false, convocado: null }) === 'a_tiempo' && PL.estadoPorDefecto({ respuesta: 'no', lesion: true, convocado: null }) === 'lesion'
+    && PL.estadoPorDefecto({ respuesta: 'no', lesion: false, convocado: null }) === 'con_excusa' && PL.estadoPorDefecto({ respuesta: 'duda', lesion: false, convocado: null }) === 'sin_excusa'
+    && PL.estadoPorDefecto({ respuesta: 'sin_responder', lesion: false, convocado: null }) === 'sin_excusa', 'por defecto copia la respuesta (D50)');
+  ok(PL.estadoPorDefecto({ respuesta: 'va', lesion: false, convocado: false }) === 'no_convocado' && PL.estadoPorDefecto({ respuesta: 'va', lesion: false, convocado: true }) === 'a_tiempo', 'partido con la convocatoria aprobada: quien no está, «no convocado»');
+  ok(PL.estadoGuardado({ estado: 'fue', motivo: 'retraso' }) === 'retraso' && PL.estadoGuardado({ estado: 'fue', motivo: null }) === 'a_tiempo' && PL.estadoGuardado({ estado: 'lesion', motivo: null }) === 'lesion', 'lo guardado, de vuelta en los estados del pase');
+  ok(!PL.estadosPase(false).includes('no_convocado') && PL.estadosPase(true).includes('no_convocado'), '«no convocado», solo en los partidos');
+  const iso = (d) => d.toISOString();
+  ok(iso(PL.finDelEvento({ fecha: '2026-10-28', inicio: '20:30:00', fin: '22:30:00' })) === '2026-10-28T21:30:00.000Z', 'se abre a la hora de fin (22:30 de Madrid)');
+  ok(iso(PL.finDelEvento({ fecha: '2026-10-25', inicio: '09:00:00', fin: null })) === '2026-10-25T10:00:00.000Z', 'sin fin: inicio + 2 h (11:00 de Madrid, ya en horario de invierno)');
+  ok(iso(PL.finDelEvento({ fecha: '2026-10-28', inicio: '23:00:00', fin: '00:30:00' })) === '2026-10-28T23:30:00.000Z', 'un fin pasada la medianoche, al día siguiente');
+  const rc = PL.recuentoPase(['a_tiempo', 'retraso', 'con_excusa', 'sin_excusa', 'lesion', 'no_convocado']);
+  ok(rc.fueron === 2 && rc.retraso === 1 && rc.conExcusa === 1 && rc.sinExcusa === 1 && rc.lesion === 1 && rc.noConvocado === 1, 'recuento del pase');
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

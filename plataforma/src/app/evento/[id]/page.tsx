@@ -13,6 +13,7 @@ import CopiarTexto from "@/app/gestion/(panel)/eventos/CopiarTexto";
 import CabeceraEvento from "./Cabecera";
 import VistaJugador from "./VistaJugador";
 import RespuestasGestor from "./RespuestasGestor";
+import PaseDeLista from "./PaseDeLista";
 import "@/components/respuestas/respuestas.css";
 import "@/components/inicio/inicio.css";
 import "@/app/gestion/(panel)/eventos/eventos.css";
@@ -21,13 +22,14 @@ import "./evento.css";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Evento · Maccabis", robots: { index: false, follow: false } };
 
-type Pestana = { id: "respuestas" | "convocatoria" | "grupos" | "whatsapp" | "mia"; texto: string };
+type Pestana = { id: "respuestas" | "convocatoria" | "grupos" | "pase" | "whatsapp" | "mia"; texto: string };
 
 const mayus = (t: string) => t.replace(/^./, (c) => c.toUpperCase());
 
 /** Evento (D189, estructura nueva). Una sola pantalla para el jugador (antes /mi-zona/evento/<id>, que redirige aqui) y,
  *  solo para los gestores, pestañas: Respuestas (por defecto; antes /gestion/eventos/<id>/respuestas), Convocatoria
- *  (partidos) o Grupos (entrenos), WhatsApp y Mi respuesta (si también juega). La pestaña va en la URL (?tab=). */
+ *  (partidos) o Grupos (entrenos), Pase de lista (entrenos y partidos de liga, D192), WhatsApp y Mi respuesta (si también
+ *  juega). La pestaña va en la URL (?tab=). */
 export default async function Evento({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const { id } = await params;
   const { tab } = await searchParams;
@@ -58,6 +60,7 @@ export default async function Evento({ params, searchParams }: { params: Promise
   const pestanas: Pestana[] = [
     { id: "respuestas", texto: "Respuestas" },
     ...(ev.tipo === "liga" ? [{ id: "convocatoria" as const, texto: "Convocatoria" }] : ev.tipo === "entreno" ? [{ id: "grupos" as const, texto: "Grupos" }] : []),
+    ...((ev.tipo === "liga" || ev.tipo === "entreno") && ev.estado === "programado" ? [{ id: "pase" as const, texto: "Pase de lista" }] : []),
     { id: "whatsapp", texto: "WhatsApp" },
     ...(mio ? [{ id: "mia" as const, texto: "Mi respuesta" }] : []),
   ];
@@ -79,6 +82,7 @@ export default async function Evento({ params, searchParams }: { params: Promise
         {actual === "respuestas" && <RespuestasGestor id={ev.id} />}
         {actual === "convocatoria" && <ConvocatoriaResumen ev={ev} />}
         {actual === "grupos" && <GruposResumen ev={ev} />}
+        {actual === "pase" && <PaseDeLista ev={ev} />}
         {actual === "whatsapp" && <Mensajes ev={ev} pistas={pistas} />}
         {actual === "mia" && mio && <VistaJugador e={mio} soloRespuesta />}
       </div>

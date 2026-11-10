@@ -141,7 +141,7 @@ try {
   await pg.goto(`${APP}/evento/${ent.id}`);
   ok(await visto(pg.getByTestId('pestanas-evento')), 'Evento (gestor): pestañas');
   const pest = (await pg.getByTestId('pestanas-evento').locator('a').allTextContents()).map((t) => t.trim());
-  ok(pest.join() === 'Respuestas,Grupos,WhatsApp,Mi respuesta', `Evento (gestor, entreno): ${pest.join(' · ')}`);
+  ok(pest.join() === 'Respuestas,Grupos,Pase de lista,WhatsApp,Mi respuesta', `Evento (gestor, entreno): ${pest.join(' · ')}`);
   ok(await visto(pg.getByTestId('tabla-respuestas')) && (await pg.content()).includes('MOTIVO-SECRETO'), 'Evento (gestor): Respuestas por defecto, con los motivos');
   await captura(pg, 'evento-gestor-respuestas');
   await pg.getByRole('link', { name: 'WhatsApp' }).click();
@@ -163,7 +163,7 @@ try {
   ok(await visto(pc.getByTestId('fila-agenda')), 'Calendario (sin ficha): los eventos del club');
   await pc.goto(`${APP}/evento/${par.id}`);
   const pestC = (await pc.getByTestId('pestanas-evento').locator('a').allTextContents()).map((t) => t.trim());
-  ok(pestC.join() === 'Respuestas,Convocatoria,WhatsApp', `Evento (sin ficha, partido): ${pestC.join(' · ')} (sin «Mi respuesta»)`);
+  ok(pestC.join() === 'Respuestas,Convocatoria,Pase de lista,WhatsApp', `Evento (sin ficha, partido): ${pestC.join(' · ')} (sin «Mi respuesta»)`);
   await ctxC.close();
 
   console.log('\n== Gestión sin la barra de subsecciones ni la hoja «Más» (gestor con ficha y sin ficha)');

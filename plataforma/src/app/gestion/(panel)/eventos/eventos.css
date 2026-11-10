@@ -155,3 +155,9 @@ input:disabled, select:disabled { opacity: 0.6; }
   .ev-tabla-resp tr.ev-fila[data-abierta="true"] { background: var(--panel-2); }
   .ev-tabla-resp tr.ev-fila[data-abierta="true"] > td.ev-fila-cab { border-bottom: 1px solid var(--linea-suave); }
 }
+
+/* Historial del calendario (D189): fecha a la izquierda; en el móvil, encima. */
+.hc-lista { display: flex; flex-direction: column; }
+.hc-fila { display: grid; grid-template-columns: 9.5rem 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--linea-suave); }
+.hc-cambios { margin: 4px 0 0; padding-left: 18px; color: var(--tinta-suave); }
+@media (max-width: 640px) { .hc-fila { grid-template-columns: 1fr; gap: 2px; } }

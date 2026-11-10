@@ -135,7 +135,11 @@ try {
   ok(await func('convocados_del_domingo') === 0 && await func('ultima_importacion_respuestas') === 0 && !(await sql`select 1 from supabase_migrations.schema_migrations where version = '20261025100000'`).length, 'revertir.sql las quita y borra su registro');
   await migrar(sql, { log: () => {} });
   ok(await func('convocados_del_domingo') === 1 && await func('ultima_importacion_respuestas') === 0, 'y se vuelve a aplicar (con las posteriores: sin ultima_importacion_respuestas)');
-  ok(JSON.stringify(await (await api('convocados_del_domingo', { p_fecha: J3 }, P['esteban-jon'].token)).json()) === JSON.stringify({ MdA: ['Jon', 'Zoe'], MdL: ['Adriano'] }), 'y sigue dando lo mismo');
+  // `migrar` (infra/migrar.mjs) ya espera a que PostgREST relea el esquema; si aun asi falla, el detalle dice que llego.
+  const otra = await api('convocados_del_domingo', { p_fecha: J3 }, P['esteban-jon'].token);
+  const otraTexto = await otra.text();
+  let otraJson = null; try { otraJson = JSON.parse(otraTexto); } catch { /* el detalle lo dice */ }
+  ok(otra.status === 200 && JSON.stringify(otraJson) === JSON.stringify({ MdA: ['Jon', 'Zoe'], MdL: ['Adriano'] }), 'y sigue dando lo mismo', `${otra.status} ${otraTexto.slice(0, 200)}`);
 
   ok(!e.errores.length, 'sin errores en la consola', e.errores.slice(0, 3).join(' | '));
 } catch (err) {

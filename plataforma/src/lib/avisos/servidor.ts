@@ -3,8 +3,8 @@ import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pistaEfectiva, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { horaDeEnvio, limiteDudas, textoLimite } from "./horario";
-import { avisosCierre, avisosPasoNoVa, avisosPorDefecto, conAvisosDeDudas, efectivaDe, inicioDe, invitados, pendienteDe, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
-import { TEXTO_PRUEBA, textoCambio, textoCancelacion, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
+import { avisosCierre, avisosPasoNoVa, avisosPorDefecto, conAvisosDeDudas, efectivaDe, inicioDe, invitados, losQueFaltan, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
+import { queEs, TEXTO_PRUEBA, textoCambio, textoCancelacion, textoDudas, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
 
 // Envio de avisos al movil (D99.5): Web Push estandar con claves VAPID. Corre SOLO en el servidor con la clave de
 // servicio de Supabase (SUPABASE_SERVICE_ROLE_KEY) y la privada VAPID: las dos viven en .env.local y en las variables
@@ -274,14 +274,16 @@ export async function recordatorioManual(eventoId: string) {
   const plan = aPlan(e, base.pistas);
   const ahora = new Date();
   const envio = horaDeEnvio(ahora, inicioDe(plan));
-  const filas: FilaAviso[] = invitados(plan, base.jugadores)
-    .filter((j) => pendienteDe(j, plan, base))
-    .map((j) => {
-      const limite = limiteDudas(plan);
-      const t = e.tipo === "entreno" ? { ...textoEntrenoHoy(plan), titulo: "Entreno: ¿vas?" }
-        : e.tipo === "liga" ? textoMartes(e.fecha, [String(e.inicio ?? "").slice(0, 5)].filter(Boolean), ahora < limite ? textoLimite(limite, ahora) : undefined) : textoOtro(plan, "24h");
-      return { ...t, clave: `rec:manual:${e.id}:${ahora.getTime()}:${j.person_id}`, tipo: "recordatorio" as const, person_id: j.person_id, eventos: [e.id], url: e.tipo === "liga" ? urlDomingo(e.fecha) : urlEvento(e), programado_para: envio };
-    });
+  // D189: «Mensaje a los que faltan»: quien no ha respondido y quien sigue en «duda», sin quien tiene una ausencia ese dia.
+  const { sinResponder, enDuda } = losQueFaltan(plan, base.jugadores, base);
+  const limite = limiteDudas(plan);
+  const fila = (j: JugadorPlan, t: { titulo: string; cuerpo: string }): FilaAviso => ({ ...t, clave: `rec:manual:${e.id}:${ahora.getTime()}:${j.person_id}`, tipo: "recordatorio", person_id: j.person_id, eventos: [e.id], url: e.tipo === "liga" ? urlDomingo(e.fecha) : urlEvento(e), programado_para: envio });
+  const tSin = e.tipo === "entreno" ? { ...textoEntrenoHoy(plan), titulo: "Entreno: ¿vas?" }
+    : e.tipo === "liga" ? textoMartes(e.fecha, [String(e.inicio ?? "").slice(0, 5)].filter(Boolean), ahora < limite ? textoLimite(limite, ahora) : undefined) : textoOtro(plan, "24h");
+  const filas: FilaAviso[] = [
+    ...sinResponder.map((j) => fila(j, tSin)),
+    ...enDuda.map((j) => fila(j, textoDudas([{ que: queEs(plan), limite }], [], ahora))),
+  ];
   await encolar(sb, filas);
   await enviarPendientes(sb, ahora);
   return { avisados: filas.length, programado: envio };

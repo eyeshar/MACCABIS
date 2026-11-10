@@ -67,7 +67,7 @@ export function BotonRecordatorio({ eventoId }: { eventoId: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <button type="button" className="boton boton-amarillo" disabled={pendiente}
-        onClick={() => { if (window.confirm("¿Enviar ahora un recordatorio a quien no ha respondido?")) empezar(async () => { const r = await recordatorioAhora(eventoId); setTexto(r.ok ? r.texto ?? "Hecho." : r.error); router.refresh(); }); }}>
+        onClick={() => { if (window.confirm("¿Enviar ahora un aviso al móvil a quien no ha respondido o sigue en duda?")) empezar(async () => { const r = await recordatorioAhora(eventoId); setTexto(r.ok ? r.texto ?? "Hecho." : r.error); router.refresh(); }); }}>
         {pendiente ? "Enviando…" : "Enviar un recordatorio ahora"}
       </button>
       {texto && <p className="pequeno" role="status" style={{ margin: 0 }}>{texto}</p>}

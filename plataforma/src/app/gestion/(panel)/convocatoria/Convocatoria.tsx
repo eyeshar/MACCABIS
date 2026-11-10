@@ -266,7 +266,7 @@ export default function Convocatoria({ ctx, enlaces = {}, ocultarNiveles = false
       <section className="gs-bloque cv-cab" aria-label="Respuestas del domingo">
         <Numeros prueba="cv-contadores" etiqueta="Respuestas del domingo" contenedor="gs-cifras cv-contadores num-cajas" grupos={gruposCabecera} />
         {ctx.proyeccion.calibracion && <p className="pequeno suave" style={{ margin: 0 }} data-testid="cv-acierto" title={ctx.proyeccion.calibracion.puntos.map((x) => `J${x.jornada} ${x.equipo}: ${x.proyeccion} (real ${x.real})`).join(" · ")}>{ctx.proyeccion.calibracion.texto}.</p>}
-        {ctx.eventoRespuestas && <Link href={`/gestion/eventos/${ctx.eventoRespuestas}/respuestas#t-rec`} className="cv-enlace">Recordar a los que no han respondido →</Link>}
+        {ctx.eventoRespuestas && <Link href={`/gestion/eventos/${ctx.eventoRespuestas}/respuestas#t-sinresp`} className="cv-enlace">Recordar a los que no han respondido →</Link>}
         {!empezada ? (
           <div className="cv-empezar">
             <p className="pequeno suave" style={{ margin: 0 }}>Abajo tienes la propuesta del motor (vista previa). Elige cómo empezar:</p>

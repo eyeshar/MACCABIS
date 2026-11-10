@@ -66,12 +66,13 @@ function enlaceRival(liga: DatosLiga | null, e: Evento) {
   return e.local ? <>{n} – {rival}</> : <>{rival} – {n}</>;
 }
 
-/** «Avisar a los que faltan» (a la pantalla de respuestas, donde está «Enviar un recordatorio ahora») y «Copiar WhatsApp». */
-function AccionesFaltan({ id, sin, mensaje }: { id: string; sin: number; mensaje: string | null }) {
-  if (!sin) return null;
+/** «Avisar a los que faltan» (a la pantalla de respuestas, donde está «Enviar un recordatorio ahora») y «Copiar WhatsApp».
+ *  `faltan`: sin responder más los que siguen en «duda» sin una ausencia ese día (D189). */
+function AccionesFaltan({ id, faltan, mensaje }: { id: string; faltan: number; mensaje: string | null }) {
+  if (!faltan) return null;
   return (
     <div className="gp-acciones" data-testid={`faltan-${id}`}>
-      <Link className="boton boton-contorno" href={`/gestion/eventos/${id}/respuestas#t-rec`}>Avisar a los que faltan</Link>
+      <Link className="boton boton-contorno" href={`/evento/${id}#t-sinresp`}>Avisar a los que faltan</Link>
       {mensaje && <CopiarBoton texto={mensaje} prueba={`whatsapp-${id}`} />}
     </div>
   );
@@ -142,11 +143,14 @@ export default async function InicioGestion() {
     const grupos = gruposEvento(ev as never, js, rs, true, defecto);
     const n = (k: string) => grupos.find((g) => g.k === k)!.n;
     const sinNombres = grupos.find((g) => g.k === "sin")?.personas.map((p) => p.nombre) ?? [];
-    const mensaje = sinNombres.length ? mensajeGrupo(sinNombres, {
+    // D189: también los que siguen en «duda», sin quien tiene una ausencia por periodo ese día.
+    const enDuda = new Set(grupos.find((g) => g.k === "duda")?.personas.map((p) => p.href) ?? []);
+    const dudanNombres = js.filter((j) => enDuda.has(hrefJugador(j.person_id)) && !ausenciaQueCubre(j.person_id, ev.fecha, defecto.ausencias)).map((j) => j.nombre_visible).sort((a, b) => a.localeCompare(b, "es"));
+    const mensaje = sinNombres.length + dudanNombres.length ? mensajeGrupo(sinNombres, {
       tipo: ev.tipo, fecha: ev.fecha, horas: [hhmm(ev.inicio)].filter(Boolean) as string[], lugar: !ev.pista_id && ev.ubicacion_nombre ? ev.ubicacion_nombre : sitioAviso(ev, pistas),
       url: `${web}${ev.tipo === "liga" ? urlDomingo(ev.fecha) : urlEvento(ev)}`, limite: limiteDudas(ev),
-    }, ahora) : null;
-    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), id: ev.id, hay: rs.length > 0, respondidas: rs.filter((r) => r.respuesta !== "sin_responder").length, dudas: lineaDudas({ ...ev, oficial: ev.oficial ?? true } as never, grupos, rs), sinFicha: sinFichaQueVan(ev as never, js, rs), mensaje };
+    }, ahora, dudanNombres) : null;
+    return { grupos, va: n("va"), duda: n("duda"), no: n("no"), sin: n("sin"), faltan: sinNombres.length + dudanNombres.length, id: ev.id, hay: rs.length > 0, respondidas: rs.filter((r) => r.respuesta !== "sin_responder").length, dudas: lineaDudas({ ...ev, oficial: ev.oficial ?? true } as never, grupos, rs), sinFicha: sinFichaQueVan(ev as never, js, rs), mensaje };
   };
   const cuentasDomingo = new Map(evDomingo.map((e) => [e.clave, cuentas(e)]));
   const respEntreno = entreno ? cuentas(entreno) : null;
@@ -241,7 +245,7 @@ export default async function InicioGestion() {
               ) : entreno ? (
                 <p className="suave" style={{ margin: 0 }} data-testid="entreno-sin-respuestas">Aún nadie ha respondido a este entreno.</p>
               ) : null}
-              {respEntreno && <AccionesFaltan id={respEntreno.id} sin={respEntreno.sin} mensaje={respEntreno.mensaje} />}
+              {respEntreno && <AccionesFaltan id={respEntreno.id} faltan={respEntreno.faltan} mensaje={respEntreno.mensaje} />}
               {entreno && <PorDefectoEntreno eventoId={entreno.id} porDefecto={porDefecto} quitados={quitadosEntreno} />}
               {respEntreno && <AvisoSinFicha personas={respEntreno.sinFicha} pista={entreno?.solo_con_ficha_en} />}
             </div>
@@ -268,7 +272,7 @@ export default async function InicioGestion() {
                             <td data-label="Equipación">{chip ? <span className={`pastilla pastilla-${chip.tipo}`}>{chip.texto}</span> : <span className="pastilla">Negra</span>}</td>
                             <td data-label="Respuestas" className={r?.hay ? "ev-celda-resp" : undefined}>
                               {r?.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={cruce(e)} dudas={r.dudas} /> : r ? <Link href={`/evento/${r.id}`} className="tenue">Sin respuestas</Link> : <span className="suave">—</span>}
-                              {r && <AccionesFaltan id={r.id} sin={r.sin} mensaje={r.mensaje} />}
+                              {r && <AccionesFaltan id={r.id} faltan={r.faltan} mensaje={r.mensaje} />}
                             </td>
                             <td data-label="Convocados">
                               {g && <Numeros variante="linea" prueba={`convocados-${e.id}`} etiqueta={`Convocados del ${NOMBRE_EQUIPO[e.equipo!]}`} grupos={g} />}
@@ -314,7 +318,7 @@ export default async function InicioGestion() {
                       <li key={e.id} data-evento={e.id}>
                         <b>{diaYNumero(e.fecha)} · {hhmm(e.inicio) ?? "hora por confirmar"} · {tituloEvento(e)}</b>
                         {r.hay ? <CuentasRespuestas id={r.id} grupos={r.grupos} nombre={tituloEvento(e)} dudas={r.dudas} /> : <Link href={`/evento/${e.id}`} className="tenue">Sin respuestas</Link>}
-                        <AccionesFaltan id={r.id} sin={r.sin} mensaje={r.mensaje} />
+                        <AccionesFaltan id={r.id} faltan={r.faltan} mensaje={r.mensaje} />
                       </li>
                     );
                   })}

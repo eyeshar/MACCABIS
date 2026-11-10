@@ -33,6 +33,17 @@ const g2 = W.mensajeGrupo(['Jon', 'Wall'], evDom, new Date('2026-11-02T18:00:00Z
 ok(/al partido del domingo 8\/11 \(09:00 y 11:00, Antonio Díaz Miguel\)/.test(g2) && /antes de las 12:00 de mañana/.test(g2), 'partido: domingo con dos horas; plazo el martes a las 12:00 (D173)', g2);
 ok(/antes del martes a las 12:00/.test(W.mensajeGrupo(['Jon'], evDom, new Date('2026-11-01T18:00:00Z'))), 'partido visto el domingo anterior: «antes del martes a las 12:00»');
 
+console.log('\n== «Mensaje a los que faltan» (D189): también los que siguen en «duda»');
+const mixto = W.mensajeGrupo(['Edu'], ev, martes, ['Ana', 'Leo']);
+ok(mixto === '@Edu aún no has respondido al entreno del miércoles 4/11 (20:30, Valdebernardo), y @Ana @Leo seguís en «duda». Responded en la web antes de las 12:00 de mañana: https://maccabis.example/mi-zona/evento/abc', 'grupo con sin responder y en duda: las dos frases, en plural al final', mixto);
+const soloDuda = W.mensajeGrupo([], ev, martes, ['Ana']);
+ok(soloDuda === '@Ana sigues en «duda» para el entreno del miércoles 4/11 (20:30, Valdebernardo). Confirma en la web antes de las 12:00 de mañana: https://maccabis.example/mi-zona/evento/abc', 'solo una en duda: «sigues en «duda»… Confirma», en singular', soloDuda);
+ok(/^@Ana @Leo seguís en «duda» para el entreno/.test(W.mensajeGrupo([], ev, martes, ['Ana', 'Leo'])) && /Confirmad en la web/.test(W.mensajeGrupo([], ev, martes, ['Ana', 'Leo'])), 'dos en duda: «seguís… Confirmad»');
+ok(W.mensajeGrupo(['Edu', 'Fernando M.'], ev, martes, []) === grupo, 'sin dudas, el mismo texto de siempre');
+const indDuda = W.mensajeIndividualDuda('Ana', ev, martes);
+ok(indDuda === 'Hola Ana, sigues en «duda» para el entreno del miércoles 4/11 (20:30, Valdebernardo). Confirma aquí: https://maccabis.example/mi-zona/evento/abc. Tienes hasta mañana a las 12:00; si no, contarás como «no va».', 'individual a quien sigue en duda', indDuda);
+ok(!/Tienes hasta/.test(W.mensajeIndividualDuda('Ana', ev, new Date('2026-11-04T12:00:00Z'))), 'pasado el plazo, sin «Tienes hasta»');
+
 console.log('\n== Enlace wa.me');
 const wa = W.enlaceWa('+34 600 000 001', ind);
 ok(wa?.startsWith('https://wa.me/34600000001?text=') && decodeURIComponent(wa.split('text=')[1]) === ind, 'wa.me/<teléfono sin + ni espacios>?text=<mensaje codificado>', wa);

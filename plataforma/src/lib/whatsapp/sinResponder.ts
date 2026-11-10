@@ -5,8 +5,10 @@
 //   - «Mensaje al grupo»: un texto con @ + MOTE de cada uno (lo que ven todos), y debajo, solo para el gestor, el nombre
 //     de contacto de cada uno en el móvil de Iván (lo que hay que buscar al escribir @);
 //   - un botón «WhatsApp» por persona: abre wa.me con su teléfono y un mensaje individual ya escrito.
-// La lista sale de la regla única (D177): quien no va por defecto o por una ausencia no sale. El plazo es el de la
-// plataforma (`limiteDudas`, D173): partidos, el martes a las 12:00; entreno del miércoles, ese día a las 12:00.
+// La lista sale de la regla única (D177): quien no va por defecto o por una ausencia no sale. Desde D189 («Mensaje a los
+// que faltan») también van los que siguen en «duda», con su propia frase, sin quien tiene una ausencia por periodo ese día.
+// El plazo es el de la plataforma (`limiteDudas`, D173): partidos, el martes a las 12:00; entreno del miércoles, ese día a
+// las 12:00.
 
 import { enMadrid, sumarDias, textoLimite } from "../avisos/horario.ts";
 
@@ -36,18 +38,30 @@ export function antesDe(limite: Date, ahora: Date) {
   return textoLimite(limite, ahora);
 }
 
-/** «Mensaje al grupo»: @ + mote de cada uno (nunca el nombre de contacto: lo verían todos). */
-export function mensajeGrupo(motes: string[], e: EventoMensaje, ahora: Date) {
-  const uno = motes.length === 1;
+/** «Mensaje al grupo»: @ + mote de cada uno (nunca el nombre de contacto: lo verían todos). `dudan`: los que siguen en
+ *  «duda» (D189), que van aparte: «@Ana sigues en «duda»». */
+export function mensajeGrupo(motes: string[], e: EventoMensaje, ahora: Date, dudan: string[] = []) {
   const plazo = antesDe(e.limite, ahora);
   const cuando = plazo ? `${plazo.startsWith("el ") ? "antes del " + plazo.slice(3) : "antes de " + plazo}` : "cuanto antes";
-  return `${motes.map((m) => `@${m}`).join(" ")} aún no ${uno ? "has" : "habéis"} respondido al ${queEvento(e)} (${horaYLugar(e)}). ${uno ? "Responde" : "Responded"} en la web ${cuando}: ${e.url}`;
+  const arrobas = (xs: string[]) => xs.map((m) => `@${m}`).join(" ");
+  const uno = motes.length + dudan.length === 1;
+  const sin = motes.length ? `${arrobas(motes)} aún no ${motes.length === 1 ? "has" : "habéis"} respondido` : "";
+  const duda = dudan.length ? `${arrobas(dudan)} ${dudan.length === 1 ? "sigues" : "seguís"} en «duda»` : "";
+  if (!duda) return `${sin} al ${queEvento(e)} (${horaYLugar(e)}). ${uno ? "Responde" : "Responded"} en la web ${cuando}: ${e.url}`;
+  if (!sin) return `${duda} para el ${queEvento(e)} (${horaYLugar(e)}). ${uno ? "Confirma" : "Confirmad"} en la web ${cuando}: ${e.url}`;
+  return `${sin} al ${queEvento(e)} (${horaYLugar(e)}), y ${duda}. Responded en la web ${cuando}: ${e.url}`;
 }
 
 /** Mensaje individual del botón «WhatsApp» de cada uno. */
 export function mensajeIndividual(mote: string, e: EventoMensaje, ahora: Date) {
   const plazo = e.limite.getTime() > ahora.getTime() ? textoLimite(e.limite, ahora) : null;
   return `Hola ${mote}, aún no has respondido al ${queEvento(e)} (${horaYLugar(e)}). Responde aquí: ${e.url}.${plazo ? ` Tienes hasta ${plazo}.` : ""}`;
+}
+
+/** Mensaje individual a quien sigue en «duda» (D189). */
+export function mensajeIndividualDuda(mote: string, e: EventoMensaje, ahora: Date) {
+  const plazo = e.limite.getTime() > ahora.getTime() ? textoLimite(e.limite, ahora) : null;
+  return `Hola ${mote}, sigues en «duda» para el ${queEvento(e)} (${horaYLugar(e)}). Confirma aquí: ${e.url}.${plazo ? ` Tienes hasta ${plazo}; si no, contarás como «no va».` : ""}`;
 }
 
 /** https://wa.me/<teléfono sin + ni espacios>?text=<mensaje>. Null sin teléfono válido (el botón sale «Falta teléfono»). */

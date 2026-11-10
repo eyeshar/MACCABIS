@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Gestión de la estructura nueva (bloques 4 y 5), de extremo a extremo: pila local, web compilada y Chrome. Jugadores
 // SINTÉTICOS (D39), calendario y reloj de prueba (D185: «hoy» es el lunes 19/10/2026), sin avisos reales (pila local).
-//   - /gestion a 360 y 390 px: las secciones 1 · Quién va esta semana, 2 · Convocatoria del domingo, 3 · Pendiente y
+//   - /gestion a 360, 390 y 412 px y en escritorio (1280 px), como gestor sin ficha y como gestor con ficha (Beto); el
+//     jugador y el anónimo no entran (los cuatro roles): las secciones 1 · Quién va esta semana, 2 · Convocatoria del domingo, 3 · Pendiente y
 //     «Plantilla y club»; sin desbordar, nada tapado, objetivos de al menos 44 px, ningún «(D» seguido de número en el
 //     HTML; enlaces a todas las pantallas de gestión (la barra de subsecciones ya no existe); «Copiar WhatsApp» a quien falta.
 //   - Gestión › No convocados: la racha y el total salen de las convocatorias aprobadas, las respuestas y las fichas
@@ -90,9 +91,10 @@ try {
   const [campana] = await sql`select id, estado from public.campanas_ropa order by creado_en limit 1`;
 
   // ---------------------------------------------------------------- /gestion
-  for (const ancho of [360, 390]) {
-    console.log(`\n== /gestion a ${ancho} px (gestor sin ficha)`);
-    const p = await e.sesion('gestor@pruebas.local', ancho);
+  for (const [ancho, quien] of [[360, 'gestor'], [390, 'gestor'], [412, 'gestor'], [1280, 'gestor'], [360, 'beto'], [412, 'beto'], [1280, 'beto']]) {
+    const rol = quien === 'beto' ? 'gestor con ficha' : 'gestor sin ficha';
+    console.log(`\n== /gestion a ${ancho} px (${rol})`);
+    const p = await e.sesion(`${quien}@pruebas.local`, ancho);
     await p.goto(`${APP}/gestion`);
     for (const [t, n] of [['gp-semana', '1 · Quién va esta semana'], ['gp-convocatoria', '2 · Convocatoria del domingo'], ['gp-pendiente', '3 · Pendiente'], ['gp-plantilla', 'Plantilla y club']])
       ok(await visto(p.getByTestId(t).getByRole('heading', { level: 2, name: n })), `sección «${n}»`);
@@ -107,7 +109,13 @@ try {
     }).map((h) => h.textContent));
     ok(!tapados.length, 'nada tapado por barras fijas', tapados.join(' | '));
     ok(!conD(await p.content()), 'ningún «(D» seguido de número en el HTML');
-    if (ancho === 390) {
+    if (ancho === 1280) {
+      // Escritorio: la columna principal ocupa su sitio (no se queda en una tira de móvil) y la barra inferior del móvil no sale.
+      const anchoMain = await p.locator('main').evaluate((m) => m.getBoundingClientRect().width);
+      ok(anchoMain >= 900, `escritorio: el contenido usa el ancho (${Math.round(anchoMain)} px)`);
+    }
+    if (quien === 'beto') ok(await visto(p.getByTestId('gp-semana')) && !(await p.getByText('Acceso restringido').count()), 'el gestor con ficha ve Gestión igual que el sin ficha');
+    if (ancho === 390 && quien === 'gestor') {
       const hrefs = await p.getByTestId('gp-plantilla').locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
       const todas = ['/gestion/jugadores', '/gestion/no-convocados', '/gestion/asistencia', '/gestion/ropa', '/gestion/eventos', '/gestion/convocatoria', '/gestion/convocatoria/datos', '/gestion/tablero', '/gestion/grupos', '/gestion/eventos/pistas', '/gestion/eventos/importar', '/gestion/telefonos', '/gestion/clasificacion', '/gestion/eventos/nuevo'];
       const faltan = todas.filter((h) => !hrefs.includes(h));
@@ -127,6 +135,19 @@ try {
       await foto(p, 'gestion-panel');
     }
     await p.context().close();
+  }
+  for (const ancho of [412, 1280]) {
+    console.log(`\n== /gestion a ${ancho} px: el jugador y el anónimo no entran`);
+    const pj = await e.sesion('ana@pruebas.local', ancho);
+    const rj = await pj.goto(`${APP}/gestion`);
+    ok((rj.status() >= 400 || !pj.url().includes('/gestion')) && !(await pj.getByTestId('gp-semana').count()), `jugador a ${ancho} px: sin Gestión`, `${rj.status()} ${pj.url()}`);
+    ok(await sinDesbordar(pj), `jugador a ${ancho} px: lo que ve, sin desbordar`);
+    await pj.context().close();
+    const ctxA = await e.contexto(ancho);
+    const pa = await e.nuevaPagina(ctxA);
+    await pa.goto(`${APP}/gestion`);
+    ok(pa.url().includes('/entrar') && !(await pa.getByTestId('gp-semana').count()), `anónimo a ${ancho} px: a /entrar`, pa.url());
+    await ctxA.close();
   }
 
   // ---------------------------------------------------------------- 3 · Pendiente: nada caducado

@@ -11,7 +11,10 @@
 //     avisar»: guarda, avisa a quien entra y a quien sale, WhatsApp del cambio); «voy» tardío solo si un equipo está bajo
 //     mínimos; la banda roja (_tras_cambio_jugador) desde el martes 12:00 y, aprobada, solo por un convocado o un «voy»;
 //   - CAMBIO DE CALENDARIO tras aprobar (editar un partido): si alguien dobla y ahora es a la misma hora, push a los gestores;
-//   - la migración 20261103100000 se revierte limpia (D111) y se vuelve a aplicar.
+//   - J5 (10/11/2026): un borrador con jugadores tocado a mano no se pisa y se le dice a Iván («tu borrador, sin tocar»);
+//     un borrador VACÍO creado antes («Empezar en blanco») se propone encima; un domingo en que solo juega un equipo, con el
+//     partido del otro aplazado a otra fecha, propone solo para ese equipo y el aviso de las 09:00 solo va a los suyos;
+//   - las migraciones 20261110140000 y 20261103100000 se revierten limpias (D111) y se vuelven a aplicar.
 //
 //   npm run pruebas:rutina-c
 import crypto from 'node:crypto';
@@ -21,6 +24,7 @@ import webpush from 'web-push';
 import { preparar, sinteticos, personas, contador, visto, sinDesbordar, RAIZ } from './comun_e2e.mjs';
 import { firmar } from './pila.mjs';
 import { migrar } from './infra/migrar.mjs';
+import { esquemaAlDia } from './infra/esquema.mjs';
 import { trasAccion, hasta } from './infra/esperas.mjs';
 import * as H from '../src/lib/avisos/horario.ts';
 import { prohibidoEn } from './prohibido.mjs';
@@ -48,7 +52,7 @@ const tarea = async (ahora) => { const t = await fetch(`${APP}/api/avisos/tarea?
 const avisos = (patron) => sql`select clave, user_id, person_id, titulo, cuerpo, url from public.avisos_registro where clave like ${patron} order by clave`;
 
 // Domingos de prueba, lejos del calendario real (que acaba en mayo de 2027).
-const D1 = '2027-07-04', D2 = '2027-07-11', D3 = '2027-07-18', D4 = '2027-07-25';
+const D1 = '2027-07-04', D2 = '2027-07-11', D3 = '2027-07-18', D4 = '2027-07-25', D5 = '2027-08-01', D6 = '2027-08-08', D6APL = '2027-09-05';
 const martes = (d) => H.sumarDias(d, -5);
 
 try {
@@ -73,6 +77,8 @@ try {
   const E2 = await evento('rc-d2-mdl', 'MdL', D2, '11:30');
   const E3 = await evento('rc-d3-mdl', 'MdL', D3, '11:30');
   const E4A = await evento('rc-d4-mda', 'MdA', D4, '10:15'), E4L = await evento('rc-d4-mdl', 'MdL', D4, '12:45');
+  const E5 = await evento('rc-d5-mdl', 'MdL', D5, '11:30');
+  const E6A = await evento('rc-d6-mda', 'MdA', D6, '10:15'), E6L = await evento('rc-d6-mdl', 'MdL', D6, '12:45');
   const poner = (ev, p, resp, motivo = null) => sql`insert into public.respuestas (evento_id, person_id, respuesta, motivo, fuente, origen) values (${ev}, ${p}, ${resp}, ${motivo}, 'web', 'jugador') on conflict (evento_id, person_id) do update set respuesta = excluded.respuesta, motivo = excluded.motivo, origen = excluded.origen, cambiado_en = pruebas.ahora()`;
   for (const id of S.slice(0, 11)) await poner(E1, id, 'va');
   await poner(E1, 'sint-r13', 'duda');
@@ -133,11 +139,48 @@ try {
   ok(t.status === 200 && !t.json.propuestas.includes(D2) && (await sql`select equipos from public.convocatorias where fecha = ${D2}`)[0].equipos.MdL.length === 1, `la del ${D2}, ya aprobada: no se toca`);
   t = await tarea(M(martes(D3), '12:05'));
   const [c3b] = await sql`select equipos, automatica_en from public.convocatorias where fecha = ${D3}`;
-  ok(t.status === 200 && !t.json.propuestas.includes(D3) && c3b.equipos.MdL.length === 1 && !c3b.automatica_en && !(await avisos(`conv-auto:${D3}:%`)).length, `la del ${D3}, con un «añadir» a mano después de su propuesta: no se toca ni se avisa`);
+  ok(t.status === 200 && !t.json.propuestas.includes(D3) && c3b.equipos.MdL.length === 1 && !c3b.automatica_en && !(await avisos(`conv-auto:${D3}:%`)).length, `la del ${D3}, con jugadores y un «añadir» a mano después de su propuesta: no se pisa`);
+  // J5 (10/11/2026): antes se callaba; ahora se lo dice a Iván, una vez.
+  const mano = await avisos(`conv-mano:${D3}:%`);
+  ok(mano.length === 1 && mano[0].user_id === ivan.uid && mano[0].titulo === 'Convocatoria del domingo 18/07: tu borrador, sin tocar'
+    && mano[0].cuerpo === 'No he hecho la propuesta automática: ya hay un borrador hecho a mano (MdL 1). No lo he cambiado: revísalo y apruébalo.' && mano[0].url === `/gestion/convocatoria?fecha=${D3}`,
+    'y avisa SOLO a Iván: «tu borrador, sin tocar» con lo que lleva (MdL 1)', JSON.stringify(mano));
+  t = await tarea(M(martes(D3), '12:20'));
+  ok((await avisos(`conv-mano:${D3}:%`)).length === 1, 'repetir la pasada no repite el aviso');
+  t = await tarea(M(martes(D3), '19:05'));
+  const pend3 = await avisos(`conv-pend:19:${D3}:%`);
+  ok(pend3.length === 1 && pend3[0].cuerpo === 'Tu borrador hecho a mano aún no está aprobado. Toca para revisarlo.', 'a las 19:00, «Tu borrador hecho a mano aún no está aprobado» (no «la propuesta está lista desde las 12:00»)', JSON.stringify(pend3));
   r = await rpc('convocatoria_propuesta_auto', { p_fecha: D3, p_jornada: 40, p_equipos: { MdL: [] }, p_dificultad: {} }, servicio);
   ok(r.datos === 'tocada', 'la base también lo frena («tocada»)', JSON.stringify(r.datos));
   r = await rpc('convocatoria_propuesta_auto', { p_fecha: D2, p_jornada: 40, p_equipos: { MdL: [] }, p_dificultad: {} }, servicio);
   ok(r.datos === 'aprobada', 'y una aprobada («aprobada»)', JSON.stringify(r.datos));
+
+  console.log('\n== Borrador VACÍO creado antes (con «Empezar en blanco»): se propone encima (J5, 10/11/2026)');
+  for (const id of S.slice(0, 11)) await poner(E5, id, 'va');
+  const [{ id: c5 }] = await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos, creado_por_nombre) values (${D5}, 40, 'borrador', 'blanco', ${sql.json({ MdA: [], MdL: [] })}, 'Iván') returning id`;
+  await sql`insert into public.convocatoria_cambios (convocatoria_id, por_nombre, accion, en) values (${c5}, 'Iván', 'blanco', pruebas.ahora() - interval '15 days')`;
+  t = await tarea(M(martes(D5), '12:05'));
+  const [c5b] = await sql`select estado, origen, equipos, automatica_en from public.convocatorias where fecha = ${D5}`;
+  ok(t.status === 200 && t.json.propuestas.includes(D5) && c5b.origen === 'propuesta' && !!c5b.automatica_en && c5b.equipos.MdL.length === 10 && c5b.estado === 'borrador',
+    'el borrador vacío (origen «blanco», hecho días antes) se rellena con la propuesta: MdL 10, sigue en borrador', JSON.stringify({ j: t.json, o: c5b.origen, n: c5b.equipos.MdL?.length }));
+  ok((await avisos(`conv-auto:${D5}:%`)).length === 1 && !(await avisos(`conv-mano:${D5}:%`)).length, 'push «lista» a Iván, no el de «tu borrador»');
+
+  console.log('\n== Solo juega un equipo: el MdA tiene el partido aplazado a otra fecha');
+  await sql`insert into public.jugadores (person_id, nombre_oficial, nombre_visible, ficha_mda, ficha_mdl, rol, entrena) values ('sint-solo-mda', 'Prueba, SoloMda', 'SoloMda', true, false, 'jugador', true) on conflict (person_id) do nothing`;
+  for (const id of S.slice(0, 11)) await poner(E6L, id, 'va');
+  // El aplazado: su evento pasa a otra fecha (como el «mda-j5» del real, del 15/11 al 20/12).
+  await sql`update public.eventos set fecha = ${D6APL} where id = ${E6A}`;
+  t = await tarea(M(martes(D6), '09:05'));
+  const plazo6 = await sql`select person_id from public.avisos_registro where clave like 'rec:dudas:%' and ${E6L}::text = any(eventos::text[])`;
+  const plazoA = await sql`select person_id from public.avisos_registro where clave like 'rec:dudas:%' and ${E6A}::text = any(eventos::text[])`;
+  ok(t.status === 200 && plazo6.some((x) => x.person_id === 'sint-r12') && !plazo6.some((x) => x.person_id === 'sint-solo-mda') && !plazoA.length,
+    'a las 09:00 del martes: aviso del plazo a quien no ha respondido del MdL (r12); nada al que solo tiene ficha del MdA ni por el partido aplazado', JSON.stringify({ plazo6, plazoA }));
+  t = await tarea(M(martes(D6), '12:05'));
+  const [c6] = await sql`select equipos from public.convocatorias where fecha = ${D6}`;
+  ok(t.status === 200 && t.json.propuestas.includes(D6) && c6?.equipos.MdL.length === 10 && !(c6.equipos.MdA?.length), 'a las 12:05: propuesta solo del MdL (10), sin MdA', JSON.stringify({ j: t.json, n: c6?.equipos }));
+  const p6 = await avisos(`conv-auto:${D6}:%`);
+  ok(p6.length === 1 && /^MdL 10 · /.test(p6[0].cuerpo), 'push a Iván «MdL 10 · …», sin el MdA', JSON.stringify(p6));
+  ok(!(await sql`select 1 from public.convocatorias where fecha = ${D6APL}`).length, 'y el aplazado no genera nada en su fecha nueva (su martes aún no ha llegado)');
 
   console.log('\n== Martes 19:00 (Iván) y 21:00 (los tres) si sigue sin aprobar');
   t = await tarea(M(martes(D1), '19:05'));
@@ -259,6 +302,30 @@ try {
   ok(e.errores.length === 0, 'sin errores de JavaScript en ninguna pantalla', e.errores.slice(0, 3).join(' | '));
 
   // ---------------------------------------------------------------------------------------------- migración reversible
+  console.log('\n== Migración 20261110140000 (borrador vacío) reversible (D111)');
+  const migsN = path.join(RAIZ, 'supabase', 'migrations');
+  const textoN = fs.readFileSync(path.join(migsN, '20261110140000_propuesta_borrador_vacio.sql'), 'utf8').replace(/--.*$/gm, '');
+  ok(!/\bdrop (table|column|function)\b|\btruncate\b|\bdelete\b|\balter table\b/i.test(textoN), 'solo reemplaza la función (sin borrados ni cambios de tablas)');
+  const D7 = '2027-08-15';
+  const vacio = async () => {
+    await sql`delete from public.convocatoria_cambios where convocatoria_id in (select id from public.convocatorias where fecha = ${D7})`;
+    await sql`delete from public.convocatorias where fecha = ${D7}`;
+    const [{ id }] = await sql`insert into public.convocatorias (fecha, jornada, estado, origen, equipos) values (${D7}, 40, 'borrador', 'blanco', ${sql.json({ MdL: [] })}) returning id`;
+    await sql`insert into public.convocatoria_cambios (convocatoria_id, por_nombre, accion, en) values (${id}, 'Iván', 'blanco', pruebas.ahora() - interval '1 day')`;
+    return (await rpc('convocatoria_propuesta_auto', { p_fecha: D7, p_jornada: 40, p_equipos: { MdL: [{ person_id: 'sint-r01' }] }, p_dificultad: {} }, servicio)).datos;
+  };
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(migsN, '20261110140000_propuesta_borrador_vacio.revertir.sql'), 'utf8')));
+  await esquemaAlDia(sql);
+  const vRev = await vacio();
+  ok(vRev === 'tocada' && !(await sql`select 1 from supabase_migrations.schema_migrations where version = '20261110140000'`).length, 'revertida: un borrador vacío con «Empezar en blanco» vuelve a contar como «tocada» y se borra su registro', JSON.stringify(vRev));
+  await migrar(sql, { log: () => {} });
+  const vApl = await vacio();
+  ok(vApl === 'guardada', 'vuelta a aplicar: se propone encima («guardada»)', JSON.stringify(vApl));
+  const privN = (await sql`select has_function_privilege('authenticated', 'public.convocatoria_propuesta_auto(date, int, jsonb, jsonb, jsonb)', 'execute') a, has_function_privilege('anon', 'public.convocatoria_propuesta_auto(date, int, jsonb, jsonb, jsonb)', 'execute') n, has_function_privilege('service_role', 'public.convocatoria_propuesta_auto(date, int, jsonb, jsonb, jsonb)', 'execute') s`)[0];
+  ok(!privN.a && !privN.n && privN.s, 'tras revertir y aplicar, sigue siendo solo de service_role', JSON.stringify(privN));
+  // La de 20261103100000 se revierte entera (sus funciones y columnas): antes, la de encima.
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(migsN, '20261110140000_propuesta_borrador_vacio.revertir.sql'), 'utf8')));
+
   console.log('\n== Migración 20261103100000 reversible (D111)');
   const migs = path.join(RAIZ, 'supabase', 'migrations');
   const texto = fs.readFileSync(path.join(migs, '20261103100000_rutina_c_automatica.sql'), 'utf8').replace(/--.*$/gm, '');

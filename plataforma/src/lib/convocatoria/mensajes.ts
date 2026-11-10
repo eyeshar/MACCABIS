@@ -180,11 +180,24 @@ export function textoPropuestaLista(fecha: string, equipos: { equipo: Equipo; re
   return { titulo: `Convocatoria del domingo ${ddmm(fecha)} lista`, cuerpo: `${cifras}${cola}${riesgo ? ` · ${riesgo}` : ""}. Revísala y apruébala.` };
 }
 
-/** Recordatorio a los gestores si el martes sigue sin aprobar (D173): a las 19:00 a Iván, a las 21:00 a los tres. */
-export function textoSinAprobar(fecha: string, tarde: boolean) {
+/** Push a Iván cuando la propuesta automática NO se hace porque ya hay un borrador hecho a mano con jugadores (10/11/2026,
+ *  J5): «Convocatoria del domingo 15/11: tu borrador, sin tocar» · «No he hecho la propuesta automática: ya hay un borrador
+ *  hecho a mano (MdL 11). No lo he cambiado: revísalo y apruébalo.» */
+export function textoBorradorAMano(fecha: string, equipos: { equipo: Equipo; recuento: RecuentoCorto }[]) {
+  const cifras = equipos.map((x) => `${x.equipo} ${x.recuento.total}`).join(" · ");
+  return {
+    titulo: `Convocatoria del domingo ${ddmm(fecha)}: tu borrador, sin tocar`,
+    cuerpo: `No he hecho la propuesta automática: ya hay un borrador hecho a mano (${cifras}). No lo he cambiado: revísalo y apruébalo.`,
+  };
+}
+
+/** Recordatorio a los gestores si el martes sigue sin aprobar (D173): a las 19:00 a Iván, a las 21:00 a los tres. Con un
+ *  borrador hecho a mano (`aMano`), el de las 19:00 no dice «la propuesta está lista desde las 12:00». */
+export function textoSinAprobar(fecha: string, tarde: boolean, aMano = false) {
   return {
     titulo: `Convocatoria del domingo ${ddmm(fecha)} sin aprobar`,
-    cuerpo: tarde ? "Sigue sin aprobar. Cualquiera de los tres puede revisarla y aprobarla: toca para abrirla." : "La propuesta está lista desde las 12:00 y aún no está aprobada. Toca para revisarla.",
+    cuerpo: tarde ? "Sigue sin aprobar. Cualquiera de los tres puede revisarla y aprobarla: toca para abrirla."
+      : aMano ? "Tu borrador hecho a mano aún no está aprobado. Toca para revisarlo." : "La propuesta está lista desde las 12:00 y aún no está aprobada. Toca para revisarla.",
   };
 }
 

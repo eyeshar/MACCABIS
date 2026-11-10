@@ -67,8 +67,6 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
 ## Pendiente de Iván
 
 **Operativa de ahora**
-- [ ] **J5 (15/11): aprobar a mano la convocatoria** esta semana: la propuesta automática no la hace porque el borrador ya está hecho a mano (MdL 11, uno por encima del tope de 10). ESTADO, «Propuesta automática de la J5…».
-- [ ] **OK para aplicar en el real la migración `20261110140000_propuesta_borrador_vacio`** (con D111: volcado, permisos antes y después, recuento de cuentas): un borrador vacío se propone encima. Sin ella, un borrador vacío con «Empezar en blanco» avisa a Iván en vez de proponer. No afecta a la J5, la J7 ni la J9.
 - [ ] **Enyel, motivo del 10/11:** confirmar con él que el motivo guardado en sus tres «no» del 10/11 (dos entrenos y el domingo 15/11) es el que quería (no se ha tocado; ESTADO, «Hoja «No voy»…»). Si falta varios días seguidos, una ausencia lo hace de una vez.
 - [ ] **Tarea programada «Maccabis · hojas del lunes (S21)»** (creada el 09/11/2026; lunes a las 9:04): Claude baja del S21 (Afición FBM por Enlace Móvil) las hojas de la jornada de los seis grupos y apunta las de G3–G6 en `jornadas_hojas.csv`, antes de la pasada de las 9:45 de la rutina A (`RUTINAS/A_ACTAS.md`). **Para que funcione el lunes 16/11 (y cada lunes), antes de las 9:04:** el PC encendido con tu sesión; la ventana **«Pantalla del teléfono»** (Enlace Móvil → «Abrir la pantalla del teléfono») abierta en la **mitad derecha del monitor principal** (no en el BenQ ni en el centro: Claude los ve vacíos o en negro); y **aprobar el acceso a «Enlace Móvil»** cuando la tarea lo pida (el permiso caduca a los 30 minutos sin uso). Si el lunes no salen las hojas, la rutina A avisa («no hay hoja de …»).
 - [x] **Rutina A sin navegador** (`fix/verificacion-sin-navegador`, nota en D179): mergeado con el OK de Iván (PR #60, 06/11/2026). Tras el merge, `git pull` en la copia `Maccabis-rutina-a` lo hace la propia rutina.
@@ -144,6 +142,8 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
 
 ### Cerrado el 10/11/2026 (`arreglo-propuesta-j5`)
 
+- [x] **J5 (15/11): aprobar a mano la convocatoria** (era «Pendiente de Iván»): aprobada por Iván el 10/11/2026 a las 13:01 (MdL 11).
+- [x] **Migración `20261110140000_propuesta_borrador_vacio` en el real** (era «Pendiente de Iván»): OK de Iván y **aplicada el 10/11/2026** con D111 y norma 19 (volcado antes y después, huellas iguales salvo la función, permisos en solo lectura antes y después). ESTADO, entrada del 10/11.
 - [x] **Pendiente de Code 22. D173, comprobar en el real la primera propuesta automática** (J5, martes 10/11 a las 12:00): **no salió, y era correcto que no se pisara**: el borrador de la J5 ya estaba hecho a mano (MdL 11, último «añadir» a las 01:11 del 10/11). El fallo era el silencio: ahora la tarea avisa a Iván («tu borrador, sin tocar»), y un borrador vacío se propone encima (migración pendiente del OK). Los avisos de las 09:00 y las 12:00 no salieron porque los 22 del MdL ya habían respondido. La comprobación real pasa al 22b (J6, 17/11). ESTADO, entrada del 10/11.
 
 ### Cerrado el 10/11/2026 (`arreglo-novoy-motivo`)

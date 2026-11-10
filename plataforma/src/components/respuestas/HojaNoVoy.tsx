@@ -7,6 +7,9 @@ import { MOTIVOS_JUGADOR, type MotivoJugador } from "@/lib/respuestas/dominio";
 // Hoja «No voy» (D99, 3.4): dialogo modal accesible (<dialog> nativo: encierra el foco, Esc lo cierra y devuelve el foco
 // a quien lo abrio). El motivo es obligatorio: «Guardar «no voy»» esta desactivado hasta elegirlo. Solo lo ven los
 // gestores (D46, D82).
+// Al abrir, el foco va al TITULO (no al primer motivo): `showModal()` enfoca el primer control, «Lesion», y Safari (iPhone)
+// le pinta el recuadro de foco, que parece un motivo ya elegido; el jugador tocaba otro y lo daba por no marcado
+// (bug de Enyel, 10/11/2026). El titulo se lee igual con lector de pantalla (aria-labelledby) y Tab sigue en los motivos.
 export default function HojaNoVoy({ abierta, titulo, motivoInicial, detalleInicial, guardando, error, onCerrar, onGuardar, volverA }: {
   abierta: boolean; titulo: string; motivoInicial?: MotivoJugador | null; detalleInicial?: string | null; guardando?: boolean; error?: string | null;
   onCerrar: () => void; onGuardar: (motivo: MotivoJugador, detalle: string) => void;
@@ -14,13 +17,14 @@ export default function HojaNoVoy({ abierta, titulo, motivoInicial, detalleInici
   volverA?: React.RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const tituloRef = useRef<HTMLHeadingElement>(null);
   const [motivo, setMotivo] = useState<MotivoJugador | null>(motivoInicial ?? null);
   const [detalle, setDetalle] = useState(detalleInicial ?? "");
   const id = useId();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (abierta && !d.open) { setMotivo(motivoInicial ?? null); setDetalle(detalleInicial ?? ""); d.showModal(); }
+    if (abierta && !d.open) { setMotivo(motivoInicial ?? null); setDetalle(detalleInicial ?? ""); d.showModal(); tituloRef.current?.focus(); }
     if (!abierta && d.open) { d.close(); volverA?.current?.focus(); }
   }, [abierta, motivoInicial, detalleInicial, volverA]);
   return (
@@ -28,7 +32,7 @@ export default function HojaNoVoy({ abierta, titulo, motivoInicial, detalleInici
       onClick={(e) => { if (e.target === ref.current) onCerrar(); }}>
       <form method="dialog" className="rw-hoja-dentro" onSubmit={(e) => { e.preventDefault(); if (motivo) onGuardar(motivo, detalle); }}>
         <span className="rw-hoja-asa" aria-hidden="true" />
-        <h2 id={`${id}-t`}>No voy al {titulo}</h2>
+        <h2 id={`${id}-t`} ref={tituloRef} tabIndex={-1}>No voy al {titulo}</h2>
         <fieldset className="rw-motivos">
           <legend>¿Por qué? Elige uno. <span className="tenue">Solo lo ven los gestores.</span></legend>
           {MOTIVOS_JUGADOR.map((m) => (

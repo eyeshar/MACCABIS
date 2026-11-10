@@ -61,10 +61,12 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 
 
 22. [ ] **D173, comprobar en el real la primera propuesta automática** (martes 10/11/2026, 12:00, J5 del 15/11; Lección del 28/10: «funciona» solo con un aviso automático REAL): en `avisos_registro`, `conv-auto:2026-11-15:<Iván>` y los `rec:dudas`/`rec:cierre` de esa mañana; en `convocatorias`, el borrador con `automatica_en`. Si no sale, mirar `/api/avisos/tarea` (500 con «convocatoria: …»).
+23. [ ] **Historial corto de las respuestas** (propuesta del 10/11/2026, caso de Enyel; necesita OK de Iván, es esquema): hoy `respuestas` guarda solo el último estado y no se puede ver si alguien cambió dos veces seguidas. Propuesta mínima: tabla `respuestas_historial` llenada por un disparador (evento, persona, respuesta, motivo, origen, quién y cuándo; **sin el detalle libre**), solo para gestores, que se borre sola a los 60 días. No recoge datos nuevos, solo conserva los cambios un tiempo. Un toque perdido en la hoja no llega al servidor y ni así se vería: para eso bastaría guardar con la respuesta cuántas veces se cambió de motivo antes de «Guardar» (un número), si Iván lo quiere.
 
 ## Pendiente de Iván
 
 **Operativa de ahora**
+- [ ] **Enyel, motivo del 10/11:** confirmar con él que el motivo guardado en sus tres «no» del 10/11 (dos entrenos y el domingo 15/11) es el que quería (no se ha tocado; ESTADO, «Hoja «No voy»…»). Si falta varios días seguidos, una ausencia lo hace de una vez.
 - [ ] **Tarea programada «Maccabis · hojas del lunes (S21)»** (creada el 09/11/2026; lunes a las 9:04): Claude baja del S21 (Afición FBM por Enlace Móvil) las hojas de la jornada de los seis grupos y apunta las de G3–G6 en `jornadas_hojas.csv`, antes de la pasada de las 9:45 de la rutina A (`RUTINAS/A_ACTAS.md`). **Para que funcione el lunes 16/11 (y cada lunes), antes de las 9:04:** el PC encendido con tu sesión; la ventana **«Pantalla del teléfono»** (Enlace Móvil → «Abrir la pantalla del teléfono») abierta en la **mitad derecha del monitor principal** (no en el BenQ ni en el centro: Claude los ve vacíos o en negro); y **aprobar el acceso a «Enlace Móvil»** cuando la tarea lo pida (el permiso caduca a los 30 minutos sin uso). Si el lunes no salen las hojas, la rutina A avisa («no hay hoja de …»).
 - [x] **Rutina A sin navegador** (`fix/verificacion-sin-navegador`, nota en D179): mergeado con el OK de Iván (PR #60, 06/11/2026). Tras el merge, `git pull` en la copia `Maccabis-rutina-a` lo hace la propia rutina.
 - [ ] **Estructura nueva (D189): mirarla en el móvil** (qué mirar primero, en el informe de `ESTADO.md`).
@@ -136,6 +138,10 @@ _(18, 19 y 20, cerrados el 02/11/2026 con D172: ver «Histórico».)_
 ---
 
 ## Histórico
+
+### Cerrado el 10/11/2026 (`arreglo-novoy-motivo`)
+
+- [x] **Hoja «No voy»: el primer motivo parecía elegido y el toque en otro no se veía marcado** (Enyel, 10/11/2026): el foco al abrir va al título y no al radio «Lesión» (Safari le pintaba el recuadro de foco). Prueba `pruebas:no-voy-primer-toque` (WebKit y Chromium). ESTADO, entrada del 10/11.
 
 ### Cerrado el 10/11/2026 (`fix/prueba-domingo-esquema`)
 

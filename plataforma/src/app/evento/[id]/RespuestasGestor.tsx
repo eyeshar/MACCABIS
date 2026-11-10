@@ -9,7 +9,7 @@ import {
   type EventoFila, type Motivo, type Respuesta,
 } from "@/lib/eventos/dominio";
 import { calendarioRecordatorios, TEXTO_HUECO, urlDomingo, urlEvento } from "@/lib/avisos/planificador";
-import { enlaceWa, mensajeGrupo, mensajeIndividual, type EventoMensaje } from "@/lib/whatsapp/sinResponder";
+import { enlaceWa, mensajeGrupo, mensajeIndividual, mensajeIndividualDuda, type EventoMensaje } from "@/lib/whatsapp/sinResponder";
 import { sitioAviso } from "@/lib/avisos/servidor";
 import { dudaAbierta, enMadrid, limiteDudas } from "@/lib/avisos/horario";
 import { MOTIVOS_JUGADOR } from "@/lib/respuestas/dominio";
@@ -144,11 +144,14 @@ export default async function RespuestasGestor({ id }: { id: string }) {
   const web = await origenWeb();
   const msgSinAvisos = mensajeSinAvisos(sinAvisos.map((l) => l.nombre), web);
 
-  // D178: WhatsApp a quien no ha respondido (la lista sale de la regla única, D177: sin los «no va por defecto» ni las
-  // ausencias). Contacto y teléfono, solo de esas personas (jugadores: RLS de gestores).
+  // «Mensaje a los que faltan» (D178 y D189): quien no ha respondido y quien sigue en «duda». La lista sale de la regla
+  // única (D177: sin los «no va por defecto» ni las ausencias), y una «duda» con una ausencia por periodo ese día tampoco
+  // cuenta. Contacto y teléfono, solo de esas personas (jugadores: RLS de gestores).
   const sinResponder = lineas.filter((l) => l.clase === "sin_responder");
-  const { data: contactosDB } = sinResponder.length
-    ? await supabase.from("jugadores").select("person_id, whatsapp_contacto, telefono").in("person_id", sinResponder.map((l) => l.person_id))
+  const enDuda = lineas.filter((l) => l.clase === "duda" && !l.periodo);
+  const faltan = [...sinResponder, ...enDuda];
+  const { data: contactosDB } = faltan.length
+    ? await supabase.from("jugadores").select("person_id, whatsapp_contacto, telefono").in("person_id", faltan.map((l) => l.person_id))
     : { data: [] };
   const contactoDe = new Map(((contactosDB ?? []) as { person_id: string; whatsapp_contacto: string | null; telefono: string | null }[]).map((c) => [c.person_id, c]));
   const eventoMsg: EventoMensaje = {
@@ -156,7 +159,7 @@ export default async function RespuestasGestor({ id }: { id: string }) {
     lugar: !evento.pista_id && evento.ubicacion_nombre ? evento.ubicacion_nombre : sitioAviso(evento, pistas),
     url: `${web}${evento.tipo === "liga" ? urlDomingo(evento.fecha) : urlEvento(evento)}`, limite: limiteDudas(evento),
   };
-  const msgGrupo = sinResponder.length ? mensajeGrupo(sinResponder.map((l) => l.nombre), eventoMsg, ahora) : "";
+  const msgGrupo = faltan.length ? mensajeGrupo(sinResponder.map((l) => l.nombre), eventoMsg, ahora, enDuda.map((l) => l.nombre)) : "";
   const opcionesPor = (l: Linea) => (dia && distintas && l.dos
     ? [{ id: "ambos", texto: "A los dos", opcion: "ambos" }, ...dia.map((e) => ({ id: `solo-${e.id}`, texto: `Solo al de las ${hhmm(e.inicio)} (${e.equipo})`, opcion: "solo", evento: e.id })), { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
     : dia ? [{ id: "voy", texto: "Va", opcion: "voy" }, { id: "no", texto: "No va", opcion: "no" }, { id: "duda", texto: "Duda", opcion: "duda" }]
@@ -245,7 +248,6 @@ export default async function RespuestasGestor({ id }: { id: string }) {
                 {manuales.length > 0 && <li data-enviado="true"><span aria-hidden="true">✓</span><span><b>Enviados a mano</b><small>{manuales.length} avisos</small></span></li>}
               </ul>
             )}
-            <BotonRecordatorio eventoId={evento.id} />
           </section>
           <section className="gs-bloque" aria-labelledby="t-sinav" data-testid="sin-avisos">
             <h2 id="t-sinav" style={{ fontSize: 22 }}>Sin avisos activados · {sinAvisos.length}</h2>
@@ -256,15 +258,19 @@ export default async function RespuestasGestor({ id }: { id: string }) {
             {sinAvisos.length > 0 && <CopiarTexto texto={msgSinAvisos} etiqueta="Copiar mensaje" />}
           </section>
           <section className="gs-bloque" aria-labelledby="t-sinresp" data-testid="sin-responder">
-            <h2 id="t-sinresp" style={{ fontSize: 22 }}>Sin responder · {sinResponder.length}</h2>
-            {sinResponder.length === 0 ? <p className="pequeno suave" style={{ margin: 0 }}>Han respondido todos (quien no va por defecto o por una ausencia no cuenta aquí).</p> : (
+            <h2 id="t-sinresp" style={{ fontSize: 22 }}>Mensaje a los que faltan · {faltan.length}</h2>
+            <p className="pequeno suave" style={{ margin: 0 }} data-testid="faltan-desglose">
+              {sinResponder.length} sin responder · {enDuda.length} en duda. Quien no va por defecto o tiene una ausencia esos días no cuenta aquí.
+            </p>
+            {faltan.length === 0 ? <p className="pequeno suave" style={{ margin: 0 }}>Han respondido todos y nadie sigue en duda.</p> : (
               <>
                 <ul className="lista-limpia ev-wa-lista" data-testid="sin-responder-lista">
-                  {sinResponder.map((l) => {
-                    const href = enlaceWa(contactoDe.get(l.person_id)?.telefono, mensajeIndividual(l.nombre, eventoMsg, ahora));
+                  {faltan.map((l) => {
+                    const duda = l.clase === "duda";
+                    const href = enlaceWa(contactoDe.get(l.person_id)?.telefono, (duda ? mensajeIndividualDuda : mensajeIndividual)(l.nombre, eventoMsg, ahora));
                     return (
-                      <li key={l.person_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minHeight: 44 }}>
-                        <NombreJugador nombre={l.nombre} personId={l.person_id} negrita />
+                      <li key={l.person_id} data-falta={duda ? "duda" : "sin"} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minHeight: 44 }}>
+                        <span><NombreJugador nombre={l.nombre} personId={l.person_id} negrita />{duda && <span className="ev-duda pequeno"> · duda</span>}</span>
                         {href
                           ? <a className="boton boton-contorno" href={href} target="_blank" rel="noopener noreferrer" data-testid="boton-whatsapp" aria-label={`WhatsApp a ${l.nombre}`}>WhatsApp</a>
                           : <button type="button" className="boton boton-contorno" disabled data-testid="boton-whatsapp" aria-label={`WhatsApp a ${l.nombre}: falta teléfono`}>Falta teléfono</button>}
@@ -275,10 +281,11 @@ export default async function RespuestasGestor({ id }: { id: string }) {
                 <div data-testid="mensaje-grupo"><CopiarTexto texto={msgGrupo} etiqueta="Mensaje al grupo" /></div>
                 <p className="pequeno" style={{ margin: 0 }} data-testid="ayuda-menciones">
                   Para que la mención avise, escribe @ en WhatsApp y busca:{" "}
-                  {sinResponder.map((l, i) => <span key={l.person_id}>{i > 0 && ", "}<b>{contactoDe.get(l.person_id)?.whatsapp_contacto ?? `${l.nombre} (sin contacto guardado)`}</b></span>)}.
+                  {faltan.map((l, i) => <span key={l.person_id}>{i > 0 && ", "}<b>{contactoDe.get(l.person_id)?.whatsapp_contacto ?? `${l.nombre} (sin contacto guardado)`}</b></span>)}.
                 </p>
               </>
             )}
+            <BotonRecordatorio eventoId={evento.id} />
           </section>
         </aside>
       </div>

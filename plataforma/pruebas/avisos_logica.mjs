@@ -469,6 +469,21 @@ console.log('\n== Domingo con la convocatoria YA APROBADA (D173): sin aviso de l
   ok(dda({ ...datos(M('2026-10-13', '09:05')), aprobadas: ['2026-10-25'] }).some((x) => x.eventos.includes('mda2')), 'aprobada OTRA fecha: el domingo 18 sí tiene su aviso');
 }
 
+console.log('\n== «Mensaje a los que faltan» (D189): sin responder y en duda, sin quien tiene una ausencia ese día');
+{
+  const js = [jug('jon', true, true), jug('guille', true, false), jug('ana', true, true), jug('leo', true, true), jug('eva', true, true), { ...jug('baja', true, true), activo: false }];
+  const resp = [
+    { evento_id: 'e28', person_id: 'guille', respuesta: 'duda' },  // duda: le toca
+    { evento_id: 'e28', person_id: 'ana', respuesta: 'duda' },     // duda con una ausencia que cubre el día: no
+    { evento_id: 'e28', person_id: 'eva', respuesta: 'va' },
+  ];
+  const aus = [{ person_id: 'ana', desde: '2026-10-26', hasta: '2026-10-30', motivo: 'viaje' }, { person_id: 'leo', desde: '2026-10-27', hasta: null, motivo: 'lesion' }];
+  const f = P.losQueFaltan(entreno28, js, { respuestas: resp, ausencias: aus, quitados: [] });
+  ok(f.sinResponder.map((j) => j.person_id).join() === 'jon', 'sin responder: Jon (Leo tiene una ausencia: cuenta como «no»; Eva va)', f.sinResponder.map((j) => j.person_id).join());
+  ok(f.enDuda.map((j) => j.person_id).join() === 'guille', 'en duda: Guille; Ana no (su ausencia cubre el día, aunque la duda gane en las pantallas)', f.enDuda.map((j) => j.person_id).join());
+  ok(!P.enDudaDe(jug('eva', true, true), entreno28, { respuestas: resp, ausencias: [], quitados: [] }), 'quien va no está «en duda»');
+}
+
 console.log('\n== Riesgo por equipo (D173): solo gestores; nivel con dos partidos de dificultad distinta, proyección siempre');
 {
   const R = await import('../src/lib/convocatoria/riesgo.ts');

@@ -90,6 +90,20 @@ export function pendienteDe(j: Pick<JugadorPlan, "person_id" | "marcas">, e: Pic
   return !r.fuera && r.respuesta === "sin_responder";
 }
 
+/** ¿Sigue en «duda» (D141) sin una ausencia por periodo que cubra el dia? Tambien le toca «Mensaje a los que faltan» (D189):
+ *  la duda gana a la ausencia en las pantallas (D150), pero a quien ya dijo que no estara esos dias no se le insiste. */
+export function enDudaDe(j: Pick<JugadorPlan, "person_id" | "marcas">, e: Pick<EventoPlan, "id" | "fecha" | "tipo" | "oficial">, d: Pick<DatosPlan, "respuestas" | "ausencias" | "quitados">) {
+  const r = efectivaDe(j, e, d);
+  return !r.fuera && r.respuesta === "duda" && !ausenciaQueCubre(j.person_id, e.fecha, d.ausencias);
+}
+
+/** «Mensaje a los que faltan» de un evento (D189, Respuestas del gestor y «Enviar un recordatorio ahora»): quien no ha
+ *  respondido y quien sigue en «duda», sin quien tiene una ausencia por periodo ese dia ni quien esta fuera (D146). */
+export function losQueFaltan(e: Pick<EventoPlan, "id" | "fecha" | "tipo" | "equipo" | "oficial" | "solo_con_ficha_en">, jugadores: JugadorPlan[], d: Pick<DatosPlan, "respuestas" | "ausencias" | "quitados">) {
+  const inv = invitados(e, jugadores);
+  return { sinResponder: inv.filter((j) => pendienteDe(j, e, d)), enDuda: inv.filter((j) => enDudaDe(j, e, d)) };
+}
+
 type Hueco = { tipo: "lunes" | "plazo" | "cierre" | "dia" | "creado" | "24h"; toca: Date };
 
 /** Los momentos en que un evento pide respuesta. «plazo» (09:00 del dia del plazo) y «cierre» (el plazo del partido) los

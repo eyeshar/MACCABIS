@@ -83,8 +83,8 @@ try {
   const pa = await e.sesion('gestor@pruebas.local', 1280);
   await pa.goto(`${APP}/gestion/asistencia?ver=todos`);
   const celda = async (id, col) => (await pa.locator(`[data-testid=tabla-asistencia] [data-person="${id}"] [data-col=${col}]`).innerText().catch(() => '')).replace(/\s+/g, ' ');
-  ok((await celda('sint-ana', 'entrenos')).includes('1 / 1') && (await celda('sint-cira', 'entrenos')).includes('0 / 1') && (await celda('sint-dani', 'sin')).trim() === '1',
-    'Ana 1/1 (fue, con retraso), Cira 0/1 (con excusa), Dani 1 sin excusa; la lesión de Beto no cuenta', `${await celda('sint-ana', 'entrenos')} | ${await celda('sint-cira', 'entrenos')} | ${await celda('sint-dani', 'sin')}`);
+  ok((await celda('sint-ana', 'entrenos')).includes('2 / 2') && (await celda('sint-cira', 'entrenos')).includes('0 / 1') && (await celda('sint-dani', 'sin')).trim() === '1',
+    'Ana 2/2 (su fila de SportEasy del otro entreno y el pase, con retraso: una vez cada uno), Cira 0/1 (con excusa), Dani 1 sin excusa; la lesión de Beto no cuenta', `${await celda('sint-ana', 'entrenos')} | ${await celda('sint-cira', 'entrenos')} | ${await celda('sint-dani', 'sin')}`);
 
   console.log(`\n== Partido del MdA del ${liga.fecha}, con la convocatoria aprobada`);
   await pg.goto(`${APP}/evento/${liga.id}?tab=pase`);

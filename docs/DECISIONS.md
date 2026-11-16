@@ -1841,3 +1841,19 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 - **Cómo se guarda (lo que la especificación dejaba abierto):** en `asistencia_eventos` (D170) con `origen = 'plataforma'` y `evento_ref` = id del evento. «A tiempo» y «retraso» son `fue`; **el retraso va en el `motivo` (`'retraso'`)**, sin estado nuevo. Columna aditiva `pasado_por_nombre` (quién pasó lista). Función `pase_de_lista(evento, filas)` (`security definer`, `is_gestor()`, solo invitados, `estado null` = quitar su fila); `asistencia_eventos` sigue sin permisos de escritura por la API. Migración `20261110120000_pase_de_lista` (aditiva, `.revertir.sql` ensayado en la pila), **aplicada en el real el 10/11/2026 con D111** (ESTADO).
 - **Sin contar dos veces:** «Asistencia y motivos» (lista y ficha) suma lo guardado y las respuestas de la plataforma en vivo (D161); con pase de lista, **la fila del pase sustituye a la de la respuesta** para esa persona y ese evento (`unirAsistencia`). La función no pisa filas de SportEasy y **no pasa lista de un día que ya está en la asistencia de SportEasy** (hasta el 23/10/2026).
 - **No entra todavía:** el desempate por entrenos de las últimas 4 semanas de la convocatoria sigue contando las respuestas («entrenos en 4 semanas»), no el pase de lista (BACKLOG).
+
+## D193 — Jornada de G3–G6 deducida de las cabeceras; la rutina A espera a las hojas que llegan y para si no ve la unidad de Drive (Iván, 16/11/2026; Code, `docs/jornada-5`, PR #83) — MATIZA D186 y D66
+
+- **Qué pasó (16/11/2026):** Google Drive para Windows estaba cerrado (sin unidad `I:`) y la pasada de las 9:45 salió «Nada nuevo» con las 29 hojas de la J5 ya subidas. `jornadas_hojas.csv` no tenía las líneas de hoy: la tarea del S21 (corre en la nube y comprueba la llegada con el conector de Drive) **nunca lo ha escrito**, aunque los docs decían que lo apuntaba al descargar.
+- **Jornada de G3–G6 (matiza D186):** `npm run jornada` la deduce de las cabeceras: el grupo, por los equipos; la jornada, la última del grupo + 1, **solo si el grupo entero encaja**.
+  - Ningún equipo juega dos veces en esa jornada, contando partidos sin hoja y líneas del registro.
+  - La jornada queda completa: con N equipos, N/2 partidos.
+  - Ningún cruce ya jugado. Con doble vuelta: en la primera, en ningún sentido; en la segunda vale la vuelta con el local cambiado, pero no el mismo local ni un cruce ya jugado dos veces.
+  - Si no encaja, no se deduce ninguna hoja de ese grupo: se apartan (no se copian, siguen en la carpeta) y se avisa por hoja, sin parar la rutina. Las hojas nuevas ya no se copian como `liga_J--_…`.
+  - Contrastado con la J5: 20 de 20 iguales al registro escrito a mano.
+- **El registro `jornadas_hojas.csv`** queda solo para partidos sin hoja, incomparecencias y correcciones; una línea suya manda sobre la deducción. No lo escribe la tarea del S21.
+- **Rutina A (`rutina_a_publicar.ps1`, matiza D66):**
+  - Antes de procesar, si no ve la carpeta de Drive, arranca Google Drive y espera hasta 2 min. Si sigue sin verla, **para y avisa** en lugar de salir «Nada nuevo».
+  - Si alguna hoja de hoy ha llegado hace menos de 10 min (la fecha más reciente entre creación en el PC y modificación), espera de 5 en 5 min, como mucho 30. `-SinEspera` la quita.
+  - Las horas de la tarea (9:45 y 13:00) no cambian.
+- **No se hace (Iván):** que la tarea del S21 compruebe la unidad `I:` (corre en la nube, no la necesita).

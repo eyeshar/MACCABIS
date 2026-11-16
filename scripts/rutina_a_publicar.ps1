@@ -13,6 +13,11 @@
        estado sea uno solo; si le falta plataforma/.env.local, lo copia de allí. npm ci si faltan los node_modules
        o si el pull ha cambiado un package-lock.json.
     1. main al día: para si hay commits sin subir.
+       1b. La carpeta de Drive de las hojas (I:\Mi unidad\Descargas aficion fbm; MACCABIS_HOJAS_DRIVE): si no está,
+           arranca Google Drive para Windows y espera hasta 2 min; si sigue sin estar, para y avisa (16/11/2026: con Drive
+           cerrado, la pasada de las 9:45 salió «Nada nuevo» con las 29 hojas ya subidas).
+       1c. Si alguna hoja de hoy ha llegado hace menos de 10 min, espera de 5 en 5 min, como mucho 30 (el S21 baja las
+           hojas de una en una y FolderSync las sube cada 10 min). -SinEspera la quita.
     2. npm run jornada -- --no-interactivo: ante cualquier duda para (código distinto de 0); sin ficheros nuevos,
        sale sin hacer nada, salvo un lunes en que MdA o MdL jugaron el fin de semana y no está su hoja: entonces avisa
        («Iván, no hay hoja de MdL de la J4: …»; nada si descansamos o el partido está aplazado).
@@ -32,9 +37,10 @@
 
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts\rutina_a_publicar.ps1         (de verdad)
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts\rutina_a_publicar.ps1 -Dry    (en seco: no escribe,
-        no hace pull ni commit; la rama y los cambios locales solo se avisan)
+        no hace pull ni commit, no arranca Drive ni espera; la rama y los cambios locales solo se avisan)
+    ... -SinEspera    (sin la espera del paso 1c)
 #>
-param([switch]$Dry)
+param([switch]$Dry, [switch]$SinEspera)
 
 # Continue: en PowerShell 5.1, con Stop, cualquier aviso de git por stderr (2>$null) se convierte en excepción.
 # Los fallos se miran por el código de salida de cada comando (Parar).
@@ -54,6 +60,12 @@ $Resumen = Join-Path $env:TEMP "rutina_a_resumen_$PID.json"
 # Norma 19 (D187): el Supabase real en el que escribe. Es el mismo que REAL.ref de plataforma/scripts/lib/destino.mjs
 # (pruebas:destino comprueba que coinciden); los scripts lo comparan con la conexión de .env.local y paran si no cuadra.
 $RefReal = 'pqbjnxmknhawlkszwmln'
+# La carpeta de Drive de las hojas (D182; la misma que lee npm run jornada) y Google Drive para Windows, para arrancarlo si
+# está cerrado. Espera a las hojas que aún llegan: $Calma min sin llegadas, de $Paso en $Paso, como mucho $EsperaMax.
+$Drive = if ($env:MACCABIS_HOJAS_DRIVE) { $env:MACCABIS_HOJAS_DRIVE } else { 'I:\Mi unidad\Descargas aficion fbm' }
+$DriveApp = 'C:\Program Files\Google\Drive File Stream\launch.bat'
+$DriveArranque = 120
+$Calma = 10; $Paso = 5; $EsperaMax = 30
 
 $script:inicio = $null           # commit de partida (para dejarlo todo como estaba si falla)
 $script:copiados = @()           # copias nuevas en fuentes_fbm/ de esta ejecución
@@ -183,6 +195,39 @@ try {
     if ($sinSubir -ne '0') { Parar "main tiene $sinSubir commit(s) sin subir." }
   }
   $script:inicio = @(GitOk @('rev-parse', 'HEAD'))[0]
+
+  # 1b. La carpeta de Drive de las hojas (16/11/2026): sin ella no se ve ninguna hoja y la pasada salía «Nada nuevo».
+  if (-not (Test-Path -LiteralPath $Drive)) {
+    Linea "!  no veo $Drive (¿Google Drive para Windows cerrado?)."
+    if (-not $Dry -and (Test-Path -LiteralPath $DriveApp)) {
+      Linea "== arranco Google Drive y espero a que aparezca la unidad (hasta $DriveArranque s)"
+      Start-Process -FilePath $DriveApp -WindowStyle Hidden
+      $t = 0
+      while (-not (Test-Path -LiteralPath $Drive) -and $t -lt $DriveArranque) { Start-Sleep -Seconds 5; $t += 5 }
+    }
+    if (-not (Test-Path -LiteralPath $Drive)) { Parar "no veo la unidad de Google Drive ($Drive): Google Drive para Windows está cerrado o sin sesión. No he procesado nada; ábrelo y relanza (o espera a la siguiente pasada)." }
+    Linea "== $Drive ya está."
+  }
+
+  # 1c. Hojas de hoy que aún llegan (16/11/2026): el S21 las baja de una en una y FolderSync las sube cada 10 minutos; si
+  # alguna hoja de hoy ha llegado (o se ha bajado) hace menos de $Calma min, se espera de $Paso en $Paso min, como mucho
+  # $EsperaMax min. Llegada = la fecha más reciente entre la de creación en el PC (cuando la trae Drive) y la de modificación.
+  if (-not $SinEspera) {
+    $hoy = (Get-Date).Date; $esperado = 0
+    while ($true) {
+      $ultima = Get-ChildItem -LiteralPath $Drive -Filter 'estadisticaPartido_*.xlsx' -File -ErrorAction SilentlyContinue |
+        ForEach-Object { if ($_.CreationTime -gt $_.LastWriteTime) { $_.CreationTime } else { $_.LastWriteTime } } |
+        Where-Object { $_ -ge $hoy } | Sort-Object -Descending | Select-Object -First 1
+      if (-not $ultima) { break }
+      $hace = ((Get-Date) - $ultima).TotalMinutes
+      if ($hace -ge $Calma) { break }
+      if ($Dry) { Linea "!  la última hoja de hoy llegó hace $([int]$hace) min: de verdad esperaría (en seco no)."; break }
+      if ($esperado -ge $EsperaMax) { Linea "!  siguen llegando hojas tras $EsperaMax min de espera: sigo con lo que hay."; break }
+      Linea "== la última hoja de hoy llegó hace $([int]$hace) min: espero $Paso min (llevo $esperado de $EsperaMax)"
+      Start-Sleep -Seconds ($Paso * 60); $esperado += $Paso
+    }
+    if ($esperado) { Linea "== esperados $esperado min a que llegaran las hojas." }
+  }
 
   # 2. Procesar la jornada sin preguntas
   $extra = if ($Dry) { ' --dry' } else { '' }

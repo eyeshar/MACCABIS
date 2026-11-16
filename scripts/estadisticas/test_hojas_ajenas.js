@@ -4,7 +4,8 @@
  * Hojas SINTÉTICAS en carpetas temporales (nunca toca fuentes_fbm/ ni data/). Comprueba que cada hoja se clasifica por su
  * CONTENIDO (temporada por la etiqueta de la cabecera, grupo por los equipos) y nunca por el nombre ni la fecha de descarga:
  *  1. Una hoja de 26/27 de dos equipos sin grupo conocido no se copia y avisa (no para, ni con --no-interactivo).
- *  2. Con esos equipos en el mapa (grupos_fase.json), va a liga/ con su grupo (G5) y sin jornada (J--).
+ *  2. Con esos equipos en el mapa (grupos_fase.json), va a liga/ con su grupo (G5) y la jornada deducida (J01).
+ *  9. (16/11/2026) Sin registro, la jornada de G3-G6 se deduce de las cabeceras si el grupo entero encaja; si no, se aparta.
  *  3. Una hoja de otra temporada (25/26, fuera de alcance) se aparta sin procesar y se avisa.
  *  5. La carpeta de Drive se lee con sus subcarpetas (respaldo_…); Descargas no.
  *  6. Una hoja descuadrada en origen para en G1/G2 y solo avisa en los grupos ajenos.
@@ -38,6 +39,10 @@ const escribe = (dir, nombre, bytes) => { fs.mkdirSync(dir, { recursive: true })
 (async () => {
   const mapa = path.join(tmp('mapa'), 'grupos_fase.json');
   fs.writeFileSync(mapa, JSON.stringify({ '2026-27': { G5: { nombre: 'SAB TAR G1 (prueba)', equipos: ['EQUIPO UNO', 'EQUIPO DOS'] } } }));
+  // Fichero de datos de jornadas temporal desde el principio: nunca el de data/ (la jornada de G3-G6 se deduce de él).
+  const datos0 = path.join(tmp('datos0'), 'jornadas.json');
+  fs.writeFileSync(datos0, JSON.stringify({ temporada: '2026-27', nota: '', partidos: [], jornadas: [] }));
+  process.env.MACCABIS_JORNADAS_AJENAS = datos0;
   const { recoger, copiar } = require('./procesar_jornada');
   const llamada = (desde, base) => recoger({ temporada: '2026-27', desde, base, sinAsistencia: true, log: () => {} });
 
@@ -57,7 +62,7 @@ const escribe = (dir, nombre, bytes) => { fs.mkdirSync(dir, { recursive: true })
   // 2. Con mapa: dos carpetas con el mismo nombre de fichero y la misma hoja
   process.env.MACCABIS_GRUPOS_FASE = mapa;
   r = await llamada([d1, d2], base);
-  ok(r.plan.length === 1 && r.plan[0].destino === 'liga' && /^liga_J--_G5_equipo-uno_vs_equipo-dos_[0-9a-f]{8}\.xlsx$/.test(r.plan[0].nombre), `2. grupo por los equipos, sin jornada (${r.plan[0] && r.plan[0].nombre})`);
+  ok(r.plan.length === 1 && r.plan[0].destino === 'liga' && /^liga_J01_G5_equipo-uno_vs_equipo-dos_[0-9a-f]{8}\.xlsx$/.test(r.plan[0].nombre), `2. grupo por los equipos y jornada deducida de las cabeceras: J01 (${r.plan[0] && r.plan[0].nombre})`);
   ok(r.descartes.length === 1, '4a. la misma hoja en dos carpetas (mismo nombre) se copia una vez');
   copiar(r.plan, { base, log: () => {} });
   ok(fs.readdirSync(path.join(base, 'liga')).length === 1, '2b. copiada a liga/');
@@ -118,12 +123,50 @@ const escribe = (dir, nombre, bytes) => { fs.mkdirSync(dir, { recursive: true })
     '7b. y queda anotada en el fichero de datos (sin marcador)');
   ok(reg.jornadas.length === 1 && reg.jornadas[0].descansa === null, '7c. con 4 equipos y 2 partidos no descansa nadie');
 
-  // Sin registro: se copia igual como J-- y se avisa, también con --no-interactivo (no para la rutina).
-  const d9 = tmp('drive-sin');
-  escribe(d9, 'estadisticaPartido_17112026.xlsx', hoja('EQUIPO UNO', 'EQUIPO TRES', 44, 39, '26/27'));
-  r = await recoger({ temporada: '2026-27', desde: d9, recursivo: [d9], base: base8, sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
-  ok(!(r instanceof Error) && r.plan.length === 1 && /^liga_J--_G5_/.test(r.plan[0].nombre) && !r.plan[0].registro && r.avisos.some(a => /sin jornada/.test(a)),
-    '7d. sin registro: se copia como J-- y avisa, sin parar la rutina');
+  // 9. Sin registro (16/11/2026): la jornada se deduce de las cabeceras (la última del grupo, J4, + 1), solo si el grupo entero
+  //    encaja. Si no, las hojas de ese grupo se apartan (no se copian) y se avisa, también con --no-interactivo (no para la rutina).
+  const sinReg = async (hojas, csv) => {
+    const d = tmp('drive-sin');
+    hojas.forEach(([l, v], i) => escribe(d, `estadisticaPartido_17112026${i ? ` (${i})` : ''}.xlsx`, hoja(l, v, 44 + i, 39, '26/27')));
+    if (csv) fs.writeFileSync(path.join(d, ja.MANIFIESTO), csv);
+    return recoger({ temporada: '2026-27', desde: d, recursivo: [d], base: base8, sinAsistencia: true, estricto: true, log: () => {} }).catch(e => e);
+  };
+  const ligas = r => (r instanceof Error ? [] : r.plan.filter(p => p.destino === 'liga'));
+  r = await sinReg([['EQUIPO UNO', 'EQUIPO TRES']]);
+  ok(!(r instanceof Error) && !ligas(r).length && r.avisos.some(a => /no se deduce su jornada \(la J05 del G5 tendría 1 de 2 partidos/.test(a)),
+    '9a. una sola hoja de la J5 (faltan partidos): se aparta y avisa, sin parar la rutina');
+  r = await sinReg([['EQUIPO UNO', 'EQUIPO TRES'], ['EQUIPO DOS', 'EQUIPO CUATRO']]);
+  ok(ligas(r).length === 2 && ligas(r).every(p => /^liga_J05_G5_/.test(p.nombre) && p.registro && p.registro.jornada === 5 && /deducida/.test(p.que)),
+    `9b. la J5 completa: las dos a la J05, con su registro (${ligas(r).map(p => p.nombre).join(', ')})`);
+  r = await sinReg([['EQUIPO DOS', 'EQUIPO UNO'], ['EQUIPO CUATRO', 'EQUIPO TRES']]);
+  ok(ligas(r).length === 2 && ligas(r).every(p => /^liga_J05_G5_/.test(p.nombre)),
+    '9c. con 4 equipos la J5 ya es la segunda vuelta: la vuelta de los cruces de la J4 (local cambiado) sí encaja');
+
+  // Doble vuelta, directamente con deducirAjenas: grupo de 11 equipos (como los de la fase), primera vuelta = J1..J11.
+  const { deducirAjenas } = require('./procesar_jornada');
+  const E = Array.from({ length: 11 }, (_, i) => `E${i + 1}`);
+  const g11 = { clave: 'G6', nombre: 'prueba', equipos: new Map(E.map(e => [e, { nombre: e }])) };
+  const pj = (j, l, v) => ({ grupo: 'G6', jornada: j, local: l, visitante: v });
+  const cinco = [['E1', 'E2'], ['E3', 'E4'], ['E5', 'E6'], ['E7', 'E8'], ['E9', 'E10']];   // descansa E11
+  const ded = (previos, hojas) => deducirAjenas({ datos: { partidos: previos, jornadas: [] }, nuevos: [],
+    porDeducir: hojas.map(([l, v], i) => ({ f: `h${i}.xlsx`, g: 'G6', local: l, visitante: v, grupo: g11, md5: '0'.repeat(32) })) });
+  let dd = ded([pj(1, 'E2', 'E1')], cinco);
+  ok(dd.length === 5 && dd.every(x => x.error) && dd[0].error.includes('ese cruce ya se jugó'),
+    '9f. primera vuelta (J2 de 11 equipos): un cruce ya jugado, aunque cambie el local, no encaja');
+  dd = ded(Array.from({ length: 11 }, (_, k) => pj(k + 1, 'E2', `E${k === 0 ? 1 : 11}`)).slice(0, 1).concat(Array.from({ length: 10 }, (_, k) => pj(k + 2, 'E11', 'E10'))), cinco);
+  ok(dd.length === 5 && dd.every(x => !x.error && x.jornada === 12),
+    '9g. segunda vuelta (J12): la vuelta de un cruce de la primera (local cambiado) encaja');
+  dd = ded([pj(1, 'E1', 'E2'), ...Array.from({ length: 10 }, (_, k) => pj(k + 2, 'E11', 'E10'))], cinco);
+  ok(dd.every(x => x.error) && dd[0].error.includes('ese cruce ya se jugó'),
+    '9h. segunda vuelta: el mismo cruce con el mismo local otra vez no encaja');
+  dd = ded([pj(1, 'E2', 'E1'), pj(12, 'E1', 'E2'), ...Array.from({ length: 11 }, (_, k) => pj(k + 2, 'E11', 'E10'))], cinco);
+  ok(dd.every(x => x.error), '9i. un cruce ya jugado dos veces no encaja');
+  r = await sinReg([['EQUIPO UNO', 'EQUIPO TRES'], ['EQUIPO UNO', 'EQUIPO CUATRO']]);
+  ok(!ligas(r).length && r.avisos.some(a => /EQUIPO UNO juega más de un partido en la J05/.test(a)),
+    '9d. un equipo dos veces (hojas de dos jornadas mezcladas): no se deduce ninguna');
+  r = await sinReg([['EQUIPO UNO', 'EQUIPO TRES']], 'archivo;grupo;jornada;local;visitante;marcador;fecha;hora;motivo\n;G5;5;EQUIPO DOS;EQUIPO CUATRO;40-30;15/11/2026;;sin hoja\n');
+  ok(ligas(r).length === 1 && /^liga_J05_G5_/.test(ligas(r)[0].nombre),
+    '9e. con el partido sin hoja de esa jornada en el registro, la jornada está completa: la hoja va a la J05');
 
   // Ya en el fichero de datos (la misma hoja con otro contenido, p. ej. corregida): toma esa jornada; si el registro dice otra, duda.
   const d10 = tmp('drive-otra');

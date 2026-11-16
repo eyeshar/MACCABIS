@@ -1,7 +1,8 @@
 /**
  * test_rutina_a.js — las dos mejoras de la rutina A del 09/11/2026 (BACKLOG), con datos sintéticos (sin calendario real, D185):
  *   1. aviso si falta NUESTRA hoja un lunes con «Nada nuevo» (hoja_nuestra.js y rutina_a_publicar.ps1);
- *   2. aplazado ≠ hoja que falta (liga.jornadasDelGrupo y liga.aplazadoDe).
+ *   2. aplazado ≠ hoja que falta (liga.jornadasDelGrupo y liga.aplazadoDe);
+ *   3. (16/11/2026) la fecha de una jornada con NUESTRO partido aplazado es la del otro grupo (liga.corregirFechasMovidas).
  * Los casos copian la J4 (08/11/2026): MdA descansa, MdL juega contra Trascendedores y RIF–Chupitimanguis está aplazado.
  *
  *   npm run test:rutina-a
@@ -102,6 +103,40 @@ comprueba(liga.aplazadoDe(cfg, g1, 'Chupitimanguis', 'RIF') && liga.aplazadoDe(c
   'la hoja del aplazado, cuando llegue, va a la J4 (en cualquier orden)');
 comprueba(liga.aplazadoDe(cfg, { clave: 'G2' }, 'RIF', 'Chupitimanguis') === null && liga.aplazadoDe(cfg, g1, 'RIF', 'Wild Boys') === null,
   'otro grupo u otro cruce no es el aplazado');
+
+// ------------------------------------------------------------------ 3. fecha de la jornada con nuestro partido aplazado
+// Copia la J5 (15/11/2026): MdA–Nabuco TD se aplaza al 20/12 y el calendario trae esa fecha para la J5 del G1.
+console.log('\n== Fecha de la jornada con nuestro partido aplazado (G1 J5: MdA–Nabuco TD al 20/12)');
+const calJ5 = [
+  { equipo: 'MDA', fase: 'liga', jornada: 4, fecha: '2026-11-08', descansa: true, rival: null },
+  { equipo: 'MDL', fase: 'liga', jornada: 4, fecha: '2026-11-08', rival: 'TRASCENDEDORES C.B.' },
+  { equipo: 'MDA', fase: 'liga', jornada: 5, fecha: '2026-12-20', rival: 'NABUCO TD' },
+  { equipo: 'MDL', fase: 'liga', jornada: 5, fecha: '2026-11-15', rival: 'VANNER' },
+  { equipo: 'MDA', fase: 'liga', jornada: 6, fecha: '2026-11-22', rival: 'RIF' },
+  { equipo: 'MDL', fase: 'liga', jornada: 6, fecha: '2026-11-22', rival: 'CRAPS' },
+];
+const NABUCO = { grupo: 'G1', jornada: 5, local: 'MdA', visitante: 'Nabuco TD', fecha: '2026-12-20', nota: 'prueba' };
+const gruposDe = cal => {
+  const gs = [{ clave: 'G1', nuestro: 'MDA', fechas: {} }, { clave: 'G2', nuestro: 'MDL', fechas: {} }];
+  for (const p of cal) gs.find(g => g.nuestro === p.equipo).fechas[p.jornada] = p.fecha;
+  return gs;
+};
+let gs = gruposDe(calJ5);
+let movidas = liga.corregirFechasMovidas(gs, calJ5, { nombres_club: NOMBRES, liga: { aplazados: [NABUCO] } });
+comprueba(igual(movidas, [['G1', 5]]) && gs[0].fechas[5] === '2026-11-15' && gs[1].fechas[5] === '2026-11-15',
+  'anotado en liga.aplazados: la J5 del G1 toma la fecha de la J5 del G2 (15/11)', JSON.stringify(gs.map(g => g.fechas)));
+comprueba(liga.jornadaPorFecha(gs[0], '2026-11-16') === 5, 'el lunes 16/11 la última jornada jugada del G1 es la J5 (no la J4)');
+gs = gruposDe(calJ5);
+movidas = liga.corregirFechasMovidas(gs, calJ5, { nombres_club: NOMBRES, liga: { aplazados: [] } });
+comprueba(igual(movidas, [['G1', 5]]) && gs[0].fechas[5] === '2026-11-15',
+  'ya quitado de liga.aplazados: su fecha (20/12) es posterior a la J6 y sigue contando como movido', JSON.stringify(gs[0].fechas));
+const calSinMover = calJ5.map(p => (p.equipo === 'MDA' && p.jornada === 5 ? { ...p, fecha: '2026-11-15' } : p));
+gs = gruposDe(calSinMover);
+movidas = liga.corregirFechasMovidas(gs, calSinMover, { nombres_club: NOMBRES, liga: { aplazados: [] } });
+comprueba(movidas.length === 0 && gs[0].fechas[4] === '2026-11-08', 'sin aplazado no se toca ninguna fecha (el descanso de la J4 tampoco)', JSON.stringify(movidas));
+gs = gruposDe(calJ5).slice(0, 1);
+movidas = liga.corregirFechasMovidas(gs, calJ5.filter(p => p.equipo === 'MDA'), { nombres_club: NOMBRES, liga: { aplazados: [NABUCO] } });
+comprueba(!(5 in gs[0].fechas), 'sin el otro grupo para copiar, la jornada se queda sin fecha (mejor que la del aplazado)', JSON.stringify(gs[0].fechas));
 
 console.log(`\n${ok} OK, ${fallos} FALLO(S)`);
 process.exit(fallos ? 1 : 0);

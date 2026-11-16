@@ -9,8 +9,9 @@
  *   npm run jornada -- --desde <carpeta> (busca en otra carpeta en vez de Descargas; la de Drive se suma igual)
  *   npm run jornada -- --drive <carpeta> (otra ruta para la carpeta de Drive; también MACCABIS_HOJAS_DRIVE; --sin-drive la quita)
  *   npm run jornada -- --jornada N       (las hojas de liga donde no jugamos son de la jornada N)
- *   (G3-G6, D186: la jornada sale del registro de descargas jornadas_hojas.csv de la carpeta de Drive y queda en
- *    data/jornadas_grupos_ajenos_<temporada>.json; sin ella, J-- y aviso)
+ *   (G3-G6, D186: la jornada se deduce de las cabeceras, la última del grupo + 1 si el grupo entero encaja, y queda en
+ *    data/jornadas_grupos_ajenos_<temporada>.json; jornadas_hojas.csv de la carpeta de Drive, solo para corregir y para
+ *    partidos sin hoja o incomparecencias; si no encaja, la hoja se aparta y se avisa)
  *   npm run jornada -- --dry             (sólo dice qué haría)
  *   npm run jornada -- --no-interactivo  (para la rutina A automática, D66: ante cualquier duda PARA con código
  *                                        distinto de 0, deshace las copias y no escribe nada; sin ficheros
@@ -215,9 +216,10 @@ async function recoger(o) {
       const que = `hoja de liga ${id.grupo.clave} ${id.hoja.local} - ${id.hoja.visitante}`;
       if (repetido(f, que)) continue;
       if (id.grupo.ajeno) {
-        // Sin calendario (D186): la jornada sale de --jornada, del registro de descargas de la rutina A (jornadas_hojas.csv
-        // en la carpeta de Drive) o, si el partido ya estaba, de data/jornadas_grupos_ajenos_<temporada>.json. Sin ninguna,
-        // se copia igual (J--) y se avisa: no bloquea nada.
+        // Sin calendario (D186): la jornada sale de --jornada, del registro (jornadas_hojas.csv en la carpeta de Drive: solo
+        // correcciones, partidos sin hoja e incomparecencias) o, si el partido ya estaba, de data/jornadas_grupos_ajenos_<temporada>.json.
+        // Sin ninguna, se DEDUCE de las cabeceras (16/11/2026): la última jornada del grupo + 1, y solo si el grupo entero
+        // encaja (ver `deducirAjenas`); si no, la hoja se aparta (no se copia, sigue en la carpeta) y se avisa.
         const { local, visitante } = id.hoja, g = id.grupo.clave;
         if (!ajenas.manifiesto) {
           ajenas.manifiesto = jornadasAjenas.leerManifiesto(ruta(jornadasAjenas.MANIFIESTO), id.ctx.grupos);
@@ -235,8 +237,11 @@ async function recoger(o) {
           const choca = [...ajenas.datos.partidos, ...ajenas.nuevos].find(p => p.grupo === g && p.jornada === jor && [p.local, p.visitante].some(n => [local, visitante].some(m => normEquipo(n) === normEquipo(m))));
           if (choca) duda(`${f} (${g} ${local} - ${visitante}) no puede ser de la ${J(jor)}: ${choca.local} - ${choca.visitante} ya es de esa jornada.`);
         }
-        if (!jor) aviso(`${f} (${g} ${local} - ${visitante}): sin jornada (no está en ${jornadasAjenas.MANIFIESTO} de la carpeta de Drive). Se carga igual como J--; apúntala en data/jornadas_grupos_ajenos_${o.temporada}.json.`);
-        const jorA = jor ? J(jor) : 'J--';
+        if (!jor) {
+          (ajenas.porDeducir || (ajenas.porDeducir = [])).push({ f, g, local, visitante, grupo: id.grupo, md5: md5(ruta(f)), ruta: ruta(f) });
+          continue;
+        }
+        const jorA = J(jor);
         const nombre = `liga_${jorA}_${g}_${slug(local)}_vs_${slug(visitante)}_${md5(ruta(f)).slice(0, 8)}.xlsx`;
         const registro = jor && !enDatos ? { grupo: g, jornada: jor, local, visitante, hoja: nombre, comprobado: true } : null;
         if (registro) ajenas.nuevos.push(registro);
@@ -298,6 +303,16 @@ async function recoger(o) {
     plan.push({ origen: f, ruta: ruta(f), destino: 'hojas', nombre, que });
   }
 
+  // Hojas de G3-G6 sin jornada en el registro ni en los datos: se deduce de las cabeceras, grupo a grupo (16/11/2026).
+  for (const r of deducirAjenas(ajenas)) {
+    if (r.error) { aviso(r.error); continue; }
+    const nombre = `liga_${J(r.jornada)}_${r.g}_${slug(r.local)}_vs_${slug(r.visitante)}_${r.md5.slice(0, 8)}.xlsx`;
+    const registro = { grupo: r.g, jornada: r.jornada, local: r.local, visitante: r.visitante, hoja: nombre, comprobado: true };
+    ajenas.nuevos.push(registro);
+    plan.push({ origen: r.f, ruta: r.ruta, destino: 'liga', nombre, registro,
+      que: `liga ${r.g} (${r.grupo.nombre}) ${J(r.jornada)} (deducida de las cabeceras): ${r.local} - ${r.visitante}` });
+  }
+
   // Asistencia: el export de SportEasy más reciente modificado desde el inicio de temporada.
   const bilan = o.sinAsistencia ? undefined : todos.filter(f => /^bilan_presence.*\.xlsx$/i.test(path.basename(f)) && !path.basename(f).startsWith('~$'))
     .map(f => ({ f, t: fs.statSync(ruta(f)).mtime })).filter(x => x.t.toISOString().slice(0, 10) >= cfg.inicio)
@@ -333,6 +348,61 @@ async function recoger(o) {
 }
 
 /**
+ * Jornada de las hojas nuevas de G3-G6 que no están en el registro ni en los datos, deducida de sus cabeceras (16/11/2026;
+ * sustituye a apuntarlas al descargar). Por grupo: la jornada es la última del grupo en los datos + 1, y solo vale si TODO el
+ * grupo encaja: ningún equipo juega dos veces en esa jornada (contando lo que ya está en ella: hojas del registro, partidos sin
+ * hoja), ningún cruce se ha jugado ya y la jornada queda completa (con N equipos, N/2 partidos redondeando hacia abajo). Si algo
+ * no encaja, no se deduce ninguna hoja de ese grupo: se apartan (no se copian, siguen en la carpeta) con un aviso por hoja que
+ * dice por qué. Se resuelve apuntándola en jornadas_hojas.csv, o con --jornada N.
+ * Devuelve [{ f, g, local, visitante, grupo, md5, ruta, jornada }] o [{ error }].
+ */
+function deducirAjenas(ajenas) {
+  const pend = ajenas.porDeducir || [];
+  if (!pend.length) return [];
+  const datos = ajenas.datos || { partidos: [], jornadas: [] };
+  const sinHoja = ((ajenas.manifiesto || {}).entradas || []).filter(e => e.sinHoja);
+  const n = normEquipo, cruce = (a, b) => [n(a), n(b)].sort().join('|');
+  const out = [];
+  for (const g of [...new Set(pend.map(p => p.g))]) {
+    const hojas = pend.filter(p => p.g === g), grupo = hojas[0].grupo;
+    const ultima = Math.max(0, ...datos.partidos.filter(p => p.grupo === g).map(p => p.jornada));
+    const jornada = ultima + 1;
+    const ya = [...datos.partidos.filter(p => p.grupo === g && p.jornada === jornada),
+      ...(ajenas.nuevos || []).filter(p => p.grupo === g && p.jornada === jornada),
+      ...((datos.jornadas || []).find(j => j.grupo === g && j.jornada === jornada) || { huecos: [] }).huecos || [],
+      ...sinHoja.filter(e => e.grupo === g && e.jornada === jornada)];
+    // Doble vuelta (22 jornadas con 11 equipos): en la primera, un cruce ya jugado (en cualquier sentido) no encaja; en la
+    // segunda, sí la vuelta (local cambiado), pero no un cruce ya jugado dos veces o con el mismo local.
+    const jugadosG = datos.partidos.filter(p => p.grupo === g);
+    const nEq = grupo.equipos ? grupo.equipos.size : 0, vuelta = nEq % 2 ? nEq : nEq - 1;
+    const yaJugado = h => {
+      const prev = jugadosG.filter(p => cruce(p.local, p.visitante) === cruce(h.local, h.visitante));
+      if (!prev.length) return false;
+      if (jornada <= vuelta || prev.length >= 2) return true;
+      return prev.some(p => n(p.local) === n(h.local));
+    };
+    const motivos = new Map();
+    const usa = new Map();
+    for (const p of [...ya.map(x => ({ ...x, previo: true })), ...hojas]) for (const e of [p.local, p.visitante]) {
+      if (!usa.has(n(e))) usa.set(n(e), []);
+      usa.get(n(e)).push(p);
+    }
+    for (const h of hojas) {
+      if (yaJugado(h)) motivos.set(h, `ese cruce ya se jugó en el ${g}`);
+      const rep = [h.local, h.visitante].find(e => usa.get(n(e)).length > 1);
+      if (rep && !motivos.has(h)) motivos.set(h, `${rep} juega más de un partido en la J${String(jornada).padStart(2, '0')}`);
+    }
+    const equipos = nEq;
+    const partidos = ya.length + hojas.length, hacen = Math.floor(equipos / 2);
+    const completo = partidos === hacen;
+    if (!motivos.size && completo) { hojas.forEach(h => out.push({ ...h, jornada })); continue; }
+    const general = !completo ? `la J${String(jornada).padStart(2, '0')} del ${g} tendría ${partidos} de ${hacen} partidos (¿falta alguna hoja o es de otra jornada?)` : 'otra hoja del grupo no encaja';
+    for (const h of hojas) out.push({ error: `${h.f} (${g} ${h.local} - ${h.visitante}): no se deduce su jornada (${motivos.get(h) || general}). No se copia; sigue en la carpeta. Apúntala en jornadas_hojas.csv de la carpeta de Drive o usa --jornada N.` });
+  }
+  return out;
+}
+
+/**
  * Copia el plan con copia segura. Devuelve cuántos ficheros nuevos ha copiado. Si algo choca, lanza un Error.
  * Si se pasa o.copiados (array), anota ahí la ruta de cada copia nueva (para deshacerlas con --no-interactivo).
  */
@@ -358,7 +428,7 @@ function copiar(plan, o) {
   return nuevos;
 }
 
-module.exports = { recoger, copiar, hashesCargados, hojasPorJornada };
+module.exports = { recoger, copiar, hashesCargados, hojasPorJornada, deducirAjenas };
 
 if (require.main === module) {
   const args = process.argv.slice(2);

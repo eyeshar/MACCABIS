@@ -49,6 +49,29 @@ const AVISO_CLASIFICACION = 'Clasificación calculada con las Bases del 47 JDM a
 const limpiaNombre = nombreTitulo;   // nombres en formato Título, los mismos que la pestaña Rivales 26/27
 const slug = s => normEquipo(s).toLowerCase().replace(/ /g, '-');
 
+/** Fecha de la jornada cuando NUESTRO partido se ha movido (16/11/2026, J5 del G1): el calendario trae la nueva fecha de
+ *  nuestro partido (20/12), no la de la jornada. Movido = anotado en `liga.aplazados` para esa jornada, o con fecha posterior
+ *  a la de nuestra jornada siguiente (así sigue valiendo cuando se juegue y se quite de la lista). Entonces la jornada toma
+ *  la fecha del otro grupo nuestro (MdA y MdL juegan la fase los mismos domingos) o, si no la hay, se queda sin fecha.
+ *  Nuestro partido conserva la suya (`fechasNuestro`). Sin esto, los demás partidos de la jornada salían con la fecha del
+ *  aplazado y `jornadaPorFecha` no daba la jornada por jugada. Cambia `fechas` de los grupos propios; devuelve [[clave, j]]. */
+function corregirFechasMovidas(propios, partidos, cfg) {
+  const movido = (g, j) => {
+    const q = partidos.find(q => q.fase === 'liga' && q.equipo === g.nuestro && q.jornada === j && q.rival);
+    if (!q || !q.fecha) return false;
+    const apl = aplazadoDe(cfg, g, (cfg.nombres_club[q.equipo] || [])[1] || q.equipo, q.rival);
+    if (apl && apl.jornada === j) return true;
+    const sig = Object.keys(g.fechas).map(Number).filter(k => k > j).sort((a, b) => a - b)[0];
+    return sig != null && q.fecha > g.fechas[sig];
+  };
+  const mover = propios.flatMap(g => Object.keys(g.fechas).map(Number).filter(j => movido(g, j)).map(j => [g, j]));
+  for (const [g, j] of mover) {
+    const otro = propios.find(x => x !== g && x.fechas[j] && !mover.some(([y, k]) => y === x && k === j));
+    if (otro) g.fechas[j] = otro.fechas[j]; else delete g.fechas[j];
+  }
+  return mover.map(([g, j]) => [g.clave, j]);
+}
+
 /** Grupos y equipos desde el calendario propio. */
 function contexto(temporada) {
   const cfg = CONFIG[temporada];
@@ -59,16 +82,18 @@ function contexto(temporada) {
     const m = String(info.grupo).match(/\bG(\d+)\s*$/);
     const g = m ? 'G' + m[1] : info.grupo;
     const propio = cfg.nombres_club[codigo][1] || codigo;   // "MdA"
-    grupos[g] = { clave: g, nombre: info.grupo, nuestro: codigo, equipos: new Map(), fechas: {}, jornadas: new Set() };
+    grupos[g] = { clave: g, nombre: info.grupo, nuestro: codigo, equipos: new Map(), fechas: {}, fechasNuestro: {}, jornadas: new Set() };
     grupos[g].equipos.set(normEquipo(codigo), { id: slug(codigo), nombre: propio, nuestro: true, codigo });
   }
   for (const p of cal.partidos.filter(p => p.fase === 'liga')) {
     const g = Object.values(grupos).find(x => x.nuestro === p.equipo);
     g.jornadas.add(p.jornada);
     if (p.fecha) g.fechas[p.jornada] = p.fecha;
+    if (p.fecha && p.rival) g.fechasNuestro[p.jornada] = p.fecha;
     if (p.rival && !g.equipos.has(normEquipo(p.rival)))
       g.equipos.set(normEquipo(p.rival), { id: slug(p.rival), nombre: limpiaNombre(p.rival), nuestro: false });
   }
+  corregirFechasMovidas(Object.values(grupos), cal.partidos, cfg);
   // Grupos AJENOS de la fase (D183): sin calendario ni jornadas; sus equipos salen de grupos_fase.json.
   // MACCABIS_GRUPOS_FASE: otro mapa de grupos (solo para las pruebas).
   const mapa = process.env.MACCABIS_GRUPOS_FASE ? JSON.parse(fs.readFileSync(process.env.MACCABIS_GRUPOS_FASE, 'utf8')) : GRUPOS_FASE;
@@ -411,7 +436,10 @@ function construir(temporada, { hoy = hoyMadrid() } = {}) {
     const juegos = mios.map(p => {
       const h = p.hoja, [l, v] = h.equipos;
       const eq = n => g.equipos.get(normEquipo(n));
-      const j = { jornada: p.jornada, fecha: g.fechas[p.jornada] || null, local: eq(h.local), visitante: eq(h.visitante), pl: l.totales.pts, pv: v.totales.pts, nuestro: p.propio,
+      const apl = aplazadoDe(ctx.cfg, g, h.local, h.visitante);
+      const fechaPartido = (p.propio && g.fechasNuestro && g.fechasNuestro[p.jornada])
+        || (apl && apl.jornada === p.jornada && apl.fecha && apl.fecha <= hoy && apl.fecha) || g.fechas[p.jornada] || null;
+      const j = { jornada: p.jornada, fecha: fechaPartido, local: eq(h.local), visitante: eq(h.visitante), pl: l.totales.pts, pv: v.totales.pts, nuestro: p.propio,
         est: { local: estEquipo(l.totales), visitante: estEquipo(v.totales) } };
       if (j.pl === j.pv) errores.push(`${h.fichero}: empate ${j.pl}-${j.pv}; en baloncesto hay prórroga, revisa la hoja.`);
       privado.push({ grupo: g.clave, jornada: p.jornada, fecha: j.fecha, local: j.local.nombre, visitante: j.visitante.nombre, pl: j.pl, pv: j.pv, fichero: h.fichero, equipos: h.equipos.map((e, i) => ({ equipo: (i ? j.visitante : j.local).nombre, jugadores: e.jugadores, totales: e.totales })) });
@@ -471,7 +499,7 @@ function construir(temporada, { hoy = hoyMadrid() } = {}) {
   return { publico, privado, ajenos, errores, avisos, aplazados: aplazadosTexto, fuentes: partidos.length };
 }
 
-module.exports = { construir, jornadasDelGrupo, aplazadoDe, validarPartidos, nombresRepetidos, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
+module.exports = { construir, jornadasDelGrupo, aplazadoDe, corregirFechasMovidas, validarPartidos, nombresRepetidos, contexto, identificarHoja, jornadaPorFecha, grupoDe, clasificar, idPartido, publicadas, retrocesos, comprobarNoRetrocede };
 
 if (require.main === module) {
   const args = process.argv.slice(2);

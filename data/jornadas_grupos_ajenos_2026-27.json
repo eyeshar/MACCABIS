@@ -163,6 +163,46 @@
       "comprobado": true
     },
     {
+      "grupo": "G3",
+      "jornada": 5,
+      "local": "PANATHIMANKOS A",
+      "visitante": "SAINZ DE VICUÑA",
+      "hoja": "liga_J05_G3_panathimankos-a_vs_sainz-de-vicuna_c1776c60.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 5,
+      "local": "MO ES MO",
+      "visitante": "SPV",
+      "hoja": "liga_J05_G3_mo-es-mo_vs_spv_9a4ab61d.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 5,
+      "local": "GUINDILLAS",
+      "visitante": "BEBERLY-TRONAS",
+      "hoja": "liga_J05_G3_guindillas_vs_beberly-tronas_f2a4e159.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 5,
+      "local": "GUERREROS MASTER",
+      "visitante": "CAFÉ HNOS. VELASCO SETTAS",
+      "hoja": "liga_J05_G3_guerreros-master_vs_cafe-hnos-velasco-settas_cff482a3.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G3",
+      "jornada": 5,
+      "local": "LOS ANGELES DE JUANAS",
+      "visitante": "SUPERLOSERS",
+      "hoja": "liga_J05_G3_los-angeles-de-juanas_vs_superlosers_cdf65cc1.xlsx",
+      "comprobado": true
+    },
+    {
       "grupo": "G4",
       "jornada": 1,
       "local": "MAD FLOWERS",
@@ -323,6 +363,46 @@
       "comprobado": true
     },
     {
+      "grupo": "G4",
+      "jornada": 5,
+      "local": "PANATHIMANKOS B",
+      "visitante": "PROYECTO DARWIN II",
+      "hoja": "liga_J05_G4_panathimankos-b_vs_proyecto-darwin-ii_c9eb3322.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 5,
+      "local": "MAD FLOWERS",
+      "visitante": "THE MOLOCHOFFF COCKTAIL",
+      "hoja": "liga_J05_G4_mad-flowers_vs_the-molochofff-cocktail_6357651e.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 5,
+      "local": "OLMOS RENACIDOS",
+      "visitante": "PUMAS RABIOSOS",
+      "hoja": "liga_J05_G4_olmos-renacidos_vs_pumas-rabiosos_21742993.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 5,
+      "local": "IMSERSO",
+      "visitante": "ARTIC YONKIS",
+      "hoja": "liga_J05_G4_imserso_vs_artic-yonkis_09b188ff.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G4",
+      "jornada": 5,
+      "local": "KRIPTOS TABERNA DE LA QUINA",
+      "visitante": "UNICAJA DE CERVEZAS",
+      "hoja": "liga_J05_G4_kriptos-taberna-de-la-quina_vs_unicaja-de-cervezas_1472a50c.xlsx",
+      "comprobado": true
+    },
+    {
       "grupo": "G5",
       "jornada": 1,
       "local": "ACCIÓN MUTANTE",
@@ -464,6 +544,46 @@
       "local": "LOS JUGONES",
       "visitante": "CHIQUI Y DESGUACES",
       "hoja": "liga_J04_G5_los-jugones_vs_chiqui-y-desguaces_def59e98.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 5,
+      "local": "DEVIL HOOPERS",
+      "visitante": "LOS JUGONES",
+      "hoja": "liga_J05_G5_devil-hoopers_vs_los-jugones_8387d059.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 5,
+      "local": "CHIQUI Y DESGUACES",
+      "visitante": "ACCIÓN MUTANTE",
+      "hoja": "liga_J05_G5_chiqui-y-desguaces_vs_accion-mutante_efd08e06.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 5,
+      "local": "NUSOTROS",
+      "visitante": "PERROS BB",
+      "hoja": "liga_J05_G5_nusotros_vs_perros-bb_39aad071.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 5,
+      "local": "LLORONES FUERA",
+      "visitante": "TAURUS",
+      "hoja": "liga_J05_G5_llorones-fuera_vs_taurus_51a16b25.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G5",
+      "jornada": 5,
+      "local": "ESTUDIABANTES",
+      "visitante": "TROTAMUNDOS",
+      "hoja": "liga_J05_G5_estudiabantes_vs_trotamundos_38a78b4a.xlsx",
       "comprobado": true
     },
     {
@@ -625,6 +745,46 @@
       "visitante": "FAKIN PANZAS",
       "hoja": "liga_J04_G6_uturbu_vs_fakin-panzas_7afd0601.xlsx",
       "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 5,
+      "local": "PER C.B.",
+      "visitante": "ROMA BASKET",
+      "hoja": "liga_J05_G6_per-c-b_vs_roma-basket_d588c377.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 5,
+      "local": "MAFIA DEL ALCOHOL",
+      "visitante": "TOTEM BLUE",
+      "hoja": "liga_J05_G6_mafia-del-alcohol_vs_totem-blue_e555c98f.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 5,
+      "local": "FAKIN PANZAS",
+      "visitante": "CACIQUES",
+      "hoja": "liga_J05_G6_fakin-panzas_vs_caciques_eac752df.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 5,
+      "local": "TRIFASIC BLUNTERS",
+      "visitante": "UTURBU",
+      "hoja": "liga_J05_G6_trifasic-blunters_vs_uturbu_4dff2f35.xlsx",
+      "comprobado": true
+    },
+    {
+      "grupo": "G6",
+      "jornada": 5,
+      "local": "DRINK TEAM",
+      "visitante": "CB MADRID",
+      "hoja": "liga_J05_G6_drink-team_vs_cb-madrid_fba9ab14.xlsx",
+      "comprobado": true
     }
   ],
   "jornadas": [
@@ -653,6 +813,12 @@
       "huecos": []
     },
     {
+      "grupo": "G3",
+      "jornada": 5,
+      "descansa": "ESTRELLA NEGRA",
+      "huecos": []
+    },
+    {
       "grupo": "G4",
       "jornada": 1,
       "descansa": "UNICAJA DE CERVEZAS",
@@ -674,6 +840,12 @@
       "grupo": "G4",
       "jornada": 4,
       "descansa": "PANATHIMANKOS B",
+      "huecos": []
+    },
+    {
+      "grupo": "G4",
+      "jornada": 5,
+      "descansa": "HIPERDESGUACE VICALVARO",
       "huecos": []
     },
     {
@@ -717,6 +889,12 @@
       "huecos": []
     },
     {
+      "grupo": "G5",
+      "jornada": 5,
+      "descansa": "BARTEAM OSBORNE",
+      "huecos": []
+    },
+    {
       "grupo": "G6",
       "jornada": 1,
       "descansa": "CACIQUES",
@@ -738,6 +916,12 @@
       "grupo": "G6",
       "jornada": 4,
       "descansa": "PER C.B.",
+      "huecos": []
+    },
+    {
+      "grupo": "G6",
+      "jornada": 5,
+      "descansa": "CLUB AGUIRRE",
       "huecos": []
     }
   ]

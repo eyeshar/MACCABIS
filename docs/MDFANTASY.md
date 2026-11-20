@@ -170,3 +170,15 @@ queda parado (nadie llega a los caros) o demasiado suelto, se toca `ingresoPorPu
   se corrige si los puntos cambian. Si la hoja se corrige después, la jornada se vuelve a puntuar sola.
 - La caja no se guarda: es la suma de los movimientos.
 - Las jornadas anteriores a que alguien se apunte se puntúan igual (hacen falta para el valor de mercado), sin avisar a nadie.
+
+### Capturas del manual y de «Cómo se juega»
+
+`npm run fantasy:manual` (con `npm run fantasy:probar -- --confirmar <ref> --sin-ventanas` en otra consola) saca las siete
+pantallas del manual a 390 px, recortadas a su zona, sin la barra inferior y de 1.400 px de alto como mucho:
+`manual_01_crear`, `02_plantilla`, `03_mercado`, `04_clausulazo`, `05_jornada`, `06_ranking` y `07_carta`.
+
+- Con los nombres de verdad, en `privado/mockups_liga/rediseno/mdfantasy/manual/` (fuera de git): para el manual.
+- Con nombres inventados, en `plataforma/src/app/mdfantasy/como-se-juega/imagenes/`: las que ilustran «Cómo se juega», una por
+  sección (el mercado lleva dos), con texto alternativo. El repositorio es público y esas pantallas enseñan el compromiso de
+  cada jugador: por eso ahí no van nombres reales.
+- Las cifras del texto de «Cómo se juega» salen de Ajustes; las de las imágenes, no: si cambia un ajuste, se regeneran.

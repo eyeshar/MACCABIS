@@ -46,6 +46,7 @@
 - **Jornada:** «MdL G» pasa a «Nuestros partidos del 15/11: MdA ganó · MdL perdió».
 - **Pruebas de pantalla nuevas:** bloqueo del gestor con el borrador (sin botones en Mercado ni en Plantilla) y «Clausulazos cerrados» desde el sábado a las 20:00; el podio se prueba ya con tres mánagers.
 - **Quinta tanda (decidido por Iván, 20/11/2026):** una corrección de asistencia ya no mueve el valor de mercado hasta la siguiente jornada; pesos nuevos de compromiso (rápido +2, entreno +2, **tope semanal 6**, editable en Ajustes) y economía recalibrada (**caja 11 M, ingreso 1,5 M + 0,04 M por punto**). Detalle en D196 y `docs/MDFANTASY.md`.
+- **Capturas del manual (20/11/2026):** `npm run fantasy:manual`, con la demo de `fantasy:probar` en marcha, saca siete pantallas a 390 px (recortadas, sin barra inferior, 1.400 px de alto como mucho) en `privado/mockups_liga/rediseno/mdfantasy/manual/` con los nombres de verdad (fuera de git) y las mismas con **nombres inventados** en `plataforma/src/app/mdfantasy/como-se-juega/imagenes/`, que son las que ilustran «Cómo se juega» (el repositorio es público y esas pantallas llevan el compromiso de cada jugador). Las cifras de las imágenes son las del día en que se sacaron: si cambia un ajuste, se regeneran.
 
 **Sexta tanda (Iván, 20/11/2026):**
 - **«Cómo se juega»** (`/mdfantasy/como-se-juega`): enlazada desde Inicio (botón a la vista para quien no tiene equipo) y bajo las pestañas. Todas las cifras salen de los parámetros vigentes; si un gestor cambia un ajuste, la página cambia sola.

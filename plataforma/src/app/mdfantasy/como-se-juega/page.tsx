@@ -5,6 +5,15 @@ import Volver from "@/components/nav/Volver";
 import { exigirSesion } from "@/lib/sesion";
 import { cargarFantasy, esFantasy } from "@/lib/fantasy/datos";
 import "../fantasy.css";
+// Las capturas que ilustran la página (las mismas pantallas del manual, con NOMBRES INVENTADOS: el repositorio es público).
+// Se regeneran con `npm run fantasy:manual` (scripts/fantasy/manual.mjs).
+import imgCrear from "./imagenes/manual_01_crear.png";
+import imgPlantilla from "./imagenes/manual_02_plantilla.png";
+import imgMercado from "./imagenes/manual_03_mercado.png";
+import imgClausulazo from "./imagenes/manual_04_clausulazo.png";
+import imgJornada from "./imagenes/manual_05_jornada.png";
+import imgRanking from "./imagenes/manual_06_ranking.png";
+import imgCarta from "./imagenes/manual_07_carta.png";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Cómo se juega · MdFantasy", robots: { index: false, follow: false } };
@@ -20,6 +29,16 @@ const SECCIONES = [
   { id: "duelos", texto: "Duelos, porra y premios" }, { id: "preguntas", texto: "Preguntas frecuentes" },
 ] as const;
 
+function Figura({ img, alt, pie }: { img: { src: string; width: number; height: number }; alt: string; pie: string }) {
+  return (
+    <figure className="fz-como-fig">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={img.src} width={img.width} height={img.height} alt={alt} loading="lazy" decoding="async" />
+      <figcaption>{pie}</figcaption>
+    </figure>
+  );
+}
+
 export default async function ComoSeJuega() {
   const { supabase } = await exigirSesion();
   const f = await cargarFantasy(supabase);
@@ -34,10 +53,12 @@ export default async function ComoSeJuega() {
       <nav className="fz-chips fz-como-indice" aria-label="En esta página" data-testid="fz-como-indice">
         {SECCIONES.map((s) => <a key={s.id} href={`#${s.id}`}>{s.texto}</a>)}
       </nav>
+      <p className="tenue pequeno" data-testid="fz-como-nota">Las imágenes son de ejemplo: los nombres son inventados.</p>
 
       <section className="gs-bloque" id="en-30-segundos" aria-labelledby="t-30">
         <h2 id="t-30" className="fz-h2">En 30 segundos</h2>
         <p>MdFantasy es un fantasy en el que los jugadores somos nosotros. Tienes una plantilla de <D k="plantilla">{num(P.plantilla)}</D> compañeros, alineas a <D k="alineados">{num(P.alineados)}</D> cada domingo y sumas lo que hagan de verdad. Gana quien más puntos acumule en la temporada.</p>
+        <Figura img={imgCrear} alt="Pantalla de Inicio de quien aún no tiene equipo: la tarjeta «Hazte mánager» con los botones «Cómo se juega» y «Crear mi equipo»." pie="Así empiezas: «Crear mi equipo»." />
       </section>
 
       <section className="gs-bloque" id="tu-plantilla" aria-labelledby="t-plantilla">
@@ -49,6 +70,7 @@ export default async function ComoSeJuega() {
           <li>Si no cambias nada, tu alineación se mantiene.</li>
         </ul>
         <p className="fz-como-ir"><Link href="/mdfantasy?tab=plantilla">Ir a Plantilla ›</Link></p>
+        <Figura img={imgPlantilla} alt="Pestaña Plantilla: caja, valor de plantilla y jugadores arriba; debajo, la pista con los cinco alineados, cada uno con su marca de convocado y los botones C, V y bajar al banquillo; al final, el banquillo con el botón «Alinear»." pie="Plantilla: tus cinco alineados en la pista y el banquillo debajo." />
       </section>
 
       <section className="gs-bloque" id="capitan" aria-labelledby="t-capitan">
@@ -58,6 +80,7 @@ export default async function ComoSeJuega() {
           <li>No puede ser el mismo dos jornadas seguidas.</li>
           <li>Si el capitán no juega, dobla el vicecapitán.</li>
         </ul>
+        <Figura img={imgJornada} alt="Pestaña Jornada: tu total frente a la media de la liga con una barra, y la tabla «Tu alineación» con rendimiento, compromiso, el extra del capitán (marcado con una C) y el total de cada jugador." pie="Jornada: el capitán (C) suma su rendimiento dos veces." />
       </section>
 
       <section className="gs-bloque" id="puntos" aria-labelledby="t-puntos">
@@ -79,6 +102,7 @@ export default async function ComoSeJuega() {
           <li>Máximo <D k="topeCompromiso">{num(P.topeCompromiso)}</D> por semana.</li>
         </ul>
         <p>Un jugador no convocado solo suma compromiso.</p>
+        <Figura img={imgCarta} alt="Carta de un jugador: su valor, su media de las últimas jornadas y de la temporada, una barra que reparte sus puntos entre rendimiento y compromiso, y sus últimas jornadas una a una." pie="La carta de cada jugador: de dónde salen sus puntos." />
       </section>
 
       <section className="gs-bloque" id="mercado" aria-labelledby="t-mercado">
@@ -92,6 +116,8 @@ export default async function ComoSeJuega() {
           <li>Cada jornada cobras dinero según tus puntos.</li>
         </ul>
         <p className="fz-como-ir"><Link href="/mdfantasy?tab=mercado">Ir a Mercado ›</Link></p>
+        <Figura img={imgMercado} alt="Pestaña Mercado: lista de jugadores con su valor, copias libres y marca de convocado. Uno se puede fichar, dos solo con clausulazo y otro ya lo tienes." pie="Mercado: «Fichar» si queda copia libre, «Clausulazo» si no, «Lo tienes» si ya es tuyo." />
+        <Figura img={imgClausulazo} alt="El cuadro del clausulazo abierto en un jugador: la pregunta «¿A quién se lo quitas?» con un desplegable de mánagers y los botones «Pagar» y «No»." pie="El clausulazo: eliges a qué mánager se lo quitas y pagas." />
       </section>
 
       <section className="gs-bloque" id="semana" aria-labelledby="t-semana">
@@ -113,6 +139,7 @@ export default async function ComoSeJuega() {
           <li>Hay logros, quinteto ideal de cada jornada y premios del mes.</li>
         </ul>
         <p className="fz-como-ir"><Link href="/mdfantasy?tab=ranking">Ir a Ranking ›</Link></p>
+        <Figura img={imgRanking} alt="Pestaña Ranking: el podio con tres escalones para los tres primeros mánagers y, debajo, la lista de todos con sus puntos." pie="Ranking: el podio y la clasificación de mánagers." />
       </section>
 
       <section className="gs-bloque" id="preguntas" aria-labelledby="t-preguntas">

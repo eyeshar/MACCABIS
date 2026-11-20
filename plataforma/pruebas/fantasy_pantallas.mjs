@@ -94,6 +94,13 @@ try {
   const vistas = {}; for (const k of Object.keys(cifras)) vistas[k] = await como(beto0, k);
   ok(JSON.stringify(vistas) === JSON.stringify(cifras), 'todas las cifras son las de Ajustes', JSON.stringify(vistas));
   ok(await sinDesbordar(beto0) && !(await pequenos(beto0, 'main a')).length, '«Cómo se juega» a 375 px: sin desbordar y enlaces de 44 px', JSON.stringify(await pequenos(beto0, 'main a')));
+  const figs = await beto0.getByTestId('fz-como').locator('section figure img').evaluateAll((is) => is.map((i) => ({ seccion: i.closest('section').id, alt: i.alt, fichero: (decodeURIComponent(i.src).match(/manual_\d\d_[a-z]+/) ?? [''])[0], pie: i.closest('figure').querySelector('figcaption')?.textContent ?? '' })));
+  ok(figs.map((x) => `${x.seccion}:${x.fichero}`).join(' ') === 'en-30-segundos:manual_01_crear tu-plantilla:manual_02_plantilla capitan:manual_05_jornada puntos:manual_07_carta mercado:manual_03_mercado mercado:manual_04_clausulazo duelos:manual_06_ranking',
+    'las siete capturas del manual, cada una en su sección', figs.map((x) => `${x.seccion}:${x.fichero}`).join(' '));
+  ok(figs.every((x) => x.alt.length > 40 && x.pie.length > 10), 'todas con texto alternativo (para quien no ve la imagen) y pie');
+  for (const i of await beto0.getByTestId('fz-como').locator('figure img').all()) await i.scrollIntoViewIfNeeded();
+  ok(await hasta(async () => (await beto0.getByTestId('fz-como').locator('figure img').evaluateAll((is) => is.every((i) => i.complete && i.naturalWidth > 0 && i.getBoundingClientRect().width <= 390)))), 'las imágenes cargan y no pasan del ancho de un móvil');
+  ok(await sinDesbordar(beto0), '…y la página sigue sin desbordar a 375 px con ellas');
   await foto(beto0, 'fantasy_como_375');
   await sql`update public.fantasy_config set parametros = '{"topeCompromiso": 8, "cajaInicial": 12.5, "sinRespuesta": -3}'::jsonb`;
   await beto0.reload();

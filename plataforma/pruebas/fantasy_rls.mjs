@@ -285,7 +285,7 @@ try {
     await sql`update public.liga_estadisticas_jugador set pts = pts + 8 where nombre = ${hoja(fichas[4].nombre_oficial)} and partido_id in (select id from public.liga_partidos where jornada = 3)`;
     ok((await puntuar()).length === 1, 'se vuelve a puntuar');
     const a1 = await foto();
-    ok(a1.total !== a0.total && a1.ingresos !== a0.ingresos, 'cambian sus puntos (y con ellos ingresos y ranking)', JSON.stringify([a0, a1]));
+    ok(a1.total === a0.total + 8, 'cambian sus puntos (los ingresos y el ranking se recalculan con ellos si algún mánager lo tiene alineado)', JSON.stringify([a0, a1]));
     ok(a1.valor === a0.valor && a1.tv === a0.tv, '…pero su valor de mercado se queda como estaba', JSON.stringify([a0, a1]));
     ok((await sql`select valor_quieto q from public.fantasy_jornadas where fecha = '2026-10-19'`)[0].q === false, 'la marca se gasta al puntuar');
     // La siguiente puntuación normal (aquí, la misma jornada con la hoja cambiada) pone el valor al día.

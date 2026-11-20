@@ -4,6 +4,12 @@ import { conSigno, fechaCorta, pts, quintetoIdeal } from "@/lib/fantasy/vista";
 import type { Consulta } from "../page";
 import { enlaceJugador, enlaceManager } from "./Inicio";
 
+/** Una celda de numeros que tambien lleva a la carta del jugador (toda la fila es enlace). El enlace «de verdad», para
+ *  teclado y lectores, es el del nombre: estos no entran en el orden de tabulacion ni se leen dos veces. */
+function Celda({ id, children }: { id: string; children: React.ReactNode }) {
+  return <td className="mono fz-td-enlace"><Link href={enlaceJugador(id)} className="fz-celda" tabIndex={-1} aria-hidden="true">{children}</Link></td>;
+}
+
 /** Jornada: mi total frente a la media, desglose por jugador (rendimiento y compromiso por separado) y quinteto ideal. */
 export default function Jornada({ f, q }: { f: Fantasy; q: Consulta }) {
   const jornadas = f.jornadas.map((j) => j.fecha);
@@ -26,9 +32,25 @@ export default function Jornada({ f, q }: { f: Fantasy; q: Consulta }) {
       </nav>
       <div className="gs-cifras fz-cifras fz-cifras-3" data-testid="fz-cifras-jornada">
         <div className="num-caja"><b className="cifra" data-testid="fz-mi-total">{mio ? pts(mio.total) : "—"}</b><span>Tu jornada</span></div>
-        <div className="num-caja"><b className="cifra">{media != null ? pts(media) : "—"}</b><span>Media de los mánagers</span></div>
+        <div className="num-caja"><b className="cifra">{media != null ? pts(media) : "—"}</b><span>Media de la liga</span></div>
         <div className="num-caja"><b className="cifra">{Object.entries(resultados).map(([eq, r]) => `${eq} ${r === "gana" ? "G" : "P"}`).join(" · ") || "—"}</b><span>Resultados</span></div>
       </div>
+
+      {mio && media != null && (() => {
+        const dif = Math.round((mio.total - media) * 10) / 10;
+        const tope = Math.max(mio.total, media, 1) * 1.1;
+        const texto = dif > 0 ? `+${pts(dif)} sobre la media` : dif < 0 ? `-${pts(-dif)} bajo la media` : "En la media";
+        return (
+          <section className="gs-bloque fz-frente" aria-label="Tu jornada frente a la media de la liga" data-testid="fz-frente">
+            <p className={`fz-frente-texto${dif > 0 ? " es-mas" : ""}`} data-testid="fz-frente-texto">{texto}</p>
+            <div className={`fz-frente-barra${dif < 0 ? " es-menos" : ""}`} role="img" aria-label={`Tú ${pts(mio.total)} puntos; media de la liga ${pts(media)}`}>
+              <i style={{ width: `${Math.max(0, Math.min(100, (mio.total / tope) * 100))}%` }} data-testid="fz-frente-mio" />
+              <u style={{ left: `${Math.min(100, (media / tope) * 100)}%` }} data-testid="fz-frente-media" />
+            </div>
+            <div className="fz-frente-leyenda"><span>Tú: <b>{pts(mio.total)}</b></span><span>Media de la liga (la raya): <b>{pts(media)}</b></span></div>
+          </section>
+        );
+      })()}
 
       {mio && (
         <section className="gs-bloque" aria-labelledby="t-fz-desglose" data-testid="fz-desglose">
@@ -38,9 +60,9 @@ export default function Jornada({ f, q }: { f: Fantasy; q: Consulta }) {
               <thead><tr><th scope="col">Jugador</th><th scope="col">Rend.</th><th scope="col">Comp.</th><th scope="col">Cap.</th><th scope="col">Total</th></tr></thead>
               <tbody>
                 {(mio.detalle.jugadores ?? []).map((x) => (
-                  <tr key={x.person_id}>
+                  <tr key={x.person_id} className="fz-fila-enlace" data-testid={`fz-fila-${x.person_id}`}>
                     <th scope="row"><Link href={enlaceJugador(x.person_id)}>{f.nombreJ.get(x.person_id) ?? "?"}</Link>{mio.detalle.dobla === x.person_id && <b className="fz-galon fz-galon-linea" aria-label="Dobló">C</b>}</th>
-                    <td className="mono">{pts(x.rendimiento)}</td><td className="mono">{conSigno(x.compromiso)}</td><td className="mono">{x.doble ? `+${pts(x.doble)}` : ""}</td><td className="mono"><b>{pts(x.total)}</b></td>
+                    <Celda id={x.person_id}>{pts(x.rendimiento)}</Celda><Celda id={x.person_id}>{conSigno(x.compromiso)}</Celda><Celda id={x.person_id}>{x.doble ? `+${pts(x.doble)}` : ""}</Celda><Celda id={x.person_id}><b>{pts(x.total)}</b></Celda>
                   </tr>
                 ))}
               </tbody>
@@ -82,9 +104,9 @@ export default function Jornada({ f, q }: { f: Fantasy; q: Consulta }) {
             <thead><tr><th scope="col">Jugador</th><th scope="col">Min</th><th scope="col">Rend.</th><th scope="col">Comp.</th><th scope="col">Total</th></tr></thead>
             <tbody>
               {pj.map((p) => (
-                <tr key={p.person_id}>
+                <tr key={p.person_id} className="fz-fila-enlace">
                   <th scope="row"><Link href={enlaceJugador(p.person_id)}>{f.nombreJ.get(p.person_id) ?? "?"}</Link>{p.doblete && <span className="pastilla pastilla-jugo fz-doblete">×2</span>}</th>
-                  <td className="mono">{deJ.get(p.person_id)?.minutos || "—"}</td><td className="mono">{pts(p.rendimiento)}</td><td className="mono">{conSigno(p.compromiso)}</td><td className="mono"><b>{pts(p.total)}</b></td>
+                  <Celda id={p.person_id}>{deJ.get(p.person_id)?.minutos || "—"}</Celda><Celda id={p.person_id}>{pts(p.rendimiento)}</Celda><Celda id={p.person_id}>{conSigno(p.compromiso)}</Celda><Celda id={p.person_id}><b>{pts(p.total)}</b></Celda>
                 </tr>
               ))}
             </tbody>

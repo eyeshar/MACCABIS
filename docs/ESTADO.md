@@ -36,12 +36,8 @@
 
 **Comprobado punto por punto (20/11/2026):** clausulazos cerrados desde el sábado a las 20:00; gestores sin operar (alinear, fichar, vender, clausulazo) desde el borrador de la convocatoria hasta que se publica; alineación, capitán y porra ajenos ocultos hasta el cierre; logros, quinteto ideal, premios del mes y resumen para WhatsApp; aviso al afectado por un clausulazo respetando el silencio (22:30–08:00). Todo estaba hecho; faltaban pruebas del bloqueo del gestor en el mercado y del aviso en silencio, ya añadidas.
 
-**Queda por decidir (Iván):**
-- **Porra de los gestores:** durante el bloqueo por el borrador de la convocatoria un gestor **sí** puede hacer la porra (no es mercado ni alineación). Si debe bloquearse también, es una línea.
-- **Maqueta:** diferencias que quedan, sin rehacer nada todavía:
-  - *Plantilla:* los 5 alineados van dentro de un recuadro amarillo en 2-2-1 con capitán (C) y vicecapitán (V) marcados, pero **no es una pista dibujada** (sin líneas de campo, zona ni aro) y los jugadores son tarjetas con botones, no fichas colocadas en posiciones.
-  - *Ranking:* hay podio de los tres primeros (el primero en el centro, más alto y con borde amarillo), pero son **tres tarjetas**, no un podio con escalones ni medallas.
-  - *Jornada:* el total y la media salen como **dos cifras una al lado de la otra** (dice «Media de los mánagers»), sin comparación visual ni diferencia; el desglose por jugador es una **tabla** con rendimiento y compromiso en columnas separadas (más capitán y total), no tarjetas, y el porqué del compromiso de cada uno está en su carta, no ahí.
+**Tercera tanda (Iván, 20/11/2026):** la porra de los gestores **queda abierta** durante el bloqueo por el borrador de la convocatoria. Tres retoques de aspecto, sin tocar el funcionamiento ni las tarjetas: (1) *Plantilla:* media pista dibujada de fondo (zona, círculo de tiro libre, arco de tres y aro) en amarillo apagado, detrás de los alineados; (2) *Ranking:* podio con tres alturas (segundo, primero, tercero) y el puesto en grande dentro de cada escalón; (3) *Jornada:* barra que compara el total con la media de la liga (la raya) y la diferencia en cifra («+3 sobre la media», «-8,5 bajo la media»), y cada fila del desglose lleva a la carta del jugador (también pulsando en los números). Probado a 375 y 1280 px; capturas en `privado/mockups_liga/rediseno/mdfantasy/retoque_*.png`.
+- **Pendiente de que Iván lo vea:** a 1280 px las tarjetas van en 3+2 (a 375 px, en 2-2-1) y tapan casi toda la pista: solo asoman trozos de las líneas entre ellas. En el móvil se ve bien la parte de abajo (zona, aro y arco). Si quiere verla entera en pantalla ancha hay que dar más alto al recuadro o estrechar las tarjetas.
 
 **Pasos exactos para probarlo (staging local, en este ordenador):**
 1. Abrir **Git Bash** en `C:\Users\Iván\Proyectos\Maccabis-fantasy\plataforma`.

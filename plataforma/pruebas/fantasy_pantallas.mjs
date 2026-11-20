@@ -139,6 +139,23 @@ try {
   ok((await ana.getByTestId('fz-mi-total').textContent()) === String(total).replace('.', ','), 'Jornada: mi total', `${await ana.getByTestId('fz-mi-total').textContent()} / ${total}`);
   ok(await visto(ana.getByTestId('fz-desglose')) && (await ana.getByTestId('fz-desglose').locator('tbody tr').count()) === al.titulares.length && (await ana.getByTestId('fz-desglose').locator('thead').textContent()).includes('Rend.') && (await ana.getByTestId('fz-desglose').locator('thead').textContent()).includes('Comp.'), 'desglose por jugador, con rendimiento y compromiso por separado');
   ok(await visto(ana.getByTestId('fz-ideal')) && (await ana.getByTestId('fz-ideal').locator('.fz-ficha').count()) === 5, 'quinteto ideal');
+  {
+    const dia = (await sql`select total from public.fantasy_puntos_manager where jornada = '2026-10-19'`).map((x) => Number(x.total));
+    const media = Math.round((dia.reduce((s2, v) => s2 + v, 0) / dia.length) * 10) / 10;
+    const dif = Math.round((total - media) * 10) / 10;
+    const es = (n) => String(n).replace('.', ',');
+    const espero = dif > 0 ? `+${es(dif)} sobre la media` : dif < 0 ? `-${es(-dif)} bajo la media` : 'En la media';
+    ok((await ana.getByTestId('fz-frente-texto').textContent()) === espero, 'Jornada: la diferencia con la media de la liga, en cifra', `${await ana.getByTestId('fz-frente-texto').textContent()} / ${espero}`);
+    const barra = await ana.evaluate(() => { const q = (t) => document.querySelector(`[data-testid="${t}"]`).getBoundingClientRect(); const c = q('fz-frente'); return { mio: q('fz-frente-mio').width, media: q('fz-frente-media').left - q('fz-frente-mio').left, ancho: c.width }; });
+    ok(barra.mio > 0 && barra.media > 0 && (total > media) === (barra.mio > barra.media) && barra.mio <= barra.ancho, 'la barra compara mi total con la media (la raya)', JSON.stringify(barra));
+    await foto(ana, 'fantasy_jornada_375');
+    await ana.getByTestId(`fz-fila-${al.titulares[1]}`).locator('td').nth(1).click();
+    await ana.waitForURL(new RegExp(`/mdfantasy/jugador/${al.titulares[1]}`));
+    ok(true, 'cada fila del desglose lleva a la carta del jugador (también pulsando en los números)');
+    await ana.goto(`${APP}/mdfantasy?tab=jornada`);
+    const bajas = await ana.evaluate(() => [...document.querySelectorAll('main .fz-tabla tbody a')].filter((a) => a.getBoundingClientRect().height < 44).length);
+    ok(bajas === 0, 'las filas-enlace miden al menos 44 px de alto', String(bajas));
+  }
   ok((await ana.getByTestId('fz-jornadas').locator('a').count()) === 3 && (await ana.getByTestId('fz-jornadas').locator('a[aria-current="page"]').textContent()) === '19/10', 'las jornadas, como chips (en la URL)');
   await ana.getByTestId('fz-jornadas').getByRole('link', { name: '4/10' }).click();
   await ana.waitForURL(/j=2026-10-04/);
@@ -146,12 +163,34 @@ try {
   ok(await sinDesbordar(ana), 'Jornada a 375 px sin desbordar');
   await ana.goto(`${APP}/mdfantasy?tab=ranking`);
   ok(await visto(ana.getByTestId('fz-podio')) && (await ana.getByTestId('fz-podio').locator('li').count()) === 2, 'Ranking: podio');
+  {
+    const alto = await ana.evaluate(() => [1, 2, 3].map((n) => document.querySelector(`.fz-podio-${n} .fz-podio-escalon`)?.getBoundingClientRect()).map((r) => (r ? { h: Math.round(r.height), x: Math.round(r.left), base: Math.round(r.bottom) } : null)));
+    ok(alto[0] && alto[1] && alto[0].h > alto[1].h && alto[1].x < alto[0].x && alto[0].base === alto[1].base && (await ana.locator('.fz-podio-1 .fz-podio-escalon').textContent()) === '1', 'podio con escalones: el primero más alto y a la derecha del segundo, con el puesto dentro', JSON.stringify(alto));
+  }
   for (const r of ['jugadores', 'compromiso', 'duelos']) { await ana.getByTestId('fz-sub').getByRole('link', { name: r === 'jugadores' ? 'Jugadores' : r === 'compromiso' ? 'Compromiso' : 'Duelos' }).click(); await ana.waitForURL(new RegExp(`r=${r}`)); if (!(await visto(ana.getByTestId(`fz-ranking-${r}`)))) ok(false, `pestaña ${r}`); }
   ok(true, 'pestañas de mánagers, jugadores, compromiso y duelos (en la URL)');
   ok(await visto(ana.getByTestId('fz-premios')) && (await ana.getByTestId('fz-premios').textContent()).includes('octubre'), 'premios del mes');
   ok((await ana.getByTestId('fz-resumen').textContent()).includes('MdFantasy · jornada del 19/10') && await visto(ana.getByTestId('fz-copiar-resumen')), 'resumen para WhatsApp con su botón de copiar');
   ok(await sinDesbordar(ana) && !(await pequenos(ana, 'main .fz-chips a, main .fz-orden a, main .fz-podio a, main button')).length, 'Ranking a 375 px: sin desbordar y con objetivos de 44 px', JSON.stringify(await pequenos(ana, 'main .fz-chips a, main .fz-orden a, main .fz-podio a, main button')));
   await foto(ana, 'fantasy_ranking_375');
+
+  console.log('\n== Los tres retoques de aspecto, a 1280 px');
+  await beto.goto(`${APP}/mdfantasy?tab=plantilla`);
+  const pista = async (p) => p.evaluate(() => { const e = document.querySelector('.fz-pista'); const c = getComputedStyle(e); return { fondo: c.backgroundImage.includes('svg') && c.backgroundImage.includes('f3c519'), fichas: e.querySelectorAll('.fz-ficha').length, botones: e.querySelectorAll('.fz-ficha-botones button').length }; });
+  const pb = await pista(beto);
+  ok(pb.fondo && pb.fichas === 5 && await sinDesbordar(beto), 'Plantilla a 1280 px: media pista dibujada de fondo y las 5 tarjetas', JSON.stringify(pb));
+  await foto(beto, 'fantasy_plantilla_1280');
+  await beto.goto(`${APP}/mdfantasy?tab=jornada`);
+  ok(await visto(beto.getByTestId('fz-frente')) && /media/.test(await beto.getByTestId('fz-frente-texto').textContent()) && await sinDesbordar(beto), 'Jornada a 1280 px: barra frente a la media y diferencia', await beto.getByTestId('fz-frente-texto').textContent());
+  await foto(beto, 'fantasy_jornada_1280');
+  await beto.goto(`${APP}/mdfantasy?tab=ranking`);
+  ok(await visto(beto.locator('.fz-podio-1 .fz-podio-escalon')) && await sinDesbordar(beto), 'Ranking a 1280 px: podio con escalones');
+  await foto(beto, 'fantasy_ranking_1280');
+  await ana.goto(`${APP}/mdfantasy?tab=plantilla`);
+  const pa2 = await pista(ana);
+  ok(pa2.fondo && pa2.fichas === 5 && await sinDesbordar(ana), 'Plantilla a 375 px: media pista de fondo, las 5 tarjetas igual', JSON.stringify(pa2));
+  await foto(ana, 'fantasy_plantilla_375_pista');
+  await ana.goto(`${APP}/mdfantasy?tab=ranking`);
   await ana.goto(`${APP}/mdfantasy?tab=ranking&r=jugadores`);
   await ana.getByTestId('fz-ranking-jugadores').locator('a').first().click();
   await ana.waitForURL(/\/mdfantasy\/jugador\//);

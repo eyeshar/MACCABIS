@@ -26,9 +26,9 @@ export default function Ranking({ f, q }: { f: Fantasy; q: Consulta }) {
         <ol className="fz-podio" aria-label="Podio" data-testid="fz-podio">
           {podio.map((m, i) => (
             <li key={m.person_id} className={`fz-podio-${i + 1}`}>
-              <span className="fz-podio-puesto" aria-hidden="true">{i + 1}</span>
               <Link href={enlaceManager(m.person_id)}>{m.nombre}</Link>
               <b className="cifra">{pts(m.total)}</b>
+              <span className="fz-podio-escalon" aria-hidden="true">{i + 1}</span>
             </li>
           ))}
         </ol>

@@ -17,7 +17,8 @@
 **MdFantasy (D196, 20/11/2026) — construido en `feat/mdfantasy`, sin merge y sin aplicar en el real**
 - [ ] **Iván: probarlo en el staging local** (`npm run fantasy:probar -- --confirmar <ref>`; pasos en `ESTADO.md`).
 - [x] Dudas contestadas por Iván (20/11/2026): en `ESTADO.md` y D196.
-- [ ] **Iván: decidir** si la porra de un gestor se bloquea con el borrador de la convocatoria, y qué se rehace para acercarse a la maqueta (pista dibujada, podio con escalones, jornada frente a la media; diferencias en `ESTADO.md`).
+- [x] Porra de los gestores abierta durante el bloqueo (Iván, 20/11/2026) y retoques de aspecto hechos (pista de fondo, podio con escalones, jornada frente a la media).
+- [ ] **Iván: ver la pista a 1280 px** (las tarjetas la tapan casi entera; nota en `ESTADO.md`).
 - [x] Nombre casado por aproximación («MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando`): confirmado por Iván (20/11/2026).
 - [ ] **Con su OK:** migración `20261121100000_mdfantasy` en el real con D111, merge, y encender primero «Solo gestores».
 - [ ] **Tras 3 o 4 jornadas jugadas de verdad:** revisar caja, ingresos y multiplicador del clausulazo en Ajustes (`docs/MDFANTASY.md`, «A revisar»).

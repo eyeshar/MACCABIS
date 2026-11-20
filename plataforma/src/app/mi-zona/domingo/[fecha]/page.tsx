@@ -15,7 +15,7 @@ import { avisoDeEvento } from "@/lib/eventos/datos";
 import { temporadaDe } from "@/lib/publico";
 import { cargarMiZona } from "@/app/mi-zona/datos";
 import {
-  cargarConvocadosDomingo, cargarMiConvocatoria, cargarMiDomingo, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa,
+  cargarConvocadosDomingo, cargarMiConvocatoria, cargarMiDomingo, cargarMiPreferencia, cargarMisAusencias, cargarMisEventosDelDia, cargarMisRespuestas, cargarQuienVa,
 } from "@/lib/respuestas/jugador";
 import {
   enlaceMapa, estadoDe, fechaLarga, hhmm, lineaCambio, opcionActual, opcionesDomingo, pistaTexto, restar20, unidades,
@@ -39,9 +39,12 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
   const partidos = (await cargarMisEventosDelDia(fecha)).filter((e) => e.tipo === "liga");
   if (!partidos.length) notFound();
   const u = unidades(partidos).find((x) => x.tipo === "domingo");
-  const [respuestas, ausencias, miDomingo, zona, convocados, misConv] = await Promise.all([
+  const [respuestas, ausencias, miDomingo, zona, convocados, misConv, miPref] = await Promise.all([
     cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha), cargarMiZona(), cargarConvocadosDomingo(fecha), cargarMiConvocatoria(),
+    cargarMiPreferencia(fecha),
   ]);
+  // D194: su partido preferido (solo él lo ve; la base lo borra si deja de ir a los dos).
+  const prefEq = miPref ? partidos.find((e) => e.id === miPref.evento_id)?.equipo ?? null : null;
   const ahora = new Date();
   const conDuda = partidos.every((e) => dudaAbierta(e, ahora));
   // D141: quien va, quien duda, quien no va y quien no ha contestado, partido a partido (solo nombres; la base no da motivos).
@@ -97,7 +100,7 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
           const lista = aprobada ? [...(convocados[eq] ?? [])].sort((x, y) => x.localeCompare(y, "es")) : null;
           return (
             <article key={e.id} className={`rw-partido${mio ? " rw-partido-mio" : ""}${otro ? " rw-partido-otro" : ""}`} data-equipo={e.equipo} data-testid={`partido-${e.equipo}`}>
-              <span className="rw-partido-eq">{e.equipo}{mio && <span className="rw-tu-juegas"> · Tú juegas aquí</span>}</span>
+              <span className="rw-partido-eq">{e.equipo}{mio && <span className="rw-tu-juegas"> · Tú juegas aquí</span>}{prefEq === e.equipo && <span className="pf-tu" data-testid="pf-tu-preferido"> · ★ Tu preferido</span>}</span>
               <strong className="mono rw-partido-hora">{hhmm(e.inicio) ?? "Hora por confirmar"}</strong>
               <span>{e.es_local === false ? `${limpiar(e.rival)} – ${e.equipo}` : `${e.equipo} – ${limpiar(e.rival)}`}</span>
               <span className="suave pequeno">{pistaTexto(e)} · quedada {hhmm(e.quedada) ?? (e.inicio ? restar20(String(e.inicio)) : "—")}</span>
@@ -137,7 +140,8 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
         <div className="mz-sec-cab"><h2 id="t-puedes">¿Puedes jugar?</h2>{est && <span className={`rw-etiqueta${est.pendiente ? " sin" : ""}`}>{est.pendiente ? "Aún no has respondido" : est.texto}</span>}</div>
         {u && (abierto ? (
             <ElegirDomingo fecha={fecha} opciones={opcionesDomingo(u, conDuda)} actual={pasoNoVa ? null : opcionActual(u, respuestas, miDomingo)} nombre={`partido del domingo ${+fecha.slice(8)}`}
-              motivo={(rNo?.motivo as MotivoJugador) ?? null} detalle={rNo?.detalle ?? null} />
+              motivo={(rNo?.motivo as MotivoJugador) ?? null} detalle={rNo?.detalle ?? null}
+              preferencia={u.eventos.length === 2 ? { partidos: u.eventos.map((e) => ({ id: e.id, equipo: e.equipo, hora: hhmm(e.inicio), rival: limpiar(e.rival) })), guardada: miPref, mismaHora: u.modo === "misma" } : null} />
           ) : <p className="suave" style={{ margin: 0 }}>Los partidos ya empezaron: no se puede cambiar la respuesta.</p>)}
         {u && abierto && est?.pendiente && (ahora.getTime() < limiteDudas(partidos[0]).getTime()
           ? <p className="suave pequeno" style={{ margin: "0 0 .5rem" }} data-testid="plazo-respuesta">Tienes hasta {textoLimite(limiteDudas(partidos[0]), ahora)} para decir si vas; si no, te quedas fuera de la convocatoria.</p>

@@ -71,6 +71,7 @@ export async function cargarTableroDomingo(sb: Cliente, fecha?: string): Promise
       ficha: j.ficha, solo_entreno: j.solo_entreno, respuesta: j.respuesta, invitadoA: j.invitadoA,
       motivo: motivoTexto(motivos.find((m) => m !== "horario") ?? motivos[0] ?? null), ausencia: notaAusencia(ausenciaQueCubre(j.person_id, ctx.fecha, ausencias)),
       puestaPor: puesta.get(j.person_id) ?? null,
+      preferencia: j.preferencia ?? null,
     };
   });
   const c = ctx.convocatoria;

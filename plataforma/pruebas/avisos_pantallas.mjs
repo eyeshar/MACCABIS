@@ -210,7 +210,7 @@ try {
     await pg.waitForURL(/e=Chavalitros/);
     const cajaNos = pg.locator('.lg-prox .eq-nos_toca');
     ok((await cajaNos.count()) === 1 && (await cajaNos.textContent()).includes('⚠ Nos toca cambiar: equipación AMARILLA') && (await cajaNos.textContent()).includes('partido perdido (Bases 47 JDM, 5.11)'), 'Scouting (Chavalitros, J10 fuera): NOS TOCA CAMBIAR con la advertencia de partido perdido');
-    ok((await pg.locator('.lg-prox [data-testid="linea-equipacion"]').textContent()) === 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.', 'Scouting (Chavalitros): «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.» (D160)');
+    ok((await pg.locator('.lg-prox [data-testid="linea-equipacion"]').textContent()) === 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.', 'Scouting (Chavalitros): «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.» (D160; jugamos de amarillo: la de reserva, la negra)');
     ok((await cajaNos.evaluate((e) => getComputedStyle(e).backgroundColor)) === 'rgb(255, 212, 0)', 'Scouting: el aviso "nos toca" es amarillo intenso');
     await pg.screenshot({ path: path.join(SALIDA, `real_e_aviso_gestion_scouting_nos_toca_${etiqueta}.png`), fullPage: true });
     await pg.selectOption('select[name="e"]', 'Craps');

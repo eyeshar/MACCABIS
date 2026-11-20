@@ -51,7 +51,7 @@ anota('plan mañana', T.textoPlanManana(plan));
 // ---- convocatoria: los tres casos, dobla, cambios
 const PART = [
   { equipo: 'MdA', rival: 'Rival A', es_local: true, inicio: '10:15', encuentro: '09:55', sitio: SITIO, direccion: 'C/ Arroyo Fontarrón, s/n', lineaEquipacion: 'Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' },
-  { equipo: 'MdL', rival: 'Rival L', es_local: false, inicio: '12:45', encuentro: '12:25', sitio: SITIO, direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.' },
+  { equipo: 'MdL', rival: 'Rival L', es_local: false, inicio: '12:45', encuentro: '12:25', sitio: SITIO, direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.' },
 ];
 for (const [eqs, disp] of [[['MdL'], ['MdA', 'MdL']], [['MdA'], ['MdA']], [[], ['MdL']], [['MdA', 'MdL'], ['MdA', 'MdL']]]) {
   anota('aviso de convocatoria', CM.textoAvisoConvocatoria('2026-11-15', PART, eqs, disp));

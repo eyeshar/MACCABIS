@@ -1,12 +1,12 @@
 import equipJson from "@/data/equipaciones.json";
-import { avisoPartido, equipoPorNombre, lineaConvocatoria, proximoPartido, type Aviso, type Equipaciones, type Partido } from "@/data/avisosEquipacion";
+import { avisoPartido, enSingular, equipoPorNombre, juntarLineas, lineaConvocatoria, lineaSinRival, proximoPartido, type Aviso, type Equipaciones, type Partido } from "@/data/avisosEquipacion";
 
 // Avisos de choque de equipacion (D79). El calculo vive en data/avisos_equipacion.js (el mismo que usa la web publica);
 // aqui solo se enganchan los datos y se ofrecen las funciones a las pantallas. Los colores salen del fichero del repo
 // (data/equipaciones_2026-27.json); los partidos, de la tabla de eventos (D151): quien llama pasa los de la fuente
 // (`partidosCalendario(await cargarFuente())`). Este modulo no lee ningun calendario por su cuenta.
 export type { Aviso, Partido };
-export { lineaConvocatoria };
+export { enSingular, juntarLineas, lineaConvocatoria };
 
 const equip = equipJson as unknown as Equipaciones;
 
@@ -39,5 +39,11 @@ export function coloresDe(nombre: string) {
 }
 
 /** Linea de equipacion de la convocatoria (D160): WhatsApp, aviso push, ficha del evento y Scouting. Siempre que haya
- *  rival ("Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso."); null si descansa. */
+ *  rival ("Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso."; si cambiamos nosotros, «… Llevad la negra
+ *  por si acaso.»: la de reserva es siempre la que no llevamos); null si descansa. */
 export const lineaEquipacion = (p: Partido | null) => lineaConvocatoria(equip, p);
+
+/** La línea cuando no hay aviso (sin rival o sin jornada en la tabla de eventos; la línea no falta nunca, D160):
+ *  «Jugamos de negro. Llevad la amarilla por si acaso.»; en singular («Lleva…») para la tarjeta de un jugador. */
+export const LINEA_SIN_RIVAL = lineaSinRival(equip);
+export const LINEA_SIN_RIVAL_SINGULAR = lineaSinRival(equip, true);

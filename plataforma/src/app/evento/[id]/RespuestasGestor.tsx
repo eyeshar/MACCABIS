@@ -22,6 +22,7 @@ import AvisoSinFicha from "@/components/numeros/AvisoSinFicha";
 import { BotonRecordatorio, BotonVisto, ResponderPor } from "@/app/gestion/(panel)/eventos/[id]/respuestas/ResponderPor";
 import CambiarAMano from "@/app/gestion/(panel)/eventos/CambiarAMano";
 import FilaRespuesta from "./FilaRespuesta";
+import MarcaPreferencia, { LeyendaPreferencia, type PreferenciaGestor } from "@/components/preferencia/MarcaPreferencia";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { ausenciaQueCubre, efectivaEn, NOTA_POR_DEFECTO, TEXTO_POR_DEFECTO } from "@/lib/disponibilidad/porDefecto";
 
@@ -34,6 +35,10 @@ type Fila = {
 type PeriodoW = { id?: string; person_id: string; desde: string; hasta: string | null; motivo: Motivo; origen?: string };
 
 const TEXTO_R: Record<Respuesta, string> = { va: "Va", duda: "Duda", no: "No va", sin_responder: "Sin responder" };
+/** Una alerta de cambio tras el cierre: de respuesta («Va → No va») o de preferencia de partido (D194: «pref:MdA», «pref:-»). */
+const textoAlerta = (antes: string, despues: string) => (antes.startsWith("pref:") || despues.startsWith("pref:")
+  ? `cambia su preferencia: ${antes.slice(5) === "-" ? "ninguna" : antes.slice(5)} → ${despues.slice(5) === "-" ? "ninguna" : despues.slice(5)}`
+  : `${TEXTO_R[antes as Respuesta] ?? antes} → ${TEXTO_R[despues as Respuesta] ?? despues}`);
 const textoMotivo = (m: Fila["motivo"]) => (m === "horario" ? "Horario" : m === "no_confirmo" ? "No confirmó" : m ? TEXTO_MOTIVO[m] : null);
 const ddmm = (f: string) => fechaDMA(f).slice(0, 5);
 const franja = (p: { desde: string; hasta: string | null }) => (p.hasta ? `ausencia del ${ddmm(p.desde)} al ${ddmm(p.hasta)}` : `ausencia desde el ${ddmm(p.desde)}, sin fecha de vuelta`);
@@ -64,6 +69,10 @@ export default async function RespuestasGestor({ id }: { id: string }) {
   ]);
   // La respuesta unica del domingo (D103): si sigue vigente, «Solo al de las 09:00» se lee tal cual, sin deducirlo.
   const { data: domingosDB } = dia ? await supabase.from("respuestas_domingo").select("person_id, opcion, solo_evento, origen, puesto_por_nombre, vigente").eq("fecha", evento.fecha).eq("vigente", true) : { data: [] };
+  // Preferencia de partido (D194, solo gestores por RLS): en la vista del domingo con dos partidos. Sin la migración, nada.
+  const { data: prefsDB } = dia ? await supabase.from("preferencias_domingo").select("person_id, evento_id, motivo, nota, cambiado_en").eq("fecha", evento.fecha) : { data: [] };
+  const prefDe = new Map(((prefsDB ?? []) as { person_id: string; evento_id: string; motivo: string; nota: string | null; cambiado_en: string }[])
+    .flatMap((x) => { const e = dia?.find((d) => d.id === x.evento_id); return e ? [[x.person_id, { equipo: e.equipo as "MdA" | "MdL", motivo: x.motivo, nota: x.nota, cambiado_en: x.cambiado_en } as PreferenciaGestor] as const] : []; }));
   const domingoDe = new Map(((domingosDB ?? []) as { person_id: string; opcion: string; solo_evento: string | null; origen: string; puesto_por_nombre: string | null }[]).map((d) => [d.person_id, d]));
   const periodos = (periodosDB ?? []) as PeriodoW[];
   const conAvisos = new Set(((subs ?? []) as { person_id: string | null }[]).map((s) => s.person_id).filter(Boolean));
@@ -190,7 +199,7 @@ export default async function RespuestasGestor({ id }: { id: string }) {
         <div className="ev-banda-roja" role="alert" data-testid="banda-roja">
           <div>
             <b>Cambios después del cierre (martes 12:00):</b>{" "}
-            {alertasL.map((a, i) => <span key={a.id}>{i > 0 && " · "}<NombreJugador nombre={nombre.get(a.person_id) ?? a.person_id} personId={a.person_id} />{`: ${TEXTO_R[a.antes]} → ${TEXTO_R[a.despues]}${dia ? ` (${eventos.find((e) => e.id === a.evento_id)?.equipo})` : ""} · ${fechaHora(a.en)}`}</span>)}
+            {alertasL.map((a, i) => <span key={a.id}>{i > 0 && " · "}<NombreJugador nombre={nombre.get(a.person_id) ?? a.person_id} personId={a.person_id} />{`: ${textoAlerta(a.antes, a.despues)}${dia ? ` (${eventos.find((e) => e.id === a.evento_id)?.equipo})` : ""} · ${fechaHora(a.en)}`}</span>)}
           </div>
           <BotonVisto eventoId={evento.id} ids={alertasL.map((a) => a.id)} />
         </div>
@@ -211,12 +220,13 @@ export default async function RespuestasGestor({ id }: { id: string }) {
       <div className="gs-dos">
         <section className="gs-bloque gs-izq" style={{ flex: "3 1 560px" }} aria-labelledby="t-resp">
           <h2 id="t-resp">Respuestas</h2>
+          {prefDe.size > 0 && <LeyendaPreferencia />}
           <div className="tabla-desplazable">
             <table className="gs-tabla ev-tabla ev-tabla-resp" data-testid="tabla-respuestas">
               <thead><tr><th>Jugador</th><th>Respuesta</th><th>Motivo y detalle</th><th>Avisos</th><th>Cambiar a mano</th><th><span className="solo-lectores">Responder por él</span></th></tr></thead>
               <tbody>
                 {lineas.map((l) => (
-                  <FilaRespuesta key={l.person_id} clase={l.clase} etiqueta={l.nombre} nombre={<NombreJugador nombre={l.nombre} personId={l.person_id} negrita />}
+                  <FilaRespuesta key={l.person_id} clase={l.clase} etiqueta={l.nombre} nombre={<><NombreJugador nombre={l.nombre} personId={l.person_id} negrita />{prefDe.get(l.person_id) && l.dos && l.clase === "va" && !l.solo && <> <MarcaPreferencia p={prefDe.get(l.person_id)!} en={evento.equipo === "MdA" || evento.equipo === "MdL" ? evento.equipo : null} nombre={l.nombre} /></>}</>}
                     estado={<span className={l.clase === "no" ? "ev-no" : l.clase === "va" ? "ev-ok" : l.clase === "duda" ? "ev-duda" : "suave"}>{l.texto}</span>} motivo={l.motivo}>
                     <td data-label="Respuesta"><span className={l.clase === "no" ? "ev-no" : l.clase === "va" ? "ev-ok" : l.clase === "duda" ? "ev-duda" : "suave"}>{l.texto}</span>{l.origenTxt && <span className="ev-sub" style={{ color: "var(--tinta-tenue)" }}>{l.origenTxt}</span>}</td>
                     <td data-label="Motivo y detalle">{l.motivo ?? <span className="suave">—</span>}</td>

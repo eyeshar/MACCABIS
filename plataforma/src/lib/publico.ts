@@ -136,7 +136,7 @@ export function chipEquipacion(a: Aviso | null | undefined) {
   if (!a?.hay) return null;
   if (a.tipo === "nos_toca") return { tipo: a.tipo, texto: "⚠ Nos toca: amarilla" };
   if (a.tipo === "cambian_ellos") return { tipo: a.tipo, texto: "Cambian ellos" };
-  return { tipo: a.tipo, texto: "Lleva la amarilla" };
+  return { tipo: a.tipo, texto: `Lleva la ${a.reserva}` };
 }
 
 // ---------------------------------------------------------------- proxima jornada

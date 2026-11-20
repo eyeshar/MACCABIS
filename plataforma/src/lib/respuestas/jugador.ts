@@ -100,6 +100,16 @@ export async function cargarMiDomingo(fecha: string): Promise<MiDomingo | null> 
   return (data as MiDomingo | null) ?? null;
 }
 
+/** Su preferencia de partido de ese domingo (D194; RLS: solo la suya). Sin la migración (o sin preferencia), null. */
+export async function cargarMiPreferencia(fecha: string): Promise<{ evento_id: string; motivo: string; nota: string | null } | null> {
+  const yo = await miPersonId();
+  if (!yo) return null;
+  const sb = await clienteSesion();
+  const { data, error } = await sb.from("preferencias_domingo").select("evento_id, motivo, nota").eq("person_id", yo).eq("fecha", fecha).maybeSingle();
+  if (error) return null;
+  return (data as { evento_id: string; motivo: string; nota: string | null } | null) ?? null;
+}
+
 /** D141: tambien los NOMBRES de quien no ha contestado. Nunca motivos ni detalles: la vista no los da. */
 export type QuienVa = { va: string[]; duda: string[]; no: string[]; sin_responder: string[] };
 

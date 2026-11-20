@@ -77,6 +77,52 @@
   function nuestraSegunda(equip) { return equip.regla_choque.nuestra_segunda; }  // "amarilla"
 
   /**
+   * Equipación de reserva: SIEMPRE la que NO llevamos ese partido, en femenino ("amarilla", "negra"). Si cambiamos
+   * nosotros (aviso 'nos_toca': vamos de la 2.ª, amarilla) es la 1.ª (negra); en todo lo demás (sin choque, cambian
+   * ellos, sin saber quién es local, rival sin color, sin rival) vamos de la 1.ª y la de reserva es la 2.ª.
+   * `a`: el aviso del partido (avisoPartido) o null.
+   */
+  function reserva(equip, a) {
+    const r = equip.regla_choque;
+    return colorConGenero(colorNormalizado(a && a.tipo === 'nos_toca' ? r.nuestra_primera : r.nuestra_segunda), 'f');
+  }
+
+  /** La frase de la reserva, el ÚNICO sitio que la escribe: «Llevad la amarilla por si acaso.» (para el grupo) o, con
+   *  `singular`, «Lleva la negra por si acaso.» (la tarjeta de un jugador). */
+  function porSiAcaso(equip, a, singular) {
+    return (singular ? 'Lleva' : 'Llevad') + ' la ' + reserva(equip, a) + ' por si acaso.';
+  }
+
+  /** La frase de porSiAcaso al final de una línea (en plural o en singular). */
+  var FIN_POR_SI_ACASO = /\s*Llevad? la [^\s.]+ por si acaso\.?$/;
+
+  /** La línea del grupo («Llevad…») en singular, para la tarjeta de un jugador («Lleva…»). */
+  function enSingular(linea) { return String(linea == null ? '' : linea).replace(/\bLlevad\b/g, 'Lleva'); }
+
+  /** Separa una línea de equipación en lo del partido y su frase de reserva: { cuerpo, reserva } (reserva null si no la lleva). */
+  function separarReserva(linea) {
+    const t = String(linea == null ? '' : linea).trim();
+    const m = t.match(FIN_POR_SI_ACASO);
+    return m ? { cuerpo: t.slice(0, m.index).trim(), reserva: m[0].trim().replace(/\.?$/, '.') } : { cuerpo: t, reserva: null };
+  }
+
+  /**
+   * Junta las líneas de equipación de una jornada en un texto. `items`: [{ etiqueta, linea }] (etiqueta: "MdA",
+   * "MdL (dorsal 7)"...). Con un solo partido, su línea tal cual (sin etiqueta). Con dos (dobla), cada línea con su
+   * etiqueta delante y la frase de la reserva UNA vez al final si es la misma en los dos; si no (un equipo va de negro y
+   * el otro de amarillo), cada equipo con la suya. `sep`: entre partidos (por defecto, un espacio).
+   */
+  function juntarLineas(items, sep) {
+    const partes = (items || []).filter((x) => x && x.linea).map((x) => Object.assign({ etiqueta: x.etiqueta || null }, separarReserva(x.linea)));
+    const punto = (t) => (!t || /[.!?]$/.test(t) ? t : t + '.');
+    const una = (p, conReserva) => [punto(p.cuerpo), conReserva ? p.reserva : null].filter(Boolean).join(' ');
+    if (partes.length <= 1) return partes[0] ? una(partes[0], true) : '';
+    const misma = partes.every((p) => p.reserva === partes[0].reserva);
+    const textos = partes.map((p) => (p.etiqueta ? p.etiqueta + ': ' : '') + una(p, !misma));
+    return textos.join(sep == null ? ' ' : sep) + (misma && partes[0].reserva ? ' ' + partes[0].reserva : '');
+  }
+
+  /**
    * Aviso de un partido nuestro. null si descansa o no hay rival.
    * { rival, colorRival, pantalonRival, conocido, hay, quien, etiqueta, texto, convocatoria }
    *  tipo: 'nos_toca' (vamos segundos: cambiamos) | 'cambian_ellos' (vamos primeros) | 'dudoso' (sin regla) | null (sin choque)
@@ -102,18 +148,20 @@
       }
       return {
         ...base, hay: true, tipo: 'cambian_ellos', quien: 'rival', etiqueta: 'ℹ Coinciden colores: cambia ' + e.nombre,
-        texto: 'Jugamos de ' + primera + '; ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + ') va en segundo lugar y debe cambiar. Llevad la ' + segunda + ' por si acaso.'
+        texto: 'Jugamos de ' + primera + '; ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + ') va en segundo lugar y debe cambiar. ' + porSiAcaso(equip, { tipo: 'cambian_ellos' })
       };
     }
     return {
       ...base, hay: true, tipo: 'dudoso', quien: 'dudoso', etiqueta: '⚠ Equipación ' + segunda,
-      texto: 'Coincidencia de color con ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + '): llevad la ' + segunda + ' por si acaso'
+      texto: 'Coincidencia de color con ' + e.nombre + ' (camiseta ' + colorConGenero(color, 'f') + '). ' + porSiAcaso(equip, { tipo: 'dudoso' })
     };
   }
 
   /**
    * Línea de equipación de la convocatoria (D160), SIEMPRE que haya rival: la misma en el WhatsApp, el aviso push de
-   * convocatoria, la ficha del evento y Scouting. Termina siempre con «Llevad la amarilla por si acaso.»
+   * convocatoria, la ficha del evento, Scouting y el calendario (.ics). Termina siempre con la frase de la reserva
+   * (porSiAcaso): «Llevad la amarilla por si acaso.» si jugamos de negro y «Llevad la negra por si acaso.» si cambiamos
+   * nosotros y jugamos de amarillo.
    *  - sin choque:            «Jugamos de negro (ellos de rojo).»
    *  - choque, vamos segundos: «Coinciden colores: cambiamos nosotros, de amarillo.»
    *  - choque, van segundos:   «Coinciden colores: cambia Litros de Mahou.»
@@ -129,7 +177,7 @@
     if (!a) return null;
     const primera = colorNormalizado(equip.regla_choque.nuestra_primera);
     const segunda = equip.regla_choque.nuestra_segunda;
-    const fin = ' Llevad la ' + colorConGenero(colorNormalizado(segunda), 'f') + ' por si acaso.';
+    const fin = ' ' + porSiAcaso(equip, a);
     if (!a.conocido) return 'Jugamos de ' + primera + ' (no tenemos el color de ' + a.rival + ').' + fin;
     if (!a.hay) return 'Jugamos de ' + primera + ' (ellos de ' + a.colorRival + ').' + fin;
     if (a.tipo === 'nos_toca') return 'Coinciden colores: cambiamos nosotros, de ' + colorNormalizado(segunda) + '.' + fin;
@@ -137,10 +185,17 @@
     return 'Coinciden colores con ' + a.rival + ': no consta quién va en segundo lugar.' + fin;
   }
 
-  /** El aviso con su línea de convocatoria (`convocatoria`, siempre que haya rival: lineaConvocatoria). */
+  /** El aviso con su línea de convocatoria (`convocatoria`, siempre que haya rival: lineaConvocatoria) y la equipación
+   *  de reserva (`reserva`: "amarilla" o "negra", la que no llevamos). */
   function avisoPartido(equip, partido) {
     const a = avisoSinLinea(equip, partido);
-    return a ? Object.assign(a, { convocatoria: lineaDe(equip, a) }) : null;
+    return a ? Object.assign(a, { convocatoria: lineaDe(equip, a), reserva: reserva(equip, a) }) : null;
+  }
+
+  /** La línea cuando no hay aviso (sin rival o sin jornada en la tabla de eventos): «Jugamos de negro. Llevad la amarilla
+   *  por si acaso.» (`singular`: «Lleva…»). */
+  function lineaSinRival(equip, singular) {
+    return 'Jugamos de ' + colorNormalizado(equip.regla_choque.nuestra_primera) + '. ' + porSiAcaso(equip, null, singular);
   }
 
   /** Próximo partido (con rival) de `equipo` desde `hoy` ("AAAA-MM-DD", inclusive). */
@@ -166,5 +221,5 @@
     return Object.keys(f);
   }
 
-  return { clave, colorNormalizado, colorConGenero, descripcionColores, equipoPorNombre, COLORES_PARECIDOS, parecidos, chocan, avisoPartido, lineaConvocatoria, proximoPartido, listarAvisos, rivalesSinColor };
+  return { clave, colorNormalizado, colorConGenero, descripcionColores, equipoPorNombre, COLORES_PARECIDOS, parecidos, chocan, avisoPartido, lineaConvocatoria, lineaSinRival, reserva, porSiAcaso, enSingular, separarReserva, juntarLineas, proximoPartido, listarAvisos, rivalesSinColor };
 });

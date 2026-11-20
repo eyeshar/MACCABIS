@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MarcaPreferencia from "@/components/preferencia/MarcaPreferencia";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import type { Convocatoria, Equipo, RespuestaPartido } from "@/lib/convocatoria/motor";
@@ -44,7 +45,9 @@ function Agrupar({ modo, cambiar }: { modo: ModoAgrupar; cambiar: (m: ModoAgrupa
 function Jugador({ f, conv, dobla }: { f: FilaTablero; conv?: Convocatoria; dobla?: boolean }) {
   return (
     <span className="tb-jugador">
-      <b>{f.href ? <Link href={f.href} className="num-nombre" draggable={false}>{f.nombre}</Link> : f.nombre}</b>
+      <b>{f.href ? <Link href={f.href} className="num-nombre" draggable={false}>{f.nombre}</Link> : f.nombre}
+        {f.preferencia && !dobla && <> <MarcaPreferencia p={f.preferencia} nombre={f.nombre}
+          en={conv ? ((["MdA", "MdL"] as const).find((e) => (conv[e] ?? []).some((x) => x.person_id === f.person_id)) ?? null) : null} /></>}</b>
       <small>
         {f.posicion ? TEXTO_POS[f.posicion] : "sin posición"}
         {f.base_reserva && <span className="tb-marca">base de reserva</span>}

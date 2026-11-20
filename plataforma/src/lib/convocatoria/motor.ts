@@ -53,6 +53,7 @@ export const REGLAS = {
   "3.1": "El partido más difícil lleva más nivel medio",
   "3.2": "Con rivales parejos, se equilibra por líneas",
   "3.3": "Proyección de anotación: aviso por debajo de la anotación mínima (45, provisional)",
+  "3.4": "Preferencia de partido: a igual línea y nivel, cada uno al partido que prefiere (solo decide el equipo, nunca quién va)",
   "4.1": "Prioridad: más nivel; a igual nivel, quien menos partidos lleva convocado",
   "4.2": "Rotación: 2 domingos disponible y fuera, entra por delante",
   "5.1": "Si no se llega: doblan los «Dobla»",
@@ -101,6 +102,9 @@ export type JugadorEntrada = {
   /** Registro de no convocados (regla 4.3): domingos seguidos en que dijo «voy» a tiempo, con ficha, y no entró en ningún
    *  equipo. Solo desempata a igual línea y nivel, y solo con `Entrada.desempateNoConvocados` encendido. */
   rachaFuera?: number;
+  /** Preferencia de partido (D194, regla 3.4): el equipo que prefiere, si va a los dos. Solo decide el EQUIPO de quien ya
+   *  va y no dobla: nunca quién va, ni el número, las líneas o el nivel de cada equipo. */
+  prefiere?: Equipo | null;
 };
 export type Entrada = {
   partidos: PartidoEntrada[]; jugadores: JugadorEntrada[];
@@ -588,6 +592,14 @@ export function proponer(entrada: Entrada): Propuesta {
     }
   }
 
+  // 6. Preferencia de partido (D194, regla 3.4). Va AL FINAL, con la propuesta ya hecha: quién va, el número de cada
+  //    equipo, sus líneas y su nivel ya están decididos y no cambian. Solo se intercambian dos jugadores que juegan cada
+  //    uno en un equipo, están disponibles (y con ficha) para los dos, son de la MISMA línea y el MISMO nivel (y la misma
+  //    marca de base de reserva y de reserva) y ninguno es fijo de un equipo (6.1) ni dobla. Se intercambian si uno
+  //    prefiere el equipo del otro y el otro no prefiere quedarse donde está. Así nunca deja a nadie fuera ni toca un
+  //    mínimo ni el equilibrio: si para respetarla hace falta desequilibrar, no se respeta.
+  if (eqs.length === 2) for (const a of intercambiosPorPreferencia(conv, eqs, dobladores)) extra.push(a);
+
   const convocatoria: Convocatoria = {};
   for (const e of eqs) convocatoria[e] = conv[e].map((j) => ({ person_id: j.person_id }));
   const rev = revisar(entrada, convocatoria, sinConvocar);
@@ -596,6 +608,40 @@ export function proponer(entrada: Entrada): Propuesta {
   const orden: Record<Gravedad, number> = { error: 0, aviso: 1, info: 2 };
   avisos.sort((x, y) => orden[x.gravedad] - orden[y.gravedad]);
   return { ...rev, avisos, convocatoria };
+}
+
+// ---------------------------------------------------------------- preferencia de partido (D194, regla 3.4)
+/** Los intercambios de la regla 3.4 sobre una propuesta ya hecha (cambia `conv` en el sitio y devuelve un aviso por
+ *  intercambio). PURA y determinista: primero los de más prioridad; como pareja, primero quien prefiere el otro equipo
+ *  (ganan los dos) y después quien no tiene preferencia; a igualdad, por identificador. Cada intercambio suma una
+ *  preferencia respetada y ninguna perdida, así que termina. */
+export function intercambiosPorPreferencia(conv: Record<Equipo, JugadorEntrada[]>, eqs: Equipo[], dobladores: ReadonlySet<string> = new Set()): Aviso[] {
+  const avisos: Aviso[] = [];
+  const [X, Y] = eqs;
+  const enLos2 = new Set(conv[X].filter((j) => conv[Y].some((k) => k.person_id === j.person_id)).map((j) => j.person_id));
+  const movible = (j: JugadorEntrada) => !dobladores.has(j.person_id) && !enLos2.has(j.person_id) && eqs.every((e) => disponibleEn(j, e) && j.ficha[e])
+    && datos(j).regla?.tipo !== "fijo";
+  const igual = (a: JugadorEntrada, b: JugadorEntrada) => lineaDe(a) === lineaDe(b) && nivelDe(a) === nivelDe(b)
+    && datos(a).base_reserva === datos(b).base_reserva && esReserva(a) === esReserva(b);
+  const equipoDe = (j: JugadorEntrada): Equipo => (conv[X].includes(j) ? X : Y);
+  for (;;) {
+    const quieren = [...conv[X], ...conv[Y]].filter((j) => movible(j) && j.prefiere && eqs.includes(j.prefiere) && j.prefiere !== equipoDe(j)).sort(compararPrioridad);
+    let hecho = false;
+    for (const a of quieren) {
+      const desde = equipoDe(a), hacia = a.prefiere as Equipo;
+      const parejas = conv[hacia].filter((b) => movible(b) && igual(a, b) && b.prefiere !== hacia)
+        .sort((b1, b2) => Number(b2.prefiere === desde) - Number(b1.prefiere === desde) || porId(b1, b2));
+      const b = parejas[0];
+      if (!b) continue;
+      conv[desde].splice(conv[desde].indexOf(a), 1, b);
+      conv[hacia].splice(conv[hacia].indexOf(b), 1, a);
+      avisos.push({ regla: "3.4", gravedad: "info", equipo: hacia, person_id: a.person_id,
+        texto: `${a.nombre} va al ${hacia} por preferencia (empate con ${b.nombre} en línea y nivel${b.prefiere === desde ? `, que prefería el ${desde}` : ""}).` });
+      hecho = true;
+      break;
+    }
+    if (!hecho) return avisos;
+  }
 }
 
 // ---------------------------------------------------------------- recambio tras aprobar (D173)

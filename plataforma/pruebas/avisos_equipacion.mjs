@@ -76,16 +76,60 @@ ok(a('MDA', 5).hay && a('MDA', 5).colorRival === 'azul', `J5 MdA–${rival('MDA'
 ok(a('MDL', 1).hay && a('MDL', 1).colorRival === 'azul oscuro', `J1 MdL–${rival('MDL', 1)}: aviso (azul oscuro)`);
 ok(!a('MDA', 1).hay && !a('MDA', 6).hay && !a('MDA', 7).hay, 'rival blanco / naranja / amarillo: sin aviso');
 ok(A.avisoPartido(equip, partido('MDA', 4)) === null, 'jornada de descanso: sin aviso ni rival');
-const FIN = ' Llevad la amarilla por si acaso.';
+const FIN = ' Llevad la amarilla por si acaso.';   // jugamos de negro: la de reserva, la amarilla
+const FIN_NEGRA = ' Llevad la negra por si acaso.';  // cambiamos nosotros y jugamos de amarillo: la de reserva, la negra
 const lc = (p) => A.lineaConvocatoria(equip, p);
-ok(lc(partido('MDL', 6)) === 'Coinciden colores: cambiamos nosotros, de amarillo.' + FIN, 'convocatoria (D160), nos toca: «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.»', lc(partido('MDL', 6)));
+ok(lc(partido('MDL', 6)) === 'Coinciden colores: cambiamos nosotros, de amarillo.' + FIN_NEGRA, 'convocatoria (D160), nos toca: «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.»', lc(partido('MDL', 6)));
 ok(lc(partido('MDA', 2)) === `Coinciden colores: cambia ${rival('MDA', 2)}.` + FIN, `convocatoria, cambian ellos: «Coinciden colores: cambia ${rival('MDA', 2)}. Llevad…»`, lc(partido('MDA', 2)));
 ok(lc({ equipo: 'MDL', rival: 'MEJORADA 2012 C.B..', local: true, descansa: false }) === 'Coinciden colores: cambia Mejorada 2012 C.B.' + FIN, 'un nombre que acaba en punto no sale con «..»', lc({ equipo: 'MDL', rival: 'MEJORADA 2012 C.B..', local: true, descansa: false }));
 ok(lc(partido('MDL', 2)) === 'Jugamos de negro (ellos de naranja).' + FIN, 'convocatoria SIN choque: también hay línea, «Jugamos de negro (ellos de naranja). Llevad…»', lc(partido('MDL', 2)));
 ok(lc({ ...partido('MDA', 2), local: null }) === `Coinciden colores con ${rival('MDA', 2)}: no consta quién va en segundo lugar.` + FIN, 'choque sin saber quién es local: lo dice y no inventa quién cambia');
 ok(lc({ equipo: 'MDA', rival: 'Equipo Inventado', descansa: false }) === 'Jugamos de negro (no tenemos el color de Equipo Inventado).' + FIN, 'rival sin color: «Jugamos de negro (no tenemos el color de …)»');
 ok(lc(partido('MDA', 4)) === null, 'jornada de descanso: sin línea');
-ok(cal.partidos.filter((p) => !p.descansa && p.rival).every((p) => lc(p)?.endsWith(FIN) && A.avisoPartido(equip, p).convocatoria === lc(p)), 'TODOS los partidos con rival tienen línea, acaba en «Llevad la amarilla por si acaso.» y es la misma en avisoPartido().convocatoria');
+{
+  const conRival = cal.partidos.filter((p) => !p.descansa && p.rival);
+  const mal = conRival.filter((p) => { const a = A.avisoPartido(equip, p); return !lc(p)?.endsWith(a.tipo === 'nos_toca' ? FIN_NEGRA : FIN) || a.convocatoria !== lc(p) || a.reserva !== (a.tipo === 'nos_toca' ? 'negra' : 'amarilla'); });
+  ok(mal.length === 0 && conRival.some((p) => A.avisoPartido(equip, p).tipo === 'nos_toca'), 'TODOS los partidos con rival tienen línea, la misma en avisoPartido().convocatoria, y acaba con la reserva que NO llevamos: «Llevad la negra…» si cambiamos nosotros, «Llevad la amarilla…» en los demás', mal.map((p) => `${p.equipo} J${p.jornada}`).join(', '));
+}
+
+console.log('\n== Reserva: SIEMPRE la equipación que no llevamos ese partido (por partido)');
+{
+  // Los tres casos con rivales del calendario de prueba: sin coincidencia, cambiamos nosotros y cambian ellos.
+  const casos = [
+    ['sin coincidencia de colores', partido('MDL', 2), null, 'Jugamos de negro (ellos de naranja). Llevad la amarilla por si acaso.', 'amarilla'],
+    ['cambiamos nosotros (de amarillo)', partido('MDL', 6), 'nos_toca', 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.', 'negra'],
+    ['cambian ellos (jugamos de negro)', partido('MDA', 2), 'cambian_ellos', `Coinciden colores: cambia ${rival('MDA', 2)}. Llevad la amarilla por si acaso.`, 'amarilla'],
+  ];
+  for (const [que, p, tipo, linea, res] of casos) {
+    const a = A.avisoPartido(equip, p);
+    ok(a.tipo === tipo && lc(p) === linea && a.convocatoria === linea && a.reserva === res && A.reserva(equip, a) === res, `${que}: «${linea}»`, `${a.tipo} · ${lc(p)} · ${a.reserva}`);
+    ok(A.porSiAcaso(equip, a, true) === `Lleva la ${res} por si acaso.` && A.enSingular(linea) === linea.replace('Llevad', 'Lleva'), `${que}, en la tarjeta de un jugador (singular): «Lleva la ${res} por si acaso.»`);
+  }
+  ok(A.avisoPartido(equip, partido('MDA', 2)).texto.endsWith('debe cambiar. Llevad la amarilla por si acaso.'), 'el aviso «cambian ellos» de la web usa la misma frase (jugamos de negro: la amarilla)');
+  ok(A.lineaSinRival(equip) === 'Jugamos de negro. Llevad la amarilla por si acaso.' && A.lineaSinRival(equip, true) === 'Jugamos de negro. Lleva la amarilla por si acaso.', 'sin rival ni aviso: «Jugamos de negro. Llevad/Lleva la amarilla por si acaso.»');
+  // Un domingo, un equipo de negro y el otro de amarillo: cada uno con su reserva (combinación sintética de dos jornadas).
+  const negro = lc(partido('MDA', 3)), amarillo = lc(partido('MDL', 6));
+  const mixto = A.juntarLineas([{ etiqueta: 'MdA', linea: negro }, { etiqueta: 'MdL', linea: amarillo }]);
+  ok(mixto === `MdA: ${negro} MdL: ${amarillo}`, 'mismo domingo, MdA de negro y MdL de amarillo: cada equipo con SU reserva (la amarilla y la negra)', mixto);
+  ok(A.juntarLineas([{ etiqueta: 'MdA', linea: negro }, { etiqueta: 'MdL', linea: lc(partido('MDL', 3)) }]) === 'MdA: Jugamos de negro (ellos de rojo). MdL: Jugamos de negro (ellos de naranja). Llevad la amarilla por si acaso.', 'mismo domingo, los dos de negro: la reserva una sola vez, al final');
+  ok(A.juntarLineas([{ etiqueta: 'MdL', linea: amarillo }]) === amarillo && A.juntarLineas([]) === '', 'un solo partido: su línea tal cual, sin etiqueta; ninguno: nada');
+  ok(JSON.stringify(A.separarReserva(amarillo)) === JSON.stringify({ cuerpo: 'Coinciden colores: cambiamos nosotros, de amarillo.', reserva: 'Llevad la negra por si acaso.' }), 'separarReserva: lo del partido y la frase de la reserva');
+}
+
+console.log('\n== Nadie escribe la frase de la reserva por su cuenta (todo sale de porSiAcaso)');
+{
+  const FRASE = /Llevad? la (amarilla|negra) por si acaso/i;
+  const fuera = ['node_modules', '.next', 'pruebas', '.git'];
+  const ficheros = [];
+  const recorrer = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (fuera.includes(e.name)) continue; const f = path.join(d, e.name); if (e.isDirectory()) recorrer(f); else if (/\.(ts|tsx|js|mjs)$/.test(e.name)) ficheros.push(f); } };
+  for (const d of ['plataforma/src', 'plataforma/scripts', 'scripts', 'chat-worker/src']) if (fs.existsSync(path.join(RAIZ, d))) recorrer(path.join(RAIZ, d));
+  ficheros.push(path.join(RAIZ, 'index.html'));
+  const MODULO = [path.join(RAIZ, 'data', 'avisos_equipacion.js'), path.join(RAIZ, 'plataforma', 'src', 'data', 'avisosEquipacion.js')];
+  // Solo código: los comentarios pueden citar la frase de ejemplo.
+  const codigo = (t) => t.split(/\r?\n/).filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+  const conFrase = ficheros.filter((f) => !MODULO.includes(f) && FRASE.test(codigo(fs.readFileSync(f, 'utf8'))));
+  ok(ficheros.length > 50 && conFrase.length === 0, `ningún fichero de la web, los scripts ni el asistente escribe la frase de la reserva aparte (${ficheros.length} ficheros)`, conFrase.map((f) => path.relative(RAIZ, f)).join(', '));
+}
 
 console.log('\n== Colores parecidos (D160)');
 ok(A.parecidos('negro', 'negro') && A.parecidos('negra', 'negro'), 'un color se parece a sí mismo (con o sin género)');
@@ -98,9 +142,9 @@ ok(A.COLORES_PARECIDOS.flat().every((c) => c in equip.paleta), 'todos los colore
 console.log('\n== Orden del calendario (Bases 5.11) y sin regla');
 const mismo = { equipo: 'MDA', rival: 'Litros de Mahou' };
 ok(A.avisoPartido(equip, { ...mismo, local: false }).tipo === 'nos_toca' && A.avisoPartido(equip, { ...mismo, local: true }).tipo === 'cambian_ellos', 'si el orden local/visitante cambia, el aviso cambia solo (rutina B)');
-ok(A.avisoPartido(equip, { ...mismo, local: null }).tipo === 'dudoso', 'sin saber quien es local: aviso prudente "llevad la amarilla por si acaso"');
+ok(A.avisoPartido(equip, { ...mismo, local: null }).tipo === 'dudoso' && A.avisoPartido(equip, { ...mismo, local: null }).reserva === 'amarilla', 'sin saber quien es local: aviso prudente "Llevad la amarilla por si acaso"');
 const sinRegla = { ...equip, regla_choque: { ...equip.regla_choque, quien_cambia: null } };
-ok(A.avisoPartido(sinRegla, { ...mismo, local: false }).texto === 'Coincidencia de color con Litros de Mahou (camiseta negra): llevad la amarilla por si acaso', 'sin regla en el fichero: vuelve al aviso prudente');
+ok(A.avisoPartido(sinRegla, { ...mismo, local: false }).texto === 'Coincidencia de color con Litros de Mahou (camiseta negra). Llevad la amarilla por si acaso.', 'sin regla en el fichero: vuelve al aviso prudente');
 
 console.log('\n== Proximo partido');
 const prox = (h, e) => A.proximoPartido(cal, h, e);
@@ -123,7 +167,7 @@ console.log('\n== Cambios oficiales del calendario de prueba (lo que acepta la r
   // De local a visitante: el rival viste de negro; en casa cambian ellos, fuera nos toca la amarilla.
   ok(a('MDL', 5).tipo === 'cambian_ellos' && A.avisoPartido(equip, p2('MDL', 5)).tipo === 'nos_toca' && lv.despues.local === false,
     `de local a visitante (MdL J5 contra ${rival('MDL', 5)}, negro): de «cambian ellos» a «nos toca cambiar»`);
-  ok(A.lineaConvocatoria(equip, p2('MDL', 5)) === 'Coinciden colores: cambiamos nosotros, de amarillo.' + FIN, 'de local a visitante: la línea de la convocatoria pasa a «cambiamos nosotros»');
+  ok(A.lineaConvocatoria(equip, p2('MDL', 5)) === 'Coinciden colores: cambiamos nosotros, de amarillo.' + FIN_NEGRA, 'de local a visitante: la línea de la convocatoria pasa a «cambiamos nosotros» y la reserva, a la negra');
   const hp = cambioPrueba('hora_y_pista');
   ok(p2(hp.equipo, hp.jornada).hora === hp.despues.hora && p2(hp.equipo, hp.jornada).campo === hp.despues.campo && A.avisoPartido(equip, p2(hp.equipo, hp.jornada)).tipo === a(hp.equipo, hp.jornada).tipo,
     `cambio de hora y pista (MdL J${hp.jornada}: ${hp.antes.hora} pista ${hp.antes.campo} → ${hp.despues.hora} pista ${hp.despues.campo}): el aviso de equipación no cambia`);

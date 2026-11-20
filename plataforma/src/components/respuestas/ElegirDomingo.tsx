@@ -5,10 +5,14 @@ import { useRef, useState, useTransition } from "react";
 import { responderDomingo } from "@/app/mi-zona/respuestas-acciones";
 import type { MotivoJugador, OpcionDomingo } from "@/lib/respuestas/dominio";
 import HojaNoVoy from "./HojaNoVoy";
+import PreferenciaDomingo, { type PartidoPref, type PrefGuardada } from "@/components/preferencia/PreferenciaDomingo";
+import { muestraPreferencia } from "@/lib/respuestas/preferencia";
 
 // «¿Puedes jugar?» del domingo (D99.3): una sola respuesta para los dos partidos. «No voy» pide motivo.
-export default function ElegirDomingo({ fecha, opciones, actual, nombre, motivo, detalle }: {
+export default function ElegirDomingo({ fecha, opciones, actual, nombre, motivo, detalle, preferencia }: {
   fecha: string; opciones: OpcionDomingo[]; actual: string | null; nombre: string; motivo?: MotivoJugador | null; detalle?: string | null;
+  /** D194: los dos partidos (si tiene las dos fichas) y su preferencia guardada; sin esto, no sale el bloque. */
+  preferencia?: { partidos: PartidoPref[]; guardada: PrefGuardada; mismaHora: boolean } | null;
 }) {
   const router = useRouter();
   const [marcada, setMarcada] = useState(actual);
@@ -25,12 +29,16 @@ export default function ElegirDomingo({ fecha, opciones, actual, nombre, motivo,
   const clase = (o: OpcionDomingo) => (o.opcion === "no" ? "rw-btn-no" : o.opcion === "duda" ? "rw-btn-duda" : "rw-btn-va");
   return (
     <div className="rw-domingo-opciones" role="group" aria-label="¿Puedes jugar?">
-      {opciones.map((o) => (
+      {opciones.map((o) => [
         <button key={o.id} ref={o.opcion === "no" ? refNo : undefined} type="button" className={`rw-btn rw-opcion ${clase(o)}${marcada === o.id ? " marcada" : ""}`} aria-pressed={marcada === o.id} disabled={pendiente}
           onClick={() => (o.opcion === "no" ? (setError(null), setHoja(true)) : guardar(o))}>
           {o.texto}
-        </button>
-      ))}
+        </button>,
+        // D194: «¿Prefieres alguno?» justo debajo de «A los dos» (o de «Voy» a la misma hora), solo si es la marcada.
+        preferencia && marcada === o.id && muestraPreferencia(preferencia.partidos.length, o.opcion)
+          ? <PreferenciaDomingo key={`pref-${o.id}`} fecha={fecha} partidos={preferencia.partidos} guardada={preferencia.guardada} mismaHora={preferencia.mismaHora} />
+          : null,
+      ])}
       {error && !hoja && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{error}</p>}
       <HojaNoVoy abierta={hoja} titulo={nombre} motivoInicial={marcada === "no" ? motivo : null} detalleInicial={marcada === "no" ? detalle : null} guardando={pendiente} volverA={refNo}
         error={hoja ? error : null} onCerrar={() => setHoja(false)} onGuardar={(m, d) => guardar(opciones.find((x) => x.opcion === "no")!, m, d)} />

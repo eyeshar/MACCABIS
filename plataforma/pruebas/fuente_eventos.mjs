@@ -80,8 +80,8 @@ try {
   const rivalJ5 = nombreDe(ev0['mdl-j5']);
   ok(ev0['mdl-j5'].includes(`SUMMARY:MdL – ${rivalJ5} (J5)`) && ev1['mdl-j5'].includes(`SUMMARY:${rivalJ5} – MdL (J5)`),
     'de local a visitante: la J5 de MdL pasa a «rival – MdL» (el local primero)');
-  ok(/Equipación: Coinciden colores: cambia /.test(ev0['mdl-j5']) && /Equipación: Coinciden colores: cambiamos nosotros\\, de amarillo\./.test(ev1['mdl-j5']),   // en el .ics las comas van escapadas
-    'de local a visitante: la equipación pasa de «cambia el rival» a «cambiamos nosotros, de amarillo»', ev1['mdl-j5'].match(/Equipación:.*?\\n/)?.[0]);
+  ok(/Equipación: Coinciden colores: cambia .*Llevad la amarilla por si acaso\./.test(ev0['mdl-j5']) && /Equipación: Coinciden colores: cambiamos nosotros\\, de amarillo\. Llevad la negra por si acaso\./.test(ev1['mdl-j5']),   // en el .ics las comas van escapadas
+    'de local a visitante: la equipación pasa de «cambia el rival» (reserva, la amarilla) a «cambiamos nosotros, de amarillo» (reserva, la negra)', ev1['mdl-j5'].match(/Equipación:.*?\\n/)?.[0]);
   const otros = Object.keys(ev0).filter((k) => !tocados.includes(k) && sinSello(ev0[k]) !== sinSello(ev1[k] ?? ''));
   ok(Object.keys(ev1).length === 67 && otros.length === 0, 'el resto de los 67 eventos, igual', otros.join(', '));
 } finally {

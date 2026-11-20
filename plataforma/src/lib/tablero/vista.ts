@@ -12,6 +12,8 @@ export type FilaTablero = {
   motivo: string | null; ausencia: string | null;
   /** Quien puso la respuesta y cuando («puesta por Ivan»). */
   puestaPor: string | null;
+  /** Preferencia de partido (D194, solo gestores; solo en la vista del domingo). */
+  preferencia?: { equipo: Equipo; motivo: string; nota: string | null; cambiado_en: string } | null;
 };
 
 export type Celda = "convocado" | "convocar" | "no_va" | "duda" | "sin_responder" | "sin_ficha" | "no_juega";

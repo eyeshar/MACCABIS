@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { exigirGestor } from "@/lib/sesion";
 import { finDeDiaMadrid } from "@/lib/fechas";
+import { nombreOcupado } from "@/lib/nombres";
 import { PRENDAS, TALLAS, type PrendaId } from "@/lib/ropa";
 import type { DatosPedido, Resultado } from "@/components/FormularioPedido";
 
@@ -22,6 +23,14 @@ export async function guardarJugador(jugadorId: string, _prev: string | null, fo
   if (contacto.length > 60) return "El contacto de WhatsApp no puede pasar de 60 letras.";
   const nombre = String(form.get("nombre_visible") ?? "").trim();
   if (!nombre) return "El nombre visible no puede quedar vacío.";
+  // El nombre visible es el de toda la web y el del WhatsApp de la convocatoria: dos jugadores activos no pueden llevar el
+  // mismo (sin contar tildes ni mayúsculas), o en la lista de convocados no se sabría quién es quién.
+  if (form.get("activo") === "on") {
+    const { data: activos, error: errorActivos } = await supabase.from("jugadores").select("id, nombre_visible").eq("activo", true);
+    if (errorActivos) return `No se pudo comprobar el nombre visible: ${errorActivos.message}`;
+    const otro = nombreOcupado(nombre, jugadorId, (activos ?? []).map((j) => ({ person_id: j.id as string, nombre: j.nombre_visible as string })));
+    if (otro) return `«${otro.nombre}» ya es el nombre visible de otro jugador: añade la inicial del apellido (como «Fernando T.»).`;
+  }
 
   // El correo se cambia aparte, con una funcion que sincroniza a la vez
   // jugadores.email y, si ya existia, su cuenta de Supabase Auth (la

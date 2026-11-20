@@ -138,7 +138,9 @@ try {
   const LIGA = ['puede_ver_liga'];
   // Pase de lista (D192): is_gestor dentro (un jugador recibe solo_gestores).
   const PASE = ['pase_de_lista'];
-  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, ...DISPONIBILIDAD, ...LIGA, ...A_MANO, ...PASE, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
+  // Preferencia de partido (D194): _exigir_jugador dentro (solo lo suyo); un gestor sin ficha recibe sin_ficha.
+  const PREFERENCIA = ['guardar_preferencia', 'quitar_preferencia'];
+  ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, ...DISPONIBILIDAD, ...LIGA, ...A_MANO, ...PASE, ...PREFERENCIA, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 
   seccion('Lista blanca: quien puede entrar (D68)');

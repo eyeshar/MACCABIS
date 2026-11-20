@@ -184,7 +184,7 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
   // Domingos ya jugados (regla 4.2, D109): para saber quien estuvo disponible y se quedo fuera.
   const pasados = liga.filter((e) => e.fecha < fecha && e.fecha < hoy);
 
-  const [jug, resp, respEnt, priv, conv, respPas, convPas, ausencias] = await Promise.all([
+  const [jug, resp, respEnt, priv, conv, respPas, convPas, ausencias, prefs] = await Promise.all([
     sb.from("jugadores").select("person_id, nombre_visible, ficha_mda, ficha_mdl, entrena, activo, rol").order("nombre_visible"),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo, cambiado_en").in("evento_id", ids),
     entrenos.length ? sb.from("respuestas").select("person_id").in("evento_id", entrenos).eq("respuesta", "va") : Promise.resolve({ data: [], error: null }),
@@ -198,8 +198,13 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
     // Todas las aprobadas: las anteriores para el historial de domingos y la dificultad marcada para la proyeccion (D133).
     sb.from("convocatorias").select("fecha, equipos, dificultad").eq("estado", "aprobada"),
     cargarAusencias(sb),
+    // Preferencia de partido (D194): solo la leen los gestores (y la tarea, con la llave de servicio). Sin la migración, nada.
+    sb.from("preferencias_domingo").select("person_id, evento_id, motivo, nota, cambiado_en").eq("fecha", fecha),
   ]);
   if (jug.error) throw new Error(`jugadores: ${jug.error.message}`);
+  if (prefs.error && !faltaTabla(prefs.error)) throw new Error(`preferencias: ${prefs.error.message}`);
+  const prefDe = new Map((((prefs.error ? [] : prefs.data) ?? []) as { person_id: string; evento_id: string; motivo: string; nota: string | null; cambiado_en: string }[])
+    .flatMap((p) => { const e = delDia.find((x) => x.id === p.evento_id); return e ? [[p.person_id, { equipo: e.equipo as Equipo, motivo: p.motivo, nota: p.nota, cambiado_en: p.cambiado_en }] as const] : []; }));
   if (resp.error) throw new Error(`respuestas: ${resp.error.message}`);
   const sinMigracion = faltaTabla(priv.error) || faltaTabla(conv.error);
   if (!sinMigracion && priv.error) throw new Error(`datos privados: ${priv.error.message}`);
@@ -293,6 +298,8 @@ export async function cargarContexto(sb: Cliente, fechaPedida?: string, opciones
       respuesta, privado, sancionado: !!(p?.sancionado_hasta_jornada && jornada != null && p.sancionado_hasta_jornada >= jornada),
       convocados: rotacion.get(j.person_id)?.convocados ?? 0, doblajes: rotacion.get(j.person_id)?.doblajes ?? 0, entrenos4: entrenosDe.get(j.person_id) ?? 0, domingosFuera: domingosFuera(j),
       rachaFuera: registro.get(j.person_id)?.racha ?? 0,
+      // D194: solo si va a los dos partidos de ese domingo (la base ya la borra si deja de ir; esto es por si acaso).
+      ...(() => { const pr = prefDe.get(j.person_id); const vale = !!pr && delDia.length === 2 && delDia.every((e) => respuesta[e.equipo as Equipo] === "va"); return { prefiere: vale ? pr!.equipo : null, preferencia: vale ? pr! : null }; })(),
       fuera: { racha: registro.get(j.person_id)?.racha ?? 0, total: registro.get(j.person_id)?.total ?? 0, soloEntreno: !!registro.get(j.person_id)?.soloEntreno },
       // D146: un «nunca a partidos» sin responder no cuenta como invitado (ni en «sin responder» ni en los contadores).
       invitado: invitadoA(j, p).length > 0, invitadoA: invitadoA(j, p),

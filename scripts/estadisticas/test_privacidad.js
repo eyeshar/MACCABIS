@@ -300,6 +300,51 @@ console.log('\n== Corte de SportEasy (D161)');
   ok(cfg.hasta === '2026-10-23', 'la temporada 2026/27 corta SportEasy el 23/10/2026 (D161)', cfg.hasta);
 }
 
+// ---------------------------------------------------------------- D194: preferencia de partido
+console.log('\n== Preferencia de partido (D194): solo el propio jugador y los gestores');
+{
+  const MIGS194 = path.join(PLAT, 'supabase', 'migrations');
+  const f194 = fs.readdirSync(MIGS194).find((f) => /_preferencia_partido\.sql$/.test(f) && !/revertir/.test(f));
+  const sql194 = f194 ? fs.readFileSync(path.join(MIGS194, f194), 'utf8') : '';
+  ok(!!f194, 'existe la migración de la preferencia de partido');
+  ok(/alter table public\.preferencias_domingo enable row level security/.test(sql194), 'preferencias_domingo con RLS');
+  const politicas = [...sql194.matchAll(/create policy (\w+) on public\.preferencias_domingo for (\w+) to (\w+)\s+using \(([^;]+)\);/g)];
+  ok(politicas.length === 2 && politicas.every((m) => m[2] === 'select' && m[3] === 'authenticated') && politicas.some((m) => /person_id = public\._mi_person_id\(\)/.test(m[4])) && politicas.some((m) => /public\.is_gestor\(\)/.test(m[4])),
+    'solo dos políticas de lectura: la suya (_mi_person_id) y la de los gestores (is_gestor)', politicas.map((m) => m[1]).join(', '));
+  ok(/revoke all on public\.preferencias_domingo from public, anon, authenticated/.test(sql194) && !/grant (insert|update|delete|all)[^;]*preferencias_domingo/.test(sql194),
+    'nadie escribe en la tabla directamente (solo guardar_preferencia y quitar_preferencia)');
+  ok(!/to anon/.test(sql194), 'nada de la preferencia para el anónimo');
+  const todas = fs.readdirSync(MIGS194).filter((f) => !/revertir/.test(f)).sort().map((f) => fs.readFileSync(path.join(MIGS194, f), 'utf8')).join('\n');
+  const ultimaQuien = todas.slice(todas.lastIndexOf('function public._quien_va'));
+  ok(!/preferenc/.test(ultimaQuien.slice(0, ultimaQuien.indexOf('$$;'))), '«quién va» (_quien_va) no lee preferencias');
+  // Quién lee la tabla en el código: solo la convocatoria de Gestión, las respuestas del evento (gestores) y SU preferencia.
+  const LECTORES = ['src/lib/convocatoria/datos.ts', 'src/app/evento/[id]/RespuestasGestor.tsx', 'src/lib/respuestas/jugador.ts'].map((f) => path.join(PLAT, f));
+  const leen = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && /preferencias_domingo/.test(fs.readFileSync(f, 'utf8').replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '')));
+  ok(leen.length === 3 && leen.every((f) => LECTORES.includes(f)), 'preferencias_domingo solo se lee en la convocatoria (Gestión), las respuestas del evento (gestores) y la del propio jugador', leen.map((f) => path.relative(ROOT, f)).join(', '));
+  ok(/exigirGestor\(\)/.test(leer('src/app/evento/[id]/RespuestasGestor.tsx')), 'las respuestas del evento (con preferencias) exigen gestor');
+  const jug194 = leer('src/lib/respuestas/jugador.ts');
+  const miPref = jug194.slice(jug194.indexOf('export async function cargarMiPreferencia'), jug194.indexOf('/** D141'));
+  ok(/\.eq\("person_id", yo\)/.test(miPref), 'el jugador solo pide la SUYA (y la base, por RLS, no le da otra)');
+  // La marca del gestor (con motivo y nota) solo en pantallas de gestores.
+  const marcas = repoTodo(path.join(PLAT, 'src')).filter((f) => /\.(ts|tsx)$/.test(f) && /MarcaPreferencia/.test(fs.readFileSync(f, 'utf8')) && !f.includes(path.join('components', 'preferencia')));
+  ok(marcas.length > 0 && marcas.every((f) => f.includes(path.join('gestion', '(panel)')) || f.endsWith('RespuestasGestor.tsx')), 'la marca ★ con motivo y nota solo la pintan pantallas de gestores', marcas.map((f) => path.relative(ROOT, f)).join(', '));
+  // Salidas públicas o de jugadores: ni WhatsApp, ni avisos al jugador, ni iCal, ni la zona pública, ni exportaciones.
+  const SALIDAS = ['src/lib/convocatoria/mensajes.ts', 'src/lib/convocatoria/salidas.ts', 'src/lib/convocatoria/avisos.ts', 'src/lib/calendario/icsPersonal.ts', 'src/lib/ical.ts', 'src/lib/icalBase.ts',
+    'src/lib/publico.ts', 'src/lib/excel.ts', 'src/components/numeros/QuienVa.tsx', 'src/app/cal/[archivo]/route.ts', 'src/lib/whatsapp/sinResponder.ts', 'src/lib/avisos/planificador.ts']
+    .filter((f) => fs.existsSync(path.join(PLAT, f)));
+  const conPref = SALIDAS.filter((f) => /preferenc|prefiere/i.test(leer(f).replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, '')));
+  ok(SALIDAS.length >= 8 && conPref.length === 0, `WhatsApp, avisos, iCal, zona pública, «quién va» y exportaciones no tocan la preferencia (${SALIDAS.length} ficheros)`, conPref.join(', '));
+  const t194 = leer('src/lib/avisos/textos.ts');
+  const tPref = t194.slice(t194.indexOf('export function textoPreferenciaGestores'), t194.indexOf('/** (e) A los gestores'));
+  ok(tPref.length > 50 && !/motivo|nota\b|MOTIVOS/.test(tPref), 'el aviso a los gestores por un cambio de preferencia no lleva motivo ni nota (pantalla de bloqueo)');
+  // Ningún JSON público lleva la preferencia.
+  const publicos = [path.join(ROOT, 'data'), path.join(PLAT, 'src', 'data'), path.join(PLAT, 'public')].filter((d) => fs.existsSync(d))
+    .flatMap((d) => repoTodo(d)).filter((f) => /\.json$/.test(f) && /"(preferencia|prefiere)"\s*:/.test(fs.readFileSync(f, 'utf8')));
+  ok(publicos.length === 0, 'ningún JSON público (data/, src/data/, public/) lleva preferencia', publicos.map((f) => path.relative(ROOT, f)).join(', '));
+  const pp = leer('pruebas/privacidad_paginas.mjs');
+  ok(/preferencia\|prefiere/.test(pp) && /Tu preferido/.test(pp), 'el HTML de las páginas públicas se revisa también por la preferencia (privacidad_paginas.mjs)');
+}
+
 (async () => {
   // En una tanda (pruebas:rapidas/completas) el HTML lo revisa pruebas:privacidad, que va siempre con esta (D149).
   if (process.env.PRUEBAS_EN_TANDA) console.log('  (el HTML renderizado lo revisa pruebas:privacidad en esta misma tanda)');

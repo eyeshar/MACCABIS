@@ -39,19 +39,19 @@ const U = (o) => ({ clase: 'domingo', eventos: ['e'], texto: 'Domingo 22/11', pl
 const aviso = madrid('2026-11-16', '10:00');
 eq(horasActivas(madrid('2026-11-16', '22:00'), madrid('2026-11-17', '09:00')), 1.5, 'horas sin contar de 22:30 a 08:00: de 22:00 a 09:00 son 1,5');
 eq(horasActivas(madrid('2026-10-24', '20:00'), madrid('2026-10-25', '10:00')), 4.5, '…también la noche del cambio de hora');
-eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-16', '18:00'), avisoEn: aviso }), P).respuesta, 3, 'responde a las 8 h del aviso: +3');
+eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-16', '18:00'), avisoEn: aviso }), P).respuesta, 2, 'responde a las 8 h del aviso: +2');
 // aviso lunes 10:00; 12,5 h activas el lunes + 3 h hasta las 11:00 del martes = 15,5 → rápido aunque hayan pasado 25 h de reloj
-eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-17', '11:00'), avisoEn: aviso }), P).respuesta, 3, 'a las 25 h de reloj, 15,5 h sin el silencio: sigue siendo rápido');
+eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-17', '11:00'), avisoEn: aviso }), P).respuesta, 2, 'a las 25 h de reloj, 15,5 h sin el silencio: sigue siendo rápido');
 eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-17', '11:00'), avisoEn: madrid('2026-11-14', '10:00') }), P).respuesta, 1, 'más de 24 h hábiles después del aviso, pero antes del plazo: +1');
-eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-15', '10:00'), avisoEn: aviso }), P).respuesta, 3, 'respondió antes de que se le avisara: +3');
-eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-15', '10:00') }), P).respuesta, 3, 'no hizo falta avisarle: +3');
+eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-15', '10:00'), avisoEn: aviso }), P).respuesta, 2, 'respondió antes de que se le avisara: +2');
+eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-15', '10:00') }), P).respuesta, 2, 'no hizo falta avisarle: +2');
 eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-18', '10:00'), avisoEn: aviso }), P).respuesta, 0, 'fuera de plazo: 0');
 eq(compromisoUnidad(U({ estado: 'sin_responder', origen: null }), P).respuesta, -2, 'no responde: −2');
 eq(compromisoUnidad(U({ estado: 'no', origen: 'ausencia' }), P).respuesta, 1, 'avisó con una ausencia: +1');
 eq(compromisoUnidad(U({ estado: 'va', origen: 'gestor' }), P).respuesta, 0, 'respondió un gestor por él: ni suma ni resta');
 eq(compromisoUnidad(U({ estado: 'no', origen: 'sistema' }), P).respuesta, 0, 'duda que cerró el sistema: 0');
 eq(compromisoUnidad(U({ estado: 'no', origen: 'defecto' }), P).respuesta, 0, '«no va» por defecto: 0');
-eq(compromisoUnidad(U({ estado: 'no', respondidoEn: madrid('2026-11-16', '11:00'), avisoEn: aviso }), P).respuesta, 3, 'decir «no voy» rápido también es responder: +3');
+eq(compromisoUnidad(U({ estado: 'no', respondidoEn: madrid('2026-11-16', '11:00'), avisoEn: aviso }), P).respuesta, 2, 'decir «no voy» rápido también es responder: +2');
 
 console.log('\n== Aviso al afectado por un clausulazo');
 const dCl = { precio: 13.1, jugador: 'Ana', comprador: 'Eme' };
@@ -73,24 +73,34 @@ eq([textoMediaValor(8.8, 4), textoMediaValor(null, 4), mediaValor(pv, 'z', 4)], 
 
 console.log('\n== Compromiso: la asistencia real');
 const E = (o) => U({ clase: 'entreno', texto: 'Entreno 18/11', respondidoEn: madrid('2026-11-16', '11:00'), avisoEn: aviso, ...o });
-eq(compromisoUnidad(E({}), P), { clase: 'entreno', texto: 'Entreno 18/11', respuesta: 3, asistencia: 3, como: 'respondió rápido' }, 'dijo «voy» y nadie ha dicho que faltara: +3 del entreno');
-eq(compromisoUnidad(E({ asistencia: 'fue' }), P).asistencia, 3, 'fue de verdad: +3');
+eq(compromisoUnidad(E({}), P), { clase: 'entreno', texto: 'Entreno 18/11', respuesta: 2, asistencia: 2, como: 'respondió rápido' }, 'dijo «voy» y nadie ha dicho que faltara: +2 del entreno');
+eq(compromisoUnidad(E({ asistencia: 'fue' }), P).asistencia, 2, 'fue de verdad: +2');
 eq(compromisoUnidad(E({ asistencia: 'falto' }), P).asistencia, -5, 'plantón (dijo «voy» y no fue): −5');
 ok(compromisoUnidad(E({ asistencia: 'falto' }), P).como.endsWith('no vino') && !/plant[oó]n|excusa|motivo/i.test(JSON.stringify([compromisoUnidad(E({ asistencia: 'falto' }), P), compromisoUnidad(E({ asistencia: 'excusa' }), P)])), 'lo que ven los jugadores: «no vino», texto neutro y sin motivo');
-eq(compromisoUnidad(E({ asistencia: 'fue' }), P).asistencia - compromisoUnidad(E({ asistencia: 'falto' }), P).asistencia, 8, 'corregir un «no vino» mal marcado devuelve los 8 puntos (de −5 a +3)');
+eq(compromisoUnidad(E({ asistencia: 'fue' }), P).asistencia - compromisoUnidad(E({ asistencia: 'falto' }), P).asistencia, 7, 'corregir un «no vino» mal marcado devuelve los 7 puntos (de −5 a +2)');
 eq(compromisoUnidad(E({ asistencia: 'excusa' }), P).asistencia, 0, 'dijo «voy» y faltó con excusa: sin entreno y sin plantón');
-eq(compromisoUnidad(E({ estado: 'sin_responder', origen: null, respondidoEn: null, asistencia: 'fue' }), P), { clase: 'entreno', texto: 'Entreno 18/11', respuesta: 0, asistencia: 3, como: 'vino sin avisar' }, 'vino sin avisar: los +3 del entreno, sin puntos (ni castigo) de respuesta');
+eq(compromisoUnidad(E({ estado: 'sin_responder', origen: null, respondidoEn: null, asistencia: 'fue' }), P), { clase: 'entreno', texto: 'Entreno 18/11', respuesta: 0, asistencia: 2, como: 'vino sin avisar' }, 'vino sin avisar: los +2 del entreno, sin puntos (ni castigo) de respuesta');
 eq(compromisoUnidad(E({ estado: 'no', asistencia: null }), P).asistencia, 0, 'dijo «no voy»: sin puntos de entreno');
 eq(compromisoUnidad(U({ asistencia: 'falto', enHoja: false, respondidoEn: madrid('2026-11-16', '11:00') }), P).asistencia, -5, 'partido: convocado, dijo «voy», no sale en la hoja y un gestor confirma que faltó: plantón');
 eq(compromisoUnidad(U({ asistencia: null, enHoja: false, respondidoEn: madrid('2026-11-16', '11:00') }), P).asistencia, 0, 'partido: si nadie lo confirma, no hay plantón');
 eq(compromisoUnidad(U({ respondidoEn: madrid('2026-11-16', '11:00') }), P).asistencia, 0, 'ir al partido no da compromiso (ya da rendimiento)');
 
 console.log('\n== Total del jugador');
-eq(puntosJugador([L({ pts: 10, masMenos: 16 })], [E({}), U({ respondidoEn: madrid('2026-11-16', '11:00') })], true, P).total, 13 + 6 + 3, 'rendimiento + compromiso');
+eq(puntosJugador([L({ pts: 10, masMenos: 16 })], [E({}), U({ respondidoEn: madrid('2026-11-16', '11:00') })], true, P).total, 13 + 4 + 2, 'rendimiento + compromiso');
 const nc = puntosJugador([], [E({})], false, P);
-ok(nc.rendimiento === 0 && nc.total === 6 && !nc.convocado, 'no convocado: solo suma compromiso');
+ok(nc.rendimiento === 0 && nc.total === 4 && !nc.convocado, 'no convocado: solo suma compromiso');
+{
+  const dom = U({ respondidoEn: madrid('2026-11-16', '11:00') });
+  const tres = puntosJugador([], [E({}), E({}), E({}), dom], false, P);
+  ok(tres.unidades.reduce((t, u) => t + u.respuesta + u.asistencia, 0) === 14 && tres.compromiso === 6 && tres.total === 6, 'tope semanal de compromiso: tres entrenos y el domingo sumarían 14, cuentan 6', `${tres.compromiso}`);
+  eq(puntosJugador([], [E({}), dom], false, P).compromiso, 6, 'justo en el tope (4 + 2): 6');
+  eq(puntosJugador([L({ pts: 10 })], [E({ asistencia: 'falto' }), U({ estado: 'sin_responder', origen: null })], true, P).compromiso, -5, 'el tope limita solo por arriba: los negativos cuentan enteros (+2 −5 −2)');
+  eq(puntosJugador([], [E({}), E({}), E({}), dom], false, parametros({ topeCompromiso: 10 })).compromiso, 10, 'el tope se cambia en Ajustes');
+  eq(puntosJugador([], [E({}), E({}), E({}), dom], false, parametros({ topeCompromiso: 30 })).compromiso, 14, 'con un tope alto, cuenta todo');
+  ok(AJUSTES.topeCompromiso.grupo === 'Compromiso' && P.topeCompromiso === 6 && P.respuestaRapida === 2 && P.respuestaATiempo === 1 && P.entrenoAsistido === 2 && P.sinRespuesta === -2 && P.planton === -5, 'pesos de salida: rápido +2, a tiempo +1, entreno +2, no responder −2, plantón −5, tope 6');
+}
 eq(puntosJugador([], [E({ asistencia: 'falto' }), U({ estado: 'sin_responder', origen: null })], false, P).total, 0, 'el total nunca baja de 0 (−2 de plantón+respuesta y −2)');
-eq(puntosJugador([L({ pts: 6, masMenos: 10 })], [E({ asistencia: 'falto' })], true, P).total, 4, 'un compromiso negativo resta del rendimiento (6 − 2)');
+eq(puntosJugador([L({ pts: 6, masMenos: 10 })], [E({ asistencia: 'falto' })], true, P).total, 3, 'un compromiso negativo resta del rendimiento (6 − 3)');
 
 console.log('\n== Nombres de la hoja');
 const fichas = [{ person_id: 'a', nombre_oficial: 'Méndez Escandón, Fernando' }, { person_id: 'b', nombre_oficial: 'Martínez Martínez, Andrés' }, { person_id: 'c', nombre_oficial: 'Martínez Martínez, Víctor' }];
@@ -121,8 +131,8 @@ eq(copiasPorJugador(25, 24, P), 9, 'copias: las justas para 25 mánagers × 7 co
 eq(copiasPorJugador(1, 24, P), 1, 'al menos una');
 ok(copiasPorJugador(25, 24, P) * 24 >= 25 * 7 && copiasPorJugador(25, 24, P) * 24 < 25 * 7 * 1.3, 'llegan para todos con poco margen libre');
 eq(precioClausula(8.9, P), 13.4, 'clausulazo = valor × 1,5');
-eq(ingreso(60, P), 4.4, 'ingreso de una jornada media (60 puntos): 2 + 0,04 × 60');
-ok(Math.abs(3 * ingreso(60, P) - precioClausula(8.9, P)) < 1, 'tres jornadas medias pagan el clausulazo de un jugador medio');
+eq(ingreso(52, P), 3.6, 'ingreso de una jornada media (52 puntos): 1,5 + 0,04 × 52');
+ok(Math.abs(3 * ingreso(52, P) - precioClausula(7.5, P)) < 1 && P.cajaInicial === 11, 'tres jornadas medias pagan el clausulazo de un jugador medio (7,5 M → 11,3 M); caja inicial 11 M');
 ok(P.cajaInicial + 6 * ingreso(60, P) < precioClausula(31.5, P), 'el del más caro no se alcanza en 6 jornadas sin vender');
 
 console.log('\n== Duelos');
@@ -172,17 +182,17 @@ const D = {
 };
 const pj = puntuarJornada(D, P);
 const A = pj.puntos.get('a'), B = pj.puntos.get('b'), C = pj.puntos.get('c');
-ok(A.doblete && A.rendimiento === redondeo((13 + 9) / 2 + 3) && A.compromiso === 9 && A.total === 23, 'Ana: dos partidos (13 y 9 → 11 + 3), entreno (+3 +3) y domingo (+3, una sola respuesta para los dos partidos)', JSON.stringify(A));
+ok(A.doblete && A.rendimiento === redondeo((13 + 9) / 2 + 3) && A.compromiso === 6 && A.total === 20, 'Ana: dos partidos (13 y 9 → 11 + 3), entreno (+2 +2) y domingo (+2, una sola respuesta para los dos partidos)', JSON.stringify(A));
 ok(A.unidades.length === 2, 'el domingo con dos partidos es UNA respuesta');
-ok(B.rendimiento === 0 && B.compromiso === -2 + 3 - 5 && B.total === 0, 'Beto: no respondió al entreno (−2), respondió al domingo (+3), convocado sin salir en la hoja y confirmado: plantón (−5); total 0', JSON.stringify(B));
+ok(B.rendimiento === 0 && B.compromiso === -2 + 2 - 5 && B.total === 0, 'Beto: no respondió al entreno (−2), respondió al domingo (+2), convocado sin salir en la hoja y confirmado: plantón (−5); total 0', JSON.stringify(B));
 ok(C.compromiso === 0 && C.unidades.length === 1, 'Caro: «no va» por defecto al entreno (0) y sin ficha en ningún partido: sin domingo');
 eq([pj.sinCasar, pj.convocadosSinHoja, pj.resultados], [['DESCONOCIDO, X'], ['b'], { MdA: 'gana', MdL: 'pierde' }], 'nombres sin casar, convocados sin hoja y resultados');
 const c = cerrarJornada(D);
 const m1 = c.guardar.managers.find((m) => m.manager === 'm1'), m2 = c.guardar.managers.find((m) => m.manager === 'm2');
-ok(m1.detalle.dobla === 'a' && m1.alineacion === 23 + 14 + 0 + 0 && m1.porra === 3 && m1.total === 40, 'm1: su capitán no jugó, dobla el vice; un acierto de porra', JSON.stringify(m1));
+ok(m1.detalle.dobla === 'a' && m1.alineacion === 20 + 14 + 0 + 0 && m1.porra === 3 && m1.total === 37, 'm1: su capitán no jugó, dobla el vice; un acierto de porra', JSON.stringify(m1));
 ok(m2.detalle.capitan !== 'a' && c.guardar.arrastradas.length === 1 && c.guardar.arrastradas[0].titulares.join() === 'a', 'm2: alineación arrastrada, sin el que vendió y sin repetir capitán', JSON.stringify(c.guardar.arrastradas));
-eq(m1.ingreso, ingreso(40, P), 'ingreso según los puntos');
-eq(c.guardar.duelos, [{ a: 'm1', b: 'm2', puntos_a: 40, puntos_b: m2.total }], 'duelo de la jornada');
+eq(m1.ingreso, ingreso(37, P), 'ingreso según los puntos');
+eq(c.guardar.duelos, [{ a: 'm1', b: 'm2', puntos_a: 37, puntos_b: m2.total }], 'duelo de la jornada');
 ok(c.guardar.logros.some((l) => l.manager === 'm1' && l.logro === 'mejor_jornada') && c.guardar.logros.some((l) => l.logro === 'duelo_ganado'), 'logros');
 eq(JSON.stringify(cerrarJornada(D).guardar), JSON.stringify(c.guardar), 'el mismo dato da el mismo resultado (repetible)');
 

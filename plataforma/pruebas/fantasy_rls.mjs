@@ -272,6 +272,32 @@ try {
   await sql`delete from public.asistencia_eventos where evento_ref = 'prueba-fz-correccion'`;
   ok(await pendiente() && (await puntuar()).length === 1 && await ingresos() === nIngresos, 'borrar la marca también recalcula; los ingresos no se duplican');
 
+  console.log('\n== Una corrección de asistencia no mueve el valor de mercado hasta la siguiente jornada');
+  {
+    const quien = fichas[4].person_id;
+    const foto = async () => (await sql`select f.valor, p.total, p.total_valor, (select sum(importe) from public.fantasy_movimientos where tipo = 'ingreso') ingresos
+      from public.fantasy_jugadores f join public.fantasy_puntos_jugador p on p.person_id = f.person_id and p.jornada = '2026-10-19' where f.person_id = ${quien}`).map((x) => ({ valor: Number(x.valor), total: Number(x.total), tv: Number(x.total_valor), ingresos: Number(x.ingresos) }))[0];
+    const a0 = await foto();
+    ok(a0.total === a0.tv && (await sql`select count(*)::int n from public.fantasy_puntos_jugador where total_valor <> total`)[0].n === 0, 'de salida, el valor sale de los mismos puntos que el ranking');
+    // Un gestor corrige la asistencia (la jornada queda pendiente «con el valor quieto») y los puntos de ese jugador cambian.
+    await sql`insert into public.asistencia_eventos (person_id, evento_ref, nombre, temporada, fecha, ambito, titulo, estado, origen) values ('sint-fz-ana', 'prueba-fz-quieto', 'Ana', '2026-27', '2026-10-19', 'entrenos', 'Entreno', 'sin_excusa', 'plataforma')`;
+    ok((await sql`select valor_quieto q from public.fantasy_jornadas where fecha = '2026-10-19'`)[0].q === true, 'la corrección marca la jornada: pendiente, con el valor quieto');
+    await sql`update public.liga_estadisticas_jugador set pts = pts + 8 where nombre = ${hoja(fichas[4].nombre_oficial)} and partido_id in (select id from public.liga_partidos where jornada = 3)`;
+    ok((await puntuar()).length === 1, 'se vuelve a puntuar');
+    const a1 = await foto();
+    ok(a1.total !== a0.total && a1.ingresos !== a0.ingresos, 'cambian sus puntos (y con ellos ingresos y ranking)', JSON.stringify([a0, a1]));
+    ok(a1.valor === a0.valor && a1.tv === a0.tv, '…pero su valor de mercado se queda como estaba', JSON.stringify([a0, a1]));
+    ok((await sql`select valor_quieto q from public.fantasy_jornadas where fecha = '2026-10-19'`)[0].q === false, 'la marca se gasta al puntuar');
+    // La siguiente puntuación normal (aquí, la misma jornada con la hoja cambiada) pone el valor al día.
+    await sql`delete from public.asistencia_eventos where evento_ref = 'prueba-fz-quieto'`;
+    await sql`update public.fantasy_jornadas set huella = null, valor_quieto = false where fecha = '2026-10-19'`;
+    ok((await puntuar()).length === 1, 'llega la siguiente puntuación normal');
+    const a2 = await foto();
+    ok(a2.tv === a2.total && a2.valor !== a0.valor && (await sql`select count(*)::int n from public.fantasy_puntos_jugador where total_valor <> total`)[0].n === 0, '…y entonces sí se mueve el valor', JSON.stringify([a0, a2]));
+    await sql`update public.liga_estadisticas_jugador set pts = pts - 8 where nombre = ${hoja(fichas[4].nombre_oficial)} and partido_id in (select id from public.liga_partidos where jornada = 3)`;
+    await puntuar();
+  }
+
   console.log('\n== Primera respuesta de cada jugador (disparador)');
   const ev = (await sql`select id from public.eventos where tipo = 'entreno' and fecha > '2026-10-19' order by fecha limit 1`)[0].id;
   await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, cambiado_en) values (${ev}, 'sint-fz-ana', 'va', 'jugador', 'web', pruebas.ahora())`;

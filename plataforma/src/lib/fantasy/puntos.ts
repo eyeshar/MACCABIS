@@ -103,7 +103,8 @@ export type PuntosJugador = {
 export function puntosJugador(lineas: LineaPartido[], unidades: Unidad[], convocado: boolean, P: Parametros): PuntosJugador {
   const r = rendimiento(lineas, P);
   const det = unidades.map((u) => compromisoUnidad(u, P));
-  const compromiso = det.reduce((s, d) => s + d.respuesta + d.asistencia, 0);
+  // Tope semanal: limita solo por arriba (los negativos cuentan enteros).
+  const compromiso = Math.min(P.topeCompromiso, det.reduce((s, d) => s + d.respuesta + d.asistencia, 0));
   return {
     rendimiento: r.total, compromiso, total: Math.max(0, r.total + compromiso),
     minutos: r.partidos.reduce((s, p) => s + p.minutos, 0), convocado: convocado || r.partidos.length > 0, doblete: r.doblete,

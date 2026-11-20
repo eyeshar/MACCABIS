@@ -41,7 +41,7 @@ export async function cargarFantasy(supabase: SupabaseClient): Promise<Fantasy |
     estado, P: parametros(estado.parametros),
     managers, jugadores: num(jugadores, ["valor", "media"]), copias: num(copias, ["precio"]), movimientos: num(movimientos, ["importe"]),
     jornadas: jornadas.filter((j) => j.puntuada_en), alineaciones, porras,
-    duelos, puntosJ: num(puntosJ, ["rendimiento", "compromiso", "total"]), puntosM: num(puntosM, ["alineacion", "porra", "total", "ingreso"]), logros,
+    duelos, puntosJ: num(puntosJ, ["rendimiento", "compromiso", "total", "total_valor"]), puntosM: num(puntosM, ["alineacion", "porra", "total", "ingreso"]), logros,
     nombreJ: new Map(jugadores.map((j) => [j.person_id, j.nombre])), nombreM: new Map(managers.map((m) => [m.person_id, m.nombre])),
   };
 }

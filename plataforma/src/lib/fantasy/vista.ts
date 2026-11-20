@@ -14,7 +14,7 @@ export type DetalleJugador = {
   partidos?: { equipo: string; pts: number; masMenos: number; relativo: number; extra: number; total: number; minutos: number }[];
   unidades?: { clase: string; texto: string; respuesta: number; asistencia: number; como: string }[];
 };
-export type PuntoJ = { jornada: string; person_id: string; rendimiento: number; compromiso: number; total: number; minutos: number; convocado: boolean; doblete: boolean; detalle: DetalleJugador };
+export type PuntoJ = { jornada: string; person_id: string; rendimiento: number; compromiso: number; total: number; total_valor?: number; minutos: number; convocado: boolean; doblete: boolean; detalle: DetalleJugador };
 export type PuntoM = {
   jornada: string; manager: string; alineacion: number; porra: number; total: number; ingreso: number;
   detalle: { dobla?: string | null; capitan?: string | null; vice?: string | null; jugadores?: { person_id: string; rendimiento: number; compromiso: number; base: number; doble: number; total: number }[] };
@@ -165,9 +165,9 @@ export function marcaConvocado(c: Convocatoria, id: string): MarcaConvocado | nu
   return { texto: "No convocado", clase: "no" };
 }
 /** La media que fija el valor de mercado: la de las ultimas N jornadas con datos del jugador. null = aun sin jornadas. */
-export function mediaValor(puntosJ: { jornada: string; person_id: string; total: number }[], id: string, n: number): number | null {
+export function mediaValor(puntosJ: { jornada: string; person_id: string; total: number; total_valor?: number }[], id: string, n: number): number | null {
   const suyas = puntosJ.filter((p) => p.person_id === id).sort((a, b) => b.jornada.localeCompare(a.jornada)).slice(0, n);
-  return suyas.length ? Math.round((suyas.reduce((t, p) => t + p.total, 0) / suyas.length) * 10) / 10 : null;
+  return suyas.length ? Math.round((suyas.reduce((t, p) => t + (p.total_valor ?? p.total), 0) / suyas.length) * 10) / 10 : null;
 }
 /** «8,8 pts · media últimas 4» */
 export const textoMediaValor = (m: number | null, n: number) => (m == null ? "sin jornadas" : `${pts(m)} pts · media últimas ${n}`);

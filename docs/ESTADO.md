@@ -20,7 +20,7 @@
 - **Con datos reales:** el staging local copia el real en solo lectura y puntúa las 5 jornadas jugadas con el código de la web; revisado a ojo en capturas a 390 px (`privado/mockups_liga/rediseno/mdfantasy/`, fuera de git).
 - **No verificado:** nada en producción ni en vistas previas (D179). Los avisos al móvil del fantasy no se han enviado nunca de verdad (barrera de no enviar a personas reales): están probados hasta la cola, no la entrega. No se han pasado las suites `-real` porque no se ha escrito nada en el real.
 
-**Parámetros elegidos** (todos se cambian en Ajustes; justificación en `docs/MDFANTASY.md`): caja inicial **13 M**; ingreso por jornada **2 M + 0,04 M por punto** (unos 4,4 M para un mánager medio, que hace unos 59 puntos); valor mínimo 4 M sobre las últimas 4 jornadas; clausulazo × 1,5; copias con un 15 % de margen; plantilla inicial ±10 %. Con eso, un clausulazo de un jugador medio (13,1 M) sale cada tres jornadas y el del más caro (47,3 M) pide 8 jornadas sin gastar: en la práctica, solo vendiendo.
+**Parámetros elegidos** (todos se cambian en Ajustes; justificación en `docs/MDFANTASY.md`; recalibrados el 20/11/2026 con los pesos nuevos de compromiso): caja inicial **11 M**; ingreso por jornada **1,5 M + 0,04 M por punto** (unos 3,6 M para un mánager medio, que hace unos 52 puntos); clausulazo de un jugador medio 11,2 M (cada tres jornadas); el del más caro 43,5 M (10 jornadas sin gastar: solo vendiendo); valor mínimo 4 M con las últimas 4 jornadas; clausulazo ×1,5; compromiso: rápido +2, a tiempo +1, entreno +2, no responder −2, plantón −5, tope semanal 6.
 
 **Nombres sin casar:** ninguno. De los 23 nombres de las hojas, 22 casan exactos y uno por aproximación, **confirmado por Iván (20/11/2026)**: «MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando` (la hoja trae un segundo nombre). `galan-domingo-guillermo` no sale en ninguna hoja porque no ha jugado.
 
@@ -45,7 +45,7 @@
 - **«Alineación guardada»** ya se queda a la vista (se perdía porque el bloque se volvía a montar al refrescar).
 - **Jornada:** «MdL G» pasa a «Nuestros partidos del 15/11: MdA ganó · MdL perdió».
 - **Pruebas de pantalla nuevas:** bloqueo del gestor con el borrador (sin botones en Mercado ni en Plantilla) y «Clausulazos cerrados» desde el sábado a las 20:00; el podio se prueba ya con tres mánagers.
-- **Sin cambiar, pendiente de decisión de Iván:** (a) corregir un plantón mueve el valor de mercado del jugador (propuesta: que una corrección no toque el valor hasta la siguiente jornada); (b) peso del compromiso frente al rendimiento (tabla con `npm run fantasy:compromiso`).
+- **Quinta tanda (decidido por Iván, 20/11/2026):** una corrección de asistencia ya no mueve el valor de mercado hasta la siguiente jornada; pesos nuevos de compromiso (rápido +2, entreno +2, **tope semanal 6**, editable en Ajustes) y economía recalibrada (**caja 11 M, ingreso 1,5 M + 0,04 M por punto**). Detalle en D196 y `docs/MDFANTASY.md`.
 
 **Pasos exactos para probarlo (staging local, en este ordenador):**
 1. Abrir **Git Bash** en `C:\Users\Iván\Proyectos\Maccabis-fantasy\plataforma`.

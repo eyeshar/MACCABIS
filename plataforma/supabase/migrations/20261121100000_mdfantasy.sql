@@ -88,7 +88,9 @@ create table public.fantasy_jornadas (
   huella text,
   ronda int,
   sin_casar text[] not null default '{}',
-  resultados jsonb not null default '{}'::jsonb
+  resultados jsonb not null default '{}'::jsonb,
+  -- La jornada está pendiente de volver a puntuarse SOLO por una corrección de asistencia: el valor de mercado no se mueve.
+  valor_quieto boolean not null default false
 );
 
 create table public.fantasy_alineaciones (
@@ -127,6 +129,9 @@ create table public.fantasy_puntos_jugador (
   rendimiento numeric(6, 1) not null,
   compromiso numeric(6, 1) not null,
   total numeric(6, 1) not null,
+  -- El total que cuenta para el VALOR de mercado. Igual que `total`, salvo tras corregir la asistencia de una jornada ya
+  -- puntuada: entonces se queda como estaba hasta que se puntúe la siguiente jornada (nadie ve saltar un precio a mitad de semana).
+  total_valor numeric(6, 1) not null,
   minutos int not null default 0,
   convocado boolean not null default false,
   doblete boolean not null default false,
@@ -170,11 +175,11 @@ as $$
     (select nullif(c.parametros ->> p_clave, '')::numeric from public.fantasy_config c where c.id = 1),
     case p_clave
       when 'puntoPorPunto' then 1 when 'masMenosDivisor' then 2 when 'masMenosTope' then 5 when 'bonusDoblete' then 3
-      when 'respuestaRapida' then 3 when 'respuestaATiempo' then 1 when 'sinRespuesta' then -2 when 'horasRapida' then 24
-      when 'entrenoAsistido' then 3 when 'planton' then -5
+      when 'respuestaRapida' then 2 when 'respuestaATiempo' then 1 when 'sinRespuesta' then -2 when 'horasRapida' then 24
+      when 'entrenoAsistido' then 2 when 'planton' then -5 when 'topeCompromiso' then 6
       when 'plantilla' then 7 when 'alineados' then 5 when 'porraAcierto' then 3
       when 'valorMinimo' then 4 when 'jornadasValor' then 4 when 'clausula' then 1.5 when 'margenCopias' then 0.15
-      when 'margenInicio' then 0.1 when 'cajaInicial' then 13 when 'ingresoFijo' then 2 when 'ingresoPorPunto' then 0.04
+      when 'margenInicio' then 0.1 when 'cajaInicial' then 11 when 'ingresoFijo' then 1.5 when 'ingresoPorPunto' then 0.04
     end)
 $$;
 
@@ -276,7 +281,7 @@ begin
   update public.fantasy_jugadores f
      set valor = greatest(v_min, coalesce(x.media_n, v_min)), media = coalesce(x.media, 0), jornadas = coalesce(x.n, 0), actualizado_en = now()
     from (select f2.person_id,
-                 (select round(avg(u.total), 1) from (select p.total from public.fantasy_puntos_jugador p where p.person_id = f2.person_id order by p.jornada desc limit v_n) u) as media_n,
+                 (select round(avg(u.total_valor), 1) from (select p.total_valor from public.fantasy_puntos_jugador p where p.person_id = f2.person_id order by p.jornada desc limit v_n) u) as media_n,
                  (select round(avg(p.total), 1) from public.fantasy_puntos_jugador p where p.person_id = f2.person_id) as media,
                  (select count(*)::int from public.fantasy_puntos_jugador p where p.person_id = f2.person_id) as n
           from public.fantasy_jugadores f2) x
@@ -537,7 +542,7 @@ begin
      set modo = coalesce(p_modo, modo), parametros = coalesce(p_parametros, parametros), alias = coalesce(p_alias, alias),
          cambiado_en = now(), cambiado_por_nombre = public._nombre_gestor()
    where id = 1;
-  if p_recalcular then update public.fantasy_jornadas set huella = null; end if;
+  if p_recalcular then update public.fantasy_jornadas set huella = null, valor_quieto = false; end if;
   if exists (select 1 from public.fantasy_jugadores) then perform public._fantasy_recalcular_valores(); end if;
 end $$;
 
@@ -646,12 +651,17 @@ end $$;
 create function public.fantasy_guardar_jornada(p jsonb)
 returns void language plpgsql security definer set search_path = ''
 as $$
-declare v_f date := (p ->> 'fecha')::date;
+declare
+  v_f date := (p ->> 'fecha')::date;
+  -- ¿Se vuelve a puntuar solo por una corrección de asistencia? Entonces el valor de mercado se queda quieto.
+  v_quieto boolean := coalesce((select j.valor_quieto from public.fantasy_jornadas j where j.fecha = v_f and j.puntuada_en is not null), false);
+  v_viejos jsonb := (select jsonb_object_agg(pj.person_id, pj.total_valor) from public.fantasy_puntos_jugador pj where pj.jornada = v_f);
 begin
   perform pg_advisory_xact_lock(hashtext('mdfantasy'));
   delete from public.fantasy_puntos_jugador where jornada = v_f;
-  insert into public.fantasy_puntos_jugador (jornada, person_id, rendimiento, compromiso, total, minutos, convocado, doblete, detalle)
+  insert into public.fantasy_puntos_jugador (jornada, person_id, rendimiento, compromiso, total, total_valor, minutos, convocado, doblete, detalle)
   select v_f, x ->> 'person_id', (x ->> 'rendimiento')::numeric, (x ->> 'compromiso')::numeric, (x ->> 'total')::numeric,
+         case when v_quieto then coalesce((v_viejos ->> (x ->> 'person_id'))::numeric, (x ->> 'total')::numeric) else (x ->> 'total')::numeric end,
          (x ->> 'minutos')::int, (x ->> 'convocado')::boolean, (x ->> 'doblete')::boolean, coalesce(x -> 'detalle', '{}'::jsonb)
   from jsonb_array_elements(coalesce(p -> 'jugadores', '[]'::jsonb)) x;
 
@@ -686,7 +696,10 @@ begin
   insert into public.fantasy_jornadas (fecha, temporada, puntuada_en, huella, ronda, sin_casar, resultados)
   values (v_f, public._fantasy_temporada(), now(), p ->> 'huella', (p ->> 'ronda')::int,
           array(select jsonb_array_elements_text(coalesce(p -> 'sin_casar', '[]'::jsonb))), coalesce(p -> 'resultados', '{}'::jsonb))
-  on conflict (fecha) do update set puntuada_en = now(), huella = excluded.huella, ronda = excluded.ronda, sin_casar = excluded.sin_casar, resultados = excluded.resultados;
+  on conflict (fecha) do update set puntuada_en = now(), huella = excluded.huella, ronda = excluded.ronda, sin_casar = excluded.sin_casar, resultados = excluded.resultados, valor_quieto = false;
+  -- Una puntuación normal (jornada nueva, hoja cambiada, parámetros) pone al día el valor de TODO: también lo que una
+  -- corrección de asistencia había dejado quieto.
+  if not v_quieto then update public.fantasy_puntos_jugador set total_valor = total where total_valor is distinct from total; end if;
 
   perform public._fantasy_recalcular_valores();
 end $$;
@@ -730,7 +743,7 @@ declare v_f date := coalesce(new.fecha, old.fecha);
 begin
   if tg_op = 'UPDATE' and new.estado is not distinct from old.estado and new.fecha = old.fecha then return null; end if;
   begin
-    update public.fantasy_jornadas set huella = null
+    update public.fantasy_jornadas set huella = null, valor_quieto = true
     where puntuada_en is not null and fecha = (select min(j.fecha) from public.fantasy_jornadas j where j.fecha >= v_f);
   exception when others then null;
   end;

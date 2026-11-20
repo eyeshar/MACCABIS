@@ -16,6 +16,7 @@ export type Parametros = {
   horasRapida: number;         // horas (sin contar el silencio de 22:30 a 08:00)
   entrenoAsistido: number;     // entreno al que fue de verdad
   planton: number;             // dijo voy y no fue
+  topeCompromiso: number;      // tope semanal: lo mas que suma el compromiso de un jugador en una jornada (solo por arriba)
   // Manager
   plantilla: number;           // jugadores en propiedad
   alineados: number;           // los que puntuan cada domingo
@@ -34,10 +35,10 @@ export type Parametros = {
 /** Valores de salida. Caja e ingresos, fijados con la simulacion de 2026-27 (docs/MDFANTASY.md). */
 export const PARAMETROS: Parametros = {
   puntoPorPunto: 1, masMenosDivisor: 2, masMenosTope: 5, bonusDoblete: 3,
-  respuestaRapida: 3, respuestaATiempo: 1, sinRespuesta: -2, horasRapida: 24, entrenoAsistido: 3, planton: -5,
+  respuestaRapida: 2, respuestaATiempo: 1, sinRespuesta: -2, horasRapida: 24, entrenoAsistido: 2, planton: -5, topeCompromiso: 6,
   plantilla: 7, alineados: 5, porraAcierto: 3,
   valorMinimo: 4, jornadasValor: 4, clausula: 1.5, margenCopias: 0.15, margenInicio: 0.1,
-  cajaInicial: 13, ingresoFijo: 2, ingresoPorPunto: 0.04,
+  cajaInicial: 11, ingresoFijo: 1.5, ingresoPorPunto: 0.04,
 };
 
 export const CLAVES = Object.keys(PARAMETROS) as (keyof Parametros)[];
@@ -56,6 +57,7 @@ export const AJUSTES: Record<keyof Parametros, { texto: string; grupo: GrupoAjus
   horasRapida: { texto: "Horas para que cuente como rápido", grupo: "Compromiso", min: 1, max: 72, paso: 1 },
   entrenoAsistido: { texto: "Entreno al que fue de verdad", grupo: "Compromiso", min: 0, max: 10, paso: 1 },
   planton: { texto: "Plantón (dijo «voy» y no fue)", grupo: "Compromiso", min: -20, max: 0, paso: 1 },
+  topeCompromiso: { texto: "Tope semanal de compromiso (por jugador y jornada)", grupo: "Compromiso", min: 0, max: 30, paso: 1 },
   plantilla: { texto: "Jugadores en la plantilla", grupo: "Mánager", min: 5, max: 12, paso: 1 },
   alineados: { texto: "Jugadores alineados", grupo: "Mánager", min: 1, max: 7, paso: 1 },
   porraAcierto: { texto: "Puntos por acierto de la porra", grupo: "Mánager", min: 0, max: 10, paso: 1 },

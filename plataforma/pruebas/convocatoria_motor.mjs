@@ -10,6 +10,8 @@
 // Y la marca «Reserva» (D158, regla 1.8): solo entra para cubrir mínimos o el número compensado; si no, «reserva disponible».
 // Y el recambio tras aprobar (D173, sugerirRecambio): reserva antes que doblar, nada de doblar a la misma hora, solo se dobla
 // para cubrir mínimos, y la lista completa de disponibles; las roturas de una aprobada tras un cambio de calendario.
+// Y la preferencia de partido (D194, regla 3.4): solo decide el EQUIPO de quien ya va; con o sin preferencias, los mismos
+// convocados, el mismo número, las mismas líneas y el mismo nivel en cada equipo.
 //
 //   npm run pruebas:convocatoria-motor
 
@@ -669,6 +671,97 @@ console.log('\n== «Partidos convocado»: las hojas y, sin hoja todavía, la con
   ok(partidosConvocado(hojas, conHoja, [...aprobadas, aprobadas[1]]).get('ana').convocados === 3, 'una convocatoria repetida no suma dos veces');
   const dobl = partidosConvocado(new Map(), new Set(), [{ fecha: '2026-11-15', equipos: { MdA: [{ person_id: 'eva' }], MdL: [{ person_id: 'eva' }] } }]);
   ok(dobl.get('eva').convocados === 2 && dobl.get('eva').doblajes === 1, 'convocada con los dos el mismo domingo: 2 partidos y 1 doblaje');
+}
+
+
+// ---------------------------------------------------------------- preferencia de partido (D194, regla 3.4)
+console.log('\n== Preferencia de partido (D194, regla 3.4): solo decide el equipo');
+{
+  const huella = (r, jugadores) => {
+    const de = new Map(jugadores.map((j) => [j.person_id, j]));
+    const eq = (e) => { const l = ids(r.convocatoria, e).map((id) => de.get(id)); return { n: l.length, base: l.filter((j) => LINEA_DE[j.privado.posicion] === 'base').length, ext: l.filter((j) => LINEA_DE[j.privado.posicion] === 'exterior').length, int: l.filter((j) => LINEA_DE[j.privado.posicion] === 'interior').length, nivel: r.recuento[e]?.nivelMedio ?? null }; };
+    const a = ids(r.convocatoria, 'MdA'), l = ids(r.convocatoria, 'MdL');
+    return JSON.stringify({ todos: [...new Set([...a, ...l])].sort(), doblan: a.filter((x) => l.includes(x)).sort(), fuera: r.sinConvocar.map((x) => x.person_id + x.regla).sort(), MdA: eq('MdA'), MdL: eq('MdL') });
+  };
+  const equipoDe = (r, id) => (ids(r.convocatoria, 'MdA').includes(id) ? (ids(r.convocatoria, 'MdL').includes(id) ? 'los dos' : 'MdA') : ids(r.convocatoria, 'MdL').includes(id) ? 'MdL' : null);
+  const conPref = (jugadores, prefs) => jugadores.map((j) => ({ ...structuredClone(j), prefiere: prefs[j.person_id] ?? null }));
+  const otroEq = (e) => (e === 'MdA' ? 'MdL' : 'MdA');
+  const partidos = [P('MdA', '09:00', 'alta'), P('MdL', '12:45', 'baja')];
+
+  // Dos empatados (interiores de nivel C: sint-15 y sint-16) en equipos distintos.
+  const base = dieciocho();
+  const r0 = proponer({ partidos, jugadores: base });
+  const e15 = equipoDe(r0, 'sint-15'), e16 = equipoDe(r0, 'sint-16');
+  ok(e15 && e16 && e15 !== e16 && e15 !== 'los dos' && e16 !== 'los dos', 'sin preferencias: los dos interiores C, uno en cada equipo', `${e15} / ${e16}`);
+  // 1. Con preferencia: el que prefiere el otro equipo se cambia con su empatado (que no tiene preferencia).
+  let jug = conPref(base, { 'sint-15': otroEq(e15) });
+  let r = proponer({ partidos, jugadores: jug });
+  ok(equipoDe(r, 'sint-15') === otroEq(e15) && equipoDe(r, 'sint-16') === e15, 'empatados en línea y nivel: va al que prefiere y su empatado pasa al otro', `${equipoDe(r, 'sint-15')} / ${equipoDe(r, 'sint-16')}`);
+  ok(huella(r, jug) === huella(r0, base), 'mismos convocados, mismo número, mismas líneas y mismo nivel medio en cada equipo');
+  const av = avisosDe(r, '3.4');
+  ok(av.length === 1 && av[0].person_id === 'sint-15' && /va al (MdA|MdL) por preferencia \(empate con Sintético 16 en línea y nivel\)/.test(av[0].texto), 'aviso 3.4 «X va al … por preferencia (empate con Y…)»', av.map((a) => a.texto).join(' | '));
+  // 2. Si el empatado prefiere quedarse donde está, no se cambia nadie.
+  jug = conPref(base, { 'sint-15': otroEq(e15), 'sint-16': e16 });
+  r = proponer({ partidos, jugadores: jug });
+  ok(equipoDe(r, 'sint-15') === e15 && equipoDe(r, 'sint-16') === e16 && !avisosDe(r, '3.4').length, 'si el empatado prefiere su equipo: nadie se mueve');
+  // 3. Los dos prefieren el equipo del otro: se cambian los dos.
+  jug = conPref(base, { 'sint-15': otroEq(e15), 'sint-16': otroEq(e16) });
+  r = proponer({ partidos, jugadores: jug });
+  ok(equipoDe(r, 'sint-15') === e16 && equipoDe(r, 'sint-16') === e15 && /que prefería el/.test(avisosDe(r, '3.4')[0]?.texto ?? ''), 'los dos prefieren el del otro: se cambian (y el aviso lo dice)');
+  // 4. Sin empatado (misma línea y nivel) en el otro equipo: no se respeta (nunca toca líneas ni mínimos).
+  const solo = ['sint-13', 'sint-14', 'sint-17', 'sint-18'].find((x) => equipoDe(r0, x) && equipoDe(r0, x) !== 'los dos');
+  jug = conPref(base, { [solo]: otroEq(equipoDe(r0, solo)) });
+  r = proponer({ partidos, jugadores: jug });
+  ok(equipoDe(r, solo) === equipoDe(r0, solo) && huella(r, jug) === huella(r0, base), `un interior sin empatado en el otro equipo (${solo}): se queda; líneas y mínimos, igual`);
+  // 5. Misma hora: igual que a distinta hora.
+  const mh = [P('MdA', '10:00', 'media'), P('MdL', '10:00', 'media')];
+  const rm0 = proponer({ partidos: mh, jugadores: base });
+  const a15 = equipoDe(rm0, 'sint-15'), a16 = equipoDe(rm0, 'sint-16');
+  jug = conPref(base, { 'sint-15': otroEq(a15) });
+  r = proponer({ partidos: mh, jugadores: jug });
+  ok(huella(r, jug) === huella(rm0, base) && (a15 === a16 || equipoDe(r, 'sint-15') === otroEq(a15)), 'misma hora: mismos convocados; con su empatado en el otro equipo, va al que prefiere', `${a15}/${a16} -> ${equipoDe(r, 'sint-15')}`);
+  // 6. Quien dobla: la preferencia no influye.
+  reset();
+  const pocos = plantilla([['base', 'B'], ['base', 'C'], ['escolta', 'B'], ['alero', 'C'], ['escolta', 'C'], ['alero', 'D'], ['pivot', 'B'], ['ala_pivot', 'C'], ['pivot', 'C'], ['ala_pivot', 'D'], ['alero', 'B'], ['pivot', 'D']]);
+  const rd0 = proponer({ partidos, jugadores: pocos });
+  const doblan = ids(rd0.convocatoria, 'MdA').filter((x) => ids(rd0.convocatoria, 'MdL').includes(x));
+  ok(doblan.length > 0, 'con 12 disponibles alguien dobla (para llegar a 7)', String(doblan.length));
+  jug = conPref(pocos, Object.fromEntries(pocos.map((j, i) => [j.person_id, i % 2 ? 'MdA' : 'MdL'])));
+  r = proponer({ partidos, jugadores: jug });
+  ok(huella(r, jug) === huella(rd0, pocos) && doblan.every((d) => equipoDe(r, d) === 'los dos'), 'quien dobla sigue en los dos; mismos convocados y equilibrio');
+  // 7. «Se quedó fuera» frente a «preferencia»: la preferencia nunca cambia QUIÉN va. 23 disponibles (tope): con el
+  //    desempate de no convocados encendido, entra quien lleva racha, prefiera lo que prefiera el otro.
+  const muchos = dieciocho().concat(plantilla([['alero', 'E', { id: 'sint-racha' }], ['alero', 'E', { id: 'sint-pref' }], ['escolta', 'E'], ['alero', 'E'], ['pivot', 'E']]));
+  muchos.find((j) => j.person_id === 'sint-racha').rachaFuera = 3;
+  const ent = { partidos, jugadores: muchos, desempateNoConvocados: true };
+  const rr0 = proponer(ent);
+  jug = conPref(muchos, { 'sint-pref': 'MdA', 'sint-racha': 'MdL' });
+  r = proponer({ ...ent, jugadores: jug });
+  ok(huella(r, jug) === huella(rr0, muchos), 'con tope y desempate 4.3: los mismos dentro y los mismos fuera con preferencias');
+  ok(!(equipoDe(r, 'sint-pref') && !equipoDe(r, 'sint-racha')), 'el que se quedó fuera (racha) nunca queda por detrás del de la preferencia', `${equipoDe(r, 'sint-racha')} / ${equipoDe(r, 'sint-pref')}`);
+  // 8. Propiedad: 300 repartos de preferencias al azar (semilla fija) en cinco escenarios: nunca cambia quién va, quién
+  //    dobla, quién queda fuera, ni el número, las líneas y el nivel medio de cada equipo; y es determinista.
+  let semilla = 20261120;
+  const azar = () => ((semilla = (semilla * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const escenarios = [
+    { partidos, jugadores: base }, { partidos: mh, jugadores: base }, { partidos, jugadores: pocos }, ent,
+    { partidos: [P('MdA', '09:00', 'media'), P('MdL', '12:45', 'media')], jugadores: muchos },
+  ];
+  let malos = 0, distintos = 0, respetadas = 0;
+  for (let k = 0; k < 300; k++) {
+    const esc = escenarios[k % escenarios.length];
+    const r1 = proponer(esc);
+    const prefs = Object.fromEntries(esc.jugadores.map((j) => [j.person_id, azar() < 0.5 ? null : azar() < 0.5 ? 'MdA' : 'MdL']));
+    const jj = conPref(esc.jugadores, prefs);
+    const r2 = proponer({ ...esc, jugadores: jj });
+    if (huella(r2, jj) !== huella(r1, esc.jugadores)) malos++;
+    const r3 = proponer({ ...esc, jugadores: [...jj].reverse() });
+    if (JSON.stringify(ids(r3.convocatoria, 'MdA').sort()) !== JSON.stringify(ids(r2.convocatoria, 'MdA').sort())) distintos++;
+    respetadas += avisosDe(r2, '3.4').length;
+  }
+  ok(malos === 0, '300 repartos de preferencias al azar: mismos convocados, dobladores, fuera, número, líneas y nivel en cada equipo', `${malos} distintos`);
+  ok(distintos === 0, 'y determinista (con los jugadores desordenados, el mismo reparto)', `${distintos} distintos`);
+  ok(respetadas > 0, `y la preferencia sí actúa (${respetadas} intercambios en total)`);
 }
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');

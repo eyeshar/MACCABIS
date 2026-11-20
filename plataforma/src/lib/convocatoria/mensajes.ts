@@ -3,12 +3,18 @@
 // reglas personales ni motivos: solo el nombre visible de cada convocado.
 
 import type { Convocatoria, Equipo } from "./motor";
+import * as Equipacion from "../../data/avisosEquipacion.js";
+
+// Ruta relativa y no "@/data/…": este fichero lo importan tal cual las pruebas de lógica (node, sin alias). Node ve el
+// módulo UMD como CommonJS (todo en `default`); Next, con sus funciones sueltas.
+const { juntarLineas } = (Equipacion as unknown as { default?: typeof Equipacion }).default ?? Equipacion;
 
 export type PartidoMensaje = {
   equipo: Equipo; rival: string | null; es_local: boolean | null; inicio: string | null; encuentro: string | null;
   /** "CDM Moratalaz, pista 2" o "pista por confirmar" */
   sitio: string; direccion: string | null;
-  /** Línea de equipación (D160: lineaConvocatoria de data/avisos_equipacion.js, siempre que haya rival), o null */
+  /** Línea de equipación (D160: lineaConvocatoria de data/avisos_equipacion.js, siempre que haya rival, con su frase de
+   *  la reserva: la equipación que no llevamos ese partido), o null */
   lineaEquipacion: string | null;
 };
 
@@ -36,7 +42,8 @@ export function mensajeConvocatoria(fecha: string, jornada: number | null, parti
     lineas.push(`${p.equipo} · ${cruce(p)}`);
     lineas.push(`${hora} ${sitio}.`);
     lineas.push(p.lineaEquipacion ?? "Equipación habitual (negra).");
-    lineas.push(ids.length ? `Convocados (${ids.length}): ${nombres(ids, nombre).join(", ")}.` : "Convocados: por confirmar.");
+    // Sin «..» si el último acaba en la inicial del apellido («… Eduardo G.»).
+    lineas.push(ids.length ? `Convocados (${ids.length}): ${nombres(ids, nombre).join(", ").replace(/\.?$/, ".")}` : "Convocados: por confirmar.");
     lineas.push("");
   }
   const juegan = partidos.map((p) => p.equipo);
@@ -57,14 +64,11 @@ export function firmaConvocatoria(conv: Convocatoria) {
 }
 
 const detallePartidos = (suyos: PartidoMensaje[]) => suyos.map((p) => `${p.equipo} a las ${p.inicio ?? "?"}${p.encuentro ? ` (quedada ${p.encuentro})` : ""}`).join(" y ");
-const FIN_EQUIPACION = / ?Llevad la \S+ por si acaso\.$/;
 /** Equipación de la jornada para el aviso al móvil (D160). Un partido: su línea tal cual. Dos (dobla): cada línea con su
- *  equipo delante y «Llevad la amarilla por si acaso.» una sola vez, al final. */
+ *  equipo delante y la frase de la reserva una sola vez, al final, si es la misma; si un equipo va de negro y el otro de
+ *  amarillo, cada uno con la suya (juntarLineas de data/avisos_equipacion.js). */
 function lineasJornada(suyos: PartidoMensaje[]) {
-  const con = suyos.filter((p) => p.lineaEquipacion).map((p) => ({ equipo: p.equipo, l: /[.!?]$/.test(p.lineaEquipacion!) ? p.lineaEquipacion! : `${p.lineaEquipacion}.` }));
-  if (con.length <= 1) return con[0]?.l ?? "";
-  const fin = con.map((x) => x.l.match(FIN_EQUIPACION)?.[0].trim()).find(Boolean);
-  return [...con.map((x) => `${x.equipo}: ${x.l.replace(FIN_EQUIPACION, "")}`), ...(fin ? [fin] : [])].join(" ");
+  return juntarLineas(suyos.map((p) => ({ etiqueta: p.equipo, linea: p.lineaEquipacion })));
 }
 
 /** Aviso al móvil «Estás convocado» (D127; pantalla de bloqueo: sin niveles ni motivos). Con la línea de equipación de

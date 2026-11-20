@@ -37,6 +37,26 @@ export async function responderDomingo(fecha: string, opcion: string, eventoId?:
   return { ok: true };
 }
 
+/** Preferencia de partido (D194): solo si va a los dos; la base lo vuelve a comprobar todo (motivo de la lista, nota con
+ *  «otro», 200 letras, partidos abiertos). Tras aprobar la convocatoria, la base deja una alerta a los gestores. */
+export async function guardarPreferencia(fecha: string, eventoId: string, motivo: string, nota?: string | null): Promise<Resultado> {
+  const { supabase } = await exigirSesion();
+  const { data, error } = await supabase.rpc("guardar_preferencia", { p_fecha: fecha, p_evento: eventoId, p_motivo: motivo, p_nota: nota?.trim() || null });
+  if (error) return { ok: false, error: textoError(error.message) };
+  await alertarSiHace(Boolean((data as { alerta?: boolean })?.alerta));
+  refrescar();
+  return { ok: true };
+}
+
+export async function quitarPreferencia(fecha: string): Promise<Resultado> {
+  const { supabase } = await exigirSesion();
+  const { data, error } = await supabase.rpc("quitar_preferencia", { p_fecha: fecha });
+  if (error) return { ok: false, error: textoError(error.message) };
+  await alertarSiHace(Boolean((data as { alerta?: boolean })?.alerta));
+  refrescar();
+  return { ok: true };
+}
+
 export type EventoPeriodo = { id: string; tipo: string; equipo: string; titulo: string | null; rival: string | null; es_local: boolean | null; fecha: string; inicio: string | null; respuesta: string };
 
 export async function previsualizarAusencia(desde: string, hasta: string | null): Promise<{ ok: true; eventos: EventoPeriodo[] } | { ok: false; error: string }> {

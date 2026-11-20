@@ -7,13 +7,11 @@ import { cargarMisAusencias, cargarMisRespuestas, cargarQuienVa, misEntrenosPorD
 import { ausenciaQueCubre, nombreCorto, TEXTO_MOTIVO_TODO, type MiEvento, type MotivoJugador } from "@/lib/respuestas/dominio";
 import { TEXTO_POR_DEFECTO_EXPLICACION, TEXTO_POR_DEFECTO_JUGADOR } from "@/lib/disponibilidad/porDefecto";
 import { avisoDeEvento } from "@/lib/eventos/datos";
+import { enSingular, LINEA_SIN_RIVAL_SINGULAR } from "@/lib/equipacion";
 import { avisosDelFichero } from "@/lib/inicio/avisos";
 import { temporadaDe } from "@/lib/publico";
 import ElRival from "./ElRival";
 
-/** La línea de equipación (D160) en singular y la de siempre si no hay aviso. */
-const LINEA_SIN_AVISO = "Jugamos de negro. Lleva la amarilla por si acaso.";
-const enSingular = (l: string) => l.replace(/Llevad/g, "Lleva");
 
 /** Lo que ve un jugador de su evento (D189; antes /mi-zona/evento/<id>, D99 3.3): equipación, avisos plegados, Voy · Duda ·
  *  No voy, «Quién va» con solo nombres (D46, norma 13.2) y «El rival» con sus colores y su scouting (D174). Lo usan la vista
@@ -69,7 +67,7 @@ export default async function VistaJugador({ e, soloRespuesta = false }: { e: Mi
         <section className="tarjeta ev2-equipacion" aria-labelledby="t-equipacion" data-testid="te-pones">
           <h2 id="t-equipacion" className="ev2-h2">Equipación</h2>
           <b>{aviso?.tipo === "nos_toca" ? "Amarilla" : "Negra"}{dorsal ? ` con tu dorsal ${dorsal}` : ""}</b>
-          <span className="pequeno" data-testid="linea-equipacion">{aviso?.convocatoria ? enSingular(aviso.convocatoria) : LINEA_SIN_AVISO}</span>
+          <span className="pequeno" data-testid="linea-equipacion">{/* La línea de equipación (D160) en singular y la de siempre si no hay aviso. */}{aviso?.convocatoria ? enSingular(aviso.convocatoria) : LINEA_SIN_RIVAL_SINGULAR}</span>
         </section>
       )}
       {avisos.length > 0 && (

@@ -75,12 +75,14 @@ export const RUTAS = [
 ];
 
 /** Claves de datos personales o privados: si salen como clave JSON en la carga de la pagina, fallo. */
-const CLAVES = /\\?"(dni|nif|telefono|tel|movil|fecha_nacimiento|nacimiento|fecha_alta|nivel|email|correo|posicion|dobla|si_dobla|si_entrena|excusa|sin_excusa|no_conv|lesion|pct_disp|pct_nosel|pct_jug|motivo|motivos)\\?":/;
+const CLAVES = /\\?"(dni|nif|telefono|tel|movil|fecha_nacimiento|nacimiento|fecha_alta|nivel|email|correo|posicion|dobla|si_dobla|si_entrena|excusa|sin_excusa|no_conv|lesion|pct_disp|pct_nosel|pct_jug|motivo|motivos|preferencia|prefiere)\\?":/;
 const PATRONES = [
   [/[\w.+-]+@[\w-]+\.[\w.-]+/, 'un correo electronico'],
   [/(?<![\d.,])\d{8}[A-Z](?![A-Za-z])/, 'un DNI'],
   [/(?<![\d.,:/-])[6-9]\d{2}[ .-]?\d{3}[ .-]?\d{3}(?![\d.,])/, 'un telefono'],
   [/\b(0?[1-9]|[12]\d|3[01])[/-](0?[1-9]|1[0-2])[/-](19[4-9]\d|200\d)\b/, 'una fecha de nacimiento (dd/mm/aaaa de 1940 a 2009)'],
+  // D194: la preferencia de partido (y su motivo y nota) solo la ven el propio jugador y los gestores.
+  [/pf-marca|pf-desplegado|Prefiere el (MdA|MdL)|Prefería el (MdA|MdL)|Tu preferido|preferencias_domingo/, 'una preferencia de partido'],
 ];
 
 /** Lo que delata una «clave del partido» (D174): la caja, la tarjeta, sus clases y las frases que solo ellas dicen. */

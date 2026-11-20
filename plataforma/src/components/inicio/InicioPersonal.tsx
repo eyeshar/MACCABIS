@@ -6,6 +6,7 @@ import Responder from "@/components/respuestas/Responder";
 import { Flecha } from "@/components/Iconos";
 import { dudaAbierta, madrid } from "@/lib/avisos/horario";
 import { avisoDeEvento } from "@/lib/eventos/datos";
+import { enSingular, juntarLineas, LINEA_SIN_RIVAL, LINEA_SIN_RIVAL_SINGULAR } from "@/lib/equipacion";
 import { hhmm as hhmmF, pistaEfectiva, tituloEvento, type EventoFila } from "@/lib/eventos/dominio";
 import { cargarPendientesSemana } from "@/lib/gestion/pendientes";
 import { avisosDelFichero } from "@/lib/inicio/avisos";
@@ -26,10 +27,8 @@ import Carrusel from "./Carrusel";
 import { cifrasTemporada } from "./TuTemporada";
 import { horasDe, pastillaDe, TarjetaPendiente, TarjetaPorDefecto, tituloUnidad } from "./piezas";
 
-/** Sin rival o sin jornada en la tabla de eventos no hay aviso; la línea de equipación no falta nunca (D160). */
-const LINEA_SIN_AVISO = "Jugamos de negro. Lleva la amarilla por si acaso.";
-/** La línea de D160 es del grupo («Llevad…»); en la tarjeta personal va en singular (Iván, 02/11/2026). */
-const enSingular = (l: string) => l.replace(/Llevad/g, "Lleva");
+// Sin rival o sin jornada en la tabla de eventos no hay aviso; la línea de equipación no falta nunca (D160): LINEA_SIN_RIVAL.
+// La línea de D160 es del grupo («Llevad…»); en la tarjeta personal va en singular (Iván, 02/11/2026): enSingular.
 /** Los próximos días de la Semana: hoy y los 9 siguientes. */
 const DIAS = 10;
 const DIA_SEMANA = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
@@ -139,7 +138,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
       clave: e.id, fecha: e.fecha, url: `/evento/${e.id}`, tipo: e.tipo, titulo: tituloEvento(e),
       etiquetas: [...(e.equipo !== "ambos" ? [{ texto: e.equipo, equipo: e.equipo }] : []), ...(e.tipo === "liga" && e.jornada ? [{ texto: `J${e.jornada}` }] : [])],
       inicio: ini, quedada: hhmmF(e.quedada) ?? (ini ? restar20(ini) : null), pista: pe ? (pe.porConfirmar ? "Pista por confirmar" : pe.texto) : "",
-      equipacion: e.tipo === "liga" ? (a?.convocatoria ?? "Jugamos de negro. Llevad la amarilla por si acaso.") : null,
+      equipacion: e.tipo === "liga" ? (a?.convocatoria ?? LINEA_SIN_RIVAL) : null,
       avisos: avisosDelFichero(e.fecha, e.equipo === "ambos" ? ["MdA", "MdL"] : [e.equipo]).map((x) => ({ id: x.id, texto: x.texto })),
     };
   };
@@ -205,17 +204,20 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
     const e = u.eventos[0];
     const h = horasDe(u);
     const liga = u.eventos.filter((x) => x.tipo === "liga");
-    // Una sola «Lleva la amarilla por si acaso» aunque jueguen los dos equipos; cada equipo con su línea (D160).
-    const POR_SI_ACASO = /\s*Lleva la amarilla por si acaso\.?/g;
-    const lineas = liga.map((x) => { const a = avisoDeEvento(x); const l = (a?.convocatoria ? enSingular(a.convocatoria) : LINEA_SIN_AVISO).replace(POR_SI_ACASO, "").trim(); const d = dorsalDe(x.equipo); return liga.length > 1 ? `${x.equipo}${d ? ` (dorsal ${d})` : ""}: ${l}` : l; });
+    // Cada equipo con su línea (D160) y la frase de la reserva (la equipación que no llevamos) una sola vez si es la misma
+    // en los dos partidos; si un equipo va de negro y el otro de amarillo, cada uno con la suya (juntarLineas).
+    const lineas = juntarLineas(liga.map((x) => { const a = avisoDeEvento(x); const d = dorsalDe(x.equipo); return { etiqueta: `${x.equipo}${d ? ` (dorsal ${d})` : ""}`, linea: a?.convocatoria ? enSingular(a.convocatoria) : LINEA_SIN_RIVAL_SINGULAR }; }), " · ");
+    // La que se pone: la amarilla si cambiamos nosotros; si dobla y cada equipo va de un color, los dos.
+    const deQue = (x: (typeof liga)[number]) => (avisoDeEvento(x)?.tipo === "nos_toca" ? "amarilla" : "negra");
+    const mismoColor = new Set(liga.map(deQue)).size === 1;
+    const sePone = liga.length ? (mismoColor ? deQue(liga[0]) : liga.map((x) => `${deQue(x)} en el ${x.equipo}`).join(" y ")) : "";
     const equipo = [...new Set(u.eventos.map((x) => x.equipo).filter((x): x is "MdA" | "MdL" => x !== "ambos"))];
-    const aviso = liga[0] ? avisoDeEvento(liga[0]) : null;
     const g = grupoDe(u);
     return {
       clave: u.clave, fecha: u.fecha, url: u.url, tipo: e.tipo, titulo: tituloUnidad(u),
       etiquetas: [...equipo.map((x) => ({ texto: x, equipo: x })), ...(e.tipo === "liga" && e.jornada ? [{ texto: `J${e.jornada}` }] : []), ...(esPlan(e) ? [{ texto: "Plan no oficial" }] : [])],
       inicio: h.inicio, quedada: h.quedada, pista: lugarTexto(e), grupo: g,
-      equipacion: liga.length ? `${aviso?.tipo === "nos_toca" ? "Amarilla" : "Negra"}${liga.length === 1 && dorsalDe(liga[0].equipo) ? ` con tu dorsal ${dorsalDe(liga[0].equipo)}` : ""}. ${lineas.join(" · ")} Lleva la amarilla por si acaso.` : null,
+      equipacion: liga.length ? `${sePone.charAt(0).toUpperCase()}${sePone.slice(1)}${liga.length === 1 && dorsalDe(liga[0].equipo) ? ` con tu dorsal ${dorsalDe(liga[0].equipo)}` : ""}. ${lineas}` : null,
       avisos: avisosDelFichero(u.fecha, equipo.length ? equipo : [...equiposJugador]).map((x) => ({ id: x.id, texto: x.texto })),
       nota: u.modo === "misma" ? "MdA y MdL a la misma hora: esta jornada no se puede doblar." : null,
     };

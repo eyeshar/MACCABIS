@@ -215,12 +215,15 @@ console.log('\n== Aviso de convocatoria (D127): a quien toca y sin dobles');
 {
   const PART = [
     { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '09:00', encuentro: '08:40', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: 'Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' },
-    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '14:00', encuentro: '13:40', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.' },
+    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '14:00', encuentro: '13:40', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.' },
   ];
   const t1 = CM.textoEstasConvocado('2026-10-25', PART, ['MdA']);
   ok(t1.titulo === 'Estás convocado · domingo 25/10' && t1.cuerpo === 'MdA a las 09:00 (quedada 08:40). Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.', '«Estás convocado · domingo 25/10» / «MdA a las 09:00 (quedada 08:40).» + la línea de equipación (D160)', JSON.stringify(t1));
   const t2 = CM.textoEstasConvocado('2026-10-25', PART, ['MdA', 'MdL']);
-  ok(t2.cuerpo === 'MdA a las 09:00 (quedada 08:40) y MdL a las 14:00 (quedada 13:40). MdA: Jugamos de negro (ellos de rojo). MdL: Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.', 'dobla: cada equipo con su línea de equipación y «Llevad la amarilla por si acaso.» una vez (D160)', t2.cuerpo);
+  ok(t2.cuerpo === 'MdA a las 09:00 (quedada 08:40) y MdL a las 14:00 (quedada 13:40). MdA: Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso. MdL: Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.', 'dobla, MdA de negro y MdL de amarillo: cada equipo con su línea y SU reserva (la que no lleva)', t2.cuerpo);
+  const NEGRO_L = { ...PART[1], lineaEquipacion: 'Jugamos de negro (ellos de naranja). Llevad la amarilla por si acaso.' };
+  const t2b = CM.textoEstasConvocado('2026-10-25', [PART[0], NEGRO_L], ['MdA', 'MdL']);
+  ok(t2b.cuerpo === 'MdA a las 09:00 (quedada 08:40) y MdL a las 14:00 (quedada 13:40). MdA: Jugamos de negro (ellos de rojo). MdL: Jugamos de negro (ellos de naranja). Llevad la amarilla por si acaso.', 'dobla, los dos de negro: cada equipo con su línea y «Llevad la amarilla por si acaso.» una vez (D160)', t2b.cuerpo);
   const conv = { MdA: [{ person_id: 'jon' }, { person_id: 'guille' }], MdL: [{ person_id: 'jon' }, { person_id: 'ana' }] };
   let d = CM.destinatariosAviso(conv, null);
   ok(!d.cambio && d.personas.map((p) => p.person_id).sort().join() === 'ana,guille,jon' && d.personas.find((p) => p.person_id === 'jon').equipos.join() === 'MdA,MdL', 'primer envío: a todos los convocados (Jon con sus dos equipos)');
@@ -418,10 +421,10 @@ console.log('\n== Aviso al aprobar (D173): un solo aviso por jugador, según su 
 {
   const PART = [
     { equipo: 'MdA', rival: 'Rival', es_local: true, inicio: '10:15', encuentro: '09:55', sitio: 'CDM Moratalaz, pista 2', direccion: null, lineaEquipacion: 'Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' },
-    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '11:30', encuentro: '11:10', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.' },
+    { equipo: 'MdL', rival: 'Otro', es_local: false, inicio: '11:30', encuentro: '11:10', sitio: 'CDM Moratalaz, pista 1', direccion: null, lineaEquipacion: 'Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.' },
   ];
   const t1 = CM.textoAvisoConvocatoria('2026-11-15', PART, ['MdL'], ['MdA', 'MdL']);
-  ok(t1.titulo === 'Estás convocado · domingo 15/11' && t1.cuerpo === 'Estás convocado con el MdL (no con el MdA) · 11:30, quedada 11:10. Coinciden colores: cambiamos nosotros, de amarillo. Llevad la amarilla por si acaso.', 'disponible para los dos y convocado en uno: «Estás convocado con el MdL (no con el MdA) · 11:30, quedada 11:10.» + equipación', JSON.stringify(t1));
+  ok(t1.titulo === 'Estás convocado · domingo 15/11' && t1.cuerpo === 'Estás convocado con el MdL (no con el MdA) · 11:30, quedada 11:10. Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.', 'disponible para los dos y convocado en uno: «Estás convocado con el MdL (no con el MdA) · 11:30, quedada 11:10.» + equipación', JSON.stringify(t1));
   const t2 = CM.textoAvisoConvocatoria('2026-11-15', PART, ['MdA'], ['MdA']);
   ok(t2.cuerpo === 'MdA a las 10:15 (quedada 09:55). Jugamos de negro (ellos de rojo). Llevad la amarilla por si acaso.' && t2.titulo === 'Estás convocado · domingo 15/11', 'convocado en el único al que podía ir: el «Estás convocado» de siempre', JSON.stringify(t2));
   const t3 = CM.textoAvisoConvocatoria('2026-11-08', [PART[1]], [], ['MdL']);

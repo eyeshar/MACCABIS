@@ -262,6 +262,11 @@ export function lineaCambio(e: Pick<MiEvento, "cambio_visible" | "cambio_visible
 }
 
 export const ERRORES: Record<string, string> = {
+  // Preferencia de partido (D194). Van primero: textoError busca por «contiene» y «falta_motivo» va después.
+  preferencia_sin_los_dos: "Solo puedes elegir preferencia si vas a los dos partidos.",
+  preferencia_falta_motivo: "Elige un motivo para guardar tu preferencia.",
+  preferencia_falta_nota: "Con «Otro», escribe el motivo en la nota.",
+  preferencia_nota_larga: "La nota es demasiado larga (200 letras como mucho).",
   sin_ficha: "Tu cuenta no tiene ficha de jugador.",
   no_invitado: "Este evento no es para tu ficha.",
   evento_cerrado: "Este evento ya empezó o se canceló: no se puede cambiar la respuesta.",

@@ -170,6 +170,13 @@ export const TEXTO_PRUEBA: Texto = { titulo: "Aviso de prueba", cuerpo: "Así te
 
 const CORTO_ESTADO: Record<RespuestaTexto, string> = { va: "va", duda: "duda", no: "no va", sin_responder: "sin responder" };
 const TEXTO_ESTADO: Record<RespuestaTexto, string> = { va: "Voy", duda: "Duda", no: "No voy", sin_responder: "Sin responder" };
+/** (e2) A los gestores (D194): un jugador cambia su preferencia de partido con la convocatoria YA APROBADA. No cambia nada
+ *  solo; solo avisa. Sin motivo ni nota en el aviso (se ven en la web, solo gestores). `antes`/`despues`: «MdA», «MdL» o null. */
+export function textoPreferenciaGestores(nombre: string, dia: string, antes: string | null, despues: string | null): Texto {
+  const que = despues ? `Ahora prefiere el ${despues}${antes ? ` (antes, el ${antes})` : ""}` : `Ya no prefiere ningún partido${antes ? ` (antes, el ${antes})` : ""}`;
+  return { titulo: `${nombre} cambia su preferencia del ${dia}`, cuerpo: `${que}. La convocatoria ya está aprobada: no cambia nada sola. Toca para ver las respuestas.` };
+}
+
 /** (e) A los gestores: un jugador cambia un partido despues del cierre (martes a las 12:00, D173) y antes de aprobar la
  *  convocatoria. Solo nombre y respuesta. (Tras aprobar, los cambios que importan salen con su propio aviso: lib/convocatoria.) */
 export function textoGestores(nombre: string, e: EventoTexto, antes: RespuestaTexto, despues: RespuestaTexto, hoy?: string): Texto {

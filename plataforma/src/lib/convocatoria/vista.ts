@@ -42,6 +42,8 @@ export type JugadorVista = JugadorEntrada & {
   respondioTarde?: boolean;
   /** Registro de no convocados (regla 4.3, solo gestores): racha seguida, total de la temporada y si es «solo entreno». */
   fuera?: { racha: number; total: number; soloEntreno: boolean };
+  /** Preferencia de partido (D194, solo gestores): equipo, motivo, nota y cuándo la dijo. `prefiere` (del motor) es su equipo. */
+  preferencia?: { equipo: Equipo; motivo: string; nota: string | null; cambiado_en: string } | null;
 };
 export type Contexto = {
   fecha: string; jornada: number | null; partidos: PartidoVista[]; jugadores: JugadorVista[];
@@ -67,7 +69,7 @@ export type Contexto = {
 /** La entrada del motor para este domingo. */
 export const entradaDe = (ctx: Pick<Contexto, "partidos" | "jugadores"> & Partial<Pick<Contexto, "desempateNoConvocados">>): Entrada => ({
   partidos: ctx.partidos.map((p) => ({ evento_id: p.evento_id, equipo: p.equipo, inicio: p.inicio, dificultad: p.dificultad.valor })),
-  jugadores: ctx.jugadores.map(({ invitado: _i, invitadoA: _a, motivoNo: _m, sancionHasta: _s, respondioTarde: _t, fuera: _f, ...j }) => j),
+  jugadores: ctx.jugadores.map(({ invitado: _i, invitadoA: _a, motivoNo: _m, sancionHasta: _s, respondioTarde: _t, fuera: _f, preferencia: _p, ...j }) => j),
   desempateNoConvocados: !!ctx.desempateNoConvocados,
 });
 

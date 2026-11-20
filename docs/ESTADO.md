@@ -2,6 +2,28 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Preferencia de partido (D194) y camiseta de reserva / nombres de los convocados (D195) — 20/11/2026, `feat/preferencia-partido`; migración `20261120100000` APLICADA en el real con D111; **PR pendiente del OK de Iván para mergear**
+- **Maqueta aprobada** con los cambios de Iván: motivo obligatorio, aviso de «sin guardar» y leyenda «☆ MdA = prefería el MdA (está en el otro)». Está en `privado/mockups_liga/rediseno/preferencia/`; las capturas de la web real son `real_*.png`.
+- **Preferencia de partido (D194, regla 3.4):**
+  - **Jugador:** con «A los dos», o con «Voy» si los partidos son a la misma hora, sale «¿Prefieres alguno?»: estrella por partido, motivo obligatorio y nota (obligatoria con «Otro»). Se guarda con un botón, avisa si sale sin guardar y su tarjeta dice «★ Tu preferido».
+  - **Gestores:** ★ o ☆ junto al jugador en Convocatoria, Tablero y Respuestas del evento. Al pulsarla se ven motivo y nota en línea.
+  - **Motor:** solo intercambia empatados en línea y nivel al final de la propuesta. Mismos convocados con o sin preferencias.
+  - **Privacidad:** RLS, solo el jugador y los gestores. Se borra sola si deja de ir a los dos. Tras aprobar, un cambio de preferencia solo avisa a los gestores.
+- **Camiseta de reserva (D195):** es la que no llevamos ese partido. Ejemplo: «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.». Una sola función (`porSiAcaso`) para el WhatsApp, la web y el calendario, partido a partido.
+- **Nombres de los convocados (D195):** salen con el mote de la plantilla. En el real se corrigieron tres `nombre_visible` que no coincidían con `privado/plantilla_2026-27.csv`: «Carlos» → «Carlos B.», «Eduardo» → «Eduardo G.» y «Victor» → «Víctor M.» (20/11, `update` por `person_id` comprobando el valor anterior). Ya no hay dos jugadores activos con el mismo nombre visible, y Gestión rechaza uno repetido.
+- **Real (D111, norma 19):**
+  - Volcado `privado/backups/2026-11-20_pre-preferencia-partido.sql` (8.842.674 bytes, 74 `COPY`, ignorado por git).
+  - La migración solo añade: tabla, funciones y dos disparadores. El `.revertir.sql` está probado en la pila (`pruebas:preferencia-rls`).
+  - Aplicada con `npm run db:migrar -- --confirmar pqbjnxmknhawlkszwmln`.
+  - **28 cuentas de auth antes y después.** También iguales antes y después: respuestas (477), eventos (68) y alertas (5).
+  - Comprobado después: RLS encendida, sin lectura anónima, sin escritura directa y dos políticas (la suya y la de los gestores).
+  - Suites `-real` en solo lectura antes (tanda de `pruebas:rapidas`) y después (`eventos`, `respuestas`, `convocatoria`, `inicio`, `whatsapp`, `asistencia-eventos`, `solo-ficha`): todas en verde.
+- **Pruebas en local:**
+  - `pruebas:rapidas`: 39 suites, 38 a la primera. `pruebas:aviso-entreno` se paró en `next build` por el aviso de seguridad de Next.js y pasó al repetirla.
+  - Nuevas: `pruebas:preferencia-rls`, `pruebas:preferencia-pantallas` (375 y 1280 px) y `pruebas:nombres-convocados`.
+  - Ampliadas: `pruebas:convocatoria-motor` (300 repartos al azar sin cambiar quién va), `test:privacidad` y `pruebas:equipacion`.
+- **Next.js 16.4.4:** `next build` avisa de una vulnerabilidad conocida y se para la primera vez. Al repetirlo, compila. No se ha actualizado nada (decide Iván; BACKLOG).
+
 ## Jornada 5 (16/11/2026), publicada a mano — `fix/fecha-jornada-aplazada`, PR #82 MERGEADO (Actions en verde)
 - **Resultado:** **MdL 71–27 Vanner** (15/11, 12:45, Moratalaz P3; acta 393050 = hoja, 71 = 71). La J5 del MdA está aplazada al 20/12 (`liga.aplazados`). Entran 29 hojas a la J5 (G1 4, G2 5, G3–G6 5 cada uno) y la liga queda con 146 hojas. Publicado en `main` (6c95aa0), `db:liga` y `db:asistencia` en el real, y `verificar_jornada` base y web (una petición, D179): todo OK.
 - **Por qué no salió a las 9:45:** Google Drive para Windows **estaba cerrado** y no había unidad `I:` (lo arrancó Code a media mañana). La tarea del S21 bajó las 29 hojas entre las 9:15 y las 9:40. Corre en la nube y comprueba la llegada por el conector de Drive, así que no le afectó. La pasada de las 9:45 salió «NADA NUEVO» (sin `I:` no veía ninguna hoja) y avisó de que faltaba la hoja de MdL. Tampoco había líneas de hoy en `jornadas_hojas.csv`: la tarea del S21 **nunca lo ha escrito** (su indicación no lo menciona; los docs decían lo contrario).

@@ -15,6 +15,7 @@ import { diaCorto } from "@/lib/eventos/dominio";
 import Numeros, { type GrupoNum, type PersonaNum } from "@/components/numeros/Numeros";
 import { ajusteRapido, aprobarYAvisar, avisarAhora, cambiarDificultad, deshacerRapido, empezar, guardarCambio, type Accion, type Motivo } from "./acciones";
 import Revision from "./Revision";
+import MarcaPreferencia, { LeyendaPreferencia } from "@/components/preferencia/MarcaPreferencia";
 
 // Convocatoria del domingo (D107): cabecera con contadores, una tarjeta por equipo que juega, disponibles sin convocar y
 // las hojas «Cambiar a mano» y «Añadir jugador». El recuento y los avisos se recalculan al momento con el motor
@@ -287,6 +288,7 @@ export default function Convocatoria({ ctx, enlaces = {}, ocultarNiveles = false
 
       {generales.length > 0 && <section className="gs-bloque" aria-label="Avisos del domingo" style={{ marginBottom: 16 }}><ListaAvisos avisos={generales} /></section>}
 
+      {ctx.partidos.length === 2 && ctx.jugadores.some((j) => j.preferencia) && <div style={{ margin: "0 0 8px" }}><LeyendaPreferencia /></div>}
       <div className="cv-equipos">
         {ctx.partidos.map((p) => (
           <TarjetaEquipo key={p.equipo} p={p} conv={conv} r={rev.recuento[p.equipo]!} maximo={rev.maximo} avisos={avisosDe(p.equipo)}
@@ -309,7 +311,7 @@ export default function Convocatoria({ ctx, enlaces = {}, ocultarNiveles = false
                   onDragStart={rapido ? (e) => { const ids = rapido.sel.has(s.person_id) && sel.desde === "sin" ? [...rapido.sel] : [s.person_id]; e.dataTransfer.setData("text/plain", ids.join(",")); e.dataTransfer.effectAllowed = "move"; rapido.setArrastre({ ids, desde: "sin" }); } : undefined}
                   onDragEnd={rapido ? () => rapido.setArrastre(null) : undefined}>
                   {rapido && <label className="cv-casilla-sel"><input type="checkbox" checked={rapido.sel.has(s.person_id)} onChange={() => rapido.alternar(s.person_id, "sin")} aria-label={`Seleccionar a ${j?.nombre ?? s.person_id}`} /></label>}
-                  <div className="cv-fila-nombre"><b><NombreCv id={s.person_id} nombre={j?.nombre ?? s.person_id} enlaces={enlaces} /></b><small>{s.motivo} · regla {s.regla}</small></div>
+                  <div className="cv-fila-nombre"><b><NombreCv id={s.person_id} nombre={j?.nombre ?? s.person_id} enlaces={enlaces} />{j?.preferencia && <> <MarcaPreferencia p={j.preferencia} en={null} nombre={j.nombre} /></>}</b><small>{s.motivo} · regla {s.regla}</small></div>
                   {empezada && <button type="button" className="boton boton-contorno cv-boton" disabled={bloqueado} onClick={() => setHoja({ tipo: "anadir", equipo: ctx.partidos.find((x) => j?.respuesta[x.equipo] === "va" && j.ficha[x.equipo])?.equipo ?? ctx.partidos[0].equipo, person_id: s.person_id })}>Añadir</button>}
                 </li>
               );
@@ -492,7 +494,7 @@ function TarjetaEquipo({ p, conv, r, maximo, avisos, previa, bloqueado, nombre, 
               onDragEnd={rapido ? () => rapido.setArrastre(null) : undefined}>
               {rapido && <label className="cv-casilla-sel"><input type="checkbox" checked={rapido.sel.has(c.person_id)} onChange={() => rapido.alternar(c.person_id, p.equipo)} aria-label={`Seleccionar a ${nombre(c.person_id)} (${p.equipo})`} /></label>}
               <div className="cv-fila-nombre">
-                <b><NombreCv id={c.person_id} nombre={nombre(c.person_id)} enlaces={enlaces} /></b>
+                <b><NombreCv id={c.person_id} nombre={nombre(c.person_id)} enlaces={enlaces} />{j?.preferencia && !dobla && <> <MarcaPreferencia p={j.preferencia} en={p.equipo} nombre={nombre(c.person_id)} /></>}</b>
                 <small>
                   {pos ? TEXTO_POSICION[pos] : "sin posición"}{c.posicion ? " (este partido)" : ""}{reserva ? " · hace de base" : ""}
                   {dobla && <span className="cv-etq cv-etq-dobla">dobla</span>}

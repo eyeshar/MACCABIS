@@ -4,7 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pistaEfectiva, type EventoFila, type Pista } from "@/lib/eventos/dominio";
 import { horaDeEnvio, limiteDudas, textoLimite } from "./horario";
 import { avisosCierre, avisosPasoNoVa, avisosPorDefecto, conAvisosDeDudas, efectivaDe, inicioDe, invitados, losQueFaltan, planificar, planificarPlanes, urlDomingo, urlEvento, type EventoPlan, type JugadorPlan } from "./planificador";
-import { queEs, TEXTO_PRUEBA, textoCambio, textoCancelacion, textoDudas, textoEntrenoHoy, textoGestores, textoMartes, textoOtro, type RespuestaTexto, type Texto } from "./textos";
+import { queEs, TEXTO_PRUEBA, textoCambio, textoCancelacion, textoDudas, textoEntrenoHoy, textoGestores, textoMartes, textoPreferenciaGestores, textoOtro, type RespuestaTexto, type Texto } from "./textos";
 
 // Envio de avisos al movil (D99.5): Web Push estandar con claves VAPID. Corre SOLO en el servidor con la clave de
 // servicio de Supabase (SUPABASE_SERVICE_ROLE_KEY) y la privada VAPID: las dos viven en .env.local y en las variables
@@ -156,9 +156,12 @@ async function encolarAlertasGestores(sb: SupabaseClient, base: Awaited<ReturnTy
   for (const a of alertas) {
     const e = base.eventos.find((x) => x.id === a.evento_id);
     const j = base.jugadores.find((x) => x.person_id === a.person_id);
-    if (!e || !j || (e.tipo !== "entreno" && aprobadas.has(e.fecha))) continue;
+    // D194: cambio de preferencia de partido («pref:MdA» → «pref:MdL»): solo existe con la convocatoria aprobada y avisa siempre.
+    const esPref = String(a.antes).startsWith("pref:") || String(a.despues).startsWith("pref:");
+    if (!e || !j || (!esPref && e.tipo !== "entreno" && aprobadas.has(e.fecha))) continue;
     const envio = horaDeEnvio(new Date(Math.max(new Date(a.en).getTime(), ahora.getTime() - 60_000)), inicioDe(e));
-    const t = textoGestores(j.nombre_visible, aPlan(e, base.pistas), a.antes, a.despues, envio.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }));
+    const eqPref = (x: string) => { const v = String(x).slice(5); return v === "MdA" || v === "MdL" ? v : null; };
+    const t = esPref ? textoPreferenciaGestores(j.nombre_visible, `domingo ${Number(e.fecha.slice(8, 10))}`, eqPref(a.antes), eqPref(a.despues)) : textoGestores(j.nombre_visible, aPlan(e, base.pistas), a.antes, a.despues, envio.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }));
     for (const g of gestores) filas.push({ ...t, clave: `gestores:${a.id}:${g.user_id}`, tipo: "gestores", user_id: g.user_id, eventos: [e.id], url: `/gestion/eventos/${e.id}/respuestas`, programado_para: envio });
   }
   await encolar(sb, filas);

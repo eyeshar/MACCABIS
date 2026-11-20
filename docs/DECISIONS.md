@@ -1857,3 +1857,54 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
   - Si alguna hoja de hoy ha llegado hace menos de 10 min (la fecha más reciente entre creación en el PC y modificación), espera de 5 en 5 min, como mucho 30. `-SinEspera` la quita.
   - Las horas de la tarea (9:45 y 13:00) no cambian.
 - **No se hace (Iván):** que la tarea del S21 compruebe la unidad `I:` (corre en la nube, no la necesita).
+
+## D194 — Preferencia de partido en los domingos con dos partidos: solo decide el equipo, nunca quién va (Iván, 20/11/2026; Code, `feat/preferencia-partido`) — COMPLETA D99.3 y la decisión del 08/10/2026 (una respuesta por domingo)
+
+- **Qué es:** quien va a los dos partidos de un domingo («A los dos»; o «Voy» si los dos son a la misma hora, que ya significa «disponible para cualquiera») puede marcar con una estrella **cuál prefiere** (una a la vez; volver a pulsarla la quita) y **por qué**. No sale con «Solo al de…», «No voy», «Duda», una sola ficha ni un domingo con un solo partido. Es una preferencia: la convocatoria la sigue decidiendo Iván.
+- **Motivo obligatorio** (Iván, en la revisión de la maqueta): Trabajo, Familia, Niños, Desplazamiento u Otro. Sin motivo, «Guardar preferencia» no se puede pulsar. La nota es opcional, salvo con «Otro», donde es obligatoria; 200 letras como mucho. Debajo, siempre: «Es una preferencia: intentaremos tenerla en cuenta, pero no es seguro».
+- **La lista de motivos vive en un solo sitio del código:** `MOTIVOS_PREFERENCIA` (`plataforma/src/lib/respuestas/preferencia.ts`). La base comprueba los mismos identificadores, y `pruebas:preferencia-rls` falla si no coinciden. Para cambiarla: se edita esa lista y se añade una migración con el check nuevo.
+- **Se guarda con un botón**, no al tocar, para que «Otro» no se quede sin nota. Si el jugador toca la estrella o el motivo y no guarda, la tarjeta dice «Sin guardar: tu preferencia aún no cuenta». Si se va por un enlace de la web, sale el diálogo «No has guardado tu preferencia», con «Guardar y salir», «Salir sin guardar» y «Seguir aquí». Si cierra o recarga la pestaña, pregunta el navegador. El botón «atrás» del móvil no lo intercepta.
+- **Datos:** tabla nueva `preferencias_domingo` (fecha, jugador, partido, motivo, nota, cuándo), una fila por domingo y jugador. Se escribe solo con `guardar_preferencia` y `quitar_preferencia`. Requisitos: los dos partidos abiertos, la ficha de los dos equipos y «va» a los dos.
+- **Se borra sola** si deja de estar disponible para los dos, venga de donde venga el cambio: su respuesta del domingo, una ausencia o un gestor que responde por él. También si un partido de ese domingo se cancela o cambia de día. Lo hacen disparadores en la base.
+- **Plazos:** los de la respuesta. Antes de aprobar la convocatoria, la preferencia entra en la propuesta si se recalcula. **Después de aprobar, un cambio no modifica nada solo:** deja una alerta a los gestores, como un «voy» tardío. Esa alerta sale en la banda roja de las respuestas del evento («cambia su preferencia: MdA → MdL») y como aviso push, sin motivo ni nota. Cambiar solo el motivo no avisa.
+- **Motor (regla 3.4 de REGLAS_CONVOCATORIA):** la preferencia **no entra en el orden de selección**: posición, nivel, dificultad, mínimos, doblajes, rotación y el desempate 4.3 quedan igual. El interruptor de 4.3 no se toca. Al final de la propuesta se intercambian dos jugadores cuando se cumple todo esto:
+  - juegan cada uno en un equipo y ninguno dobla;
+  - son de la misma línea y el mismo nivel, con la misma marca de base de reserva y de reserva;
+  - los dos están disponibles y tienen ficha para los dos partidos, y ninguno es fijo de un equipo;
+  - uno prefiere el equipo del otro y el otro no prefiere quedarse.
+
+  **Con o sin preferencias salen los mismos convocados, el mismo número por equipo, las mismas líneas y el mismo nivel medio.** Solo puede cambiar el equipo. Si para respetarla hubiera que desequilibrar, no se respeta. Cada intercambio deja el aviso informativo «X va al MdA por preferencia (empate con Y en línea y nivel)». Iván lo sigue pudiendo cambiar todo a mano.
+- **Privacidad (RLS, no solo pantalla):**
+  - La preferencia, el motivo y la nota los leen **solo el propio jugador y los gestores**. Nadie escribe en la tabla directamente, ni un gestor, y no hay nada para el anónimo.
+  - No sale en «quién va», en los mensajes de WhatsApp, en la zona pública, en el iCal ni en las exportaciones.
+  - `npm run test:privacidad` lo comprueba en la migración y en el código, y `privacidad_paginas.mjs` en el HTML de las páginas públicas (claves `preferencia`/`prefiere` y los textos de la marca).
+- **Pantallas:**
+  - **Jugador:** el bloque va debajo de «A los dos» o «Voy», y su tarjeta del partido lleva «★ Tu preferido», que solo ve él.
+  - **Gestores:** en Convocatoria, Tablero y Respuestas del evento, junto al jugador va **★** si está en el partido que prefiere o **☆ MdA** si prefería el MdA y está en el otro. Al pulsar la marca se ven el motivo, la nota y cuándo lo dijo, en línea y sin salir de la página (norma 13); otro toque lo cierra. Arriba va la leyenda «★ está en el partido que prefiere · ☆ MdA = prefería el MdA (está en el otro)».
+- **Avisos:** no se avisa al jugador cuando no se respeta su preferencia, porque ya le llega la convocatoria. El mensaje de convocatoria no cambia.
+- **Esquema (D111, sin staging):** la migración `20261120100000_preferencia_partido` es solo aditiva. Ella y su `.revertir.sql` se probaron en la pila local: se deshace limpia y se vuelve a aplicar. En el real se aplica con volcado previo, pruebas `-real` antes y después y recuento de cuentas.
+- **Maqueta aprobada:** `privado/mockups_liga/rediseno/preferencia/`, con los cambios de Iván del 20/11: motivo obligatorio, aviso de «sin guardar» y la leyenda nueva.
+- **Pruebas:**
+  - `pruebas:preferencia-rls`, con la pila local: permisos, validaciones, borrado automático, alertas tras aprobar, lista de motivos y migración reversible.
+  - `pruebas:convocatoria-motor`: empate con y sin preferencia, «se quedó fuera» frente a preferencia, sin empatado en el otro equipo, misma hora, quien dobla, y 300 repartos al azar donde nunca cambia quién va.
+  - `pruebas:preferencia-pantallas`: jugador y gestor a 375 y 1280 px.
+  - `test:privacidad`.
+
+## D195 — La camiseta de reserva es siempre la que NO llevamos ese partido; los convocados, con el mote de la plantilla (Iván, 20/11/2026; Code, `feat/preferencia-partido`) — SUSTITUYE en D160 «siempre terminan en «Llevad la amarilla por si acaso.»» (31/10/2026)
+
+- **Camiseta de reserva:** antes, la línea de equipación terminaba siempre en «Llevad la amarilla por si acaso.», también cuando jugábamos de amarillo porque nos tocaba cambiar a nosotros. Ahora la reserva es la equipación que no llevamos ese partido, y se calcula para cada partido por separado: un domingo, un equipo puede ir de negro y el otro de amarillo.
+  - Sin coincidencia: «Jugamos de negro (ellos de naranja). Llevad la amarilla por si acaso.»
+  - Cambiamos nosotros: «Coinciden colores: cambiamos nosotros, de amarillo. Llevad la negra por si acaso.»
+  - Cambian ellos: «Coinciden colores: cambia X. Llevad la amarilla por si acaso.»
+  - «No consta quién va en segundo lugar»: termina igual, en una frase aparte («… Llevad la amarilla por si acaso.»).
+- **Un solo sitio:** la frase de la reserva solo la escribe `porSiAcaso` (`data/avisos_equipacion.js`, con su copia en `plataforma/src/data/`). La usan la línea de la convocatoria (WhatsApp, aviso «Estás convocado», ficha del evento, Scouting, `/calendario.ics`), la tarjeta personal en singular («Lleva la negra por si acaso») y la etiqueta pública. `pruebas:equipacion` falla si algún fichero escribe la frase por su cuenta.
+  - **Quien dobla con equipaciones distintas:** el aviso al móvil lleva cada línea con su reserva («MdA: … Llevad la amarilla por si acaso. MdL: … Llevad la negra por si acaso.»). Si la reserva es la misma en los dos partidos, sigue saliendo una sola vez al final.
+  - **Su tarjeta:** dice «Negra en el MdA y amarilla en el MdL».
+- **Nombres en «Convocados»:** siempre `jugadores.nombre_visible`, el mismo nombre que en el resto de la web. El código ya lo usaba; lo que estaba mal eran tres nombres de la base, que no coincidían con el mote de la plantilla (`privado/plantilla_2026-27.csv`): «Carlos» → «Carlos B.», «Eduardo» → «Eduardo G.» y «Victor» → «Víctor M.». Así ya no se confunden con «Carlos (entrenador)», con «Edu» ni con el otro Víctor («Wall»).
+  - Corregidos en la semilla (`plataforma/scripts/plantilla_2026_27.mjs`) y en el real (ver ESTADO).
+  - La lista ya no acaba en «..» cuando el último nombre lleva inicial.
+  - Al guardar un jugador en Gestión, se rechaza un nombre visible que ya tenga otro jugador activo (sin distinguir tildes ni mayúsculas).
+- **Pruebas:**
+  - `pruebas:equipacion`: los tres casos, el domingo mixto y el barrido de la frase.
+  - `pruebas:nombres-convocados`, nueva: falla si dos convocados del mismo mensaje salen con el mismo nombre, si un nombre suelto se repite en la plantilla o si falta una tilde.
+  - Ajustadas: `pruebas:avisos-logica`, `pruebas:privacidad-avisos`, `pruebas:avisos`, `pruebas:fuente-eventos` (los 9 partidos de «cambiamos nosotros» del calendario de prueba dicen ahora «Llevad la negra») y `pruebas:convocatoria-motor`.

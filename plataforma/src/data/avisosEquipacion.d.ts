@@ -11,6 +11,8 @@ export type Equipaciones = {
 export type Aviso = {
   rival: string; colorRival: string | null; pantalonRival: string | null; conocido: boolean; hay: boolean;
   tipo: "nos_toca" | "cambian_ellos" | "dudoso" | null; quien: "nosotros" | "rival" | "dudoso" | null; etiqueta: string | null; texto: string | null; convocatoria: string | null;
+  /** La equipación de reserva, la que no llevamos ese partido: "amarilla" (jugamos de negro) o "negra" (cambiamos nosotros). */
+  reserva: string;
 };
 export function clave(nombre: string | null | undefined): string;
 export function colorNormalizado(texto: string): string;
@@ -20,6 +22,12 @@ export function descripcionColores(camiseta: string, pantalon: string): string;
 export function chocan(equip: Equipaciones, colorRival: string): boolean;
 export function avisoPartido(equip: Equipaciones, partido: Partial<Partido> | null): Aviso | null;
 export function lineaConvocatoria(equip: Equipaciones, partido: Partial<Partido> | null): string | null;
+export function lineaSinRival(equip: Equipaciones, singular?: boolean): string;
+export function reserva(equip: Equipaciones, aviso: Pick<Aviso, "tipo"> | null): string;
+export function porSiAcaso(equip: Equipaciones, aviso: Pick<Aviso, "tipo"> | null, singular?: boolean): string;
+export function enSingular(linea: string): string;
+export function separarReserva(linea: string | null | undefined): { cuerpo: string; reserva: string | null };
+export function juntarLineas(items: { etiqueta?: string | null; linea: string | null | undefined }[], sep?: string): string;
 export function proximoPartido(calendario: { partidos: Partido[] }, hoy: string, equipo: "MDA" | "MDL"): Partido | null;
 export function listarAvisos(equip: Equipaciones, calendario: { partidos: Partido[] }): { fecha: string; equipo: string; jornada: number; rival: string; color: string; tipo: string; texto: string }[];
 export function rivalesSinColor(equip: Equipaciones, calendario: { partidos: Partido[] }): string[];

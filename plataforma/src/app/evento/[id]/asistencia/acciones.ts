@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { exigirGestor } from "@/lib/sesion";
+import { repuntuarTrasAsistencia } from "@/lib/fantasy/servidor";
 import { cargarEvento } from "@/lib/eventos/datos";
 import { filasAsistencia, filasParaGuardar } from "@/lib/fantasy/asistencia";
 
@@ -25,5 +26,7 @@ export async function guardarAsistenciaReal(eventoId: string, ausentes: string[]
   if (error) return { ok: false, error: ERR[Object.keys(ERR).find((k) => error.message.includes(k)) ?? ""] ?? `No se pudo guardar: ${error.message}` };
   revalidatePath(`/evento/${eventoId}`, "layout");
   revalidatePath("/gestion/asistencia", "layout");
+  // D196: corregir un «no vino» de una jornada ya puntuada recalcula los puntos al momento
+  if ((await repuntuarTrasAsistencia())?.length) revalidatePath("/mdfantasy", "layout");
   return { ok: true, fueron: guardar.filter((f) => f.estado === "a_tiempo").length, faltaron: guardar.filter((f) => f.estado === "sin_excusa" && ausentes.includes(f.person_id)).length };
 }

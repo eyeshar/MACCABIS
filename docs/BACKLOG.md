@@ -15,8 +15,10 @@
 - [x] **Lo que no entró de la especificación (D189):** cerrado el 10/11/2026 (PR #72 a #76; ver «Histórico»).
 
 **MdFantasy (D196, 20/11/2026) — construido en `feat/mdfantasy`, sin merge y sin aplicar en el real**
-- [ ] **Iván: probarlo en el staging local** (`npm run fantasy:probar -- --confirmar <ref>`; pasos en `ESTADO.md`) y contestar las 8 dudas abiertas de `ESTADO.md`.
-- [ ] **Iván: confirmar el nombre casado por aproximación** («MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando`).
+- [ ] **Iván: probarlo en el staging local** (`npm run fantasy:probar -- --confirmar <ref>`; pasos en `ESTADO.md`).
+- [x] Dudas contestadas por Iván (20/11/2026): en `ESTADO.md` y D196.
+- [ ] **Iván: decidir** si la porra de un gestor se bloquea con el borrador de la convocatoria, y qué se rehace para acercarse a la maqueta (pista dibujada, podio con escalones, jornada frente a la media; diferencias en `ESTADO.md`).
+- [x] Nombre casado por aproximación («MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando`): confirmado por Iván (20/11/2026).
 - [ ] **Con su OK:** migración `20261121100000_mdfantasy` en el real con D111, merge, y encender primero «Solo gestores».
 - [ ] **Tras 3 o 4 jornadas jugadas de verdad:** revisar caja, ingresos y multiplicador del clausulazo en Ajustes (`docs/MDFANTASY.md`, «A revisar»).
 - [ ] **Más adelante:** avisos al móvil del fantasy para los jugadores (hoy solo el del clausulazo): «cierra la jornada en 24 h y no tienes alineación», «ya están los puntos». No se han hecho para no añadir avisos sin que Iván los pida.

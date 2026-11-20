@@ -11,6 +11,7 @@ import { puntuarJornada } from '../src/lib/fantasy/jornada.ts';
 import { cerrarJornada } from '../src/lib/fantasy/cierre.ts';
 import { rankingManagers, rankingDuelos, rankingJugadores, quintetoIdeal, rivalDe, premiosDelMes, resumenWhatsapp, insignias } from '../src/lib/fantasy/vista.ts';
 import { madrid } from '../src/lib/avisos/horario.ts';
+import { avisoClausulazo } from '../src/lib/fantasy/avisos.ts';
 
 let fallos = 0;
 const ok = (c, q, d = '') => { if (c) console.log(`  OK    ${q}`); else { fallos++; console.log(`  FALLO ${q}${d !== '' ? ` -> ${d}` : ''}`); } };
@@ -52,11 +53,22 @@ eq(compromisoUnidad(U({ estado: 'no', origen: 'sistema' }), P).respuesta, 0, 'du
 eq(compromisoUnidad(U({ estado: 'no', origen: 'defecto' }), P).respuesta, 0, '«no va» por defecto: 0');
 eq(compromisoUnidad(U({ estado: 'no', respondidoEn: madrid('2026-11-16', '11:00'), avisoEn: aviso }), P).respuesta, 3, 'decir «no voy» rápido también es responder: +3');
 
+console.log('\n== Aviso al afectado por un clausulazo');
+const dCl = { precio: 13.1, jugador: 'Ana', comprador: 'Eme' };
+const avDia = avisoClausulazo(dCl, 'a', 'm2', madrid('2026-11-17', '10:00'));
+ok(avDia.person_id === 'm2' && avDia.tipo === 'cambio' && avDia.cuerpo === 'Eme se lleva a Ana. Cobras 13,1 M.' && avDia.url === '/mdfantasy?tab=mercado', 'va solo al mánager que pierde al jugador, con quién y cuánto cobra', JSON.stringify(avDia));
+eq(avDia.programado_para.getTime(), madrid('2026-11-17', '10:00').getTime(), 'de día sale al momento');
+eq(avisoClausulazo(dCl, 'a', 'm2', madrid('2026-11-17', '23:15')).programado_para.getTime(), madrid('2026-11-18', '08:00').getTime(), 'a las 23:15 (silencio): espera a las 08:00 del día siguiente');
+eq(avisoClausulazo(dCl, 'a', 'm2', madrid('2026-11-18', '06:40')).programado_para.getTime(), madrid('2026-11-18', '08:00').getTime(), 'a las 06:40 (silencio): espera a las 08:00');
+eq(avisoClausulazo(dCl, 'a', 'm2', madrid('2026-11-17', '22:29')).programado_para.getTime(), madrid('2026-11-17', '22:29').getTime(), 'a las 22:29 todavía sale');
+
 console.log('\n== Compromiso: la asistencia real');
 const E = (o) => U({ clase: 'entreno', texto: 'Entreno 18/11', respondidoEn: madrid('2026-11-16', '11:00'), avisoEn: aviso, ...o });
 eq(compromisoUnidad(E({}), P), { clase: 'entreno', texto: 'Entreno 18/11', respuesta: 3, asistencia: 3, como: 'respondió rápido' }, 'dijo «voy» y nadie ha dicho que faltara: +3 del entreno');
 eq(compromisoUnidad(E({ asistencia: 'fue' }), P).asistencia, 3, 'fue de verdad: +3');
 eq(compromisoUnidad(E({ asistencia: 'falto' }), P).asistencia, -5, 'plantón (dijo «voy» y no fue): −5');
+ok(compromisoUnidad(E({ asistencia: 'falto' }), P).como.endsWith('no vino') && !/plant[oó]n|excusa|motivo/i.test(JSON.stringify([compromisoUnidad(E({ asistencia: 'falto' }), P), compromisoUnidad(E({ asistencia: 'excusa' }), P)])), 'lo que ven los jugadores: «no vino», texto neutro y sin motivo');
+eq(compromisoUnidad(E({ asistencia: 'fue' }), P).asistencia - compromisoUnidad(E({ asistencia: 'falto' }), P).asistencia, 8, 'corregir un «no vino» mal marcado devuelve los 8 puntos (de −5 a +3)');
 eq(compromisoUnidad(E({ asistencia: 'excusa' }), P).asistencia, 0, 'dijo «voy» y faltó con excusa: sin entreno y sin plantón');
 eq(compromisoUnidad(E({ estado: 'sin_responder', origen: null, respondidoEn: null, asistencia: 'fue' }), P), { clase: 'entreno', texto: 'Entreno 18/11', respuesta: 0, asistencia: 3, como: 'vino sin avisar' }, 'vino sin avisar: los +3 del entreno, sin puntos (ni castigo) de respuesta');
 eq(compromisoUnidad(E({ estado: 'no', asistencia: null }), P).asistencia, 0, 'dijo «no voy»: sin puntos de entreno');

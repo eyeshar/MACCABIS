@@ -4,6 +4,7 @@
 -- enviados siguen en avisos_registro; son texto).
 -- Probado en la pila local (pruebas:fantasy-rls): se deshace limpia y se vuelve a aplicar.
 drop trigger if exists fantasy_primera_respuesta on public.respuestas;
+drop trigger if exists fantasy_asistencia_cambia on public.asistencia_eventos;
 do $$
 declare f text;
 begin

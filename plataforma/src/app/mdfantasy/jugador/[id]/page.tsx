@@ -69,16 +69,16 @@ export default async function Carta({ params }: { params: Promise<{ id: string }
             </ul>
           ) : <p className="suave" style={{ margin: 0 }}>Aún no tiene jornadas.</p>}
         </section>
-        {ultimas[0] && (
-          <details className="fz-detalle">
-            <summary>Detalle de la jornada del {fechaCorta(ultimas[0].jornada)}</summary>
+        {ultimas.map((u0) => (
+          <details className="fz-detalle" key={u0.jornada}>
+            <summary>Detalle de la jornada del {fechaCorta(u0.jornada)}</summary>
             <ul className="lista-limpia">
-              {(ultimas[0].detalle.partidos ?? []).map((x, i) => <li key={`p${i}`}>{x.equipo}: {x.pts} pts, +/- relativo {conSigno(x.relativo)} → {conSigno(x.extra)} · <b>{pts(x.total)}</b> ({x.minutos} min)</li>)}
-              {ultimas[0].doblete && <li>Dos partidos el mismo domingo: media de los dos + {f.P.bonusDoblete}</li>}
-              {(ultimas[0].detalle.unidades ?? []).map((u, i) => <li key={`u${i}`}>{u.texto}: {u.como || "—"} · <b>{conSigno(u.respuesta + u.asistencia)}</b></li>)}
+              {(u0.detalle.partidos ?? []).map((x, i) => <li key={`p${i}`}>{x.equipo}: {x.pts} pts, +/- relativo {conSigno(x.relativo)} → {conSigno(x.extra)} · <b>{pts(x.total)}</b> ({x.minutos} min)</li>)}
+              {u0.doblete && <li>Dos partidos el mismo domingo: media de los dos + {f.P.bonusDoblete}</li>}
+              {(u0.detalle.unidades ?? []).map((u, i) => <li key={`u${i}`}>{u.texto}: {u.como || "—"} · <b>{conSigno(u.respuesta + u.asistencia)}</b></li>)}
             </ul>
           </details>
-        )}
+        ))}
         <section aria-labelledby="t-fz-insignias" data-testid="fz-carta-insignias">
           <h2 id="t-fz-insignias" className="fz-h3">Insignias</h2>
           {ins.length ? <p className="fz-insignias">{ins.map((x) => <span key={x.clave} className="pastilla pastilla-jugo">{x.texto}{x.veces > 1 ? ` ×${x.veces}` : ""}</span>)}</p> : <p className="suave" style={{ margin: 0 }}>Todavía ninguna.</p>}

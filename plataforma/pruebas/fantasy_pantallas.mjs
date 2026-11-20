@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // MdFantasy (D196) en pantalla: pila local, web compilada y Chrome, a 375 y 1280 px. Jugadores SINTÉTICOS, calendario y
 // reloj de prueba (D185; hoy = lunes 19/10/2026). Nunca imprime datos privados.
-//   - Apagado: nadie ve «Fantasy» en el menú ni entra. Un gestor lo enciende en Ajustes.
+//   - Apagado: nadie ve «MdFantasy» en el menú ni entra. Un gestor lo enciende en Ajustes.
 //   - Encendido: la entrada sale en la barra (jugador 5, gestor 6) y lleva a las cinco pestañas (en la URL).
 //   - Crear equipo, alinear (capitán y vicecapitán), vender y fichar, porra; la alineación de otro no se ve antes del cierre.
 //   - Tras puntuar: Jornada (total, desglose, quinteto ideal), Ranking (podio, pestañas, premios, resumen para WhatsApp)
@@ -13,7 +13,8 @@ import { cerrarJornada } from '../src/lib/fantasy/cierre.ts';
 import { PARAMETROS } from '../src/lib/fantasy/reglas.ts';
 
 const { ok, fallos, sumar } = contador();
-const e = await preparar();
+// La web lleva la clave de servicio DE LA PILA (nunca la real): al corregir la asistencia vuelve a puntuar al momento.
+const e = await preparar({ envExtra: async (pila) => ({ SUPABASE_SERVICE_ROLE_KEY: await pila.firmar({ role: 'service_role', iss: 'supabase-local' }, 3600 * 24) }) });
 const { sql, APP, pila } = e;
 try {
   await sinteticos(sql, [['sint-fp-ana', 'Ana', true, true], ['sint-fp-beto', 'Beto', true, true], ['sint-fp-gema', 'Gema', true, true]]);
@@ -62,10 +63,10 @@ try {
   console.log('\n== Encendido: menú y alta');
   await ana.goto(`${APP}/mdfantasy`);
   ok(await visto(ana.getByTestId('fz-bienvenida')), 'encendido: el jugador ve «Hazte mánager»');
-  ok(await hasta(async () => (await barra(ana)).join('·') === 'Semana·Calendario·Liga·Club·Fantasy'), 'la barra del jugador suma «Fantasy» (5)', (await barra(ana)).join('·'));
-  ok((await ana.getByTestId('barra').locator('a[aria-current="page"]').textContent()) === 'Fantasy' && (await ana.getByTestId('titulo-seccion').textContent()) === 'MdFantasy', 'la entrada queda marcada y la cabecera dice MdFantasy');
+  ok(await hasta(async () => (await barra(ana)).join('·') === 'Semana·Calendario·Liga·Club·MdFantasy'), 'la barra del jugador suma «MdFantasy» (5)', (await barra(ana)).join('·'));
+  ok((await ana.getByTestId('barra').locator('a[aria-current="page"]').textContent()) === 'MdFantasy' && (await ana.getByTestId('titulo-seccion').textContent()) === 'MdFantasy', 'la entrada queda marcada y la cabecera dice MdFantasy');
   await gema.goto(`${APP}/mdfantasy`);
-  ok(await hasta(async () => (await barra(gema)).join('·') === 'Semana·Calendario·Liga·Club·Fantasy·Gestión'), 'la barra del gestor: 6 entradas', (await barra(gema)).join('·'));
+  ok(await hasta(async () => (await barra(gema)).join('·') === 'Semana·Calendario·Liga·Club·MdFantasy·Gestión'), 'la barra del gestor: 6 entradas', (await barra(gema)).join('·'));
   ok(!(await pequenos(gema, '[data-testid="barra"] a')).length && await sinDesbordar(gema), 'con 6 entradas a 375 px, cada una mide al menos 44 px y nada desborda', JSON.stringify(await pequenos(gema, '[data-testid="barra"] a')));
   await trasAccion(ana, () => ana.getByTestId('fz-crear').click());
   ok(await hasta(async () => (await sql`select count(*)::int n from public.fantasy_copias where manager = 'sint-fp-ana'`)[0].n === PARAMETROS.plantilla), 'crear equipo: plantilla de 7');
@@ -119,7 +120,7 @@ try {
   await beto.goto(`${APP}/mdfantasy?tab=plantilla&m=sint-fp-ana`);
   ok(await visto(beto.getByTestId('fz-oculta')) && await visto(beto.getByTestId('fz-plantilla-otro')) && !(await beto.locator('.fz-galon').count()), 'otro mánager: se ve su plantilla, no su alineación ni su capitán');
   ok(!(await beto.content()).includes('"capitan"'), 'el HTML tampoco lleva su capitán');
-  ok(await visto(beto.getByTestId('nav-principal').or(beto.getByRole('navigation', { name: 'Principal' })).getByRole('link', { name: 'Fantasy' })), 'escritorio: «Fantasy» en el menú de la cabecera');
+  ok(await visto(beto.getByTestId('nav-principal').or(beto.getByRole('navigation', { name: 'Principal' })).getByRole('link', { name: 'MdFantasy' })), 'escritorio: «MdFantasy» en el menú de la cabecera');
 
   console.log('\n== Tras puntuar una jornada: Jornada, Ranking y carta');
   await sql`update public.fantasy_managers set alta_en = alta_en - interval '2 days'`;
@@ -179,6 +180,20 @@ try {
   ok(await hasta(async () => { const f = await sql`select person_id, estado from public.asistencia_eventos where evento_ref = ${ent.id} and origen = 'plataforma'`; return f.find((x) => x.person_id === 'sint-fp-beto')?.estado === 'sin_excusa' && f.find((x) => x.person_id === 'sint-fp-gema')?.estado === 'fue'; }), '…y se puede corregir: un ausente y uno que vino sin avisar');
   ok(await sinDesbordar(gema) && !(await pequenos(gema, 'main button, main label.fz-casilla')).length, '«¿Faltó alguien?» a 375 px: sin desbordar y con objetivos de 44 px', JSON.stringify(await pequenos(gema, 'main button, main label.fz-casilla')));
   await foto(gema, 'fantasy_asistencia_375');
+
+  console.log('\n== Corregir un «no vino»: se recalcula al momento, sin esperar a la tarea');
+  const noVino = async () => (await sql`select count(*)::int n from public.fantasy_puntos_jugador where person_id = 'sint-fp-beto' and detalle::text like '%no vino%'`)[0].n;
+  const compBeto = async () => Number((await sql`select coalesce(sum(compromiso), 0) c from public.fantasy_puntos_jugador where person_id = 'sint-fp-beto'`)[0].c);
+  ok(await hasta(async () => (await noVino()) === 1), 'marcado «faltó» desde la pantalla: sus puntos ya llevan el «no vino»', String(await noVino()));
+  const conFalta = await compBeto();
+  await ana.goto(`${APP}/mdfantasy/jugador/sint-fp-beto`);
+  const carta = await ana.getByTestId('fz-carta').textContent();
+  ok(carta.includes('no vino') && !/plant[oó]n|excusa|motivo/i.test(carta), 'los demás lo ven en su carta con texto neutro («no vino»), sin motivo', (carta.match(/plant[oó]n|excusa|motivo/i) ?? ['falta «no vino»: ' + carta.slice(-400)])[0]);
+  await gema.goto(`${APP}/evento/${ent.id}/asistencia`);
+  await gema.getByTestId('asistencia-falto-sint-fp-beto').uncheck();
+  await trasAccion(gema, () => gema.getByTestId('asistencia-guardar').click());
+  ok(await hasta(async () => (await noVino()) === 0), 'corregido («sí vino»): el «no vino» desaparece al momento');
+  ok((await compBeto()) - conFalta === PARAMETROS.entrenoAsistido - PARAMETROS.planton, 'y recupera los puntos (de −5 a +3)', `${await compBeto()} / ${conFalta}`);
 
   ok(!e.errores.length, 'sin errores de JavaScript en la consola', e.errores.slice(0, 3).join(' | '));
 } catch (err) { console.log(`  FALLO ${err.stack}`); sumar(); }

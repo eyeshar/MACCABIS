@@ -714,6 +714,25 @@ end $$;
 create trigger fantasy_primera_respuesta after insert or update on public.respuestas
   for each row execute function public._fantasy_primera_respuesta();
 
+-- Corregir la asistencia real (un «no vino» mal marcado, o al revés) de un entreno o partido de una jornada YA puntuada
+-- la deja pendiente: se vuelve a puntuar al momento desde la web (lib/fantasy/servidor.ts) o, como muy tarde, en la
+-- siguiente pasada de la tarea. Nunca puede hacer fallar el pase de lista.
+create function public._fantasy_asistencia_cambia()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare v_f date := coalesce(new.fecha, old.fecha);
+begin
+  if tg_op = 'UPDATE' and new.estado is not distinct from old.estado and new.fecha = old.fecha then return null; end if;
+  begin
+    update public.fantasy_jornadas set huella = null
+    where puntuada_en is not null and fecha = (select min(j.fecha) from public.fantasy_jornadas j where j.fecha >= v_f);
+  exception when others then null;
+  end;
+  return null;
+end $$;
+create trigger fantasy_asistencia_cambia after insert or update or delete on public.asistencia_eventos
+  for each row execute function public._fantasy_asistencia_cambia();
+
 -- -------------------------------------------------------------------------------------------------------- permisos
 do $$
 declare t text;

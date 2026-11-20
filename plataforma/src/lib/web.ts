@@ -14,14 +14,14 @@ const S: Record<IdSeccion, Seccion> = {
   calendario: { id: "calendario", texto: "Calendario", href: "/calendario" },
   liga: { id: "liga", texto: "Liga", href: "/liga" },
   club: { id: "club", texto: "Club", href: "/club" },
-  mdfantasy: { id: "mdfantasy", texto: "Fantasy", href: "/mdfantasy" },
+  mdfantasy: { id: "mdfantasy", texto: "MdFantasy", href: "/mdfantasy" },
   gestion: { id: "gestion", texto: "Gestión", href: "/gestion" },
   acceso: { id: "acceso", texto: "Acceso", href: "/entrar" },
 };
 
 /** La barra (y el menu de escritorio) de cada persona: jugador Semana · Calendario · Liga · Club; gestor, con o sin ficha,
  *  ademas Gestión; sin sesion, Inicio (la portada publica) · Liga · Club · Acceso. */
-/** D196: «Fantasy» (MdFantasy) entra en la barra de todo el que tiene sesion SOLO cuando el juego esta encendido para el
+/** D196: «MdFantasy» entra en la barra de todo el que tiene sesion SOLO cuando el juego esta encendido para el
  *  (fantasy_acceso(), que llega con la sesion): apagado, la barra es la de siempre. */
 export function seccionesDe(u: { esGestor: boolean } | null, fantasy = false): Seccion[] {
   if (!u) return [S.inicio, S.liga, S.club, S.acceso];

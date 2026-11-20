@@ -10,7 +10,7 @@ const GRUPOS: GrupoAjuste[] = ["Rendimiento", "Compromiso", "Mánager", "Mercado
 const MODOS = [
   { id: "apagado", texto: "Apagado", nota: "Nadie lo ve." },
   { id: "gestores", texto: "Solo gestores", nota: "Para probarlo antes de abrirlo." },
-  { id: "todos", texto: "Abierto a todos", nota: "Todo jugador con sesión ve «Fantasy» en el menú." },
+  { id: "todos", texto: "Abierto a todos", nota: "Todo jugador con sesión ve «MdFantasy» en el menú." },
 ];
 
 export default function AjustesFormulario({ modo, campos, alias, sinCasar, jugadores, puntuadas, cambiado }: {

@@ -202,6 +202,8 @@ try {
   await sql`insert into public.convocatorias (fecha, jornada, estado) values ('2026-10-25', 3, 'borrador')`;
   ok(err(await rpc('fantasy_alinear', { p_titulares: [], p_capitan: null, p_vice: null }, G.t)) === 'gestor_bloqueado', 'con el borrador de la convocatoria, un gestor no opera');
   ok((await rpc('fantasy_apostar', { p_equipo: 'MdA', p_pronostico: 'gana' }, G.t)).status < 300, '…pero sí puede hacer la porra');
+  ok(err(await rpc('fantasy_fichar', { p_jugador: cinco[0] }, G.t)) === 'gestor_bloqueado' && err(await rpc('fantasy_vender', { p_jugador: cinco[0] }, G.t)) === 'gestor_bloqueado' && err(await rpc('fantasy_clausulazo', { p_jugador: segundo.jugador, p_dueno: segundo.manager }, G.t)) === 'gestor_bloqueado', '…ni ficha, ni vende, ni hace clausulazos');
+  ok((await rpc('fantasy_estado', {}, G.t)).datos.gestor_bloqueado === true && (await rpc('fantasy_estado', {}, A.t)).datos.gestor_bloqueado === false, 'la pantalla lo sabe: bloqueado el gestor, no el jugador');
   ok((await rpc('fantasy_alinear', { p_titulares: cinco, p_capitan: cinco[0], p_vice: cinco[1] }, A.t)).status < 300, 'a un jugador el borrador no le afecta');
   await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = pruebas.ahora() where fecha = '2026-10-25'`;
   ok((await rpc('fantasy_alinear', { p_titulares: [], p_capitan: null, p_vice: null }, G.t)).status < 300, 'publicada la convocatoria, el gestor vuelve a operar');
@@ -220,6 +222,7 @@ try {
   const eB = (await rpc('fantasy_estado', {}, B.t)).datos;
   ok(eB.clausulas_cerradas === true && eB.cerrado === false, 'desde la víspera a las 20:00: clausulazos cerrados, el resto abierto');
   ok(err(await rpc('fantasy_clausulazo', { p_jugador: segundo.jugador, p_dueno: segundo.manager }, B.t)) === 'clausulas_cerradas' || segundo.manager === B.pid, 'clausulazo fuera de hora: no');
+  ok(err(await rpc('fantasy_clausulazo', { p_jugador: segundo.jugador, p_dueno: segundo.manager }, C.t)) === 'clausulas_cerradas' || segundo.manager === C.pid, '…ni para otro mánager');
   // Empieza el primer partido (hoy a las 09:00): todo cerrado y las alineaciones se ven.
   await sql`update public.eventos set inicio = '09:00' where fecha = '2026-10-19' and tipo = 'liga'`;
   ok(err(await rpc('fantasy_vender', { p_jugador: cinco[0] }, A.t)) === 'cerrado' && err(await rpc('fantasy_alinear', { p_titulares: cinco, p_capitan: cinco[1], p_vice: null }, A.t)) === 'cerrado' && err(await rpc('fantasy_apostar', { p_equipo: 'MdA', p_pronostico: 'gana' }, A.t)) === 'cerrado', 'desde el primer partido: mercado, alineación y porra cerrados');
@@ -250,6 +253,21 @@ try {
   ok((await sql`select count(*)::int n from public.fantasy_logros where logro = 'mejor_jornada'`)[0].n >= 1, 'logro: mejor mánager de la jornada');
   ok((await rpc('fantasy_estado', {}, A.t)).datos.jornada > '2026-10-19', 'puntuada la jornada, el mercado pasa a la siguiente y se abre');
   ok(err(await rpc('fantasy_alinear', { p_titulares: al.titulares, p_capitan: al.capitan, p_vice: null }, A.t)) === 'capitan_repetido', 'el capitán no puede repetir dos jornadas seguidas');
+
+  console.log('\n== Corregir la asistencia real de una jornada ya puntuada');
+  const pendiente = async () => (await sql`select huella is null p from public.fantasy_jornadas where fecha = '2026-10-19'`)[0].p;
+  const ingresos = async () => (await sql`select count(*)::int n from public.fantasy_movimientos where tipo = 'ingreso'`)[0].n;
+  const nIngresos = await ingresos();
+  ok(!(await pendiente()) && (await puntuar()).length === 0, 'la jornada está puntuada y no hay nada pendiente');
+  await sql`insert into public.asistencia_eventos (person_id, evento_ref, nombre, temporada, fecha, ambito, titulo, estado, origen) values ('sint-fz-ana', 'prueba-fz-correccion', 'Ana', '2026-27', '2026-10-19', 'entrenos', 'Entreno', 'sin_excusa', 'plataforma')`;
+  ok(await pendiente(), 'marcar un «no vino» en un entreno de esa semana deja la jornada pendiente');
+  ok((await puntuar()).length === 1 && !(await pendiente()), '…y se vuelve a puntuar');
+  await sql`update public.asistencia_eventos set motivo = 'x' where evento_ref = 'prueba-fz-correccion'`;
+  ok(!(await pendiente()), 'cambiar solo el motivo (privado, no puntúa) no toca nada');
+  await sql`update public.asistencia_eventos set estado = 'fue' where evento_ref = 'prueba-fz-correccion'`;
+  ok(await pendiente() && (await puntuar()).length === 1, 'corregirlo («sí vino») la deja pendiente otra vez y se recalcula');
+  await sql`delete from public.asistencia_eventos where evento_ref = 'prueba-fz-correccion'`;
+  ok(await pendiente() && (await puntuar()).length === 1 && await ingresos() === nIngresos, 'borrar la marca también recalcula; los ingresos no se duplican');
 
   console.log('\n== Primera respuesta de cada jugador (disparador)');
   const ev = (await sql`select id from public.eventos where tipo = 'entreno' and fecha > '2026-10-19' order by fecha limit 1`)[0].id;

@@ -88,8 +88,8 @@ export function compromisoUnidad(u: Unidad, P: Parametros): DetalleUnidad {
   if (u.clase === "entreno") {
     if (u.asistencia === "fue" && !dijoVoy) { asistencia = P.entrenoAsistido; respuesta = 0; como = "vino sin avisar"; }
     else if (u.asistencia === "fue" || (u.asistencia === null && dijoVoy)) asistencia = P.entrenoAsistido;
-    else if (u.asistencia === "falto" && dijoVoy) { asistencia = P.planton; como = `${como ? `${como}; ` : ""}plantón`; }
-  } else if (u.asistencia === "falto" && dijoVoy && u.convocado && !u.enHoja) { asistencia = P.planton; como = `${como ? `${como}; ` : ""}plantón`; }
+    else if (u.asistencia === "falto" && dijoVoy) { asistencia = P.planton; como = `${como ? `${como}; ` : ""}no vino`; }
+  } else if (u.asistencia === "falto" && dijoVoy && u.convocado && !u.enHoja) { asistencia = P.planton; como = `${como ? `${como}; ` : ""}no vino`; }
   return { clase: u.clase, texto: u.texto, respuesta, asistencia, como };
 }
 

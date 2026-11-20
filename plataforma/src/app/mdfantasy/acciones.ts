@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { exigirGestor, exigirSesion } from "@/lib/sesion";
 import { clienteServicio, configuradoEnvio, encolar, enviarPendientes } from "@/lib/avisos/servidor";
-import { horaDeEnvio } from "@/lib/avisos/horario";
+import { avisoClausulazo } from "@/lib/fantasy/avisos";
+import { repuntuarFantasy } from "@/lib/fantasy/servidor";
 import { millones } from "@/lib/fantasy/reglas";
 
 // MdFantasy (D196): cada accion va con la sesion de quien la hace; la base decide (funciones fantasy_*, que comprueban el
@@ -62,7 +63,7 @@ export async function clausulazo(jugador: string, dueno: string): Promise<R> {
     if (configuradoEnvio()) {
       const sb = clienteServicio();
       const ahora = new Date();
-      await encolar(sb, [{ titulo: "MdFantasy: te han hecho un clausulazo", cuerpo: `${d.comprador} se lleva a ${d.jugador}. Cobras ${millones(Number(d.precio))}.`, clave: `fantasy-clausulazo:${jugador}:${dueno}:${ahora.getTime()}`, tipo: "cambio", person_id: dueno, eventos: [], url: "/mdfantasy?tab=mercado", programado_para: horaDeEnvio(ahora, null) }]);
+      await encolar(sb, [avisoClausulazo(d, jugador, dueno, ahora)]);
       await enviarPendientes(sb, ahora);
     }
   } catch (e) { console.error("mdfantasy: no se pudo avisar del clausulazo", e); }
@@ -92,11 +93,8 @@ export async function puntuarAhora(): Promise<R> {
   await exigirGestor();
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { ok: false, error: "Este servidor no tiene la clave de servicio: se puntuará en la próxima pasada de la tarea." };
   try {
-    const { tareaFantasy } = await import("@/lib/fantasy/tarea");
-    const sb = clienteServicio();
-    const r = await tareaFantasy(sb, new Date());
-    if (configuradoEnvio()) await encolar(sb, r.filas);
+    const puntuadas = (await repuntuarFantasy()) ?? [];
     refrescar();
-    return { ok: true, aviso: r.puntuadas.length ? `Puntuadas: ${r.puntuadas.join(", ")}.` : "No había nada nuevo que puntuar." };
+    return { ok: true, aviso: puntuadas.length ? `Puntuadas: ${puntuadas.join(", ")}.` : "No había nada nuevo que puntuar." };
   } catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
 }

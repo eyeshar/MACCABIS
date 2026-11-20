@@ -46,6 +46,7 @@ mánagers pero no son elegibles). Una cuenta de gestor sin ficha no puede jugar.
 6. **Entreno sin respuesta de los gestores a «¿Faltó alguien ayer?»:** quien dijo «voy», fue (+3).
 7. **Plantón en un partido:** solo si estaba convocado, dijo «voy», no sale en la hoja **y un gestor lo confirma**. Si nadie lo confirma, no hay plantón.
 8. **Dijo «voy» y faltó con excusa** (pase de lista «con excusa» o «lesionado»): sin los +3 y sin plantón.
+   - Lo que ven los jugadores de un plantón es **«no vino»**, sin motivo (el motivo es solo de gestores). **Si un gestor lo corrige** (en «¿Faltó alguien?» o en el pase de lista), la jornada se vuelve a puntuar **al momento**, aunque ya estuviera cerrada: puntos, ingresos y ranking se recalculan sin duplicar nada.
 9. **Cuándo respondió:** hasta ahora la base solo guardaba el último cambio. La migración apunta desde ahora la **primera** respuesta de cada jugador a cada evento; en lo anterior se usa el último cambio.
 
 ### Puntos de un mánager

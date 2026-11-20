@@ -26,12 +26,12 @@ export function contador() {
 export const esperar = esperarUrl;
 
 /** Pila + eventos de la temporada + (opcional) web compilada (solo si cambio algo, D149) con `envExtra`, en el puerto de
- *  la app de este carril (infra/puertos.mjs). */
+ *  la app de este carril (infra/puertos.mjs). `envExtra` puede ser una funcion de la pila (para firmar una clave con ella). */
 export async function preparar({ envExtra = {}, compilar = true } = {}) {
   const pila = await arrancar();
   await cargarEventos(pila.sql, { log: () => {} });
   let app = null;
-  if (compilar) app = await arrancarApp({ puerto: PUERTOS.app, env: { NEXT_PUBLIC_SUPABASE_URL: pila.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: pila.anonKey }, envExtra });
+  if (compilar) app = await arrancarApp({ puerto: PUERTOS.app, env: { NEXT_PUBLIC_SUPABASE_URL: pila.url, NEXT_PUBLIC_SUPABASE_ANON_KEY: pila.anonKey }, envExtra: typeof envExtra === 'function' ? await envExtra(pila) : envExtra });
   const APP = app?.APP ?? `http://127.0.0.1:${PUERTOS.app}`;
   const nav = compilar ? await abrirNavegador() : null;
   const codigoDe = async (email) => (await pila.sql`select codigo from public._otp_pruebas where email = ${email}`)[0]?.codigo;

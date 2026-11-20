@@ -22,17 +22,26 @@
 
 **Parámetros elegidos** (todos se cambian en Ajustes; justificación en `docs/MDFANTASY.md`): caja inicial **13 M**; ingreso por jornada **2 M + 0,04 M por punto** (unos 4,4 M para un mánager medio, que hace unos 59 puntos); valor mínimo 4 M sobre las últimas 4 jornadas; clausulazo × 1,5; copias con un 15 % de margen; plantilla inicial ±10 %. Con eso, un clausulazo de un jugador medio (13,1 M) sale cada tres jornadas y el del más caro (47,3 M) pide 8 jornadas sin gastar: en la práctica, solo vendiendo.
 
-**Nombres sin casar:** ninguno. De los 23 nombres de las hojas, 22 casan exactos y uno por aproximación, que conviene que Iván confirme: **«MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando`** (la hoja trae un segundo nombre). `galan-domingo-guillermo` no sale en ninguna hoja porque no ha jugado.
+**Nombres sin casar:** ninguno. De los 23 nombres de las hojas, 22 casan exactos y uno por aproximación, **confirmado por Iván (20/11/2026)**: «MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando` (la hoja trae un segundo nombre). `galan-domingo-guillermo` no sale en ninguna hoja porque no ha jugado.
 
-**Dudas abiertas (decide Iván):**
-1. **Rama de Supabase:** no se ha creado (plan gratuito y D111). ¿Vale el staging local, o quiere pagar el plan con ramas?
-2. **Menú:** con el juego encendido, el jugador pasa de 4 a 5 entradas y el gestor de 5 a 6. Cabe, pero justo. Opciones: (a) como está, con «Fantasy» en la barra; (b) dejar la barra como estaba y entrar desde una tarjeta en Semana y una fila en «Yo»; (c) solo para gestores, mover «Gestión» al avatar.
-3. **Privacidad:** el plantón y el «no respondió» de cada jugador los ve todo el equipo (hoy la asistencia real es solo de gestores). ¿De acuerdo?
-4. **«No va por defecto»:** ahora no resta. ¿O debe restar −2 como quien no responde?
-5. **Mánagers:** ¿pueden jugar los de solo entreno? Ahora sí (y el entrenador).
-6. **Jornadas ya jugadas:** al activar, las 5 jugadas se puntúan (hacen falta para el valor de mercado) pero nadie suma puntos de mánager por ellas. ¿Se empieza de cero en la siguiente, como está?
-7. **Maqueta:** no la encontré; comparar las capturas con la maqueta aprobada.
-8. **Semanas sin partido:** los entrenos de una semana sin liga cuentan para la jornada siguiente. ¿Bien así?
+**Dudas respondidas por Iván (20/11/2026, segunda tanda):**
+1. Vale el staging local; no se pagan ramas de Supabase.
+2. Entrada en el menú principal para jugadores y gestores, sin mover «Gestión». La etiqueta es **«MdFantasy»** (cabe: probado con 6 entradas a 375 px, 44 px por entrada y sin desbordar).
+3. El plantón lo ven todos con texto neutro (**«no vino»**); el motivo sigue siendo solo de gestores. **Corregir un «no vino» mal marcado recalcula los puntos al momento** (desde «¿Faltó alguien?» o desde el pase de lista), sin esperar a la tarea.
+4. «No va por defecto»: 0 puntos, ni +1 ni −2 (ya estaba así).
+5. Los de solo entreno pueden ser mánagers.
+6. Se empieza de cero: las jornadas ya jugadas solo fijan valores.
+7. Los entrenos de una semana sin partido cuentan para la jornada siguiente.
+8. «MENDEZ ESCANDON, FERNANDO ANTONIO» es Fernando M.: confirmado (casa solo, por aproximación; no hace falta alias).
+
+**Comprobado punto por punto (20/11/2026):** clausulazos cerrados desde el sábado a las 20:00; gestores sin operar (alinear, fichar, vender, clausulazo) desde el borrador de la convocatoria hasta que se publica; alineación, capitán y porra ajenos ocultos hasta el cierre; logros, quinteto ideal, premios del mes y resumen para WhatsApp; aviso al afectado por un clausulazo respetando el silencio (22:30–08:00). Todo estaba hecho; faltaban pruebas del bloqueo del gestor en el mercado y del aviso en silencio, ya añadidas.
+
+**Queda por decidir (Iván):**
+- **Porra de los gestores:** durante el bloqueo por el borrador de la convocatoria un gestor **sí** puede hacer la porra (no es mercado ni alineación). Si debe bloquearse también, es una línea.
+- **Maqueta:** diferencias que quedan, sin rehacer nada todavía:
+  - *Plantilla:* los 5 alineados van dentro de un recuadro amarillo en 2-2-1 con capitán (C) y vicecapitán (V) marcados, pero **no es una pista dibujada** (sin líneas de campo, zona ni aro) y los jugadores son tarjetas con botones, no fichas colocadas en posiciones.
+  - *Ranking:* hay podio de los tres primeros (el primero en el centro, más alto y con borde amarillo), pero son **tres tarjetas**, no un podio con escalones ni medallas.
+  - *Jornada:* el total y la media salen como **dos cifras una al lado de la otra** (dice «Media de los mánagers»), sin comparación visual ni diferencia; el desglose por jugador es una **tabla** con rendimiento y compromiso en columnas separadas (más capitán y total), no tarjetas, y el porqué del compromiso de cada uno está en su carta, no ahí.
 
 **Pasos exactos para probarlo (staging local, en este ordenador):**
 1. Abrir **Git Bash** en `C:\Users\Iván\Proyectos\Maccabis-fantasy\plataforma`.

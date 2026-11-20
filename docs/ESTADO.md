@@ -2,6 +2,49 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## MdFantasy (D196) — 20/11/2026, `feat/mdfantasy`: CONSTRUIDO y probado en local; **SIN merge, SIN migración en el real, APAGADO**. Lo aprueba Iván después de probarlo
+
+**Informe en lenguaje sencillo.**
+
+**Qué funciona (todo en local; en producción no hay nada):**
+- **El juego entero:** crear equipo (plantilla de 7 al azar y caja), alinear 5 con capitán y vicecapitán, porra, fichar, vender, clausulazo, duelos, ranking, carta de cada jugador y ajustes de gestores.
+- **Los puntos salen solos** cuando se publican las estadísticas de la jornada (la tarea de cada 15 minutos lo detecta). Se puede repetir sin duplicar nada.
+- **«¿Faltó alguien ayer?»** para los tres gestores, el día después del entreno a las 9:00, con «Vinieron todos», marcar ausentes y «vino sin avisar». Es el mismo pase de lista de siempre: cuenta en «Asistencia y motivos».
+- **Apagado por defecto.** Lo encienden los gestores en MdFantasy › Ajustes: «Solo gestores» (para probar) o «Abierto a todos».
+
+**Qué se ha verificado y cómo:**
+- **Reglas, una a una:** `pruebas:fantasy-logica`, en verde (rendimiento, compromiso, capitán, valor, copias, duelos, cierre de una jornada).
+- **Permisos y mercado en la base local:** `pruebas:fantasy-rls`, en verde. Apagado no se ve nada; nadie escribe directamente; la alineación, el capitán y la porra de los demás no se ven hasta el cierre; un clausulazo por jornada; horario del sábado a las 20:00 y del primer partido; bloqueo de gestores con el borrador de la convocatoria; volver a puntuar no duplica; la migración se deshace limpia y se vuelve a aplicar.
+- **Pantallas a 375 y 1280 px:** `pruebas:fantasy-pantallas`, en verde (sin desbordar, botones de 44 px, sin errores de consola).
+- **Lo que ya había:** `typecheck`, `pruebas:humo`, `pruebas:navegacion`, `pruebas:cache-publica`, `pruebas:avisos-logica`, `pruebas:seguridad-base`, `pruebas:pase-lista`, `pruebas:destino-pila` y `pruebas:procesos`, en verde en local. La batería completa, en GitHub Actions (ver el PR).
+- **Con datos reales:** el staging local copia el real en solo lectura y puntúa las 5 jornadas jugadas con el código de la web; revisado a ojo en capturas a 390 px (`privado/mockups_liga/rediseno/mdfantasy/`, fuera de git).
+- **No verificado:** nada en producción ni en vistas previas (D179). Los avisos al móvil del fantasy no se han enviado nunca de verdad (barrera de no enviar a personas reales): están probados hasta la cola, no la entrega. No se han pasado las suites `-real` porque no se ha escrito nada en el real.
+
+**Parámetros elegidos** (todos se cambian en Ajustes; justificación en `docs/MDFANTASY.md`): caja inicial **13 M**; ingreso por jornada **2 M + 0,04 M por punto** (unos 4,4 M para un mánager medio, que hace unos 59 puntos); valor mínimo 4 M sobre las últimas 4 jornadas; clausulazo × 1,5; copias con un 15 % de margen; plantilla inicial ±10 %. Con eso, un clausulazo de un jugador medio (13,1 M) sale cada tres jornadas y el del más caro (47,3 M) pide 8 jornadas sin gastar: en la práctica, solo vendiendo.
+
+**Nombres sin casar:** ninguno. De los 23 nombres de las hojas, 22 casan exactos y uno por aproximación, que conviene que Iván confirme: **«MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando`** (la hoja trae un segundo nombre). `galan-domingo-guillermo` no sale en ninguna hoja porque no ha jugado.
+
+**Dudas abiertas (decide Iván):**
+1. **Rama de Supabase:** no se ha creado (plan gratuito y D111). ¿Vale el staging local, o quiere pagar el plan con ramas?
+2. **Menú:** con el juego encendido, el jugador pasa de 4 a 5 entradas y el gestor de 5 a 6. Cabe, pero justo. Opciones: (a) como está, con «Fantasy» en la barra; (b) dejar la barra como estaba y entrar desde una tarjeta en Semana y una fila en «Yo»; (c) solo para gestores, mover «Gestión» al avatar.
+3. **Privacidad:** el plantón y el «no respondió» de cada jugador los ve todo el equipo (hoy la asistencia real es solo de gestores). ¿De acuerdo?
+4. **«No va por defecto»:** ahora no resta. ¿O debe restar −2 como quien no responde?
+5. **Mánagers:** ¿pueden jugar los de solo entreno? Ahora sí (y el entrenador).
+6. **Jornadas ya jugadas:** al activar, las 5 jugadas se puntúan (hacen falta para el valor de mercado) pero nadie suma puntos de mánager por ellas. ¿Se empieza de cero en la siguiente, como está?
+7. **Maqueta:** no la encontré; comparar las capturas con la maqueta aprobada.
+8. **Semanas sin partido:** los entrenos de una semana sin liga cuentan para la jornada siguiente. ¿Bien así?
+
+**Pasos exactos para probarlo (staging local, en este ordenador):**
+1. Abrir **Git Bash** en `C:\Users\Iván\Proyectos\Maccabis-fantasy\plataforma`.
+2. Escribir: `npm run fantasy:probar -- --confirmar pqbjnxmknhawlkszwmln`
+3. Esperar unos 3 o 4 minutos (copia del real en solo lectura, puntuación y compilación). Se abren **dos ventanas de Chrome**: una como Iván (gestor) y otra como un jugador, ya dentro de MdFantasy, con 8 mánagers de demostración y las 5 jornadas ya puntuadas.
+4. Probar: Inicio (cuenta atrás, porra), Plantilla (cambiar capitán y guardar), Mercado (vender, fichar, clausulazo: hace falta vender antes para tener hueco), Jornada, Ranking (copiar el resumen de WhatsApp), una carta de jugador y, como gestor, Ajustes.
+5. Para «¿Faltó alguien ayer?»: en la ventana de gestor, ir a Calendario, abrir el último entreno pasado y añadir `/asistencia` al final de la dirección.
+6. Para entrar como otra persona: `http://127.0.0.1:23303/entrar` con `<person_id>@pruebas.local`; el código de 6 cifras sale en la ventana de Git Bash.
+7. Al terminar, **Ctrl+C** en Git Bash: se cierra y se borra todo. Nada de lo hecho llega al real.
+
+**Para ponerlo en producción (cuando Iván diga, no antes):** 1) OK al PR; 2) migración `20261121100000_mdfantasy` en el real con D111 (volcado, suites `-real` antes y después, recuento de cuentas); 3) merge; 4) en Ajustes, «Solo gestores» para probarlo los tres en el móvil; 5) «Abierto a todos». Vuelta atrás: apagar el interruptor (inmediato) o `npm run db:revertir -- 20261121100000 --confirmar <ref>`.
+
 ## Next.js 16.4.5 y WebKit en Actions — 20/11/2026, `chore/next-16-4-5` (OK de Iván: mergear si Actions sale en verde)
 - **Next.js 16.4.4 → 16.4.5, fijo** (sin `^`). Corrige 7 avisos de seguridad de gravedad media publicados del 16 al 19/11. **Ninguno afectaba a la web**, tampoco al login ni a Gestión:
   - Cuatro de caché con `use cache` o Cache Components (GHSA-mfr8, vc7v, rhh4, vvgp): no los usamos.

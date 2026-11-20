@@ -239,6 +239,11 @@ export async function ejecutarTarea(ahora = new Date()) {
     if (r) { sumar(r.encolados); propuestas = r.propuestas; }
     sumar(await paso("alertas a gestores", () => encolarAlertasGestores(sb, base, ahora)));
   }
+  // D196: MdFantasy puntua las jornadas con estadisticas publicadas y avisa a los gestores (si la migracion no esta, nada).
+  sumar(await paso("mdfantasy", async () => {
+    const { tareaFantasy } = await import("@/lib/fantasy/tarea");
+    return encolar(sb, (await tareaFantasy(sb, ahora)).filas);
+  }));
   const envio = (await paso("envio de lo pendiente", () => enviarPendientes(sb, ahora))) ?? { pendientes: 0, enviados: 0 };
   const error = fallos.length ? fallos.map((x) => `${x.paso}: ${x.motivo}`).join(" | ") : undefined;
   return { cerradas, encolados, ...envio, propuestas, ...(error ? { error, fallos } : {}) };

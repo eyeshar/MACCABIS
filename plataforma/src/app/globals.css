@@ -759,6 +759,8 @@ html[data-sesion="pendiente"] :is(.nv-menu, .nv-derecha, .nv-barra, .nv-titulo, 
   body { padding-bottom: calc(var(--alto-barra) + 1px + env(safe-area-inset-bottom)); } /* + el borde de la barra */
   .nv-barra { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 42; background: var(--panel-2); border-top: 1px solid var(--borde); padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   .nv-barra[data-n="5"] { --n: 5; }
+  .nv-barra[data-n="6"] { --n: 6; } /* D196: gestor con MdFantasy encendido */
+  .nv-barra[data-n="6"] .nv-barra-item { font-size: 11px; }
   .nv-barra-item { position: relative; min-height: var(--alto-barra); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--tinta-tenue); text-decoration: none; font: inherit; font-size: 12px; font-weight: 600; background: none; border: 0; cursor: pointer; padding: 0; }
   .nv-barra-item[aria-current="page"] { color: var(--c-amarillo); }
   .nv-barra-item[aria-current="page"]::before { content: ""; position: absolute; top: -1px; left: 22%; right: 22%; height: 3px; border-radius: 0 0 3px 3px; background: var(--c-amarillo); }

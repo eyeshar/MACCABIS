@@ -5,7 +5,7 @@
 export const FUNDACION = 2013;
 
 /** Secciones de la navegacion (D189, estructura nueva; sustituye a los menus de D89, D90 y D117). */
-export type IdSeccion = "inicio" | "semana" | "calendario" | "liga" | "club" | "gestion" | "acceso";
+export type IdSeccion = "inicio" | "semana" | "calendario" | "liga" | "club" | "mdfantasy" | "gestion" | "acceso";
 export type Seccion = { id: IdSeccion; texto: string; href: string };
 
 const S: Record<IdSeccion, Seccion> = {
@@ -14,20 +14,23 @@ const S: Record<IdSeccion, Seccion> = {
   calendario: { id: "calendario", texto: "Calendario", href: "/calendario" },
   liga: { id: "liga", texto: "Liga", href: "/liga" },
   club: { id: "club", texto: "Club", href: "/club" },
+  mdfantasy: { id: "mdfantasy", texto: "Fantasy", href: "/mdfantasy" },
   gestion: { id: "gestion", texto: "Gestión", href: "/gestion" },
   acceso: { id: "acceso", texto: "Acceso", href: "/entrar" },
 };
 
 /** La barra (y el menu de escritorio) de cada persona: jugador Semana · Calendario · Liga · Club; gestor, con o sin ficha,
  *  ademas Gestión; sin sesion, Inicio (la portada publica) · Liga · Club · Acceso. */
-export function seccionesDe(u: { esGestor: boolean } | null): Seccion[] {
+/** D196: «Fantasy» (MdFantasy) entra en la barra de todo el que tiene sesion SOLO cuando el juego esta encendido para el
+ *  (fantasy_acceso(), que llega con la sesion): apagado, la barra es la de siempre. */
+export function seccionesDe(u: { esGestor: boolean } | null, fantasy = false): Seccion[] {
   if (!u) return [S.inicio, S.liga, S.club, S.acceso];
-  return [S.semana, S.calendario, S.liga, S.club, ...(u.esGestor ? [S.gestion] : [])];
+  return [S.semana, S.calendario, S.liga, S.club, ...(fantasy ? [S.mdfantasy] : []), ...(u.esGestor ? [S.gestion] : [])];
 }
 
 /** Titulo de la seccion en la cabecera del movil. */
 export const TITULO_SECCION: Record<IdSeccion, string> = {
-  inicio: "Inicio", semana: "Semana", calendario: "Calendario", liga: "Liga", club: "Club", gestion: "Gestión", acceso: "Acceso",
+  inicio: "Inicio", semana: "Semana", calendario: "Calendario", liga: "Liga", club: "Club", mdfantasy: "MdFantasy", gestion: "Gestión", acceso: "Acceso",
 };
 
 /** La seccion de una pantalla (la que se marca en la barra). Yo (/yo, /avisos) no es de ninguna: se marca el avatar. */
@@ -36,6 +39,7 @@ export function seccionDe(ruta: string, conSesion: boolean): IdSeccion | null {
   if (ruta === "/" || ruta === "/inicio") return conSesion ? "semana" : "inicio";
   if (en("/calendario", "/evento", "/agenda", "/planes", "/mi-zona", "/guia-tallas")) return "calendario";
   if (en("/gestion")) return "gestion";
+  if (en("/mdfantasy")) return "mdfantasy";
   if (en("/liga")) return "liga";
   if (en("/club", "/plantilla", "/historia", "/jugador", "/privacidad")) return "club";
   if (en("/entrar", "/auth")) return "acceso";

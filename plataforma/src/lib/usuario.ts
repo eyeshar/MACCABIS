@@ -32,15 +32,16 @@ export const usuarioActual = cache(async (): Promise<Usuario | null> => {
 /** Lo mismo con todas las llamadas explicitas y a la vez, para /api/sesion: un Route Handler no tiene la cache de React
  *  por peticion, asi que `usuarioActual` + `puedeVerLigaActual` repetirian la llamada a Auth. Aqui: una a Auth y, con ella,
  *  tres a la base en paralelo (mi_zona, is_gestor, puede_ver_liga). D175. */
-export async function sesionDelNavegador(): Promise<{ usuario: Usuario | null; verLiga: boolean }> {
+export async function sesionDelNavegador(): Promise<{ usuario: Usuario | null; verLiga: boolean; fantasy: boolean }> {
   const { supabase, user } = await sesionActual();
-  if (!supabase || !user) return { usuario: null, verLiga: false };
-  const [z, g, l] = await Promise.all([supabase.rpc("mi_zona"), supabase.rpc("is_gestor"), supabase.rpc("puede_ver_liga")]);
+  if (!supabase || !user) return { usuario: null, verLiga: false, fantasy: false };
+  // fantasy_acceso (D196): si la migracion no esta aplicada da error y cuenta como apagado.
+  const [z, g, l, f] = await Promise.all([supabase.rpc("mi_zona"), supabase.rpc("is_gestor"), supabase.rpc("puede_ver_liga"), supabase.rpc("fantasy_acceso")]);
   const zona = z.error ? null : ((z.data as Zona | null) ?? null);
   const esGestor = Boolean(g.data);
   // Misma regla que puedeVerLigaActual: sin la funcion de D162 aplicada, solo los gestores.
   const verLiga = l.error ? esGestor : Boolean(l.data);
-  return { usuario: await armarUsuario(supabase, user, zona, esGestor), verLiga };
+  return { usuario: await armarUsuario(supabase, user, zona, esGestor), verLiga, fantasy: !f.error && f.data === true };
 }
 
 async function armarUsuario(supabase: NonNullable<Awaited<ReturnType<typeof sesionActual>>["supabase"]>, user: { id: string; email?: string }, zona: Zona | null, esGestor: boolean): Promise<Usuario> {

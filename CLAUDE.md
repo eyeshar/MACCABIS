@@ -60,6 +60,7 @@ Si `--lista` elige algo que no encaja o se queda corto, añade con `--suite`. Au
 | `src/app/page.tsx`, `layout.tsx`, `globals.css` (raíz) | plataforma | `pruebas:portada`, `pruebas:navegacion` (+ las que usen lo tocado) |
 | `src/app/asistente`, `api/chat`, `src/lib/chat/` | plataforma | `pruebas:chat-ia` |
 | `src/proxy.ts`, `next.config.ts` (rewrites), `src/app/layout.tsx`, `components/nav/Sesion.tsx`, `api/sesion`, una página pública cacheada (`/`, `/liga`, `/club`, `/historia`, `/plantilla`) | plataforma | `pruebas:cache-publica`, `pruebas:navegacion`, `pruebas:portada`, `pruebas:inicio-personal` |
+| `src/app/mdfantasy/…`, `src/lib/fantasy/`, `evento/[id]/asistencia`, la migración `…_mdfantasy` (D196) | plataforma | `pruebas:fantasy-logica`, `pruebas:fantasy-rls`, `pruebas:fantasy-pantallas` (staging local: `npm run fantasy:probar -- --confirmar <ref>`) |
 | `src/lib/avisos/`, `api/avisos`, avisos | plataforma | `pruebas:avisos-logica`, `pruebas:respuestas-pantallas`, `pruebas:dudas`… |
 | `src/app/liga…`, `historia`, `plantilla`, `jugador`, `gestion/liga`, `gestion/scouting`, `src/components/liga/` | **estadísticas** | sus suites web (`pruebas:pantallas`, `pruebas:liga-partidos`, `pruebas:cuadre`, `pruebas:privacidad`…) **+** `test:regresion`, `test:liga`, `test:privacidad`, `pruebas:liga` |
 | `data/`, `scripts/` (raíz), `index.html`, `plataforma/src/data/` | **estadísticas** | las comprobaciones de la raíz (`check:*`, `test:*`) + `pruebas:liga` |

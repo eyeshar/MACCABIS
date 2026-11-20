@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRuta } from "@/components/nav/useRuta";
 import { seccionesDe, seccionDe, TITULO_SECCION, type IdSeccion } from "@/lib/web";
 import { useSesion } from "./Sesion";
-import { Barras, Calendario, Candado, Casa, Club, Panel } from "@/components/Iconos";
+import { Barras, Calendario, Candado, Casa, Club, Panel, Trofeo } from "@/components/Iconos";
 import AsistenteFlotante from "@/components/asistente/AsistenteFlotante";
 
 // Los enlaces de la cabecera, la barra y el pie no se precargan (prefetch={false}, D175): las paginas publicas son ya estaticas
@@ -21,13 +21,13 @@ import AsistenteFlotante from "@/components/asistente/AsistenteFlotante";
 // asi que tampoco hay parpadeos de «Acceso».
 
 const ICONO: Record<IdSeccion, React.ReactNode> = {
-  inicio: <Casa />, semana: <Casa />, calendario: <Calendario />, liga: <Barras />, club: <Club />, gestion: <Panel size={22} />, acceso: <Candado size={22} />,
+  inicio: <Casa />, semana: <Casa />, calendario: <Calendario />, liga: <Barras />, club: <Club />, mdfantasy: <Trofeo />, gestion: <Panel size={22} />, acceso: <Candado size={22} />,
 };
 
 export default function Navegacion({ escudo }: { escudo: React.ReactNode }) {
-  const { usuario } = useSesion();
+  const { usuario, fantasy } = useSesion();
   const ruta = useRuta();
-  const secciones = seccionesDe(usuario);
+  const secciones = seccionesDe(usuario, fantasy);
   const actual = seccionDe(ruta, Boolean(usuario));
   const titulo = TITULO_SECCION[actual ?? (usuario ? "semana" : "inicio")];
   const enYo = ruta === "/yo" || ruta.startsWith("/yo/") || ruta.startsWith("/avisos");

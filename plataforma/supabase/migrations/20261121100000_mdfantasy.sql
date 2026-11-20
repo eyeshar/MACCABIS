@@ -346,8 +346,18 @@ begin
     'clausulas_cerradas', case when v_j is null then true else public._fantasy_clausulas_cerradas(v_j) end,
     'gestor_bloqueado', case when v_j is null then false else public._fantasy_gestor_bloqueado(v_j) end,
     'caja', public._fantasy_caja(v_p),
-    'equipos', coalesce((select jsonb_agg(jsonb_build_object('equipo', e.equipo, 'rival', coalesce(e.rival_texto, e.rival), 'inicio', e.inicio, 'evento', e.id) order by e.inicio)
+    'equipos', coalesce((select jsonb_agg(jsonb_build_object('equipo', e.equipo, 'rival', coalesce(e.rival_texto, e.rival), 'inicio', e.inicio, 'evento', e.id, 'jornada', e.jornada) order by e.inicio)
                          from public.eventos e where e.fecha = v_j and e.tipo = 'liga' and e.oficial is not false and e.estado = 'programado' and e.borrado_en is null), '[]'::jsonb),
+    -- Empezado el primer partido, los equipos nuestros de ese domingo cuya hoja aún no está: la jornada no se puntúa hasta
+    -- tenerlas todas («Pendiente: falta la hoja de MdA»).
+    'hojas_pendientes', case when v_j is null or not public._fantasy_cerrada(v_j) then '[]'::jsonb else coalesce((
+        select jsonb_agg(distinct e.equipo) from public.eventos e
+        where e.fecha = v_j and e.tipo = 'liga' and e.oficial is not false and e.estado = 'programado' and e.borrado_en is null
+          and e.temporada = public._fantasy_temporada()
+          and not exists (select 1 from public.liga_partidos p
+                          join public.liga_estadisticas_jugador s on s.partido_id = p.id and s.equipo = e.equipo
+                          where p.temporada = public._fantasy_temporada() and p.nuestro and p.jornada = e.jornada
+                            and p.grupo = case e.equipo when 'MdA' then 'G1' else 'G2' end)), '[]'::jsonb) end,
     -- La convocatoria PUBLICADA de la jornada en juego (lo mismo que ya ven los jugadores en su portada): quién va con
     -- cada equipo. null = sin publicar (no existe o sigue en borrador).
     'convocatoria', (select jsonb_build_object(
@@ -597,7 +607,7 @@ begin
     'jugadores', coalesce((select jsonb_agg(jsonb_build_object('person_id', j.person_id, 'nombre_oficial', j.nombre_oficial, 'nombre_visible', j.nombre_visible) order by j.person_id)
                            from public.jugadores j where j.activo and j.rol = 'jugador'), '[]'::jsonb),
     'partidos', coalesce((select jsonb_agg(jsonb_build_object(
-                            'equipo', e.equipo, 'evento', e.id,
+                            'equipo', e.equipo, 'evento', e.id, 'partido', p.id, 'jornada', p.jornada,
                             'rival', case when p.local = e.equipo then p.visitante else p.local end,
                             'pts_favor', case when p.local = e.equipo then p.pts_local else p.pts_visitante end,
                             'pts_contra', case when p.local = e.equipo then p.pts_visitante else p.pts_local end,
@@ -605,7 +615,7 @@ begin
                           from public.eventos e
                           join public.liga_partidos p on p.temporada = v_t and p.nuestro and p.jornada = e.jornada and p.grupo = case e.equipo when 'MdA' then 'G1' else 'G2' end
                           where e.id = any (v_ev) and e.tipo = 'liga'), '[]'::jsonb),
-    'lineas', coalesce((select jsonb_agg(jsonb_build_object('equipo', e.equipo, 'nombre', s.nombre, 'segundos', coalesce(s.segundos, 0), 'pts', coalesce(s.pts, 0), 'mas_menos', coalesce(s.mas_menos, 0)))
+    'lineas', coalesce((select jsonb_agg(jsonb_build_object('equipo', e.equipo, 'partido', p.id, 'nombre', s.nombre, 'segundos', coalesce(s.segundos, 0), 'pts', coalesce(s.pts, 0), 'mas_menos', coalesce(s.mas_menos, 0)))
                         from public.eventos e
                         join public.liga_partidos p on p.temporada = v_t and p.nuestro and p.jornada = e.jornada and p.grupo = case e.equipo when 'MdA' then 'G1' else 'G2' end
                         join public.liga_estadisticas_jugador s on s.partido_id = p.id and s.equipo = e.equipo

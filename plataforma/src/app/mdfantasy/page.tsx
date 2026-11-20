@@ -41,6 +41,7 @@ export default async function MdFantasy({ searchParams }: { searchParams: Promis
       <nav className="fz-pestanas" aria-label="Secciones de MdFantasy" data-testid="fz-pestanas">
         {PESTANAS.map((p) => <Link key={p.id} href={p.id === "inicio" ? "/mdfantasy" : `/mdfantasy?tab=${p.id}`} aria-current={actual === p.id ? "page" : undefined}>{p.texto}</Link>)}
       </nav>
+      <p className="fz-ayuda"><Link href="/mdfantasy/como-se-juega" data-testid="fz-como-enlace">Cómo se juega ›</Link></p>
       <div className="fz-panel" data-pestana={actual}>
         {actual === "inicio" && <Inicio f={f} />}
         {actual === "plantilla" && <Plantilla f={f} q={q} />}

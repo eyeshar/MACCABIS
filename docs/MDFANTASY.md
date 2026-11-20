@@ -113,6 +113,12 @@ semanal de 6. Tabla de `npm run fantasy:compromiso` con los pesos nuevos (24 ele
 El compromiso sigue pesando más de la mitad el 08/11 y el 15/11 **porque esos domingos solo jugó un equipo** (9 y 10
 jugadores con minutos de 24): los otros catorce solo pueden sumar compromiso. Quien juega hace 11 de media; quien no, 3 o 4.
 
+### Hojas incompletas y partidos aplazados
+
+- **La jornada es el domingo.** Se puntúa cuando están las hojas de **todos** nuestros partidos de ese domingo; mientras tanto, Jornada dice «Pendiente: falta la hoja de MdA» (o «faltan las hojas de MdA y MdL»).
+- **Un partido aplazado cuenta para la jornada del domingo en que se juega.** Si por eso un jugador juega dos partidos ese día (aunque sean del mismo equipo), se aplica la regla de doblar: media de los dos más el extra. Cada hoja se puntúa con el marcador de su partido.
+- **Porra con dos partidos del mismo equipo:** vale el de la jornada de ese día (el de número de jornada más alto), no el aplazado.
+
 ### Nombres de la hoja
 
 `liga_estadisticas_jugador` identifica por nombre. De los 23 nombres de nuestras hojas:

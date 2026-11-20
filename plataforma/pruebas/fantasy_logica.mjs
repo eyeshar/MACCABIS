@@ -9,7 +9,7 @@ import { rendimientoPartido, rendimiento, horasActivas, compromisoUnidad, puntos
 import { puntosManager, arrastrar, valor, copiasPorJugador, ingreso, precioClausula, duelos } from '../src/lib/fantasy/manager.ts';
 import { puntuarJornada } from '../src/lib/fantasy/jornada.ts';
 import { cerrarJornada } from '../src/lib/fantasy/cierre.ts';
-import { rankingManagers, rankingDuelos, rankingJugadores, quintetoIdeal, rivalDe, premiosDelMes, resumenWhatsapp, insignias, marcaConvocado, mediaValor, textoMediaValor } from '../src/lib/fantasy/vista.ts';
+import { rankingManagers, rankingDuelos, rankingJugadores, quintetoIdeal, rivalDe, premiosDelMes, resumenWhatsapp, insignias, marcaConvocado, mediaValor, textoMediaValor, textoHojasPendientes, equiposDePorra } from '../src/lib/fantasy/vista.ts';
 import { madrid } from '../src/lib/avisos/horario.ts';
 import { avisoClausulazo } from '../src/lib/fantasy/avisos.ts';
 
@@ -70,6 +70,27 @@ const pv = [['2026-10-04', 20], ['2026-10-18', 10], ['2026-10-25', 6], ['2026-11
 eq(mediaValor(pv, 'a', 4), 8.8, 'media de las últimas 4 jornadas (la del valor), no la de la temporada (11)');
 eq(valor(pv.map((x) => x.total).reverse(), P), 8.8, '…y es exactamente el valor de mercado');
 eq([textoMediaValor(8.8, 4), textoMediaValor(null, 4), mediaValor(pv, 'z', 4)], ['8,8 pts · media últimas 4', 'sin jornadas', null], 'el texto: «8,8 pts · media últimas 4»');
+
+console.log('\n== Partido aplazado: un equipo juega dos partidos el mismo domingo');
+{
+  const jug = [{ person_id: 'a', nombre_oficial: 'Uno, Ana', nombre_visible: 'Ana' }, { person_id: 'b', nombre_oficial: 'Dos, Beto', nombre_visible: 'Beto' }];
+  const dd = {
+    fecha: '2026-12-20', jugadores: jug, eventos: [], estados: [], avisos: [], asistencia: [], convocados: [],
+    // MdA juega su partido de la jornada 9 (gana) y el aplazado de la jornada 5 (pierde), el mismo domingo.
+    partidos: [{ equipo: 'MdA', partido: 905, jornada: 5, rival: 'X', pts_favor: 40, pts_contra: 60, segundos_equipo: 14400 }, { equipo: 'MdA', partido: 909, jornada: 9, rival: 'Y', pts_favor: 70, pts_contra: 50, segundos_equipo: 14400 }],
+    lineas: [{ equipo: 'MdA', partido: 905, nombre: 'UNO, ANA', segundos: 1440, pts: 6, mas_menos: -10 }, { equipo: 'MdA', partido: 909, nombre: 'UNO, ANA', segundos: 1440, pts: 12, mas_menos: 10 },
+      { equipo: 'MdA', partido: 909, nombre: 'DOS, BETO', segundos: 1440, pts: 8, mas_menos: 10 }],
+  };
+  const r = puntuarJornada(dd, P);
+  const a = r.puntos.get('a'), b = r.puntos.get('b');
+  const uno = rendimientoPartido(L({ pts: 6, masMenos: -10, ptsFavor: 40, ptsContra: 60 }), P).total, otro = rendimientoPartido(L({ pts: 12, masMenos: 10, ptsFavor: 70, ptsContra: 50 }), P).total;
+  ok(a.doblete && a.partidos.length === 2 && a.rendimiento === redondeo((uno + otro) / 2 + P.bonusDoblete), 'quien juega los dos: la media de los dos más el extra (regla de doblar)', JSON.stringify(a.partidos));
+  ok(a.partidos[0].total === uno && a.partidos[1].total === otro, 'cada hoja se puntúa con el marcador de SU partido, no con el del otro', `${a.partidos.map((x) => x.total)} / ${uno}, ${otro}`);
+  ok(!b.doblete && b.partidos.length === 1 && b.rendimiento === rendimientoPartido(L({ pts: 8, masMenos: 10, ptsFavor: 70, ptsContra: 50 }), P).total, 'quien juega solo uno: lo suyo, sin extra');
+  eq(r.resultados, { MdA: 'gana' }, 'la porra de ese equipo se decide con el partido de la jornada de ese día (el aplazado no cuenta)');
+  eq(equiposDePorra([{ equipo: 'MdA', jornada: 5, evento: 'x' }, { equipo: 'MdL', jornada: 9, evento: 'z' }, { equipo: 'MdA', jornada: 9, evento: 'y' }]).map((x) => x.evento), ['z', 'y'], 'y en pantalla sale una sola fila de porra por equipo');
+}
+eq([textoHojasPendientes(['MdA']), textoHojasPendientes(['MdL', 'MdA']), textoHojasPendientes([]), textoHojasPendientes(undefined)], ['Pendiente: falta la hoja de MdA', 'Pendiente: faltan las hojas de MdA y MdL', null, null], '«Pendiente: falta la hoja de MdA»');
 
 console.log('\n== Compromiso: la asistencia real');
 const E = (o) => U({ clase: 'entreno', texto: 'Entreno 18/11', respondidoEn: madrid('2026-11-16', '11:00'), avisoEn: aviso, ...o });

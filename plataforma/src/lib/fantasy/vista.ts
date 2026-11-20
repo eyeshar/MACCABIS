@@ -171,3 +171,16 @@ export function mediaValor(puntosJ: { jornada: string; person_id: string; total:
 }
 /** «8,8 pts · media últimas 4» */
 export const textoMediaValor = (m: number | null, n: number) => (m == null ? "sin jornadas" : `${pts(m)} pts · media últimas ${n}`);
+
+/** «Pendiente: falta la hoja de MdA» / «Pendiente: faltan las hojas de MdA y MdL». Sin nada pendiente, null. */
+export function textoHojasPendientes(equipos: string[] | undefined | null): string | null {
+  const e = [...new Set(equipos ?? [])].sort();
+  if (!e.length) return null;
+  return e.length === 1 ? `Pendiente: falta la hoja de ${e[0]}` : `Pendiente: faltan las hojas de ${e.slice(0, -1).join(", ")} y ${e.at(-1)}`;
+}
+/** Un equipo, una fila de porra: si juega dos partidos ese domingo (uno aplazado), el de la jornada mas alta. */
+export function equiposDePorra<T extends { equipo: string; jornada?: number | null }>(equipos: T[]): T[] {
+  const por = new Map<string, T>();
+  for (const x of equipos) { const y = por.get(x.equipo); if (!y || (x.jornada ?? 0) > (y.jornada ?? 0)) por.set(x.equipo, x); }
+  return equipos.filter((x) => por.get(x.equipo) === x);
+}

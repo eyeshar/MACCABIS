@@ -47,6 +47,12 @@
 - **Pruebas de pantalla nuevas:** bloqueo del gestor con el borrador (sin botones en Mercado ni en Plantilla) y «Clausulazos cerrados» desde el sábado a las 20:00; el podio se prueba ya con tres mánagers.
 - **Quinta tanda (decidido por Iván, 20/11/2026):** una corrección de asistencia ya no mueve el valor de mercado hasta la siguiente jornada; pesos nuevos de compromiso (rápido +2, entreno +2, **tope semanal 6**, editable en Ajustes) y economía recalibrada (**caja 11 M, ingreso 1,5 M + 0,04 M por punto**). Detalle en D196 y `docs/MDFANTASY.md`.
 
+**Sexta tanda (Iván, 20/11/2026):**
+- **«Cómo se juega»** (`/mdfantasy/como-se-juega`): enlazada desde Inicio (botón a la vista para quien no tiene equipo) y bajo las pestañas. Todas las cifras salen de los parámetros vigentes; si un gestor cambia un ajuste, la página cambia sola.
+- **Hojas incompletas:** la jornada ya no se puntuaba hasta tener las hojas de todos nuestros partidos de ese domingo; ahora Jornada lo dice: «Pendiente: falta la hoja de MdA».
+- **Partido aplazado:** cuenta para la jornada del domingo en que se juega (en el real, MdA J5 está el 20/12). Corregido un fallo: si un equipo jugaba dos partidos el mismo domingo, las dos hojas se puntuaban con el marcador del primero; ahora cada hoja va con su partido y quien juega los dos lleva la media más el extra. La porra de ese equipo se decide con el partido de la jornada de ese día (no con el aplazado): **decisión de Code, a confirmar por Iván**.
+- **Migración en el real: pendiente del OK de Iván (prevista el domingo 22/11 por la tarde).** Crea 13 tablas `fantasy_*` y 33 funciones; **toca dos tablas existentes solo para añadirles un disparador** (`respuestas` y `asistencia_eventos`), sin cambiar columnas ni datos.
+
 **Pasos exactos para probarlo (staging local, en este ordenador):**
 1. Abrir **Git Bash** en `C:\Users\Iván\Proyectos\Maccabis-fantasy\plataforma`.
 2. Escribir: `npm run fantasy:probar -- --confirmar pqbjnxmknhawlkszwmln`

@@ -82,6 +82,32 @@ try {
   ok(await sinDesbordar(ana) && !(await pequenos(ana, 'main button, main a.boton, main .fz-pestanas a, main .num-caja')).length, 'Inicio a 375 px: sin desbordar y con objetivos de 44 px', JSON.stringify(await pequenos(ana, 'main button, main a.boton, main .fz-pestanas a, main .num-caja')));
   await foto(ana, 'fantasy_inicio_375');
 
+  console.log('\n== «Cómo se juega»');
+  const beto0 = await e.sesion('beto@pruebas.local', 375); // todavía sin equipo
+  await beto0.goto(`${APP}/mdfantasy`);
+  ok(await visto(beto0.getByTestId('fz-bienvenida').getByTestId('fz-como-enlace-inicio')), 'quien aún no tiene equipo ve bien a la vista «Cómo se juega»');
+  await beto0.getByTestId('fz-como-enlace-inicio').click();
+  await beto0.waitForURL(/\/mdfantasy\/como-se-juega/);
+  const como = async (p, k) => (await p.locator(`[data-p="${k}"]`).first().textContent());
+  ok((await beto0.getByTestId('fz-como').locator('h2').allTextContents()).join('|') === 'En 30 segundos|Tu plantilla|Capitán y vicecapitán|Cómo puntúa un jugador|El mercado|La semana|Duelos, porra y premios|Preguntas frecuentes', 'las ocho secciones, en su orden', (await beto0.getByTestId('fz-como').locator('h2').allTextContents()).join('|'));
+  const cifras = { plantilla: '7', alineados: '5', cajaInicial: '11 M', puntoPorPunto: '1', masMenosTope: '±5', bonusDoblete: '3', horasRapida: '24 h', respuestaRapida: '+2', respuestaATiempo: '+1', sinRespuesta: '−2', entrenoAsistido: '+2', planton: '−5', topeCompromiso: '6', jornadasValor: '4', clausula: '1,5', porraAcierto: '+3' };
+  const vistas = {}; for (const k of Object.keys(cifras)) vistas[k] = await como(beto0, k);
+  ok(JSON.stringify(vistas) === JSON.stringify(cifras), 'todas las cifras son las de Ajustes', JSON.stringify(vistas));
+  ok(await sinDesbordar(beto0) && !(await pequenos(beto0, 'main a')).length, '«Cómo se juega» a 375 px: sin desbordar y enlaces de 44 px', JSON.stringify(await pequenos(beto0, 'main a')));
+  await foto(beto0, 'fantasy_como_375');
+  await sql`update public.fantasy_config set parametros = '{"topeCompromiso": 8, "cajaInicial": 12.5, "sinRespuesta": -3}'::jsonb`;
+  await beto0.reload();
+  ok(await como(beto0, 'topeCompromiso') === '8' && await como(beto0, 'cajaInicial') === '12,5 M' && await como(beto0, 'sinRespuesta') === '−3', 'si un gestor cambia un ajuste, la página cambia sola');
+  await sql`update public.fantasy_config set parametros = '{}'::jsonb`;
+  ok((await beto0.getByTestId('volver').getAttribute('href')).startsWith('/mdfantasy'), 'el «‹» vuelve a MdFantasy');
+  await beto0.getByTestId('fz-como-indice').getByRole('link', { name: 'El mercado' }).click();
+  ok(await hasta(async () => /#mercado$/.test(beto0.url())), 'el índice lleva a cada sección');
+  await ana.goto(`${APP}/mdfantasy?tab=ranking`);
+  await ana.getByTestId('fz-como-enlace').click();
+  await ana.waitForURL(/\/mdfantasy\/como-se-juega/);
+  ok(await visto(ana.getByTestId('fz-como')), 'desde las pestañas (cualquiera) también se llega');
+  await ana.goto(`${APP}/mdfantasy`);
+
   console.log('\n== Plantilla');
   await ana.getByTestId('fz-pestanas').getByRole('link', { name: 'Plantilla' }).click();
   await ana.waitForURL(/tab=plantilla/);
@@ -180,6 +206,10 @@ try {
   await sql`update public.eventos set inicio = '09:00' where fecha = '2026-10-19' and tipo = 'liga'`;
   const al = (await sql`select titulares, capitan from public.fantasy_alineaciones where manager = 'sint-fp-ana'`)[0];
   await publicar(3, '2026-10-19', 'MdA', 66, 50, al.titulares, 18);
+  await ana.goto(`${APP}/mdfantasy?tab=jornada`);
+  ok((await ana.getByTestId('fz-hoja-pendiente').textContent()).includes('Pendiente: falta la hoja de MdL') && !(await sql`select 1 from public.fantasy_jornadas where fecha = '2026-10-19' and puntuada_en is not null`).length, 'con una sola hoja publicada: «Pendiente: falta la hoja de MdL» y la jornada sin puntuar', await ana.getByTestId('fz-hoja-pendiente').textContent().catch(() => ''));
+  await puntuar();
+  ok(!(await sql`select 1 from public.fantasy_jornadas where fecha = '2026-10-19' and puntuada_en is not null`).length, '…y sigue sin puntuarse aunque pase la tarea');
   await publicar(3, '2026-10-19', 'MdL', 40, 52, reales.slice(4, 12), 10);
   await ana.goto(`${APP}/mdfantasy`);
   ok((await ana.getByTestId('fz-cierre').textContent()).includes('En juego'), 'empezado el primer partido: «En juego»');

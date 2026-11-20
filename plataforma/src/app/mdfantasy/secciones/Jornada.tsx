@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Fantasy } from "@/lib/fantasy/datos";
-import { conSigno, fechaCorta, pts, quintetoIdeal } from "@/lib/fantasy/vista";
+import { conSigno, fechaCorta, pts, quintetoIdeal, textoHojasPendientes } from "@/lib/fantasy/vista";
 import type { Consulta } from "../page";
 import { enlaceJugador, enlaceManager } from "./Inicio";
 
@@ -13,7 +13,9 @@ function Celda({ id, children }: { id: string; children: React.ReactNode }) {
 /** Jornada: mi total frente a la media, desglose por jugador (rendimiento y compromiso por separado) y quinteto ideal. */
 export default function Jornada({ f, q }: { f: Fantasy; q: Consulta }) {
   const jornadas = f.jornadas.map((j) => j.fecha);
-  if (!jornadas.length) return <section className="gs-bloque" data-testid="fz-sin-jornadas"><p className="suave" style={{ margin: 0 }}>Aún no hay ninguna jornada puntuada.</p></section>;
+  const falta = textoHojasPendientes(f.estado.hojas_pendientes);
+  const pendiente = falta && f.estado.jornada ? <p className="aviso aviso-info" data-testid="fz-hoja-pendiente">Jornada del {fechaCorta(f.estado.jornada)}. {falta}. Se puntúa cuando estén las hojas de todos nuestros partidos de ese domingo.</p> : null;
+  if (!jornadas.length) return <>{pendiente}<section className="gs-bloque" data-testid="fz-sin-jornadas"><p className="suave" style={{ margin: 0 }}>Aún no hay ninguna jornada puntuada.</p></section></>;
   const j = q.j && jornadas.includes(q.j) ? q.j : jornadas.at(-1)!;
   const yo = f.estado.person_id;
   const dia = f.puntosM.filter((p) => p.jornada === j);
@@ -27,6 +29,7 @@ export default function Jornada({ f, q }: { f: Fantasy; q: Consulta }) {
 
   return (
     <>
+      {pendiente}
       <nav className="fz-chips" aria-label="Jornadas" data-testid="fz-jornadas">
         {jornadas.map((x) => <Link key={x} href={`/mdfantasy?tab=jornada&j=${x}`} aria-current={x === j ? "page" : undefined}>{fechaCorta(x)}</Link>)}
       </nav>

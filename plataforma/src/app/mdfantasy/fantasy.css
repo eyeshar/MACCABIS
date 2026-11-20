@@ -177,3 +177,15 @@ legend.fz-h2 { padding: 0; float: left; width: 100%; margin-bottom: 4px; }
 .fz-fila-quien .fz-conv { align-self: flex-start; }
 .fz-nota-media { margin: 8px 0 0; }
 .fz-banq-datos { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+.fz-ayuda { margin: 0; text-align: right; }
+.fz-ayuda a, .fz-como-ir a { display: inline-flex; align-items: center; min-height: var(--toque); color: var(--c-amarillo); font-weight: 600; text-decoration: none; }
+.fz-ayuda a:hover, .fz-como-ir a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.fz-como { display: flex; flex-direction: column; gap: 12px; }
+.fz-como .gs-bloque { display: flex; flex-direction: column; gap: 8px; scroll-margin-top: 12px; }
+.fz-como p { margin: 0; }
+.fz-como .fz-reglas { color: var(--tinta); gap: 6px; }
+.fz-como b[data-p] { color: var(--c-amarillo); white-space: nowrap; }
+.fz-como-ir { margin: 0; }
+.fz-faq { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.fz-faq dt { font-weight: 700; margin-top: 8px; }
+.fz-faq dd { margin: 0; color: var(--tinta-suave); }

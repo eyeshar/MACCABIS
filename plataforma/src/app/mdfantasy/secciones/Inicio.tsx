@@ -2,7 +2,7 @@ import Link from "next/link";
 import Numeros from "@/components/numeros/Numeros";
 import type { Fantasy } from "@/lib/fantasy/datos";
 import { millones } from "@/lib/fantasy/reglas";
-import { alineacionVigente, fechaCorta, pts, rankingDuelos, rankingManagers, rivalDe } from "@/lib/fantasy/vista";
+import { equiposDePorra, alineacionVigente, fechaCorta, pts, rankingDuelos, rankingManagers, rivalDe } from "@/lib/fantasy/vista";
 import { fechaHora } from "@/lib/fechas";
 import { CrearEquipo, CuentaAtras, PorraBotones } from "../Cliente";
 
@@ -36,6 +36,7 @@ export default function Inicio({ f }: { f: Fantasy }) {
             <li>Cada domingo alineas a {f.P.alineados}; suman sus puntos reales y su compromiso.</li>
             <li>Ficha, vende y haz clausulazos en el mercado.</li>
           </ul>
+          <p style={{ margin: 0 }}><Link href="/mdfantasy/como-se-juega" className="boton boton-contorno boton-bloque" data-testid="fz-como-enlace-inicio">Cómo se juega</Link></p>
           {!yo ? <p className="aviso aviso-info">Tu cuenta no tiene ficha: puedes mirar, pero no jugar.</p>
             : e.cerrado && e.jornada ? <p className="aviso aviso-info">Ahora mismo está cerrado (hay jornada en juego). Podrás crear tu equipo cuando se publiquen las estadísticas.</p>
             : <CrearEquipo />}
@@ -90,7 +91,7 @@ export default function Inicio({ f }: { f: Fantasy }) {
       {e.jornada && e.equipos.length > 0 && (
         <section className="gs-bloque" aria-labelledby="t-fz-porra" data-testid="fz-porra">
           <h2 id="t-fz-porra" className="fz-h2">Porra <span className="suave fz-h2-nota">+{f.P.porraAcierto} por acierto</span></h2>
-          {e.equipos.map((x) => <PorraBotones key={x.equipo} equipo={x.equipo} rival={x.rival ?? "rival"} actual={misPorras.get(x.equipo) ?? null} cerrado={e.cerrado} />)}
+          {equiposDePorra(e.equipos).map((x) => <PorraBotones key={x.equipo} equipo={x.equipo} rival={x.rival ?? "rival"} actual={misPorras.get(x.equipo) ?? null} cerrado={e.cerrado} />)}
         </section>
       )}
 

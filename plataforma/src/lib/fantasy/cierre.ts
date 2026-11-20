@@ -41,7 +41,7 @@ export function cerrarJornada(d: DatosCierre, Pfijo?: Parametros) {
     const mejor = Math.max(...managers.map((m) => m.total));
     if (mejor > 0) for (const m of managers.filter((x) => x.total === mejor)) logros.push({ manager: m.manager, logro: "mejor_jornada", texto: "Mejor mánager de la jornada" });
     for (const m of managers) {
-      if (m.apuestas > 0 && m.aciertos === m.apuestas && m.apuestas === d.partidos.length) logros.push({ manager: m.manager, logro: "pleno_porra", texto: "Pleno en la porra" });
+      if (m.apuestas > 0 && m.aciertos === m.apuestas && m.apuestas === new Set(d.partidos.map((x) => x.equipo)).size) logros.push({ manager: m.manager, logro: "pleno_porra", texto: "Pleno en la porra" });
       const cap = m.detalle.jugadores.find((j) => j.person_id === m.detalle.dobla);
       if (cap && cap.doble >= 15) logros.push({ manager: m.manager, logro: "capitan_de_oro", texto: "Capitán de oro (15 o más de rendimiento)" });
       if (m.detalle.jugadores.length >= P.alineados && m.detalle.jugadores.every((j) => j.rendimiento > 0)) logros.push({ manager: m.manager, logro: "pleno_alineacion", texto: "Los cinco alineados jugaron" });

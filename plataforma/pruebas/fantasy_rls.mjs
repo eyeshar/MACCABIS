@@ -236,6 +236,7 @@ try {
   const oficial = new Map((await sql`select person_id, nombre_oficial from public.jugadores`).map((x) => [x.person_id, x.nombre_oficial]));
   const al = (await sql`select titulares, capitan from public.fantasy_alineaciones where manager = ${A.pid} and jornada = '2026-10-19'`)[0];
   await publicar(3, '2026-10-19', 'MdA', 66, 50, al.titulares.slice(0, 5).map((id, i) => [id.startsWith('sint-') ? `PRUEBA, ${id.slice(8).toUpperCase()}` : hoja(oficial.get(id)), 2880, 10 + i, 16]));
+  ok(JSON.stringify((await rpc('fantasy_estado', {}, A.t)).datos.hojas_pendientes) === '["MdL"]' && (await puntuar()).length === 0, 'con la hoja de un solo equipo, la jornada NO se puntúa: falta la de MdL');
   await publicar(3, '2026-10-19', 'MdL', 40, 52, ocho(4, [9, 8, 7, 6, 5, 4, 3, 2]));
   await sql`update public.fantasy_managers set alta_en = alta_en - interval '2 days'`; // se apuntaron antes del primer partido
   const cierre = await puntuar();

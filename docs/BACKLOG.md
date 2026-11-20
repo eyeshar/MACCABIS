@@ -19,6 +19,7 @@
 - [x] Dudas contestadas por Iván (20/11/2026): en `ESTADO.md` y D196.
 - [x] Porra de los gestores abierta durante el bloqueo (Iván, 20/11/2026) y retoques de aspecto hechos (pista de fondo, podio con escalones, jornada frente a la media).
 - [x] Corrección de asistencia sin mover el valor hasta la siguiente jornada; pesos de compromiso nuevos con tope semanal 6 y economía recalibrada (Iván, 20/11/2026).
+- [ ] **Iván: confirmar** que, si un equipo juega dos partidos el mismo domingo (uno aplazado), la porra de ese equipo se decide con el partido de la jornada de ese día.
 - [ ] **Iván: ver la pista a 1280 px** (las tarjetas la tapan casi entera; nota en `ESTADO.md`).
 - [x] Nombre casado por aproximación («MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando`): confirmado por Iván (20/11/2026).
 - [ ] **Con su OK:** migración `20261121100000_mdfantasy` en el real con D111, merge, y encender primero «Solo gestores».

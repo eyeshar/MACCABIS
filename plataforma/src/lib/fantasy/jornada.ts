@@ -9,8 +9,9 @@ import type { Parametros } from "./reglas.ts";
 export type DatosJornada = {
   fecha: string;
   jugadores: { person_id: string; nombre_oficial: string; nombre_visible: string }[];   // elegibles: rol jugador y activos
-  partidos: { equipo: string; rival: string; pts_favor: number; pts_contra: number; segundos_equipo: number }[];
-  lineas: { equipo: string; nombre: string; segundos: number; pts: number; mas_menos: number }[];
+  /** `partido` identifica el partido: un equipo puede jugar DOS el mismo domingo (uno aplazado). `jornada`, su numero de liga. */
+  partidos: { equipo: string; rival: string; pts_favor: number; pts_contra: number; segundos_equipo: number; partido?: string | number; jornada?: number }[];
+  lineas: { equipo: string; nombre: string; segundos: number; pts: number; mas_menos: number; partido?: string | number }[];
   eventos: { id: string; tipo: string; equipo: string; fecha: string; inicio: string | null; oficial: boolean | null }[];
   /** Una fila por evento e invitado: su estado visible y de donde sale. */
   estados: { evento_id: string; person_id: string; estado: string; por: string | null; origen: string | null; cambiado_en: string | null; primera_en: string | null }[];
@@ -92,7 +93,8 @@ export function puntuarJornada(d: DatosJornada, P: Parametros): ResultadoJornada
   const lineasDe = new Map<string, LineaPartido[]>();
   for (const l of d.lineas) {
     const id = mapa.get(l.nombre);
-    const p = d.partidos.find((x) => x.equipo === l.equipo);
+    // la linea va con SU partido (si un equipo juega dos el mismo domingo, cada hoja con el suyo); sin identificador, por equipo
+    const p = l.partido != null ? d.partidos.find((x) => x.partido === l.partido) : d.partidos.find((x) => x.equipo === l.equipo);
     if (!id || !p) continue;
     lineasDe.set(id, [...(lineasDe.get(id) ?? []), { equipo: l.equipo, pts: l.pts, segundos: l.segundos, masMenos: l.mas_menos, ptsFavor: p.pts_favor, ptsContra: p.pts_contra, segundosEquipo: p.segundos_equipo }]);
   }
@@ -107,6 +109,8 @@ export function puntuarJornada(d: DatosJornada, P: Parametros): ResultadoJornada
     puntos.set(j.person_id, puntosJugador(lineas, unidades, convocado, P));
   }
   const resultados: ResultadoJornada["resultados"] = {};
-  for (const p of d.partidos) resultados[p.equipo] = p.pts_favor > p.pts_contra ? "gana" : "pierde";
+  // La porra es por equipo. Si un equipo juega dos partidos ese domingo (uno aplazado), vale el de la jornada de ese dia:
+  // el de numero de jornada mas alto (el aplazado viene de una jornada anterior).
+  for (const p of [...d.partidos].sort((a, b) => (a.jornada ?? 0) - (b.jornada ?? 0))) resultados[p.equipo] = p.pts_favor > p.pts_contra ? "gana" : "pierde";
   return { puntos, sinCasar, aproximados, resultados, convocadosSinHoja };
 }

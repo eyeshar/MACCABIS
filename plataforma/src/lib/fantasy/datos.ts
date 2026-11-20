@@ -9,6 +9,7 @@ import type { AlineacionF, Copia, Duelo, JornadaF, Jugador, LogroF, Manager, Mov
 export type EstadoFantasy = {
   acceso: boolean; modo: string | null; person_id: string | null; es_gestor: boolean; es_manager: boolean; elegible: boolean;
   jornada: string | null; primer_partido: string | null; cerrado: boolean; clausulas_cerradas: boolean; gestor_bloqueado: boolean;
+  convocatoria?: Partial<Record<string, string[]>> | null;
   caja: number; equipos: { equipo: string; rival: string | null; inicio: string | null; evento: string }[]; parametros: unknown; ahora: string;
 };
 

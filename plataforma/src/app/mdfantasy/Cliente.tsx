@@ -77,11 +77,11 @@ export function BotonClausulazo({ jugador, nombre, precio, duenos, desactivado }
   );
 }
 
-export type DePlantilla = { id: string; nombre: string; valor: string; media: string };
+export type DePlantilla = { id: string; nombre: string; valor: string; media: string; conv?: { texto: string; clase: "si" | "no" } | null };
 
 /** La pista con los alineados, capitan (C) y vicecapitan (V), y el banquillo. Se guarda con un boton. */
-export function Alineador({ plantilla, inicial, max, vetado, bloqueo }: {
-  plantilla: DePlantilla[]; inicial: { titulares: string[]; capitan: string | null; vice: string | null }; max: number; vetado: string | null; bloqueo: string | null;
+export function Alineador({ plantilla, inicial, max, vetado, bloqueo, sinPublicar = false, jornadasValor = 4 }: {
+  plantilla: DePlantilla[]; inicial: { titulares: string[]; capitan: string | null; vice: string | null }; max: number; vetado: string | null; bloqueo: string | null; sinPublicar?: boolean; jornadasValor?: number;
 }) {
   const a = useAccion();
   const [tit, setTit] = useState<string[]>(inicial.titulares.filter((id) => plantilla.some((p) => p.id === id)));
@@ -105,8 +105,12 @@ export function Alineador({ plantilla, inicial, max, vetado, bloqueo }: {
   }, [sucio]);
   const banquillo = plantilla.filter((p) => !tit.includes(p.id));
   const huecos = Array.from({ length: Math.max(0, max - tit.length) });
+  const noConvocados = tit.map(de).filter((p): p is DePlantilla => !!p && p.conv?.clase === "no");
+  const marca = (p: DePlantilla) => (p.conv ? <span className={`pastilla fz-conv ${p.conv.clase === "si" ? "pastilla-ok" : "pastilla-pendiente"}`} data-conv={p.conv.clase} data-testid={`fz-conv-${p.id}`}>{p.conv.texto}</span> : null);
   return (
     <div className="fz-alineador" data-testid="fz-alineador">
+      {sinPublicar && <p className="aviso aviso-info fz-msj" data-testid="fz-conv-sin-publicar">Convocatoria sin publicar.</p>}
+      {noConvocados.length > 0 && <p className="aviso aviso-error fz-msj" role="status" data-testid="fz-alineado-no-convocado">{noConvocados.length === 1 ? `${noConvocados[0].nombre} está alineado y no está convocado.` : `${noConvocados.map((p) => p.nombre).join(", ")} están alineados y no están convocados.`}</p>}
       <div className="fz-pista" role="list" aria-label={`Alineados: ${tit.length} de ${max}`}>
         {tit.map((id) => {
           const p = de(id);
@@ -116,6 +120,7 @@ export function Alineador({ plantilla, inicial, max, vetado, bloqueo }: {
               {(cap === id || vice === id) && <b className="fz-galon" aria-label={cap === id ? "Capitán" : "Vicecapitán"}>{cap === id ? "C" : "V"}</b>}
               <Link href={`/mdfantasy/jugador/${id}`} className="fz-ficha-nombre">{p.nombre}</Link>
               <span className="tenue pequeno">{p.valor} · {p.media} pts</span>
+              {marca(p)}
               {!bloqueo && (
                 <span className="fz-ficha-botones">
                   <button type="button" aria-pressed={cap === id} disabled={vetado === id} title={vetado === id ? "Fue tu capitán la jornada pasada" : "Capitán: dobla su rendimiento"} onClick={() => hacerCap(id)} data-testid={`fz-cap-${id}`}>C</button>
@@ -128,13 +133,14 @@ export function Alineador({ plantilla, inicial, max, vetado, bloqueo }: {
         })}
         {huecos.map((_, i) => <div key={`h${i}`} role="listitem" className="fz-ficha fz-hueco"><span className="tenue">Hueco libre</span></div>)}
       </div>
+      <p className="tenue pequeno fz-nota-media" data-testid="fz-nota-media">Los puntos de cada jugador son su media de las últimas {jornadasValor} jornadas, la que fija su valor.</p>
       <h3 className="fz-h3">Banquillo</h3>
       {banquillo.length ? (
         <ul className="lista-limpia fz-banquillo" data-testid="fz-banquillo">
           {banquillo.map((p) => (
             <li key={p.id}>
               <Link href={`/mdfantasy/jugador/${p.id}`}>{p.nombre}</Link>
-              <span className="tenue pequeno">{p.valor} · {p.media} pts</span>
+              <span className="fz-banq-datos"><span className="tenue pequeno">{p.valor} · {p.media} pts</span>{marca(p)}</span>
               {!bloqueo && <button type="button" className="boton boton-contorno" disabled={tit.length >= max} onClick={() => alternar(p.id)} data-testid={`fz-alinear-${p.id}`}>Alinear</button>}
             </li>
           ))}

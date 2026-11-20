@@ -135,7 +135,7 @@ legend.fz-h2 { padding: 0; float: left; width: 100%; margin-bottom: 4px; }
 .fz-carta-valor { margin: 0; text-align: right; display: flex; flex-direction: column; }
 .fz-carta-valor b { font-size: 1.5rem; color: var(--c-amarillo); white-space: nowrap; }
 .fz-carta-valor span, .fz-carta-cifras span { font-size: 0.78rem; color: var(--tinta-tenue); }
-.fz-carta-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fz-carta-cifras { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .fz-carta-cifras div { display: flex; flex-direction: column; padding: 8px; border-radius: 12px; background: #0008; border: 1px solid var(--borde); }
 .fz-carta-cifras b { font-family: var(--f-titulos); font-weight: 800; font-size: 2rem; line-height: 1; }
 .fz-barra { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--borde); }
@@ -171,3 +171,9 @@ legend.fz-h2 { padding: 0; float: left; width: 100%; margin-bottom: 4px; }
 /* En pantallas anchas el recuadro es bajo: la media pista se amplia y se ve de la zona hacia abajo, entre las tarjetas */
 @media (min-width: 561px) { .fz-pista { background-size: auto 200%, auto; } }
 .fz-podio { max-width: 560px; margin-inline: auto; }
+.fz-cifras-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fz-resultados { margin: 0; font-weight: 600; }
+.fz-conv { font-size: 0.72rem; white-space: normal; text-align: center; line-height: 1.15; padding: 2px 8px; }
+.fz-fila-quien .fz-conv { align-self: flex-start; }
+.fz-nota-media { margin: 8px 0 0; }
+.fz-banq-datos { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }

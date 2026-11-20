@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Fantasy } from "@/lib/fantasy/datos";
 import { millones } from "@/lib/fantasy/reglas";
-import { alineacionVigente, fechaCorta, pts } from "@/lib/fantasy/vista";
+import { alineacionVigente, fechaCorta, marcaConvocado, mediaValor, pts, textoMediaValor } from "@/lib/fantasy/vista";
 import { Alineador } from "../Cliente";
 import type { Consulta } from "../page";
 import { bloqueoDe, enlaceJugador } from "./Inicio";
@@ -25,6 +25,9 @@ export default function Plantilla({ f, q }: { f: Fantasy; q: Consulta }) {
   const valor = plantilla.reduce((s, j) => s + j.valor, 0);
   const alin = e.jornada ? f.alineaciones.find((a) => a.manager === de && a.jornada === e.jornada) : undefined;
   const vigente = alineacionVigente(de, e.jornada, f.alineaciones, plantilla.map((j) => j.person_id));
+  const conv = e.jornada ? e.convocatoria ?? null : null;
+  const N = f.P.jornadasValor;
+  const mv = (id: string) => mediaValor(f.puntosJ, id, N);
   const caja = mio ? e.caja : f.movimientos.filter((m) => m.manager === de).reduce((s, m) => s + m.importe, 0);
 
   return (
@@ -39,8 +42,9 @@ export default function Plantilla({ f, q }: { f: Fantasy; q: Consulta }) {
         <h2 id="t-fz-pista" className="fz-h2">{e.jornada ? `Alineación · jornada del ${fechaCorta(e.jornada)}` : "Alineación"}</h2>
         {mio ? (
           <Alineador
-            key={`${e.jornada}-${vigente.titulares.join()}-${vigente.capitan}-${vigente.vice}-${plantilla.map((p) => p.person_id).join()}`}
-            plantilla={plantilla.map((j) => ({ id: j.person_id, nombre: j.nombre, valor: millones(j.valor), media: pts(j.media) }))}
+            key={`${e.jornada}-${plantilla.map((p) => p.person_id).join()}`}
+            plantilla={plantilla.map((j) => ({ id: j.person_id, nombre: j.nombre, valor: millones(j.valor), media: mv(j.person_id) == null ? "—" : pts(mv(j.person_id)!), conv: marcaConvocado(conv, j.person_id) }))}
+            sinPublicar={!!e.jornada && !conv} jornadasValor={N}
             inicial={{ titulares: vigente.titulares, capitan: vigente.capitan, vice: vigente.vice }}
             max={f.P.alineados} vetado={vigente.vetado} bloqueo={bloqueoDe(f)}
           />
@@ -57,7 +61,7 @@ export default function Plantilla({ f, q }: { f: Fantasy; q: Consulta }) {
           <>
             <p className="suave" style={{ margin: 0 }} data-testid="fz-oculta">Su alineación, capitán y porra no se ven hasta el cierre de la jornada.</p>
             <ul className="lista-limpia fz-banquillo" data-testid="fz-plantilla-otro">
-              {plantilla.map((j) => <li key={j.person_id}><Link href={enlaceJugador(j.person_id)}>{j.nombre}</Link><span className="tenue pequeno">{millones(j.valor)} · {pts(j.media)} pts</span></li>)}
+              {plantilla.map((j) => <li key={j.person_id}><Link href={enlaceJugador(j.person_id)}>{j.nombre}</Link><span className="tenue pequeno">{millones(j.valor)} · {textoMediaValor(mv(j.person_id), N)}</span></li>)}
             </ul>
           </>
         )}

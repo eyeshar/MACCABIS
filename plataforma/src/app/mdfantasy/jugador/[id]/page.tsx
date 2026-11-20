@@ -6,7 +6,7 @@ import Numeros from "@/components/numeros/Numeros";
 import { exigirSesion } from "@/lib/sesion";
 import { cargarFantasy, esFantasy } from "@/lib/fantasy/datos";
 import { millones } from "@/lib/fantasy/reglas";
-import { conSigno, fechaCorta, insignias, pts } from "@/lib/fantasy/vista";
+import { conSigno, fechaCorta, insignias, mediaValor, pts } from "@/lib/fantasy/vista";
 import { fichaEstadisticas } from "@/lib/mensajes";
 import { Compartir } from "../../Cliente";
 import "../../fantasy.css";
@@ -43,7 +43,8 @@ export default async function Carta({ params }: { params: Promise<{ id: string }
           <p className="fz-carta-valor"><b className="cifra">{millones(j.valor)}</b><span>valor</span></p>
         </header>
         <div className="fz-carta-cifras">
-          <div><b className="cifra" data-testid="fz-carta-media">{pts(j.media)}</b><span>media</span></div>
+          <div><b className="cifra" data-testid="fz-carta-media">{mediaValor(f.puntosJ, j.person_id, f.P.jornadasValor) == null ? "—" : pts(mediaValor(f.puntosJ, j.person_id, f.P.jornadasValor)!)}</b><span>media últimas {f.P.jornadasValor} (fija el valor)</span></div>
+          <div><b className="cifra" data-testid="fz-carta-media-temporada">{pts(j.media)}</b><span>media de temporada</span></div>
           <div><b className="cifra">{pts(total)}</b><span>puntos</span></div>
           <div><b className="cifra">{suyos.filter((p) => p.minutos > 0).length}</b><span>jornadas jugadas</span></div>
         </div>

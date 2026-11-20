@@ -92,6 +92,9 @@ try {
   ok(await visto(ana.getByTestId('fz-sin-guardar')), 'avisa de que hay cambios sin guardar');
   await trasAccion(ana, () => ana.getByTestId('fz-guardar-alineacion').click());
   ok(await hasta(async () => (await sql`select capitan from public.fantasy_alineaciones where manager = 'sint-fp-ana'`)[0].capitan === nuevoCap), 'cambiar el capitán y guardar');
+  ok(await visto(ana.getByTestId('fz-alineador').getByTestId('fz-ok')) && (await ana.getByTestId('fz-alineador').getByTestId('fz-ok').textContent()).includes('Alineación guardada') && !(await ana.getByTestId('fz-sin-guardar').count()), 'al guardar queda a la vista «Alineación guardada»');
+  ok(await visto(ana.getByTestId('fz-alineador').getByTestId('fz-conv-sin-publicar')) && !(await ana.locator('.fz-conv').count()), 'sin convocatoria publicada: «Convocatoria sin publicar» y ninguna marca');
+  ok((await ana.getByTestId('fz-nota-media').textContent()).includes('últimas 4 jornadas'), 'la plantilla dice qué media enseña (la de las últimas 4, la del valor)');
   ok(await sinDesbordar(ana) && !(await pequenos(ana, 'main .fz-ficha-botones button, main .fz-banquillo button, main .fz-guardar button')).length, 'Plantilla a 375 px: sin desbordar y botones de 44 px', JSON.stringify(await pequenos(ana, 'main .fz-ficha-botones button, main .fz-banquillo button, main .fz-guardar button')));
   await foto(ana, 'fantasy_plantilla_375');
 
@@ -111,6 +114,49 @@ try {
   ok(await visto(ana.getByTestId('fz-movimientos').getByText(/Vende a|Ficha a/).first()), 'los movimientos salen en la lista');
   ok(await visto(ana.getByTestId('fz-jugador-sint-fp-ana').getByText('Eres tú')), 'su propia copia no se puede fichar');
   ok(await sinDesbordar(ana) && !(await pequenos(ana, 'main .fz-mercado button')).length, 'Mercado a 375 px: sin desbordar y botones de 44 px');
+  {
+    const [m] = await sql`select f.person_id, f.valor, (select round(avg(u.total), 1) from (select p.total from public.fantasy_puntos_jugador p where p.person_id = f.person_id order by p.jornada desc limit 4) u) m4
+      from public.fantasy_jugadores f where f.en_mercado and f.valor > 4 order by f.valor desc, f.person_id limit 1`;
+    const fila = await ana.getByTestId(`fz-jugador-${m.person_id}`).textContent();
+    const es = (n) => String(Number(n)).replace('.', ',');
+    ok(fila.includes(`${es(m.m4)} pts · media últimas 4`) && Number(m.m4) === Number(m.valor), 'Mercado: la media que se ve es la de las últimas 4 jornadas, la que fija el valor', `${fila.slice(0, 80)} / ${m.m4} / ${m.valor}`);
+    ok(await visto(ana.getByTestId('fz-mercado').getByTestId('fz-conv-sin-publicar')) && !(await ana.getByTestId('fz-filtro-conv').count()), 'Mercado sin convocatoria publicada: «Convocatoria sin publicar», sin filtro');
+  }
+
+  console.log('\n== Convocatoria: borrador (gestor bloqueado), publicada (marcas, filtro y aviso)');
+  await gema.goto(`${APP}/mdfantasy`);
+  if (await gema.getByTestId('fz-crear').count()) await trasAccion(gema, () => gema.getByTestId('fz-crear').click());
+  ok(await hasta(async () => (await sql`select count(*)::int n from public.fantasy_copias where manager = 'sint-fp-gema'`)[0].n === PARAMETROS.plantilla), 'la gestora tiene equipo');
+  const jornadaConv = (await sql`select public._fantasy_jornada_actual()::text j`)[0].j;
+  await sql`insert into public.convocatorias (fecha, jornada, estado) values (${jornadaConv}, 3, 'borrador')`;
+  await gema.goto(`${APP}/mdfantasy?tab=mercado`);
+  ok((await gema.getByTestId('fz-mercado-bloqueo').textContent()).includes('Eres gestor') && !(await gema.locator('main .fz-mercado button').count()), 'con el borrador de la convocatoria, la gestora ve el aviso y ningún botón de fichar, vender ni clausulazo');
+  await gema.goto(`${APP}/mdfantasy?tab=plantilla`);
+  ok((await gema.getByTestId('fz-bloqueo').textContent()).includes('Eres gestor') && !(await gema.getByTestId('fz-guardar-alineacion').count()) && !(await gema.locator('.fz-ficha-botones button').count()), '…ni puede tocar la alineación');
+  await ana.goto(`${APP}/mdfantasy?tab=mercado`);
+  ok(!(await ana.getByTestId('fz-mercado-bloqueo').count()) && await visto(ana.getByTestId('fz-mercado').getByTestId('fz-conv-sin-publicar')), 'a un jugador el borrador no le bloquea ni le enseña nada: sigue «Convocatoria sin publicar»');
+  const tit = (await sql`select titulares from public.fantasy_alineaciones where manager = 'sint-fp-ana'`)[0].titulares;
+  await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = pruebas.ahora(), equipos = ${sql.json({ MdA: [{ person_id: tit[0] }], MdL: [{ person_id: tit[0] }, { person_id: tit[1] }] })} where fecha = ${jornadaConv}`;
+  await gema.goto(`${APP}/mdfantasy?tab=mercado`);
+  ok(!(await gema.getByTestId('fz-mercado-bloqueo').count()), 'publicada la convocatoria, la gestora vuelve a operar', JSON.stringify(await sql`select fecha::text, estado from public.convocatorias`) + ' ' + jornadaConv + ' ' + (await gema.getByTestId('fz-mercado-bloqueo').textContent().catch(() => '')));
+  await ana.goto(`${APP}/mdfantasy?tab=plantilla`);
+  const marcaDe = async (id) => (await ana.getByTestId(`fz-conv-${id}`).textContent());
+  ok(await marcaDe(tit[0]) === 'Convocado en los dos' && await marcaDe(tit[1]) === 'Convocado MdL' && await marcaDe(tit[2]) === 'No convocado' && !(await ana.getByTestId('fz-conv-sin-publicar').count()), 'Plantilla: cada jugador lleva su marca de convocado', `${await marcaDe(tit[0])} / ${await marcaDe(tit[1])} / ${await marcaDe(tit[2])}`);
+  ok((await ana.locator('.fz-conv').count()) === PARAMETROS.plantilla, '…también los del banquillo');
+  const avisoNC = await ana.getByTestId('fz-alineado-no-convocado').textContent();
+  ok(/alineados y no están convocados/.test(avisoNC), 'Plantilla: avisa de los alineados que no están convocados', avisoNC);
+  for (const id of tit.slice(2)) await ana.getByTestId(`fz-quitar-${id}`).click(); // (vendió a un titular: quedan 4 alineados)
+  ok(await hasta(async () => !(await ana.getByTestId('fz-alineado-no-convocado').count())), 'al mandar al banquillo a los no convocados, el aviso desaparece');
+  ok(await sinDesbordar(ana) && !(await pequenos(ana, 'main .fz-ficha-botones button, main .fz-banquillo button')).length, 'Plantilla con marcas a 375 px: sin desbordar y botones de 44 px');
+  await ana.goto(`${APP}/mdfantasy?tab=plantilla`);
+  await foto(ana, 'fantasy_plantilla_375_convocados');
+  await ana.goto(`${APP}/mdfantasy?tab=mercado`);
+  ok((await ana.getByTestId(`fz-jugador-${tit[0]}`).locator('.fz-conv').textContent()) === 'Convocado en los dos' && (await ana.getByTestId('fz-mercado').locator('.fz-conv[data-conv="no"]').count()) > 0, 'Mercado: marca de convocado en cada jugador');
+  await ana.getByTestId('fz-filtro-conv').getByRole('link', { name: 'Convocados' }).click();
+  await ana.waitForURL(/c=1/);
+  ok((await ana.getByTestId('fz-mercado').locator('li.fz-fila').count()) === 2 && !(await ana.getByTestId('fz-mercado').locator('.fz-conv[data-conv="no"]').count()), 'filtro «Convocados» (en la URL): solo los dos convocados');
+  ok(await sinDesbordar(ana) && !(await pequenos(ana, 'main .fz-chips a')).length, 'Mercado con filtro a 375 px: sin desbordar');
+  await foto(ana, 'fantasy_mercado_375_convocados');
   await foto(ana, 'fantasy_mercado_375');
 
   console.log('\n== La alineación de otro no se ve antes del cierre');
@@ -124,8 +170,14 @@ try {
 
   console.log('\n== Tras puntuar una jornada: Jornada, Ranking y carta');
   await sql`update public.fantasy_managers set alta_en = alta_en - interval '2 days'`;
-  await sql`update public.eventos set fecha = '2026-10-19', inicio = '09:00' where fecha = '2026-10-25' and tipo = 'liga'`;
+  // El partido pasa a ser HOY a las 21:00: la víspera a las 20:00 ya pasó (clausulazos cerrados) y aún no ha empezado (lo demás, abierto).
+  await sql`update public.eventos set fecha = '2026-10-19', inicio = '21:00' where fecha = '2026-10-25' and tipo = 'liga'`;
   for (const t of ['fantasy_alineaciones', 'fantasy_porras', 'fantasy_movimientos']) await sql.unsafe(`update public.${t} set jornada = '2026-10-19' where jornada = '2026-10-25'`);
+  await sql`update public.fantasy_jugadores set copias = (select count(*) from public.fantasy_copias c where c.jugador = fantasy_jugadores.person_id) where person_id in (select jugador from public.fantasy_copias where manager = 'sint-fp-beto')`;
+  await ana.goto(`${APP}/mdfantasy?tab=mercado`);
+  ok(await visto(ana.getByTestId('fz-clausulas-cerradas')) && !(await ana.getByTestId('fz-mercado-bloqueo').count()), 'desde el sábado a las 20:00: «Clausulazos cerrados», con el resto del mercado abierto');
+  ok((await ana.locator('[data-testid^="fz-clausulazo-no-"]').count()) > 0 && !(await ana.locator('main button[data-testid^="fz-clausulazo-"]').count()) && (await ana.locator('main button[data-testid^="fz-vender-"]').count()) > 0, '…sin ningún botón de clausulazo y con los de vender');
+  await sql`update public.eventos set inicio = '09:00' where fecha = '2026-10-19' and tipo = 'liga'`;
   const al = (await sql`select titulares, capitan from public.fantasy_alineaciones where manager = 'sint-fp-ana'`)[0];
   await publicar(3, '2026-10-19', 'MdA', 66, 50, al.titulares, 18);
   await publicar(3, '2026-10-19', 'MdL', 40, 52, reales.slice(4, 12), 10);
@@ -139,6 +191,7 @@ try {
   ok((await ana.getByTestId('fz-mi-total').textContent()) === String(total).replace('.', ','), 'Jornada: mi total', `${await ana.getByTestId('fz-mi-total').textContent()} / ${total}`);
   ok(await visto(ana.getByTestId('fz-desglose')) && (await ana.getByTestId('fz-desglose').locator('tbody tr').count()) === al.titulares.length && (await ana.getByTestId('fz-desglose').locator('thead').textContent()).includes('Rend.') && (await ana.getByTestId('fz-desglose').locator('thead').textContent()).includes('Comp.'), 'desglose por jugador, con rendimiento y compromiso por separado');
   ok(await visto(ana.getByTestId('fz-ideal')) && (await ana.getByTestId('fz-ideal').locator('.fz-ficha').count()) === 5, 'quinteto ideal');
+  ok(/^Nuestros partidos del 19\/10: MdA (ganó|perdió) · MdL (ganó|perdió)$/.test(await ana.getByTestId('fz-resultados').textContent()), 'Jornada: los resultados, con su contexto («Nuestros partidos del…: MdA ganó · MdL perdió»)', await ana.getByTestId('fz-resultados').textContent());
   {
     const dia = (await sql`select total from public.fantasy_puntos_manager where jornada = '2026-10-19'`).map((x) => Number(x.total));
     const media = Math.round((dia.reduce((s2, v) => s2 + v, 0) / dia.length) * 10) / 10;
@@ -162,10 +215,10 @@ try {
   ok((await ana.getByTestId('fz-mi-total').textContent()) === '—', 'una jornada anterior a mi alta: sin total, con los puntos de los jugadores');
   ok(await sinDesbordar(ana), 'Jornada a 375 px sin desbordar');
   await ana.goto(`${APP}/mdfantasy?tab=ranking`);
-  ok(await visto(ana.getByTestId('fz-podio')) && (await ana.getByTestId('fz-podio').locator('li').count()) === 2, 'Ranking: podio');
+  ok(await visto(ana.getByTestId('fz-podio')) && (await ana.getByTestId('fz-podio').locator('li').count()) === 3, 'Ranking: podio de los tres primeros');
   {
     const alto = await ana.evaluate(() => [1, 2, 3].map((n) => document.querySelector(`.fz-podio-${n} .fz-podio-escalon`)?.getBoundingClientRect()).map((r) => (r ? { h: Math.round(r.height), x: Math.round(r.left), base: Math.round(r.bottom) } : null)));
-    ok(alto[0] && alto[1] && alto[0].h > alto[1].h && alto[1].x < alto[0].x && alto[0].base === alto[1].base && (await ana.locator('.fz-podio-1 .fz-podio-escalon').textContent()) === '1', 'podio con escalones: el primero más alto y a la derecha del segundo, con el puesto dentro', JSON.stringify(alto));
+    ok(alto[0] && alto[1] && alto[2] && alto[0].h > alto[1].h && alto[1].h > alto[2].h && alto[1].x < alto[0].x && alto[0].x < alto[2].x && alto[0].base === alto[1].base && alto[1].base === alto[2].base && (await ana.locator('.fz-podio-1 .fz-podio-escalon').textContent()) === '1', 'podio con tres alturas (segundo, primero, tercero), con el puesto dentro', JSON.stringify(alto));
   }
   for (const r of ['jugadores', 'compromiso', 'duelos']) { await ana.getByTestId('fz-sub').getByRole('link', { name: r === 'jugadores' ? 'Jugadores' : r === 'compromiso' ? 'Compromiso' : 'Duelos' }).click(); await ana.waitForURL(new RegExp(`r=${r}`)); if (!(await visto(ana.getByTestId(`fz-ranking-${r}`)))) ok(false, `pestaña ${r}`); }
   ok(true, 'pestañas de mánagers, jugadores, compromiso y duelos (en la URL)');

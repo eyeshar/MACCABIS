@@ -9,7 +9,7 @@ import { rendimientoPartido, rendimiento, horasActivas, compromisoUnidad, puntos
 import { puntosManager, arrastrar, valor, copiasPorJugador, ingreso, precioClausula, duelos } from '../src/lib/fantasy/manager.ts';
 import { puntuarJornada } from '../src/lib/fantasy/jornada.ts';
 import { cerrarJornada } from '../src/lib/fantasy/cierre.ts';
-import { rankingManagers, rankingDuelos, rankingJugadores, quintetoIdeal, rivalDe, premiosDelMes, resumenWhatsapp, insignias } from '../src/lib/fantasy/vista.ts';
+import { rankingManagers, rankingDuelos, rankingJugadores, quintetoIdeal, rivalDe, premiosDelMes, resumenWhatsapp, insignias, marcaConvocado, mediaValor, textoMediaValor } from '../src/lib/fantasy/vista.ts';
 import { madrid } from '../src/lib/avisos/horario.ts';
 import { avisoClausulazo } from '../src/lib/fantasy/avisos.ts';
 
@@ -61,6 +61,15 @@ eq(avDia.programado_para.getTime(), madrid('2026-11-17', '10:00').getTime(), 'de
 eq(avisoClausulazo(dCl, 'a', 'm2', madrid('2026-11-17', '23:15')).programado_para.getTime(), madrid('2026-11-18', '08:00').getTime(), 'a las 23:15 (silencio): espera a las 08:00 del día siguiente');
 eq(avisoClausulazo(dCl, 'a', 'm2', madrid('2026-11-18', '06:40')).programado_para.getTime(), madrid('2026-11-18', '08:00').getTime(), 'a las 06:40 (silencio): espera a las 08:00');
 eq(avisoClausulazo(dCl, 'a', 'm2', madrid('2026-11-17', '22:29')).programado_para.getTime(), madrid('2026-11-17', '22:29').getTime(), 'a las 22:29 todavía sale');
+
+console.log('\n== Convocados y la media que fija el valor');
+const cv = { MdA: ['a', 'b'], MdL: ['b', 'c'] };
+eq(['a', 'b', 'c', 'd'].map((id) => marcaConvocado(cv, id).texto), ['Convocado MdA', 'Convocado en los dos', 'Convocado MdL', 'No convocado'], 'la marca de cada jugador');
+ok(marcaConvocado(null, 'a') === null && marcaConvocado(undefined, 'a') === null, 'sin convocatoria publicada no hay marca (se dice «Convocatoria sin publicar»)');
+const pv = [['2026-10-04', 20], ['2026-10-18', 10], ['2026-10-25', 6], ['2026-11-08', 10], ['2026-11-15', 9]].map(([jornada, total]) => ({ jornada, person_id: 'a', total }));
+eq(mediaValor(pv, 'a', 4), 8.8, 'media de las últimas 4 jornadas (la del valor), no la de la temporada (11)');
+eq(valor(pv.map((x) => x.total).reverse(), P), 8.8, '…y es exactamente el valor de mercado');
+eq([textoMediaValor(8.8, 4), textoMediaValor(null, 4), mediaValor(pv, 'z', 4)], ['8,8 pts · media últimas 4', 'sin jornadas', null], 'el texto: «8,8 pts · media últimas 4»');
 
 console.log('\n== Compromiso: la asistencia real');
 const E = (o) => U({ clase: 'entreno', texto: 'Entreno 18/11', respondidoEn: madrid('2026-11-16', '11:00'), avisoEn: aviso, ...o });

@@ -201,12 +201,15 @@ try {
   console.log('\n== Horario');
   await sql`insert into public.convocatorias (fecha, jornada, estado) values ('2026-10-25', 3, 'borrador')`;
   ok(err(await rpc('fantasy_alinear', { p_titulares: [], p_capitan: null, p_vice: null }, G.t)) === 'gestor_bloqueado', 'con el borrador de la convocatoria, un gestor no opera');
+  ok((await rpc('fantasy_estado', {}, A.t)).datos.convocatoria === null, 'con el borrador, la convocatoria no se enseña a nadie (sin publicar)');
   ok((await rpc('fantasy_apostar', { p_equipo: 'MdA', p_pronostico: 'gana' }, G.t)).status < 300, '…pero sí puede hacer la porra');
   ok(err(await rpc('fantasy_fichar', { p_jugador: cinco[0] }, G.t)) === 'gestor_bloqueado' && err(await rpc('fantasy_vender', { p_jugador: cinco[0] }, G.t)) === 'gestor_bloqueado' && err(await rpc('fantasy_clausulazo', { p_jugador: segundo.jugador, p_dueno: segundo.manager }, G.t)) === 'gestor_bloqueado', '…ni ficha, ni vende, ni hace clausulazos');
   ok((await rpc('fantasy_estado', {}, G.t)).datos.gestor_bloqueado === true && (await rpc('fantasy_estado', {}, A.t)).datos.gestor_bloqueado === false, 'la pantalla lo sabe: bloqueado el gestor, no el jugador');
   ok((await rpc('fantasy_alinear', { p_titulares: cinco, p_capitan: cinco[0], p_vice: cinco[1] }, A.t)).status < 300, 'a un jugador el borrador no le afecta');
   await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = pruebas.ahora() where fecha = '2026-10-25'`;
+  await sql`update public.convocatorias set equipos = ${sql.json({ MdA: [{ person_id: 'sint-fz-ana', nivel: 9 }], MdL: [] })} where fecha = '2026-10-25'`;
   ok((await rpc('fantasy_alinear', { p_titulares: [], p_capitan: null, p_vice: null }, G.t)).status < 300, 'publicada la convocatoria, el gestor vuelve a operar');
+  ok(JSON.stringify((await rpc('fantasy_estado', {}, B.t)).datos.convocatoria) === JSON.stringify({ MdA: ['sint-fz-ana'], MdL: [] }), 'publicada: quién va con cada equipo, solo los identificadores (nada más de la convocatoria)');
   // El domingo pasa a ser mañana (martes 20/10): el «sábado a las 20:00» es hoy a las 20:00 → clausulazos aún abiertos; a hoy mismo por la noche → cerrados.
   await sql`update public.eventos set fecha = '2026-10-20' where fecha = '2026-10-25' and tipo = 'liga'`;
   await sql`update public.convocatorias set fecha = '2026-10-20' where fecha = '2026-10-25'`;

@@ -18,7 +18,7 @@ const PESTANAS = [
   { id: "inicio", texto: "Inicio" }, { id: "plantilla", texto: "Plantilla" }, { id: "mercado", texto: "Mercado" },
   { id: "jornada", texto: "Jornada" }, { id: "ranking", texto: "Ranking" },
 ] as const;
-export type Consulta = { tab?: string; j?: string; r?: string; m?: string; mes?: string };
+export type Consulta = { tab?: string; j?: string; r?: string; m?: string; mes?: string; c?: string };
 
 export default async function MdFantasy({ searchParams }: { searchParams: Promise<Consulta> }) {
   const { supabase } = await exigirSesion();
@@ -44,7 +44,7 @@ export default async function MdFantasy({ searchParams }: { searchParams: Promis
       <div className="fz-panel" data-pestana={actual}>
         {actual === "inicio" && <Inicio f={f} />}
         {actual === "plantilla" && <Plantilla f={f} q={q} />}
-        {actual === "mercado" && <Mercado f={f} />}
+        {actual === "mercado" && <Mercado f={f} q={q} />}
         {actual === "jornada" && <Jornada f={f} q={q} />}
         {actual === "ranking" && <Ranking f={f} q={q} />}
       </div>

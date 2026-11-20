@@ -39,6 +39,14 @@
 **Tercera tanda (Iván, 20/11/2026):** la porra de los gestores **queda abierta** durante el bloqueo por el borrador de la convocatoria. Tres retoques de aspecto, sin tocar el funcionamiento ni las tarjetas: (1) *Plantilla:* media pista dibujada de fondo (zona, círculo de tiro libre, arco de tres y aro) en amarillo apagado, detrás de los alineados; (2) *Ranking:* podio con tres alturas (segundo, primero, tercero) y el puesto en grande dentro de cada escalón; (3) *Jornada:* barra que compara el total con la media de la liga (la raya) y la diferencia en cifra («+3 sobre la media», «-8,5 bajo la media»), y cada fila del desglose lleva a la carta del jugador (también pulsando en los números). Probado a 375 y 1280 px; capturas en `privado/mockups_liga/rediseno/mdfantasy/retoque_*.png`.
 - **Pendiente de que Iván lo vea:** a 1280 px las tarjetas van en 3+2 (a 375 px, en 2-2-1) y tapan casi toda la pista: solo asoman trozos de las líneas entre ellas. En el móvil se ve bien la parte de abajo (zona, aro y arco). Si quiere verla entera en pantalla ancha hay que dar más alto al recuadro o estrechar las tarjetas.
 
+**Cuarta tanda, tras la prueba de Iván en local (20/11/2026):**
+- **Convocados:** cada jugador lleva en Plantilla y Mercado su marca («Convocado MdA», «Convocado MdL», «Convocado en los dos», «No convocado»); filtro «Convocados» en Mercado (en la URL); antes de publicarse, «Convocatoria sin publicar»; Plantilla avisa de los alineados no convocados. Sale de la convocatoria **aprobada** (lo mismo que ya ve el jugador en su portada), por `fantasy_estado`; con el borrador no se enseña nada.
+- **Media y valor:** Plantilla y Mercado enseñan la media de las jornadas que fijan el valor («media últimas 4»); la de temporada queda en la carta, con su nombre.
+- **«Alineación guardada»** ya se queda a la vista (se perdía porque el bloque se volvía a montar al refrescar).
+- **Jornada:** «MdL G» pasa a «Nuestros partidos del 15/11: MdA ganó · MdL perdió».
+- **Pruebas de pantalla nuevas:** bloqueo del gestor con el borrador (sin botones en Mercado ni en Plantilla) y «Clausulazos cerrados» desde el sábado a las 20:00; el podio se prueba ya con tres mánagers.
+- **Sin cambiar, pendiente de decisión de Iván:** (a) corregir un plantón mueve el valor de mercado del jugador (propuesta: que una corrección no toque el valor hasta la siguiente jornada); (b) peso del compromiso frente al rendimiento (tabla con `npm run fantasy:compromiso`).
+
 **Pasos exactos para probarlo (staging local, en este ordenador):**
 1. Abrir **Git Bash** en `C:\Users\Iván\Proyectos\Maccabis-fantasy\plataforma`.
 2. Escribir: `npm run fantasy:probar -- --confirmar pqbjnxmknhawlkszwmln`

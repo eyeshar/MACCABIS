@@ -343,6 +343,12 @@ begin
     'caja', public._fantasy_caja(v_p),
     'equipos', coalesce((select jsonb_agg(jsonb_build_object('equipo', e.equipo, 'rival', coalesce(e.rival_texto, e.rival), 'inicio', e.inicio, 'evento', e.id) order by e.inicio)
                          from public.eventos e where e.fecha = v_j and e.tipo = 'liga' and e.oficial is not false and e.estado = 'programado' and e.borrado_en is null), '[]'::jsonb),
+    -- La convocatoria PUBLICADA de la jornada en juego (lo mismo que ya ven los jugadores en su portada): quién va con
+    -- cada equipo. null = sin publicar (no existe o sigue en borrador).
+    'convocatoria', (select jsonb_build_object(
+                       'MdA', coalesce((select jsonb_agg(x ->> 'person_id') from jsonb_array_elements(case when jsonb_typeof(c.equipos -> 'MdA') = 'array' then c.equipos -> 'MdA' else '[]'::jsonb end) x), '[]'::jsonb),
+                       'MdL', coalesce((select jsonb_agg(x ->> 'person_id') from jsonb_array_elements(case when jsonb_typeof(c.equipos -> 'MdL') = 'array' then c.equipos -> 'MdL' else '[]'::jsonb end) x), '[]'::jsonb))
+                     from public.convocatorias c where c.fecha = v_j and c.estado = 'aprobada'),
     'parametros', (select parametros from public.fantasy_config where id = 1),
     'ahora', now());
 end $$;

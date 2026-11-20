@@ -30,11 +30,14 @@ export default function Jornada({ f, q }: { f: Fantasy; q: Consulta }) {
       <nav className="fz-chips" aria-label="Jornadas" data-testid="fz-jornadas">
         {jornadas.map((x) => <Link key={x} href={`/mdfantasy?tab=jornada&j=${x}`} aria-current={x === j ? "page" : undefined}>{fechaCorta(x)}</Link>)}
       </nav>
-      <div className="gs-cifras fz-cifras fz-cifras-3" data-testid="fz-cifras-jornada">
+      <div className="gs-cifras fz-cifras fz-cifras-2" data-testid="fz-cifras-jornada">
         <div className="num-caja"><b className="cifra" data-testid="fz-mi-total">{mio ? pts(mio.total) : "—"}</b><span>Tu jornada</span></div>
         <div className="num-caja"><b className="cifra">{media != null ? pts(media) : "—"}</b><span>Media de la liga</span></div>
-        <div className="num-caja"><b className="cifra">{Object.entries(resultados).map(([eq, r]) => `${eq} ${r === "gana" ? "G" : "P"}`).join(" · ") || "—"}</b><span>Resultados</span></div>
       </div>
+
+      {Object.keys(resultados).length > 0 && (
+        <p className="fz-resultados" data-testid="fz-resultados"><span className="tenue">Nuestros partidos del {fechaCorta(j)}:</span> {Object.entries(resultados).map(([eq, r]) => `${eq} ${r === "gana" ? "ganó" : "perdió"}`).join(" · ")}</p>
+      )}
 
       {mio && media != null && (() => {
         const dif = Math.round((mio.total - media) * 10) / 10;

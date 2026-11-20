@@ -151,3 +151,23 @@ export function insignias(personId: string, pj: PuntoJ[]) {
   if (perfecto) out.push({ clave: "compromiso", texto: "Compromiso perfecto", veces: perfecto });
   return out;
 }
+
+/** La convocatoria publicada de la jornada en juego: ids por equipo. null = sin publicar. */
+export type Convocatoria = Partial<Record<string, string[]>> | null | undefined;
+export type MarcaConvocado = { texto: string; clase: "si" | "no" };
+/** La marca de cada jugador: «Convocado MdA», «Convocado MdL», «Convocado en los dos» o «No convocado». Sin publicar, null. */
+export function marcaConvocado(c: Convocatoria, id: string): MarcaConvocado | null {
+  if (!c) return null;
+  const a = (c.MdA ?? []).includes(id), l = (c.MdL ?? []).includes(id);
+  if (a && l) return { texto: "Convocado en los dos", clase: "si" };
+  if (a) return { texto: "Convocado MdA", clase: "si" };
+  if (l) return { texto: "Convocado MdL", clase: "si" };
+  return { texto: "No convocado", clase: "no" };
+}
+/** La media que fija el valor de mercado: la de las ultimas N jornadas con datos del jugador. null = aun sin jornadas. */
+export function mediaValor(puntosJ: { jornada: string; person_id: string; total: number }[], id: string, n: number): number | null {
+  const suyas = puntosJ.filter((p) => p.person_id === id).sort((a, b) => b.jornada.localeCompare(a.jornada)).slice(0, n);
+  return suyas.length ? Math.round((suyas.reduce((t, p) => t + p.total, 0) / suyas.length) * 10) / 10 : null;
+}
+/** «8,8 pts · media últimas 4» */
+export const textoMediaValor = (m: number | null, n: number) => (m == null ? "sin jornadas" : `${pts(m)} pts · media últimas ${n}`);

@@ -24,7 +24,7 @@ npm run pruebas:rapidas -- --lista      # solo dice qué pasaría y por qué
 npm run pruebas:rapidas -- --suite pruebas:grupos   # añadir una a mano
 ```
 
-Es **lo único que Code ejecuta y espera** en local. Compara la rama con `origin/main` (más lo no guardado) y elige solo:
+Es **lo único que Code ejecuta y espera** en local. **Pero si `--lista` elige más de unas 10 suites, no se lanza entera** (norma 15.5 de `NORMAS_DE_TRABAJO.md`, Iván 20/11/2026): solo la lógica tocada, sus RLS, `test:privacidad` si toca datos privados y las `-real` si hay migración; el resto, Actions. Si Actions falla en algo no tocado, se dice a Iván antes de arreglarlo. Compara la rama con `origin/main` (más lo no guardado) y elige solo:
 
 - `typecheck` si cambia algo de `plataforma/`. (No hay lint en el proyecto.)
 - **Humo** (`pruebas:humo`): si se toca la web y ninguna suite elegida la arranca ya, una que compila, arranca contra la

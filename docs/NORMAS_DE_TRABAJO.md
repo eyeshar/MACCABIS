@@ -95,6 +95,12 @@ La norma anterior era excesiva y agotaba la memoria del equipo. Desde el 01/11/2
 3. **Las suites `-real` contra producción, solo cuando el cambio escriba en producción o toque permisos.**
 4. **Varios PR en paralelo: nunca más de una suite pesada a la vez en local** (cerrojo común de `pruebas:rapidas`).
 `npm run pruebas:rapidas` ya lo aplica solo. Detalle, tabla «si tocas X, pasa Y», puertos y lo que solo va en local: `CLAUDE.md` en la raíz.
+5. **(Iván, 20/11/2026) La batería completa en local no se pasa nunca por defecto, tampoco «de hecho».** Antes de lanzar nada, `npm run pruebas:rapidas -- --lista`.
+   - Si elige más de unas 10 suites (porque el cambio toca datos, ficheros compartidos o migraciones), **no se lanza entera**.
+   - Se pasan a mano solo: las suites de la lógica tocada, sus pruebas de RLS, `test:privacidad` si toca datos privados, y las `-real` antes y después si se aplica una migración.
+   - Ejemplo del 20/11: motor de convocatoria, preferencia, equipación y nombres del WhatsApp, `test:privacidad`, RLS y `-real`.
+   - Todo lo demás lo pasa Actions en el PR.
+   - Si Actions falla en algo que el cambio no ha tocado, se le dice a Iván **antes** de arreglarlo.
 
 ## 16. PR de solo documentación (Iván, 02/11/2026, D173)
 - Un PR que **solo toca `docs/`** se puede mergear **sin el OK de Iván** si GitHub Actions está en verde (`npm run ci:estado`).

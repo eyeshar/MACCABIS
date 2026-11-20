@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { exigirGestor } from "@/lib/sesion";
+import { repuntuarTrasAsistencia } from "@/lib/fantasy/servidor";
 import type { EstadoPase } from "@/lib/eventos/paseDeLista";
 
 // Pase de lista (D192): guarda con la sesion del gestor; la base (pase_de_lista, is_gestor) decide.
@@ -19,5 +20,7 @@ export async function guardarPaseDeLista(eventoId: string, filas: { person_id: s
   if (error) return { ok: false, error: ERR[Object.keys(ERR).find((k) => error.message.includes(k)) ?? ""] ?? `No se pudo guardar: ${error.message}` };
   revalidatePath(`/evento/${eventoId}`);
   revalidatePath("/gestion/asistencia", "layout");
+  // D196: corregir un «no vino» de una jornada ya puntuada recalcula los puntos al momento
+  if ((await repuntuarTrasAsistencia())?.length) revalidatePath("/mdfantasy", "layout");
   return { ok: true, n: Number(data ?? 0) };
 }

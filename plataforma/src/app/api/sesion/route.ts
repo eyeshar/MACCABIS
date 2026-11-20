@@ -9,11 +9,12 @@ import type { DatosSesion } from "@/components/nav/Sesion";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const { usuario, verLiga } = await sesionDelNavegador().catch(() => ({ usuario: null, verLiga: false }));
+  const { usuario, verLiga, fantasy } = await sesionDelNavegador().catch(() => ({ usuario: null, verLiga: false, fantasy: false }));
   const estado: DatosSesion = {
     usuario,
     chat: usuario && puedeUsarChat(usuario) ? { nombre: usuario.corto, dueno: duenoConversacion(usuario.email) } : null,
     verLiga,
+    fantasy,
   };
   return NextResponse.json(estado, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }

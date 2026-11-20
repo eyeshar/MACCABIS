@@ -122,3 +122,9 @@ El repositorio es **público** y su historial no se reescribe (decisión de Ivá
 - **Cómo (D187):** un solo módulo, `plataforma/scripts/lib/destino.mjs`: `--pila` (solo `127.0.0.1`, sin leer `.env.local`) o `--confirmar <ref>` (el real, escrito en el repositorio); si no cuadra, para sin conectarse. Lo prueba `pruebas:destino` (Actions). Un script nuevo que escriba, revierta o cree cuentas lo usa (`exigirDestino`).
 - Motivo: el 06/11/2026 una prueba de la vuelta atrás de D186, pensada para la pila local, se conectó al Supabase real porque le llegó vacía la conexión de la pila y cargó la de `.env.local` (ESTADO, «Incidente durante la carga de D186»). Solo leyó, pero el siguiente paso era revertir.
 
+
+## 20. Cambiar datos en el real por decisión propia: antes, el OK de Iván (Iván, 20/11/2026)
+- Cualquier cambio de **datos** en el Supabase real (filas, no esquema) que **no venga de un procedimiento ya autorizado** necesita el OK de Iván **antes**, aunque sea una corrección obvia. Ejemplos: un nombre visible, una ficha, una respuesta, una convocatoria o una marca privada. Los procedimientos autorizados son, por ejemplo, la rutina A, `npm run jornada`, `db:liga`, `db:asistencia` y las acciones de la web.
+- **Cómo:** Code lo propone con el qué, el porqué, las filas exactas (por `person_id` o id), el valor de antes y el de después, y cómo deshacerlo. Iván dice sí o no. Sin su sí, no se escribe.
+- Los cambios de **esquema** siguen la norma 10 (D111).
+- Motivo: el 20/11/2026 Code cambió en el real, por su cuenta, tres nombres visibles para que los convocados salieran con el mote de la plantilla (D195). Era una corrección y no rompió nada, pero era un cambio de datos sin el OK previo de Iván.

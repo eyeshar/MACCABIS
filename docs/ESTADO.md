@@ -2,7 +2,16 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-## Preferencia de partido (D194) y camiseta de reserva / nombres de los convocados (D195) — 20/11/2026, `feat/preferencia-partido`; migración `20261120100000` APLICADA en el real con D111; **PR pendiente del OK de Iván para mergear**
+## Next.js 16.4.5 y WebKit en Actions — 20/11/2026, `chore/next-16-4-5` (OK de Iván: mergear si Actions sale en verde)
+- **Next.js 16.4.4 → 16.4.5, fijo** (sin `^`). Corrige 7 avisos de seguridad de gravedad media publicados del 16 al 19/11. **Ninguno afectaba a la web**, tampoco al login ni a Gestión:
+  - Cuatro de caché con `use cache` o Cache Components (GHSA-mfr8, vc7v, rhh4, vvgp): no los usamos.
+  - Cookies en rutas Edge (GHSA-f3mh): no tenemos rutas Edge.
+  - Servidor propio (GHSA-pc58): estamos en Vercel.
+  - SVG en el optimizador de imágenes (GHSA-7qx7): no hay SVG en `public/` ni imágenes remotas.
+- En el lockfile solo cambian los 10 paquetes de Next. `next build` ya no se para con el aviso de seguridad. En local, `typecheck` y `pruebas:humo` en verde; la batería completa, en Actions.
+- **WebKit en Actions:** el grupo que instala WebKit con sus dependencias del sistema se pasaba a veces del tiempo máximo y se cancelaba (PR #84 y #86). Ahora el tiempo máximo del trabajo sube de 25 a 35 minutos y los navegadores de Playwright se guardan en caché entre ejecuciones. No se quita ni se reduce ninguna prueba.
+
+## Preferencia de partido (D194) y camiseta de reserva / nombres de los convocados (D195) — 20/11/2026, `feat/preferencia-partido`; migración `20261120100000` APLICADA en el real con D111; **PR #84 MERGEADO** con el OK de Iván (Actions en verde) y desplegado (una carga de `/mi-zona/domingo/2026-11-22` sin sesión: 307 a `/entrar`, D179)
 - **Maqueta aprobada** con los cambios de Iván: motivo obligatorio, aviso de «sin guardar» y leyenda «☆ MdA = prefería el MdA (está en el otro)». Está en `privado/mockups_liga/rediseno/preferencia/`; las capturas de la web real son `real_*.png`.
 - **Preferencia de partido (D194, regla 3.4):**
   - **Jugador:** con «A los dos», o con «Voy» si los partidos son a la misma hora, sale «¿Prefieres alguno?»: estrella por partido, motivo obligatorio y nota (obligatoria con «Otro»). Se guarda con un botón, avisa si sale sin guardar y su tarjeta dice «★ Tu preferido».
@@ -22,7 +31,8 @@
   - `pruebas:rapidas`: 39 suites, 38 a la primera. `pruebas:aviso-entreno` se paró en `next build` por el aviso de seguridad de Next.js y pasó al repetirla.
   - Nuevas: `pruebas:preferencia-rls`, `pruebas:preferencia-pantallas` (375 y 1280 px) y `pruebas:nombres-convocados`.
   - Ampliadas: `pruebas:convocatoria-motor` (300 repartos al azar sin cambiar quién va), `test:privacidad` y `pruebas:equipacion`.
-- **Next.js 16.4.4:** `next build` avisa de una vulnerabilidad conocida y se para la primera vez. Al repetirlo, compila. No se ha actualizado nada (decide Iván; BACKLOG).
+- **Nombres nuevos, comprobado (20/11):** actas, estadísticas, asistencia, respuestas y convocatoria van por identificador; las estadísticas públicas usan el nombre completo. Lo único que busca por mote es «Importar teléfonos» de Gestión (después de buscar por contacto): un CSV viejo con «Carlos» daría «ningún jugador», nunca otra persona.
+- **Normas nuevas del 20/11:** 15.5 (nunca la batería completa en local por defecto; PR #85) y 20 (datos del real por decisión propia, solo con el OK previo de Iván; PR #86).
 
 ## Jornada 5 (16/11/2026), publicada a mano — `fix/fecha-jornada-aplazada`, PR #82 MERGEADO (Actions en verde)
 - **Resultado:** **MdL 71–27 Vanner** (15/11, 12:45, Moratalaz P3; acta 393050 = hoja, 71 = 71). La J5 del MdA está aplazada al 20/12 (`liga.aplazados`). Entran 29 hojas a la J5 (G1 4, G2 5, G3–G6 5 cada uno) y la liga queda con 146 hojas. Publicado en `main` (6c95aa0), `db:liga` y `db:asistencia` en el real, y `verificar_jornada` base y web (una petición, D179): todo OK.

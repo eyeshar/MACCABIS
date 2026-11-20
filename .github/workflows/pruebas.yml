@@ -21,7 +21,8 @@ jobs:
   pruebas:
     name: Pruebas (grupo ${{ matrix.grupo }} de 4)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # 35 (antes 25): el grupo que instala WebKit con sus dependencias del sistema se pasaba a veces de 25 (20/11/2026).
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -55,6 +56,11 @@ jobs:
           key: pruebas-${{ runner.os }}-${{ matrix.grupo }}-${{ hashFiles('plataforma/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
             pruebas-${{ runner.os }}-${{ matrix.grupo }}-${{ hashFiles('plataforma/package-lock.json') }}-
+      - name: Navegadores de Playwright en caché
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('plataforma/package-lock.json') }}
       - name: WebKit (solo si el grupo lleva pruebas:safe-area o pruebas:no-voy-primer-toque, que miran el iPhone con Safari)
         run: |
           if npm run -s pruebas:completas -- --lista --grupo ${{ matrix.grupo }}/4 | grep -qE 'pruebas:(safe-area|no-voy-primer-toque) '; then

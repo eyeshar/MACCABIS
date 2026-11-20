@@ -60,8 +60,6 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
 23. [ ] **Historial corto de las respuestas** (propuesta del 10/11/2026, caso de Enyel; necesita OK de Iván, es esquema): hoy `respuestas` guarda solo el último estado y no se puede ver si alguien cambió dos veces seguidas. Propuesta mínima: tabla `respuestas_historial` llenada por un disparador (evento, persona, respuesta, motivo, origen, quién y cuándo; **sin el detalle libre**), solo para gestores, que se borre sola a los 60 días. No recoge datos nuevos, solo conserva los cambios un tiempo. Un toque perdido en la hoja no llega al servidor y ni así se vería: para eso bastaría guardar con la respuesta cuántas veces se cambió de motivo antes de «Guardar» (un número), si Iván lo quiere.
 
 ## Pendiente de Iván
-- **Mergear `feat/preferencia-partido`** (D194 y D195), con Actions en verde. La migración ya está en el real y es solo aditiva, así que el código de `main` funciona igual sin ella.
-- **Next.js 16.4.4:** `next build` avisa de una vulnerabilidad conocida (`next upgrade`). Hay que decidir si se actualiza, en una rama aparte con la batería completa en Actions.
 - **Preferencia de partido:** tras dos o tres jornadas, mirar si se respeta poco. Ahora solo cambia el equipo entre empatados en línea y nivel; si se quisiera más, habría que relajar ese empate, y sería decisión de Iván.
 
 **Operativa de ahora**
@@ -137,6 +135,12 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
 ---
 
 ## Histórico
+
+### Cerrado el 20/11/2026 (`chore/next-16-4-5`, normas 15.5 y 20)
+- PR #84 mergeado con el OK de Iván y desplegado.
+- Next.js 16.4.5 fijo: 7 avisos de gravedad media, ninguno nos afectaba.
+- WebKit en Actions: tiempo máximo de 25 a 35 minutos y navegadores de Playwright en caché.
+- Normas 15.5 (PR #85) y 20 (PR #86).
 
 ### Cerrado el 20/11/2026 (`feat/preferencia-partido`)
 - Preferencia de partido en los domingos con dos partidos (D194, regla 3.4): maqueta aprobada, construida, migración en el real, pruebas `pruebas:preferencia-rls`, `pruebas:preferencia-pantallas`, `pruebas:convocatoria-motor` y `test:privacidad`.

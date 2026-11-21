@@ -13,6 +13,7 @@ export type Duelo = { jornada: string; manager_a: string; manager_b: string | nu
 export type DetalleJugador = {
   partidos?: { equipo: string; pts: number; masMenos: number; relativo: number; extra: number; total: number; minutos: number }[];
   unidades?: { clase: string; texto: string; respuesta: number; asistencia: number; como: string }[];
+  mitad?: boolean;
 };
 export type PuntoJ = { jornada: string; person_id: string; rendimiento: number; compromiso: number; total: number; total_valor?: number; minutos: number; convocado: boolean; doblete: boolean; detalle: DetalleJugador };
 export type PuntoM = {
@@ -155,6 +156,12 @@ export function insignias(personId: string, pj: PuntoJ[]) {
 /** La convocatoria publicada de la jornada en juego: ids por equipo. null = sin publicar. */
 export type Convocatoria = Partial<Record<string, string[]>> | null | undefined;
 export type MarcaConvocado = { texto: string; clase: "si" | "no" };
+/** Marca de respuesta al domingo (antes de la convocatoria): «Va», «No va», «Duda» o «Sin responder» (este, en rojo). */
+export type MarcaRespuesta = { texto: string; clase: "va" | "no" | "duda" | "sin" };
+const RESPUESTA: Record<string, MarcaRespuesta> = { va: { texto: "Va", clase: "va" }, no: { texto: "No va", clase: "no" }, duda: { texto: "Duda", clase: "duda" }, sin_responder: { texto: "Sin responder", clase: "sin" } };
+/** null = no esta invitado a ese domingo o aun no se sabe (o la convocatoria ya esta publicada). */
+export const marcaRespuesta = (r: Record<string, string> | null | undefined, id: string): MarcaRespuesta | null => (r && r[id] ? RESPUESTA[r[id]] ?? null : null);
+export const CLASE_RESPUESTA: Record<MarcaRespuesta["clase"], string> = { va: "pastilla-ok", no: "pastilla-pendiente", duda: "pastilla-dudoso", sin: "fz-resp-sin" };
 /** La marca de cada jugador: «Convocado MdA», «Convocado MdL», «Convocado en los dos» o «No convocado». Sin publicar, null. */
 export function marcaConvocado(c: Convocatoria, id: string): MarcaConvocado | null {
   if (!c) return null;

@@ -55,7 +55,7 @@ export function cerrarJornada(d: DatosCierre, Pfijo?: Parametros) {
   const guardar = {
     fecha: d.fecha, huella: d.huella, ronda: d.managers.length >= 2 ? d.ronda : null,
     sin_casar: r.sinCasar, resultados: r.resultados,
-    jugadores: [...r.puntos].map(([person_id, p]) => ({ person_id, rendimiento: p.rendimiento, compromiso: p.compromiso, total: p.total, minutos: p.minutos, convocado: p.convocado, doblete: p.doblete, detalle: { partidos: p.partidos, unidades: p.unidades } })),
+    jugadores: [...r.puntos].map(([person_id, p]) => ({ person_id, rendimiento: p.rendimiento, compromiso: p.compromiso, total: p.total, minutos: p.minutos, convocado: p.convocado, doblete: p.doblete, detalle: { partidos: p.partidos, unidades: p.unidades, ...(p.mitad ? { mitad: true } : {}) } })),
     arrastradas,
     managers: managers.map((m) => ({ manager: m.manager, alineacion: m.alineacion, porra: m.porra, total: m.total, ingreso: m.ingreso, detalle: m.detalle })),
     duelos: pares, logros,

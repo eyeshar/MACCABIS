@@ -5,13 +5,13 @@
 // arrastre de la alineación, valor, copias, ingresos, duelos rotatorios, el cierre de una jornada y lo que pintan las pantallas.
 //   npm run pruebas:fantasy-logica
 import { PARAMETROS as P, parametros, CLAVES, AJUSTES, millones, redondeo } from '../src/lib/fantasy/reglas.ts';
-import { rendimientoPartido, rendimiento, horasActivas, compromisoUnidad, puntosJugador, casarNombres, masMenosRelativo } from '../src/lib/fantasy/puntos.ts';
+import { rendimientoPartido, rendimiento, horasActivas, compromisoUnidad, puntosJugador, casarNombres, masMenosRelativo, contestoATiempo } from '../src/lib/fantasy/puntos.ts';
 import { puntosManager, arrastrar, valor, copiasPorJugador, ingreso, precioClausula, duelos } from '../src/lib/fantasy/manager.ts';
 import { puntuarJornada } from '../src/lib/fantasy/jornada.ts';
 import { cerrarJornada } from '../src/lib/fantasy/cierre.ts';
-import { rankingManagers, rankingDuelos, rankingJugadores, quintetoIdeal, rivalDe, premiosDelMes, resumenWhatsapp, insignias, marcaConvocado, mediaValor, textoMediaValor, textoHojasPendientes, equiposDePorra } from '../src/lib/fantasy/vista.ts';
-import { madrid } from '../src/lib/avisos/horario.ts';
-import { avisoClausulazo } from '../src/lib/fantasy/avisos.ts';
+import { rankingManagers, rankingDuelos, rankingJugadores, quintetoIdeal, rivalDe, premiosDelMes, resumenWhatsapp, insignias, marcaConvocado, marcaRespuesta, CLASE_RESPUESTA, mediaValor, textoMediaValor, textoHojasPendientes, equiposDePorra } from '../src/lib/fantasy/vista.ts';
+import { madrid, lunesDe, limiteDudas } from '../src/lib/avisos/horario.ts';
+import { avisoClausulazo, avisosSinResponder, tocaAvisoManagers, textoSinResponder, HORA_AVISO_MANAGERS } from '../src/lib/fantasy/avisos.ts';
 
 let fallos = 0;
 const ok = (c, q, d = '') => { if (c) console.log(`  OK    ${q}`); else { fallos++; console.log(`  FALLO ${q}${d !== '' ? ` -> ${d}` : ''}`); } };
@@ -122,6 +122,66 @@ ok(nc.rendimiento === 0 && nc.total === 4 && !nc.convocado, 'no convocado: solo 
 }
 eq(puntosJugador([], [E({ asistencia: 'falto' }), U({ estado: 'sin_responder', origen: null })], false, P).total, 0, 'el total nunca baja de 0 (−2 de plantón+respuesta y −2)');
 eq(puntosJugador([L({ pts: 6, masMenos: 10 })], [E({ asistencia: 'falto' })], true, P).total, 3, 'un compromiso negativo resta del rendimiento (6 − 3)');
+
+console.log('\n== Interruptor «Rendimiento a la mitad si no contestó a tiempo» (apagado de salida)');
+{
+  const ON = { ...P, mitadSinRespuesta: 1 };
+  const { mitadSinRespuesta: _fuera, ...SIN } = P;   // los parametros de antes de existir el interruptor
+  const trece = [L({ pts: 10, masMenos: 16 })];       // rendimiento 13
+  const casos = {
+    'respondió él a tiempo': U({ respondidoEn: madrid('2026-11-16', '11:00'), avisoEn: aviso }),
+    'respondió él fuera de plazo': U({ respondidoEn: madrid('2026-11-18', '10:00'), avisoEn: aviso }),
+    'respondió un gestor por él': U({ origen: 'gestor' }),
+    'el sistema cerró su duda': U({ estado: 'no', origen: 'sistema' }),
+    'no respondió': U({ estado: 'sin_responder', origen: null }),
+  };
+  ok(P.mitadSinRespuesta === 0 && AJUSTES.mitadSinRespuesta.interruptor === true && AJUSTES.mitadSinRespuesta.texto === 'Rendimiento a la mitad si no contestó a tiempo' && parametros({}).mitadSinRespuesta === 0, 'de salida está DESACTIVADO y en Ajustes es un interruptor');
+  ok(parametros({ mitadSinRespuesta: 1 }).mitadSinRespuesta === 1 && parametros({ mitadSinRespuesta: 2 }).mitadSinRespuesta === 0, 'solo admite apagado (0) o encendido (1)');
+  // APAGADO: nada cambia, caso a caso, respecto a como se puntuaba sin el interruptor.
+  ok(Object.values(casos).every((u) => JSON.stringify(puntosJugador(trece, [u], true, P)) === JSON.stringify(puntosJugador(trece, [u], true, SIN)) && puntosJugador(trece, [u], true, P).rendimiento === 13 && !('mitad' in puntosJugador(trece, [u], true, P))),
+    'APAGADO: los cinco casos puntúan exactamente igual que antes (rendimiento 13, sin marca)');
+  // ENCENDIDO
+  const on = Object.fromEntries(Object.entries(casos).map(([k, u]) => [k, puntosJugador(trece, [u], true, ON)]));
+  eq(Object.fromEntries(Object.entries(on).map(([k, x]) => [k, [x.rendimiento, !!x.mitad]])), { 'respondió él a tiempo': [13, false], 'respondió él fuera de plazo': [7, true], 'respondió un gestor por él': [7, true], 'el sistema cerró su duda': [7, true], 'no respondió': [7, true] },
+    'ENCENDIDO: solo quien respondió él mismo antes del plazo conserva su rendimiento; los demás, la mitad hacia arriba (13 → 7)');
+  ok(on['no respondió'].total === 7 + P.sinRespuesta && on['no respondió'].compromiso === P.sinRespuesta && on['respondió él a tiempo'].total === puntosJugador(trece, [casos['respondió él a tiempo']], true, P).total, '…el compromiso no cambia: el total es la mitad del rendimiento más su compromiso');
+  eq([8, 1, 0].map((n) => puntosJugador([L({ pts: n, masMenos: 10 })], [casos['no respondió']], true, ON).rendimiento), [4, 1, 0], 'redondeo hacia arriba: 8 → 4, 1 → 1, 0 → 0');
+  const sinJugar = puntosJugador([], [casos['no respondió']], false, ON);
+  ok(sinJugar.rendimiento === 0 && !sinJugar.mitad, 'si no juega no hay nada que partir (ni marca)');
+  ok(puntosJugador(trece, [U({ origen: 'sin_datos', estado: 'sin_responder' })], true, ON).rendimiento === 13 && puntosJugador(trece, [], true, ON).rendimiento === 13, 'un domingo sin datos de respuestas (anterior a responder en la web) o sin invitación no penaliza');
+  ok(puntosJugador(trece, [U({ clase: 'entreno', estado: 'sin_responder', origen: null }), casos['respondió él a tiempo']], true, ON).rendimiento === 13, 'cuenta la respuesta al DOMINGO, no la del entreno');
+  ok(contestoATiempo([casos['respondió él a tiempo']]) && !contestoATiempo([casos['respondió un gestor por él']]), 'una respuesta puesta por un gestor no cuenta como suya');
+  const dos = puntosJugador([L({ pts: 10, masMenos: 16 }), L({ equipo: 'MdL', pts: 6, masMenos: 10 })], [casos['no respondió']], true, ON);
+  ok(dos.doblete && dos.rendimiento === Math.ceil(13 / 2), 'con dos partidos: la mitad de lo que le saldría (media + extra)', String(dos.rendimiento));
+}
+
+console.log('\n== Aviso a los mánagers la víspera del plazo: «no han contestado al domingo»');
+{
+  const sr = { fecha: '2026-11-22', evento: { tipo: 'liga', fecha: '2026-11-22', inicio: '10:15:00', oficial: true },
+    managers: [{ person_id: 'm1', pendientes: ['Jon', 'Alonso'] }, { person_id: 'm2', pendientes: [] }, { person_id: 'm3', pendientes: ['Edu'] }] };
+  const { limite, toca } = tocaAvisoManagers(sr.evento);
+  ok(limite.getTime() === madrid('2026-11-17', '12:00').getTime() && limite.getTime() === limiteDudas(sr.evento).getTime(), 'usa el plazo de respuesta de la web (martes a las 12:00), no una hora nueva');
+  ok(HORA_AVISO_MANAGERS === '20:30' && toca.getTime() === madrid('2026-11-16', '20:30').getTime(), 'toca la víspera del plazo (lunes) a las 20:30');
+  ok(toca.getTime() - madrid(lunesDe(sr.fecha), '19:00').getTime() === 90 * 60000, '…hora y media después del recordatorio del lunes a las 19:00 a los jugadores: no se pisan');
+  eq(avisosSinResponder(sr, madrid('2026-11-16', '19:00')).length + avisosSinResponder(sr, madrid('2026-11-16', '20:29')).length, 0, 'antes de las 20:30 no sale nada');
+  const a = avisosSinResponder(sr, madrid('2026-11-16', '20:30'));
+  eq(a.map((x) => [x.person_id, x.cuerpo]), [['m1', 'Jon y Alonso no han contestado al domingo y los tienes en plantilla.'], ['m3', 'Edu no ha contestado al domingo y lo tienes en plantilla.']], 'un único aviso por mánager, solo a quien tiene alguno pendiente');
+  eq(textoSinResponder(['Jon', 'Alonso', 'Edu']), 'Jon, Alonso y Edu no han contestado al domingo y los tienes en plantilla.', 'con tres: «Jon, Alonso y Edu no han contestado…»');
+  ok(a.every((x) => x.tipo === 'cambio' && x.url === '/mdfantasy?tab=plantilla' && x.eventos.length === 0 && x.programado_para.getTime() === madrid('2026-11-16', '20:30').getTime()), 'sale en el momento, con enlace a Plantilla');
+  const tarde = avisosSinResponder(sr, madrid('2026-11-16', '22:45'));
+  ok(tarde.length === 2 && tarde[0].programado_para.getTime() === madrid('2026-11-17', '08:00').getTime(), 'si la tarea pasa ya en horario de silencio (22:30–08:00), espera a las 08:00');
+  ok(tarde[0].clave === a[0].clave && a[0].clave === 'fantasy-sin-responder:2026-11-22:m1', 'la clave es estable: no se repite aunque la tarea pase cada 15 minutos');
+  eq(avisosSinResponder(sr, madrid('2026-11-16', '23:30')).length + avisosSinResponder(sr, madrid('2026-11-17', '09:00')).length + avisosSinResponder(sr, madrid('2026-11-15', '20:30')).length, 0, 'pasado el margen, otro día o el día del plazo: nada');
+  eq(avisosSinResponder(null, madrid('2026-11-16', '20:30')).length + avisosSinResponder({ ...sr, evento: null }, madrid('2026-11-16', '20:30')).length, 0, 'sin jornada, con el juego apagado o con la convocatoria publicada (la base devuelve null): nada');
+}
+
+console.log('\n== Marca de respuesta al domingo (antes de la convocatoria)');
+{
+  const r = { a: 'va', b: 'no', c: 'duda', d: 'sin_responder' };
+  eq(['a', 'b', 'c', 'd'].map((id) => marcaRespuesta(r, id).texto), ['Va', 'No va', 'Duda', 'Sin responder'], '«Va», «No va», «Duda» y «Sin responder»');
+  ok(CLASE_RESPUESTA[marcaRespuesta(r, 'd').clase] === 'fz-resp-sin' && CLASE_RESPUESTA[marcaRespuesta(r, 'a').clase] === 'pastilla-ok', '«Sin responder» va en rojo; «Va», en verde');
+  ok(marcaRespuesta(r, 'z') === null && marcaRespuesta(null, 'a') === null && marcaRespuesta(undefined, 'a') === null, 'quien no está invitado, o con la convocatoria ya publicada, no lleva marca');
+}
 
 console.log('\n== Nombres de la hoja');
 const fichas = [{ person_id: 'a', nombre_oficial: 'Méndez Escandón, Fernando' }, { person_id: 'b', nombre_oficial: 'Martínez Martínez, Andrés' }, { person_id: 'c', nombre_oficial: 'Martínez Martínez, Víctor' }];

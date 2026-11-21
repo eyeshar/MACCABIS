@@ -182,3 +182,33 @@ pantallas del manual a 390 px, recortadas a su zona, sin la barra inferior y de 
   sección (el mercado lleva dos), con texto alternativo. El repositorio es público y esas pantallas enseñan el compromiso de
   cada jugador: por eso ahí no van nombres reales.
 - Las cifras del texto de «Cómo se juega» salen de Ajustes; las de las imágenes, no: si cambia un ajuste, se regeneran.
+
+### Animar a contestar a tiempo (21/11/2026)
+
+Migración aparte: `20261122100000_mdfantasy_respuestas` (dos funciones y un parámetro; ni tablas ni disparadores). Sin ella la
+web funciona igual, sin estas tres cosas.
+
+- **Respuesta a la vista.** En Plantilla y Mercado, hasta que se publica la convocatoria del domingo, cada jugador lleva lo que
+  ha contestado a ese domingo: «Va», «No va», «Duda» o «Sin responder» (en rojo). Es el estado que ya se ve en el evento; sin
+  motivos. Después, la marca de convocado.
+- **Aviso a los mánagers.** La víspera del plazo de respuesta, a las **20:30** (el plazo es el de la web: martes a las 12:00):
+  «Jon y Alonso no han contestado al domingo y los tienes en plantilla». Uno por mánager y solo si tiene alguno pendiente. A
+  los jugadores se les recuerda el lunes a las 19:00; este va hora y media después para no pisarlo y nombrar solo a quien sigue
+  sin contestar. Respeta el silencio (22:30–08:00).
+- **Interruptor «Rendimiento a la mitad si no contestó a tiempo»** (Ajustes, grupo Rendimiento; `mitadSinRespuesta`).
+  **Apagado de salida.** Encendido: quien juega sin haber respondido él mismo en la web antes del plazo suma la mitad de su
+  rendimiento (hacia arriba). Lo que pone un gestor no cuenta como suyo.
+
+**Dato de partida** — `npm run fantasy:respuestas -- --confirmar <ref>` (solo lectura; solo porcentajes). Jugadores invitados
+al domingo que contestaron por sí mismos en la web:
+
+| Domingo | Plazo | Antes del plazo | A tiempo o tarde (antes del partido) |
+|---|---|---|---|
+| 08/11 | 03/11 12:00 | 9 % | 32 % |
+| 15/11 | 10/11 12:00 | 32 % | 41 % |
+| 22/11 | 17/11 12:00 | 54 % | 71 % (a 21/11, aún sin jugar) |
+
+Salvedades: hasta que la migración de MdFantasy esté en el real solo se guarda la hora del **último cambio** de cada respuesta
+(no la primera): quien contestó a tiempo y cambió después del plazo sale como «tarde», así que estos tres datos se quedan algo
+cortos. Con la migración, el comando usa la primera respuesta (columna «Hora que se mira»). El 08/11 fue la primera semana con
+el plazo del martes a las 12:00 (D173, 02/11).

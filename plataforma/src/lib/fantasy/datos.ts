@@ -10,6 +10,8 @@ export type EstadoFantasy = {
   acceso: boolean; modo: string | null; person_id: string | null; es_gestor: boolean; es_manager: boolean; elegible: boolean;
   jornada: string | null; primer_partido: string | null; cerrado: boolean; clausulas_cerradas: boolean; gestor_bloqueado: boolean;
   convocatoria?: Partial<Record<string, string[]>> | null; hojas_pendientes?: string[];
+  /** Mientras la convocatoria del domingo no esta publicada: el estado de respuesta de cada jugador a ese domingo (va | no | duda | sin_responder). */
+  respuestas?: Record<string, string> | null;
   caja: number; equipos: { equipo: string; rival: string | null; inicio: string | null; evento: string; jornada?: number | null }[]; parametros: unknown; ahora: string;
 };
 
@@ -24,8 +26,10 @@ export type Fantasy = {
 export async function cargarFantasy(supabase: SupabaseClient): Promise<Fantasy | { estado: EstadoFantasy } | null> {
   const { data, error } = await supabase.rpc("fantasy_estado");
   if (error) return null;
-  const estado = { ...(data as EstadoFantasy), caja: Number((data as EstadoFantasy).caja ?? 0) };
+  const estado: EstadoFantasy = { ...(data as EstadoFantasy), caja: Number((data as EstadoFantasy).caja ?? 0) };
   if (!estado.acceso) return { estado };
+  // Sin la migracion 20261122100000 la funcion no existe: se queda sin marcas de respuesta, nada mas.
+  if (estado.jornada && !estado.convocatoria) estado.respuestas = await supabase.rpc("fantasy_respuestas_domingo").then((r) => (r.error ? null : (r.data as Record<string, string> | null)));
   const t = <T,>(tabla: string, orden?: string, asc = true) => {
     const q = supabase.from(tabla).select("*");
     return (orden ? q.order(orden, { ascending: asc }) : q).limit(5000).then((r) => (r.data ?? []) as T[]);

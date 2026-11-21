@@ -67,6 +67,7 @@ export default async function ComoSeJuega() {
           <li>Al crear tu equipo te tocan <D k="plantilla">{num(P.plantilla)}</D> jugadores al azar, de valor parecido para todos, y <D k="cajaInicial">{num(P.cajaInicial)} M</D> en caja.</li>
           <li>No puedes tenerte a ti mismo.</li>
           <li>Cada jornada alineas a <D k="alineados">{num(P.alineados)}</D>. Solo puntúan por rendimiento los que están convocados; verás la marca en cada jugador.</li>
+          <li data-testid="fz-como-respuestas">Antes de publicarse la convocatoria, en cada jugador ves si ha contestado al domingo: «Va», «No va», «Duda» o «Sin responder».</li>
           <li>Si no cambias nada, tu alineación se mantiene.</li>
         </ul>
         <p className="fz-como-ir"><Link href="/mdfantasy?tab=plantilla">Ir a Plantilla ›</Link></p>
@@ -90,6 +91,7 @@ export default async function ComoSeJuega() {
           <li><D k="puntoPorPunto">{num(P.puntoPorPunto)}</D> por cada punto anotado.</li>
           <li>Su +/- comparado con el del equipo en sus minutos, hasta <D k="masMenosTope">±{num(P.masMenosTope)}</D>.</li>
           <li>Si juega dos partidos el mismo domingo: la media de los dos más <D k="bonusDoblete">{num(P.bonusDoblete)}</D>.</li>
+          {P.mitadSinRespuesta > 0 && <li data-testid="fz-como-mitad">Si no contestó él mismo en la web antes del plazo y luego juega, su rendimiento cuenta la mitad (redondeando hacia arriba).</li>}
           <li>Nunca menos de 0.</li>
         </ul>
         <h3 className="fz-h3">Compromiso (lo que hace durante la semana)</h3>

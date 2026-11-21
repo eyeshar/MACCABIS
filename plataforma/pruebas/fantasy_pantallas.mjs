@@ -59,6 +59,14 @@ try {
   await gema.getByTestId('fz-p-porraAcierto').fill(String(PARAMETROS.porraAcierto));
   await trasAccion(gema, () => gema.getByTestId('fz-guardar-ajustes').click());
   ok(await hasta(async () => Object.keys((await sql`select parametros from public.fantasy_config`)[0].parametros).length === 0), 'volver al valor de salida lo quita de lo cambiado');
+  const mitad = gema.getByTestId('fz-p-mitadSinRespuesta');
+  ok(await visto(mitad) && !(await mitad.isChecked()) && (await gema.locator('label', { has: mitad }).textContent()).includes('Rendimiento a la mitad si no contestó a tiempo'), 'Ajustes: el interruptor «Rendimiento a la mitad si no contestó a tiempo», desactivado de salida');
+  await mitad.check();
+  await trasAccion(gema, () => gema.getByTestId('fz-guardar-ajustes').click());
+  ok(await hasta(async () => (await sql`select parametros from public.fantasy_config`)[0].parametros.mitadSinRespuesta === 1), '…se activa y se guarda');
+  await mitad.uncheck();
+  await trasAccion(gema, () => gema.getByTestId('fz-guardar-ajustes').click());
+  ok(await hasta(async () => Object.keys((await sql`select parametros from public.fantasy_config`)[0].parametros).length === 0), '…y al desactivarlo vuelve a quedar como de salida');
 
   console.log('\n== Encendido: menú y alta');
   await ana.goto(`${APP}/mdfantasy`);
@@ -102,9 +110,12 @@ try {
   ok(await hasta(async () => (await beto0.getByTestId('fz-como').locator('figure img').evaluateAll((is) => is.every((i) => i.complete && i.naturalWidth > 0 && i.getBoundingClientRect().width <= 390)))), 'las imágenes cargan y no pasan del ancho de un móvil');
   ok(await sinDesbordar(beto0), '…y la página sigue sin desbordar a 375 px con ellas');
   await foto(beto0, 'fantasy_como_375');
-  await sql`update public.fantasy_config set parametros = '{"topeCompromiso": 8, "cajaInicial": 12.5, "sinRespuesta": -3}'::jsonb`;
+  ok((await beto0.getByTestId('fz-como-respuestas').textContent()).includes('ves si ha contestado al domingo') && (await beto0.locator('#tu-plantilla').getByTestId('fz-como-respuestas').count()) === 1, '«Tu plantilla» cuenta que antes de la convocatoria se ve si cada jugador ha contestado');
+  ok(!(await beto0.getByTestId('fz-como-mitad').count()) && !(await beto0.getByTestId('fz-como').textContent()).includes('la mitad'), 'con el interruptor apagado, «Cómo se juega» no menciona el rendimiento a la mitad');
+  await sql`update public.fantasy_config set parametros = '{"topeCompromiso": 8, "cajaInicial": 12.5, "sinRespuesta": -3, "mitadSinRespuesta": 1}'::jsonb`;
   await beto0.reload();
   ok(await como(beto0, 'topeCompromiso') === '8' && await como(beto0, 'cajaInicial') === '12,5 M' && await como(beto0, 'sinRespuesta') === '−3', 'si un gestor cambia un ajuste, la página cambia sola');
+  ok(await visto(beto0.getByTestId('fz-como-mitad')), '…y con el interruptor encendido sí lo explica');
   await sql`update public.fantasy_config set parametros = '{}'::jsonb`;
   ok((await beto0.getByTestId('volver').getAttribute('href')).startsWith('/mdfantasy'), 'el «‹» vuelve a MdFantasy');
   await beto0.getByTestId('fz-como-indice').getByRole('link', { name: 'El mercado' }).click();
@@ -114,6 +125,37 @@ try {
   await ana.waitForURL(/\/mdfantasy\/como-se-juega/);
   ok(await visto(ana.getByTestId('fz-como')), 'desde las pestañas (cualquiera) también se llega');
   await ana.goto(`${APP}/mdfantasy`);
+
+  console.log('\n== Antes de la convocatoria: lo que ha contestado cada jugador al domingo');
+  {
+    const jr = (await sql`select public._fantasy_jornada_actual()::text j`)[0].j;
+    const mios = (await sql`select jugador from public.fantasy_copias where manager = 'sint-fp-ana' order by jugador`).map((x) => x.jugador);
+    const evDe = async (pid) => (await sql`select e.id from public.eventos e where e.fecha = ${jr} and e.tipo = 'liga' and e.estado = 'programado' and e.borrado_en is null and public._invitado(${pid}, e.id) order by e.inicio limit 1`)[0]?.id;
+    const invitados = [];
+    for (const id of mios) if (await evDe(id)) invitados.push(id);
+    const puestas = { [invitados[0]]: 'va', [invitados[1]]: 'duda', [invitados[2]]: 'no' };
+    for (const [id, r] of Object.entries(puestas)) await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, cambiado_en) values (${await evDe(id)}, ${id}, ${r}, 'jugador', 'web', pruebas.ahora())`;
+    const TEXTO = { va: 'Va', no: 'No va', duda: 'Duda', sin_responder: 'Sin responder' };
+    const espero = Object.fromEntries(mios.map((id) => [id, invitados.includes(id) ? TEXTO[puestas[id] ?? 'sin_responder'] : null]));
+    await ana.goto(`${APP}/mdfantasy?tab=plantilla`);
+    const enPlantilla = {};
+    for (const id of mios) enPlantilla[id] = (await ana.getByTestId(`fz-resp-${id}`).count()) ? await ana.getByTestId(`fz-resp-${id}`).textContent() : null;
+    ok(invitados.length >= 4 && JSON.stringify(enPlantilla) === JSON.stringify(espero), 'Plantilla: cada jugador (alineado o en el banquillo) lleva «Va», «No va», «Duda» o «Sin responder»', JSON.stringify(enPlantilla));
+    const sin = ana.getByTestId(`fz-resp-${invitados[3]}`);
+    const color = await sin.evaluate((e) => { const c = getComputedStyle(e).color.match(/\d+/g).map(Number); return c[0] > 200 && c[0] > c[1] + 50 && c[0] > c[2] + 50; });
+    ok((await sin.getAttribute('data-resp')) === 'sin' && color, '«Sin responder» va en rojo');
+    ok((await ana.getByTestId('fz-conv-sin-publicar').textContent()).includes('lo que ha contestado al domingo') && !(await ana.locator('.fz-conv[data-conv]').count()) && !(await ana.getByTestId('fz-alineado-no-convocado').count()), '…sin marcas de convocado ni avisos de «no convocado» todavía');
+    ok(await sinDesbordar(ana), 'Plantilla con las marcas de respuesta a 375 px: sin desbordar');
+    await foto(ana, 'fantasy_respuestas_plantilla_375');
+    await ana.goto(`${APP}/mdfantasy?tab=mercado`);
+    const enMercado = async (id) => ((await ana.getByTestId(`fz-jugador-${id}`).locator('[data-resp]').count()) ? ana.getByTestId(`fz-jugador-${id}`).locator('[data-resp]').textContent() : null);
+    ok(await enMercado(invitados[0]) === 'Va' && await enMercado(invitados[1]) === 'Duda' && await enMercado(invitados[2]) === 'No va' && await enMercado(invitados[3]) === 'Sin responder' && (await ana.getByTestId('fz-vender').locator('[data-resp]').count()) === invitados.length,
+      'Mercado: la misma marca en la lista de jugadores y en «Tu plantilla»');
+    ok(!(await ana.locator('main').textContent()).includes('otro motivo') && await sinDesbordar(ana), '…sin motivos, y sin desbordar a 375 px');
+    await sql`delete from public.respuestas where person_id = any(${Object.keys(puestas)}) and evento_id in (select id from public.eventos where fecha = ${jr})`;
+    await sql`delete from public.fantasy_primeras_respuestas where person_id = any(${Object.keys(puestas)})`;
+    await ana.goto(`${APP}/mdfantasy`);
+  }
 
   console.log('\n== Plantilla');
   await ana.getByTestId('fz-pestanas').getByRole('link', { name: 'Plantilla' }).click();
@@ -126,7 +168,7 @@ try {
   await trasAccion(ana, () => ana.getByTestId('fz-guardar-alineacion').click());
   ok(await hasta(async () => (await sql`select capitan from public.fantasy_alineaciones where manager = 'sint-fp-ana'`)[0].capitan === nuevoCap), 'cambiar el capitán y guardar');
   ok(await visto(ana.getByTestId('fz-alineador').getByTestId('fz-ok')) && (await ana.getByTestId('fz-alineador').getByTestId('fz-ok').textContent()).includes('Alineación guardada') && !(await ana.getByTestId('fz-sin-guardar').count()), 'al guardar queda a la vista «Alineación guardada»');
-  ok(await visto(ana.getByTestId('fz-alineador').getByTestId('fz-conv-sin-publicar')) && !(await ana.locator('.fz-conv').count()), 'sin convocatoria publicada: «Convocatoria sin publicar» y ninguna marca');
+  ok(await visto(ana.getByTestId('fz-alineador').getByTestId('fz-conv-sin-publicar')) && !(await ana.locator('.fz-conv[data-conv]').count()), 'sin convocatoria publicada: «Convocatoria sin publicar» y ninguna marca de convocado');
   ok((await ana.getByTestId('fz-nota-media').textContent()).includes('últimas 4 jornadas'), 'la plantilla dice qué media enseña (la de las últimas 4, la del valor)');
   ok(await sinDesbordar(ana) && !(await pequenos(ana, 'main .fz-ficha-botones button, main .fz-banquillo button, main .fz-guardar button')).length, 'Plantilla a 375 px: sin desbordar y botones de 44 px', JSON.stringify(await pequenos(ana, 'main .fz-ficha-botones button, main .fz-banquillo button, main .fz-guardar button')));
   await foto(ana, 'fantasy_plantilla_375');
@@ -168,6 +210,7 @@ try {
   ok((await gema.getByTestId('fz-bloqueo').textContent()).includes('Eres gestor') && !(await gema.getByTestId('fz-guardar-alineacion').count()) && !(await gema.locator('.fz-ficha-botones button').count()), '…ni puede tocar la alineación');
   await ana.goto(`${APP}/mdfantasy?tab=mercado`);
   ok(!(await ana.getByTestId('fz-mercado-bloqueo').count()) && await visto(ana.getByTestId('fz-mercado').getByTestId('fz-conv-sin-publicar')), 'a un jugador el borrador no le bloquea ni le enseña nada: sigue «Convocatoria sin publicar»');
+  ok((await ana.getByTestId('fz-mercado').locator('[data-resp]').count()) > 0, '…y con la marca de respuesta de cada jugador');
   const tit = (await sql`select titulares from public.fantasy_alineaciones where manager = 'sint-fp-ana'`)[0].titulares;
   await sql`update public.convocatorias set estado = 'aprobada', aprobada_en = pruebas.ahora(), equipos = ${sql.json({ MdA: [{ person_id: tit[0] }], MdL: [{ person_id: tit[0] }, { person_id: tit[1] }] })} where fecha = ${jornadaConv}`;
   await gema.goto(`${APP}/mdfantasy?tab=mercado`);
@@ -176,6 +219,7 @@ try {
   const marcaDe = async (id) => (await ana.getByTestId(`fz-conv-${id}`).textContent());
   ok(await marcaDe(tit[0]) === 'Convocado en los dos' && await marcaDe(tit[1]) === 'Convocado MdL' && await marcaDe(tit[2]) === 'No convocado' && !(await ana.getByTestId('fz-conv-sin-publicar').count()), 'Plantilla: cada jugador lleva su marca de convocado', `${await marcaDe(tit[0])} / ${await marcaDe(tit[1])} / ${await marcaDe(tit[2])}`);
   ok((await ana.locator('.fz-conv').count()) === PARAMETROS.plantilla, '…también los del banquillo');
+  ok(!(await ana.locator('[data-resp]').count()), 'publicada la convocatoria, la marca de respuesta deja paso a la de convocado');
   const avisoNC = await ana.getByTestId('fz-alineado-no-convocado').textContent();
   ok(/alineados y no están convocados/.test(avisoNC), 'Plantilla: avisa de los alineados que no están convocados', avisoNC);
   for (const id of tit.slice(2)) await ana.getByTestId(`fz-quitar-${id}`).click(); // (vendió a un titular: quedan 4 alineados)

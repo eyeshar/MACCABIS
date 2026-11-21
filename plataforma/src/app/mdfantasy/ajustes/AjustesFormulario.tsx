@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { GrupoAjuste, Parametros } from "@/lib/fantasy/reglas";
 import { guardarAjustes, puntuarAhora, type R } from "../acciones";
 
-type Campo = { clave: keyof Parametros; texto: string; grupo: GrupoAjuste; min: number; max: number; paso: number; valor: number; salida: number };
+type Campo = { clave: keyof Parametros; texto: string; grupo: GrupoAjuste; min: number; max: number; paso: number; interruptor?: boolean; valor: number; salida: number };
 const GRUPOS: GrupoAjuste[] = ["Rendimiento", "Compromiso", "Mánager", "Mercado"];
 const MODOS = [
   { id: "apagado", texto: "Apagado", nota: "Nadie lo ve." },
@@ -50,12 +50,17 @@ export default function AjustesFormulario({ modo, campos, alias, sinCasar, jugad
       {GRUPOS.map((g) => (
         <fieldset key={g} className="gs-bloque">
           <legend className="fz-h2">{g}</legend>
-          {campos.filter((c) => c.grupo === g).map((c) => (
+          {campos.filter((c) => c.grupo === g).map((c) => (c.interruptor ? (
+            <label key={c.clave} className="fz-radio">
+              <input type="checkbox" checked={v[c.clave] === "1"} onChange={(e) => setV({ ...v, [c.clave]: e.target.checked ? "1" : "0" })} data-testid={`fz-p-${c.clave}`} />
+              <span><b>{c.texto}</b> <span className="suave">{v[c.clave] === "1" ? "Activado" : "Desactivado"}{c.salida === 0 ? " (de salida, desactivado)" : ""}. Quien juegue sin haber contestado él mismo en la web antes del plazo suma la mitad de su rendimiento (hacia arriba). Una respuesta puesta por un gestor no cuenta como suya.</span></span>
+            </label>
+          ) : (
             <label key={c.clave} className="fz-campo">
               <span>{c.texto}{Number(v[c.clave].replace(",", ".")) !== c.salida && <em className="tenue pequeno"> (de salida: {String(c.salida).replace(".", ",")})</em>}</span>
               <input type="number" inputMode="decimal" min={c.min} max={c.max} step={c.paso} value={v[c.clave]} onChange={(e) => setV({ ...v, [c.clave]: e.target.value })} aria-invalid={malos.includes(c)} data-testid={`fz-p-${c.clave}`} />
             </label>
-          ))}
+          )))}
         </fieldset>
       ))}
 

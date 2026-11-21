@@ -137,6 +137,7 @@
     "fantasy:simular": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/fantasy/simular.mjs",
     "fantasy:compromiso": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/fantasy/compromiso.mjs",
     "fantasy:manual": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/fantasy/manual.mjs",
+    "fantasy:respuestas": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/fantasy/respuestas.mjs",
     "fantasy:probar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning scripts/fantasy/probar.mjs",
     "pruebas:rapidas": "node pruebas/infra/corredor.mjs rapidas",
     "pruebas:completas": "node pruebas/infra/corredor.mjs completas",

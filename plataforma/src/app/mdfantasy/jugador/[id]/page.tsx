@@ -75,6 +75,7 @@ export default async function Carta({ params }: { params: Promise<{ id: string }
             <summary>Detalle de la jornada del {fechaCorta(u0.jornada)}</summary>
             <ul className="lista-limpia">
               {(u0.detalle.partidos ?? []).map((x, i) => <li key={`p${i}`}>{x.equipo}: {x.pts} pts, +/- relativo {conSigno(x.relativo)} → {conSigno(x.extra)} · <b>{pts(x.total)}</b> ({x.minutos} min)</li>)}
+              {u0.detalle.mitad && <li data-testid="fz-mitad">No contestó a tiempo al domingo: su rendimiento cuenta la mitad · <b>{pts(u0.rendimiento)}</b></li>}
               {u0.doblete && <li>Dos partidos el mismo domingo: media de los dos + {f.P.bonusDoblete}</li>}
               {(u0.detalle.unidades ?? []).map((u, i) => <li key={`u${i}`}>{u.texto}: {u.como || "—"} · <b>{conSigno(u.respuesta + u.asistencia)}</b></li>)}
               {(u0.detalle.unidades ?? []).reduce((t, u) => t + u.respuesta + u.asistencia, 0) > u0.compromiso && <li data-testid="fz-tope">Tope semanal de compromiso: cuenta <b>{conSigno(u0.compromiso)}</b></li>}

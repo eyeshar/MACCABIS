@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Fantasy } from "@/lib/fantasy/datos";
 import { millones } from "@/lib/fantasy/reglas";
-import { alineacionVigente, fechaCorta, marcaConvocado, mediaValor, pts, textoMediaValor } from "@/lib/fantasy/vista";
+import { alineacionVigente, fechaCorta, marcaConvocado, marcaRespuesta, mediaValor, pts, textoMediaValor } from "@/lib/fantasy/vista";
 import { Alineador } from "../Cliente";
 import type { Consulta } from "../page";
 import { bloqueoDe, enlaceJugador } from "./Inicio";
@@ -43,7 +43,7 @@ export default function Plantilla({ f, q }: { f: Fantasy; q: Consulta }) {
         {mio ? (
           <Alineador
             key={`${e.jornada}-${plantilla.map((p) => p.person_id).join()}`}
-            plantilla={plantilla.map((j) => ({ id: j.person_id, nombre: j.nombre, valor: millones(j.valor), media: mv(j.person_id) == null ? "—" : pts(mv(j.person_id)!), conv: marcaConvocado(conv, j.person_id) }))}
+            plantilla={plantilla.map((j) => ({ id: j.person_id, nombre: j.nombre, valor: millones(j.valor), media: mv(j.person_id) == null ? "—" : pts(mv(j.person_id)!), conv: marcaConvocado(conv, j.person_id), resp: conv ? null : marcaRespuesta(e.respuestas, j.person_id) }))}
             sinPublicar={!!e.jornada && !conv} jornadasValor={N}
             inicial={{ titulares: vigente.titulares, capitan: vigente.capitan, vice: vigente.vice }}
             max={f.P.alineados} vetado={vigente.vetado} bloqueo={bloqueoDe(f)}

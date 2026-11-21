@@ -3,10 +3,13 @@
 //      Repetible: fantasy_guardar_jornada guarda por clave, no duplica.
 //   2. Avisa a los gestores de los nombres de la hoja que no casan con ninguna ficha y de los convocados que no salen en
 //      la hoja («¿Falto?»).
+//   4. La vispera del plazo de respuesta del domingo, a las 20:30: a cada manager, los de su plantilla que siguen sin
+//      responder (migracion 20261122100000; si no esta aplicada, nada).
 //   3. El dia despues de un entreno, a las 9:00: «¿Falto alguien ayer?» a los gestores (una vez; vale la primera respuesta).
 // Si la migracion 20261121100000 no esta aplicada (PGRST202) o el juego esta apagado, no hace nada.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { enMadrid, enSilencio, horaDeEnvio, madrid } from "../avisos/horario.ts";
+import { avisosSinResponder, type SinResponder } from "./avisos.ts";
 import { cerrarJornada, type DatosCierre } from "./cierre.ts";
 
 type Fila = { titulo: string; cuerpo: string; clave: string; tipo: "gestores" | "cambio"; person_id: string | null; user_id: string | null; eventos: string[]; url: string; programado_para: Date };
@@ -58,6 +61,12 @@ export async function tareaFantasy(sb: SupabaseClient, ahora: Date): Promise<{ p
       await aGestores({ titulo: "¿Faltó alguien ayer?", cuerpo: `Entreno del ${dia(e.fecha)}: di si vinieron todos o marca quién faltó. Si nadie dice nada antes del domingo, cuenta que vinieron todos.`, eventos: [e.evento_id], url: `/evento/${e.evento_id}/asistencia`, programado_para: ahora },
         (u) => `fantasy-falto:${e.evento_id}:${u}`);
     }
+  }
+  // «Jon y Alonso no han contestado al domingo y los tienes en plantilla»: solo se pregunta a la base a la hora del aviso.
+  if (modo !== "apagado" && enMadrid(ahora).minutos >= 20 * 60 + 30 && enMadrid(ahora).minutos < 23 * 60 + 30) {
+    const { data: sr, error: es } = await sb.rpc("fantasy_sin_responder");
+    if (es && !NO_EXISTE(es)) throw new Error(`fantasy sin responder: ${es.message}`);
+    if (!es) filas.push(...avisosSinResponder(sr as SinResponder, ahora));
   }
   return { puntuadas, filas };
 }

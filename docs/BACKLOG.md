@@ -14,7 +14,7 @@
 - [x] **Fases 2, 3 y 4 · bloques 1 a 6 y «Yo»** (`feat/estructura-nueva`, D189, 06/11/2026): navegación, Semana, Calendario y Evento, Gestión, convocatoria con el registro de no convocados (desempate APAGADO) y el pedido de ropa activable (cerrado), Yo, Liga y Club. Estado del merge y de producción en `ESTADO.md`.
 - [x] **Lo que no entró de la especificación (D189):** cerrado el 10/11/2026 (PR #72 a #76; ver «Histórico»).
 
-**MdFantasy (D196, 20/11/2026) — construido en `feat/mdfantasy`, sin merge y sin aplicar en el real**
+**MdFantasy (D196) — en el real desde el 22/11/2026 (migraciones aplicadas, PR #88 y #89 mergeados), APAGADO**
 - [ ] **Iván: probarlo en el staging local** (`npm run fantasy:probar -- --confirmar <ref>`; pasos en `ESTADO.md`).
 - [x] Dudas contestadas por Iván (20/11/2026): en `ESTADO.md` y D196.
 - [x] Porra de los gestores abierta durante el bloqueo (Iván, 20/11/2026) y retoques de aspecto hechos (pista de fondo, podio con escalones, jornada frente a la media).
@@ -22,8 +22,9 @@
 - [ ] **Iván: confirmar** que, si un equipo juega dos partidos el mismo domingo (uno aplazado), la porra de ese equipo se decide con el partido de la jornada de ese día.
 - [ ] **Iván: ver la pista a 1280 px** (las tarjetas la tapan casi entera; nota en `ESTADO.md`).
 - [x] Nombre casado por aproximación («MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando`): confirmado por Iván (20/11/2026).
-- [ ] **Con su OK:** migración `20261121100000_mdfantasy` en el real con D111, merge, y encender primero «Solo gestores».
-- [ ] **Después (o a la vez, si está en verde):** `feat/mdfantasy-respuestas` (marca de respuesta, aviso del lunes a las 20:30 a los mánagers, interruptor apagado) con su migración `20261122100000_mdfantasy_respuestas`, también con D111 y el OK de Iván.
+- [x] **Hecho el 22/11/2026 con su OK:** migración `20261121100000_mdfantasy` en el real con D111 y merge (PR #88).
+- [ ] **Iván:** las cinco comprobaciones de la web y encender primero «Solo gestores» (`/mdfantasy/ajustes`).
+- [x] **Hecho el 22/11/2026 (PR #89):** `feat/mdfantasy-respuestas` (marca de respuesta, aviso del lunes a las 20:30 a los mánagers, interruptor apagado) con su migración `20261122100000_mdfantasy_respuestas`, también con D111 y el OK de Iván.
 - [ ] **Iván, tras la jornada del 13/12/2026 (tres jornadas):** repetir `npm run fantasy:respuestas -- --confirmar <ref>` y comparar con el dato de partida (9 %, 32 %, 54 %).
 - [ ] **Tras 3 o 4 jornadas jugadas de verdad:** revisar caja, ingresos y multiplicador del clausulazo en Ajustes (`docs/MDFANTASY.md`, «A revisar»).
 - [ ] **Más adelante:** avisos al móvil del fantasy para los jugadores (hoy solo el del clausulazo): «cierra la jornada en 24 h y no tienes alineación», «ya están los puntos». No se han hecho para no añadir avisos sin que Iván los pida.

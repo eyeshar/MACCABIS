@@ -1,7 +1,7 @@
 # MdFantasy — reglas, simulación y parámetros (D196)
 
-> Fantasy interno del club. Encargo de Iván del 20/11/2026; construido en `feat/mdfantasy`, **sin mergear y sin aplicar en
-> el real**. Este documento es la fase 1 del encargo (simulación antes de construir) y la referencia de las reglas tal como
+> Fantasy interno del club. Encargo de Iván del 20/11/2026; construido en `feat/mdfantasy`; **en el real desde el
+> 22/11/2026, apagado**. Este documento es la fase 1 del encargo (simulación antes de construir) y la referencia de las reglas tal como
 > han quedado en el código. Decisión: `DECISIONS.md`, D196. Estado y cómo probarlo: `ESTADO.md`.
 >
 > El detalle con nombres (puntos de cada jugador en cada jornada y por qué) **no está en git**: lleva quién respondió y

@@ -75,6 +75,7 @@ export default async function PaseDeLista({ ev }: { ev: EventoFila }) {
           : "Sin guardar todavía: cada uno sale con lo que respondió. Ajusta lo que no cuadre y guarda."}
         {partido && !convocados && " Sin convocatoria aprobada: nadie sale como «no convocado» por defecto."}
       </p>
+      <p className="pequeno" style={{ margin: 0 }}><a href={`/evento/${ev.id}/asistencia`} data-testid="pase-rapido">Solo decir quién faltó ›</a></p>
       <PaseDeListaFormulario eventoId={ev.id} partido={partido} filas={filas} />
       <p className="pequeno suave" style={{ margin: 0 }}>Cuenta en «Asistencia y motivos» en lugar de la respuesta (no suma dos veces). «No convocado» y «Lesionado» no cuentan para el porcentaje.</p>
     </section>

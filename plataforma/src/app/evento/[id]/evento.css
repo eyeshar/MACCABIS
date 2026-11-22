@@ -30,3 +30,7 @@
 .pl-nombre small { font-size: 0.8rem; }
 .pl-select { min-height: var(--toque); min-width: 11.5rem; max-width: 100%; }
 @media (max-width: 420px) { .pl-fila { flex-wrap: wrap; } .pl-select { flex: 1 1 100%; } }
+
+/* «¿Faltó alguien?» (D196): casilla grande junto a cada nombre. */
+.fz-casilla { display: inline-flex; align-items: center; gap: 8px; min-height: var(--toque); font-weight: 600; }
+.fz-casilla input { width: 22px; height: 22px; accent-color: var(--c-amarillo); }

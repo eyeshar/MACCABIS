@@ -11,7 +11,7 @@ import { useRuta } from "./useRuta";
 // esconde (sin quitarle el sitio) hasta saber quien es: nunca un parpadeo de «Acceso» para quien ya ha entrado.
 
 export type Chat = { nombre: string; dueno: string } | null;
-export type DatosSesion = { usuario: Usuario | null; chat: Chat; /** puede_ver_liga(): Scouting rivales y Liga consolidada (D162). */ verLiga: boolean };
+export type DatosSesion = { usuario: Usuario | null; chat: Chat; /** puede_ver_liga(): Scouting rivales y Liga consolidada (D162). */ verLiga: boolean; /** fantasy_acceso(): MdFantasy encendido para esta persona (D196). */ fantasy?: boolean };
 /** listo = ya se sabe si hay sesion (false solo mientras se pide /api/sesion con cookie de sesion puesta). */
 export type EstadoSesion = DatosSesion & { listo: boolean };
 

@@ -2,6 +2,69 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## MdFantasy (D196) — 20/11/2026, `feat/mdfantasy`: CONSTRUIDO y probado en local; **SIN merge, SIN migración en el real, APAGADO**. Lo aprueba Iván después de probarlo
+
+**Informe en lenguaje sencillo.**
+
+**Qué funciona (todo en local; en producción no hay nada):**
+- **El juego entero:** crear equipo (plantilla de 7 al azar y caja), alinear 5 con capitán y vicecapitán, porra, fichar, vender, clausulazo, duelos, ranking, carta de cada jugador y ajustes de gestores.
+- **Los puntos salen solos** cuando se publican las estadísticas de la jornada (la tarea de cada 15 minutos lo detecta). Se puede repetir sin duplicar nada.
+- **«¿Faltó alguien ayer?»** para los tres gestores, el día después del entreno a las 9:00, con «Vinieron todos», marcar ausentes y «vino sin avisar». Es el mismo pase de lista de siempre: cuenta en «Asistencia y motivos».
+- **Apagado por defecto.** Lo encienden los gestores en MdFantasy › Ajustes: «Solo gestores» (para probar) o «Abierto a todos».
+
+**Qué se ha verificado y cómo:**
+- **Reglas, una a una:** `pruebas:fantasy-logica`, en verde (rendimiento, compromiso, capitán, valor, copias, duelos, cierre de una jornada).
+- **Permisos y mercado en la base local:** `pruebas:fantasy-rls`, en verde. Apagado no se ve nada; nadie escribe directamente; la alineación, el capitán y la porra de los demás no se ven hasta el cierre; un clausulazo por jornada; horario del sábado a las 20:00 y del primer partido; bloqueo de gestores con el borrador de la convocatoria; volver a puntuar no duplica; la migración se deshace limpia y se vuelve a aplicar.
+- **Pantallas a 375 y 1280 px:** `pruebas:fantasy-pantallas`, en verde (sin desbordar, botones de 44 px, sin errores de consola).
+- **Lo que ya había:** `typecheck`, `pruebas:humo`, `pruebas:navegacion`, `pruebas:cache-publica`, `pruebas:avisos-logica`, `pruebas:seguridad-base`, `pruebas:pase-lista`, `pruebas:destino-pila` y `pruebas:procesos`, en verde en local. La batería completa, en GitHub Actions (ver el PR). El primer push salió en rojo por una sola cosa, del propio cambio: `pruebas` lleva la lista cerrada de funciones que puede ejecutar un usuario con sesión y faltaban las once del fantasy; añadidas (segundo push).
+- **Con datos reales:** el staging local copia el real en solo lectura y puntúa las 5 jornadas jugadas con el código de la web; revisado a ojo en capturas a 390 px (`privado/mockups_liga/rediseno/mdfantasy/`, fuera de git).
+- **No verificado:** nada en producción ni en vistas previas (D179). Los avisos al móvil del fantasy no se han enviado nunca de verdad (barrera de no enviar a personas reales): están probados hasta la cola, no la entrega. No se han pasado las suites `-real` porque no se ha escrito nada en el real.
+
+**Parámetros elegidos** (todos se cambian en Ajustes; justificación en `docs/MDFANTASY.md`; recalibrados el 20/11/2026 con los pesos nuevos de compromiso): caja inicial **11 M**; ingreso por jornada **1,5 M + 0,04 M por punto** (unos 3,6 M para un mánager medio, que hace unos 52 puntos); clausulazo de un jugador medio 11,2 M (cada tres jornadas); el del más caro 43,5 M (10 jornadas sin gastar: solo vendiendo); valor mínimo 4 M con las últimas 4 jornadas; clausulazo ×1,5; compromiso: rápido +2, a tiempo +1, entreno +2, no responder −2, plantón −5, tope semanal 6.
+
+**Nombres sin casar:** ninguno. De los 23 nombres de las hojas, 22 casan exactos y uno por aproximación, **confirmado por Iván (20/11/2026)**: «MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando` (la hoja trae un segundo nombre). `galan-domingo-guillermo` no sale en ninguna hoja porque no ha jugado.
+
+**Dudas respondidas por Iván (20/11/2026, segunda tanda):**
+1. Vale el staging local; no se pagan ramas de Supabase.
+2. Entrada en el menú principal para jugadores y gestores, sin mover «Gestión». La etiqueta es **«MdFantasy»** (cabe: probado con 6 entradas a 375 px, 44 px por entrada y sin desbordar).
+3. El plantón lo ven todos con texto neutro (**«no vino»**); el motivo sigue siendo solo de gestores. **Corregir un «no vino» mal marcado recalcula los puntos al momento** (desde «¿Faltó alguien?» o desde el pase de lista), sin esperar a la tarea.
+4. «No va por defecto»: 0 puntos, ni +1 ni −2 (ya estaba así).
+5. Los de solo entreno pueden ser mánagers.
+6. Se empieza de cero: las jornadas ya jugadas solo fijan valores.
+7. Los entrenos de una semana sin partido cuentan para la jornada siguiente.
+8. «MENDEZ ESCANDON, FERNANDO ANTONIO» es Fernando M.: confirmado (casa solo, por aproximación; no hace falta alias).
+
+**Comprobado punto por punto (20/11/2026):** clausulazos cerrados desde el sábado a las 20:00; gestores sin operar (alinear, fichar, vender, clausulazo) desde el borrador de la convocatoria hasta que se publica; alineación, capitán y porra ajenos ocultos hasta el cierre; logros, quinteto ideal, premios del mes y resumen para WhatsApp; aviso al afectado por un clausulazo respetando el silencio (22:30–08:00). Todo estaba hecho; faltaban pruebas del bloqueo del gestor en el mercado y del aviso en silencio, ya añadidas.
+
+**Tercera tanda (Iván, 20/11/2026):** la porra de los gestores **queda abierta** durante el bloqueo por el borrador de la convocatoria. Tres retoques de aspecto, sin tocar el funcionamiento ni las tarjetas: (1) *Plantilla:* media pista dibujada de fondo (zona, círculo de tiro libre, arco de tres y aro) en amarillo apagado, detrás de los alineados; (2) *Ranking:* podio con tres alturas (segundo, primero, tercero) y el puesto en grande dentro de cada escalón; (3) *Jornada:* barra que compara el total con la media de la liga (la raya) y la diferencia en cifra («+3 sobre la media», «-8,5 bajo la media»), y cada fila del desglose lleva a la carta del jugador (también pulsando en los números). Probado a 375 y 1280 px; capturas en `privado/mockups_liga/rediseno/mdfantasy/retoque_*.png`.
+- **Pendiente de que Iván lo vea:** a 1280 px las tarjetas van en 3+2 (a 375 px, en 2-2-1) y tapan casi toda la pista: solo asoman trozos de las líneas entre ellas. En el móvil se ve bien la parte de abajo (zona, aro y arco). Si quiere verla entera en pantalla ancha hay que dar más alto al recuadro o estrechar las tarjetas.
+
+**Cuarta tanda, tras la prueba de Iván en local (20/11/2026):**
+- **Convocados:** cada jugador lleva en Plantilla y Mercado su marca («Convocado MdA», «Convocado MdL», «Convocado en los dos», «No convocado»); filtro «Convocados» en Mercado (en la URL); antes de publicarse, «Convocatoria sin publicar»; Plantilla avisa de los alineados no convocados. Sale de la convocatoria **aprobada** (lo mismo que ya ve el jugador en su portada), por `fantasy_estado`; con el borrador no se enseña nada.
+- **Media y valor:** Plantilla y Mercado enseñan la media de las jornadas que fijan el valor («media últimas 4»); la de temporada queda en la carta, con su nombre.
+- **«Alineación guardada»** ya se queda a la vista (se perdía porque el bloque se volvía a montar al refrescar).
+- **Jornada:** «MdL G» pasa a «Nuestros partidos del 15/11: MdA ganó · MdL perdió».
+- **Pruebas de pantalla nuevas:** bloqueo del gestor con el borrador (sin botones en Mercado ni en Plantilla) y «Clausulazos cerrados» desde el sábado a las 20:00; el podio se prueba ya con tres mánagers.
+- **Quinta tanda (decidido por Iván, 20/11/2026):** una corrección de asistencia ya no mueve el valor de mercado hasta la siguiente jornada; pesos nuevos de compromiso (rápido +2, entreno +2, **tope semanal 6**, editable en Ajustes) y economía recalibrada (**caja 11 M, ingreso 1,5 M + 0,04 M por punto**). Detalle en D196 y `docs/MDFANTASY.md`.
+- **Capturas del manual (20/11/2026):** `npm run fantasy:manual`, con la demo de `fantasy:probar` en marcha, saca siete pantallas a 390 px (recortadas, sin barra inferior, 1.400 px de alto como mucho) en `privado/mockups_liga/rediseno/mdfantasy/manual/` con los nombres de verdad (fuera de git) y las mismas con **nombres inventados** en `plataforma/src/app/mdfantasy/como-se-juega/imagenes/`, que son las que ilustran «Cómo se juega» (el repositorio es público y esas pantallas llevan el compromiso de cada jugador). Las cifras de las imágenes son las del día en que se sacaron: si cambia un ajuste, se regeneran.
+
+**Sexta tanda (Iván, 20/11/2026):**
+- **«Cómo se juega»** (`/mdfantasy/como-se-juega`): enlazada desde Inicio (botón a la vista para quien no tiene equipo) y bajo las pestañas. Todas las cifras salen de los parámetros vigentes; si un gestor cambia un ajuste, la página cambia sola.
+- **Hojas incompletas:** la jornada ya no se puntuaba hasta tener las hojas de todos nuestros partidos de ese domingo; ahora Jornada lo dice: «Pendiente: falta la hoja de MdA».
+- **Partido aplazado:** cuenta para la jornada del domingo en que se juega (en el real, MdA J5 está el 20/12). Corregido un fallo: si un equipo jugaba dos partidos el mismo domingo, las dos hojas se puntuaban con el marcador del primero; ahora cada hoja va con su partido y quien juega los dos lleva la media más el extra. La porra de ese equipo se decide con el partido de la jornada de ese día (no con el aplazado): **decisión de Code, a confirmar por Iván**.
+- **Migración en el real: pendiente del OK de Iván (prevista el domingo 22/11 por la tarde).** Crea 13 tablas `fantasy_*` y 33 funciones; **toca dos tablas existentes solo para añadirles un disparador** (`respuestas` y `asistencia_eventos`), sin cambiar columnas ni datos.
+
+**Pasos exactos para probarlo (staging local, en este ordenador):**
+1. Abrir **Git Bash** en `C:\Users\Iván\Proyectos\Maccabis-fantasy\plataforma`.
+2. Escribir: `npm run fantasy:probar -- --confirmar pqbjnxmknhawlkszwmln`
+3. Esperar unos 3 o 4 minutos (copia del real en solo lectura, puntuación y compilación). Se abren **dos ventanas de Chrome**: una como Iván (gestor) y otra como un jugador, ya dentro de MdFantasy, con 8 mánagers de demostración y las 5 jornadas ya puntuadas.
+4. Probar: Inicio (cuenta atrás, porra), Plantilla (cambiar capitán y guardar), Mercado (vender, fichar, clausulazo: hace falta vender antes para tener hueco), Jornada, Ranking (copiar el resumen de WhatsApp), una carta de jugador y, como gestor, Ajustes.
+5. Para «¿Faltó alguien ayer?»: en la ventana de gestor, ir a Calendario, abrir el último entreno pasado y añadir `/asistencia` al final de la dirección.
+6. Para entrar como otra persona: `http://127.0.0.1:23303/entrar` con `<person_id>@pruebas.local`; el código de 6 cifras sale en la ventana de Git Bash.
+7. Al terminar, **Ctrl+C** en Git Bash: se cierra y se borra todo. Nada de lo hecho llega al real.
+
+**Para ponerlo en producción (cuando Iván diga, no antes):** 1) OK al PR; 2) migración `20261121100000_mdfantasy` en el real con D111 (volcado, suites `-real` antes y después, recuento de cuentas); 3) merge; 4) en Ajustes, «Solo gestores» para probarlo los tres en el móvil; 5) «Abierto a todos». Vuelta atrás: apagar el interruptor (inmediato) o `npm run db:revertir -- 20261121100000 --confirmar <ref>`.
+
 ## Next.js 16.4.5 y WebKit en Actions — 20/11/2026, `chore/next-16-4-5` (OK de Iván: mergear si Actions sale en verde)
 - **Next.js 16.4.4 → 16.4.5, fijo** (sin `^`). Corrige 7 avisos de seguridad de gravedad media publicados del 16 al 19/11. **Ninguno afectaba a la web**, tampoco al login ni a Gestión:
   - Cuatro de caché con `use cache` o Cache Components (GHSA-mfr8, vc7v, rhh4, vvgp): no los usamos.

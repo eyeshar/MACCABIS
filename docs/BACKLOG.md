@@ -14,6 +14,20 @@
 - [x] **Fases 2, 3 y 4 · bloques 1 a 6 y «Yo»** (`feat/estructura-nueva`, D189, 06/11/2026): navegación, Semana, Calendario y Evento, Gestión, convocatoria con el registro de no convocados (desempate APAGADO) y el pedido de ropa activable (cerrado), Yo, Liga y Club. Estado del merge y de producción en `ESTADO.md`.
 - [x] **Lo que no entró de la especificación (D189):** cerrado el 10/11/2026 (PR #72 a #76; ver «Histórico»).
 
+**MdFantasy (D196, 20/11/2026) — construido en `feat/mdfantasy`, sin merge y sin aplicar en el real**
+- [ ] **Iván: probarlo en el staging local** (`npm run fantasy:probar -- --confirmar <ref>`; pasos en `ESTADO.md`).
+- [x] Dudas contestadas por Iván (20/11/2026): en `ESTADO.md` y D196.
+- [x] Porra de los gestores abierta durante el bloqueo (Iván, 20/11/2026) y retoques de aspecto hechos (pista de fondo, podio con escalones, jornada frente a la media).
+- [x] Corrección de asistencia sin mover el valor hasta la siguiente jornada; pesos de compromiso nuevos con tope semanal 6 y economía recalibrada (Iván, 20/11/2026).
+- [ ] **Iván: confirmar** que, si un equipo juega dos partidos el mismo domingo (uno aplazado), la porra de ese equipo se decide con el partido de la jornada de ese día.
+- [ ] **Iván: ver la pista a 1280 px** (las tarjetas la tapan casi entera; nota en `ESTADO.md`).
+- [x] Nombre casado por aproximación («MENDEZ ESCANDON, FERNANDO ANTONIO» = `mendez-escandon-fernando`): confirmado por Iván (20/11/2026).
+- [ ] **Con su OK:** migración `20261121100000_mdfantasy` en el real con D111, merge, y encender primero «Solo gestores».
+- [ ] **Tras 3 o 4 jornadas jugadas de verdad:** revisar caja, ingresos y multiplicador del clausulazo en Ajustes (`docs/MDFANTASY.md`, «A revisar»).
+- [ ] **Más adelante:** avisos al móvil del fantasy para los jugadores (hoy solo el del clausulazo): «cierra la jornada en 24 h y no tienes alineación», «ya están los puntos». No se han hecho para no añadir avisos sin que Iván los pida.
+- [ ] **Más adelante:** premios del mes con historial (hoy se calculan al vuelo) y más logros.
+- [ ] **Más adelante:** que el desempate de la convocatoria por entrenos use la asistencia real (pendiente 6 de «Pendiente de Code»), ahora que los gestores la van a responder cada semana.
+
 **1. Bloque «Tablero, asistencias, convocatoria, scouting y migración» (31/10/2026, un PR por apartado)**
 - [x] **A. Marca «reserva»** (`feat/reserva`, D158; #9, mergeada y aplicada el 01/11): `jugadores_privado.reserva`; el motor solo mete a un reserva si sin él no se cubren los mínimos o el número compensado; casilla en Gestión → Jugadores. _Migración y carga (Fernando M. y Guillermo) con el OK de Iván._
 - [x] **B. Tablero y asistencia a mano** (`feat/tablero-asistencia-mano`, D159; #10, mergeada y aplicada el 01/11): el selector «Ver» con todos los eventos de la temporada; «Van / Disponible» en la barra de acciones; cambiar a mano la respuesta de cada invitado en la ficha del evento.

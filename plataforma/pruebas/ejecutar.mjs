@@ -142,7 +142,7 @@ try {
   const PREFERENCIA = ['guardar_preferencia', 'quitar_preferencia'];
   // MdFantasy (D196): todas comprueban dentro el interruptor (_fantasy_acceso) y quien llama; _fantasy_acceso y _fantasy_cerrada
   // solo devuelven si o no y las usan las politicas de lectura. Las del rol de servicio (puntuar) no estan aqui.
-  const FANTASY = ['_fantasy_acceso', '_fantasy_cerrada', 'fantasy_acceso', 'fantasy_alinear', 'fantasy_alta', 'fantasy_apostar', 'fantasy_clausulazo', 'fantasy_estado', 'fantasy_fichar', 'fantasy_guardar_ajustes', 'fantasy_vender'];
+  const FANTASY = ['_fantasy_acceso', '_fantasy_cerrada', 'fantasy_acceso', 'fantasy_alinear', 'fantasy_alta', 'fantasy_apostar', 'fantasy_clausulazo', 'fantasy_estado', 'fantasy_respuestas_domingo', 'fantasy_fichar', 'fantasy_guardar_ajustes', 'fantasy_vender'];
   ok(JSON.stringify(authFunciones) === JSON.stringify([...PASO3, ...CONVOCATORIA, ...INICIO, ...DOMINGO, ...AVISOS, ...PISTAS, ...DISPONIBILIDAD, ...LIGA, ...A_MANO, ...PASE, ...PREFERENCIA, ...FANTASY, 'anular_pedido', 'cambiar_correo_jugador', 'dorsal_cogido', 'guardar_pedido', 'is_gestor', 'mi_zona', 'tallas_vive', 'tocar_actualizado_en'].sort()),
     'authenticated solo puede ejecutar las funciones de sesion previstas', authFunciones.join(', '));
 

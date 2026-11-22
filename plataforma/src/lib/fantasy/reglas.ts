@@ -9,6 +9,9 @@ export type Parametros = {
   masMenosDivisor: number;     // el +/- relativo se divide entre esto (2 = la mitad)
   masMenosTope: number;        // tope del +/- relativo, en positivo y en negativo
   bonusDoblete: number;        // dos partidos el mismo domingo: media + esto
+  /** Interruptor (0 = apagado, 1 = encendido): si no respondio el mismo en la web antes del plazo y luego juega, su
+   *  rendimiento de esa jornada cuenta la mitad (hacia arriba). De salida, APAGADO. */
+  mitadSinRespuesta: number;
   // Compromiso (por evento al que esta invitado)
   respuestaRapida: number;     // responde el mismo en `horasRapida` desde el aviso
   respuestaATiempo: number;    // responde el mismo antes del plazo
@@ -39,6 +42,7 @@ export const PARAMETROS: Parametros = {
   plantilla: 7, alineados: 5, porraAcierto: 3,
   valorMinimo: 4, jornadasValor: 4, clausula: 1.5, margenCopias: 0.15, margenInicio: 0.1,
   cajaInicial: 11, ingresoFijo: 1.5, ingresoPorPunto: 0.04,
+  mitadSinRespuesta: 0,
 };
 
 export const CLAVES = Object.keys(PARAMETROS) as (keyof Parametros)[];
@@ -46,7 +50,7 @@ export const CLAVES = Object.keys(PARAMETROS) as (keyof Parametros)[];
 export type GrupoAjuste = "Rendimiento" | "Compromiso" | "Mánager" | "Mercado";
 
 /** Texto y limites de cada parametro para la pantalla de ajustes. */
-export const AJUSTES: Record<keyof Parametros, { texto: string; grupo: GrupoAjuste; min: number; max: number; paso: number }> = {
+export const AJUSTES: Record<keyof Parametros, { texto: string; grupo: GrupoAjuste; min: number; max: number; paso: number; interruptor?: boolean }> = {
   puntoPorPunto: { texto: "Puntos por punto anotado", grupo: "Rendimiento", min: 0, max: 5, paso: 0.5 },
   masMenosDivisor: { texto: "El +/- relativo se divide entre", grupo: "Rendimiento", min: 1, max: 10, paso: 0.5 },
   masMenosTope: { texto: "Tope del +/- relativo (±)", grupo: "Rendimiento", min: 0, max: 20, paso: 1 },
@@ -69,6 +73,7 @@ export const AJUSTES: Record<keyof Parametros, { texto: string; grupo: GrupoAjus
   cajaInicial: { texto: "Caja inicial (M)", grupo: "Mercado", min: 0, max: 100, paso: 0.5 },
   ingresoFijo: { texto: "Ingreso fijo por jornada (M)", grupo: "Mercado", min: 0, max: 20, paso: 0.5 },
   ingresoPorPunto: { texto: "Ingreso por punto del mánager (M)", grupo: "Mercado", min: 0, max: 1, paso: 0.01 },
+  mitadSinRespuesta: { texto: "Rendimiento a la mitad si no contestó a tiempo", grupo: "Rendimiento", min: 0, max: 1, paso: 1, interruptor: true },
 };
 
 /** Los parametros vigentes: los de salida mas lo que hayan cambiado los gestores (solo claves y numeros validos). */

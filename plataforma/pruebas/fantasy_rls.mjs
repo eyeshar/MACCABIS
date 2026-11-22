@@ -198,6 +198,34 @@ try {
   ok((await rpc('fantasy_apostar', { p_equipo: 'MdA', p_pronostico: 'gana' }, A.t)).status < 300 && (await rpc('fantasy_apostar', { p_equipo: 'MdL', p_pronostico: 'pierde' }, A.t)).status < 300, 'porra de los dos partidos');
   ok((await api('/fantasy_porras?select=manager', { token: B.t })).datos.length === 0, 'la porra de otro no se ve antes del cierre');
 
+  console.log('\n== Respuestas al domingo: a la vista hasta que se publica la convocatoria (migración 20261122100000)');
+  {
+    const r0 = (await rpc('fantasy_respuestas_domingo', {}, A.t)).datos;
+    const ids = Object.keys(r0 ?? {});
+    ok(ids.length >= 4 && Object.values(r0).every((x) => x === 'sin_responder'), 'sin convocatoria publicada: cada invitado al domingo con su estado (de salida, sin responder)', JSON.stringify(r0).slice(0, 200));
+    const evDe = async (pid) => (await sql`select e.id from public.eventos e where e.fecha = '2026-10-25' and e.tipo = 'liga' and e.estado = 'programado' and e.borrado_en is null and public._invitado(${pid}, e.id) order by e.inicio limit 1`)[0].id;
+    const [va, duda, no, gestor] = ids;
+    await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, cambiado_en) values (${await evDe(va)}, ${va}, 'va', 'jugador', 'web', pruebas.ahora())`;
+    await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, cambiado_en) values (${await evDe(duda)}, ${duda}, 'duda', 'jugador', 'web', pruebas.ahora())`;
+    await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, cambiado_en, motivo, detalle) values (${await evDe(no)}, ${no}, 'no', 'jugador', 'web', pruebas.ahora(), 'otro', 'un motivo privado')`;
+    await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, puesto_por_nombre) values (${await evDe(gestor)}, ${gestor}, 'va', 'gestor', 'web', 'Gema')`;
+    const r1 = (await rpc('fantasy_respuestas_domingo', {}, B.t)).datos;
+    ok(r1[va] === 'va' && r1[duda] === 'duda' && r1[no] === 'no' && r1[gestor] === 'va' && ids.slice(4).every((x) => r1[x] === 'sin_responder'), '«va», «duda», «no» y «sin responder»: el estado que ya se ve en el evento', JSON.stringify(r1).slice(0, 200));
+    ok(Object.values(r1).every((x) => typeof x === 'string') && !JSON.stringify(r1).includes('motivo') && !JSON.stringify(r1).includes('privado'), 'solo el estado: ni motivos ni detalles');
+    ok((await rpc('fantasy_respuestas_domingo', {}, X.t)).datos === null, 'una cuenta sin ficha (sin acceso al juego) no recibe nada');
+    ok((await rpc('fantasy_sin_responder', {}, A.t)).status >= 400 && (await rpc('fantasy_sin_responder', {}, G.t)).status >= 400, 'la lista para el aviso solo la lee el rol de servicio');
+    const sr = (await rpc('fantasy_sin_responder', {}, SERVICIO)).datos;
+    const espero = await sql`select c.manager, array_agg(f.nombre order by f.valor desc, f.nombre) nombres from public.fantasy_copias c join public.fantasy_jugadores f on f.person_id = c.jugador
+                             where c.jugador = any(${ids.slice(4)}) group by 1 order by 1`;
+    ok(sr.fecha === '2026-10-25' && sr.evento.tipo === 'liga' && JSON.stringify(sr.managers.map((m) => [m.person_id, m.pendientes])) === JSON.stringify(espero.map((x) => [x.manager, x.nombres])) && espero.length > 0,
+      'para el aviso: por mánager, los nombres de los suyos que siguen sin responder (los que ya contestaron, no)', JSON.stringify(sr).slice(0, 300));
+    await sql`insert into public.convocatorias (fecha, jornada, estado, aprobada_en) values ('2026-10-25', 3, 'aprobada', pruebas.ahora())`;
+    ok((await rpc('fantasy_respuestas_domingo', {}, A.t)).datos === null && (await rpc('fantasy_sin_responder', {}, SERVICIO)).datos === null, 'publicada la convocatoria: ya no se enseña la respuesta ni se avisa');
+    await sql`delete from public.convocatorias where fecha = '2026-10-25'`;
+    await sql`delete from public.respuestas where person_id = any(${[va, duda, no, gestor]}) and evento_id in (select id from public.eventos where fecha = '2026-10-25')`;
+    await sql`delete from public.fantasy_primeras_respuestas where person_id = any(${[va, duda, no, gestor]})`;
+  }
+
   console.log('\n== Horario');
   await sql`insert into public.convocatorias (fecha, jornada, estado) values ('2026-10-25', 3, 'borrador')`;
   ok(err(await rpc('fantasy_alinear', { p_titulares: [], p_capitan: null, p_vice: null }, G.t)) === 'gestor_bloqueado', 'con el borrador de la convocatoria, un gestor no opera');
@@ -299,6 +327,42 @@ try {
     await puntuar();
   }
 
+  console.log('\n== Interruptor «Rendimiento a la mitad si no contestó a tiempo»: apagado no cambia nada; encendido, la mitad');
+  {
+    const foto = async () => JSON.stringify(await sql`select jornada::text, person_id, rendimiento::float8, compromiso::float8, total::float8, detalle from public.fantasy_puntos_jugador order by jornada, person_id`);
+    const rend = async () => new Map((await sql`select person_id, rendimiento::float8 r, (detalle ->> 'mitad') mitad from public.fantasy_puntos_jugador where jornada = '2026-10-19'`).map((x) => [x.person_id, x]));
+    const antesTodo = await foto();
+    ok(Number((await sql`select public._fantasy_param('mitadSinRespuesta') v`)[0].v) === 0 && !antesTodo.includes('"mitad"'), 'de salida, apagado: ninguna jornada lleva la marca');
+    // Dos que jugaron ese día: uno contesta él mismo a tiempo y a otro le contesta un gestor. Los demás, sin responder.
+    const jugaron = (await sql`select p.person_id, (select e.id from public.eventos e where e.fecha = '2026-10-19' and e.tipo = 'liga' and e.estado = 'programado' and e.borrado_en is null and public._invitado(p.person_id, e.id) order by e.inicio limit 1) ev
+                               from public.fantasy_puntos_jugador p where p.jornada = '2026-10-19' and p.rendimiento > 1 order by p.person_id`).filter((x) => x.ev);
+    const [propio, deGestor] = jugaron;
+    await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, cambiado_en) values (${propio.ev}, ${propio.person_id}, 'va', 'jugador', 'web', '2026-10-10 10:00+02')`;
+    await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, puesto_por_nombre, cambiado_en) values (${deGestor.ev}, ${deGestor.person_id}, 'va', 'gestor', 'web', 'Gema', '2026-10-10 10:00+02')`;
+    await sql`update public.fantasy_jornadas set huella = null where fecha = '2026-10-19'`;
+    await puntuar();
+    const apagado = await rend();
+    ok([...apagado.values()].every((x) => x.mitad === null) && jugaron.length >= 4, 'APAGADO, con respuestas de por medio: nadie pierde rendimiento');
+    ok(err(await rpc('fantasy_guardar_ajustes', { p_modo: null, p_parametros: { mitadSinRespuesta: 1 }, p_alias: null, p_recalcular: true }, A.t)) === 'solo_gestores'
+      && (await rpc('fantasy_guardar_ajustes', { p_modo: null, p_parametros: { mitadSinRespuesta: 1 }, p_alias: null, p_recalcular: true }, G.t)).status < 300, 'lo activa un gestor en Ajustes (un jugador no)');
+    await puntuar();
+    const encendido = await rend();
+    ok(encendido.get(propio.person_id).r === apagado.get(propio.person_id).r && encendido.get(propio.person_id).mitad === null, 'ENCENDIDO: quien contestó él mismo antes del plazo conserva su rendimiento');
+    ok(encendido.get(deGestor.person_id).r === Math.ceil(apagado.get(deGestor.person_id).r / 2) && encendido.get(deGestor.person_id).mitad === 'true', '…una respuesta puesta por un gestor no cuenta como suya: la mitad, hacia arriba',
+      `${apagado.get(deGestor.person_id).r} → ${encendido.get(deGestor.person_id).r}`);
+    const resto = jugaron.slice(2);
+    ok(resto.every((j) => encendido.get(j.person_id).r === Math.ceil(apagado.get(j.person_id).r / 2)) && [...encendido].every(([id, x]) => apagado.get(id).r > 0 || x.r === 0), '…y quien jugó sin responder, también la mitad; quien no jugó sigue en 0');
+    // Las jornadas anteriores a responder en la web (sin ninguna respuesta) no se tocan.
+    ok(!(await sql`select 1 from public.fantasy_puntos_jugador where jornada < '2026-10-19' and detalle ? 'mitad'`).length, 'las jornadas sin datos de respuestas no penalizan a nadie');
+    // Vuelta atrás: se apaga, se quitan las dos respuestas y todo queda exactamente como estaba.
+    ok((await rpc('fantasy_guardar_ajustes', { p_modo: null, p_parametros: {}, p_alias: null, p_recalcular: true }, G.t)).status < 300, 'se desactiva');
+    await sql`delete from public.respuestas where evento_id in (${propio.ev}, ${deGestor.ev}) and person_id in (${propio.person_id}, ${deGestor.person_id})`;
+    await sql`delete from public.fantasy_primeras_respuestas where person_id in (${propio.person_id}, ${deGestor.person_id})`;
+    await sql`update public.fantasy_jornadas set huella = null, valor_quieto = false`;
+    await puntuar();
+    ok(await foto() === antesTodo, 'apagado otra vez: todas las jornadas puntúan exactamente igual que antes de existir el interruptor');
+  }
+
   console.log('\n== Primera respuesta de cada jugador (disparador)');
   const ev = (await sql`select id from public.eventos where tipo = 'entreno' and fecha > '2026-10-19' order by fecha limit 1`)[0].id;
   await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen, fuente, cambiado_en) values (${ev}, 'sint-fz-ana', 'va', 'jugador', 'web', pruebas.ahora())`;
@@ -334,6 +398,16 @@ try {
   console.log('\n== Ninguna función abierta al anónimo');
   const abiertas = await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like '%fantasy%' and has_function_privilege('anon', p.oid, 'execute')`;
   ok(!abiertas.length, 'ninguna función del fantasy la puede ejecutar el anónimo', abiertas.map((x) => x.proname).join());
+
+  console.log('\n== Migración 20261122100000 (respuestas) reversible por separado (D111)');
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, '20261122100000_mdfantasy_respuestas.revertir.sql'), 'utf8')));
+  const tras = await sql`select (select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname in ('fantasy_respuestas_domingo', 'fantasy_sin_responder', '_fantasy_respuestas')) f,
+    public._fantasy_param('mitadSinRespuesta') mitad, public._fantasy_param('cajaInicial')::float8 caja, (select count(*)::int from public.fantasy_managers) m,
+    (select count(*)::int from supabase_migrations.schema_migrations where version = '20261122100000') r`;
+  ok(tras[0].f === 0 && tras[0].mitad === null && tras[0].caja === PARAMETROS.cajaInicial && tras[0].m > 0 && tras[0].r === 0, 'revertida sola: sin sus funciones ni el interruptor, y el juego (mánagers, parámetros) intacto', JSON.stringify(tras[0]));
+  ok((await rpc('fantasy_estado', {}, A.t)).status < 300 && (await rpc('fantasy_respuestas_domingo', {}, A.t)).status >= 400, 'sin ella, el juego sigue funcionando (solo falta la función de respuestas)');
+  await migrar(sql, { log: () => {} });
+  ok(Number((await sql`select public._fantasy_param('mitadSinRespuesta') v`)[0].v) === 0, 'se vuelve a aplicar, con el interruptor apagado');
 
   console.log(`\n== Migración ${MIG} reversible (D111)`);
   await revertirPosteriores(sql, MIGS, MIG);

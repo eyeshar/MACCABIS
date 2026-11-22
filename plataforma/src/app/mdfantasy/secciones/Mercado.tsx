@@ -2,12 +2,14 @@ import Link from "next/link";
 import type { Fantasy } from "@/lib/fantasy/datos";
 import { precioClausula } from "@/lib/fantasy/manager";
 import { millones } from "@/lib/fantasy/reglas";
-import { fechaCorta, importe, marcaConvocado, mediaValor, textoMediaValor, textoMovimiento, type MarcaConvocado } from "@/lib/fantasy/vista";
+import { CLASE_RESPUESTA, fechaCorta, importe, marcaConvocado, marcaRespuesta, mediaValor, textoMediaValor, textoMovimiento, type MarcaConvocado, type MarcaRespuesta } from "@/lib/fantasy/vista";
 import { BotonClausulazo, BotonMercado } from "../Cliente";
 import type { Consulta } from "../page";
 import { bloqueoDe, enlaceJugador, enlaceManager } from "./Inicio";
 
 export const Marca = ({ m }: { m: MarcaConvocado | null }) => (m ? <span className={`pastilla fz-conv ${m.clase === "si" ? "pastilla-ok" : "pastilla-pendiente"}`} data-conv={m.clase}>{m.texto}</span> : null);
+/** Antes de la convocatoria: lo que ha contestado al domingo. */
+export const Respuesta = ({ m }: { m: MarcaRespuesta | null }) => (m ? <span className={`pastilla fz-conv ${CLASE_RESPUESTA[m.clase]}`} data-resp={m.clase}>{m.texto}</span> : null);
 
 /** Mercado: valor, copias libres, fichar, vender, clausulazo y movimientos. Con `?c=1`, solo los convocados. */
 export default function Mercado({ f, q }: { f: Fantasy; q: Consulta }) {
@@ -21,6 +23,7 @@ export default function Mercado({ f, q }: { f: Fantasy; q: Consulta }) {
   const conv = e.jornada ? e.convocatoria ?? null : null;
   const soloConv = !!conv && q.c === "1";
   const marca = (id: string) => marcaConvocado(conv, id);
+  const resp = (id: string) => (conv ? null : marcaRespuesta(e.respuestas, id));
   const media = (id: string) => textoMediaValor(mediaValor(f.puntosJ, id, f.P.jornadasValor), f.P.jornadasValor);
   const mercado = f.jugadores.filter((j) => j.en_mercado && (!soloConv || marca(j.person_id)?.clase === "si")).sort((a, b) => b.valor - a.valor || a.nombre.localeCompare(b.nombre, "es"));
   const duenosDe = (id: string) => f.copias.filter((c) => c.jugador === id);
@@ -41,7 +44,7 @@ export default function Mercado({ f, q }: { f: Fantasy; q: Consulta }) {
           <ul className="lista-limpia fz-mercado">
             {[...mias].map((id) => jug.get(id)).filter((j): j is NonNullable<typeof j> => !!j).sort((a, b) => b.valor - a.valor).map((j) => (
               <li key={j.person_id} className="fz-fila">
-                <span className="fz-fila-quien"><Link href={enlaceJugador(j.person_id)}>{j.nombre}</Link><span className="tenue pequeno">{media(j.person_id)}</span><Marca m={marca(j.person_id)} /></span>
+                <span className="fz-fila-quien"><Link href={enlaceJugador(j.person_id)}>{j.nombre}</Link><span className="tenue pequeno">{media(j.person_id)}</span><Marca m={marca(j.person_id)} /><Respuesta m={resp(j.person_id)} /></span>
                 <b className="cifra fz-valor">{millones(j.valor)}</b>
                 <BotonMercado accion="vender" jugador={j.person_id} nombre={j.nombre} precio={millones(j.valor)} desactivado={bloqueo ? "Cerrado" : null} />
               </li>
@@ -57,7 +60,7 @@ export default function Mercado({ f, q }: { f: Fantasy; q: Consulta }) {
             <Link href="/mdfantasy?tab=mercado" aria-current={!soloConv ? "page" : undefined}>Todos</Link>
             <Link href="/mdfantasy?tab=mercado&c=1" aria-current={soloConv ? "page" : undefined}>Convocados</Link>
           </nav>
-        ) : <p className="aviso aviso-info" data-testid="fz-conv-sin-publicar">Convocatoria sin publicar.</p>)}
+        ) : <p className="aviso aviso-info" data-testid="fz-conv-sin-publicar">Convocatoria sin publicar.{e.respuestas ? " En cada jugador, lo que ha contestado al domingo." : ""}</p>)}
         {soloConv && !mercado.length && <p className="suave" style={{ margin: 0 }}>No hay ningún convocado en el mercado.</p>}
         <ul className="lista-limpia fz-mercado">
           {mercado.map((j) => {
@@ -79,6 +82,7 @@ export default function Mercado({ f, q }: { f: Fantasy; q: Consulta }) {
                   <Link href={enlaceJugador(j.person_id)}>{j.nombre}</Link>
                   <span className="tenue pequeno">{media(j.person_id)} · {libres} {libres === 1 ? "libre" : "libres"} de {j.copias}</span>
                   <Marca m={marca(j.person_id)} />
+                  <Respuesta m={resp(j.person_id)} />
                 </span>
                 <b className="cifra fz-valor">{millones(j.valor)}</b>
                 {accion}

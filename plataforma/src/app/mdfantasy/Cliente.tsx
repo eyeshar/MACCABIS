@@ -77,7 +77,8 @@ export function BotonClausulazo({ jugador, nombre, precio, duenos, desactivado }
   );
 }
 
-export type DePlantilla = { id: string; nombre: string; valor: string; media: string; conv?: { texto: string; clase: "si" | "no" } | null };
+const CLASE_RESP = { va: "pastilla-ok", no: "pastilla-pendiente", duda: "pastilla-dudoso", sin: "fz-resp-sin" } as const;
+export type DePlantilla = { id: string; nombre: string; valor: string; media: string; conv?: { texto: string; clase: "si" | "no" } | null; resp?: { texto: string; clase: "va" | "no" | "duda" | "sin" } | null };
 
 /** La pista con los alineados, capitan (C) y vicecapitan (V), y el banquillo. Se guarda con un boton. */
 export function Alineador({ plantilla, inicial, max, vetado, bloqueo, sinPublicar = false, jornadasValor = 4 }: {
@@ -106,10 +107,10 @@ export function Alineador({ plantilla, inicial, max, vetado, bloqueo, sinPublica
   const banquillo = plantilla.filter((p) => !tit.includes(p.id));
   const huecos = Array.from({ length: Math.max(0, max - tit.length) });
   const noConvocados = tit.map(de).filter((p): p is DePlantilla => !!p && p.conv?.clase === "no");
-  const marca = (p: DePlantilla) => (p.conv ? <span className={`pastilla fz-conv ${p.conv.clase === "si" ? "pastilla-ok" : "pastilla-pendiente"}`} data-conv={p.conv.clase} data-testid={`fz-conv-${p.id}`}>{p.conv.texto}</span> : null);
+  const marca = (p: DePlantilla) => (p.conv ? <span className={`pastilla fz-conv ${p.conv.clase === "si" ? "pastilla-ok" : "pastilla-pendiente"}`} data-conv={p.conv.clase} data-testid={`fz-conv-${p.id}`}>{p.conv.texto}</span> : p.resp ? <span className={`pastilla fz-conv ${CLASE_RESP[p.resp.clase]}`} data-resp={p.resp.clase} data-testid={`fz-resp-${p.id}`}>{p.resp.texto}</span> : null);
   return (
     <div className="fz-alineador" data-testid="fz-alineador">
-      {sinPublicar && <p className="aviso aviso-info fz-msj" data-testid="fz-conv-sin-publicar">Convocatoria sin publicar.</p>}
+      {sinPublicar && <p className="aviso aviso-info fz-msj" data-testid="fz-conv-sin-publicar">Convocatoria sin publicar.{plantilla.some((p) => p.resp) ? " En cada jugador, lo que ha contestado al domingo." : ""}</p>}
       {noConvocados.length > 0 && <p className="aviso aviso-error fz-msj" role="status" data-testid="fz-alineado-no-convocado">{noConvocados.length === 1 ? `${noConvocados[0].nombre} está alineado y no está convocado.` : `${noConvocados.map((p) => p.nombre).join(", ")} están alineados y no están convocados.`}</p>}
       <div className="fz-pista" role="list" aria-label={`Alineados: ${tit.length} de ${max}`}>
         {tit.map((id) => {

@@ -97,6 +97,8 @@ export type PuntosJugador = {
   rendimiento: number; compromiso: number; total: number;
   minutos: number; convocado: boolean; doblete: boolean;
   partidos: DetallePartido[]; unidades: DetalleUnidad[];
+  /** Solo con el interruptor «mitadSinRespuesta» encendido: jugo sin haber contestado el mismo a tiempo y su rendimiento va a la mitad. */
+  mitad?: boolean;
 };
 
 /** Total del jugador en la jornada: rendimiento + compromiso, minimo 0. Sin minutos, solo suma compromiso. */
@@ -105,11 +107,23 @@ export function puntosJugador(lineas: LineaPartido[], unidades: Unidad[], convoc
   const det = unidades.map((u) => compromisoUnidad(u, P));
   // Tope semanal: limita solo por arriba (los negativos cuentan enteros).
   const compromiso = Math.min(P.topeCompromiso, det.reduce((s, d) => s + d.respuesta + d.asistencia, 0));
+  // Interruptor (apagado de salida): jugo sin haber contestado EL MISMO en la web antes del plazo del domingo. Una respuesta
+  // puesta por un gestor (o por el sistema, o una ausencia) no cuenta como suya. Sin datos de respuestas, no se aplica.
+  const mitad = P.mitadSinRespuesta > 0 && r.partidos.length > 0 && !contestoATiempo(unidades);
+  const rend = mitad ? Math.ceil(r.total / 2) : r.total;
   return {
-    rendimiento: r.total, compromiso, total: Math.max(0, r.total + compromiso),
+    rendimiento: rend, compromiso, total: Math.max(0, rend + compromiso),
     minutos: r.partidos.reduce((s, p) => s + p.minutos, 0), convocado: convocado || r.partidos.length > 0, doblete: r.doblete,
-    partidos: r.partidos, unidades: det,
+    partidos: r.partidos, unidades: det, ...(mitad ? { mitad: true } : {}),
   };
+}
+
+/** ¿Contesto el mismo, en la web y antes del plazo, al domingo? Si no estaba invitado o el evento no tiene datos de
+ *  respuestas (los anteriores a responder en la web), cuenta que si: no se le puede pedir. */
+export function contestoATiempo(unidades: Unidad[]) {
+  const d = unidades.find((u) => u.clase === "domingo");
+  if (!d || d.origen === "sin_datos") return true;
+  return d.origen === "jugador" && !!d.respondidoEn && d.respondidoEn.getTime() <= d.plazo.getTime();
 }
 
 /** Clave para casar el nombre de la hoja («MENDEZ ESCANDON, FERNANDO ANTONIO») con el oficial de la ficha. */

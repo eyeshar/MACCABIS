@@ -1,7 +1,7 @@
 # MdFantasy — reglas, simulación y parámetros (D196)
 
 > Fantasy interno del club. Encargo de Iván del 20/11/2026; construido en `feat/mdfantasy`; **en el real desde el
-> 22/11/2026, apagado**. Este documento es la fase 1 del encargo (simulación antes de construir) y la referencia de las reglas tal como
+> 22/11/2026 y abierto a todos desde el 23/11/2026**. Este documento es la fase 1 del encargo (simulación antes de construir) y la referencia de las reglas tal como
 > han quedado en el código. Decisión: `DECISIONS.md`, D196. Estado y cómo probarlo: `ESTADO.md`.
 >
 > El detalle con nombres (puntos de cada jugador en cada jornada y por qué) **no está en git**: lleva quién respondió y
@@ -185,7 +185,7 @@ pantallas del manual a 390 px, recortadas a su zona, sin la barra inferior y de 
 
 ### Animar a contestar a tiempo (21/11/2026)
 
-Migración aparte: `20261122100000_mdfantasy_respuestas` (dos funciones y un parámetro; ni tablas ni disparadores). Sin ella la
+Migración aparte: `20261122100000_mdfantasy_respuestas` (tres funciones nuevas y un parámetro; ni tablas ni disparadores). Sin ella la
 web funciona igual, sin estas tres cosas.
 
 - **Respuesta a la vista.** En Plantilla y Mercado, hasta que se publica la convocatoria del domingo, cada jugador lleva lo que

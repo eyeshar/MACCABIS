@@ -2,7 +2,9 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-## MdFantasy (D196) — 20/11/2026, `feat/mdfantasy`: CONSTRUIDO y probado en local; **SIN merge, SIN migración en el real, APAGADO**. Lo aprueba Iván después de probarlo
+## MdFantasy (D196) — EN EL REAL desde el 22/11/2026 (migraciones aplicadas, PR #88 y #89 mergeados), **APAGADO**. Lo enciende Iván
+
+**En el real desde el 22/11/2026 (OK de Iván):** migraciones `20261121100000_mdfantasy` y `20261122100000_mdfantasy_respuestas` aplicadas con D111 (volcados `privado/backups/2026-11-22_pre-mdfantasy.sql` y `…_pre-mdfantasy-respuestas.sql`; cinco pruebas `-real` en verde antes y después; 28 cuentas antes y después), PR #88 y #89 mergeados. El juego sigue **APAGADO**. La tarea de avisos puntuó en su primera pasada las cinco jornadas jugadas (04/10, 18/10, 25/10, 08/11 y 15/11): 24 jugadores con valor, ningún aviso enviado. Sin jornada pendiente, la tarea hace dos consultas pequeñas (medido en el real: 23 ms). Lo que sigue es la descripción de la construcción (20–21/11).
 
 **Informe en lenguaje sencillo.**
 

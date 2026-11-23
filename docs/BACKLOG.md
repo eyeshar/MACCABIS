@@ -80,6 +80,7 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
 23. [ ] **Historial corto de las respuestas** (propuesta del 10/11/2026, caso de Enyel; necesita OK de Iván, es esquema): hoy `respuestas` guarda solo el último estado y no se puede ver si alguien cambió dos veces seguidas. Propuesta mínima: tabla `respuestas_historial` llenada por un disparador (evento, persona, respuesta, motivo, origen, quién y cuándo; **sin el detalle libre**), solo para gestores, que se borre sola a los 60 días. No recoge datos nuevos, solo conserva los cambios un tiempo. Un toque perdido en la hoja no llega al servidor y ni así se vería: para eso bastaría guardar con la respuesta cuántas veces se cambió de motivo antes de «Guardar» (un número), si Iván lo quiere.
 
 ## Pendiente de Iván
+- [ ] **Visto bueno para mergear D197** (`feat/asistencia-hoja-plataforma`, 23/11/2026): en «Asistencia y motivos», los partidos de liga desde el 24/10 se cuentan con la hoja de la FBM y la convocatoria aprobada (D72), no solo con la respuesta. Sin migración ni datos que cargar; tras el merge, como mucho una carga de `/gestion/asistencia` en producción (D179). Cambian 21 filas de 16 personas (ESTADO, «Asistencia: hoja y convocatoria»).
 - **Preferencia de partido:** tras dos o tres jornadas, mirar si se respeta poco. Ahora solo cambia el equipo entre empatados en línea y nivel; si se quisiera más, habría que relajar ese empate, y sería decisión de Iván.
 
 **Operativa de ahora**

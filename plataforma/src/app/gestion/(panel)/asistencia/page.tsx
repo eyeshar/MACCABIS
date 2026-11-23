@@ -130,7 +130,7 @@ export default async function Asistencia({ searchParams }: { searchParams: Promi
         </div>
       </Plegable>
       <p className="as-nota">
-        Asistencia = fue / (fue + faltas). Faltas = con excusa + sin excusa. No cuentan «no convocado» ni lesión. TOTAL suma entrenos y partidos (no es la media). Mínimo {MINIMO_EVENTOS} eventos para el ranking. Ningún jugador ve esta pantalla (D46, D82).
+        Asistencia = fue / (fue + faltas). Faltas = con excusa + sin excusa. No cuentan «no convocado» ni lesión. En los partidos manda la hoja de la FBM y, si no, la convocatoria aprobada: quien sale en la hoja fue; convocado y no vino, falta; «voy» sin entrar en ninguna, no convocado (D197). TOTAL suma entrenos y partidos (no es la media). Mínimo {MINIMO_EVENTOS} eventos para el ranking. Ningún jugador ve esta pantalla (D46, D82).
       </p>
       {hayAprox && (
         <p className="as-nota" data-testid="nota-aprox">

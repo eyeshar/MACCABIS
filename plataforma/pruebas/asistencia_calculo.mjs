@@ -196,6 +196,78 @@ console.log('\n== La plataforma desde el 24/10 (D161) con los estados de la tabl
   ok(l.equipo === 'MdL' && l.temporada === '2026-27' && l.origen === 'plataforma' && l.nombre === 'Ana' && filas.find((x) => x.ambito === 'entrenos').equipo === null, 'filas con equipo (solo partidos), temporada, origen y nombre');
 }
 
+console.log('\n== Partidos de liga: mandan la hoja de la FBM y la convocatoria aprobada (D72, D197)');
+{
+  // Domingo 22/11 con dos partidos (MdA y MdL), los dos con hoja y convocatoria aprobada; 15/11 MdL con convocatoria y sin
+  // hoja; 08/11 MdL sin ninguna de las dos (provisional). Jugadores sintéticos.
+  const L = (id, fecha, equipo) => ({ id, fecha, tipo: 'liga', oficial: true, equipo, titulo: `${equipo} – Rival` });
+  const evs = [L('a22', '2026-11-22', 'MdA'), L('l22', '2026-11-22', 'MdL'), L('l15', '2026-11-15', 'MdL'), L('l08', '2026-11-08', 'MdL'),
+    { id: 'e18', fecha: '2026-11-18', tipo: 'entreno', oficial: true, equipo: null, titulo: 'Entreno' }];
+  const season = {
+    partidos: [{ pn: 6, equipo: 'MDA', fecha: '2026-11-22' }, { pn: 6, equipo: 'MDL', fecha: '2026-11-22' }],
+    players: [
+      { person_id: 'sint-hoja', games: [{ pn: 6, eq: 'MDA' }] },
+      { person_id: 'sint-dijo-no', games: [{ pn: 6, eq: 'MDL' }] },
+      { person_id: 'sint-sin-resp', games: [{ pn: 6, eq: 'MDA' }] },
+      { person_id: 'sint-doblado-medio', games: [{ pn: 6, eq: 'MDA' }] },
+      { nombre: 'Rival sin persona', games: [{ pn: 6, eq: 'MDA' }] },
+    ],
+  };
+  const aprobadas = [
+    { fecha: '2026-11-22', equipos: { MdA: [{ person_id: 'sint-hoja' }, { person_id: 'sint-viaje' }, { person_id: 'sint-conv-no' }, { person_id: 'sint-conv-lesion' }, { person_id: 'sint-doblado-medio' }, { person_id: 'sint-conv-ausencia' }],
+      MdL: [{ person_id: 'sint-viaje' }, { person_id: 'sint-dijo-no' }, { person_id: 'sint-doblado-medio' }] } },
+    { fecha: '2026-11-15', equipos: { MdL: [{ person_id: 'sint-c15' }, { person_id: 'sint-c15-no' }] } },
+  ];
+  const partidos = { hojas: A.hojasDeTemporada(season), convocados: A.convocadosDeAprobadas(aprobadas) };
+  ok(partidos.hojas.get('2026-11-22|MdA')?.size === 3 && partidos.hojas.get('2026-11-22|MdL')?.size === 1 && !partidos.hojas.has('2026-11-15|MdL'), 'hojas por partido («fecha|MdA»), sin las filas sin persona; un partido sin hoja no aparece');
+  const R = (evento_id, person_id, respuesta, motivo = null) => ({ evento_id, person_id, respuesta, motivo });
+  const defecto = { marcas: new Map([['sint-nunca', { no_suele_entrenar: false, nunca_partidos: true }]]), quitados: new Set(),
+    ausencias: [{ person_id: 'sint-conv-ausencia', desde: '2026-11-20', hasta: '2026-11-23', motivo: 'viaje' }] };
+  const resp = [
+    R('a22', 'sint-hoja', 'va'),                       // en la hoja → fue
+    R('l22', 'sint-dijo-no', 'no', 'trabajo'),         // respondió «no» pero sale en la hoja → fue
+    // Caso de Enyel: dobla, dijo «voy» a los dos, convocado en los dos, no sale en ninguna hoja (viaje sin avisar).
+    R('a22', 'sint-viaje', 'va'), R('l22', 'sint-viaje', 'va'),
+    // Doblado a medias: convocado en los dos, solo jugó el MdA.
+    R('a22', 'sint-doblado-medio', 'va'), R('l22', 'sint-doblado-medio', 'va'),
+    R('a22', 'sint-conv-no', 'no', 'familia'),         // convocado, luego «no» con motivo → con excusa
+    R('a22', 'sint-conv-lesion', 'no', 'lesion'),      // convocado, lesionado → lesión (no cuenta)
+    R('a22', 'sint-conv-ausencia', 'sin_responder'),   // convocado, ausencia por periodo → con excusa
+    R('a22', 'sint-voy-fuera', 'va'), R('l22', 'sint-voy-fuera', 'va'), // «voy» sin entrar en ninguna → no convocado
+    R('a22', 'sint-no', 'no', 'viaje'), R('a22', 'sint-duda', 'duda'), R('a22', 'sint-nunca', 'sin_responder'), // fuera: como siempre
+    R('l15', 'sint-c15', 'va'), R('l15', 'sint-c15-no', 'no'), R('l15', 'sint-v15', 'va'), // sin hoja: manda la convocatoria
+    R('l08', 'sint-p', 'va'), R('l08', 'sint-p-no', 'no', 'trabajo'), // sin hoja ni convocatoria: provisional
+    R('e18', 'sint-viaje', 'va'), R('e18', 'sint-voy-fuera', 'no', 'trabajo'), // entrenos: no cambian
+  ];
+  const a = A.asistenciaPlataforma(evs, resp, defecto, '2026-11-23', partidos);
+  const est = (p, e) => a.filter((x) => x.person_id === p && x.evento_id === e).map((x) => x.estado + (x.provisional ? '*' : '')).join(',') || '(no cuenta)';
+  ok(est('sint-hoja', 'a22') === 'fue', 'sale en la hoja → fue');
+  ok(est('sint-dijo-no', 'l22') === 'fue', 'respondió «no» pero sale en la hoja → fue');
+  ok(est('sint-sin-resp', 'a22') === 'fue', 'sale en la hoja sin respuesta guardada → fue');
+  ok(est('sint-viaje', 'a22') === 'sin_excusa' && est('sint-viaje', 'l22') === 'sin_excusa', 'caso Enyel: dobla, «voy» a los dos, convocado y no sale en ninguna hoja → sin excusa en cada partido', est('sint-viaje', 'a22') + ' ' + est('sint-viaje', 'l22'));
+  ok(est('sint-doblado-medio', 'a22') === 'fue' && est('sint-doblado-medio', 'l22') === 'sin_excusa', 'doblado: cada partido por separado (fue al MdA, falta en el MdL)');
+  ok(est('sint-conv-no', 'a22') === 'con_excusa' && est('sint-conv-ausencia', 'a22') === 'con_excusa', 'convocado y no sale en la hoja con «no» con motivo o ausencia por periodo → con excusa');
+  ok(est('sint-conv-lesion', 'a22') === 'lesion', 'convocado y lesionado → lesión (excluida)');
+  ok(est('sint-voy-fuera', 'a22') === 'no_convocado' && est('sint-voy-fuera', 'l22') === 'no_convocado', '«voy» sin salir en la hoja ni en la convocatoria → no convocado');
+  ok(est('sint-no', 'a22') === 'con_excusa' && est('sint-duda', 'a22') === 'sin_excusa' && est('sint-nunca', 'a22') === '(no cuenta)', 'fuera de las dos: «no» = con excusa, «duda» = sin excusa, «nunca a partidos» sin responder no cuenta (D161)');
+  ok(est('sint-c15', 'l15') === 'fue' && est('sint-c15-no', 'l15') === 'sin_excusa' && est('sint-v15', 'l15') === 'no_convocado', 'sin hoja: manda la convocatoria aprobada con la respuesta («voy» convocado = fue; convocado con «no» sin motivo = sin excusa; «voy» fuera = no convocado)');
+  ok(est('sint-p', 'l08') === 'fue*' && est('sint-p-no', 'l08') === 'con_excusa*', 'sin hoja ni convocatoria: la regla de D161, marcada provisional');
+  ok(est('sint-viaje', 'e18') === 'fue' && est('sint-voy-fuera', 'e18') === 'con_excusa', 'entrenos: no cambian');
+  ok(a.every((x) => x.person_id), 'las filas de la hoja sin persona no generan filas');
+  // En la tabla: el caso Enyel cuenta 1 de 3 en partidos (fue en otro, y dos faltas); no convocado no cuenta.
+  const nombres = { 'sint-viaje': 'Viajero' };
+  const filas = P.filasDePlataforma(a, nombres);
+  const extra = { person_id: 'sint-viaje', nombre: 'Viajero', temporada: '2026-27', evento_ref: 'previo', fecha: '2026-11-01', ambito: 'partidos', equipo: 'MdA', titulo: null, estado: 'fue', motivo: null, origen: 'sporteasy' };
+  const j = por(P.calcularJugadores({ filas: [...filas, extra], totales: [], hoy: '2026-11-23' }, todos(), null), 'sint-viaje');
+  ok(j.partidos.fue === 1 && j.partidos.faltas === 2 && j.partidos.sin === 2, 'caso Enyel en la tabla: 1/3 en partidos, 2 sin excusa', JSON.stringify(j.partidos));
+  const v = por(P.calcularJugadores({ filas, totales: [], hoy: '2026-11-23' }, todos(), null), 'sint-voy-fuera');
+  ok(v.partidos.fue === 0 && v.partidos.faltas === 0 && v.entrenos.faltas === 1, '«voy» no convocado no cuenta en partidos (sí su entreno)', JSON.stringify(v.partidos));
+  const fp = P.fichaJugador({ filas: P.filasDePlataforma(a, {}), totales: [], hoy: '2026-11-23' }, 'sint-p');
+  ok(fp.ultimos[0].provisional === true && !P.filasDePlataforma(a, {}).find((x) => x.person_id === 'sint-hoja').provisional, 'la ficha lleva la marca «provisional» solo en los partidos sin hoja ni convocatoria');
+  const sinPartidos = A.asistenciaPlataforma(evs, resp, defecto, '2026-11-23');
+  ok(sinPartidos.filter((x) => x.ambito === 'partidos').every((x) => x.provisional) && sinPartidos.find((x) => x.person_id === 'sint-viaje' && x.evento_id === 'a22').estado === 'fue', 'sin hojas ni convocatorias (llamada antigua): todo provisional, la regla de D161');
+}
+
 console.log('\n== Pase de lista (D192): manda sobre la respuesta en vivo, sin contar dos veces');
 {
   const fila = (person_id, evento_ref, estado, origen, o = {}) => ({ person_id, nombre: person_id, temporada: '2026-27', evento_ref, fecha: '2026-10-28', ambito: 'entrenos', equipo: null, titulo: null, estado, motivo: o.motivo ?? null, origen });

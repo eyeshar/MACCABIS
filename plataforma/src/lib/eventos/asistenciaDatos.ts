@@ -1,6 +1,7 @@
 import "server-only";
 import { cargarEventos, cargarJugadores, TEMPORADA, type Cliente } from "./datos";
-import { asistenciaPlataforma, type RespuestaEvento } from "./asistencia";
+import seasonJson from "@/data/estadisticas/season_2026-27.json";
+import { asistenciaPlataforma, convocadosDeAprobadas, hojasDeTemporada, type RespuestaEvento } from "./asistencia";
 import { filasDePlataforma, type FilaEvento, type TotalTemporada } from "./asistenciaPantalla";
 import { cargarDefecto } from "@/lib/convocatoria/defecto";
 import { hoyMadrid } from "@/lib/dias";
@@ -29,16 +30,20 @@ export async function cargarTotales(sb: Cliente): Promise<TotalTemporada[]> {
   return (data ?? []) as TotalTemporada[];
 }
 
-/** Desde el 24/10/2026 (D161): lo que dicen las respuestas de la plataforma en los eventos ya pasados, en vivo. */
+/** Desde el 24/10/2026 (D161): lo que dicen las respuestas de la plataforma en los eventos ya pasados, en vivo. En los
+ *  partidos de liga mandan la hoja de la FBM (season_2026-27.json, público) y la convocatoria aprobada (D72, D197). */
 export async function cargarFilasPlataforma(sb: Cliente): Promise<{ filas: FilaEvento[]; nombres: Record<string, string>; actuales: Set<string> }> {
-  const [eventos, jugadores, defecto, { data: r, error }] = await Promise.all([
+  const [eventos, jugadores, defecto, { data: r, error }, conv] = await Promise.all([
     cargarEventos(sb), cargarJugadores(sb), cargarDefecto(sb),
     sb.from("respuestas").select("evento_id, person_id, respuesta, motivo").range(0, 19999),
+    sb.from("convocatorias").select("fecha, equipos").eq("estado", "aprobada"),
   ]);
   if (error) throw new Error(error.message);
+  if (conv.error) throw new Error(`convocatorias: ${conv.error.message}`);
   const nombres: Record<string, string> = {};
   for (const j of jugadores) nombres[j.person_id] = j.nombre_visible;
-  const a = asistenciaPlataforma(eventos, (r ?? []) as RespuestaEvento[], defecto, hoyMadrid());
+  const partidos = { hojas: hojasDeTemporada(seasonJson as Parameters<typeof hojasDeTemporada>[0]), convocados: convocadosDeAprobadas((conv.data ?? []) as Parameters<typeof convocadosDeAprobadas>[0]) };
+  const a = asistenciaPlataforma(eventos, (r ?? []) as RespuestaEvento[], defecto, hoyMadrid(), partidos);
   return { filas: filasDePlataforma(a, nombres), nombres, actuales: new Set(jugadores.filter((j) => j.activo && j.rol !== "entrenador").map((j) => j.person_id)) };
 }
 

@@ -11,6 +11,8 @@ export type Ambito = "entrenos" | "partidos";
 export type FilaEvento = {
   person_id: string; nombre: string; temporada: string; evento_ref: string; fecha: string; ambito: Ambito;
   equipo: "MdA" | "MdL" | null; titulo: string | null; estado: Estado; motivo: string | null; origen: "sporteasy" | "plataforma";
+  /** Partido de la plataforma en vivo sin hoja ni convocatoria aprobada todavía: cuenta la respuesta (D197). */
+  provisional?: boolean;
 };
 /** Fila de asistencia_motivos (totales por temporada, persona y ámbito). */
 export type TotalTemporada = {
@@ -61,12 +63,13 @@ export const textoPct = (p: number | null) => (p == null ? "—" : `${Math.round
 
 /** Filas de la plataforma (`asistenciaPlataforma`) con la forma de la tabla. */
 export function filasDePlataforma(
-  a: { person_id: string; ambito: Ambito; evento_id: string; fecha: string; equipo: "MdA" | "MdL" | null; titulo: string | null; motivo: string | null; estado: "fue" | "con_excusa" | "sin_excusa" | "lesion" }[],
+  a: { person_id: string; ambito: Ambito; evento_id: string; fecha: string; equipo: "MdA" | "MdL" | null; titulo: string | null; motivo: string | null; estado: Estado; provisional?: boolean }[],
   nombres: Record<string, string>,
 ): FilaEvento[] {
   return a.map((x) => ({
     person_id: x.person_id, nombre: nombres[x.person_id] ?? x.person_id, temporada: "2026-27", evento_ref: x.evento_id, fecha: x.fecha, ambito: x.ambito,
     equipo: x.ambito === "partidos" ? x.equipo : null, titulo: x.titulo, estado: x.estado, motivo: x.motivo, origen: "plataforma" as const,
+    ...(x.ambito === "partidos" && x.provisional ? { provisional: true } : {}),
   }));
 }
 

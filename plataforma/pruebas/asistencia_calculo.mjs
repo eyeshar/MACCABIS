@@ -226,7 +226,7 @@ console.log('\n== Partidos de liga: mandan la hoja de la FBM y la convocatoria a
   const resp = [
     R('a22', 'sint-hoja', 'va'),                       // en la hoja → fue
     R('l22', 'sint-dijo-no', 'no', 'trabajo'),         // respondió «no» pero sale en la hoja → fue
-    // Caso de Enyel: dobla, dijo «voy» a los dos, convocado en los dos, no sale en ninguna hoja (viaje sin avisar).
+    // Caso del 22/11: dobla, dijo «voy» a los dos, convocado en los dos, no sale en ninguna hoja (viaje sin avisar).
     R('a22', 'sint-viaje', 'va'), R('l22', 'sint-viaje', 'va'),
     // Doblado a medias: convocado en los dos, solo jugó el MdA.
     R('a22', 'sint-doblado-medio', 'va'), R('l22', 'sint-doblado-medio', 'va'),
@@ -244,7 +244,7 @@ console.log('\n== Partidos de liga: mandan la hoja de la FBM y la convocatoria a
   ok(est('sint-hoja', 'a22') === 'fue', 'sale en la hoja → fue');
   ok(est('sint-dijo-no', 'l22') === 'fue', 'respondió «no» pero sale en la hoja → fue');
   ok(est('sint-sin-resp', 'a22') === 'fue', 'sale en la hoja sin respuesta guardada → fue');
-  ok(est('sint-viaje', 'a22') === 'sin_excusa' && est('sint-viaje', 'l22') === 'sin_excusa', 'caso Enyel: dobla, «voy» a los dos, convocado y no sale en ninguna hoja → sin excusa en cada partido', est('sint-viaje', 'a22') + ' ' + est('sint-viaje', 'l22'));
+  ok(est('sint-viaje', 'a22') === 'sin_excusa' && est('sint-viaje', 'l22') === 'sin_excusa', 'caso del 22/11: dobla, «voy» a los dos, convocado y no sale en ninguna hoja → sin excusa en cada partido', est('sint-viaje', 'a22') + ' ' + est('sint-viaje', 'l22'));
   ok(est('sint-doblado-medio', 'a22') === 'fue' && est('sint-doblado-medio', 'l22') === 'sin_excusa', 'doblado: cada partido por separado (fue al MdA, falta en el MdL)');
   ok(est('sint-conv-no', 'a22') === 'con_excusa' && est('sint-conv-ausencia', 'a22') === 'con_excusa', 'convocado y no sale en la hoja con «no» con motivo o ausencia por periodo → con excusa');
   ok(est('sint-conv-lesion', 'a22') === 'lesion', 'convocado y lesionado → lesión (excluida)');
@@ -254,12 +254,12 @@ console.log('\n== Partidos de liga: mandan la hoja de la FBM y la convocatoria a
   ok(est('sint-p', 'l08') === 'fue*' && est('sint-p-no', 'l08') === 'con_excusa*', 'sin hoja ni convocatoria: la regla de D161, marcada provisional');
   ok(est('sint-viaje', 'e18') === 'fue' && est('sint-voy-fuera', 'e18') === 'con_excusa', 'entrenos: no cambian');
   ok(a.every((x) => x.person_id), 'las filas de la hoja sin persona no generan filas');
-  // En la tabla: el caso Enyel cuenta 1 de 3 en partidos (fue en otro, y dos faltas); no convocado no cuenta.
+  // En la tabla: el caso del 22/11 cuenta 1 de 3 en partidos (fue en otro, y dos faltas); no convocado no cuenta.
   const nombres = { 'sint-viaje': 'Viajero' };
   const filas = P.filasDePlataforma(a, nombres);
   const extra = { person_id: 'sint-viaje', nombre: 'Viajero', temporada: '2026-27', evento_ref: 'previo', fecha: '2026-11-01', ambito: 'partidos', equipo: 'MdA', titulo: null, estado: 'fue', motivo: null, origen: 'sporteasy' };
   const j = por(P.calcularJugadores({ filas: [...filas, extra], totales: [], hoy: '2026-11-23' }, todos(), null), 'sint-viaje');
-  ok(j.partidos.fue === 1 && j.partidos.faltas === 2 && j.partidos.sin === 2, 'caso Enyel en la tabla: 1/3 en partidos, 2 sin excusa', JSON.stringify(j.partidos));
+  ok(j.partidos.fue === 1 && j.partidos.faltas === 2 && j.partidos.sin === 2, 'caso del 22/11 en la tabla: 1/3 en partidos, 2 sin excusa', JSON.stringify(j.partidos));
   const v = por(P.calcularJugadores({ filas, totales: [], hoy: '2026-11-23' }, todos(), null), 'sint-voy-fuera');
   ok(v.partidos.fue === 0 && v.partidos.faltas === 0 && v.entrenos.faltas === 1, '«voy» no convocado no cuenta en partidos (sí su entreno)', JSON.stringify(v.partidos));
   const fp = P.fichaJugador({ filas: P.filasDePlataforma(a, {}), totales: [], hoy: '2026-11-23' }, 'sint-p');

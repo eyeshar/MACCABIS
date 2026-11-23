@@ -17,6 +17,14 @@ export async function cargarDefecto(sb: Cliente, eventoIds?: string[]): Promise<
   return defectoDe((m.data ?? []) as { person_id: string; no_suele_entrenar: boolean; nunca_partidos: boolean }[], q.error ? [] : ((q.data ?? []) as { evento_id: string; person_id: string }[]), ausencias);
 }
 
+/** Convocatorias aprobadas (fecha y equipos), con la sesión del GESTOR (RLS: solo gestores). Para «Asistencia y motivos»
+ *  (D197): en los partidos de liga sin hoja, y fuera de ella, manda quién estaba convocado. */
+export async function cargarAprobadas(sb: Cliente): Promise<{ fecha: string; equipos: Record<string, { person_id: string }[] | null> | null }[]> {
+  const { data, error } = await sb.from("convocatorias").select("fecha, equipos").eq("estado", "aprobada");
+  if (error) throw new Error(`convocatorias: ${error.message}`);
+  return (data ?? []) as { fecha: string; equipos: Record<string, { person_id: string }[] | null> | null }[];
+}
+
 /** Ausencias por periodo sin borrar (D150), con la sesion del GESTOR (RLS). Son pocas: todas, y cada pantalla mira las
  *  que cubren el dia de su evento (`ausenciaQueCubre`). */
 export async function cargarAusencias(sb: Cliente): Promise<AusenciaDisp[]> {

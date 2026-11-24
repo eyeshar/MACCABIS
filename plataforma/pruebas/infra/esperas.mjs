@@ -46,6 +46,9 @@ export async function sesionLista(p, ms = 10000) {
   // Sin cookie de sesion, nada que esperar; con ella, hasta que la cabecera enseñe a la persona (el estado «pendiente» se pone
   // despues del cambio de URL, asi que no basta con mirarlo).
   await p.waitForFunction(() => !/(?:^|; *)sb-[^=;]*-auth-token/.test(document.cookie) || (document.documentElement.dataset.sesion === 'listo' && document.querySelector('header .nv-avatar')), null, { timeout: ms }).catch(() => {});
+  // D198: una pantalla con loading.tsx (el domingo) llega en trozos detrás de su esqueleto: hasta que se va, la pagina aun
+  // no esta, y un momento despues de irse aun queda una copia de la pagina en un <div hidden> de React (contaria doble).
+  await p.waitForFunction(() => !document.querySelector('main.esq[aria-busy="true"]') && !document.querySelector('div[hidden] main'), null, { timeout: ms }).catch(() => {});
   await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))).catch(() => {});
 }
 

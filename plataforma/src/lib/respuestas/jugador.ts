@@ -26,11 +26,12 @@ export async function cargarMiEvento(id: string): Promise<MiEvento | null> {
   return (data as MiEvento | null) ?? null;
 }
 
-export async function cargarMisEventosDelDia(fecha: string): Promise<MiEvento[]> {
+// cache() (D198): la piden el layout del domingo (para el 404 antes del esqueleto) y la página, en la misma petición.
+export const cargarMisEventosDelDia = cache(async (fecha: string): Promise<MiEvento[]> => {
   const sb = await clienteSesion();
   const { data } = await sb.from(VISTA).select(COLS).eq("fecha", fecha).order("inicio");
   return (data ?? []) as MiEvento[];
-}
+});
 
 /** Grupos de entreno publicados (D122): en cada entreno, el nombre de SU grupo y sus compañeros. Nada mas. */
 export const cargarMisGrupos = cache(async (): Promise<{ evento_id: string; grupo: string; companeros: string[] }[]> => {

@@ -231,6 +231,7 @@ try {
 
   console.log(`\n== Domingo con horas distintas (J3, ${ddmm(F('2026-10-25'))})`);
   await pj.goto(`${APP}/mi-zona/domingo/${F('2026-10-25')}`);
+  await visto(pj.getByTestId('situacion')); // D198: el domingo llega en trozos detrás de su esqueleto (loading.tsx)
   ok((await pj.locator('.rw-partido').count()) === 2 && await visto(pj.getByText('Estar disponible no es estar convocado: en la convocatoria te decimos en qué equipo juegas.')), 'las dos tarjetas de partido y la nota de convocatoria');
   for (const o of ['A los dos', 'Solo al de las 09:00 (MdA)', 'Solo al de las 14:00 (MdL)', 'No voy', 'Duda']) ok(await visto(pj.getByRole('button', { name: o })), `opción «${o}»`);
   await trasAccion(pj, () => pj.getByRole('button', { name: 'Solo al de las 09:00 (MdA)' }).click());

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Hoja «No voy»: el motivo se elige al PRIMER toque (bug de Enyel, 10/11/2026). Al abrir la hoja, `showModal()` ponía el
+// Hoja «No voy»: el motivo se elige al PRIMER toque (bug que contó un jugador, 10/11/2026). Al abrir la hoja, `showModal()` ponía el
 // foco en el primer motivo («Lesión») y Safari le pintaba el recuadro de foco: parecía preseleccionado y el toque en otro
 // motivo no parecía marcarlo. Ahora el foco va al título de la hoja.
 // En /evento/<id> (Responder) y en /mi-zona/domingo/<fecha> (ElegirDomingo), en WebKit (iPhone, con toques), a 360 px con

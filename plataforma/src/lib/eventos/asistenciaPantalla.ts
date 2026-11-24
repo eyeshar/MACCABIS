@@ -11,6 +11,10 @@ export type Ambito = "entrenos" | "partidos";
 export type FilaEvento = {
   person_id: string; nombre: string; temporada: string; evento_ref: string; fecha: string; ambito: Ambito;
   equipo: "MdA" | "MdL" | null; titulo: string | null; estado: Estado; motivo: string | null; origen: "sporteasy" | "plataforma";
+  /** Partido de la plataforma en vivo sin hoja ni convocatoria aprobada todavía: cuenta la respuesta (D197). */
+  provisional?: boolean;
+  /** Partido ya jugado con convocatoria aprobada y aún sin hoja de la FBM: puede cambiar cuando llegue la hoja (D197). */
+  pendienteHoja?: boolean;
 };
 /** Fila de asistencia_motivos (totales por temporada, persona y ámbito). */
 export type TotalTemporada = {
@@ -61,13 +65,22 @@ export const textoPct = (p: number | null) => (p == null ? "—" : `${Math.round
 
 /** Filas de la plataforma (`asistenciaPlataforma`) con la forma de la tabla. */
 export function filasDePlataforma(
-  a: { person_id: string; ambito: Ambito; evento_id: string; fecha: string; equipo: "MdA" | "MdL" | null; titulo: string | null; motivo: string | null; estado: "fue" | "con_excusa" | "sin_excusa" | "lesion" }[],
+  a: { person_id: string; ambito: Ambito; evento_id: string; fecha: string; equipo: "MdA" | "MdL" | null; titulo: string | null; motivo: string | null; estado: Estado; provisional?: boolean; pendienteHoja?: boolean }[],
   nombres: Record<string, string>,
 ): FilaEvento[] {
   return a.map((x) => ({
     person_id: x.person_id, nombre: nombres[x.person_id] ?? x.person_id, temporada: "2026-27", evento_ref: x.evento_id, fecha: x.fecha, ambito: x.ambito,
     equipo: x.ambito === "partidos" ? x.equipo : null, titulo: x.titulo, estado: x.estado, motivo: x.motivo, origen: "plataforma" as const,
+    ...(x.ambito === "partidos" && x.provisional ? { provisional: true } : {}),
+    ...(x.ambito === "partidos" && x.pendienteHoja ? { pendienteHoja: true } : {}),
   }));
+}
+
+/** Partidos ya jugados con convocatoria aprobada y sin hoja todavía (D197), por fecha: «22/11 MdA»… para el aviso de la tabla. */
+export function partidosPendientesDeHoja(filas: FilaEvento[]): { fecha: string; equipo: "MdA" | "MdL" | null }[] {
+  const vistos = new Map<string, { fecha: string; equipo: "MdA" | "MdL" | null }>();
+  for (const f of filas) if (f.pendienteHoja) vistos.set(f.evento_ref, { fecha: f.fecha, equipo: f.equipo });
+  return [...vistos.values()].sort((a, b) => a.fecha.localeCompare(b.fecha) || String(a.equipo).localeCompare(String(b.equipo)));
 }
 
 /** Las dos fuentes sin contar dos veces (D192): lo guardado en asistencia_eventos (SportEasy y, desde D192, el pase de

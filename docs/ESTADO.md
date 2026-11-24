@@ -2,7 +2,7 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-## «Responder al domingo» que no parecía hacer nada en el iPhone (D198) — 24/11/2026, `fix/domingo-tactil`; migración `20261124100000_quien_va_eventos` **SIN APLICAR en el real** (la web funciona igual sin ella)
+## «Responder al domingo» que no parecía hacer nada en el iPhone (D198) — 24/11/2026, `fix/domingo-tactil`; migración `20261124100000_quien_va_eventos` **APLICADA en el real con D111**; **PR #95 MERGEADO** (`cdfd7f7`, OK de Iván, Actions en verde en `bec9fcd`) y desplegado
 
 **Qué pasaba:** un jugador (iPhone, Safari en pestaña) tocaba «Responder al domingo» del 29/11 y no veía nada; al insistir, zoom de doble toque. El domingo anterior creyó haber respondido «no» y no constaba.
 
@@ -26,7 +26,15 @@
 
 **Verificado:** en local, `typecheck`, `pruebas:domingo`, `pruebas:asistencia-efectiva`, `pruebas:inicio-proximo-partido`, `pruebas:no-voy-primer-toque`, `pruebas:chat-ia` y `pruebas:humo` en verde. Tras el primer rojo de Actions, también `pruebas`, `pruebas:respuestas-pantallas`, `pruebas:eventos-pantallas`, `pruebas:numeros`, `pruebas:estructura`, `pruebas:dudas` y `pruebas:motivo-unico`. Sin sesión, el domingo da 307 a `/entrar`; con fecha mala o día sin partidos, 404. De las `-real` (solo lectura), `asistencia-eventos`, `respuestas`, `convocatoria` y `whatsapp`, en verde. **`eventos-real` (3) e `inicio-real` (1) fallan igual en `main`:** esperan 67 eventos públicos y el real tiene 68. **`solo-ficha-real` (2)** compara con la foto del 01/11 y desde entonces hay un plan nuevo. Las dos cosas son deriva de datos, ajena a este cambio: no se ha tocado. `--lista` elegía 12 suites; por la norma 15.5, las pantallas no tocadas van a GitHub Actions.
 
-**Pendiente:** aplicar la migración en el real (D111, con el OK de Iván). Mientras no esté, la web usa la vista y sigue igual de lenta en esa consulta, pero ya con esqueleto, «Abriendo…» y error visible. Tras el merge, como mucho una carga de `/mi-zona/domingo/<fecha>` sin sesión (307 a `/entrar`), sin navegador (D179). **No verificado en un iPhone real:** el zoom, la franja de arriba ni la banda; WebKit en local no da insets propios.
+**En el real (24/11/2026, OK de Iván):**
+- **Volcado** `privado/backups/2026-11-24_pre-quien-va.sql`: 10.210.461 bytes, 88 `COPY`, ignorado por git.
+- **Migración solo aditiva** con su `.revertir.sql`, ensayado en la pila (`pruebas:asistencia-efectiva`). Aplicada con `db:migrar --confirmar pqbjnxmknhawlkszwmln`, después de Actions en verde y antes del merge.
+- **Comprobado:** `quien_va` existe, es `security definer`, `authenticated` puede ejecutarla y `anon` no. Como un jugador real, en una transacción `READ ONLY` deshecha, da para el 29/11 las mismas 46 filas que la vista (ninguna de más ni de menos, en los dos partidos). Tarda 7 ms; la vista, 329 ms.
+- **Cuentas de auth:** 28 antes y 28 después.
+- **Desplegado** (`dpl_AJyKivXMNjGn6B52eqQFeLtHtYpy`, READY). Una sola carga de `/mi-zona/domingo/2026-11-29` sin sesión, con `curl` (D179): 307 a `/entrar` en 0,75 s.
+- **`-real` después:** `asistencia-eventos`, `respuestas`, `convocatoria` y `whatsapp` en verde. `eventos` (3) e `inicio` (1) fallan igual que antes, porque esperan 67 eventos públicos y hay 68 (BACKLOG 24).
+
+**Pendiente:** **no verificado en un iPhone real** el zoom, la franja de arriba ni la banda (WebKit en local no da insets propios). La salida de emergencia en otros enlaces y la detección de versión vieja (BACKLOG 25) siguen sin hacer.
 
 ## Asistencia: hoja y convocatoria en los partidos desde el 24/10 (D197) — 23/11/2026, `feat/asistencia-hoja-fbm`, **PR nuevo y limpio, sin mergear (falta el visto bueno de Iván)**
 

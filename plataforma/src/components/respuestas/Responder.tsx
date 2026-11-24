@@ -66,10 +66,22 @@ function AbrirDomingo({ href, texto, grande }: { href: string; texto: string; gr
   useEffect(() => { if (!pulsado) return; const t = setTimeout(() => setPulsado(false), 15000); return () => clearTimeout(t); }, [pulsado]);
   return (
     <Link href={href} className={`boton boton-amarillo rw-abrir${grande ? " grande" : ""}${pulsado ? " pulsado" : ""}`} data-testid="abrir-domingo"
-      onClick={(ev) => { if (cargando.current) { ev.preventDefault(); return; } setPulsado(true); }}>
+      onClick={(ev) => { if (cargando.current) { ev.preventDefault(); return; } setPulsado(true); salidaDeEmergencia(href); }}>
       <EstadoEnlace texto={texto} pulsado={pulsado} cargando={cargando} />
     </Link>
   );
+}
+
+// D198: salida de emergencia. El 24/11 los toques de un jugador no llegaron al servidor: la navegacion del cliente se
+// quedo dentro del movil (lo mas probable, una pestaña de Safari con una version vieja tras un despliegue). Si a los
+// ~6 s del toque la ruta sigue siendo la de antes, se carga la pagina entera, como un enlace normal. El temporizador no
+// depende del componente: si la navegacion si llego (o se fue a otra pagina), la ruta ya no es la de antes y no hace nada.
+const ESPERA_EMERGENCIA_MS = 6000;
+function salidaDeEmergencia(href: string) {
+  const antes = window.location.pathname + window.location.search;
+  window.setTimeout(() => {
+    if (window.location.pathname + window.location.search === antes) window.location.assign(href);
+  }, ESPERA_EMERGENCIA_MS);
 }
 
 function EstadoEnlace({ texto, pulsado, cargando }: { texto: string; pulsado: boolean; cargando: RefObject<boolean> }) {

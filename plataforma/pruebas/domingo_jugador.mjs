@@ -143,6 +143,28 @@ try {
     ok(await visto(pg.getByTestId('situacion'), 15000) && pg.url().endsWith(`/mi-zona/domingo/${J3}`), 'y se abre el domingo');
     pg.off('request', cuenta);
     ok(pedidas <= 1, 'un segundo toque mientras carga no pide el domingo otra vez', `${pedidas} peticiones`);
+
+    // Salida de emergencia: la navegación del cliente se queda colgada dentro del navegador (las peticiones RSC del
+    // domingo no vuelven nunca, como una pestaña con una versión vieja). A los ~6 s, carga entera de la página.
+    const retenidas = [];
+    const colgar = async (route) => { if (route.request().headers()['rsc']) { retenidas.push(route); return; } await route.continue(); };
+    await pg.route('**/mi-zona/domingo/**', colgar);
+    try {
+      const b2 = await boton(pg);
+      let carga = null;
+      const enteras = (r) => { if (r.isNavigationRequest() && r.frame() === pg.mainFrame() && r.url().includes(`/mi-zona/domingo/${J3}`)) carga ??= Date.now(); };
+      pg.on('request', enteras);
+      const t0 = Date.now();
+      await b2?.click();
+      ok(await hasta(async () => (await pg.getByTestId('abrir-domingo').filter({ hasText: 'Abriendo…' }).count()) > 0, 3000) && !pg.url().includes('/mi-zona/domingo/'),
+        'con la navegación colgada: «Abriendo…» y la ruta sin cambiar', pg.url());
+      ok(await visto(pg.getByTestId('situacion'), 20000) && pg.url().endsWith(`/mi-zona/domingo/${J3}`), 'a los pocos segundos, el domingo llega igual (carga entera)');
+      ok(carga !== null && carga - t0 >= 5000, 'por una carga entera de la página, y no antes de ~6 s', carga === null ? 'sin carga entera' : `${carga - t0} ms`);
+      pg.off('request', enteras);
+    } finally {
+      await pg.unroute('**/mi-zona/domingo/**', colgar);
+      for (const r of retenidas) await r.abort().catch(() => {});
+    }
   }
   // Un fallo al cargar no se queda en silencio (error.tsx): se le quita a la web, un momento, su función mi_zona().
   const erroresAntes = e.errores.length;

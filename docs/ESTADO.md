@@ -2,11 +2,11 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-## Una respuesta nunca se pierde en silencio (D199) — 24/11/2026, `fix/respuesta-nunca-perdida`, **PR sin mergear**
+## Una respuesta nunca se pierde en silencio (D199) — 24/11/2026, `fix/respuesta-nunca-perdida`; **PR #97 MERGEADO** (`3d43cd5`, Actions en verde en `fb63dea`) y desplegado
 
 **Qué cubre:** una pestaña abierta antes de un despliegue que guarda Voy / No voy / Duda, la respuesta del domingo, un plan o la preferencia. Hoy, sin Skew Protection, el servidor nuevo puede no conocer la acción vieja (409, «Server Action … was not found») y la respuesta no se guarda.
 
-**Skew Protection (por API):** el equipo sigue en Pro y la tiene **disponible pero inactiva** (todas las peticiones del 20 al 24/11, `inactive`). Cubre las acciones del servidor durante 12 h desde cada despliegue y no existe en Hobby. **Propuesta a Iván, sin activar** (D199). Lo de abajo funciona con ella o sin ella.
+**Skew Protection (por API):** el equipo sigue en Pro y la tiene **disponible pero inactiva** (todas las peticiones del 20 al 24/11, `inactive`). Cubre las acciones del servidor durante 12 h desde cada despliegue y no existe en Hobby. **Descartada por ahora (Iván, 24/11): no se activa** mientras no se decida conscientemente quedarse en Pro. La base es la protección propia de abajo.
 
 **Qué cambia:**
 - `next.config.ts` (`NEXT_PUBLIC_VERSION_WEB`) y `src/app/version.txt/route.ts`: la versión de cada compilación, estática, servida por la CDN sin función y sin pasar por el proxy.
@@ -31,10 +31,37 @@
 - **Los que nunca respondieron en la web:** de los 22 invitados a los dos partidos, 6 solo tienen las filas importadas de SportEasy («va»), sin respuesta propia en la web.
 - **Sin nombre:** no se ha identificado al jugador; no se ha dado su nombre. Si Iván lo dice, se mira su fila en solo lectura.
 
+**Conclusión (Iván, 24/11):** el fallo del 22/11 fue el del enlace del domingo (D198, PR #95), no una acción de una versión antigua: el «no» nunca salió del móvil.
+
+**El caso real** (solo lectura; el detalle, con nombre, en `privado/asistencia/diagnosticos/`): su respuesta al 22/11 es una de las 6 importadas de SportEasy, sin respuesta propia en la web. Con ella contó como disponible, y eso pesó en la convocatoria, en la asistencia (D197) y en MdFantasy. No se ha cambiado nada.
+
+**Filas importadas de SportEasy («va»/«no» sin fecha y sin respuesta propia): análisis, sin cambiar nada (decide Iván)**
+- **Cuántas hay** (real, 24/11):
+  - en partidos futuros: **113 «va» y 19 «no», en 29 partidos del 29/11 al 09/05/2027, de 11 personas**;
+  - ya jugados tras el fin de SportEasy (08/11–22/11): 24 «va» y 13 «no».
+- **Cuentan igual que un «voy» de la web casi en todas partes.** Las dos reglas del estado efectivo (`_estado_efectivo` en SQL, `respuestaEfectiva`/`efectivaEn` en TS) solo ven el texto de la respuesta, no `origen` ni `cambiado_en`. Dónde pesa:
+  - **Convocatoria (motor y propuesta automática):** `lib/convocatoria/datos.ts` lee la respuesta sin `origen`, así que el jugador sale disponible y entra en «van». Como `cambiado_en` es NULL, nunca sale «respondió después de la propuesta».
+  - **Registro de no convocados:** `noConvocados.ts` trata `origen = sporteasy` como «a tiempo» a propósito. Suma racha de «tiempo fuera» si no lo convocan.
+  - **«Quién va»** (`quien_va`, `v_quien_va`) y **«Respuestas al partido»:** sale como «Va».
+  - **Recordatorios y «Mensaje a los que faltan»** (`lib/avisos/planificador.ts`): no se le avisa, porque cuenta como respondido.
+  - **Panel del gestor y contadores** (`numeros/respuestas.ts`): cuenta en «van» y no en «sin responder». La pantalla de respuestas del gestor ya lo marca «importada», pero lo cuenta como «Va».
+  - **MdFantasy:**
+    - `fantasy/jornada.ts` convierte el origen en «jugador» y la falta de hora en el 01/01/1970, así que cuenta como «rápido», y nunca le cae el descuento por no contestar;
+    - a su mánager no le llega el aviso de «sin responder» (`fantasy_sin_responder`);
+    - el comentario del propio código dice que eso no debería ser «rápido».
+  - **Asistencia** (`asistenciaPlataforma`): con hoja o convocatoria manda D197; sin ellas, «voy» cuenta como «fue» (provisional).
+  - **Preferencia de partido** (`_domingo_doble`): con «va» a los dos puede marcar preferencia.
+- **Propuestas, para elegir:**
+  1. **Recomendada, rápida y antes del martes 25/11 a las 12:00** (propuesta automática del 29/11): **en los eventos futuros, pasar esas filas a «sin responder»**. Es un cambio de datos en el real, así que necesita tu OK (norma 20): volcado previo, guardar las filas en `privado/` para poder devolverlas, y luego borrarlas (o ponerlas `sin_responder`) solo donde `origen = 'sporteasy'`, `cambiado_en` es NULL y el evento es del 29/11 en adelante. Llega a todos los sitios a la vez sin tocar código. Los jugadores pasarían a recibir recordatorios y tendrían que responder en la web. Lo ya jugado no se toca (la asistencia de esos días depende de ellas).
+  2. **En el código, para lo que quede:** una regla común «respuesta válida» (`origen = sporteasy` y `cambiado_en` NULL en un evento posterior al 02/11, que cuente como «sin responder»), aplicada antes de las dos funciones del estado efectivo, en SQL y en TS. Además, en MdFantasy, sin hora no cuenta como «rápido», y en `noConvocados.ts` deja de ser «a tiempo» en esos eventos. Más trabajo y más pruebas, pero también cubre lo ya jugado.
+  3. Mostrarlas como «importada, sin confirmar» y pedir confirmación por push a esas 11 personas, sin cambiar el cálculo. Es la más suave y no evita que cuenten mientras no respondan.
+
 **Verificado en local:** `typecheck`, `pruebas:domingo` (con el bloque D199), `pruebas:no-voy-primer-toque`, `pruebas:respuestas-pantallas`, `pruebas:cache-publica` y `pruebas:humo`, en verde. `--lista` llegaba a 21 suites de pantallas: el resto, Actions (D167).
 
+**En producción:** desplegado (`dpl_4CgjQedLRujn8uoum2TvPc932k1X`, READY). Una sola comprobación por `curl` (D179): `/version.txt` da 200, `X-Vercel-Cache: PRERENDER` (estática, sin función) y justo ese id de despliegue.
+
 **Pendiente:**
-- Iván: decidir sobre Skew Protection.
+- Iván: decidir sobre las filas importadas de SportEasy (arriba; antes del martes 25/11 a las 12:00 si se quiere que no cuenten para el 29/11).
 - Los enlaces al evento y a los planes, sin salida propia (BACKLOG 25).
 - No probado en un iPhone real.
 
@@ -228,11 +255,11 @@
 - **E · primera propuesta automática (D173), comprobada en el real en solo lectura a las 12:20:** no se guardó ni salió el push: el borrador de la J5 (15/11, MdL) estaba hecho a mano y la propuesta automática no lo pisa. `/api/avisos/tarea` respondió 200 a las 12:00 y las 12:15 (`propuestas: []`), ningún 500. El silencio en ese caso se arregló después en `arreglo-propuesta-j5` (PR #80, entrada de arriba: aviso a Iván y borrador vacío propuesto encima); la comprobación real pasa a la J6 (17/11, BACKLOG 22b).
 
 ## Hoja «No voy»: el primer motivo parecía elegido y el toque en otro «no marcaba» (10/11/2026) — `arreglo-novoy-motivo`
-- **Lo que contó Enyel:** al abrir por primera vez la hoja de «No voy», si pulsaba un motivo distinto del «preseleccionado», no se marcaba a la primera.
+- **Lo que contó el jugador:** al abrir por primera vez la hoja de «No voy», si pulsaba un motivo distinto del «preseleccionado», no se marcaba a la primera.
 - **Causa:** en ningún caso hay motivo preseleccionado por datos (sin respuesta previa, la hoja abre vacía). Lo que parecía preseleccionado era el **foco**: `showModal()` lo pone en el primer control de la hoja, el radio «Lesión», y **Safari (iPhone) le pinta el recuadro amarillo de foco** (`input:focus-visible` de `globals.css`); Chrome no lo pinta. Con «Lesión» enmarcado y el motivo tocado en rojo, la hoja parecía tener dos marcados, o ninguno nuevo. Descartado con pruebas: estado que se reinicia al abrir (el `useEffect` solo pone el valor inicial si la hoja estaba cerrada), dos fuentes de verdad, radios sin `onChange`, grupos `name="motivo"` cruzados entre hojas (cada una en su `<form>`) y el `router.refresh()` de la hoja anterior llegando con la siguiente abierta (probado con la red retrasada 0,8 y 2,5 s). En Chromium y en WebKit emulado (iPhone 13, Pixel 7) **el primer toque marcaba siempre**; que en un iPhone de verdad el toque se pierda con un radio enfocado no se puede reproducir sin el teléfono: el arreglo quita el foco del radio igualmente.
 - **Arreglo:** `HojaNoVoy` lleva el foco al **título** al abrir (`tabIndex={-1}`, sin recuadro); Tab sigue entrando en los motivos, Esc cierra y devuelve el foco como antes. Lo usan `Responder` (Semana, Calendario, Evento) y `ElegirDomingo` (domingo); la ficha del gestor no usa esta hoja (desplegable, `CambiarAMano`/`ResponderPor`). Otras hojas con opciones (convocatoria: foco en «×»; tablero, ausencias y planes: páginas o sin foco inicial) no tienen el patrón.
 - **Prueba nueva:** `pruebas:no-voy-primer-toque` (`plataforma/pruebas/no_voy_primer_toque.mjs`), en WebKit iPhone con toques, Chromium 360 px con toques y 1280 px con clics, en `/evento/<id>` y `/mi-zona/domingo/<fecha>`: foco en el título al abrir, primer toque en otro motivo marcado (y solo ese), se guarda ese motivo en la pila y «Guardar» con el motivo preseleccionado sigue guardando el de antes. **Sin el arreglo falla** (9 fallos: el foco en «Lesión»); con él, 49 OK. `pruebas:rapidas` la elige al tocar `HojaNoVoy`, `Responder` o `ElegirDomingo` (marca `// vigila:` nueva en `infra/catalogo.mjs`); en Actions va en el grupo que instala WebKit.
-- **Caso real (solo lectura, norma 19):** Enyel respondió «no» el 10/11 a tres eventos seguidos (dos entrenos y un domingo, entre las 08:42 y las 08:45), los tres desde la web, puestos por él y con el mismo motivo (el motivo solo lo ven los gestores: no va aquí, el repositorio es público). No hay registro de cambios de las respuestas (`respuestas` guarda solo el último estado) y el motivo no sale del móvil hasta «Guardar», así que un toque perdido no deja rastro. El motivo guardado parece coherente; queda para que Iván lo confirme con él. Propuesta para la próxima vez, en BACKLOG.
+- **Caso real (solo lectura, norma 19):** un jugador respondió «no» el 10/11 a tres eventos seguidos (dos entrenos y un domingo, entre las 08:42 y las 08:45), los tres desde la web, puestos por él y con el mismo motivo (el motivo solo lo ven los gestores: no va aquí, el repositorio es público). No hay registro de cambios de las respuestas (`respuestas` guarda solo el último estado) y el motivo no sale del móvil hasta «Guardar», así que un toque perdido no deja rastro. El motivo guardado parece coherente; queda para que Iván lo confirme con él. Propuesta para la próxima vez, en BACKLOG.
 
 ## Rutina A: aviso si falta nuestra hoja y aplazados (09/11/2026, noche) — `mejora/rutina-a-avisos`
 - **Aviso si falta nuestra hoja.** Un lunes en que la pasada de las 9:45 o la de las 13:00 sale «Nada nuevo», si el calendario dice que MdA o MdL jugaron el sábado o el domingo y no hay su hoja en `data/season_2026-27.json`, la rutina avisa con la notificación de Windows de siempre (no hay otro canal): «Iván, no hay hoja de MdL de la J4: revisa la tarea "hojas del lunes" o bájala del S21». También lo apunta en `privado/registro_rutina_a.log`, en la línea de «NADA NUEVO». No avisa si nuestro equipo descansó o su partido está aplazado (otra fecha o estado «aplazado» en el calendario), ni otro día que no sea lunes.

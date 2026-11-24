@@ -21,6 +21,10 @@ const CSP = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // D199: la version de esta compilacion. La lleva dentro el JavaScript de cada pestaña y la publica /version.txt; si no
+  // coinciden, la pestaña es de un despliegue anterior y recarga antes de guardar nada. En Vercel, el despliegue; fuera,
+  // la hora de la compilacion (cada next build de las pruebas es una version distinta).
+  env: { NEXT_PUBLIC_VERSION_WEB: process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || `local-${Date.now()}` },
   // La app vive en plataforma/ dentro del repositorio del dashboard: esta es su raiz.
   outputFileTracingRoot: path.join(__dirname),
   turbopack: {

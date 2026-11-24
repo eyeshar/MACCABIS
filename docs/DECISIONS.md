@@ -2012,3 +2012,44 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 9. **Regiones (comprobado por API el 24/11):** las funciones de Vercel van en `dub1` (Dublín; todas las invocaciones de 7 días) y Supabase está en `eu-west-1` (Irlanda). Coinciden: no se cambia nada.
 
 **Pruebas:** `pruebas` (la lista de funciones que puede ejecutar `authenticated` incluye `quien_va`), `pruebas:asistencia-efectiva` (bloque D198: `quien_va` da las mismas filas que la vista con uno y dos eventos; solo evento, nombre y estado; nada a una cuenta sin ficha ni a un anónimo; la migración es aditiva y se revierte y se vuelve a aplicar). `pruebas:domingo` (bloque D198: el texto del botón con y sin respuesta, `touch-action`, el viewport sin bloquear el pellizco, algo visible nada más tocar, un segundo toque que no vuelve a pedir el domingo, la salida de emergencia (con las peticiones RSC del domingo colgadas, a los ~6 s llega por una carga entera), y un fallo provocado que enseña «No se ha podido cargar tu domingo» con «Reintentar» y se recupera).
+
+## D199 — Una respuesta nunca se pierde en silencio: versión de la pestaña, guardado confirmado y esqueleto colgado (Iván, 24/11/2026; Code, `fix/respuesta-nunca-perdida`) — SUBE el punto 25 del BACKLOG a trabajo inmediato
+
+**Contexto:** tras D198 quedaba un riesgo. Una pestaña abierta antes de un despliegue sigue con el JavaScript viejo. Sus acciones del servidor (Voy / No voy / Duda, el domingo, los planes) llegan al despliegue nuevo, que puede no conocerlas. En Next 16.4.5 el servidor responde 409 «Server Action unavailable» con `x-nextjs-action-not-found` y el cliente lanza `UnrecognizedActionError`; la respuesta no se guarda. Iván: «una respuesta nunca puede perderse en silencio».
+
+**Skew Protection de Vercel (comprobado por API, 24/11):**
+- **Disponible pero inactiva:** el equipo «Web TCPC» sigue en **Pro**. La facturación tiene cargos el 23–24/11, y en Hobby no se cobra. Las 11.235 peticiones del proyecto del 20 al 24/11 constan como `skew_protection: inactive`.
+- **Planes:** según la documentación de Vercel, solo Pro y Enterprise; Hobby no la tiene.
+- **Qué cubre:** recursos estáticos, navegaciones del cliente, prefetch y acciones del servidor llamadas por Next. Las cargas enteras no.
+- **Cuánto dura:** 12 h en Pro, contadas desde la creación del despliegue. Una pestaña de más de 12 h vuelve a quedar sin protección.
+- **Cómo se activa:** en Next ≥ 14.1.4 basta con encenderla en Settings › Advanced y volver a desplegar.
+- **Coste:** las páginas que leí no dan precio aparte.
+- **Propuesta a Iván, sin activar:** encenderla mientras el equipo siga en Pro. Es configuración del equipo compartido con TCPC, que decide Iván. No sustituye a lo de abajo: deja de existir al pasar a Hobby (D188) y no llega a pestañas de más de 12 h.
+
+**Decisiones:**
+1. **Versión de cada compilación:** `NEXT_PUBLIC_VERSION_WEB` (`next.config.ts`) es `VERCEL_DEPLOYMENT_ID`, o el commit, o la hora de la compilación. Va dentro del JavaScript de la pestaña, y `/version.txt` la publica. Esta es una ruta **estática**: la sirve la CDN sin función, y el proxy no la toca porque el matcher ya excluye los `.txt`. Coste de CPU: ninguno.
+2. **Antes de guardar** (`guardarSeguro`, `src/lib/version/cliente.ts`): si `/version.txt` dice otra versión, la página se recarga entera **sin llamar a la acción**. Si no se puede saber (sin red, más de 3 s), se intenta guardar.
+3. **Si el guardado lanza** (acción no encontrada o cualquier otro error): recarga entera. La página nueva lo dice arriba (`AvisoRecarga`, en el layout raíz) hasta que se cierra:
+   - por versión: **«La web se ha actualizado: vuelve a pulsar tu respuesta.»**;
+   - por otro fallo: «No se ha podido guardar tu respuesta: vuelve a pulsarla.».
+   **Excepción:** sin red (`navigator.onLine === false`) no se recarga; recargar daría la página de error del navegador. Dice «Sin conexión: tu respuesta NO se ha guardado».
+   **Sin bucles:** como mucho una recarga cada 30 s; si no, el error se ve en el sitio.
+4. **El botón se marca solo con la confirmación del servidor** (`useGuardado`): solo con `ok`. Mientras tanto dice «Guardando…», y a los 10 s sin respuesta: «Aún no se ha confirmado: tu respuesta todavía NO está guardada…». Un `ok: false` del servidor se ve como hasta ahora. Una respuesta que no es del servidor (sin `ok`) no cuenta como guardada.
+5. **Al volver a la pestaña** (`visibilitychange`, como mucho una vez por minuto): si la web ya es otra versión, recarga sin aviso, antes de que se pulse nada.
+6. **Esqueleto colgado** (lo que D198 dejó fuera: la ruta ya ha cambiado pero la página no llega): `VigiaEsqueleto`, dentro de `Esqueleto`, hace una carga entera a los ~10 s. Si esa página ya se recargó en los últimos 2 min, no recarga sola y muestra «Está tardando más de lo normal» con un botón «Recargar».
+7. **Dónde:**
+   - `Responder` (tarjetas y evento), `ElegirDomingo` (el domingo), `SiVoy`, `ResponderPlan` y `PreferenciaDomingo` (guardar y quitar).
+   - **Fuera:** las pantallas de gestor y las ausencias. Usan otras acciones y nadie responde por ellas en una pestaña del domingo; si hace falta, el mismo `guardarSeguro`.
+   - **Los enlaces normales al evento y a los planes siguen sin salida propia** (BACKLOG 25). `/evento` no tiene `loading.tsx` (D198), así que una navegación colgada se queda en la página de antes. La comprobación de versión al volver a la pestaña cubre el caso más probable.
+
+**Investigación del 22/11 (solo lectura, sin tocar datos):**
+- **Vercel, del 13 al 24/11:** ni un 409 ni un «Failed to find Server Action» (Next lo registra con `console.warn`; en registros, `warning`). Ninguna respuesta ≥ 400 a un POST de acción. Solo 503 de `/api/avisos/salud`, los 404 de bots e iconos y dos 404 de `/evento` el 24/11.
+- **Tabla `respuestas`:** guarda solo el último estado, sin historial (BACKLOG 23), así que un intento fallido no deja rastro ahí. En el 22/11, todos los invitados tienen fila.
+- **Los que nunca respondieron en la web:** de los 22 invitados a los dos partidos, 8 no tienen respuesta del domingo. De esos, 6 solo tienen las filas importadas de SportEasy («va», sin fecha). Si el jugador está entre ellos, su «no» no llegó al servidor, y no consta ninguna petición fallida.
+- **Sin nombres:** no se ha mirado el caso con nombre (no se ha dado). Si Iván dice quién es, se mira su fila, solo en lectura.
+
+**Pruebas:** `pruebas:domingo`, bloque D199, con Guille en «¿Puedes jugar?»:
+1. Acción no encontrada (409 simulado): recarga con «La web se ha actualizado…», y nada guardado ni marcado en la base ni en el botón. Al volver a pulsar, guardada y marcada.
+2. `/version.txt` con otra versión: recarga sin llamar a la acción.
+3. El servidor no contesta: «Guardando…» y, a los ~10 s, «todavía NO está guardada», sin marcar. Al cortarse, recarga con «No se ha podido guardar…».
+4. Prefetch del esqueleto que llega y página que no: se ve el esqueleto con la ruta nueva, y a los ~10 s el domingo llega por una carga entera.

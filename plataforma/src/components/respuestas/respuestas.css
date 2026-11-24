@@ -183,3 +183,7 @@ button.boton.rw-btn-no { background: var(--rw-no); color: #2a0b07; border-color:
 .rw-equipaciones small { display: inline-block; min-width: 72px; }
 .rw-quien-va { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--borde); font-size: 15px; }
 .rw-quien-va p { margin: 4px 0 0; overflow-wrap: anywhere; }
+
+/* D199: el guardado en marcha y, si tarda, que todavía no está guardado. */
+.rw-guardando { margin: 0; font-size: 14px; color: var(--suave, #b9b4c4); }
+.rw-guardando.lento { color: var(--texto, #fff); font-weight: 700; border-left: 3px solid var(--amarillo, #f5c542); padding-left: 8px; }

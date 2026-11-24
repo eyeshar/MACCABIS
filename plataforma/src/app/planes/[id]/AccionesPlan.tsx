@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import ConfirmarEnPagina from "@/components/ConfirmarEnPagina";
+import { EstadoGuardado, useGuardado } from "@/components/respuestas/useGuardado";
 import { borrarPlan, cancelarPlan, hacerOficial, responderPlan } from "../acciones";
 
 type R = "va" | "duda" | "no";
@@ -12,14 +13,9 @@ type R = "va" | "duda" | "no";
 export function ResponderPlan({ id, actual, completo, nombre, sinDuda }: { id: string; actual: R | null; completo: boolean; nombre: string; sinDuda?: boolean }) {
   const router = useRouter();
   const [marcada, setMarcada] = useState<R | null>(actual);
-  const [error, setError] = useState<string | null>(null);
-  const [pendiente, empezar] = useTransition();
-  const guardar = (r: R) => empezar(async () => {
-    setError(null);
-    const res = await responderPlan(id, r);
-    if (!res.ok) { setError(res.error); return; }
-    setMarcada(r); router.refresh();
-  });
+  // D199: se marca solo con el servidor confirmando; un fallo recarga o se ve (useGuardado).
+  const { pendiente, lento, error, guardar: guardarConfirmado } = useGuardado();
+  const guardar = (r: R) => guardarConfirmado(() => responderPlan(id, r), () => { setMarcada(r); router.refresh(); });
   const lleno = completo && marcada !== "va";
   return (
     <div className="rw-responder grande">
@@ -30,7 +26,8 @@ export function ResponderPlan({ id, actual, completo, nombre, sinDuda }: { id: s
         <button type="button" className={`rw-btn rw-btn-no${marcada === "no" ? " marcada" : ""}`} aria-pressed={marcada === "no"} disabled={pendiente} onClick={() => guardar("no")}>No voy</button>
         {!sinDuda && <button type="button" className={`rw-btn rw-btn-duda${marcada === "duda" ? " marcada" : ""}`} aria-pressed={marcada === "duda"} disabled={pendiente} onClick={() => guardar("duda")}>Duda</button>}
       </div>
-      {error && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{error}</p>}
+      <EstadoGuardado pendiente={pendiente} lento={lento} />
+      {error && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }} data-testid="error-guardado">{error}</p>}
     </div>
   );
 }

@@ -2,10 +2,11 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { responder, responderDomingo } from "@/app/mi-zona/respuestas-acciones";
 import type { MotivoJugador } from "@/lib/respuestas/dominio";
 import HojaNoVoy from "./HojaNoVoy";
+import { EstadoGuardado, useGuardado } from "./useGuardado";
 
 type Actual = "va" | "duda" | "no" | null;
 const BOTONES: { r: "va" | "duda" | "no"; texto: string; clase: string }[] = [
@@ -22,23 +23,21 @@ export default function Responder({ eventoId, fecha, domingo, actual, nombre, gr
 }) {
   const router = useRouter();
   const [hoja, setHoja] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [marcada, setMarcada] = useState<Actual>(actual);
-  const [pendiente, empezar] = useTransition();
+  // D199: se marca solo con el servidor confirmando; un fallo recarga o se ve (useGuardado).
+  const { pendiente, lento, error, setError, guardar: guardarConfirmado } = useGuardado();
   const refNo = useRef<HTMLButtonElement>(null);
 
   if (urlDomingo) {
     return <AbrirDomingo href={urlDomingo} grande={grande} texto={respondido ? "Ver mi domingo / Cambiar respuesta" : "Responder al domingo"} />;
   }
 
-  const guardar = (r: "va" | "duda" | "no", m?: MotivoJugador, d?: string) => empezar(async () => {
-    setError(null);
-    const res = domingo && fecha
-      ? await responderDomingo(fecha, r === "va" ? "voy" : r, null, m ?? null, d ?? null)
-      : await responder(eventoId!, r, m ?? null, d ?? null);
-    if (!res.ok) { setError(res.error); return; }
-    setMarcada(r); setHoja(false); router.refresh();
-  });
+  const guardar = (r: "va" | "duda" | "no", m?: MotivoJugador, d?: string) => guardarConfirmado(
+    () => (domingo && fecha
+      ? responderDomingo(fecha, r === "va" ? "voy" : r, null, m ?? null, d ?? null)
+      : responder(eventoId!, r, m ?? null, d ?? null)),
+    () => { setMarcada(r); setHoja(false); router.refresh(); },
+  );
 
   return (
     <div className={`rw-responder${grande ? " grande" : ""}`}>
@@ -50,7 +49,8 @@ export default function Responder({ eventoId, fecha, domingo, actual, nombre, gr
           </button>
         ))}
       </div>
-      {error && !hoja && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{error}</p>}
+      {!hoja && <EstadoGuardado pendiente={pendiente} lento={lento} />}
+      {error && !hoja && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }} data-testid="error-guardado">{error}</p>}
       <HojaNoVoy abierta={hoja} titulo={nombre} motivoInicial={marcada === "no" ? motivo : null} detalleInicial={marcada === "no" ? detalle : null} volverA={refNo}
         guardando={pendiente} error={hoja ? error : null} onCerrar={() => setHoja(false)} onGuardar={(m, d) => guardar("no", m, d)} />
     </div>

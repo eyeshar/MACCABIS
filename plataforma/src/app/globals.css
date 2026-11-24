@@ -246,6 +246,11 @@ details > summary { cursor: pointer; min-height: var(--toque); display: flex; al
 @keyframes esq-brillo { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .esq-linea, .esq-bloque { animation: none; } }
 .fallo h1 { margin-top: 0; font-size: 26px; }
+/* D199: tras recargar por una pestaña vieja o un guardado fallido; y el esqueleto que se queda colgado. */
+.aviso-recarga { position: sticky; top: env(safe-area-inset-top); z-index: 55; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0; padding: 12px 16px; background: var(--amarillo, #f5c542); color: #14121a; font-weight: 700; }
+.aviso-recarga p { margin: 0; flex: 1 1 220px; }
+.esq-tarda { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.esq-tarda p { margin: 0; }
 
 /* ===== Liga 26/27 en gestion (scouting y liga consolidada, D73) ===== */
 .lg-etq { margin: 0; font-size: 0.85rem; color: var(--tinta-suave); }

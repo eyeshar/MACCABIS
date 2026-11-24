@@ -155,6 +155,39 @@ try {
   await sql`update public.respuestas_web_config set encendido = false where id = 1`;
   r = await rpc('responder', { p_evento: ent.id, p_respuesta: 'va' }, tA);
   ok(r.status === 200, 'y se responde aunque la fila vieja diga «apagado»', JSON.stringify(r.datos));
+
+  console.log('\n== D200: nadie crea respuestas en nombre de un jugador (origen sporteasy, rechazado)');
+  const MIG200 = '20261125100000_sin_respuestas_importadas';
+  const texto200 = fs.readFileSync(path.join(MIGS, `${MIG200}.sql`), 'utf8').replace(/\$\$[\s\S]*?\$\$/g, '').replace(/--.*$/gm, '');
+  ok(fs.existsSync(path.join(MIGS, `${MIG200}.revertir.sql`)) && !/\bdelete\s+from\b|\btruncate\b|\bupdate\s+public\.|\binsert\s+into\b|\bdrop\b|\balter\s+table\b/i.test(texto200), 'migración solo aditiva (una función y un disparador), con su .revertir.sql');
+  const [ent2] = await sql`select id from public.eventos where tipo = 'entreno' and estado = 'programado' and fecha > current_date + 2 and id <> ${ent.id} order by fecha limit 1`;
+  await sql`insert into public.respuestas (evento_id, person_id, respuesta, origen) values (${ent2.id}, 'sint-beto', 'va', 'sporteasy') on conflict (evento_id, person_id) do update set origen = 'sporteasy', respuesta = 'va'`;
+  // En la pila el disparador está apagado (infra/importadas.mjs: los datos de prueba «importados»); aquí se enciende.
+  await sql`alter table public.respuestas enable trigger respuestas_sin_importadas`;
+  try {
+    const rechaza = async (q) => { try { await sql.begin((tx) => q(tx)); return null; } catch (err) { return err.message; } };
+    const m1 = await rechaza((tx) => tx`insert into public.respuestas (evento_id, person_id, respuesta, origen) values (${ent.id}, 'sint-beto', 'va', 'sporteasy') on conflict (evento_id, person_id) do update set origen = 'sporteasy'`);
+    ok(/respuesta_importada_no_permitida/.test(m1 ?? ''), 'una fila nueva con origen sporteasy: rechazada (también como superusuario: vale para cualquier script)', m1);
+    const m2 = await rechaza((tx) => tx`update public.respuestas set origen = 'sporteasy' where evento_id = ${ent.id} and person_id = 'sint-ana'`);
+    ok(/respuesta_importada_no_permitida/.test(m2 ?? ''), 'pasar una respuesta existente a sporteasy: rechazado', m2);
+    const m3 = await rechaza((tx) => tx`update public.respuestas set motivo = null where evento_id = ${ent2.id} and person_id = 'sint-beto'`);
+    ok(m3 === null, 'las importadas que ya hay (histórico) se pueden seguir tocando', m3);
+    r = await rpc('responder', { p_evento: ent2.id, p_respuesta: 'no', p_motivo: 'trabajo' }, tB);
+    const [ya] = await sql`select respuesta, origen from public.respuestas where evento_id = ${ent2.id} and person_id = 'sint-beto'`;
+    ok(r.status === 200 && ya?.origen === 'jugador' && ya.respuesta === 'no', 'y al responder en la web la importada pasa a ser suya (origen jugador)', JSON.stringify([r.datos, ya]));
+    const m4 = await rechaza((tx) => tx`delete from public.respuestas where evento_id = ${ent2.id} and person_id = 'sint-beto'`);
+    ok(m4 === null, 'borrar una respuesta sigue siendo posible');
+    console.log('\n== D200: reversión y vuelta a aplicar');
+    await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${MIG200}.revertir.sql`), 'utf8')));
+    const sinT = (await sql`select 1 from pg_trigger where tgname = 'respuestas_sin_importadas'`).length === 0;
+    const sinReg = (await sql`select 1 from supabase_migrations.schema_migrations where version = ${MIG200.slice(0, 14)}`).length === 0;
+    ok(sinT && sinReg && (await rechaza((tx) => tx`insert into public.respuestas (evento_id, person_id, respuesta, origen) values (${ent.id}, 'sint-beto', 'va', 'sporteasy') on conflict (evento_id, person_id) do update set origen = 'sporteasy'`)) === null, 'revertida: sin disparador ni registro (y otra vez se podría importar)');
+    await migrar(sql, { log: () => {} });
+    const [t] = await sql`select tgenabled from pg_trigger where tgname = 'respuestas_sin_importadas'`;
+    ok(!!t && (await sql`select 1 from supabase_migrations.schema_migrations where version = ${MIG200.slice(0, 14)}`).length === 1, 'vuelta a aplicar: el disparador vuelve (en la pila, apagado otra vez para los datos de prueba)', t?.tgenabled);
+  } finally {
+    await sql`alter table public.respuestas disable trigger respuestas_sin_importadas`.catch(() => {});
+  }
 } catch (err) {
   console.log(`  FALLO excepción -> ${err.stack ?? err}`);
   sumar();

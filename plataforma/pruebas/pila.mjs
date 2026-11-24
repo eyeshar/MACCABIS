@@ -24,6 +24,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { migrar, semilla } from '../scripts/db.mjs';
 import { comprobarDestino } from '../scripts/lib/destino.mjs';
 import { fijarRelojBase } from './infra/reloj.mjs';
+import { permitirImportadasEnPruebas } from './infra/importadas.mjs';
 import { PUERTOS as P, exigirLibres } from './infra/puertos.mjs';
 import { lanzar, apuntarProceso, apuntarCarpeta, olvidarCarpeta, apuntarPostgres, olvidarPostgres, matarArbol, conVentanasOcultas } from './infra/procesos.mjs';
 import { pararPostgres, barrerPostgres } from './infra/matar.mjs';
@@ -109,6 +110,7 @@ export async function arrancar({ log = () => {} } = {}) {
   await sql.unsafe(fs.readFileSync(path.join(AQUI, 'supabase_local.sql'), 'utf8'));
   await migrar(sql, { log });
   await fijarRelojBase(sql);   // D185: «hoy» fijo también en la base (now() -> pruebas.ahora())
+  await permitirImportadasEnPruebas(sql);   // D200: los datos de prueba «importados de SportEasy» se pueden crear
   await semilla(sql, { log });
   // Tabla SOLO de pruebas (no va en ninguna migracion): guarda los codigos de
   // un solo uso que "manda" el doble de /otp, para que el test los lea.

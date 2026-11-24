@@ -42,8 +42,22 @@ function asistenciaDe(estados: string[]): Unidad["asistencia"] {
   return null;
 }
 
+/** D200: desde esta jornada, una respuesta sin hora (las importadas de SportEasy, que nadie dio en la web) cuenta como
+ *  «sin responder»: ni «rápido» ni «antes del plazo», y no evita el descuento por no responder. Las jornadas anteriores
+ *  se puntúan como siempre (si se vuelven a puntuar, no cambian). */
+export const DESDE_SIN_HORA = "2026-11-29";
+const sinHora = (e: DatosJornada["estados"][number]) =>
+  !e.por && e.estado !== "sin_responder" && (e.origen === "sporteasy" || (e.origen === "jugador" && !e.primera_en && !e.cambiado_en));
+
+/** Los estados de la jornada con la regla de D200 aplicada (solo desde DESDE_SIN_HORA). */
+export function estadosDe(d: Pick<DatosJornada, "fecha" | "estados">): DatosJornada["estados"] {
+  if (d.fecha < DESDE_SIN_HORA) return d.estados;
+  return d.estados.map((e) => (sinHora(e) ? { ...e, estado: "sin_responder", origen: null, cambiado_en: null, primera_en: null } : e));
+}
+
 /** Las unidades de compromiso de una persona: cada entreno oficial de la semana y el domingo (una sola respuesta). */
-export function unidadesDe(personId: string, d: DatosJornada, enHoja: boolean): Unidad[] {
+export function unidadesDe(personId: string, d0: DatosJornada, enHoja: boolean): Unidad[] {
+  const d = { ...d0, estados: estadosDe(d0) };
   const mias = d.estados.filter((e) => e.person_id === personId);
   const grupos: { clase: Unidad["clase"]; evs: DatosJornada["eventos"] }[] = [];
   for (const ev of d.eventos.filter((e) => e.tipo === "entreno")) grupos.push({ clase: "entreno", evs: [ev] });
@@ -69,7 +83,8 @@ export function unidadesDe(personId: string, d: DatosJornada, enHoja: boolean): 
       texto: g.clase === "entreno" ? `Entreno ${dia(primero.fecha)}` : `Domingo ${dia(d.fecha)}`,
       plazo: limiteDudas({ tipo: primero.tipo, fecha: primero.fecha, inicio: primero.inicio, oficial: primero.oficial ?? true }),
       estado, origen,
-      // sin hora (respuesta importada): cuenta como respondida a tiempo, nunca como rapida
+      // sin hora (respuesta importada), solo en jornadas anteriores al 29/11 (D200): la hora 0 la hace contar como respondida
+      // a tiempo («antes del plazo», ver puntuarJornada). Desde el 29/11, estadosDe() ya la ha pasado a «sin responder».
       respondidoEn: origen === "jugador" ? new Date(tiempos.length ? Math.min(...tiempos) : 0) : null,
       avisoEn: avisos.length ? new Date(Math.min(...avisos)) : null,
       asistencia: asistenciaDe(d.asistencia.filter((a) => a.person_id === personId && ids.includes(a.evento_id)).map((a) => a.estado)),

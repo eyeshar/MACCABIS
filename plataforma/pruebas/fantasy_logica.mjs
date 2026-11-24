@@ -7,7 +7,7 @@
 import { PARAMETROS as P, parametros, CLAVES, AJUSTES, millones, redondeo } from '../src/lib/fantasy/reglas.ts';
 import { rendimientoPartido, rendimiento, horasActivas, compromisoUnidad, puntosJugador, casarNombres, masMenosRelativo, contestoATiempo } from '../src/lib/fantasy/puntos.ts';
 import { puntosManager, arrastrar, valor, copiasPorJugador, ingreso, precioClausula, duelos } from '../src/lib/fantasy/manager.ts';
-import { puntuarJornada } from '../src/lib/fantasy/jornada.ts';
+import { puntuarJornada, unidadesDe } from '../src/lib/fantasy/jornada.ts';
 import { cerrarJornada } from '../src/lib/fantasy/cierre.ts';
 import { rankingManagers, rankingDuelos, rankingJugadores, quintetoIdeal, rivalDe, premiosDelMes, resumenWhatsapp, insignias, marcaConvocado, marcaRespuesta, CLASE_RESPUESTA, mediaValor, textoMediaValor, textoHojasPendientes, equiposDePorra } from '../src/lib/fantasy/vista.ts';
 import { madrid, lunesDe, limiteDudas } from '../src/lib/avisos/horario.ts';
@@ -297,6 +297,29 @@ const wa = resumenWhatsapp('2026-11-08', managers, jug, pm, pjs, dl);
 ok(wa.includes('*MdFantasy · jornada del 8/11*') && wa.includes('🥇 Ene · 60 pts') && wa.includes('Eme 50 - 60 Ene') && wa.includes('Ana (23)'), 'resumen para WhatsApp: jornada, quinteto, duelos y general', wa);
 ok(!/motivo|nivel|plant[oó]n/i.test(wa), 'el resumen no lleva nada privado');
 eq(insignias('a', pjs).map((i) => i.clave), ['mvp', 'doblete', '20', 'compromiso'], 'insignias de la carta');
+
+console.log('\n== D200: una respuesta sin hora (importada de SportEasy) no cuenta como respondida');
+{
+  // Ana responde en la web; Beto solo tiene la fila importada («va», sin hora). Mismo domingo, antes y desde el 29/11.
+  const jornadaDe = (fecha) => ({
+    fecha, huella: 'h', ronda: 0, parametros: {}, partidos: [], lineas: [], avisos: [], asistencia: [], convocados: [], managers: [],
+    jugadores: [{ person_id: 'a', nombre_oficial: 'Uno, Ana', nombre_visible: 'Ana' }, { person_id: 'b', nombre_oficial: 'Dos, Beto', nombre_visible: 'Beto' }],
+    eventos: [{ id: 'p1', tipo: 'liga', equipo: 'MdA', fecha, inicio: '10:15:00', oficial: true }],
+    estados: [
+      { evento_id: 'p1', person_id: 'a', estado: 'va', por: null, origen: 'jugador', cambiado_en: `${fecha.slice(0, 8)}${String(Number(fecha.slice(8)) - 6).padStart(2, '0')}T09:00:00Z`, primera_en: null },
+      { evento_id: 'p1', person_id: 'b', estado: 'va', por: null, origen: 'sporteasy', cambiado_en: null, primera_en: null },
+    ],
+  });
+  const dom = (r, id) => r.puntos.get(id).unidades.find((u) => u.clase === 'domingo');
+  const antes = puntuarJornada(jornadaDe('2026-11-22'), P), desde = puntuarJornada(jornadaDe('2026-11-29'), P);
+  eq([dom(antes, 'b').respuesta, dom(antes, 'b').como], [P.respuestaATiempo, 'respondió antes del plazo'], 'jornadas anteriores al 29/11: como siempre (+1 «antes del plazo»): el pasado no cambia si se vuelve a puntuar');
+  eq([dom(desde, 'b').respuesta, dom(desde, 'b').como], [P.sinRespuesta, 'no respondió'], 'desde el 29/11: la importada es «no respondió» (descuento), ni «rápido» ni «antes del plazo»');
+  ok(dom(desde, 'a').respuesta > 0, 'quien respondió en la web, igual que antes', JSON.stringify(dom(desde, 'a')));
+  ok(!contestoATiempo(unidadesDe('b', jornadaDe('2026-11-29'), false)) && contestoATiempo(unidadesDe('b', jornadaDe('2026-11-22'), false)), 'y no cuenta como contestada a tiempo desde el 29/11 (no evita la mitad del rendimiento si se enciende); antes, sí');
+  const sinHoraJugador = { ...jornadaDe('2026-11-29') };
+  sinHoraJugador.estados = [sinHoraJugador.estados[0], { evento_id: 'p1', person_id: 'b', estado: 'va', por: null, origen: 'jugador', cambiado_en: null, primera_en: null }];
+  eq(dom(puntuarJornada(sinHoraJugador, P), 'b').como, 'no respondió', 'una respuesta «del jugador» sin ninguna hora, tampoco');
+}
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

@@ -2,6 +2,28 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Filas importadas de SportEasy y caso del 22/11 (D200, D199) — 25/11/2026, `fix/importadas-sporteasy`
+
+**Hecho en el real (OK de Iván, 24/11; volcado `privado/backups/2026-11-25_pre-importadas.sql`):**
+- **Importadas desde el 06/12 → «sin responder»:** 117 filas quitadas (100 «va» de 10 personas, 17 «no» de 3; 27 partidos del 13/12 al 09/05/2027). Guardadas tal cual en `privado/respuestas/…_quitadas_2026-11-25.json` para poder devolverlas.
+  - Desde el 06/12: de 224 filas a 107; importadas, de 117 a 0.
+  - Intactas: las 15 del 29/11 y las 100 de lo jugado. 28 cuentas antes y después.
+  - Comprobado con `planificador.ts` sobre el real en solo lectura: los 117 salen «sin responder» y con recordatorio pendiente.
+- **29/11, sin tocar:** convocatoria aprobada (24/11 11:29, 9+9, WhatsApp y aviso enviados). La propuesta automática no la sustituye ni reenvía nada: con una aprobada no propone, y la base lo impide. **7 convocados tienen como único «va» una fila importada** (lista con nombres fuera de git, en `privado/asistencia/diagnosticos/`): Iván les escribe.
+- **Caso del 22/11, corregido** con `gestor_responder` y una nueva puntuación de la jornada (D199):
+  - las dos faltas pasan a «con excusa»;
+  - MdFantasy, −1 (compromiso y total 3 → 2), sin mover el valor de mercado;
+  - simulado antes, en solo lectura: solo cambiaba esa persona.
+
+**Código (PR de `fix/importadas-sporteasy`):**
+- La migración `20261125100000_sin_respuestas_importadas` (disparador que rechaza respuestas nuevas con origen sporteasy).
+- MdFantasy: sin hora = sin responder desde el 29/11 (`jornada.ts`).
+- La pila de pruebas apaga el disparador para los datos de prueba (`pruebas/infra/importadas.mjs`).
+- Pruebas en `pruebas:fin-sporteasy` y `pruebas:fantasy-logica`.
+- **Verificado en local:** `typecheck`, `pruebas:fin-sporteasy`, `pruebas:fantasy-logica` y las `-real` (4 en verde; `eventos-real` e `inicio-real` con su fallo conocido del recuento fijo, BACKLOG 24).
+
+**Pendiente:** el aviso a los mánagers de «sin responder» del 29/11 sigue contando las 15 importadas como respondidas (D200).
+
 ## Una respuesta nunca se pierde en silencio (D199) — 24/11/2026, `fix/respuesta-nunca-perdida`; **PR #97 MERGEADO** (`3d43cd5`, Actions en verde en `fb63dea`) y desplegado
 
 **Qué cubre:** una pestaña abierta antes de un despliegue que guarda Voy / No voy / Duda, la respuesta del domingo, un plan o la preferencia. Hoy, sin Skew Protection, el servidor nuevo puede no conocer la acción vieja (409, «Server Action … was not found») y la respuesta no se guarda.

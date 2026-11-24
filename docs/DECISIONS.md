@@ -2055,3 +2055,42 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 2. `/version.txt` con otra versión: recarga sin llamar a la acción.
 3. El servidor no contesta: «Guardando…» y, a los ~10 s, «todavía NO está guardada», sin marcar. Al cortarse, recarga con «No se ha podido guardar…».
 4. Prefetch del esqueleto que llega y página que no: se ve el esqueleto con la ruta nueva, y a los ~10 s el domingo llega por una carga entera.
+
+**Corrección del caso del 22/11 (Iván, 25/11/2026; con los mecanismos que ya había, sin tocar el cálculo):**
+- **Asistencia:** las dos faltas «sin excusa» (MdA y MdL) pasan a **justificadas**. Un gestor pone su respuesta con `gestor_responder` (la misma que usa el tablero): «No voy», motivo `viaje`, detalle «Vacaciones». «Vacaciones» no existe como motivo; el más cercano es `viaje`. Queda en `tablero_registro`, así que se puede deshacer. Con D197 (convocado, fuera de la hoja y con un «no» con motivo) sale «con excusa» en los dos partidos.
+- **MdFantasy:** sale el +1 «respondió antes del plazo» de ese domingo. Lo da la nueva puntuación de la jornada del 22/11: se marcó como pendiente igual que lo hace la corrección de asistencia (`huella = null`, `valor_quieto = true`, para que no se mueva el valor de mercado), y la tarea la puntuó a las 00:00 del 25/11 con el código desplegado. Ahora el domingo dice «respondió un gestor por él» (0). Compromiso y total, 3 → 2, y el valor de mercado no cambia.
+- **Comprobado antes, en solo lectura:** se simuló la nueva puntuación con los datos del real. Tal cual daba lo guardado exactamente (0 diferencias). Con el «no» del gestor cambiaba solo esa persona (−1) y ningún mánager.
+- **Nada más de su historial cambia** (el entreno del 18/11 sigue +2). Detalle con nombre, fuera de git: `privado/asistencia/diagnosticos/`.
+
+## D200 — Filas importadas de SportEasy: fuera de los eventos futuros, el importador no puede volver y MdFantasy no las cuenta (Iván, 24–25/11/2026; Code, `fix/importadas-sporteasy`)
+
+**Contexto:** el 26/10, antes del fin de SportEasy (D172), se importaron respuestas («va»/«no») a partidos de toda la temporada, sin fecha y sin que el jugador respondiera en la web. Cuentan igual que un «voy» dado en la web: disponibles para la convocatoria, «Va» en «Quién va», fuera de los recordatorios, «van» en el panel, «a tiempo» en el registro de no convocados, «antes del plazo» en MdFantasy. Las dos reglas del estado efectivo (`_estado_efectivo`, `respuestaEfectiva`) solo ven el texto de la respuesta. Análisis completo en `ESTADO.md` (D199). Lo destapó el caso del 22/11 (D198, D199).
+
+**Decisiones:**
+1. **Eventos desde el 06/12/2026: las importadas pasan a «sin responder»** (Iván).
+   - Se quitaron las 117 filas con `origen = 'sporteasy'` y sin fecha (`cambiado_en` NULL): 100 «va» de 10 personas y 17 «no» sin motivo de 3, en 27 partidos del 13/12 al 09/05/2027. Sin fila, la respuesta es «sin responder», igual que quien nunca contestó.
+   - **Antes:**
+     - volcado completo (`privado/backups/2026-11-25_pre-importadas.sql`, 88 `COPY`, ignorado por git);
+     - las 117 filas, tal cual, en `privado/respuestas/importadas_sporteasy_desde_2026-12-06_quitadas_2026-11-25.json`, para poder devolverlas;
+     - borradas en una transacción que comprobaba el número.
+   - **Recuentos:** desde el 06/12 había 224 filas y quedan 107; importadas desde el 06/12, de 117 a 0. Las 15 del 29/11 y las 100 de partidos ya jugados, intactas. 28 cuentas antes y después.
+   - **Comprobado con la lógica de los recordatorios** (`planificador.ts`, datos del real en solo lectura): los 117 siguen invitados, su respuesta efectiva es «sin responder» (lo que cuenta el panel) y los 117 tienen recordatorio pendiente.
+2. **El 29/11 no se toca.** Su convocatoria ya estaba aprobada y compartida. Con una aprobada, la tarea de la propuesta automática no propone (`tareaConvocatoria` pasa a `trasAprobar`, que solo avisa a los gestores de bajas y de «voy» tardíos) y la base lo vuelve a impedir: `convocatoria_propuesta_auto` devuelve 'aprobada' antes de tocar nada. Iván escribe a los convocados cuyo único «va» es importado (lista fuera de git).
+3. **Lo ya jugado no se recalcula:** su asistencia (D197) y su MdFantasy ya se calcularon con esas filas. Cambiarlas movería faltas, valores y puntos de jornadas cerradas. La única excepción es el caso del 22/11, corregido con los mecanismos de siempre (D199).
+4. **El importador no puede volver:** migración `20261125100000_sin_respuestas_importadas`, solo aditiva. Un disparador rechaza cualquier fila nueva de `respuestas` con origen `sporteasy`, o que pase a serlo (`respuesta_importada_no_permitida`), venga de donde venga (también un script con la URL de la base).
+   - **Por qué así y no «guardarlas marcadas y que no cuenten»:** el importador ya no existe (D153/D172) y nada necesita respuestas importadas nuevas. Que una fila guardada no cuente en ningún sitio obligaría a cambiar más de 20 lecturas en SQL y TS: convocatoria, «Quién va», recordatorios, panel, no convocados, MdFantasy y asistencia. Con más riesgo y más pruebas, y para un dato que ya no va a llegar.
+   - **Las importadas que quedan** (el 29/11 y lo jugado) se pueden seguir cambiando: al responder en la web pasan a ser del jugador. También se pueden borrar.
+   - **En la pila de pruebas** el disparador se apaga tras migrar (`pruebas/infra/importadas.mjs`), porque muchas suites usan filas «importadas» como dato de partida. `pruebas:fin-sporteasy` lo enciende para comprobar que rechaza.
+5. **MdFantasy, desde la jornada del 29/11** (`DESDE_SIN_HORA`, `src/lib/fantasy/jornada.ts`): una respuesta sin hora (importada, o «del jugador» sin ninguna fecha) cuenta como «sin responder».
+   - Ni «rápido» ni «antes del plazo», y le cae el descuento por no responder. Tampoco cuenta como contestada a tiempo para la mitad del rendimiento.
+   - Las jornadas anteriores se puntúan como siempre: si una se vuelve a puntuar (hoja nueva, «recalcular»), no cambia.
+   - **No cambia:** el aviso a los mánagers de «sin responder» (`fantasy_sin_responder`, SQL) sigue contando como respondidas las 15 importadas del 29/11. Solo afecta a ese domingo, porque desde el 06/12 ya no hay.
+
+**Pruebas:**
+- `pruebas:fin-sporteasy`, bloque D200:
+  - la migración es aditiva y tiene su `.revertir.sql`;
+  - rechaza una fila nueva con sporteasy (también como superusuario) y pasar una existente a sporteasy;
+  - las existentes se pueden tocar, se vuelven del jugador al responder y se pueden borrar;
+  - se revierte y se vuelve a aplicar.
+- `pruebas:fantasy-logica`, bloque D200: antes del 29/11, como siempre (+1); desde el 29/11, «no respondió» con descuento; quien respondió en la web, igual; no cuenta como contestada a tiempo; una «del jugador» sin hora, tampoco.
+

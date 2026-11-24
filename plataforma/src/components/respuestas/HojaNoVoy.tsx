@@ -9,7 +9,7 @@ import { MOTIVOS_JUGADOR, type MotivoJugador } from "@/lib/respuestas/dominio";
 // gestores (D46, D82).
 // Al abrir, el foco va al TITULO (no al primer motivo): `showModal()` enfoca el primer control, «Lesion», y Safari (iPhone)
 // le pinta el recuadro de foco, que parece un motivo ya elegido; el jugador tocaba otro y lo daba por no marcado
-// (bug de Enyel, 10/11/2026). El titulo se lee igual con lector de pantalla (aria-labelledby) y Tab sigue en los motivos.
+// (bug que contó un jugador, 10/11/2026). El titulo se lee igual con lector de pantalla (aria-labelledby) y Tab sigue en los motivos.
 export default function HojaNoVoy({ abierta, titulo, motivoInicial, detalleInicial, guardando, error, onCerrar, onGuardar, volverA }: {
   abierta: boolean; titulo: string; motivoInicial?: MotivoJugador | null; detalleInicial?: string | null; guardando?: boolean; error?: string | null;
   onCerrar: () => void; onGuardar: (motivo: MotivoJugador, detalle: string) => void;

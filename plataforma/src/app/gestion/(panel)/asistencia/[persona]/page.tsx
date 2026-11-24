@@ -49,7 +49,7 @@ export default async function FichaAsistencia({ params }: { params: Promise<{ pe
               </tbody>
             </table>
           </div>
-          <p className="as-nota">No cuentan «no convocado» ni lesión. 2025/26: totales corregidos a mano (D72).</p>
+          <p className="as-nota">No cuentan «no convocado» ni lesión. Partidos: manda la hoja de la FBM y, si no, la convocatoria aprobada (D197); «provisional», aún sin ninguna de las dos; «pendiente de hoja», con convocatoria y sin hoja todavía (puede cambiar cuando llegue). 2025/26: totales corregidos a mano (D72).</p>
         </section>
         <section className="gs-bloque" aria-labelledby="f-mot">
           <h2 id="f-mot">Motivos más frecuentes</h2>
@@ -64,6 +64,8 @@ export default async function FichaAsistencia({ params }: { params: Promise<{ pe
                 <span>{e.ambito === "entrenos" ? "Entreno" : `Partido${e.equipo ? ` ${e.equipo}` : ""}`}{e.titulo && e.ambito === "partidos" ? ` · ${e.titulo}` : ""}</span>
                 <span className={`as-estado ${e.estado}`}>{textoEstado(e.estado)}</span>
                 {e.segunSportEasy && <span className="as-det" data-testid="segun-sporteasy">según SportEasy</span>}
+                {e.provisional && <span className="as-det" data-testid="provisional" title="Aún sin hoja de la FBM ni convocatoria aprobada: cuenta su respuesta">provisional</span>}
+                {e.pendienteHoja && <span className="as-det" data-testid="pendiente-hoja" title="Partido jugado con convocatoria aprobada y sin hoja de la FBM cargada: cuenta la convocatoria hasta que llegue la hoja">pendiente de hoja</span>}
                 {e.motivo && e.estado !== "fue" && <span className="as-det">{e.motivo}</span>}
               </li>
             ))}

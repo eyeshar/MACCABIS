@@ -2,6 +2,16 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Asistencia: hoja y convocatoria en los partidos desde el 24/10 (D197) — 23/11/2026, `feat/asistencia-hoja-fbm`, **PR nuevo y limpio, sin mergear (falta el visto bueno de Iván)**
+
+**Qué pasaba:** «Asistencia y motivos» contaba los partidos de liga desde el 24/10 solo con la respuesta: quien dijo «voy» contaba como «fue» aunque no viniera o no lo convocaran. Lo destapó un caso real de un convocado con «voy» que no vino.
+
+**Qué cambia (D197):** cada partido por separado. Si sale en la hoja de la FBM, fue (aunque respondiera «no»). Si estaba convocado y no sale en la hoja, falta (con excusa si hay un «no» con motivo o una ausencia por periodo; si no, sin excusa). Si dijo «voy» y no sale en ninguna de las dos, no convocado (no cuenta). Lo demás, como antes. Un partido sin hoja se cuenta con la convocatoria aprobada; sin ninguna de las dos, con la respuesta y marcado «provisional» en la ficha. Un partido jugado con convocatoria y aún sin hoja sale como «pendiente de hoja» en la ficha y en un aviso de la tabla. Entrenos, registro de no convocados (4.3) y motor: sin cambios. La tendencia de 4 semanas y la ficha lo heredan. Sin migración.
+
+**Efecto en el real (solo lectura, 23/11):** 21 filas de partido de 16 personas; a 15 les bajan los «fue» en partidos (de uno a tres) y a una se le quedan igual. Cifras por persona, con nombres: `privado/asistencia/diagnosticos/antes_despues_D197_2026-11-23.md`.
+
+**Verificado:** `typecheck`, `pruebas:asistencia-calculo` (caso nuevo con todos los supuestos, sintético), `pruebas:eventos-logica`, `pruebas:asistencia-pantalla` y `pruebas:pase-lista` en local (`pruebas:rapidas`), y `pruebas:asistencia-eventos-real` (solo lectura) en verde. La batería completa, en GitHub Actions (ver el PR). **No verificado:** nada en producción (D179); tras el merge, como mucho una carga de `/gestion/asistencia`.
+
 ## MdFantasy (D196) — EN EL REAL desde el 22/11/2026 (migraciones aplicadas, PR #88 y #89 mergeados) y **ABIERTO A TODOS desde el 23/11/2026**
 
 **Abierto a todos desde el 23/11/2026 a las 11:57 (Iván).** Se saltó la fase «Solo gestores» por decisión de Iván. La jornada del 22/11 (J6, publicada por la rutina A a las 11:01) se puntuó sola a las 11:15 y cuadra con las hojas: seis jornadas puntuadas. **Primera jornada que puntúa para los mánagers: 29/11/2026.**

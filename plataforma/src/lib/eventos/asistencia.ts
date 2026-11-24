@@ -14,7 +14,12 @@ export type AsistenciaEvento = {
   person_id: string; ambito: "partidos" | "entrenos"; fue: boolean; motivo: string | null;
   /** Para la pantalla rediseñada (D170): el evento, su fecha, equipo y título, y el estado en los cinco de la tabla nueva. */
   evento_id: string; fecha: string; equipo: "MdA" | "MdL" | null; titulo: string | null;
-  estado: "fue" | "con_excusa" | "sin_excusa" | "lesion";
+  estado: "fue" | "con_excusa" | "sin_excusa" | "lesion" | "no_convocado";
+  /** Partido de liga sin hoja de la FBM ni convocatoria aprobada: manda la respuesta, a falta de confirmar (D197). */
+  provisional: boolean;
+  /** Partido ya jugado con convocatoria aprobada y sin hoja de la FBM cargada: manda la convocatoria, pero la hoja puede
+   *  cambiarlo cuando llegue (D197). */
+  pendienteHoja: boolean;
 };
 export type EventoAsistencia = { id: string; fecha: string; tipo: string; oficial?: boolean; equipo?: string | null; titulo?: string | null };
 export type RespuestaEvento = { evento_id: string; person_id: string; respuesta: "va" | "duda" | "no" | "sin_responder"; motivo: Motivo | null };
@@ -31,29 +36,113 @@ export type ResumenJugador = {
 const pct = (f: number, t: number) => (t > 0 ? f / t : null);
 const TEXTO_NUEVO: Record<Motivo, string> = { lesion: "lesión", trabajo: "trabajo", viaje: "viaje", familia: "familia", otro: "otro" };
 
+/** Quién estuvo en cada partido de liga (D72, D197), por «fecha|MdA»: quién sale en la hoja de la FBM (`hojas`: solo los
+ *  partidos que ya tienen hoja) y quién estaba en la convocatoria aprobada de ese equipo (`convocados`: solo los domingos
+ *  con convocatoria aprobada). */
+export type QuienPartido = { hojas: Map<string, Set<string>>; convocados: Map<string, Set<string>> };
+export const clavePartido = (fecha: string, equipo: string | null | undefined) => `${fecha}|${equipo}`;
+const EQUIPO: Record<string, "MdA" | "MdL" | undefined> = { MDA: "MdA", MDL: "MdL", MdA: "MdA", MdL: "MdL" };
+
+/** Las hojas de una temporada (`season_<t>.json`, público): por partido, quién sale en ella. */
+export function hojasDeTemporada(season: { partidos: { pn: number; equipo: string; fecha: string }[]; players: { person_id?: string; games?: { pn: number; eq: string }[] }[] }): Map<string, Set<string>> {
+  const out = new Map<string, Set<string>>();
+  const fechaDe = new Map<string, string>();
+  for (const p of season.partidos) {
+    const eq = EQUIPO[p.equipo];
+    if (!eq) continue;
+    fechaDe.set(`${p.pn}|${eq}`, p.fecha);
+    out.set(clavePartido(p.fecha, eq), new Set());
+  }
+  for (const j of season.players) {
+    if (!j.person_id) continue;
+    for (const g of j.games ?? []) {
+      const eq = EQUIPO[g.eq];
+      const f = eq && fechaDe.get(`${g.pn}|${eq}`);
+      if (f) out.get(clavePartido(f, eq))!.add(j.person_id);
+    }
+  }
+  // Una hoja sin ninguno de los nuestros (incomparecencia, hoja mal casada) no dice quién vino: cuenta como «sin hoja».
+  for (const [k, s] of out) if (!s.size) out.delete(k);
+  return out;
+}
+
+/** Las convocatorias aprobadas (`convocatorias.equipos`): por partido, quién estaba convocado en ese equipo. */
+export function convocadosDeAprobadas(aprobadas: { fecha: string; equipos: Record<string, { person_id: string }[] | null | undefined> | null }[]): Map<string, Set<string>> {
+  const out = new Map<string, Set<string>>();
+  for (const c of aprobadas) for (const [k, lista] of Object.entries(c.equipos ?? {})) {
+    const eq = EQUIPO[k];
+    if (eq) out.set(clavePartido(c.fecha, eq), new Set((lista ?? []).map((x) => x.person_id)));
+  }
+  return out;
+}
+
 /** Asistencia de la plataforma (D161): partidos de liga y entrenos YA PASADOS (fecha < hoy) desde DESDE_PLATAFORMA. Por
  *  cada respuesta, la efectiva (D146/D150): «va» = fue; «no» = no fue, con su motivo (el de la respuesta, el de la
  *  ausencia por periodo o «no suele entrenar»); «duda» o «sin responder» en un evento pasado = «sin responder». Quien
- *  queda fuera (solo entreno en un partido, sin responder) no cuenta. Amistosos y torneos no cuentan, como en SportEasy. */
-export function asistenciaPlataforma(eventos: EventoAsistencia[], respuestas: RespuestaEvento[], defecto: Defecto | null, hoy: string): AsistenciaEvento[] {
+ *  queda fuera (solo entreno en un partido, sin responder) no cuenta. Amistosos y torneos no cuentan, como en SportEasy.
+ *
+ *  En los partidos de liga mandan la hoja de la FBM y la convocatoria aprobada (D72, D197), cada partido por separado
+ *  (también el del doblado):
+ *   - sale en la hoja → fue, responda lo que responda (o aunque no respondiera);
+ *   - no sale en la hoja (o el partido aún no la tiene y no dijo «voy») pero estaba en la convocatoria aprobada de ese
+ *     equipo → falta: «con excusa» si tiene un «no» con motivo o una ausencia por periodo; «sin excusa» si no (aunque
+ *     dijera «voy»). La lesión sigue siendo lesión (no cuenta);
+ *   - dijo «voy» y no sale ni en la hoja ni en la convocatoria aprobada → no convocado (no cuenta);
+ *   - «no», «duda» o «sin responder» fuera de las dos → como siempre (con excusa / sin excusa); «nunca a partidos» sin
+ *     responder sigue sin contar.
+ *  Un partido sin hoja ni convocatoria aprobada se cuenta con la respuesta, marcado `provisional`; uno con convocatoria
+ *  aprobada y sin hoja, marcado `pendienteHoja`. Sin `partidos`, todos los partidos son provisionales (la regla de D161). */
+export function asistenciaPlataforma(eventos: EventoAsistencia[], respuestas: RespuestaEvento[], defecto: Defecto | null, hoy: string, partidos: QuienPartido | null = null): AsistenciaEvento[] {
   const ev = new Map(eventos.filter((e) => e.fecha >= DESDE_PLATAFORMA && e.fecha < hoy && (esEntreno(e) || (e.tipo === "liga" && e.oficial !== false))).map((e) => [e.id, e]));
   const res: AsistenciaEvento[] = [];
+  const base = (e: EventoAsistencia, person_id: string): Pick<AsistenciaEvento, "person_id" | "ambito" | "evento_id" | "fecha" | "equipo" | "titulo"> => ({
+    person_id, ambito: esEntreno(e) ? "entrenos" as const : "partidos" as const, evento_id: e.id, fecha: e.fecha,
+    equipo: e.equipo === "MdA" || e.equipo === "MdL" ? e.equipo : null, titulo: e.titulo ?? null,
+  });
+  const quien = (e: EventoAsistencia) => {
+    if (esEntreno(e)) return null;
+    const k = clavePartido(e.fecha, e.equipo);
+    return { hoja: partidos?.hojas.get(k) ?? null, conv: partidos?.convocados.get(k) ?? null };
+  };
+  const vistos = new Set<string>();
   for (const r of respuestas) {
     const e = ev.get(r.evento_id);
     if (!e) continue;
+    vistos.add(`${e.id}|${r.person_id}`);
+    const b = base(e, r.person_id);
+    const q = quien(e);
+    const provisional = !!q && !q.hoja && !q.conv;
+    const pendienteHoja = !!q && !q.hoja && !!q.conv;
+    if (q?.hoja?.has(r.person_id)) { res.push({ ...b, fue: true, motivo: null, estado: "fue", provisional, pendienteHoja }); continue; }
+    const enConv = !!q?.conv?.has(r.person_id);
     const ef = efectivaEn(e, r.person_id, r.respuesta, defecto);
-    if (ef.fuera) continue;
-    const ambito = esEntreno(e) ? "entrenos" : "partidos";
-    const base = { person_id: r.person_id, ambito, evento_id: e.id, fecha: e.fecha, equipo: e.equipo === "MdA" || e.equipo === "MdL" ? e.equipo : null, titulo: e.titulo ?? null } as const;
-    if (ef.respuesta === "va") { res.push({ ...base, fue: true, motivo: null, estado: "fue" }); continue; }
-    const motivo = ef.respuesta !== "no" ? "sin responder"
+    if (ef.fuera && !enConv) continue;
+    const va = ef.respuesta === "va";
+    // «Voy»: fue en un entreno, en un partido provisional o convocado en un partido aún sin hoja; si no, no convocado.
+    if (va && (!q || provisional || (!q.hoja && enConv))) { res.push({ ...b, fue: true, motivo: null, estado: "fue", provisional, pendienteHoja }); continue; }
+    if (va && !enConv) { res.push({ ...b, fue: false, motivo: null, estado: "no_convocado", provisional, pendienteHoja }); continue; }
+    const motivo = va ? "convocado, no fue"
+      : ef.respuesta !== "no" ? "sin responder"
       : r.motivo ? TEXTO_NUEVO[r.motivo]
       : ef.por === "ausencia" ? (TEXTO_NUEVO[ef.ausencia?.motivo as Motivo] ?? "ausencia")
       : ef.por === "defecto" ? "no suele entrenar" : "no va, sin motivo";
     // Estado en la tabla nueva: lesión si el motivo (o la ausencia) lo es; «no» con cualquier otro motivo = con excusa
-    // (avisó); «sin responder» o «duda» en un evento ya pasado = sin excusa.
-    const estado = ef.respuesta !== "no" ? "sin_excusa" : motivo === "lesión" ? "lesion" : "con_excusa";
-    res.push({ ...base, fue: false, motivo, estado });
+    // (avisó); «sin responder» o «duda» en un evento ya pasado = sin excusa. Convocado y no fue (D197): con excusa solo con
+    // un «no» con motivo o una ausencia por periodo.
+    const estado = motivo === "lesión" && ef.respuesta === "no" ? "lesion"
+      : enConv ? (ef.respuesta === "no" && (r.motivo || ef.por === "ausencia") ? "con_excusa" : "sin_excusa")
+      : ef.respuesta !== "no" ? "sin_excusa" : "con_excusa";
+    res.push({ ...b, fue: false, motivo, estado, provisional, pendienteHoja });
+  }
+  // Quien sale en la hoja o en la convocatoria aprobada sin respuesta guardada: fue (hoja) o sin excusa (convocado).
+  for (const e of ev.values()) {
+    const q = quien(e);
+    if (!q) continue;
+    for (const p of new Set([...(q.hoja ?? []), ...(q.conv ?? [])])) {
+      if (vistos.has(`${e.id}|${p}`)) continue;
+      const fue = !!q.hoja?.has(p);
+      res.push({ ...base(e, p), fue, motivo: fue ? null : "sin responder", estado: fue ? "fue" : "sin_excusa", provisional: false, pendienteHoja: !q.hoja });
+    }
   }
   return res;
 }
@@ -75,6 +164,7 @@ export function resumenTemporada(filas: FilaResumen[], plataforma: AsistenciaEve
     suma(r, "con excusa", f.con_excusa); suma(r, "sin excusa", f.sin_excusa); suma(r, "no convocado", f.no_convocado); suma(r, "lesión", f.lesion);
   }
   for (const x of plataforma) {
+    if (x.estado === "no_convocado") continue; // no cuenta (D170, D197)
     const r = get(x.person_id, nombres[x.person_id] ?? x.person_id);
     const a = r[x.ambito];
     r[x.ambito] = { ...a, fueron: a.fueron + (x.fue ? 1 : 0), total: a.total + 1 };

@@ -7,7 +7,7 @@ import { exigirGestor } from "@/lib/sesion";
 import { hoyMadrid } from "@/lib/dias";
 import { cargarFilasGuardadas, cargarFilasPlataforma, cargarTotales, TEMPORADA } from "@/lib/eventos/asistenciaDatos";
 import {
-  calcularJugadores, colorPct, COLUMNAS, DIR_DEFECTO, eventosDe, MINIMO_EVENTOS, ordenar, PRIMERA_GUARDADA, PRIMERA_PRECISA, separar, temporadasDesde, textoPct, unirAsistencia,
+  calcularJugadores, colorPct, COLUMNAS, DIR_DEFECTO, eventosDe, MINIMO_EVENTOS, ordenar, partidosPendientesDeHoja, PRIMERA_GUARDADA, PRIMERA_PRECISA, separar, temporadasDesde, textoPct, unirAsistencia,
   type Columna, type Cuenta, type FilaJugador, type Filtros,
 } from "@/lib/eventos/asistenciaPantalla";
 
@@ -38,6 +38,9 @@ export default async function Asistencia({ searchParams }: { searchParams: Promi
   const filas = unirAsistencia(guardadas, temporadas.includes(TEMPORADA) ? plat.filas : []);
   const js = ordenar(calcularJugadores({ filas, totales, hoy }, f, f.ver === "actual" ? plat.actuales : null), col, dir);
   const { ranking, pocos } = separar(js);
+  // D197: partidos jugados con convocatoria aprobada y sin hoja todavía (cuenta la convocatoria; la hoja puede cambiarlo).
+  const pendientes = temporadas.includes(TEMPORADA)
+    ? partidosPendientesDeHoja(plat.filas).filter((x) => f.equipo === "todos" || x.equipo === f.equipo) : [];
 
   const href = (c: Partial<{ t: string[]; ver: string; eq: string; p: string; o: string; d: string }>) => {
     const v = { t: temporadas, ver: f.ver, eq: f.equipo, p: f.periodo === "4s" ? "4s" : "temporada", o: col, d: dir, ...c };
@@ -130,11 +133,16 @@ export default async function Asistencia({ searchParams }: { searchParams: Promi
         </div>
       </Plegable>
       <p className="as-nota">
-        Asistencia = fue / (fue + faltas). Faltas = con excusa + sin excusa. No cuentan «no convocado» ni lesión. TOTAL suma entrenos y partidos (no es la media). Mínimo {MINIMO_EVENTOS} eventos para el ranking. Ningún jugador ve esta pantalla (D46, D82).
+        Asistencia = fue / (fue + faltas). Faltas = con excusa + sin excusa. No cuentan «no convocado» ni lesión. En los partidos manda la hoja de la FBM y, si no, la convocatoria aprobada: quien sale en la hoja fue; convocado y no vino, falta; «voy» sin entrar en ninguna, no convocado (D197). TOTAL suma entrenos y partidos (no es la media). Mínimo {MINIMO_EVENTOS} eventos para el ranking. Ningún jugador ve esta pantalla (D46, D82).
       </p>
       {hayAprox && (
         <p className="as-nota" data-testid="nota-aprox">
           <b>aprox.</b> Las temporadas anteriores a 2025/26 vienen de SportEasy, que no guardaba «no convocado» ni casi nunca las lesiones: esos porcentajes son aproximados (suelen salir algo más bajos).
+        </p>
+      )}
+      {pendientes.length > 0 && (
+        <p className="as-nota" data-testid="nota-pendiente-hoja">
+          <b>Pendiente de hoja:</b> {pendientes.map((x) => `${x.fecha.slice(8, 10)}/${x.fecha.slice(5, 7)}${x.equipo ? ` ${x.equipo}` : ""}`).join(", ")}. Jugados con convocatoria aprobada y sin hoja de la FBM cargada: cuentan según la convocatoria y pueden cambiar cuando llegue la hoja.
         </p>
       )}
       {haySegun && (

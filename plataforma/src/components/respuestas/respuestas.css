@@ -57,6 +57,13 @@
 button.boton.rw-btn-no { background: var(--rw-no); color: #2a0b07; border-color: var(--rw-no); }
 .rw-abrir { width: 100%; }
 .rw-abrir.grande { min-height: 56px; }
+/* D198: el toque se nota al momento (hundido y «Abriendo…») mientras llega el domingo. */
+.rw-abrir:active, .rw-abrir.pulsado { transform: translateY(1px); filter: brightness(.92); }
+.rw-abrir.pulsado { cursor: progress; }
+.rw-abrir-texto { display: inline-flex; align-items: center; justify-content: center; gap: .5em; }
+.rw-girando { width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: rw-girar .8s linear infinite; }
+@keyframes rw-girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .rw-girando { animation: none; border-right-color: currentColor; opacity: .6; } }
 
 /* ---------- agenda */
 .rw-fila { color: var(--tinta); text-decoration: none; min-height: 56px; }

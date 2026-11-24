@@ -136,6 +136,33 @@ try {
     }
   }
 
+  console.log('\n== D198: quien_va(uuid[]) da lo mismo que v_quien_va, solo de los eventos pedidos');
+  const clave = (filas) => JSON.stringify((filas ?? []).map((f) => `${f.evento_id}|${f.nombre}|${f.estado}`).sort());
+  const qv = (ids, token) => api('/rpc/quien_va', { metodo: 'POST', cuerpo: { p_eventos: ids }, token });
+  for (const ids of [[ent.id], [par.id], [ent.id, par.id]]) {
+    const [a, b] = [await api(`/v_quien_va?select=evento_id,nombre,estado&evento_id=in.(${ids.join(',')})`, { token: ver.token }), await qv(ids, ver.token)];
+    ok(b.status === 200 && clave(a.datos) === clave(b.datos) && (b.datos?.length ?? 0) > 0, `${ids.length} evento(s): las mismas ${b.datos?.length ?? 0} filas que la vista`, `${b.status} vista ${a.datos?.length} · función ${b.datos?.length}`);
+  }
+  const r0 = await qv([ent.id, par.id], ver.token);
+  ok(r0.datos.every((f) => Object.keys(f).sort().join() === 'estado,evento_id,nombre'), 'solo evento, nombre y estado (ni marca ni motivo)');
+  ok(r0.datos.every((f) => f.evento_id === ent.id || f.evento_id === par.id), 'y solo de los eventos pedidos');
+  ok((await qv([], ver.token)).datos?.length === 0, 'sin eventos, nada');
+  const sinFicha = await cuenta('sint-sinficha-qv@pruebas.local');
+  const rs = await qv([ent.id, par.id], sinFicha.token);
+  ok(rs.status === 200 && rs.datos?.length === 0, 'una cuenta sin ficha (no invitada): nada', `${rs.status} ${rs.datos?.length}`);
+  const ra = await qv([ent.id, par.id]);
+  ok(ra.status === 401 || ra.status === 403 || ra.status === 404, 'un anónimo no puede llamarla', String(ra.status));
+  const MIG3 = '20261124100000_quien_va_eventos';
+  const texto3 = fs.readFileSync(path.join(MIGS, `${MIG3}.sql`), 'utf8').replace(/--.*$/gm, '');
+  ok(fs.existsSync(path.join(MIGS, `${MIG3}.revertir.sql`)) && !/\bdrop\b|\btruncate\b|\bdelete\b|\bupdate\b|alter\s+table|create\s+or\s+replace/i.test(texto3), `${MIG3}: solo aditiva (una función nueva) y con su .revertir.sql`);
+  const hay3 = async () => (await sql`select to_regprocedure('public.quien_va(uuid[])') is not null fn, (select count(*)::int from supabase_migrations.schema_migrations where version = '20261124100000') reg`)[0];
+  await sql.begin((tx) => tx.unsafe(fs.readFileSync(path.join(MIGS, `${MIG3}.revertir.sql`), 'utf8')));
+  let h3 = await hay3();
+  ok(!h3.fn && h3.reg === 0, 'revertida: sin la función y sin registro', JSON.stringify(h3));
+  await migrar(sql, { log: () => {} });
+  h3 = await hay3();
+  ok(h3.fn && h3.reg === 1 && clave((await qv([ent.id, par.id], ver.token)).datos) === clave(r0.datos), 'y se vuelve a aplicar, con lo mismo', JSON.stringify(h3));
+
   console.log('\n== A4: quien no va por defecto no recibe «no has respondido»');
   const datos = { respuestas: Object.entries(resp).map(([person_id, respuesta]) => ({ evento_id: ent.id, person_id, respuesta })), ausencias: [aus], quitados: [{ evento_id: ent.id, person_id: 'sint-qui' }] };
   const evP = { id: ent.id, fecha: '2026-11-04', tipo: 'entreno', oficial: true };

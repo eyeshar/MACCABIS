@@ -17,7 +17,9 @@ import ElRival from "./ElRival";
  *  No voy, «Quién va» con solo nombres (D46, norma 13.2) y «El rival» con sus colores y su scouting (D174). Lo usan la vista
  *  de jugador y la pestaña «Mi respuesta» de un gestor que también juega. */
 export default async function VistaJugador({ e, soloRespuesta = false }: { e: MiEvento; soloRespuesta?: boolean }) {
-  const [respuestas, ausencias, zona] = await Promise.all([cargarMisRespuestas(), cargarMisAusencias(), cargarMiZona().catch(() => null)]);
+  // D198: «Quién va» a la vez que lo demás (antes iba detrás, en serie).
+  const [respuestas, ausencias, zona, quienVa] = await Promise.all([cargarMisRespuestas(), cargarMisAusencias(), cargarMiZona().catch(() => null),
+    soloRespuesta ? Promise.resolve(null) : cargarQuienVa([e.id])]);
   const r = respuestas.find((x) => x.evento_id === e.id) ?? null;
   const aus = ausenciaQueCubre(e.fecha, ausencias);
   const ahora = new Date();
@@ -54,7 +56,7 @@ export default async function VistaJugador({ e, soloRespuesta = false }: { e: Mi
   );
   if (soloRespuesta) return responder;
 
-  const quien = (await cargarQuienVa([e.id])).get(e.id);
+  const quien = quienVa?.get(e.id);
   // Equipación (D160) y el rival, solo en los partidos de liga con rival y jornada.
   const aviso = avisoDeEvento(e);
   const temporada = zona ? temporadaDe(zona.jugador.person_id) : null;

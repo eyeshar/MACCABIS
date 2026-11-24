@@ -7,7 +7,7 @@ import { sumarDias, hoyMadrid } from "@/lib/dias";
 import { cargarFuente } from "@/lib/eventos/fuente";
 import { vigentes, type AvisoFichero } from "@/lib/inicio/avisosFichero";
 import { eventosTemporada, temporadaDe } from "@/lib/publico";
-import { cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisRespuestas } from "@/lib/respuestas/jugador";
+import { cargarMiConvocatoria, cargarMisAusencias, cargarMisEventos, cargarMisRespuestas, filasQuienVa } from "@/lib/respuestas/jugador";
 import { enlaceLugar, lugarTexto, type MiEvento } from "@/lib/respuestas/dominio";
 import { clienteSesion } from "@/lib/supabase";
 import type { Usuario } from "@/lib/usuario";
@@ -25,9 +25,9 @@ async function quienVa(ids: string[]): Promise<Map<string, QuienCtx>> {
   const m = new Map<string, QuienCtx>();
   if (!ids.length) return m;
   const sb = await clienteSesion();
-  const { data } = await sb.from("v_quien_va").select("evento_id, nombre, estado").in("evento_id", ids);
+  const data = await filasQuienVa(sb, ids);
   for (const id of ids) m.set(id, { va: [], duda: [], no: [], sin_responder: [] });
-  for (const f of (data ?? []) as { evento_id: string; nombre: string; estado: string }[]) {
+  for (const f of data) {
     const q = m.get(f.evento_id);
     if (!q) continue;
     (f.estado === "va" ? q.va : f.estado === "duda" ? q.duda : f.estado === "no" ? q.no : q.sin_responder).push(String(f.nombre));

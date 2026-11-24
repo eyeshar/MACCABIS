@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { responderDomingo } from "@/app/mi-zona/respuestas-acciones";
 import type { MotivoJugador, OpcionDomingo } from "@/lib/respuestas/dominio";
 import HojaNoVoy from "./HojaNoVoy";
+import { EstadoGuardado, useGuardado } from "./useGuardado";
 import PreferenciaDomingo, { type PartidoPref, type PrefGuardada } from "@/components/preferencia/PreferenciaDomingo";
 import { muestraPreferencia } from "@/lib/respuestas/preferencia";
 
@@ -17,15 +18,13 @@ export default function ElegirDomingo({ fecha, opciones, actual, nombre, motivo,
   const router = useRouter();
   const [marcada, setMarcada] = useState(actual);
   const [hoja, setHoja] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pendiente, empezar] = useTransition();
+  // D199: se marca solo con el servidor confirmando; un fallo recarga o se ve (useGuardado).
+  const { pendiente, lento, error, setError, guardar: guardarConfirmado } = useGuardado();
   const refNo = useRef<HTMLButtonElement>(null);
-  const guardar = (o: OpcionDomingo, m?: MotivoJugador, d?: string) => empezar(async () => {
-    setError(null);
-    const r = await responderDomingo(fecha, o.opcion, o.evento ?? null, m ?? null, d ?? null);
-    if (!r.ok) { setError(r.error); return; }
-    setMarcada(o.id); setHoja(false); router.refresh();
-  });
+  const guardar = (o: OpcionDomingo, m?: MotivoJugador, d?: string) => guardarConfirmado(
+    () => responderDomingo(fecha, o.opcion, o.evento ?? null, m ?? null, d ?? null),
+    () => { setMarcada(o.id); setHoja(false); router.refresh(); },
+  );
   const clase = (o: OpcionDomingo) => (o.opcion === "no" ? "rw-btn-no" : o.opcion === "duda" ? "rw-btn-duda" : "rw-btn-va");
   return (
     <div className="rw-domingo-opciones" role="group" aria-label="¿Puedes jugar?">
@@ -39,7 +38,8 @@ export default function ElegirDomingo({ fecha, opciones, actual, nombre, motivo,
           ? <PreferenciaDomingo key={`pref-${o.id}`} fecha={fecha} partidos={preferencia.partidos} guardada={preferencia.guardada} mismaHora={preferencia.mismaHora} />
           : null,
       ])}
-      {error && !hoja && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }}>{error}</p>}
+      {!hoja && <EstadoGuardado pendiente={pendiente} lento={lento} />}
+      {error && !hoja && <p className="aviso aviso-error" role="alert" style={{ margin: 0 }} data-testid="error-guardado">{error}</p>}
       <HojaNoVoy abierta={hoja} titulo={nombre} motivoInicial={marcada === "no" ? motivo : null} detalleInicial={marcada === "no" ? detalle : null} guardando={pendiente} volverA={refNo}
         error={hoja ? error : null} onCerrar={() => setHoja(false)} onGuardar={(m, d) => guardar(opciones.find((x) => x.opcion === "no")!, m, d)} />
     </div>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { guardarPreferencia, quitarPreferencia } from "@/app/mi-zona/respuestas-acciones";
 import { faltaParaGuardar, MOTIVO_CON_NOTA, MOTIVOS_PREFERENCIA, NOTA_MAXIMA, TEXTO_FIJO_PREFERENCIA } from "@/lib/respuestas/preferencia";
+import { guardarSeguro } from "@/lib/version/cliente";
 import "./preferencia.css";
 
 export type PartidoPref = { id: string; equipo: string; hora: string | null; rival: string };
@@ -47,7 +48,9 @@ export default function PreferenciaDomingo({ fecha, partidos, guardada, mismaHor
   const guardar = (y?: string) => empezar(async () => {
     setError(null); setHecho(false);
     if (falta || !evento || !motivo) { setError(falta); return; }
-    const r = await guardarPreferencia(fecha, evento, motivo, motivo === MOTIVO_CON_NOTA || nota.trim() ? nota : null);
+    // D199: pestaña vieja o fallo, recarga (nunca un «guardado» sin confirmar).
+    const r = await guardarSeguro(() => guardarPreferencia(fecha, evento, motivo, motivo === MOTIVO_CON_NOTA || nota.trim() ? nota : null));
+    if (r === "recargando") return;
     if (!r.ok) { setError(r.error); return; }
     setHecho(true);
     if (y) { dialogo.current?.close(); router.push(y); } else router.refresh();
@@ -57,7 +60,7 @@ export default function PreferenciaDomingo({ fecha, partidos, guardada, mismaHor
     if (evento !== id) { setEvento(id); return; }
     // Volver a pulsar la quita: si estaba guardada, se borra al momento.
     setEvento(null); setMotivo(guardada ? null : motivo);
-    if (guardada) empezar(async () => { const r = await quitarPreferencia(fecha); if (!r.ok) setError(r.error); else { setMotivo(null); setNota(""); router.refresh(); } });
+    if (guardada) empezar(async () => { const r = await guardarSeguro(() => quitarPreferencia(fecha)); if (r === "recargando") return; if (!r.ok) setError(r.error); else { setMotivo(null); setNota(""); router.refresh(); } });
   };
   const salirSinGuardar = () => { const y = destino; setEvento(guardada?.evento_id ?? null); setMotivo(guardada?.motivo ?? null); setNota(guardada?.nota ?? ""); dialogo.current?.close(); if (y) setTimeout(() => router.push(y), 0); };
 

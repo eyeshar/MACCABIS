@@ -2,6 +2,42 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Una respuesta nunca se pierde en silencio (D199) — 24/11/2026, `fix/respuesta-nunca-perdida`, **PR sin mergear**
+
+**Qué cubre:** una pestaña abierta antes de un despliegue que guarda Voy / No voy / Duda, la respuesta del domingo, un plan o la preferencia. Hoy, sin Skew Protection, el servidor nuevo puede no conocer la acción vieja (409, «Server Action … was not found») y la respuesta no se guarda.
+
+**Skew Protection (por API):** el equipo sigue en Pro y la tiene **disponible pero inactiva** (todas las peticiones del 20 al 24/11, `inactive`). Cubre las acciones del servidor durante 12 h desde cada despliegue y no existe en Hobby. **Propuesta a Iván, sin activar** (D199). Lo de abajo funciona con ella o sin ella.
+
+**Qué cambia:**
+- `next.config.ts` (`NEXT_PUBLIC_VERSION_WEB`) y `src/app/version.txt/route.ts`: la versión de cada compilación, estática, servida por la CDN sin función y sin pasar por el proxy.
+- `src/lib/version/cliente.ts` (`guardarSeguro`):
+  - antes de guardar compara versiones y, si el servidor ya es otro, recarga sin llamar a la acción;
+  - si la acción falla, recarga y avisa;
+  - sin red, no recarga: dice que no se ha guardado;
+  - sin bucles: como mucho una recarga cada 30 s.
+- `src/components/respuestas/useGuardado.tsx`: el botón se marca **solo** con el `ok` del servidor. Mientras guarda dice «Guardando…», y a los 10 s «Aún no se ha confirmado: tu respuesta todavía NO está guardada…».
+  - Lo usan `Responder.tsx`, `ElegirDomingo.tsx`, `SiVoy.tsx` y `app/planes/[id]/AccionesPlan.tsx` (`ResponderPlan`).
+  - `PreferenciaDomingo.tsx` usa `guardarSeguro` directamente.
+- `src/components/version/AvisoRecarga.tsx` (en `app/layout.tsx`):
+  - tras la recarga, «La web se ha actualizado: vuelve a pulsar tu respuesta.» (o «No se ha podido guardar tu respuesta: vuelve a pulsarla.»);
+  - al volver a una pestaña vieja (como mucho una comprobación por minuto), recarga antes de que se pulse nada.
+- `src/components/carga/VigiaEsqueleto.tsx` (dentro de `Esqueleto`): si la ruta ya cambió pero el esqueleto sigue a los ~10 s, carga entera. Si ya se hizo hace menos de 2 min, «Está tardando más de lo normal» y «Recargar».
+- `globals.css` y `respuestas.css`: estilos de los avisos.
+- `pruebas/domingo_jugador.mjs`: bloque D199 (4 casos; detalle en D199).
+
+**Investigación del 22/11 (solo lectura):**
+- **Vercel, del 13 al 24/11:** ningún 409 ni «Failed to find Server Action», y ningún POST de acción con error. Los 6 `warn` del 17 al 24/11 son `refresh_token_already_used` de Auth en `GET /` (3 peticiones).
+- **`respuestas`:** solo guarda el último estado, sin historial (BACKLOG 23), así que un intento fallido no deja huella. Todos los invitados del 22/11 tienen fila.
+- **Los que nunca respondieron en la web:** de los 22 invitados a los dos partidos, 6 solo tienen las filas importadas de SportEasy («va»), sin respuesta propia en la web.
+- **Sin nombre:** no se ha identificado al jugador; no se ha dado su nombre. Si Iván lo dice, se mira su fila en solo lectura.
+
+**Verificado en local:** `typecheck`, `pruebas:domingo` (con el bloque D199), `pruebas:no-voy-primer-toque`, `pruebas:respuestas-pantallas`, `pruebas:cache-publica` y `pruebas:humo`, en verde. `--lista` llegaba a 21 suites de pantallas: el resto, Actions (D167).
+
+**Pendiente:**
+- Iván: decidir sobre Skew Protection.
+- Los enlaces al evento y a los planes, sin salida propia (BACKLOG 25).
+- No probado en un iPhone real.
+
 ## «Responder al domingo» que no parecía hacer nada en el iPhone (D198) — 24/11/2026, `fix/domingo-tactil`; migración `20261124100000_quien_va_eventos` **APLICADA en el real con D111**; **PR #95 MERGEADO** (`cdfd7f7`, OK de Iván, Actions en verde en `bec9fcd`) y desplegado
 
 **Qué pasaba:** un jugador (iPhone, Safari en pestaña) tocaba «Responder al domingo» del 29/11 y no veía nada; al insistir, zoom de doble toque. El domingo anterior creyó haber respondido «no» y no constaba.

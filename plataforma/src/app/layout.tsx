@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import Cabecera from "@/components/nav/Cabecera";
 import SesionProvider, { SCRIPT_SESION } from "@/components/nav/Sesion";
 import RastroNavegacion from "@/components/nav/RastroNavegacion";
+import AvisoRecarga from "@/components/version/AvisoRecarga";
 import Analitica from "@/components/analitica/Analitica";
 import { URL_PRODUCCION, esVistaPrevia } from "@/lib/indexacion";
 import { ANALITICA_ACTIVA } from "@/lib/analitica";
@@ -46,6 +47,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <a href="#contenido" className="nv-saltar">Saltar al contenido</a>
           {/* Una sola navegacion en toda la web (D89): la cabecera y la barra inferior viven aqui, no en cada zona. */}
           <Cabecera />
+          {/* D199: «La web se ha actualizado: vuelve a pulsar tu respuesta» y la recarga al volver a una pestaña vieja. */}
+          <AvisoRecarga />
           <div id="contenido" tabIndex={-1}>{children}</div>
         </SesionProvider>
         <Suspense fallback={null}><RastroNavegacion /></Suspense>

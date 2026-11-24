@@ -180,6 +180,106 @@ try {
   ok(await visto(pg.getByTestId('situacion'), 15000), '«Reintentar», ya arreglado, trae el domingo');
   e.errores.length = erroresAntes; // solo se quitan los del fallo provocado (a propósito); los de antes siguen contando
 
+  console.log('\n== D199: una respuesta nunca se pierde en silencio (pestaña de una versión vieja)');
+  {
+    const erroresD199 = e.errores.length;
+    // Lo guardado por él: la respuesta del domingo (respuestas_domingo) y la de cada partido (respuestas).
+    const suyas = async () => (await sql`select 1 from public.respuestas_domingo where fecha = ${J3} and person_id = 'galan-domingo-guillermo' and vigente`).length
+      + (await sql`select 1 from public.respuestas r join public.eventos ev on ev.id = r.evento_id
+        where ev.fecha = ${J3} and ev.tipo = 'liga' and r.person_id = 'galan-domingo-guillermo' and r.origen = 'jugador'`).length;
+    const borrarSuyas = async () => {
+      await sql`delete from public.respuestas_domingo where fecha = ${J3} and person_id = 'galan-domingo-guillermo'`;
+      await sql`delete from public.respuestas r using public.eventos ev where ev.id = r.evento_id and ev.fecha = ${J3} and r.person_id = 'galan-domingo-guillermo'`;
+    };
+    const opcion = () => pg.locator('.rw-vas button.rw-btn-va').first();
+    const marcadaSi = async () => (await opcion().getAttribute('aria-pressed')) === 'true';
+    const sinBucle = async () => { await pg.waitForLoadState('load').catch(() => {}); await hasta(() => pg.evaluate(() => { sessionStorage.removeItem('maccabis-recarga-en'); return true; }).catch(() => false), 5000); };
+    const esAccion = (r) => r.request().method() === 'POST' && !!r.request().headers()['next-action'];
+    let cargas = 0;
+    const cuentaCargas = (r) => { if (r.isNavigationRequest() && r.frame() === pg.mainFrame()) cargas++; };
+    pg.on('request', cuentaCargas);
+    await pg.goto(URL_D);
+    const antes = await suyas();
+    ok(antes === 0 && !(await marcadaSi()), 'de partida, Guille sin respuesta suya en el domingo y nada marcado', `${antes} filas`);
+
+    // 1) La acción no existe en el servidor (despliegue nuevo): Next responde 409 con x-nextjs-action-not-found.
+    const noEncontrada = async (route) => {
+      if (!esAccion(route)) return route.fallback();
+      await route.fulfill({ status: 409, headers: { 'x-nextjs-action-not-found': '1', 'content-type': 'text/plain' }, body: 'Server Action unavailable.' });
+    };
+    await pg.route('**/mi-zona/domingo/**', noEncontrada);
+    cargas = 0;
+    await opcion().click();
+    const aviso = pg.getByTestId('aviso-recarga');
+    ok(await visto(aviso, 15000) && (await aviso.innerText()).includes('La web se ha actualizado: vuelve a pulsar tu respuesta') && cargas >= 1,
+      'acción no encontrada: recarga entera y «La web se ha actualizado: vuelve a pulsar tu respuesta»', `${cargas} cargas`);
+    await pg.unroute('**/mi-zona/domingo/**', noEncontrada);
+    ok(await suyas() === 0 && !(await marcadaSi()), 'y no hay nada guardado ni marcado (ni en la base ni en el botón)');
+    await opcion().click();
+    ok(await hasta(async () => (await suyas()) > 0 && (await marcadaSi()), 10000), 'al volver a pulsar: guardada en la base y marcada');
+
+    // 2) Antes de guardar ya se ve que el servidor es otra versión (/version.txt): recarga sin llegar a llamar a la acción.
+    await sinBucle();
+    await borrarSuyas();
+    await pg.goto(URL_D);
+    const otraVersion = (route) => route.fulfill({ status: 200, headers: { 'content-type': 'text/plain' }, body: 'otro-despliegue' });
+    await pg.route('**/version.txt', otraVersion);
+    let acciones = 0;
+    const cuentaAcciones = (r) => { if (r.method() === 'POST' && r.headers()['next-action']) acciones++; };
+    pg.on('request', cuentaAcciones);
+    cargas = 0;
+    await opcion().click();
+    ok(await visto(pg.getByTestId('aviso-recarga'), 15000) && cargas >= 1 && acciones === 0, 'pestaña vieja (otra versión en el servidor): recarga antes de guardar, sin llamar a la acción', `${cargas} cargas, ${acciones} acciones`);
+    pg.off('request', cuentaAcciones);
+    await pg.unroute('**/version.txt', otraVersion);
+    { const n = await suyas(), m = await marcadaSi(); ok(n === 0 && !m, 'sin nada guardado ni marcado', `${n} filas, marcada ${m}, ${await pg.locator('.rw-vas button[aria-pressed="true"]').allInnerTexts()}`); }
+
+    // 3) El servidor no contesta: a los ~10 s lo dice (NO está guardada) y el botón sigue sin marcar; al fallar, recarga.
+    await sinBucle();
+    const colgadas = [];
+    const colgar = (route) => { if (!esAccion(route)) return route.fallback(); colgadas.push(route); };
+    await pg.route('**/mi-zona/domingo/**', colgar);
+    await pg.goto(URL_D);
+    await opcion().click();
+    ok(await visto(pg.getByTestId('guardando'), 3000), 'mientras guarda: «Guardando…»');
+    const sinConf = pg.getByTestId('sin-confirmar');
+    ok(await visto(sinConf, 15000) && /todavía NO está guardada/.test(await sinConf.innerText()) && !(await marcadaSi()), 'sin confirmación a los ~10 s: «tu respuesta todavía NO está guardada», sin marcar', `${pg.url()} · ${colgadas.length} colgadas · guardando ${await pg.getByTestId('guardando').count()} · aviso ${await pg.getByTestId('aviso-recarga').count()}`);
+    cargas = 0;
+    for (const r of colgadas) await r.abort('failed').catch(() => {});
+    await pg.unroute('**/mi-zona/domingo/**', colgar);
+    const avisoFallo = pg.getByTestId('aviso-recarga');
+    ok(await visto(avisoFallo, 15000) && (await avisoFallo.getAttribute('data-motivo')) === 'fallo' && /vuelve a pulsarla/.test(await avisoFallo.innerText()), 'y si el guardado falla: recarga y «No se ha podido guardar tu respuesta: vuelve a pulsarla»');
+    { const n = await suyas(), m = await marcadaSi(); ok(n === 0 && !m, 'sin nada guardado ni marcado', `${n} filas, marcada ${m}, ${await pg.locator('.rw-vas button[aria-pressed="true"]').allInnerTexts()}`); }
+    pg.off('request', cuentaCargas);
+
+    // 4) La ruta ya ha cambiado pero se queda en el esqueleto: a los ~10 s, carga entera (lo que no cubría D198).
+    await sinBucle();
+    const retenidas = [];
+    const esqueleto = async (route) => {
+      const h = route.request().headers();
+      if (h['rsc'] && !h['next-router-prefetch'] && !h['next-router-segment-prefetch']) { retenidas.push(route); return; }
+      await route.fallback();
+    };
+    await pg.route('**/mi-zona/domingo/**', esqueleto);
+    try {
+      const b = await boton(pg);
+      let carga = null;
+      const enteras = (r) => { if (r.isNavigationRequest() && r.frame() === pg.mainFrame() && r.url().includes(`/mi-zona/domingo/${J3}`)) carga ??= Date.now(); };
+      pg.on('request', enteras);
+      const t0 = Date.now();
+      await b?.click();
+      const vioEsqueleto = await hasta(async () => (await pg.getByTestId('cargando-domingo').count()) > 0 && pg.url().includes('/mi-zona/domingo/'), 5000);
+      ok(vioEsqueleto, 'la navegación cambia de ruta y se queda en el esqueleto (las peticiones del domingo no vuelven)', pg.url());
+      ok(await visto(pg.getByTestId('situacion'), 25000), 'a los ~10 s, el domingo llega por una carga entera');
+      ok(carga !== null && (!vioEsqueleto || carga - t0 >= 9000), 'por una carga entera, y no antes de ~10 s con el esqueleto', carga === null ? 'sin carga entera' : `${carga - t0} ms`);
+      pg.off('request', enteras);
+    } finally {
+      await pg.unroute('**/mi-zona/domingo/**', esqueleto);
+      for (const r of retenidas) await r.abort().catch(() => {});
+    }
+    e.errores.length = erroresD199; // los 409, las peticiones cortadas y su console.error son a propósito
+  }
+
   console.log('\n== Un jugador inactivo no lee nada');
   await sql`update public.jugadores set activo = false where person_id = 'galan-domingo-guillermo'`;
   const inact = await (await api('convocados_del_domingo', { p_fecha: J3 }, P['galan-domingo-guillermo'].token)).json();

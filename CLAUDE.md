@@ -104,6 +104,9 @@ base en solo lectura y una sola petición a `/liga`; nota en D179).
   `cancel-in-progress` y `timeout-minutes`. **Es gratis porque el repositorio es público**; si algún día pasa a privado,
   hay que revisarlo antes (gastaría la bolsa de minutos de la cuenta, que comparte Web TCPC). No tocar `salud-avisos.yml`.
 - **Nunca el calendario real ni el reloj real (D185):** las pruebas usan el calendario de prueba (`plataforma/pruebas/fixtures/calendario_prueba.json`, `infra/calendario.mjs`) y «hoy» fijo (`infra/reloj.mjs`: 19/10/2026 10:00, el mismo reloj en la base, la web y el navegador; `fechas_prueba.hoyMadrid()`, `ahoraPrueba()`). Nada de `data/calendario_…`, `new Date()` para «hoy» ni `now()` en el SQL de una prueba (usar `pruebas.ahora()`). Un caso nuevo de calendario va a `cambios_prueba`.
+- **Pruebas sintéticas, siempre con nombres inventados (D197):** `sint-…`, «Ana», «Beto»…; nunca nombres ni `person_id`
+  reales, ni un caso real descrito (fecha, motivo, circunstancias) de forma que se reconozca a la persona. El caso real
+  va, con nombres, a `privado/`.
 - **Sin esperas fijas** (`waitForTimeout`): tras un clic que guarda, `trasAccion(p, () => …click())`; para algo de la
   interfaz, `hasta(() => condición)` (`plataforma/pruebas/infra/esperas.mjs`).
 - **Capturas:** solo si se pide (`PRUEBAS_CAPTURAS=1`, o una suite suelta con `npm run pruebas:<suite>`; en las tandas,

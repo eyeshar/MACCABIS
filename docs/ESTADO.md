@@ -26,7 +26,7 @@
 - `pruebas/domingo_jugador.mjs`: bloque D199 (4 casos; detalle en D199).
 
 **Investigación del 22/11 (solo lectura):**
-- **Vercel, del 13 al 24/11:** ningún 409 ni «Failed to find Server Action», y ningún POST de acción con error.
+- **Vercel, del 13 al 24/11:** ningún 409 ni «Failed to find Server Action», y ningún POST de acción con error. Los 6 `warn` del 17 al 24/11 son `refresh_token_already_used` de Auth en `GET /` (3 peticiones).
 - **`respuestas`:** solo guarda el último estado, sin historial (BACKLOG 23), así que un intento fallido no deja huella. Todos los invitados del 22/11 tienen fila.
 - **Los que nunca respondieron en la web:** de los 22 invitados a los dos partidos, 6 solo tienen las filas importadas de SportEasy («va»), sin respuesta propia en la web.
 - **Sin nombre:** no se ha identificado al jugador; no se ha dado su nombre. Si Iván lo dice, se mira su fila en solo lectura.

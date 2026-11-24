@@ -26,11 +26,12 @@ export async function cargarMiEvento(id: string): Promise<MiEvento | null> {
   return (data as MiEvento | null) ?? null;
 }
 
-export async function cargarMisEventosDelDia(fecha: string): Promise<MiEvento[]> {
+// cache() (D198): la piden el layout del domingo (para el 404 antes del esqueleto) y la página, en la misma petición.
+export const cargarMisEventosDelDia = cache(async (fecha: string): Promise<MiEvento[]> => {
   const sb = await clienteSesion();
   const { data } = await sb.from(VISTA).select(COLS).eq("fecha", fecha).order("inicio");
   return (data ?? []) as MiEvento[];
-}
+});
 
 /** Grupos de entreno publicados (D122): en cada entreno, el nombre de SU grupo y sus compañeros. Nada mas. */
 export const cargarMisGrupos = cache(async (): Promise<{ evento_id: string; grupo: string; companeros: string[] }[]> => {
@@ -113,13 +114,27 @@ export async function cargarMiPreferencia(fecha: string): Promise<{ evento_id: s
 /** D141: tambien los NOMBRES de quien no ha contestado. Nunca motivos ni detalles: la vista no los da. */
 export type QuienVa = { va: string[]; duda: string[]; no: string[]; sin_responder: string[] };
 
+type FilaQuienVa = { evento_id: string; nombre: string; estado: string };
+
+/** D198: las filas de v_quien_va de esos eventos, por quien_va(uuid[]), que filtra los eventos ANTES de cruzarlos con
+ *  los jugadores (la vista calcula la temporada entera y filtra después: ~0,7 s de media en el real, hasta 3,7 s). Sin
+ *  la migración aplicada, la vista, como antes. */
+export async function filasQuienVa(sb: Awaited<ReturnType<typeof clienteSesion>>, eventoIds: string[]): Promise<FilaQuienVa[]> {
+  if (!eventoIds.length) return [];
+  const r = await sb.rpc("quien_va", { p_eventos: eventoIds });
+  if (!r.error) return (r.data ?? []) as FilaQuienVa[];
+  const { data } = await sb.from("v_quien_va").select("evento_id, nombre, estado").in("evento_id", eventoIds);
+  return (data ?? []) as FilaQuienVa[];
+}
+
 export async function cargarQuienVa(eventoIds: string[]): Promise<Map<string, QuienVa>> {
   const sb = await clienteSesion();
-  const { data } = await sb.from("v_quien_va").select("evento_id, nombre, estado").in("evento_id", eventoIds);
+  const data = await filasQuienVa(sb, eventoIds);
   const m = new Map<string, QuienVa>();
   for (const id of eventoIds) m.set(id, { va: [], duda: [], no: [], sin_responder: [] });
-  for (const f of (data ?? []) as { evento_id: string; nombre: string; estado: string }[]) {
-    const q = m.get(f.evento_id)!;
+  for (const f of data) {
+    const q = m.get(f.evento_id);
+    if (!q) continue;
     if (f.estado === "va") q.va.push(f.nombre);
     else if (f.estado === "duda") q.duda.push(f.nombre);
     else if (f.estado === "no") q.no.push(f.nombre);

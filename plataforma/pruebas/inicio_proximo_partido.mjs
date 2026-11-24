@@ -80,7 +80,7 @@ try {
   ok((await estado(ph2)) === 'Lesión', 'Hugo, de baja por lesión: «Lesión»');
   const pb2 = await sesion('beto');
   ok((await estado(pb2)) === 'Sin responder', 'Beto, sin convocatoria y sin responder al primero: «Sin responder»');
-  const boton = tarjeta(pb2).locator('button, a').filter({ hasText: /^(Voy|Responder al domingo)$/ }).first();
+  const boton = tarjeta(pb2).locator('button, a').filter({ hasText: /^(Voy|Responder al domingo|Ver mi domingo \/ Cambiar respuesta)$/ }).first();
   ok(await visto(boton) && await boton.evaluate((b) => b.getBoundingClientRect().height >= 44), 'con los botones para responder en la tarjeta (≥ 44 px)');
   const pg = await sesion('gaby');
   ok((await estado(pg)) === 'No vas', 'Gaby (no va a ninguno): «No vas»');

@@ -123,7 +123,8 @@ try {
     'mi_calendario_regenerar', 'mi_calendario_registrar', 'mi_calendario_version', 'mi_posicion', 'mis_grupos', 'responder_plan', 'tablero_deshacer', 'tablero_responder'];
   // Pagina del domingo (D128): nombres de la convocatoria aprobada (solo plantilla activa y gestores, dentro de la
   // funcion). La hora de la ultima importacion de SportEasy (ultima_importacion_respuestas) se borro en D172.
-  const DOMINGO = ['convocados_del_domingo'];
+  // D198: «Quién va» de unos eventos concretos (lo mismo que _quien_va: solo los eventos a los que está invitado quien pregunta).
+  const DOMINGO = ['convocados_del_domingo', 'quien_va'];
   // Alarma de la tarea de avisos (D141, correccion del 28/10; D145): la llama la barra de Gestion con la sesion del gestor;
   // is_gestor dentro (un jugador recibe 42501) y solo devuelve codigos HTTP y horas de pg_net, ningun dato de personas.
   const AVISOS = ['estado_tarea_avisos'];

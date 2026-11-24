@@ -12,7 +12,7 @@
 //     convocatorias aprobadas, y nada a un anónimo.
 //
 //   npm run pruebas:domingo
-import { preparar, personas, sinteticos, contador, visto, sinDesbordar } from './comun_e2e.mjs';
+import { preparar, personas, sinteticos, contador, visto, sinDesbordar, hasta } from './comun_e2e.mjs';
 import { adelantar, semanas, hoyMadrid } from './fechas_prueba.mjs';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -117,6 +117,68 @@ try {
   ok((await pn.getByTestId('situacion').innerText()) === 'No estás convocado este domingo', 'aprobada sin él y con «no» a los dos: «No estás convocado este domingo», no «No vas»');
   ok(/^No vas\b/.test(await pn.locator('.rw-vas .rw-etiqueta').innerText()) && /^No voy$/.test(await pn.locator('.rw-vas button[aria-pressed="true"]').innerText()), 'su respuesta: «No vas» y «No voy» marcado');
   await foto(pn, 'domingo_no_vas_375');
+
+  console.log('\n== D198: el botón del inicio dice qué hace y el toque se nota al momento');
+  // Dos partidos a horas distintas: en el inicio no se responde, se abre el domingo.
+  const boton = async (p) => { await p.goto(`${APP}/`); const b = p.getByTestId('abrir-domingo').first(); return (await visto(b)) ? b : null; };
+  const bj = await boton(pj);
+  ok(bj && (await bj.innerText()).trim() === 'Ver mi domingo / Cambiar respuesta', 'Jon (convocado y con respuesta): «Ver mi domingo / Cambiar respuesta»', bj ? await bj.innerText() : 'sin botón');
+  // Guille, con ficha en los dos (con una sola, su domingo es un partido y se responde en la tarjeta).
+  await sql`update public.jugadores set ficha_mda = true, ficha_mdl = true where person_id = 'galan-domingo-guillermo'`;
+  const bg = await boton(pg);
+  ok(bg && (await bg.innerText()).trim() === 'Responder al domingo', 'Guille (sin responder): «Responder al domingo»', bg ? await bg.innerText() : 'sin botón');
+  ok(bg && (await bg.evaluate((x) => getComputedStyle(x).touchAction)) === 'manipulation', 'el botón no hace zoom con el doble toque (touch-action: manipulation)');
+  const vp = await pg.locator('meta[name="viewport"]').getAttribute('content');
+  ok(!/maximum-scale|user-scalable/.test(vp ?? ''), 'y el pellizco sigue (ni maximum-scale ni user-scalable en el viewport)', vp);
+  if (bg) {
+    // El toque: en seguida «Abriendo…» o el esqueleto del domingo (loading.tsx), y luego el domingo. Las peticiones del
+    // domingo se cuentan para ver que un segundo toque mientras carga no lo vuelve a pedir.
+    let pedidas = 0;
+    const cuenta = (r) => { if (r.url().includes(`/mi-zona/domingo/${J3}`) && r.headers()['next-router-prefetch'] !== '1') pedidas++; };
+    pg.on('request', cuenta);
+    await bg.click();
+    await bg.click({ timeout: 1000 }).catch(() => {});
+    const pronto = await hasta(async () => (await pg.getByTestId('cargando-domingo').count()) > 0 || (await pg.getByTestId('abrir-domingo').filter({ hasText: 'Abriendo…' }).count()) > 0 || (await pg.getByTestId('situacion').count()) > 0, 3000);
+    ok(pronto, 'al tocar se ve algo al momento: «Abriendo…», el esqueleto o ya el domingo');
+    ok(await visto(pg.getByTestId('situacion'), 15000) && pg.url().endsWith(`/mi-zona/domingo/${J3}`), 'y se abre el domingo');
+    pg.off('request', cuenta);
+    ok(pedidas <= 1, 'un segundo toque mientras carga no pide el domingo otra vez', `${pedidas} peticiones`);
+
+    // Salida de emergencia: la navegación del cliente se queda colgada dentro del navegador (las peticiones RSC del
+    // domingo no vuelven nunca, como una pestaña con una versión vieja). A los ~6 s, carga entera de la página.
+    const retenidas = [];
+    const colgar = async (route) => { if (route.request().headers()['rsc']) { retenidas.push(route); return; } await route.continue(); };
+    await pg.route('**/mi-zona/domingo/**', colgar);
+    try {
+      const b2 = await boton(pg);
+      let carga = null;
+      const enteras = (r) => { if (r.isNavigationRequest() && r.frame() === pg.mainFrame() && r.url().includes(`/mi-zona/domingo/${J3}`)) carga ??= Date.now(); };
+      pg.on('request', enteras);
+      const t0 = Date.now();
+      await b2?.click();
+      ok(await hasta(async () => (await pg.getByTestId('abrir-domingo').filter({ hasText: 'Abriendo…' }).count()) > 0, 3000) && !pg.url().includes('/mi-zona/domingo/'),
+        'con la navegación colgada: «Abriendo…» y la ruta sin cambiar', pg.url());
+      ok(await visto(pg.getByTestId('situacion'), 20000) && pg.url().endsWith(`/mi-zona/domingo/${J3}`), 'a los pocos segundos, el domingo llega igual (carga entera)');
+      ok(carga !== null && carga - t0 >= 5000, 'por una carga entera de la página, y no antes de ~6 s', carga === null ? 'sin carga entera' : `${carga - t0} ms`);
+      pg.off('request', enteras);
+    } finally {
+      await pg.unroute('**/mi-zona/domingo/**', colgar);
+      for (const r of retenidas) await r.abort().catch(() => {});
+    }
+  }
+  // Un fallo al cargar no se queda en silencio (error.tsx): se le quita a la web, un momento, su función mi_zona().
+  const erroresAntes = e.errores.length;
+  await sql`revoke execute on function public.mi_zona() from authenticated`;
+  try {
+    await pg.goto(URL_D);
+    ok(await visto(pg.getByTestId('fallo-pantalla')) && /No se ha podido cargar tu domingo/.test(await pg.getByTestId('fallo-pantalla').innerText()), 'si falla, lo dice: «No se ha podido cargar tu domingo»');
+    ok(await visto(pg.getByTestId('fallo-reintentar')), 'con «Reintentar»');
+  } finally {
+    await sql`grant execute on function public.mi_zona() to authenticated`;
+  }
+  await pg.getByTestId('fallo-reintentar').click().catch(() => {});
+  ok(await visto(pg.getByTestId('situacion'), 15000), '«Reintentar», ya arreglado, trae el domingo');
+  e.errores.length = erroresAntes; // solo se quitan los del fallo provocado (a propósito); los de antes siguen contando
 
   console.log('\n== Un jugador inactivo no lee nada');
   await sql`update public.jugadores set activo = false where person_id = 'galan-domingo-guillermo'`;

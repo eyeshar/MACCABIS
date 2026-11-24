@@ -36,19 +36,19 @@ export default async function Domingo({ params }: { params: Promise<{ fecha: str
   const { fecha } = await params;
   await exigirSesion();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) notFound();
-  const partidos = (await cargarMisEventosDelDia(fecha)).filter((e) => e.tipo === "liga");
+  // D198: todo a la vez. Lo que no depende de los partidos sale ya con la sesión; «Quién va», en cuanto se sabe qué
+  // partidos hay (antes iba detrás del resto, en serie, y era la consulta más lenta). «Quién va» (D141): solo nombres y estado.
+  const delDia = cargarMisEventosDelDia(fecha).then((l) => l.filter((e) => e.tipo === "liga"));
+  const [partidos, respuestas, ausencias, miDomingo, zona, convocados, misConv, miPref, quienVa] = await Promise.all([
+    delDia, cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha), cargarMiZona(), cargarConvocadosDomingo(fecha), cargarMiConvocatoria(),
+    cargarMiPreferencia(fecha), delDia.then((l) => (l.length ? cargarQuienVa(l.map((e) => e.id)) : null)),
+  ]);
   if (!partidos.length) notFound();
   const u = unidades(partidos).find((x) => x.tipo === "domingo");
-  const [respuestas, ausencias, miDomingo, zona, convocados, misConv, miPref] = await Promise.all([
-    cargarMisRespuestas(), cargarMisAusencias(), cargarMiDomingo(fecha), cargarMiZona(), cargarConvocadosDomingo(fecha), cargarMiConvocatoria(),
-    cargarMiPreferencia(fecha),
-  ]);
   // D194: su partido preferido (solo él lo ve; la base lo borra si deja de ir a los dos).
   const prefEq = miPref ? partidos.find((e) => e.id === miPref.evento_id)?.equipo ?? null : null;
   const ahora = new Date();
   const conDuda = partidos.every((e) => dudaAbierta(e, ahora));
-  // D141: quien va, quien duda, quien no va y quien no ha contestado, partido a partido (solo nombres; la base no da motivos).
-  const quienVa = await cargarQuienVa(partidos.map((e) => e.id));
   const abierto = !!u && u.eventos.every((e) => madrid(e.fecha, e.inicio ? String(e.inicio).slice(0, 5) : "00:00") > new Date());
   const est = u ? estadoDe(u, respuestas, ausencias) : null;
   const rNo = respuestas.find((r) => partidos.some((e) => e.id === r.evento_id) && r.respuesta === "no" && r.motivo !== "horario" && r.motivo !== "no_confirmo");

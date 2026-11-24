@@ -238,6 +238,7 @@ export default async function InicioPersonal({ usuario, aviso }: { usuario: Usua
         <Responder eventoId={u.eventos[0].id} fecha={u.fecha} domingo={u.tipo === "domingo"} actual={r?.motivo === "no_confirmo" ? null : actual}
           nombre={u.tipo === "domingo" ? `partido del domingo ${+u.fecha.slice(8)}` : nombreCorto(u.eventos[0])}
           sinDuda={!u.eventos.every((x) => dudaAbierta(x, ahora))} urlDomingo={u.modo === "distintas" ? u.url : undefined}
+          respondido={!est.pendiente || Boolean(convocatorias.find((c) => c.fecha === u.fecha)?.equipos.length)}
           motivo={r?.motivo === "no_confirmo" ? null : ((r?.motivo as MotivoJugador) ?? null)} detalle={r?.detalle ?? null} />
       </div>
     );

@@ -2,6 +2,32 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## «Responder al domingo» que no parecía hacer nada en el iPhone (D198) — 24/11/2026, `fix/domingo-tactil`; migración `20261124100000_quien_va_eventos` **SIN APLICAR en el real** (la web funciona igual sin ella)
+
+**Qué pasaba:** un jugador (iPhone, Safari en pestaña) tocaba «Responder al domingo» del 29/11 y no veía nada; al insistir, zoom de doble toque. El domingo anterior creyó haber respondido «no» y no constaba.
+
+**Causa (D198):** **no había error**: todo 200 en Vercel, sin excepciones. **Había lentitud sin ninguna señal en pantalla.** La consulta de «Quién va» (`v_quien_va`) calcula la temporada entera antes de filtrar: en el real, media de 0,7 s y hasta 3,7 s, en serie detrás del resto. Con el arranque en frío, la página llegaba a tardar de 0,6 a 6,5 s esa mañana, con picos de 12 a 31 s otros días que no quedan explicados del todo. Mientras tanto, sin `loading.tsx`, el toque no enseñaba nada y cada toque repetía la petición. Entre las 07:40 y las 08:00 del 24/11 no llegó ninguna petición de esa página: el toque de las 07:49, si fue a esa hora, no salió del móvil.
+
+**Qué cambia:**
+- `plataforma/supabase/migrations/20261124100000_quien_va_eventos.sql` (+ `.revertir.sql`): función nueva `quien_va(uuid[])`, lo mismo que la vista pero solo de los eventos pedidos.
+- `src/lib/respuestas/jugador.ts` (`filasQuienVa`, `cargarQuienVa`) y `src/lib/chat/servidor.ts`: usan la función y, si no está, la vista.
+- `src/app/mi-zona/domingo/[fecha]/page.tsx` y `src/app/evento/[id]/VistaJugador.tsx`: «Quién va» en paralelo con lo demás.
+- `src/app/mi-zona/domingo/[fecha]/`: `loading.tsx` (esqueleto), `error.tsx` y `layout.tsx` (sesión, fecha y partidos del día antes del esqueleto: 307 y 404 de verdad). `src/app/evento/[id]/error.tsx` (sin `loading.tsx`: rompía sus redirecciones y su 404, D198). `src/app/error.tsx`, `src/app/global-error.tsx`, `src/components/carga/Esqueleto.tsx` y `FalloPantalla.tsx`.
+- `pruebas/infra/esperas.mjs`: el `goto` común espera a que se vaya el esqueleto. `pruebas/ejecutar.mjs`: `quien_va` en la lista de funciones de `authenticated`.
+- `src/components/respuestas/Responder.tsx` (+ `respuestas.css`): el enlace del domingo se hunde y dice «Abriendo…», no se relanza con más toques y dice «Ver mi domingo / Cambiar respuesta» si ya respondió o está convocado (`InicioPersonal.tsx` le pasa `respondido`).
+- **Salida de emergencia (condición de Iván para el merge):** en `Responder.tsx` (`AbrirDomingo`), si a los ~6 s del toque la ruta sigue siendo la de antes, carga la página entera (`window.location.assign`). Cubre la navegación del cliente colgada dentro del móvil: el 24/11 no llegó ninguna petición entre las 07:40 y las 08:00, y la hipótesis, sin comprobar, es una pestaña con una versión vieja tras un despliegue. Lo prueba `pruebas:domingo`: con las peticiones RSC del domingo colgadas, el domingo llega por una carga entera, y no antes de 5 s. **Otros enlaces (valorado, sin cambiar; BACKLOG 25):** los del evento (`/evento/[id]` desde la agenda, las tarjetas y Gestión) y los de los planes son `Link` normales y se colgarían igual. Los Voy/No voy de las tarjetas son acciones del servidor: con una versión vieja, el servidor no encuentra la acción y la respuesta no se guarda (antes, sin `error.tsx`, sin aviso claro; ahora sale la pantalla de fallo). Es candidata a explicar «creyó haber dicho que no y no constaba». Mejor arreglo general que copiar la salida a cada enlace: detectar la versión vieja (`deploymentId` de Next o comparar la versión con `/api/sesion`) y recargar.
+- `src/app/globals.css`: `touch-action: manipulation` (el pellizco sigue), franja bajo la barra de estado (`safe-area-inset-top`), `safe-area-inset-bottom` en el `body`, estilos del esqueleto y del fallo.
+- `src/components/avisos/BandaAvisos.tsx`: en un iPhone sin instalar, «Añade Maccabis a la pantalla de inicio» y cómo.
+- Pruebas: bloques D198 en `pruebas/asistencia_efectiva.mjs` y `pruebas/domingo_jugador.mjs`; `pruebas/inicio_proximo_partido.mjs` acepta el texto nuevo del botón.
+
+**Regiones (por API, 24/11):** las funciones de Vercel corren en `dub1` (Dublín: todas las invocaciones de los últimos 7 días) y Supabase está en `eu-west-1` (Irlanda). Coinciden: no hay nada que cambiar.
+
+**Medido en local (pila + `next build`/`next start`):** `v_quien_va` 494 ms → `quien_va` 15 ms; página del domingo 594 → 91 ms; esqueleto a 30–80 ms del toque; contenido a ~330 ms.
+
+**Verificado:** en local, `typecheck`, `pruebas:domingo`, `pruebas:asistencia-efectiva`, `pruebas:inicio-proximo-partido`, `pruebas:no-voy-primer-toque`, `pruebas:chat-ia` y `pruebas:humo` en verde. Tras el primer rojo de Actions, también `pruebas`, `pruebas:respuestas-pantallas`, `pruebas:eventos-pantallas`, `pruebas:numeros`, `pruebas:estructura`, `pruebas:dudas` y `pruebas:motivo-unico`. Sin sesión, el domingo da 307 a `/entrar`; con fecha mala o día sin partidos, 404. De las `-real` (solo lectura), `asistencia-eventos`, `respuestas`, `convocatoria` y `whatsapp`, en verde. **`eventos-real` (3) e `inicio-real` (1) fallan igual en `main`:** esperan 67 eventos públicos y el real tiene 68. **`solo-ficha-real` (2)** compara con la foto del 01/11 y desde entonces hay un plan nuevo. Las dos cosas son deriva de datos, ajena a este cambio: no se ha tocado. `--lista` elegía 12 suites; por la norma 15.5, las pantallas no tocadas van a GitHub Actions.
+
+**Pendiente:** aplicar la migración en el real (D111, con el OK de Iván). Mientras no esté, la web usa la vista y sigue igual de lenta en esa consulta, pero ya con esqueleto, «Abriendo…» y error visible. Tras el merge, como mucho una carga de `/mi-zona/domingo/<fecha>` sin sesión (307 a `/entrar`), sin navegador (D179). **No verificado en un iPhone real:** el zoom, la franja de arriba ni la banda; WebKit en local no da insets propios.
+
 ## Asistencia: hoja y convocatoria en los partidos desde el 24/10 (D197) — 23/11/2026, `feat/asistencia-hoja-fbm`, **PR nuevo y limpio, sin mergear (falta el visto bueno de Iván)**
 
 **Qué pasaba:** «Asistencia y motivos» contaba los partidos de liga desde el 24/10 solo con la respuesta: quien dijo «voy» contaba como «fue» aunque no viniera o no lo convocaran. Lo destapó un caso real de un convocado con «voy» que no vino.

@@ -48,10 +48,16 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+/* D198: iPhone. Sin el zoom del doble toque en lo que se pulsa (el pellizco sigue: nada de maximum-scale ni
+   user-scalable=no), y una franja fija del color del fondo bajo la hora y la bateria: con viewportFit "cover" (web
+   instalada, y Safari en iOS 26) lo que sube al hacer scroll ya no se pinta debajo de la barra de estado. */
+a, button, input, select, textarea, label, summary, [role="button"] { touch-action: manipulation; }
+body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: var(--fondo); z-index: 60; pointer-events: none; }
 body {
   margin: 0;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom); /* D198; en movil lo cambia la barra inferior (mas abajo) */
   background: var(--fondo);
   color: var(--tinta);
   font-family: var(--f-texto);
@@ -229,6 +235,17 @@ td.falta { color: var(--error); font-weight: 700; }
 details > summary { cursor: pointer; min-height: var(--toque); display: flex; align-items: center; font-weight: 700; }
 .pie { text-align: center; color: var(--tinta-suave); font-size: 0.85rem; margin-top: 32px; }
 .solo-lectores { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* D198: esqueleto de carga (loading.tsx) y pantalla de fallo (error.tsx). */
+.esq { display: flex; flex-direction: column; gap: 12px; }
+.esq-linea, .esq-bloque { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--tarjeta) 0%, var(--borde) 50%, var(--tarjeta) 100%); background-size: 200% 100%; animation: esq-brillo 1.2s ease-in-out infinite; }
+.esq-linea { height: 16px; }
+.esq-corta { width: 40%; height: 12px; }
+.esq-titulo { width: 75%; height: 30px; }
+.esq-media { width: 60%; height: 40px; border-radius: 10px; }
+.esq-bloque { height: 150px; border-radius: 14px; }
+@keyframes esq-brillo { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .esq-linea, .esq-bloque { animation: none; } }
+.fallo h1 { margin-top: 0; font-size: 26px; }
 
 /* ===== Liga 26/27 en gestion (scouting y liga consolidada, D73) ===== */
 .lg-etq { margin: 0; font-size: 0.85rem; color: var(--tinta-suave); }

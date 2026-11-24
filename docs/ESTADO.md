@@ -2,11 +2,11 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-## Una respuesta nunca se pierde en silencio (D199) — 24/11/2026, `fix/respuesta-nunca-perdida`, **PR sin mergear**
+## Una respuesta nunca se pierde en silencio (D199) — 24/11/2026, `fix/respuesta-nunca-perdida`; **PR #97 MERGEADO** (`3d43cd5`, Actions en verde en `fb63dea`) y desplegado
 
 **Qué cubre:** una pestaña abierta antes de un despliegue que guarda Voy / No voy / Duda, la respuesta del domingo, un plan o la preferencia. Hoy, sin Skew Protection, el servidor nuevo puede no conocer la acción vieja (409, «Server Action … was not found») y la respuesta no se guarda.
 
-**Skew Protection (por API):** el equipo sigue en Pro y la tiene **disponible pero inactiva** (todas las peticiones del 20 al 24/11, `inactive`). Cubre las acciones del servidor durante 12 h desde cada despliegue y no existe en Hobby. **Propuesta a Iván, sin activar** (D199). Lo de abajo funciona con ella o sin ella.
+**Skew Protection (por API):** el equipo sigue en Pro y la tiene **disponible pero inactiva** (todas las peticiones del 20 al 24/11, `inactive`). Cubre las acciones del servidor durante 12 h desde cada despliegue y no existe en Hobby. **Descartada por ahora (Iván, 24/11): no se activa** mientras no se decida conscientemente quedarse en Pro. La base es la protección propia de abajo.
 
 **Qué cambia:**
 - `next.config.ts` (`NEXT_PUBLIC_VERSION_WEB`) y `src/app/version.txt/route.ts`: la versión de cada compilación, estática, servida por la CDN sin función y sin pasar por el proxy.
@@ -31,10 +31,37 @@
 - **Los que nunca respondieron en la web:** de los 22 invitados a los dos partidos, 6 solo tienen las filas importadas de SportEasy («va»), sin respuesta propia en la web.
 - **Sin nombre:** no se ha identificado al jugador; no se ha dado su nombre. Si Iván lo dice, se mira su fila en solo lectura.
 
+**Conclusión (Iván, 24/11):** el fallo del 22/11 fue el del enlace del domingo (D198, PR #95), no una acción de una versión antigua: el «no» nunca salió del móvil.
+
+**El caso real** (solo lectura; el detalle, con nombre, en `privado/asistencia/diagnosticos/`): su respuesta al 22/11 es una de las 6 importadas de SportEasy, sin respuesta propia en la web. Con ella contó como disponible, y eso pesó en la convocatoria, en la asistencia (D197) y en MdFantasy. No se ha cambiado nada.
+
+**Filas importadas de SportEasy («va»/«no» sin fecha y sin respuesta propia): análisis, sin cambiar nada (decide Iván)**
+- **Cuántas hay** (real, 24/11):
+  - en partidos futuros: **113 «va» y 19 «no», en 29 partidos del 29/11 al 09/05/2027, de 11 personas**;
+  - ya jugados tras el fin de SportEasy (08/11–22/11): 24 «va» y 13 «no».
+- **Cuentan igual que un «voy» de la web casi en todas partes.** Las dos reglas del estado efectivo (`_estado_efectivo` en SQL, `respuestaEfectiva`/`efectivaEn` en TS) solo ven el texto de la respuesta, no `origen` ni `cambiado_en`. Dónde pesa:
+  - **Convocatoria (motor y propuesta automática):** `lib/convocatoria/datos.ts` lee la respuesta sin `origen`, así que el jugador sale disponible y entra en «van». Como `cambiado_en` es NULL, nunca sale «respondió después de la propuesta».
+  - **Registro de no convocados:** `noConvocados.ts` trata `origen = sporteasy` como «a tiempo» a propósito. Suma racha de «tiempo fuera» si no lo convocan.
+  - **«Quién va»** (`quien_va`, `v_quien_va`) y **«Respuestas al partido»:** sale como «Va».
+  - **Recordatorios y «Mensaje a los que faltan»** (`lib/avisos/planificador.ts`): no se le avisa, porque cuenta como respondido.
+  - **Panel del gestor y contadores** (`numeros/respuestas.ts`): cuenta en «van» y no en «sin responder». La pantalla de respuestas del gestor ya lo marca «importada», pero lo cuenta como «Va».
+  - **MdFantasy:**
+    - `fantasy/jornada.ts` convierte el origen en «jugador» y la falta de hora en el 01/01/1970, así que cuenta como «rápido», y nunca le cae el descuento por no contestar;
+    - a su mánager no le llega el aviso de «sin responder» (`fantasy_sin_responder`);
+    - el comentario del propio código dice que eso no debería ser «rápido».
+  - **Asistencia** (`asistenciaPlataforma`): con hoja o convocatoria manda D197; sin ellas, «voy» cuenta como «fue» (provisional).
+  - **Preferencia de partido** (`_domingo_doble`): con «va» a los dos puede marcar preferencia.
+- **Propuestas, para elegir:**
+  1. **Recomendada, rápida y antes del martes 25/11 a las 12:00** (propuesta automática del 29/11): **en los eventos futuros, pasar esas filas a «sin responder»**. Es un cambio de datos en el real, así que necesita tu OK (norma 20): volcado previo, guardar las filas en `privado/` para poder devolverlas, y luego borrarlas (o ponerlas `sin_responder`) solo donde `origen = 'sporteasy'`, `cambiado_en` es NULL y el evento es del 29/11 en adelante. Llega a todos los sitios a la vez sin tocar código. Los jugadores pasarían a recibir recordatorios y tendrían que responder en la web. Lo ya jugado no se toca (la asistencia de esos días depende de ellas).
+  2. **En el código, para lo que quede:** una regla común «respuesta válida» (`origen = sporteasy` y `cambiado_en` NULL en un evento posterior al 02/11, que cuente como «sin responder»), aplicada antes de las dos funciones del estado efectivo, en SQL y en TS. Además, en MdFantasy, sin hora no cuenta como «rápido», y en `noConvocados.ts` deja de ser «a tiempo» en esos eventos. Más trabajo y más pruebas, pero también cubre lo ya jugado.
+  3. Mostrarlas como «importada, sin confirmar» y pedir confirmación por push a esas 11 personas, sin cambiar el cálculo. Es la más suave y no evita que cuenten mientras no respondan.
+
 **Verificado en local:** `typecheck`, `pruebas:domingo` (con el bloque D199), `pruebas:no-voy-primer-toque`, `pruebas:respuestas-pantallas`, `pruebas:cache-publica` y `pruebas:humo`, en verde. `--lista` llegaba a 21 suites de pantallas: el resto, Actions (D167).
 
+**En producción:** desplegado (`dpl_4CgjQedLRujn8uoum2TvPc932k1X`, READY). Una sola comprobación por `curl` (D179): `/version.txt` da 200, `X-Vercel-Cache: PRERENDER` (estática, sin función) y justo ese id de despliegue.
+
 **Pendiente:**
-- Iván: decidir sobre Skew Protection.
+- Iván: decidir sobre las filas importadas de SportEasy (arriba; antes del martes 25/11 a las 12:00 si se quiere que no cuenten para el 29/11).
 - Los enlaces al evento y a los planes, sin salida propia (BACKLOG 25).
 - No probado en un iPhone real.
 

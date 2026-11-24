@@ -2024,7 +2024,7 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 - **Cuánto dura:** 12 h en Pro, contadas desde la creación del despliegue. Una pestaña de más de 12 h vuelve a quedar sin protección.
 - **Cómo se activa:** en Next ≥ 14.1.4 basta con encenderla en Settings › Advanced y volver a desplegar.
 - **Coste:** las páginas que leí no dan precio aparte.
-- **Propuesta a Iván, sin activar:** encenderla mientras el equipo siga en Pro. Es configuración del equipo compartido con TCPC, que decide Iván. No sustituye a lo de abajo: deja de existir al pasar a Hobby (D188) y no llega a pestañas de más de 12 h.
+- **Descartada por ahora (Iván, 24/11/2026): NO se activa** mientras no se decida conscientemente quedarse en Pro. La solución de base es la protección propia (`/version.txt` y lo de abajo), que funciona en cualquier plan. Si algún día se decide seguir en Pro, se puede encender como capa extra: Settings › Advanced y volver a desplegar.
 
 **Decisiones:**
 1. **Versión de cada compilación:** `NEXT_PUBLIC_VERSION_WEB` (`next.config.ts`) es `VERCEL_DEPLOYMENT_ID`, o el commit, o la hora de la compilación. Va dentro del JavaScript de la pestaña, y `/version.txt` la publica. Esta es una ruta **estática**: la sirve la CDN sin función, y el proxy no la toca porque el matcher ya excluye los `.txt`. Coste de CPU: ninguno.
@@ -2041,6 +2041,8 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
    - `Responder` (tarjetas y evento), `ElegirDomingo` (el domingo), `SiVoy`, `ResponderPlan` y `PreferenciaDomingo` (guardar y quitar).
    - **Fuera:** las pantallas de gestor y las ausencias. Usan otras acciones y nadie responde por ellas en una pestaña del domingo; si hace falta, el mismo `guardarSeguro`.
    - **Los enlaces normales al evento y a los planes siguen sin salida propia** (BACKLOG 25). `/evento` no tiene `loading.tsx` (D198), así que una navegación colgada se queda en la página de antes. La comprobación de versión al volver a la pestaña cubre el caso más probable.
+
+**Conclusión de la investigación (Iván, 24/11/2026):** apunta al fallo del enlace del domingo (D198, PR #95), **no** a acciones de una versión antigua. El «no» nunca salió del móvil: no hay ninguna petición fallida en el servidor. Revisado el caso real (detalle con nombre fuera de git, en `privado/asistencia/diagnosticos/`): su respuesta al 22/11 es una de las filas importadas de SportEasy («va», sin fecha), sin respuesta propia en la web.
 
 **Investigación del 22/11 (solo lectura, sin tocar datos):**
 - **Vercel, del 13 al 24/11:** ni un 409 ni un «Failed to find Server Action» (Next lo registra con `console.warn`; en registros, `warning`). Ninguna respuesta ≥ 400 a un POST de acción. Solo 503 de `/api/avisos/salud`, los 404 de bots e iconos y dos 404 de `/evento` el 24/11. **Los 6 avisos (`warn`) del 17 al 24/11**, leídos uno a uno, son 3 peticiones `GET /` con `refresh_token_already_used` de Supabase Auth: dos peticiones a la vez refrescando la misma sesión. Ninguno es de acciones del servidor.

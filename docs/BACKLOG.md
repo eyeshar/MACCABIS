@@ -82,7 +82,7 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
 25. [~] **Salida de emergencia en otros enlaces importantes** (D198). **Las respuestas, hechas con D199 (24/11/2026, `fix/respuesta-nunca-perdida`):** Voy / No voy / Duda, el domingo, los planes y la preferencia comprueban la versión antes de guardar, recargan si falla, y el botón se marca solo con la confirmación. También el esqueleto colgado y la vuelta a una pestaña vieja. **Sigue pendiente:** los enlaces normales al evento (`/evento/[id]`) y a los planes no tienen salida propia si la navegación se cuelga sin cambiar de ruta.
 26. [ ] **Prioridad baja: `refresh_token_already_used` en `GET /`** (Supabase Auth, visto el 24/11/2026 en los registros de Vercel: 3 peticiones entre el 19 y el 23/11, cada una con dos avisos). Dos peticiones a la vez renuevan la misma sesión (el proxy y la página, o dos pestañas). La segunda encuentra el token ya usado. **Riesgo:** que se le cierre la sesión a un jugador sin motivo. En los tres casos la página se sirvió igual. Mirar si el proxy y `/api/sesion` renuevan a la vez, y la opción de reutilización de Supabase (`refresh token reuse interval`).
 27. [x] ~~**Aviso a los mánagers de «sin responder» (`fantasy_sin_responder`) con las importadas del 29/11**~~ **No aplica** (D200, 25/11/2026): las importadas son respuestas válidas, así que contarlas como respondidas es lo correcto.
-28. [ ] **Prioridad media, antes de septiembre de 2027 (arranque de la 2027/28): `verificar_real.mjs` por propiedades y sin restos en el real** (Iván, 25/11/2026; sigue a D201). Es manual y escribe en el real: crea 5 cuentas `prueba-…@maccabis.invalid` y una campaña «PRUEBA temporal», y **cambia a mano el correo de dos jugadores reales**. Lo deshace todo en un `finally`, que no se ejecuta si el proceso muere de golpe (Ctrl+C dos veces, cierre de la ventana, falta de memoria); los dos jugadores se quedarían sin poder entrar con su correo.
+28. [ ] **PRIORIDAD ALTA (Iván, 25/11/2026, D202), como tarde antes de septiembre de 2027 (arranque de la 2027/28): `verificar_real.mjs` por propiedades y sin restos en el real** (sigue a D201). **PROHIBIDA contra el real hasta resolver este punto:** el script se niega a arrancar sin `--pila` (código 2, con un mensaje que lo explica). Sube a prioridad alta por el riesgo de dejar sin acceso a jugadores reales. **Vía elegida (Iván): el jugador sintético.** El 25/11 se comprobó, en solo lectura, que ningún jugador real tiene hoy el correo alterado (ni rastro de `prueba-…@maccabis.invalid`, ni gestores ni campañas «PRUEBA», y los dos jugadores que toca tienen el mismo correo en los 43 volcados). Es manual y escribe en el real: crea 5 cuentas `prueba-…@maccabis.invalid` y una campaña «PRUEBA temporal», y **cambia a mano el correo de dos jugadores reales**. Lo deshace todo en un `finally`, que no se ejecuta si el proceso muere de golpe (Ctrl+C dos veces, cierre de la ventana, falta de memoria); los dos jugadores se quedarían sin poder entrar con su correo.
    - **Propiedades, no números:**
      - quitar «44» filas de calendario y «22» de clasificación de la liga (valen para la 2026/27);
      - quitar el mote «Manu» escrito en el código (el del jugador que elige);
@@ -93,12 +93,13 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
      - una segunda ejecución, o una orden propia, lee ese registro y lo deshace;
      - borrarlo solo al acabar la limpieza;
      - Ctrl+C y SIGTERM llevan a la limpieza;
-     - mejor aún, no tocar correos de jugadores reales: un jugador sintético `sint-…` creado y borrado en la propia prueba.
+     - **vía elegida: no tocar correos de jugadores reales.** Un jugador sintético `sint-…` (con su cuenta `@maccabis.invalid`), creado y borrado en la propia prueba y apuntado en el registro de antes. Así un corte a medias solo deja restos sintéticos, que la orden de huérfanos encuentra; nunca a un jugador sin acceso.
    - **Orden para detectar huérfanos** (`npm run db:temporales`, solo lectura; borrar, con `--confirmar <ref>` y el OK de Iván, norma 20). Lista:
      - cuentas de auth con `@maccabis.invalid`;
      - gestores «PRUEBA temporal»;
      - campañas «PRUEBA temporal …» y sus pedidos;
      - el registro pendiente de `privado/tmp/`, si lo hay.
+   - **Al acabar:** quitar la guarda de `verificar_real.mjs` (con el OK de Iván) y la prohibición de `CLAUDE.md`.
    - **Prueba:** en la pila local, cortar la verificación a medias (matar el proceso) y comprobar que la orden encuentra los restos y que la limpieza los quita. Recuento de cuentas de auth antes y después (norma 14).
 
 ## Pendiente de Iván

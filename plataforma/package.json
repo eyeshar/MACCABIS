@@ -143,6 +143,7 @@
     "pruebas:rapidas": "node pruebas/infra/corredor.mjs rapidas",
     "pruebas:completas": "node pruebas/infra/corredor.mjs completas",
     "pruebas:limpiar": "node pruebas/infra/limpiar.mjs",
+    "pruebas:huerfanos": "node pruebas/huerfanos.mjs",
     "ci:estado": "node ../scripts/ci_estado.mjs"
   },
   "dependencies": {

@@ -5,10 +5,12 @@
 import { migrar as migrarDe } from '../../scripts/db.mjs';
 import { fijarRelojBase } from './reloj.mjs';
 import { esquemaAlDia } from './esquema.mjs';
+import { permitirImportadasEnPruebas } from './importadas.mjs';
 
 export async function migrar(sql, opciones) {
   const r = await migrarDe(sql, opciones);
   await fijarRelojBase(sql);
+  await permitirImportadasEnPruebas(sql);
   await esquemaAlDia(sql);
   return r;
 }

@@ -2,6 +2,24 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Filas importadas de SportEasy y caso del 22/11 (D200, D199) — 25/11/2026, `fix/importadas-sporteasy`
+
+**Las importadas son respuestas válidas (Iván, 25/11): se quitaron y se restauraron el mismo día** (D200):
+- Las 117 importadas de eventos desde el 06/12 se quitaron con volcado y copia en `privado/respuestas/`. Por el cambio de criterio se **restauraron tal cual** (0 diferencias campo a campo).
+- **Excepciones: 0** (nadie respondió en la web entre medias). **Recordatorios en ese rato: 0.**
+- Desde el 06/12, otra vez 224 filas y 117 importadas. Intactas las 15 del 29/11 y las 98 de lo jugado (2 de las 100 son ahora la respuesta del gestor del 22/11). 28 cuentas antes y después.
+- **29/11, sin tocar:** convocatoria aprobada (24/11 11:29, 9+9, WhatsApp y aviso enviados). La propuesta automática no la sustituye ni reenvía nada. **7 convocados tienen como único «va» una fila importada** (lista con nombres fuera de git, en `privado/asistencia/diagnosticos/`). Con el nuevo criterio es una respuesta válida.
+
+**Caso del 22/11, corregido** con `gestor_responder` y una nueva puntuación de la jornada (D199):
+- las dos faltas pasan a «con excusa» (`viaje`), y se mantiene;
+- MdFantasy, −1 (compromiso y total 3 → 2), sin mover el valor de mercado. Devolverle el +1, solo si Iván lo confirma.
+
+**Código (PR #99, `fix/importadas-sporteasy`):**
+- La migración `20261125100000_sin_respuestas_importadas` (un disparador que rechaza respuestas nuevas con origen sporteasy).
+- MdFantasy no cambia: la regla «sin hora = sin responder» se quitó antes de mergear.
+- La pila de pruebas apaga el disparador para los datos de prueba (`pruebas/infra/importadas.mjs`).
+- Pruebas en `pruebas:fin-sporteasy` y `pruebas:fantasy-logica`.
+
 ## Una respuesta nunca se pierde en silencio (D199) — 24/11/2026, `fix/respuesta-nunca-perdida`; **PR #97 MERGEADO** (`3d43cd5`, Actions en verde en `fb63dea`) y desplegado
 
 **Qué cubre:** una pestaña abierta antes de un despliegue que guarda Voy / No voy / Duda, la respuesta del domingo, un plan o la preferencia. Hoy, sin Skew Protection, el servidor nuevo puede no conocer la acción vieja (409, «Server Action … was not found») y la respuesta no se guarda.
@@ -61,7 +79,7 @@
 **En producción:** desplegado (`dpl_4CgjQedLRujn8uoum2TvPc932k1X`, READY). Una sola comprobación por `curl` (D179): `/version.txt` da 200, `X-Vercel-Cache: PRERENDER` (estática, sin función) y justo ese id de despliegue.
 
 **Pendiente:**
-- Iván: decidir sobre las filas importadas de SportEasy (arriba; antes del martes 25/11 a las 12:00 si se quiere que no cuenten para el 29/11).
+- ~~Iván: decidir sobre las filas importadas de SportEasy~~ Decidido (D200): son respuestas válidas y se quedan.
 - Los enlaces al evento y a los planes, sin salida propia (BACKLOG 25).
 - No probado en un iPhone real.
 

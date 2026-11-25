@@ -298,5 +298,25 @@ ok(wa.includes('*MdFantasy · jornada del 8/11*') && wa.includes('🥇 Ene · 60
 ok(!/motivo|nivel|plant[oó]n/i.test(wa), 'el resumen no lleva nada privado');
 eq(insignias('a', pjs).map((i) => i.clave), ['mvp', 'doblete', '20', 'compromiso'], 'insignias de la carta');
 
+console.log('\n== D200: una respuesta importada de SportEasy (sin hora) cuenta como respondida antes del plazo');
+{
+  // Ana responde en la web; Beto solo tiene la fila importada («va», sin hora). Vale para cualquier jornada.
+  const jornadaDe = (fecha) => ({
+    fecha, huella: 'h', ronda: 0, parametros: {}, partidos: [], lineas: [], avisos: [], asistencia: [], convocados: [], managers: [],
+    jugadores: [{ person_id: 'a', nombre_oficial: 'Uno, Ana', nombre_visible: 'Ana' }, { person_id: 'b', nombre_oficial: 'Dos, Beto', nombre_visible: 'Beto' }],
+    eventos: [{ id: 'p1', tipo: 'liga', equipo: 'MdA', fecha, inicio: '10:15:00', oficial: true }],
+    estados: [
+      { evento_id: 'p1', person_id: 'a', estado: 'va', por: null, origen: 'jugador', cambiado_en: `${fecha.slice(0, 8)}${String(Number(fecha.slice(8)) - 6).padStart(2, '0')}T09:00:00Z`, primera_en: null },
+      { evento_id: 'p1', person_id: 'b', estado: 'va', por: null, origen: 'sporteasy', cambiado_en: null, primera_en: null },
+    ],
+  });
+  const dom = (r, id) => r.puntos.get(id).unidades.find((u) => u.clase === 'domingo');
+  for (const f of ['2026-11-22', '2026-12-13']) {
+    const r = puntuarJornada(jornadaDe(f), P);
+    eq([dom(r, 'b').respuesta, dom(r, 'b').como], [P.respuestaATiempo, 'respondió antes del plazo'], `${f}: la importada, +1 «antes del plazo» (nunca «rápido»)`);
+    ok(dom(r, 'a').respuesta > 0, `${f}: quien respondió en la web, igual`);
+  }
+}
+
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

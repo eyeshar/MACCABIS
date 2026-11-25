@@ -2055,3 +2055,38 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 2. `/version.txt` con otra versión: recarga sin llamar a la acción.
 3. El servidor no contesta: «Guardando…» y, a los ~10 s, «todavía NO está guardada», sin marcar. Al cortarse, recarga con «No se ha podido guardar…».
 4. Prefetch del esqueleto que llega y página que no: se ve el esqueleto con la ruta nueva, y a los ~10 s el domingo llega por una carga entera.
+
+**Corrección del caso del 22/11 (Iván, 25/11/2026; con los mecanismos que ya había, sin tocar el cálculo):**
+- **Asistencia:** las dos faltas «sin excusa» (MdA y MdL) pasan a **justificadas**. Un gestor pone su respuesta con `gestor_responder` (la misma que usa el tablero): «No voy», motivo `viaje`, detalle «Vacaciones». «Vacaciones» no existe como motivo; el más cercano es `viaje`. Queda en `tablero_registro`, así que se puede deshacer. Con D197 (convocado, fuera de la hoja y con un «no» con motivo) sale «con excusa» en los dos partidos.
+- **MdFantasy:** sale el +1 «respondió antes del plazo» de ese domingo. Lo da la nueva puntuación de la jornada del 22/11: se marcó como pendiente igual que lo hace la corrección de asistencia (`huella = null`, `valor_quieto = true`, para que no se mueva el valor de mercado), y la tarea la puntuó a las 00:00 del 25/11 con el código desplegado. Ahora el domingo dice «respondió un gestor por él» (0). Compromiso y total, 3 → 2, y el valor de mercado no cambia.
+- **Comprobado antes, en solo lectura:** se simuló la nueva puntuación con los datos del real. Tal cual daba lo guardado exactamente (0 diferencias). Con el «no» del gestor cambiaba solo esa persona (−1) y ningún mánager.
+- **Nada más de su historial cambia** (el entreno del 18/11 sigue +2). Detalle con nombre, fuera de git: `privado/asistencia/diagnosticos/`.
+- **Tras el cambio de criterio de D200 (las importadas son respuestas válidas):** la falta justificada se mantiene (motivo `viaje`). El −1 de MdFantasy sigue mientras Iván no confirme devolverlo. Si lo confirma: se vuelve a marcar la jornada del 22/11 para puntuar (`huella = null`, `valor_quieto = true`). Ojo: con el «no» del gestor el domingo seguirá saliendo «respondió un gestor por él»; para el +1 habría que puntuar esa unidad aparte, y eso es un mecanismo nuevo que habría que proponer antes.
+
+## D200 — Filas importadas de SportEasy: son respuestas válidas; se restauraron, el importador queda bloqueado y MdFantasy no cambia (Iván, 24–25/11/2026; Code, `fix/importadas-sporteasy`)
+
+**Contexto:** el 26/10, antes del fin de SportEasy (D172), se importaron respuestas («va»/«no») a partidos de toda la temporada, sin fecha. Cuentan igual que una respuesta dada en la web: convocatoria, «Quién va», recordatorios, panel, no convocados, MdFantasy y asistencia. Lo destapó el caso del 22/11 (D198, D199). El análisis está en `ESTADO.md` (D199).
+
+**Lo que pasó (25/11/2026):**
+1. **Primero se quitaron** (OK de Iván del 24/11): las 117 importadas de eventos desde el 06/12 (100 «va» de 10 personas y 17 «no» sin motivo de 3, en 27 partidos del 13/12 al 09/05/2027) pasaron a «sin responder». Antes: volcado completo (`privado/backups/2026-11-25_pre-importadas.sql`) y las 117 filas, tal cual, en `privado/respuestas/importadas_sporteasy_desde_2026-12-06_quitadas_2026-11-25.json`.
+2. **Cambio de criterio de Iván, el mismo día: se restauraron.** Las importadas son respuestas válidas de los jugadores. Las dieron ellos en SportEasy y, si quieren, las cambian en la web. Borrarlas fue un error: dejaba sin respuesta a quien ya había contestado, le habría mandado recordatorios y le habría dejado fuera de la convocatoria, sin que hubiera cambiado nada.
+   - **Restauradas tal cual** (mismo `id` y mismos campos, comprobado campo a campo: 0 diferencias). Una sola transacción que comprobaba el número, y sin invalidar respuestas del domingo (`maccabis.desde_domingo`). Volcado previo: `privado/backups/2026-11-25_pre-sin-importadas.sql`.
+   - **Excepciones: 0.** Entre el borrado y la restauración nadie respondió en la web a esos eventos: ni en `respuestas` ni en el domingo.
+   - **Recordatorios en ese rato: 0.** No salió ninguno, ni enviado ni programado (`avisos_registro`), a esas personas por esos eventos.
+   - **Recuentos:** desde el 06/12, de 107 filas a 224; importadas desde el 06/12, de 0 a 117. Las 15 del 29/11 y las 98 de lo ya jugado, intactas: eran 100 y 2 son ahora la respuesta del gestor del caso del 22/11 (D199). 28 cuentas antes y después.
+3. **El 29/11 no se tocó.** Su convocatoria ya estaba aprobada y compartida. Con una aprobada, la propuesta automática no propone (`tareaConvocatoria` → `trasAprobar`, que solo avisa a los gestores) y la base lo impide (`convocatoria_propuesta_auto` devuelve 'aprobada').
+
+**Decisiones:**
+1. **Las importadas cuentan como siempre:** en la convocatoria, el panel, los recordatorios, la asistencia y MdFantasy. En MdFantasy, +1 «antes del plazo» y nunca «rápido», como hasta ahora. La regla «sin hora = sin responder» que llegó a escribirse en esta rama se quitó antes de mergear.
+2. **El importador no puede volver:** migración `20261125100000_sin_respuestas_importadas`, solo aditiva. Un disparador rechaza cualquier fila nueva de `respuestas` con origen `sporteasy`, o una que pase a serlo (`respuesta_importada_no_permitida`), venga de donde venga, también de un script con la URL de la base. El importador ya no existe (D153/D172) y una fila importada nueva solo podría venir de un error.
+   - Las importadas que hay se pueden cambiar (al responder en la web pasan a ser del jugador) y borrar.
+   - **En la pila de pruebas**, el disparador se apaga tras migrar (`pruebas/infra/importadas.mjs`), porque muchas suites usan filas «importadas» como dato de partida. `pruebas:fin-sporteasy` lo enciende para comprobar que rechaza.
+3. **Lo ya jugado no se recalcula.** La única excepción es el caso del 22/11, corregido con los mecanismos de siempre (D199).
+
+**Pruebas:**
+- `pruebas:fin-sporteasy`, bloque D200:
+  - la migración es aditiva y tiene su `.revertir.sql`;
+  - rechaza una fila nueva con sporteasy (también como superusuario) y que una existente pase a sporteasy;
+  - las existentes se pueden tocar, pasan a ser del jugador al responder y se pueden borrar;
+  - se revierte y se vuelve a aplicar.
+- `pruebas:fantasy-logica`, bloque D200: la importada da +1 «antes del plazo» antes y después del 29/11, y quien respondió en la web, igual.

@@ -2061,7 +2061,7 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 - **MdFantasy:** sale el +1 «respondió antes del plazo» de ese domingo. Lo da la nueva puntuación de la jornada del 22/11: se marcó como pendiente igual que lo hace la corrección de asistencia (`huella = null`, `valor_quieto = true`, para que no se mueva el valor de mercado), y la tarea la puntuó a las 00:00 del 25/11 con el código desplegado. Ahora el domingo dice «respondió un gestor por él» (0). Compromiso y total, 3 → 2, y el valor de mercado no cambia.
 - **Comprobado antes, en solo lectura:** se simuló la nueva puntuación con los datos del real. Tal cual daba lo guardado exactamente (0 diferencias). Con el «no» del gestor cambiaba solo esa persona (−1) y ningún mánager.
 - **Nada más de su historial cambia** (el entreno del 18/11 sigue +2). Detalle con nombre, fuera de git: `privado/asistencia/diagnosticos/`.
-- **Tras el cambio de criterio de D200 (las importadas son respuestas válidas):** la falta justificada se mantiene (motivo `viaje`). El −1 de MdFantasy sigue mientras Iván no confirme devolverlo. Si lo confirma: se vuelve a marcar la jornada del 22/11 para puntuar (`huella = null`, `valor_quieto = true`). Ojo: con el «no» del gestor el domingo seguirá saliendo «respondió un gestor por él»; para el +1 habría que puntuar esa unidad aparte, y eso es un mecanismo nuevo que habría que proponer antes.
+- **Tras el cambio de criterio de D200 (las importadas son respuestas válidas):** la falta justificada se mantiene (motivo `viaje`). **El −1 de MdFantasy se queda como está** (Iván, 25/11/2026): no se devuelve el +1 y no se hace ningún mecanismo nuevo para eso.
 
 ## D200 — Filas importadas de SportEasy: son respuestas válidas; se restauraron, el importador queda bloqueado y MdFantasy no cambia (Iván, 24–25/11/2026; Code, `fix/importadas-sporteasy`)
 
@@ -2082,6 +2082,8 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
    - Las importadas que hay se pueden cambiar (al responder en la web pasan a ser del jugador) y borrar.
    - **En la pila de pruebas**, el disparador se apaga tras migrar (`pruebas/infra/importadas.mjs`), porque muchas suites usan filas «importadas» como dato de partida. `pruebas:fin-sporteasy` lo enciende para comprobar que rechaza.
 3. **Lo ya jugado no se recalcula.** La única excepción es el caso del 22/11, corregido con los mecanismos de siempre (D199).
+
+**Aplicado (25/11/2026):** PR #99 mergeado (`a76f3a8`) y la migración aplicada en el real con D111 (volcado previo, 28 cuentas antes y después). El disparador está activo y rechaza pasar una fila a sporteasy.
 
 **Pruebas:**
 - `pruebas:fin-sporteasy`, bloque D200:

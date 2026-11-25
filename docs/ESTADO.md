@@ -12,9 +12,9 @@
 
 **Caso del 22/11, corregido** con `gestor_responder` y una nueva puntuación de la jornada (D199):
 - las dos faltas pasan a «con excusa» (`viaje`), y se mantiene;
-- MdFantasy, −1 (compromiso y total 3 → 2), sin mover el valor de mercado. Devolverle el +1, solo si Iván lo confirma.
+- MdFantasy, −1 (compromiso y total 3 → 2), sin mover el valor de mercado. Se queda así: no se devuelve el +1 (Iván, 25/11).
 
-**Código (PR #99, `fix/importadas-sporteasy`):**
+**Código (PR #99, `fix/importadas-sporteasy`): MERGEADO** (`a76f3a8`, Actions en verde en `39fe2f6`). **Migración `20261125100000` APLICADA en el real con D111** (25/11, volcado `privado/backups/2026-11-25_pre-disparador-importadas.sql`, 88 `COPY`; 28 cuentas antes y después; disparador activo y comprobado: rechaza pasar una fila a sporteasy). Las `-real`: `respuestas-real`, `convocatoria-real` y `asistencia-eventos-real` en verde; `eventos-real`, `inicio-real` y `solo-ficha-real`, con su fallo conocido del recuento fijo (BACKLOG 24).
 - La migración `20261125100000_sin_respuestas_importadas` (un disparador que rechaza respuestas nuevas con origen sporteasy).
 - MdFantasy no cambia: la regla «sin hora = sin responder» se quitó antes de mergear.
 - La pila de pruebas apaga el disparador para los datos de prueba (`pruebas/infra/importadas.mjs`).

@@ -88,7 +88,7 @@ ok(de(600)?.mcp.map((m) => m.pid).join(',') === '604' && Math.round(de(600).mem 
 const sinVentana = sesionesClaude([...base, ...ses], 700, new Set());
 ok(sinVentana.find((x) => x.pid === 600)?.terminal?.ventana === false, 'sin ventana visible, lo dice');
 // Nunca se cierra una sesión: lo que lista no pasa por parar() ni por matarArbol() (comprobado en el código de limpiar.mjs).
-const fuente = fs.readFileSync(new URL('./infra/limpiar.mjs', import.meta.url), 'utf8');
+const fuente = fs.readFileSync(new URL('./infra/limpiar.mjs', import.meta.url), 'utf8').replace(/\r\n/g, '\n'); // en Windows, git lo deja en CRLF
 const cuerpo = fuente.slice(fuente.indexOf('function listarSesiones'), fuente.indexOf('\n}\n', fuente.indexOf('function listarSesiones')));
 ok(cuerpo.length > 100 && !/parar\(|matarArbol|\.kill\(|taskkill|Stop-Process/.test(cuerpo), 'limpiar.mjs solo las lista: nada que las pare en listarSesiones()');
 ok((fuente.match(/sesionesClaude\(/g) ?? []).length === 1, 'y sesionesClaude() solo se usa ahí');

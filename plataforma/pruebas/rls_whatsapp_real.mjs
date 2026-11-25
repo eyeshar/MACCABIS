@@ -2,8 +2,9 @@
 // D177 y D178 CONTRA EL SUPABASE REAL, en SOLO LECTURA (como pruebas:respuestas-real). No crea ni borra cuentas ni
 // escribe nada: anónimo por HTTPS con la clave pública; un jugador y un gestor con cuentas que YA existen, dentro de una
 // transacción READ ONLY que adopta su rol y claims. Vale antes y después de aplicar 20261104100000 y 20261104110000.
-//   - D177: en el entreno del miércoles 04/11/2026 (o el que se pase con --fecha), el «Quién va» del jugador (v_quien_va)
-//     da los mismos números que Gestión (respuestaEfectiva con los datos de la base). Antes de aplicar, no coinciden.
+//   - D177: en el próximo entreno programado (o el último, si no queda ninguno; o el que se pase con --fecha), el «Quién
+//     va» del jugador (v_quien_va) da los mismos números que Gestión (respuestaEfectiva con los datos de la base). Antes
+//     de aplicar, no coinciden. (Hasta BACKLOG 24, D201, era siempre el del 04/11/2026: una fecha fija.)
 //   - D178: whatsapp_contacto y telefono, solo gestores: ni anónimo ni un jugador los leen; ninguna vista los expone.
 // Solo imprime recuentos y motes (nunca teléfonos, contactos, motivos ni marcas).
 //
@@ -20,8 +21,11 @@ dotenv.config({ path: path.join(RAIZ, '.env.local') });
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const i = process.argv.indexOf('--fecha');
-const FECHA = i > 0 ? process.argv[i + 1] : '2026-11-04';
 const sql = conectar();
+// Hoy en Madrid (contra el real, el reloj de verdad es el que vale: es lo que ve el club).
+const HOY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
+const FECHA = i > 0 ? process.argv[i + 1] : (await sql`select fecha::text f from public.eventos where tipo = 'entreno' and estado = 'programado' and borrado_en is null
+  order by (fecha < ${HOY}::date), case when fecha >= ${HOY}::date then fecha end, fecha desc limit 1`)[0]?.f;
 let fallos = 0;
 const ok = (c, que, det = '') => { if (c) console.log(`  OK    ${que}`); else { fallos++; console.log(`  FALLO ${que}${det ? ` -> ${det}` : ''}`); } };
 

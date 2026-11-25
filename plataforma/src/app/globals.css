@@ -846,3 +846,7 @@ html[data-sesion="pendiente"] :is(.nv-menu, .nv-derecha, .nv-barra, .nv-titulo, 
 a[data-abriendo] { cursor: progress; animation: abriendo 0.9s ease-in-out infinite alternate; }
 @keyframes abriendo { from { opacity: 1; } to { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { a[data-abriendo] { animation: none; opacity: 0.6; } }
+/* D203: la petición salió y a los ~20 s no ha llegado: el aviso, justo debajo del enlace tocado (GuardaEnlaces). */
+a[data-tarda] { animation: none; opacity: 1; }
+.enlace-tarda { position: absolute; z-index: 60; margin-top: 4px; max-width: calc(100vw - 16px); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; background: var(--fondo, #fff); color: inherit; border: 2px solid var(--amarillo, #f5c400); border-radius: 10px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); }
+.enlace-tarda .boton { min-height: 44px; }

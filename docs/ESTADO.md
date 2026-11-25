@@ -4,10 +4,15 @@
 
 ## Enlaces al evento y a los planes con salida de emergencia (D203, BACKLOG 25 cerrado) — 25/11/2026, `fix/enlaces-sin-salida`
 
-- **Qué cambia:** un toque en cualquier enlace a `/evento/…` o `/planes/…` ya no puede quedarse sin respuesta. Si la navegación se cuelga, carga entera a los ~6 s; si la pestaña es de un despliegue anterior (`/version.txt`), en seguida. El enlace parpadea suave mientras abre y un segundo toque no lo relanza.
+- **Qué cambia:** un toque en cualquier enlace a `/evento/…` o `/planes/…` ya no puede quedarse sin respuesta. El enlace parpadea suave mientras abre y un segundo toque no lo relanza.
+  - Pestaña de un despliegue anterior (`/version.txt`): carga entera en seguida.
+  - A los ~6 s, si la petición ni ha salido del navegador: carga entera.
+  - **Si salió y sigue en curso, no se recarga** (cargas reales de 12–31 s; no duplicar CPU). A los ~20 s, «Está tardando más de lo normal» con «Recargar» a mano.
+  - Igual en «Responder al domingo».
+  - Ctrl, Mayús, Alt o ⌘ + clic, el clic central, `target="_blank"` y las descargas: no se mete.
 - **Cómo:** una sola guarda en el layout raíz (`components/nav/GuardaEnlaces.tsx`) con la lógica común en `lib/navegacion/salida.ts`, que usa también «Responder al domingo». No se ha tocado ninguno de los 17 enlaces (8 ficheros); uno nuevo queda cubierto solo.
 - **Sin `loading.tsx` en `/evento`** (D198): sus redirecciones y sus 404 siguen igual, comprobado.
-- **Pruebas:** `pruebas:enlaces` (nueva, 31 OK; sin la guarda, 10 fallos). `pruebas:domingo` y `pruebas:no-voy-primer-toque`, en verde.
+- **Pruebas:** `pruebas:enlaces` (nueva). Sin la guarda, 10 fallos; con la regla vieja de recargar a los 6 s, 5. Tiene los casos de la petición lenta que termina bien y de los toques especiales. `pruebas:domingo` (no sale / sale y no vuelve) y `pruebas:no-voy-primer-toque`, en verde.
 
 ## verificar_real.mjs prohibida; memoria y node huérfanos (D202) — 25/11/2026, `docs/backlog-verificar-real`
 

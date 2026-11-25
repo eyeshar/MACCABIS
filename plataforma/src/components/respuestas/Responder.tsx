@@ -60,26 +60,30 @@ export default function Responder({ eventoId, fecha, domingo, actual, nombre, gr
 
 // D198: el toque se nota al momento («Abriendo…», el boton apagado) aunque el domingo tarde en llegar, y un segundo toque
 // mientras carga no relanza la navegacion (antes cada toque pedia la pagina otra vez y no se veia nada).
+// D203: la salida de emergencia es la comun (@/lib/navegacion/salida): carga entera si la pestaña es vieja o si a los ~6 s
+// la peticion ni ha salido; si salio y sigue en curso, no se recarga y a los ~20 s el boton dice «Está tardando más de lo
+// normal · Toca para recargar» (y otro toque recarga).
 function AbrirDomingo({ href, texto, grande }: { href: string; texto: string; grande?: boolean }) {
   const cargando = useRef(false);
-  const [pulsado, setPulsado] = useState(false);
-  // Si la navegacion no llega a cambiar de pagina (cancelada, sin red), el boton vuelve a estar listo.
-  useEffect(() => { if (!pulsado) return; const t = setTimeout(() => setPulsado(false), 15000); return () => clearTimeout(t); }, [pulsado]);
+  const [estado, setEstado] = useState<"listo" | "abriendo" | "tarda">("listo");
   return (
-    <Link href={href} className={`boton boton-amarillo rw-abrir${grande ? " grande" : ""}${pulsado ? " pulsado" : ""}`} data-testid="abrir-domingo" data-salida-propia
-      onClick={(ev) => { if (cargando.current) { ev.preventDefault(); return; } setPulsado(true); salidaDeEmergencia(href); }}>
-      <EstadoEnlace texto={texto} pulsado={pulsado} cargando={cargando} />
+    <Link href={href} className={`boton boton-amarillo rw-abrir${grande ? " grande" : ""}${estado !== "listo" ? " pulsado" : ""}`} data-testid="abrir-domingo" data-salida-propia
+      onClick={(ev) => {
+        if (estado === "tarda") { ev.preventDefault(); window.location.assign(href); return; }
+        if (cargando.current || estado === "abriendo") { ev.preventDefault(); return; }
+        setEstado("abriendo");
+        salidaDeEmergencia(href, { alCambiar: () => setEstado("listo"), alTardar: () => setEstado("tarda") });
+      }}>
+      <EstadoEnlace texto={texto} estado={estado} cargando={cargando} />
     </Link>
   );
 }
 
-// D198: salida de emergencia (si a los ~6 s la ruta sigue igual, carga entera; con D203 también si la pestaña es de una
-// versión vieja). La lógica es común con GuardaEnlaces (evento y planes): @/lib/navegacion/salida.
-
-function EstadoEnlace({ texto, pulsado, cargando }: { texto: string; pulsado: boolean; cargando: RefObject<boolean> }) {
+function EstadoEnlace({ texto, estado, cargando }: { texto: string; estado: "listo" | "abriendo" | "tarda"; cargando: RefObject<boolean> }) {
   const { pending } = useLinkStatus();
   useEffect(() => { cargando.current = pending; }, [pending, cargando]);
-  const ocupado = pending || pulsado;
+  if (estado === "tarda") return <span className="rw-abrir-texto" role="alert">Está tardando más de lo normal · Toca para recargar</span>;
+  const ocupado = pending || estado === "abriendo";
   return (
     <span className="rw-abrir-texto" aria-live="polite" aria-busy={ocupado || undefined}>
       {ocupado ? <><span className="rw-girando" aria-hidden="true" />Abriendo…</> : texto}

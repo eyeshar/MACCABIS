@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import Cabecera from "@/components/nav/Cabecera";
 import SesionProvider, { SCRIPT_SESION } from "@/components/nav/Sesion";
 import RastroNavegacion from "@/components/nav/RastroNavegacion";
+import GuardaEnlaces from "@/components/nav/GuardaEnlaces";
 import AvisoRecarga from "@/components/version/AvisoRecarga";
 import Analitica from "@/components/analitica/Analitica";
 import { URL_PRODUCCION, esVistaPrevia } from "@/lib/indexacion";
@@ -52,6 +53,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div id="contenido" tabIndex={-1}>{children}</div>
         </SesionProvider>
         <Suspense fallback={null}><RastroNavegacion /></Suspense>
+        {/* D203: los enlaces al evento y a los planes nunca se quedan sin respuesta (salida de emergencia común). */}
+        <GuardaEnlaces />
         <RegistroSW />
         {/* D188: Web Analytics de Vercel, lista pero apagada (NEXT_PUBLIC_ANALITICA=1 la enciende al compilar). */}
         {ANALITICA_ACTIVA && <Analitica />}

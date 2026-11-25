@@ -55,6 +55,7 @@ Si `--lista` elige algo que no encaja o se queda corto, añade con `--suite`. Au
 | `src/app/gestion/(panel)/eventos/…`, pistas, importar | plataforma | `pruebas:eventos-pantallas`, `pruebas:tablero`, `pruebas:numeros`, `pruebas:dudas`, `pruebas:ubicacion`, `pruebas:disponibilidad-pantallas`… (las que visitan `/gestion/eventos`) |
 | `src/app/gestion/(panel)/convocatoria/…`, `src/lib/convocatoria/` | plataforma | `pruebas:convocatoria-pantallas`, `pruebas:convocatoria-motor`, `pruebas:proyeccion`, `pruebas:avisos-logica`, `pruebas:numeros`… |
 | `src/app/gestion/(panel)/tablero`, `grupos`, `src/lib/grupos/` | plataforma | `pruebas:tablero`, `pruebas:grupos`, `pruebas:safe-area`, `pruebas:disponibilidad-pantallas` |
+| `src/components/nav/GuardaEnlaces.tsx`, `src/lib/navegacion/`, los enlaces a `/evento` o `/planes` (D203) | plataforma | `pruebas:enlaces`, `pruebas:domingo` |
 | `src/app/mi-zona/…`, `agenda`, `src/components/inicio/`, respuestas | plataforma | `pruebas:respuestas-pantallas`, `pruebas:inicio-personal`, `pruebas:domingo`, `pruebas:dudas`… |
 | `src/app/entrar`, `cuenta`, `auth`, la navegación (`src/components/nav/`) | plataforma | `pruebas`, `pruebas:navegacion` (y las que entran con código) |
 | `src/app/page.tsx`, `layout.tsx`, `globals.css` (raíz) | plataforma | `pruebas:portada`, `pruebas:navegacion` (+ las que usen lo tocado) |

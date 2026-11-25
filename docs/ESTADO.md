@@ -2,6 +2,18 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Enlaces al evento y a los planes con salida de emergencia (D203, BACKLOG 25 cerrado) — 25/11/2026, `fix/enlaces-sin-salida`
+
+- **Qué cambia:** un toque en cualquier enlace a `/evento/…` o `/planes/…` ya no puede quedarse sin respuesta. El enlace parpadea suave mientras abre y un segundo toque no lo relanza.
+  - Pestaña de un despliegue anterior (`/version.txt`): carga entera en seguida.
+  - A los ~6 s, si la petición ni ha salido del navegador: carga entera.
+  - **Si salió y sigue en curso, no se recarga** (cargas reales de 12–31 s; no duplicar CPU). A los ~20 s, «Está tardando más de lo normal» con «Recargar» a mano.
+  - Igual en «Responder al domingo».
+  - Ctrl, Mayús, Alt o ⌘ + clic, el clic central, `target="_blank"` y las descargas: no se mete.
+- **Cómo:** una sola guarda en el layout raíz (`components/nav/GuardaEnlaces.tsx`) con la lógica común en `lib/navegacion/salida.ts`, que usa también «Responder al domingo». No se ha tocado ninguno de los 17 enlaces (8 ficheros); uno nuevo queda cubierto solo.
+- **Sin `loading.tsx` en `/evento`** (D198): sus redirecciones y sus 404 siguen igual, comprobado.
+- **Pruebas:** `pruebas:enlaces` (nueva). Sin la guarda, 10 fallos; con la regla vieja de recargar a los 6 s, 5. Tiene los casos de la petición lenta que termina bien y de los toques especiales. `pruebas:domingo` (no sale / sale y no vuelve) y `pruebas:no-voy-primer-toque`, en verde.
+
 ## verificar_real.mjs prohibida; memoria y node huérfanos (D202) — 25/11/2026, `docs/backlog-verificar-real`
 
 - **`verificar_real.mjs`, PROHIBIDA contra el real** hasta resolver BACKLOG 28 (prioridad alta, vía del jugador sintético). Se niega a arrancar sin `--pila`. Motivo: cambia el correo de dos jugadores reales y, si se corta, pueden quedarse sin acceso.
@@ -9,7 +21,7 @@
 - **Memoria:** `pruebas:rapidas` y `pruebas:completas` esperan (hasta 3 min) si hay menos de 4 GB libres antes de una suite pesada, y si no, avisan.
 - **`pruebas:limpiar`** caza los node huérfanos de las carpetas de Maccabis (`-- --lista` para verlos sin tocar nada). Probado con un huérfano fabricado.
 - **Norma nueva:** nada de esperas en segundo plano.
-- **Revisión de procesos del 25/11:** las pruebas no dejaban restos. Se cerró la espera huérfana de `ci:estado`. Quedan, sin tocar, tres sesiones viejas de Claude Code (14, 20 y 21/11; unos 1,35 GB; que las cierre Iván) y un `next start` de Web TCPC.
+- **Revisión de procesos del 25/11:** las pruebas no dejaban restos. Se cerró la espera huérfana de `ci:estado`. Quedan, sin tocar, un `next start` de Web TCPC y dos sesiones de Claude Code del 14 y del 21/11 (unos 0,9 GB). Cuelgan de una ventana de Windows Terminal abierta, así que las cierra Iván. La del 20/11 que se contó como vieja era la propia sesión de trabajo.
 
 ## Las `-real` comprueban propiedades, no recuentos (D201, BACKLOG 24) — 25/11/2026, `fix/real-propiedades`; **PR #101 MERGEADO** (`345e6ed`, Actions en verde en `6c02eff`)
 

@@ -100,6 +100,7 @@
     "pruebas:vista-pista-libre": "node pruebas/vista_pista_libre.mjs",
     "pruebas:seguridad-base": "node pruebas/seguridad_base.mjs",
     "pruebas:domingo": "node pruebas/domingo_jugador.mjs",
+    "pruebas:enlaces": "node pruebas/enlaces_evento.mjs",
     "pruebas:liga-partidos": "node pruebas/liga_partidos.mjs",
     "pruebas:liga-club": "node pruebas/liga_club.mjs",
     "pruebas:numeros": "node pruebas/numeros_pantallas.mjs",

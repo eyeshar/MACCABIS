@@ -144,24 +144,45 @@ try {
     pg.off('request', cuenta);
     ok(pedidas <= 1, 'un segundo toque mientras carga no pide el domingo otra vez', `${pedidas} peticiones`);
 
-    // Salida de emergencia: la navegación del cliente se queda colgada dentro del navegador (las peticiones RSC del
-    // domingo no vuelven nunca, como una pestaña con una versión vieja). A los ~6 s, carga entera de la página.
+    // Salida de emergencia (D198, D203). Las peticiones RSC del domingo (también las de prefetch) se retienen, así que la
+    // ruta no cambia. Dos casos: (a) la de la navegación ni sale del navegador (se sustituye `fetch` en la página, como
+    // una pestaña con una versión vieja): carga entera a los ~6 s; (b) sale y no vuelve: no se recarga sola (en
+    // producción hay cargas reales de 12–31 s) y a los ~20 s el botón lo dice y un toque recarga.
+    const URL_REL = `/mi-zona/domingo/${J3}`;
     const retenidas = [];
     const colgar = async (route) => { if (route.request().headers()['rsc']) { retenidas.push(route); return; } await route.continue(); };
     await pg.route('**/mi-zona/domingo/**', colgar);
+    let carga = null, t0 = 0;
+    const enteras = (r) => { if (r.isNavigationRequest() && r.frame() === pg.mainFrame() && r.url().includes(URL_REL)) carga ??= Date.now(); };
+    pg.on('request', enteras);
     try {
-      const b2 = await boton(pg);
-      let carga = null;
-      const enteras = (r) => { if (r.isNavigationRequest() && r.frame() === pg.mainFrame() && r.url().includes(`/mi-zona/domingo/${J3}`)) carga ??= Date.now(); };
-      pg.on('request', enteras);
-      const t0 = Date.now();
+      let b2 = await boton(pg);
+      await pg.evaluate((t) => {
+        const previo = window.fetch;
+        window.fetch = function (entrada, init) {
+          const u = String(entrada?.url ?? entrada);
+          const h = new Headers(init?.headers);
+          if (u.includes('_rsc') && u.includes(t) && !h.has('next-router-prefetch') && !h.has('next-router-segment-prefetch')) return new Promise(() => {});
+          return previo.apply(this, arguments);
+        };
+      }, URL_REL);
+      carga = null; t0 = Date.now();
       await b2?.click();
       ok(await hasta(async () => (await pg.getByTestId('abrir-domingo').filter({ hasText: 'Abriendo…' }).count()) > 0, 3000) && !pg.url().includes('/mi-zona/domingo/'),
-        'con la navegación colgada: «Abriendo…» y la ruta sin cambiar', pg.url());
-      ok(await visto(pg.getByTestId('situacion'), 20000) && pg.url().endsWith(`/mi-zona/domingo/${J3}`), 'a los pocos segundos, el domingo llega igual (carga entera)');
-      ok(carga !== null && carga - t0 >= 5000, 'por una carga entera de la página, y no antes de ~6 s', carga === null ? 'sin carga entera' : `${carga - t0} ms`);
-      pg.off('request', enteras);
+        '(a) la navegación no sale: «Abriendo…» y la ruta sin cambiar', pg.url());
+      ok(await visto(pg.getByTestId('situacion'), 20000) && pg.url().endsWith(URL_REL), '(a) a los pocos segundos, el domingo llega igual (carga entera)');
+      ok(carga !== null && carga - t0 >= 5000, '(a) por una carga entera de la página, y no antes de ~6 s', carga === null ? 'sin carga entera' : `${carga - t0} ms`);
+
+      b2 = await boton(pg);
+      carga = null; t0 = Date.now();
+      await b2?.click();
+      ok(!(await hasta(() => carga !== null, 9000)) && !pg.url().includes('/mi-zona/domingo/'), '(b) la petición sale y no vuelve: pasados ~6 s (y 9), sin carga entera', carga === null ? '' : `${carga - t0} ms`);
+      const tarda = pg.getByTestId('abrir-domingo').filter({ hasText: 'Está tardando más de lo normal' });
+      ok(await visto(tarda, 16000) && Date.now() - t0 >= 18000, '(b) a los ~20 s: «Está tardando más de lo normal · Toca para recargar»', `${Date.now() - t0} ms`);
+      await tarda.click();
+      ok(await visto(pg.getByTestId('situacion'), 15000) && pg.url().endsWith(URL_REL) && carga !== null, '(b) el toque recarga: el domingo llega por carga entera');
     } finally {
+      pg.off('request', enteras);
       await pg.unroute('**/mi-zona/domingo/**', colgar);
       for (const r of retenidas) await r.abort().catch(() => {});
     }

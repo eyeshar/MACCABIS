@@ -2169,3 +2169,28 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 - `pruebas:huerfanos` (nueva, lógica), con listas de procesos inventadas sacadas de lo visto el 25/11. Es huérfana y solo cuenta el proceso de arriba: la espera de ci:estado sin su consola, y un padre muerto cuyo PID reutilizó otro programa. No se tocan: la misma espera con la sesión viva, la rutina A desde el Programador de tareas, un `next start` de Web TCPC, unas pruebas lanzadas desde una terminal, los servidores MCP y Postgres.
 - En esta máquina: un node huérfano real fabricado a propósito. `pruebas:limpiar -- --lista` lo encontró (y nada más) y `pruebas:limpiar` lo paró.
 - `verificar_real.mjs`: sin destino, la guardia de siempre (código 3); con el real confirmado, la prohibición (código 2), sin conectarse ni crear nada.
+
+## D203 — Los enlaces al evento y a los planes nunca se quedan sin respuesta: una guarda común en el layout, no un componente por enlace (Iván, 25/11/2026; Code, `fix/enlaces-sin-salida`) — cierra el BACKLOG 25
+
+**Contexto:** D198 dio a «Responder al domingo» una salida de emergencia (si a los ~6 s del toque la dirección sigue igual, carga entera) y D199 la comprobación de versión con `/version.txt`. Los enlaces normales al evento (`/evento/[id]`) y a los planes (`/planes/[id]`) seguían sin ella: si la navegación del cliente se colgaba sin cambiar de ruta, el toque no hacía nada. Son **17 enlaces en 8 ficheros** (el calendario, las filas y tarjetas del inicio y de la agenda, el panel de Gestión, la lista de eventos, la ficha del evento en Gestión, «Respuestas» de `CuentasRespuestas` y las pestañas del evento; la guarda cubre además «Proponer un plan», «Editar» y el pase de lista), y cualquiera nuevo tendría que acordarse de usarla.
+
+**Decisión:**
+1. **Una sola guarda, `GuardaEnlaces`, en el layout raíz:** escucha los toques del documento (fase de captura) y actúa en todo enlace cuya dirección empiece por `/evento/` o `/planes/`. **No se toca ningún enlace**, y uno nuevo queda cubierto solo.
+2. **La lógica, común** (`src/lib/navegacion/salida.ts`). `AbrirDomingo` usa la misma función; lleva `data-salida-propia` para que la guarda no la duplique. Tras un toque, si la dirección no ha cambiado:
+   - **Pestaña de otro despliegue** (`/version.txt`, D199): carga entera en seguida.
+   - **A los ~6 s, si la petición de esa navegación ni ha salido del navegador** (el caso del 24/11): carga entera.
+   - **Si salió y sigue en curso, no se recarga** (ajuste de Iván, 25/11/2026). En producción hay cargas reales de 12–31 s: recargar a los 6 s duplicaba el trabajo del servidor (cuota de CPU compartida con TCPC) y hacía esperar más. A los ~20 s, si sigue sin llegar: «Está tardando más de lo normal» con «Recargar» a mano. En los enlaces de la guarda sale justo debajo del enlace; en `AbrirDomingo`, en el propio botón («· Toca para recargar»). Otro toque en el enlace también recarga.
+   - **Cómo se sabe si salió:** no sirve PerformanceObserver, porque Resource Timing solo anota una petición al terminar y aquí importa la que sigue en curso. Se envuelve `fetch` (Next lo busca al llamar: `segment-cache/fetch.js`) y se anota cada petición RSC de navegación (`?_rsc=`, sin cabecera de prefetch) con su ruta y su hora. La petición y su respuesta no se tocan. Si un día Next dejara de usar el `fetch` global, la guarda creería que no ha salido y volvería a recargar a los 6 s: `pruebas:enlaces` lo detecta (caso de la petición lenta).
+3. **El aviso, en el propio enlace:** `data-abriendo` y `aria-busy` (el enlace parpadea suave; quieto con «reducir movimiento»), sin cambiar su tamaño. **Nada de `loading.tsx` en `/evento`:** rompía su redirección y su 404 (D198). Un segundo toque mientras está «abriendo» no relanza la navegación (la guarda lo para antes que `<Link>`, que mira `defaultPrevented`).
+4. **No se mete en** lo que no es un toque normal (Ctrl/⌘/Mayús/Alt, botón central, otra pestaña, descarga, otro sitio, la misma dirección). Una redirección o un 404 del destino cambian la dirección: la salida de emergencia no se dispara.
+
+**Pruebas:** `pruebas:enlaces` (nueva, pila local y web compilada):
+- sin problemas, navegación del cliente sin carga entera;
+- navegación que no sale (se sustituye `fetch` en la página), para el evento y para el plan: aviso en el enlace al momento, la dirección igual, dos toques más sin pedirlo otra vez y carga entera pasados ~6 s;
+- **petición lenta (10 s) que termina bien:** llega sin carga entera y con una sola petición;
+- petición que no vuelve: sin carga entera a los 9 s, aviso a los ~20 s (no antes de 18) y «Recargar» hace la carga entera;
+- **toques especiales** (Ctrl, Mayús, Alt y ⌘ + clic, clic central, `target="_blank"`, descarga): el enlace no se marca y no hay carga entera;
+- pestaña vieja: carga entera en menos de 4 s;
+- redirecciones (`/evento/<plan>` → `/planes/<plan>`, `/planes/<oficial>` → `/evento/<oficial>`) y 404 (id inexistente, no-id, plan borrado), también por navegación del cliente, sin carga entera de más.
+
+**Demostración:** sin la guarda, 10 fallos (los casos colgados y la pestaña vieja). Con la regla vieja (recargar a los 6 s aunque la petición haya salido), 5 fallos: la petición lenta y la que no vuelve. En los dos casos, las redirecciones y los 404 siguen en verde. `pruebas:domingo` cubre lo mismo en `AbrirDomingo`: no sale, carga entera a los ~6 s; sale y no vuelve, a los ~20 s «Está tardando más de lo normal · Toca para recargar», y el toque recarga. `pruebas:no-voy-primer-toque`, en verde.

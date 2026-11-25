@@ -82,6 +82,24 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
 25. [~] **Salida de emergencia en otros enlaces importantes** (D198). **Las respuestas, hechas con D199 (24/11/2026, `fix/respuesta-nunca-perdida`):** Voy / No voy / Duda, el domingo, los planes y la preferencia comprueban la versión antes de guardar, recargan si falla, y el botón se marca solo con la confirmación. También el esqueleto colgado y la vuelta a una pestaña vieja. **Sigue pendiente:** los enlaces normales al evento (`/evento/[id]`) y a los planes no tienen salida propia si la navegación se cuelga sin cambiar de ruta.
 26. [ ] **Prioridad baja: `refresh_token_already_used` en `GET /`** (Supabase Auth, visto el 24/11/2026 en los registros de Vercel: 3 peticiones entre el 19 y el 23/11, cada una con dos avisos). Dos peticiones a la vez renuevan la misma sesión (el proxy y la página, o dos pestañas). La segunda encuentra el token ya usado. **Riesgo:** que se le cierre la sesión a un jugador sin motivo. En los tres casos la página se sirvió igual. Mirar si el proxy y `/api/sesion` renuevan a la vez, y la opción de reutilización de Supabase (`refresh token reuse interval`).
 27. [x] ~~**Aviso a los mánagers de «sin responder» (`fantasy_sin_responder`) con las importadas del 29/11**~~ **No aplica** (D200, 25/11/2026): las importadas son respuestas válidas, así que contarlas como respondidas es lo correcto.
+28. [ ] **Prioridad media, antes de septiembre de 2027 (arranque de la 2027/28): `verificar_real.mjs` por propiedades y sin restos en el real** (Iván, 25/11/2026; sigue a D201). Es manual y escribe en el real: crea 5 cuentas `prueba-…@maccabis.invalid` y una campaña «PRUEBA temporal», y **cambia a mano el correo de dos jugadores reales**. Lo deshace todo en un `finally`, que no se ejecuta si el proceso muere de golpe (Ctrl+C dos veces, cierre de la ventana, falta de memoria); los dos jugadores se quedarían sin poder entrar con su correo.
+   - **Propiedades, no números:**
+     - quitar «44» filas de calendario y «22» de clasificación de la liga (valen para la 2026/27);
+     - quitar el mote «Manu» escrito en el código (el del jugador que elige);
+     - comparar con la base en el momento, como las `-real` (D201).
+   - **La huella de todas las tablas de `public` antes y después:** también falla si el club escribe algo mientras corre. Ceñirla a las filas que toca la prueba, o al menos decir qué tabla cambió y si fue por ella.
+   - **Limpieza garantizada aunque se corte:**
+     - antes de crear nada, apuntar en un fichero de `privado/tmp/` qué va a crear y qué correos cambia (con el original);
+     - una segunda ejecución, o una orden propia, lee ese registro y lo deshace;
+     - borrarlo solo al acabar la limpieza;
+     - Ctrl+C y SIGTERM llevan a la limpieza;
+     - mejor aún, no tocar correos de jugadores reales: un jugador sintético `sint-…` creado y borrado en la propia prueba.
+   - **Orden para detectar huérfanos** (`npm run db:temporales`, solo lectura; borrar, con `--confirmar <ref>` y el OK de Iván, norma 20). Lista:
+     - cuentas de auth con `@maccabis.invalid`;
+     - gestores «PRUEBA temporal»;
+     - campañas «PRUEBA temporal …» y sus pedidos;
+     - el registro pendiente de `privado/tmp/`, si lo hay.
+   - **Prueba:** en la pila local, cortar la verificación a medias (matar el proceso) y comprobar que la orden encuentra los restos y que la limpieza los quita. Recuento de cuentas de auth antes y después (norma 14).
 
 ## Pendiente de Iván
 

@@ -2,6 +2,12 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## `pruebas:limpiar` lista las sesiones de Claude Code (D204) — 25/11/2026, `feat/limpiar-sesiones-claude`
+
+- **Qué cambia:** al final de `pruebas:limpiar` (también con `-- --lista`) salen las sesiones de Claude Code abiertas: PID, desde cuándo, de qué terminal cuelgan y si tiene ventana, sus MCP y la memoria. Se marca la actual (`► ESTA SESIÓN`). **Nunca las cierra:** lo decide Iván.
+- **Hoy:** dos, del 14 y del 21/11, en pestañas de una ventana de Windows Terminal abierta, más la actual (20/11).
+- **Pruebas:** `pruebas:huerfanos`, bloque D204 (22 OK en total).
+
 ## Enlaces al evento y a los planes con salida de emergencia (D203, BACKLOG 25 cerrado) — 25/11/2026, `fix/enlaces-sin-salida`
 
 - **Qué cambia:** un toque en cualquier enlace a `/evento/…` o `/planes/…` ya no puede quedarse sin respuesta. El enlace parpadea suave mientras abre y un segundo toque no lo relanza.

@@ -60,3 +60,51 @@ export function nodesHuerfanos(lista, m) {
   });
   return deArriba.map(({ p, raiz }) => ({ pid: p.pid, cmd: p.cmd, raiz: raiz.pid === p.pid ? null : raiz }));
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Sesiones de Claude Code abiertas (D204). SOLO SE LISTAN: `pruebas:limpiar` nunca cierra una sesión de Claude; eso lo
+// decide Iván, una a una. El 25/11/2026 se contó por error la propia sesión de trabajo entre las «viejas»: por eso se
+// marca cuál es la actual (la que tiene en su cadena de padres al proceso que pregunta).
+
+/** El CLI de Claude Code (instalado con npm o el nativo de ~/.local/bin). No la aplicación de escritorio (WindowsApps). */
+export const CLAUDE_CODE = /[\\/]@anthropic-ai[\\/]claude-code[\\/]|[\\/]\.local[\\/]bin[\\/]claude(\.exe)?(["\s]|$)/i;
+const TERMINALES = [
+  [/windowsterminal\.exe/i, 'Windows Terminal'], [/(^|[\\/"\s])code\.exe/i, 'VS Code'], [/cursor\.exe/i, 'Cursor'],
+  [/openconsole\.exe|conhost\.exe/i, 'consola'], [/explorer\.exe/i, 'el escritorio (Explorador)'],
+];
+const nombre = (cmd) => (cmd.match(/([^\\/"\s]+\.exe)/i)?.[1] ?? cmd.split(/\s+/)[0] ?? '?');
+/** FileTime de Windows (100 ns desde 1601) a Date; null si no hay. */
+export const fechaDe = (t) => (t ? new Date(t / 1e4 - 11644473600000) : null);
+
+/**
+ * Las sesiones de Claude Code de una lista de procesos ({ pid, ppid, t, cmd, mem }), sin las anidadas en otra.
+ * `yo`: el PID que pregunta (para marcar la sesión actual). `conVentana`: PIDs con ventana visible (Windows).
+ * Devuelve [{ pid, inicio, actual, padre: { pid, nombre } | null, terminal: { pid, nombre, ventana (null: el Explorador,
+ *            cuya ventana no dice nada) } | null,
+ *            mcp: [{ pid, cmd }], mem }] (mem = la sesión y todo lo que cuelga de ella).
+ */
+export function sesionesClaude(lista, yo, conVentana = new Set()) {
+  const porPid = new Map(lista.map((p) => [p.pid, p]));
+  const hijos = new Map();
+  for (const p of lista) { if (!hijos.has(p.ppid)) hijos.set(p.ppid, []); if (p.pid !== p.ppid) hijos.get(p.ppid).push(p); }
+  const subir = (p) => { const out = []; let x = p; for (let n = 0; n < 40 && !huerfano(x, porPid); n++) { x = porPid.get(x.ppid); out.push(x); } return out; };
+  const bajar = (p) => { const out = [], cola = [p]; while (cola.length) { const x = cola.shift(); for (const h of hijos.get(x.pid) ?? []) if (h.t >= x.t || !h.t || !x.t) { out.push(h); cola.push(h); } } return out; };
+  const sesiones = lista.filter((p) => CLAUDE_CODE.test(p.cmd));
+  const ids = new Set(sesiones.map((p) => p.pid));
+  const mia = (() => { const y = porPid.get(yo); if (!y) return null; if (ids.has(y.pid)) return y.pid; return subir(y).find((x) => ids.has(x.pid))?.pid ?? null; })();
+  return sesiones.filter((p) => !subir(p).some((x) => ids.has(x.pid))).map((p) => {
+    const arriba = subir(p);
+    const padre = arriba[0] ?? null;
+    let terminal = null;
+    for (const x of arriba) { const t = TERMINALES.find(([re]) => re.test(x.cmd)); if (t) { terminal = { pid: x.pid, nombre: t[1], ventana: /explorer\.exe/i.test(x.cmd) ? null : conVentana.has(x.pid) }; break; } }
+    const abajo = bajar(p);
+    return {
+      pid: p.pid, inicio: fechaDe(p.t), actual: p.pid === mia,
+      padre: padre ? { pid: padre.pid, nombre: nombre(padre.cmd) } : null,
+      terminal,
+      // El servidor de verdad (el node que corre su cli.js), no el `npx` que lo lanzó.
+      mcp: abajo.filter((x) => /mcp/i.test(x.cmd) && /node(\.exe)?["\s]/i.test(x.cmd) && !/npx-cli\.js/i.test(x.cmd)).map((x) => ({ pid: x.pid, cmd: x.cmd })),
+      mem: [p, ...abajo].reduce((s, x) => s + (x.mem || 0), 0),
+    };
+  }).sort((a, b) => (a.inicio?.getTime() ?? 0) - (b.inicio?.getTime() ?? 0));
+}

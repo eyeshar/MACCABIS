@@ -138,6 +138,9 @@ base en solo lectura y una sola petición a `/liga`; nota en D179).
   nombra y no lo toca). No lo lances con una prueba de este worktree en marcha: también la pararía. Desde D202 caza
   también los **node huérfanos de cualquier carpeta de Maccabis** (los que siguen vivos cuando su sesión ya se cerró;
   lo que cuelga de una sesión, terminal o tarea programada viva no lo toca). `-- --lista` solo dice lo que haría.
+  Al final **lista las sesiones de Claude Code abiertas** (D204): PID, inicio, de qué terminal cuelgan y si tiene
+  ventana visible, sus servidores MCP y la memoria, con **► ESTA SESIÓN** en la actual. **Nunca cierra una sesión**:
+  eso lo decide Iván, una a una (desde su terminal o cerrando la pestaña).
 - **Memoria (D202):** antes de cada suite pesada, `pruebas:rapidas` y `pruebas:completas` miran la memoria libre. Con
   menos de 4 GB esperan hasta 3 minutos a que se libere y, si no, arrancan con un AVISO (`PRUEBAS_MEMORIA_MIN_GB`,
   `PRUEBAS_MEMORIA_ESPERA_S`; `0` lo apaga).

@@ -7,7 +7,8 @@
 //   npm run pruebas:huerfanos
 // vigila: pruebas/infra/limpiar.mjs
 // vigila: pruebas/infra/huerfanos.mjs
-import { nodesHuerfanos, esNodeMaccabis } from './infra/huerfanos.mjs';
+import fs from 'node:fs';
+import { nodesHuerfanos, esNodeMaccabis, sesionesClaude } from './infra/huerfanos.mjs';
 
 let fallos = 0;
 const ok = (c, m, d = '') => { console.log(`  ${c ? 'OK   ' : 'FALLO'} ${m}${c ? '' : d ? ' -> ' + d : ''}`); if (!c) fallos++; };
@@ -60,6 +61,37 @@ const reusado = [{ pid: 400, ppid: 401, t: 80, cmd: `node ${RAIZ}\\Maccabis\\pla
 ok(pids(reusado) === '400', 'su padre murió y Windows dio el PID a otro programa (más nuevo): huérfano', pids(reusado));
 const terminal = [{ pid: 500, ppid: 22, t: 100, cmd: `${NPM} run pruebas:rapidas` }, { pid: 501, ppid: 500, t: 101, cmd: 'node pruebas/rls_eventos_real.mjs' }];
 ok(pids(terminal) === '', 'unas pruebas lanzadas a mano desde una terminal abierta: no se tocan', pids(terminal));
+
+console.log('\n== Sesiones de Claude Code (D204): solo se listan, marcando la actual');
+// 23: la del árbol fijo (claude nativo de ~/.local/bin) en una pestaña de Windows Terminal; dentro, la terminal de sus
+// herramientas (700, el que pregunta) y un claude anidado (900, no cuenta aparte). 600: otra, instalada con npm, en otra
+// pestaña, con sus MCP (el npx y el servidor). 800: una cuya terminal ya se cerró. 950: la aplicación de escritorio.
+const CC = '"C:\\Users\\Ana\\AppData\\Roaming\\npm\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe" --dangerously-skip-permissions';
+const ses = [
+  { pid: 700, ppid: 23, t: 200, cmd: 'powershell.exe -NoProfile -NonInteractive', mem: 1 },
+  { pid: 900, ppid: 23, t: 201, cmd: CC, mem: 1 },
+  { pid: 601, ppid: 21, t: 110, cmd: 'powershell.exe', mem: 0 },
+  { pid: 600, ppid: 601, t: 111, cmd: CC, mem: 300 * 2 ** 20 },
+  { pid: 602, ppid: 600, t: 112, cmd: 'C:\\WINDOWS\\system32\\cmd.exe /d /s /c "npx ^"@playwright/mcp@latest^""', mem: 0 },
+  { pid: 603, ppid: 602, t: 113, cmd: '"F:\\node\\node.exe" "F:\\node\\node_modules\\npm\\bin\\npx-cli.js" "@playwright/mcp@latest"', mem: 0 },
+  { pid: 604, ppid: 603, t: 114, cmd: '"node" "C:\\Users\\Ana\\AppData\\Local\\npm-cache\\_npx\\x\\node_modules\\@playwright\\mcp\\cli.js"', mem: 100 * 2 ** 20 },
+  { pid: 800, ppid: 799, t: 120, cmd: CC, mem: 0 },
+  { pid: 950, ppid: 20, t: 130, cmd: '"C:\\Program Files\\WindowsApps\\Claude_6.1_x64__x\\app\\claude.exe"', mem: 0 },
+];
+const s = sesionesClaude([...base, ...ses], 700, new Set([21]));
+const de = (pid) => s.find((x) => x.pid === pid);
+ok(s.map((x) => x.pid).join(',') === '23,600,800', 'tres sesiones, por fecha: sin la aplicación de escritorio ni la anidada', s.map((x) => x.pid).join(','));
+ok(de(23)?.actual && !de(600)?.actual && !de(800)?.actual, 'la actual es la que tiene en su cadena al que pregunta (y solo esa)');
+ok(de(23)?.terminal?.nombre === 'Windows Terminal' && de(23).terminal.pid === 21 && de(23).terminal.ventana === true && de(23).padre?.nombre === 'powershell.exe', 'de qué cuelga: su pestaña (powershell) de Windows Terminal, con ventana visible', JSON.stringify(de(23)));
+ok(de(800)?.terminal === null && de(800)?.padre === null, 'la de la terminal cerrada: sin padre ni terminal viva', JSON.stringify(de(800)));
+ok(de(600)?.mcp.map((m) => m.pid).join(',') === '604' && Math.round(de(600).mem / 2 ** 20) === 400, 'sus MCP (el servidor, no el npx) y la memoria con todo lo que cuelga', JSON.stringify(de(600)));
+const sinVentana = sesionesClaude([...base, ...ses], 700, new Set());
+ok(sinVentana.find((x) => x.pid === 600)?.terminal?.ventana === false, 'sin ventana visible, lo dice');
+// Nunca se cierra una sesión: lo que lista no pasa por parar() ni por matarArbol() (comprobado en el código de limpiar.mjs).
+const fuente = fs.readFileSync(new URL('./infra/limpiar.mjs', import.meta.url), 'utf8');
+const cuerpo = fuente.slice(fuente.indexOf('function listarSesiones'), fuente.indexOf('\n}\n', fuente.indexOf('function listarSesiones')));
+ok(cuerpo.length > 100 && !/parar\(|matarArbol|\.kill\(|taskkill|Stop-Process/.test(cuerpo), 'limpiar.mjs solo las lista: nada que las pare en listarSesiones()');
+ok((fuente.match(/sesionesClaude\(/g) ?? []).length === 1, 'y sesionesClaude() solo se usa ahí');
 
 console.log(fallos ? `\n${fallos} FALLO(S)` : '\nTodo OK');
 process.exit(fallos ? 1 : 0);

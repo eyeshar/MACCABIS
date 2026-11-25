@@ -2142,3 +2142,30 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 `infra/catalogo.mjs` acepta `// vigila: pruebas/…`: `pruebas:rapidas` elige `real-mutaciones` cuando se toca una de esas `-real` o sus reglas.
 
 **D179:** ninguna `-real` abre un navegador. Todas van por SQL y por la API REST de Supabase. `verificar_real.mjs` (manual, crea cuentas temporales) sigue esperando 44 filas de calendario y 22 de clasificación de la liga. No se ha tocado (crea cuentas en el real, norma 14); queda anotado en ESTADO.
+
+## D202 — `verificar_real.mjs` prohibida contra el real; memoria antes de las suites pesadas, node huérfanos y nada de esperas en segundo plano (Iván, 25/11/2026; Code, `docs/backlog-verificar-real`)
+
+**Contexto:**
+- Al revisar `verificar_real.mjs` (BACKLOG 28) se vio que cambia a mano el correo de dos jugadores reales y crea 5 cuentas en auth. Lo deshace en un `finally`, que no se ejecuta si el proceso muere de golpe.
+- El mismo día, el equipo se quedó sin memoria por tercera vez. Claude Code mató una espera en segundo plano (`ci:estado -- --esperar`), pero su `npm` y su `node` siguieron vivos, sin consola.
+- Revisión del 25/11:
+  - las pruebas de Maccabis no dejaban nada (ni Postgres, ni PostgREST, ni Chrome de Playwright, ni next);
+  - quedaban tres sesiones viejas de Claude Code abiertas (14, 20 y 21/11, unos 1,35 GB) y un `next start` de Web TCPC, que no se tocaron;
+  - con Chrome y los demás programas abiertos quedan unos 5 GB libres de 32.
+
+**Decisiones:**
+1. **`verificar_real.mjs`, prohibida contra el real hasta resolver BACKLOG 28** (sube a prioridad alta).
+   - El script se niega a arrancar sin `--pila`: código 2 y un mensaje con el motivo. La guarda va justo después de la de destino (norma 19), antes de crear nada; `pruebas:destino` sigue viendo su guardia de siempre.
+   - Vía para rehacerla (Iván): un jugador sintético, sin tocar correos de jugadores reales.
+   - **Comprobado en solo lectura el 25/11:** ningún jugador real tiene el correo alterado. En el real no hay ningún correo `prueba-…`/`@maccabis.invalid` (jugadores, auth, gestores) ni campañas «PRUEBA». Los dos jugadores que toca la suite tienen el mismo correo en los 43 volcados de `privado/backups/` y una cuenta con ese correo. Los 28 jugadores con correo tienen cuenta con el mismo correo. El único correo distinto del primer volcado (07/10) es el de un jugador cambiado una vez entre el 26 y el 28/10 (el caso de su cuenta de Google, ESTADO), estable desde entonces y que no es de prueba.
+2. **Memoria antes de cada suite pesada** (`pruebas:rapidas` y `pruebas:completas`, solo en local). Con menos de 4 GB libres, la suite espera hasta 3 minutos y, si no se liberan, arranca con un AVISO. Se ajusta con `PRUEBAS_MEMORIA_MIN_GB` y `PRUEBAS_MEMORIA_ESPERA_S`; `0` lo apaga.
+3. **`pruebas:limpiar` caza los node huérfanos de cualquier carpeta de Maccabis** (`infra/huerfanos.mjs`).
+   - Huérfano: subiendo por sus padres, la cadena se corta sin llegar a una sesión viva (escritorio, terminal, Claude, VS Code, Programador de tareas, servicios).
+   - De Maccabis: su línea de órdenes nombra una carpeta de Maccabis, un script relativo que existe en ellas o `npm run` de una orden de sus `package.json`.
+   - Lo de otros proyectos y lo que cuelga de una sesión viva no se toca nunca. `-- --lista` solo dice lo que haría.
+4. **Norma: nada de esperas en segundo plano.** Para Actions, una consulta a `ci:estado` cuando haga falta; si no ha terminado, se le dice a Iván.
+
+**Pruebas:**
+- `pruebas:huerfanos` (nueva, lógica), con listas de procesos inventadas sacadas de lo visto el 25/11. Es huérfana y solo cuenta el proceso de arriba: la espera de ci:estado sin su consola, y un padre muerto cuyo PID reutilizó otro programa. No se tocan: la misma espera con la sesión viva, la rutina A desde el Programador de tareas, un `next start` de Web TCPC, unas pruebas lanzadas desde una terminal, los servidores MCP y Postgres.
+- En esta máquina: un node huérfano real fabricado a propósito. `pruebas:limpiar -- --lista` lo encontró (y nada más) y `pruebas:limpiar` lo paró.
+- `verificar_real.mjs`: sin destino, la guardia de siempre (código 3); con el real confirmado, la prohibición (código 2), sin conectarse ni crear nada.

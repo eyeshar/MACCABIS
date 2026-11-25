@@ -7,14 +7,19 @@
 //     cuando muere el postmaster, que no lleva la carpeta en su linea de ordenes (matar.mjs);
 //   - por puerto (Windows): lo que escucha en el bloque de este worktree, si es de este worktree. Si el puerto se
 //     atribuye a un PID que ya no existe (un hijo heredo el socket), los hijos de ese PID que sean de este worktree.
-// Nunca otros proyectos (Web TCPC), otros worktrees ni lo que no reconozca: lo dice y no lo toca. Una prueba de ESTE
-// worktree que siga en marcha si se para (no lo lances mientras corre una).
+//   - (D202, Windows) los node HUÉRFANOS de cualquier carpeta de Maccabis (la principal y sus worktrees): los que siguen
+//     vivos cuando la sesión que los lanzó ya se cerró (infra/huerfanos.mjs). Lo que cuelga de una sesión, terminal o
+//     tarea programada viva no se toca nunca, sea de este worktree o de otro.
+// Nunca otros proyectos (Web TCPC), otros worktrees (salvo esos huérfanos) ni lo que no reconozca: lo dice y no lo toca.
+// Una prueba de ESTE worktree que siga en marcha sí se para (no lo lances mientras corre una).
+//   npm run pruebas:limpiar -- --lista      solo dice lo que pararía y los node huérfanos, sin tocar nada
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { REPO, BASE } from './puertos.mjs';
 import { matarArbol, pararPostgres, barrerPostgres, procesos, norm, BIN_PG } from './matar.mjs';
+import { carpetasMaccabis, nodesHuerfanos } from './huerfanos.mjs';
 
 const PG = path.join(REPO, 'plataforma', 'pruebas', 'resultados', 'pg');
 const pgDir = norm(PG) + '/', plat = norm(path.join(REPO, 'plataforma')) + '/', repo = norm(REPO) + '/';
@@ -23,10 +28,12 @@ const appEnBloque = (cmd) => { const m = cmd.match(/next['"]?\s+start\s+-p\s+(\d
 const deEsteWorktree = (cmd) => norm(cmd).includes(repo);
 const corto = (cmd) => cmd.replace(/\s+/g, ' ').slice(0, 140);
 
+const LISTA = process.argv.includes('--lista');
 let parados = 0;
 /** Postgres (postmaster con -D) se para con pg_ctl; lo demas, matando su arbol. */
 function parar({ pid, cmd }, motivo) {
-  console.log(`  parando ${pid} (${motivo}): ${corto(cmd)}`);
+  console.log(`  ${LISTA ? 'pararía' : 'parando'} ${pid} (${motivo}): ${corto(cmd)}`);
+  if (LISTA) return;
   const dir = !/--forkchild/.test(cmd) && norm(cmd).includes(norm(BIN_PG)) && cmd.match(/\s-D\s+(?:"([^"]+)"|(\S+))/);
   if (!(dir && pararPostgres(dir[1] || dir[2]))) matarArbol(pid);
   parados++;
@@ -38,6 +45,12 @@ for (const p of todos) {
   const c = norm(p.cmd);
   if (c.includes(pgDir)) parar(p, 'carpeta de bases');
   else if (c.includes(plat) && appEnBloque(p.cmd)) parar(p, 'app de pruebas');
+}
+
+if (LISTA) {
+  if (process.platform === 'win32') for (const h of nodesHuerfanos(todos, carpetasMaccabis(REPO))) console.log(`  node huérfano ${h.pid}: ${corto(h.cmd)}`);
+  console.log('(--lista: no se ha tocado nada; tampoco se miran los Postgres sin padre ni los puertos)');
+  process.exit(0);
 }
 
 // 2. Postgres de este worktree sin padre
@@ -64,6 +77,13 @@ if (process.platform === 'win32') {
     const nuestros = hijos.filter((p) => deEsteWorktree(p.cmd));
     for (const h of nuestros) parar(h, `puerto ${puerto}, heredado de ${pid}`);
     if (!nuestros.length) console.log(`  puerto ${puerto}: atribuido a ${pid}, que ya no existe, sin hijos de este worktree: no se toca`);
+  }
+}
+
+// 3b. node huérfanos de las carpetas de Maccabis (D202, Windows)
+if (process.platform === 'win32') {
+  for (const h of nodesHuerfanos(procesos().filter((p) => p.pid !== process.pid), carpetasMaccabis(REPO))) {
+    parar(h, `node huérfano${h.raiz ? `: su sesión (${h.raiz.pid}) ya se cerró` : ': su padre ya no existe'}`);
   }
 }
 

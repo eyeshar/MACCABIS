@@ -89,6 +89,10 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
 | `pruebas:pantallas`, `pruebas:liga-partidos`, `pruebas:liga` | comprueban las estadísticas por jugador de la liga, que salen de las hojas de `fuentes_fbm/` (jugadores de otros equipos: fuera de git). Las suites que solo cargan la liga de paso (`navegacion`, `portada`, `avisos`, `safe-area`) usan en Actions la publicada en `data/` (`pruebas/infra/liga.mjs`) |
 | `pruebas:eventos-real`, `pruebas:respuestas-real`, `pruebas:convocatoria-real`, `pruebas:inicio-real`, `pruebas:asistencia-eventos-real`, `pruebas:whatsapp-real`, `pruebas:solo-ficha-real` | solo lectura contra el Supabase real: claves de `plataforma/.env.local` |
 
+**`verificar_real.mjs` está PROHIBIDA contra el real hasta resolver BACKLOG 28 (Iván, 25/11/2026, D202):** cambia el
+correo de dos jugadores reales y crea cuentas en auth, y si se corta a medias pueden quedarse sin acceso. El script se
+niega a arrancar sin `--pila`. No se quita la guarda ni se esquiva (ni copiando sus pasos a mano) sin el OK de Iván.
+
 `pruebas:rapidas` las incluye cuando toca (estadísticas, o escribir en producción o tocar permisos). Las de `verificar_*`
 (producción, vista previa) siguen siendo manuales, salvo `verificar_jornada.mjs`, que lanza la rutina A sin navegador (la
 base en solo lectura y una sola petición a `/liga`; nota en D179).
@@ -130,7 +134,16 @@ base en solo lectura y una sola petición a `/liga`; nota en D179).
 - **Al terminar no queda nada encendido**, tampoco si falla, con Ctrl+C o si la matan de golpe (un vigía aparte, fuera
   del árbol de la prueba, lo limpia). Si aun así queda algo de ESTE worktree: `npm run pruebas:limpiar` (solo toca lo
   suyo: por la carpeta de bases, por los puertos de su bloque y los Postgres de su `node_modules` sin padre; lo ajeno lo
-  nombra y no lo toca). No lo lances con una prueba de este worktree en marcha: también la pararía.
+  nombra y no lo toca). No lo lances con una prueba de este worktree en marcha: también la pararía. Desde D202 caza
+  también los **node huérfanos de cualquier carpeta de Maccabis** (los que siguen vivos cuando su sesión ya se cerró;
+  lo que cuelga de una sesión, terminal o tarea programada viva no lo toca). `-- --lista` solo dice lo que haría.
+- **Memoria (D202):** antes de cada suite pesada, `pruebas:rapidas` y `pruebas:completas` miran la memoria libre. Con
+  menos de 4 GB esperan hasta 3 minutos a que se libere y, si no, arrancan con un AVISO (`PRUEBAS_MEMORIA_MIN_GB`,
+  `PRUEBAS_MEMORIA_ESPERA_S`; `0` lo apaga).
+- **Nada de esperas en segundo plano (D202):** Code no deja corriendo en segundo plano órdenes que solo esperan (`ci:estado
+  -- --esperar`, un bucle de sondeo, un `sleep`). Si el equipo va justo de memoria, Claude Code las mata y sus hijos
+  quedan huérfanos (25/11/2026). Para Actions, una consulta a `npm run ci:estado` cuando haga falta; si no ha terminado,
+  se le dice a Iván y se vuelve a mirar más tarde.
 - **Sin ventanas de consola en Windows:** todo `spawn`/`spawnSync`/`exec`/`execSync`/`execFile`/`execFileSync`/`fork` de
   `plataforma/pruebas`, `plataforma/scripts`, `scripts/` y `chat-worker` lleva `windowsHide: true` (`npm run pruebas:procesos`
   falla si falta). Una librería que lanza procesos sin esa opción (embedded-postgres) se arranca dentro de

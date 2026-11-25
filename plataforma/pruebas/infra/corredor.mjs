@@ -265,6 +265,25 @@ async function tomarCerrojo(s) {
 const soltarCerrojo = () => { if (cerrojoMio) { cerrojoMio = false; try { fs.rmSync(CERROJO, { recursive: true, force: true }); } catch {} } };
 process.on('exit', soltarCerrojo);
 
+// D202: memoria libre antes de cada suite pesada (solo en local). Tres veces en noviembre de 2026 el equipo se quedó sin
+// memoria con muchos programas abiertos y una compilación de la web o una pila en marcha. Con menos de
+// PRUEBAS_MEMORIA_MIN_GB (4 por defecto; 0 lo apaga), la suite espera hasta PRUEBAS_MEMORIA_ESPERA_S (180 s) a que se
+// libere; si no, arranca igual y lo avisa. os.freemem() es la memoria disponible (en Windows, la que el sistema puede
+// dar sin pasar nada a disco).
+const MEMORIA_MIN_GB = Number(process.env.PRUEBAS_MEMORIA_MIN_GB ?? 4);
+const MEMORIA_ESPERA_S = Number(process.env.PRUEBAS_MEMORIA_ESPERA_S ?? 180);
+const gbLibres = () => os.freemem() / 2 ** 30;
+async function esperarMemoria(s) {
+  if (EN_CI || !(MEMORIA_MIN_GB > 0) || gbLibres() >= MEMORIA_MIN_GB) return;
+  console.log(`  (poca memoria libre: ${gbLibres().toFixed(1)} GB, menos de ${MEMORIA_MIN_GB}; ${s.id} espera hasta ${MEMORIA_ESPERA_S} s a que se libere. Cierra lo que no uses; «npm run pruebas:limpiar -- --lista» dice si quedan restos de Maccabis)`);
+  const hasta = Date.now() + MEMORIA_ESPERA_S * 1000;
+  while (Date.now() < hasta) {
+    await new Promise((r) => setTimeout(r, 5000));
+    if (gbLibres() >= MEMORIA_MIN_GB) { console.log(`  (ya hay ${gbLibres().toFixed(1)} GB libres: sigue ${s.id})`); return; }
+  }
+  console.log(`  AVISO: sigue habiendo poca memoria (${gbLibres().toFixed(1)} GB libres): ${s.id} arranca igual. Si el equipo va justo, párala (Ctrl+C) y cierra programas.`);
+}
+
 // En Actions: las que compilan la web, en serie en el carril 0; el resto en los carriles 1-4. En local (D167): todas las
 // pesadas (web y pila) en serie en el carril 0 y con el cerrojo; las de logica en los carriles 1-2. La web espera al
 // typecheck (lee .next/types mientras next build los reescribe).
@@ -283,7 +302,7 @@ const colaOtras = async (carril) => {
 const colaWeb = async () => {
   await typecheckHecho;
   for (const s of web) {
-    if (!EN_CI) await tomarCerrojo(s);
+    if (!EN_CI) { await tomarCerrojo(s); await esperarMemoria(s); }
     try { await ejecutar(s, 0); } finally { soltarCerrojo(); }
   }
 };

@@ -216,6 +216,7 @@ misma lógica de sesión y lista blanca; Google se revisa a mano en la vista pre
 ```
 node pruebas/verificar_real.mjs --confirmar pqbjnxmknhawlkszwmln
 ```
+**PROHIBIDA contra el real hasta resolver BACKLOG 28 (D202):** se niega a arrancar sin `--pila`.
 Verifica contra el proyecto real de Supabase (lee `.env.local`; sin el ref del real no se conecta, D187): la lista blanca (`correo_permitido`, el hook),
 RLS, quién puede entrar y quién no, y que un jugador solo ve lo suyo. Crea datos temporales y los borra al final.
 

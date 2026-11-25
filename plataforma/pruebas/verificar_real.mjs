@@ -5,6 +5,12 @@
 // al final, pase lo que pase. No imprime claves ni correos reales de jugadores.
 //
 //   node pruebas/verificar_real.mjs --confirmar <ref>   (norma 19: sin el ref del real, o --pila, no se conecta)
+//
+// PROHIBIDA CONTRA EL REAL hasta resolver BACKLOG 28 (Iván, 25/11/2026, D202): cambia a mano el correo de dos jugadores
+// reales y crea cuentas en auth, y solo lo deshace en el `finally`; si el proceso muere de golpe, esos jugadores se
+// quedarían sin poder entrar con su correo. Se niega a arrancar salvo con `--pila` (la pila local, para rehacerla con un
+// jugador sintético). Va justo después de la guardia de destino (norma 19), antes de crear nada. Quitar esta guarda es
+// parte de BACKLOG 28, con el OK de Iván.
 
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -16,6 +22,16 @@ import { exigirDestino } from '../scripts/lib/destino.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 await exigirDestino(process.argv.slice(2), { conApi: true });   // crea cuentas temporales: destino comprobado antes
+if (!process.argv.includes('--pila')) {
+  console.error([
+    'verificar_real.mjs está PROHIBIDA contra el Supabase real hasta resolver BACKLOG 28 (D202).',
+    'Motivo: cambia el correo de dos jugadores reales y crea cuentas temporales; si se corta a medias (Ctrl+C, falta de',
+    'memoria, cierre de la ventana), esos jugadores pueden quedarse sin acceso.',
+    'Lo que sí se puede pasar contra el real, en solo lectura: las -real (npm run pruebas:eventos-real, …).',
+    'Con --pila corre contra la pila local (para rehacerla con un jugador sintético).',
+  ].join('\n'));
+  process.exit(2);
+}
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const sql = conectar();

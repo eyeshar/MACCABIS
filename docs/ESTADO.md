@@ -2,7 +2,16 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-## Las `-real` comprueban propiedades, no recuentos (D201, BACKLOG 24) — 25/11/2026, `fix/real-propiedades`
+## verificar_real.mjs prohibida; memoria y node huérfanos (D202) — 25/11/2026, `docs/backlog-verificar-real`
+
+- **`verificar_real.mjs`, PROHIBIDA contra el real** hasta resolver BACKLOG 28 (prioridad alta, vía del jugador sintético). Se niega a arrancar sin `--pila`. Motivo: cambia el correo de dos jugadores reales y, si se corta, pueden quedarse sin acceso.
+- **Comprobado en el real (solo lectura):** ningún jugador tiene hoy el correo alterado por una ejecución anterior. Detalle en D202.
+- **Memoria:** `pruebas:rapidas` y `pruebas:completas` esperan (hasta 3 min) si hay menos de 4 GB libres antes de una suite pesada, y si no, avisan.
+- **`pruebas:limpiar`** caza los node huérfanos de las carpetas de Maccabis (`-- --lista` para verlos sin tocar nada). Probado con un huérfano fabricado.
+- **Norma nueva:** nada de esperas en segundo plano.
+- **Revisión de procesos del 25/11:** las pruebas no dejaban restos. Se cerró la espera huérfana de `ci:estado`. Quedan, sin tocar, tres sesiones viejas de Claude Code (14, 20 y 21/11; unos 1,35 GB; que las cierre Iván) y un `next start` de Web TCPC.
+
+## Las `-real` comprueban propiedades, no recuentos (D201, BACKLOG 24) — 25/11/2026, `fix/real-propiedades`; **PR #101 MERGEADO** (`345e6ed`, Actions en verde en `6c02eff`)
 
 **Qué cambia:**
 - `eventos-real`, `inicio-real`, `solo-ficha-real` y `whatsapp-real` ya no llevan números, fotos ni fechas del club escritos en el código.
@@ -34,7 +43,7 @@ En local, `pruebas:rapidas` (7 suites, todo en verde) y `pruebas:procesos`.
 
 **D179:** ninguna `-real` abre un navegador (SQL y API REST).
 
-**Pendiente, sin tocar:** `verificar_real.mjs` (manual, crea cuentas temporales en el real) espera 44 filas de calendario y 22 de clasificación de la liga. Valen para toda la 2026/27, pero fallarán con la temporada siguiente. Se arregla cuando haga falta pasarla.
+**Pendiente:** `verificar_real.mjs` (manual, crea cuentas temporales en el real) espera 44 filas de calendario y 22 de clasificación de la liga. Valen para toda la 2026/27, pero fallarán con la temporada siguiente. Desde D202 está **prohibida** contra el real: BACKLOG 28, prioridad alta.
 
 ## Filas importadas de SportEasy y caso del 22/11 (D200, D199) — 25/11/2026, `fix/importadas-sporteasy`
 

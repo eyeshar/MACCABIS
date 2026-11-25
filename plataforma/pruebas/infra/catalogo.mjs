@@ -22,7 +22,7 @@ export const SOLO_LOCAL = {
   'pruebas:inicio-real': 'Supabase real: claves de plataforma/.env.local',
   'pruebas:asistencia-eventos-real': 'Supabase real: claves de plataforma/.env.local',
   'pruebas:whatsapp-real': 'Supabase real: claves de plataforma/.env.local',
-  'pruebas:solo-ficha-real': 'Supabase real: claves de plataforma/.env.local y la foto de privado/backups/',
+  'pruebas:solo-ficha-real': 'Supabase real: claves de plataforma/.env.local',
 };
 
 /** Pruebas de estadisticas y liga: en local solo si el cambio toca datos, el pipeline, las migraciones o sus pantallas. */
@@ -56,8 +56,9 @@ export function catalogo() {
     const rutas = [...new Set([...src.matchAll(/\bAPP\}?\s*\+?\s*['`]?(\/[a-z][\w\-/.]*)/gi)].map((m) => claveRuta(m[1])))];
     const importa = [...src.matchAll(/from '\.\.\/(src\/(?:lib|components)\/[\w/.-]+|scripts\/[\w/.-]+)'/g)].map((m) => m[1]);
     // `// vigila: src/components/…` en la cabecera: la suite cuenta como si importara ese fichero (componentes .tsx que
-    // la suite no puede importar y que llegan a demasiadas pantallas para el límite de 4; p. ej. HojaNoVoy).
-    importa.push(...[...src.matchAll(/^\/\/ vigila: ((?:src|scripts)\/[\w/.-]+)\s*$/gm)].map((m) => m[1]));
+    // la suite no puede importar y que llegan a demasiadas pantallas para el límite de 4; p. ej. HojaNoVoy). También
+    // `pruebas/…`: una suite que lanza otras (real-mutaciones pasa las `-real` contra la pila, D201).
+    importa.push(...[...src.matchAll(/^\/\/ vigila: ((?:src|scripts|pruebas)\/[\w/.-]+)\s*$/gm)].map((m) => m[1]));
     lista.push({ id, dir: PLAT, tipo, fuente: `plataforma/${fuente}`, rutas, importa });
   }
   for (const s of lista) {

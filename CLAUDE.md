@@ -87,8 +87,7 @@ No van a Actions porque necesitan claves de Supabase o datos que no están en gi
 | `test:regresion` | lee `.cache-jdm/` y `data/raw/` (fuera de git) |
 | `test:liga` | lee las hojas de `fuentes_fbm/` (fuera de git) |
 | `pruebas:pantallas`, `pruebas:liga-partidos`, `pruebas:liga` | comprueban las estadísticas por jugador de la liga, que salen de las hojas de `fuentes_fbm/` (jugadores de otros equipos: fuera de git). Las suites que solo cargan la liga de paso (`navegacion`, `portada`, `avisos`, `safe-area`) usan en Actions la publicada en `data/` (`pruebas/infra/liga.mjs`) |
-| `pruebas:eventos-real`, `pruebas:respuestas-real`, `pruebas:convocatoria-real`, `pruebas:inicio-real`, `pruebas:asistencia-eventos-real` | solo lectura contra el Supabase real: claves de `plataforma/.env.local` |
-| `pruebas:solo-ficha-real` | ídem, y la foto previa de `privado/backups/` (prueba de la migración de D148) |
+| `pruebas:eventos-real`, `pruebas:respuestas-real`, `pruebas:convocatoria-real`, `pruebas:inicio-real`, `pruebas:asistencia-eventos-real`, `pruebas:whatsapp-real`, `pruebas:solo-ficha-real` | solo lectura contra el Supabase real: claves de `plataforma/.env.local` |
 
 `pruebas:rapidas` las incluye cuando toca (estadísticas, o escribir en producción o tocar permisos). Las de `verificar_*`
 (producción, vista previa) siguen siendo manuales, salvo `verificar_jornada.mjs`, que lanza la rutina A sin navegador (la
@@ -112,6 +111,11 @@ base en solo lectura y una sola petición a `/liga`; nota en D179).
 - **Capturas:** solo si se pide (`PRUEBAS_CAPTURAS=1`, o una suite suelta con `npm run pruebas:<suite>`; en las tandas,
   `-- --capturas`).
 - **No se borra ni se desactiva una prueba** sin decirlo en el resumen del bloque, con el motivo.
+- **Las `-real` comprueban propiedades, no números (D201):** nada de recuentos, fotos ni fechas escritos en el código
+  («67 eventos», «14 de 17 pistas», la foto del 01/11). Lo esperado se calcula de la base en ese momento, en la misma foto
+  de la transacción (`repeatable read`), y cada fila cumple sus reglas (`pruebas/infra/reglas_real.mjs`). Una `-real` solo
+  falla si algo está mal, nunca porque el club cree un evento o un plan. Una regla nueva lleva su caso en
+  `pruebas:real-mutaciones` (pila local: la `-real` en verde con la base sana y en rojo con el fallo metido).
 
 ## Puertos y procesos de las pruebas
 
@@ -177,7 +181,6 @@ cd plataforma && npm ci     # instalación PROPIA, plataforma (no enlazar node_m
 Y copiar lo que no está en git (si falta, algunas pruebas fallan sin que el código tenga la culpa):
 `plataforma/.env.local`, `privado/` **sin `backups/` ni `tmp/`** (`robocopy <origen> <destino> /E /XD backups tmp`),
 `fuentes_fbm/` al día, `.cache-jdm/`, `data/raw/` y `plataforma/pruebas/.bin/` (PostgREST; si no está, se descarga).
-`pruebas:solo-ficha-real` necesita además `privado/backups/2026-11-01_solo_ficha_foto.json` (solo ese fichero; la foto del real del 01/11/2026).
 Las suites de avisos push (`respuestas-pantallas`, `convocatoria-pantallas`…) necesitan `openssl` en el PATH: pásalas
 desde Git Bash (en PowerShell no está).
 `next-env.d.ts` lo crea `pruebas:rapidas` si falta.

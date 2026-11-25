@@ -8,6 +8,10 @@
 // inventado no devuelve nada); el jugador no lee tableros, grupos sin publicar, hashes del calendario ni avisos de otros,
 // ni crea planes en una transaccion de solo lectura; la vista publica no tiene planes; y el numero de cuentas de auth.
 // Nunca imprime datos personales: solo recuentos.
+// BACKLOG 24 (D201): sin recuentos ni fotos escritos en el código. «La vista pública no tiene planes» es «ningún evento no
+// oficial ni borrado de la base sale en lo público» (un plan hecho oficial conserva su clave plan-… y sí es público), y
+// las pistas se comprueban por reglas (coordenadas completas; las habituales, con coordenadas) y contra la base en la
+// misma foto, no contra «14 de 17». `pruebas:real-mutaciones` demuestra en la pila local que sigue detectando errores.
 //
 //   npm run pruebas:inicio-real -- --antes      antes de aplicar la migracion
 //   npm run pruebas:inicio-real                 despues
@@ -15,6 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { conectar } from '../scripts/db.mjs';
+import { problemasPistas } from './infra/reglas_real.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(RAIZ, '.env.local') });
@@ -32,12 +37,15 @@ async function api(ruta, { metodo = 'GET', cuerpo } = {}) {
   return { status: r.status, datos };
 }
 const bloqueado = (r) => r.status === 401 || r.status === 403 || r.status === 404 || (Array.isArray(r.datos) && r.datos.length === 0);
-async function como(userId, fn) {
+// `antes(tx)` lee con el rol de la conexión en la MISMA foto (repeatable read) lo que se compara con lo que ve la cuenta.
+async function como(userId, fn, antes = async () => null) {
   try {
-    await sql.begin('read only', async (tx) => {
+    await sql.begin('isolation level repeatable read read only', async (tx) => {
+      const base = await antes(tx);
+      ok((await tx`show transaction_read_only`)[0].transaction_read_only === 'on', 'la transacción es de solo lectura');
       await tx.unsafe('set local role authenticated');
       await tx`select set_config('request.jwt.claims', ${JSON.stringify({ sub: userId, role: 'authenticated' })}, true)`;
-      await fn(tx);
+      await fn(tx, base);
       throw new Error('__deshacer__');
     });
   } catch (e) { if (e.message !== '__deshacer__') throw e; }
@@ -55,8 +63,11 @@ try {
 
   console.log('\n== Anónimo (HTTPS, clave pública)');
   for (const t of ['eventos', 'respuestas', 'jugadores_privado', 'convocatorias', ...(ANTES ? [] : NUEVAS), ...(ANTES ? [] : ['v_mi_agenda'])]) ok(bloqueado(await api(`/${t}?select=*&limit=1`)), `anónimo no lee ${t}`);
-  const pub = await api('/v_eventos_publicos?select=clave&limit=500');
-  ok(Array.isArray(pub.datos) && pub.datos.length > 0 && !pub.datos.some((x) => /^plan-/.test(x.clave)), `la vista pública responde (${pub.datos?.length} eventos) y no tiene planes`);
+  // Lo que nunca puede salir en lo público, leído de la base ahora: los planes sin hacer oficiales y lo borrado.
+  const ocultas = new Set((await sql`select clave from public.eventos where not oficial or borrado_en is not null`).map((x) => x.clave));
+  const pub = await api('/v_eventos_publicos?select=clave&limit=10000');
+  const colados = (Array.isArray(pub.datos) ? pub.datos : []).filter((x) => ocultas.has(x.clave)).map((x) => x.clave);
+  ok(Array.isArray(pub.datos) && pub.datos.length > 0 && !colados.length, `la vista pública responde (${pub.datos?.length} eventos) y no tiene ningún plan sin hacer oficial ni evento borrado (${ocultas.size} en la base)`, colados.slice(0, 3).join(' '));
   const anonFn = (await sql`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE') order by 1`).map((x) => x.proname);
   ok(JSON.stringify(anonFn) === JSON.stringify(ANTES ? [] : ['calendario_personal']), `anónimo solo ejecuta ${ANTES ? 'ninguna función' : 'calendario_personal (D120)'}`, anonFn.join(', '));
   if (!ANTES) {
@@ -94,7 +105,7 @@ try {
   });
 
   console.log('\n== Un gestor (cuenta existente, transacción de solo lectura)');
-  await como(ges.id, async (tx) => {
+  await como(ges.id, async (tx, base) => {
     const [{ n: ev }] = await tx`select count(*)::int n from public.eventos`;
     ok(ev > 0, `el gestor lee los eventos (${ev})`);
     if (!ANTES) {
@@ -104,12 +115,14 @@ try {
         const [{ n }] = await tx.unsafe(`select count(*)::int n from public.${t}`);
         ok(n >= 0, `el gestor lee ${t} (${n})`);
       }
-      // Foto del real del 01/11/2026: 17 pistas, 14 con coordenadas (eran 3 cuando se escribió esta suite, el 24/10; desde
-      // entonces se han dado de alta las de los amistosos, torneos y planes). Si se da de alta otra pista, se cambia aquí.
-      const [{ n: pistas, total }] = await tx`select count(*) filter (where lat is not null)::int n, count(*)::int total from public.pistas`;
-      ok(pistas === 14 && total === 17, `pistas como en la foto del 01/11: 14 con coordenadas de 17 (hoy ${pistas} de ${total})`);
+      // Las pistas que lee el gestor son las de la base (misma foto) y cumplen las reglas: coordenadas completas y en
+      // rango, y las habituales con coordenadas (el mapa). Antes era «14 de 17» (foto del 01/11): fallaba con cada alta.
+      const vistas = await tx`select slug, estado, lat, lng from public.pistas order by slug`;
+      ok(JSON.stringify(vistas) === JSON.stringify(base.pistas), `el gestor lee todas las pistas de la base, con sus coordenadas (${vistas.length}, ${vistas.filter((x) => x.lat !== null).length} con coordenadas)`);
+      const mal = problemasPistas(vistas);
+      ok(vistas.length > 0 && !mal.length, 'cada pista tiene las dos coordenadas o ninguna, en rango, y las habituales las tienen', mal.slice(0, 3).join(' · '));
     }
-  });
+  }, async (tx) => ({ pistas: ANTES ? [] : await tx`select slug, estado, lat, lng from public.pistas order by slug` }));
   const [{ n: cuentas2 }] = await sql`select count(*)::int n from auth.users`;
   ok(cuentas2 === cuentas, `cuentas de auth sin cambios durante la prueba (${cuentas2})`);
 } catch (e) { console.error(e); fallos++; } finally {

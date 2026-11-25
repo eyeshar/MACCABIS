@@ -2,6 +2,40 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## Las `-real` comprueban propiedades, no recuentos (D201, BACKLOG 24) — 25/11/2026, `fix/real-propiedades`
+
+**Qué cambia:**
+- `eventos-real`, `inicio-real`, `solo-ficha-real` y `whatsapp-real` ya no llevan números, fotos ni fechas del club escritos en el código.
+- Lo esperado se calcula de la base en el momento, en la misma foto de la transacción, y cada fila cumple sus reglas (`pruebas/infra/reglas_real.mjs`).
+- Fallaban por deriva de datos: 67 eventos fijos (el real tiene 68), «14 de 17 pistas» y la foto de invitados del 01/11.
+- `inicio-real` tenía además una regla mal planteada: «ninguna clave `plan-…` en lo público», pero un plan hecho oficial es público.
+- `solo-ficha-real` ya no necesita `privado/backups/2026-11-01_solo_ficha_foto.json`.
+- Detalle, y lo que pierde fuerza, en D201. Para la liga se compensa con «calendario entero, 1…N sin huecos».
+
+**Demostración:** `pruebas:real-mutaciones` (nueva, pila local, también en Actions). Con la base sana, las tres en verde. Con 8 fallos metidos uno a uno, cada una en rojo por la comprobación que toca, y otra vez en verde al quitarlo:
+- plan privado visible en lo público;
+- temporada mal;
+- descanso en jornada con partido;
+- partido borrado;
+- respuestas ajenas legibles;
+- pista habitual sin coordenadas;
+- sin ficha invitado;
+- marca retroactiva.
+
+**Verificado (25/11, en el real, solo lectura):**
+- `eventos-real` 84 OK: 68 públicos de 69, 1 plan oculto, 4 descansos, liga entera;
+- `inicio-real` 38 OK;
+- `solo-ficha-real` 17 OK: 23 entrenos con la marca, 1.932 pares de invitados, 3 sin ficha;
+- `whatsapp-real` 9 OK, con el entreno del 25/11;
+- sin tocar y en verde: `respuestas-real`, `convocatoria-real` y `asistencia-eventos-real`;
+- 28 cuentas de auth antes y después.
+
+En local, `pruebas:rapidas` (7 suites, todo en verde) y `pruebas:procesos`.
+
+**D179:** ninguna `-real` abre un navegador (SQL y API REST).
+
+**Pendiente, sin tocar:** `verificar_real.mjs` (manual, crea cuentas temporales en el real) espera 44 filas de calendario y 22 de clasificación de la liga. Valen para toda la 2026/27, pero fallarán con la temporada siguiente. Se arregla cuando haga falta pasarla.
+
 ## Filas importadas de SportEasy y caso del 22/11 (D200, D199) — 25/11/2026, `fix/importadas-sporteasy`
 
 **Las importadas son respuestas válidas (Iván, 25/11): se quitaron y se restauraron el mismo día** (D200):

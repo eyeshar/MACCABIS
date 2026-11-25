@@ -2092,3 +2092,53 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
   - las existentes se pueden tocar, pasan a ser del jugador al responder y se pueden borrar;
   - se revierte y se vuelve a aplicar.
 - `pruebas:fantasy-logica`, bloque D200: la importada da +1 «antes del plazo» antes y después del 29/11, y quien respondió en la web, igual.
+
+## D201 — Las `-real` comprueban propiedades, no recuentos ni fotos (Iván, 24–25/11/2026; Code, `fix/real-propiedades`, BACKLOG 24)
+
+**Contexto:** `pruebas:eventos-real` e `pruebas:inicio-real` esperaban 67 eventos públicos (el real tiene 68) y `14 de 17` pistas con coordenadas. `pruebas:solo-ficha-real` comparaba los invitados con la foto del 01/11, y el plan creado después (hoy una quedada oficial) la hacía fallar. Fallaban cada vez que el club creaba un evento o un plan, sin culpa del código. Además, `inicio-real` daba por hecho que toda clave `plan-…` es privada: un plan hecho oficial conserva su clave y es público con todo derecho. `whatsapp-real` miraba siempre el entreno del 04/11 (fecha fija).
+
+**Criterio:** una `-real` solo falla si algo está mal. Nada de números, fotos ni fechas del club en el código. Lo esperado se calcula de la base en ese momento:
+- lo que ve una cuenta se compara con la base en la misma foto (transacción `repeatable read read only`);
+- la API anónima se compara con la base leída antes y después (si cambia entre medias, se repite);
+- cada fila cumple las reglas de `pruebas/infra/reglas_real.mjs`.
+
+**Qué comprueban ahora:**
+- `eventos-real`:
+  - lo público son exactamente los eventos oficiales y no borrados de la base, sin claves repetidas;
+  - ningún plan sin hacer oficial ni evento borrado sale en lo público;
+  - cada evento público tiene fecha dentro de su temporada, tipo, equipo y estado válidos, y hora de inicio anterior a la de fin; los de liga, además, jornada, rival y local/visitante;
+  - ninguna jornada de liga está repetida por equipo;
+  - los descansos son los de la base, bien formados y nunca el día o la jornada de un partido de ese equipo;
+  - **el calendario de liga está entero** (partidos y descansos cubren 1…N por equipo). Esto conserva lo que el 67 sí detectaba: que desaparezca un partido;
+  - como mucho una pista de serie;
+  - el gestor ve todos los eventos y el jugador lo suyo, contra la base en la misma foto;
+  - «sin efectos» ya no compara el número de eventos antes y después; se comprueba que cada transacción es de solo lectura.
+- `inicio-real`:
+  - ningún evento no oficial ni borrado sale en lo público;
+  - el gestor lee todas las pistas de la base;
+  - las coordenadas van las dos o ninguna, en rango, y las pistas habituales las tienen.
+- `solo-ficha-real`, sin foto:
+  - qué entrenos llevan la marca se recalcula aparte con las pistas y se compara con `solo_con_ficha_en`;
+  - `_invitado` se compara par a par (todos los eventos por todos los jugadores, 1.932 hoy) con la regla escrita aparte en la prueba;
+  - los sin ficha quedan fuera de los entrenos marcados y dentro de los demás;
+  - nada retroactivo: ninguna pista con la marca desde antes del 04/11/2026, ningún evento marcado antes de esa fecha y ningún entreno público anterior a que la pista de serie fuera habitual sale en ella. La foto `privado/backups/2026-11-01_solo_ficha_foto.json` ya no hace falta.
+- `whatsapp-real`: por defecto, el próximo entreno programado (o el último); `--fecha` sigue valiendo.
+
+**Lo que se pierde:**
+- **Un entreno, amistoso o plan borrado de la tabla** ya no se detecta: no hay un total contra el que comparar. Para la liga se cubre con el calendario entero. Para los entrenos se podría comprobar la serie semanal, pero los cambios legítimos (festivos, pista) la harían frágil, así que no se hace.
+- **Una pista no habitual que pierda las coordenadas** ya no se detecta.
+- **Las comprobaciones de la carga de datos de D148** (Valdebernardo habitual y sin la nota de obras, los 23 entrenos de 20:30 a 22:30) se quitan. Eran de una carga ya hecha y verificada, y un cambio legítimo de horario las rompería. La regla que protegen sigue comprobada.
+
+**Demostración permanente:** `pruebas:real-mutaciones` (nueva, pila local, entra en Actions). Pasa las tres `-real` contra la pila con datos sintéticos: un plan privado, un plan hecho oficial, la pista habitual «solo con ficha» desde el 04/11 y un jugador sin ficha. Con la base sana, en verde. Después mete 8 fallos, uno a uno, y comprueba que cada suite sale en rojo por la comprobación que toca y vuelve al verde al quitarlo:
+1. la vista pública sin `e.oficial`, en `eventos` e `inicio`;
+2. un partido con la temporada de otro año;
+3. un descanso en la jornada de un partido;
+4. un partido borrado (hueco en el calendario);
+5. una política que deja leer respuestas ajenas;
+6. la pista habitual sin coordenadas;
+7. `_invitado` sin la regla de D148;
+8. la marca retroactiva.
+
+`infra/catalogo.mjs` acepta `// vigila: pruebas/…`: `pruebas:rapidas` elige `real-mutaciones` cuando se toca una de esas `-real` o sus reglas.
+
+**D179:** ninguna `-real` abre un navegador. Todas van por SQL y por la API REST de Supabase. `verificar_real.mjs` (manual, crea cuentas temporales) sigue esperando 44 filas de calendario y 22 de clasificación de la liga. No se ha tocado (crea cuentas en el real, norma 14); queda anotado en ESTADO.

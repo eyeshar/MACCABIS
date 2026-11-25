@@ -130,6 +130,7 @@
     "pruebas:claves": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/claves_rival.mjs",
     "pruebas:jugadores-rivales": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/jugadores_rivales.mjs",
     "pruebas:solo-ficha-real": "node pruebas/solo_con_ficha_real.mjs",
+    "pruebas:real-mutaciones": "node pruebas/real_mutaciones.mjs",
     "pruebas:fantasy-logica": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/fantasy_logica.mjs",
     "pruebas:fantasy-rls": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/fantasy_rls.mjs",
     "pruebas:fantasy-pantallas": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning pruebas/fantasy_pantallas.mjs",

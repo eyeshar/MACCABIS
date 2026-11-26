@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRuta } from "@/components/nav/useRuta";
-import { rutaDe, salidaDeEmergencia, vigilarPeticiones } from "@/lib/navegacion/salida";
+import { indicadorActual, rutaDe, salidaDeEmergencia, suscribirIndicador, vigilarPeticiones } from "@/lib/navegacion/salida";
 
 /** Enlaces que no pueden quedarse sin respuesta (D203): el evento y los planes, se pinten donde se pinten. */
 export const RUTA_GUARDADA = /^\/(evento|planes)\//;
@@ -22,10 +22,14 @@ type Aviso = { href: string; top: number; left: number; ancho: number };
  *     más de lo normal» con «Recargar» (y otro toque en el enlace también recarga).
  * No se mete en lo que no es un toque normal (Ctrl/⌘/Mayús/Alt, botón central, otra pestaña, descarga, otro sitio, la
  * misma dirección) ni en un enlace con su propia salida (`data-salida-propia`, como AbrirDomingo).
+ *
+ * También pinta el indicador fijo de la pantalla en blanco (dirección ya cambiada, sin página ni esqueleto: ver
+ * salida.ts), el de estos enlaces y el de AbrirDomingo: esa página ya no está, pero este layout sí.
  */
 export default function GuardaEnlaces() {
   const ruta = useRuta();
   const [aviso, setAviso] = useState<Aviso | null>(null);
+  const indicador = useSyncExternalStore(suscribirIndicador, indicadorActual, () => null);
   // Ya en otra página: lo que quedara marcado vuelve a estar listo y el aviso se va.
   useEffect(() => { document.querySelectorAll("a[data-abriendo], a[data-tarda]").forEach(limpiar); setAviso(null); }, [ruta]);
   useEffect(() => {
@@ -43,6 +47,7 @@ export default function GuardaEnlaces() {
       a.setAttribute("data-abriendo", "");
       a.setAttribute("aria-busy", "true");
       salidaDeEmergencia(a.href, {
+        textoCargando: destino.startsWith("/planes/") ? "Cargando el plan…" : "Cargando el evento…",
         alCambiar: () => limpiar(a),
         alTardar: () => {
           if (!a.isConnected) return;
@@ -56,11 +61,21 @@ export default function GuardaEnlaces() {
     document.addEventListener("click", alTocar, true);
     return () => document.removeEventListener("click", alTocar, true);
   }, []);
-  if (!aviso) return null;
   return (
-    <div className="enlace-tarda" role="alert" data-testid="enlace-tarda" style={{ top: aviso.top, left: aviso.left, width: Math.max(aviso.ancho, 220) }}>
-      <span>Está tardando más de lo normal.</span>
-      <button type="button" className="boton boton-amarillo" onClick={() => window.location.assign(aviso.href)}>Recargar</button>
-    </div>
+    <>
+      {aviso && (
+        <div className="enlace-tarda" role="alert" data-testid="enlace-tarda" style={{ top: aviso.top, left: aviso.left, width: Math.max(aviso.ancho, 220) }}>
+          <span>Está tardando más de lo normal.</span>
+          <button type="button" className="boton boton-amarillo" onClick={() => window.location.assign(aviso.href)}>Recargar</button>
+        </div>
+      )}
+      {indicador && (
+        <div className="indicador-carga" data-testid="indicador-carga" data-tipo={indicador.tipo} role={indicador.tipo === "tarda" ? "alert" : "status"}>
+          {indicador.tipo === "cargando" && <span className="indicador-girando" aria-hidden="true" />}
+          <span>{indicador.texto}</span>
+          {indicador.tipo === "tarda" && <button type="button" className="boton boton-amarillo" onClick={() => window.location.assign(indicador.href)}>Recargar</button>}
+        </div>
+      )}
+    </>
   );
 }

@@ -2056,6 +2056,16 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 3. El servidor no contesta: «Guardando…» y, a los ~10 s, «todavía NO está guardada», sin marcar. Al cortarse, recarga con «No se ha podido guardar…».
 4. Prefetch del esqueleto que llega y página que no: se ve el esqueleto con la ruta nueva, y a los ~10 s el domingo llega por una carga entera.
 
+**Ajuste del 26/11/2026 (Iván; Code, `fix/domingo-en-blanco`): la pantalla en blanco.** El caso 4 fallaba 2 de cada 4 tandas y no era lentitud de la máquina:
+- **El hueco:** el domingo tiene dos prefetch, el árbol de la ruta (`/_tree`) y, después, el del esqueleto. El layout de `[fecha]` hace la sesión, la fecha y si hay partido **por encima** de `loading.tsx` (D198, para que el 307 y el 404 sean de verdad). Si el del esqueleto llega cuando la navegación ya ha salido, Next cambia la dirección y deja vacío el sitio de la página (`#contenido`): ni esqueleto (sin él no hay vigía) ni el botón tocado. **Se quedaba en blanco para siempre.** Ya pasaba desde D198/D199.
+- **Lo que se hace ahora** (opción (b) de Iván, la regla de D203): a los ~1,5 s en blanco, un **indicador fijo** «Cargando tu domingo…». Si la petición no salió, carga entera a los ~6 s; si salió y sigue en curso, **no se recarga**, y a los ~20 s el indicador pasa a «Está tardando más de lo normal» con «Recargar». Lo pinta `GuardaEnlaces` (layout raíz), así que sigue en pantalla aunque la página del botón ya no esté. Detalle en D203.
+- **El esqueleto colgado (este punto 4) sigue igual:** carga entera a los ~10 s.
+- **Prueba:** el caso 4 se parte en dos, cada uno **siempre igual** (sin carrera):
+  - **(4b) esqueleto:** se espera a que llegue el prefetch del esqueleto antes del toque;
+  - **(4a) en blanco:** se retiene el prefetch del esqueleto hasta que sale la navegación.
+  - Se espera a la condición, con límite generoso, en vez del plazo fijo de 5 s.
+  - En verde en 6 tandas seguidas de `pruebas:domingo`. Sin el arreglo (`#contenido` vacío tomado por «ha llegado», como antes), 4 fallos en (4a).
+
 **Corrección del caso del 22/11 (Iván, 25/11/2026; con los mecanismos que ya había, sin tocar el cálculo):**
 - **Asistencia:** las dos faltas «sin excusa» (MdA y MdL) pasan a **justificadas**. Un gestor pone su respuesta con `gestor_responder` (la misma que usa el tablero): «No voy», motivo `viaje`, detalle «Vacaciones». «Vacaciones» no existe como motivo; el más cercano es `viaje`. Queda en `tablero_registro`, así que se puede deshacer. Con D197 (convocado, fuera de la hoja y con un «no» con motivo) sale «con excusa» en los dos partidos.
 - **MdFantasy:** sale el +1 «respondió antes del plazo» de ese domingo. Lo da la nueva puntuación de la jornada del 22/11: se marcó como pendiente igual que lo hace la corrección de asistencia (`huella = null`, `valor_quieto = true`, para que no se mueva el valor de mercado), y la tarea la puntuó a las 00:00 del 25/11 con el código desplegado. Ahora el domingo dice «respondió un gestor por él» (0). Compromiso y total, 3 → 2, y el valor de mercado no cambia.
@@ -2194,6 +2204,16 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 - redirecciones (`/evento/<plan>` → `/planes/<plan>`, `/planes/<oficial>` → `/evento/<oficial>`) y 404 (id inexistente, no-id, plan borrado), también por navegación del cliente, sin carga entera de más.
 
 **Demostración:** sin la guarda, 10 fallos (los casos colgados y la pestaña vieja). Con la regla vieja (recargar a los 6 s aunque la petición haya salido), 5 fallos: la petición lenta y la que no vuelve. En los dos casos, las redirecciones y los 404 siguen en verde. `pruebas:domingo` cubre lo mismo en `AbrirDomingo`: no sale, carga entera a los ~6 s; sale y no vuelve, a los ~20 s «Está tardando más de lo normal · Toca para recargar», y el toque recarga. `pruebas:no-voy-primer-toque`, en verde.
+
+**Ajuste del 26/11/2026 (Iván; Code, `fix/domingo-en-blanco`): «ha llegado» ya no es solo «ha cambiado la dirección».** Next puede cambiar la dirección y dejar vacío el sitio de la página (`#contenido` del layout raíz) hasta que responde el servidor: el domingo en blanco, ver D199. Ahora:
+- **Llegar** = la dirección ya no es la de antes **y** hay algo dentro de `#contenido`: la página, su esqueleto, un 404 o un error. Una redirección o un 404 del destino cuentan igual que antes.
+- **Dirección cambiada y en blanco:** a los ~1,5 s, el indicador fijo (`indicador-carga`): «Cargando tu domingo…», «Cargando el evento…» o «Cargando el plan…». Después, la misma regla que con la dirección sin cambiar:
+  - la petición no salió: carga entera a los ~6 s;
+  - salió y sigue en curso: no se recarga, y a los ~20 s el indicador dice «Está tardando más de lo normal», con «Recargar».
+- **Dónde se pinta:** `GuardaEnlaces`, en el layout raíz, porque el enlace tocado ya no está en pantalla.
+- **Cómo:** el seguimiento mira cada 250 ms (antes, dos temporizadores) y se acaba en cuanto llega.
+- **Vale para todo lo que usa la salida común:** `AbrirDomingo` y los enlaces a `/evento` y `/planes`.
+- `pruebas:enlaces` sigue en verde. Las pruebas del blanco están en `pruebas:domingo` (D199).
 
 ## D204 — `pruebas:limpiar` lista las sesiones de Claude Code abiertas, sin cerrarlas nunca (Iván, 25/11/2026; Code, `feat/limpiar-sesiones-claude`)
 

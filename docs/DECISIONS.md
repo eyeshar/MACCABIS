@@ -2194,3 +2194,25 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 - redirecciones (`/evento/<plan>` → `/planes/<plan>`, `/planes/<oficial>` → `/evento/<oficial>`) y 404 (id inexistente, no-id, plan borrado), también por navegación del cliente, sin carga entera de más.
 
 **Demostración:** sin la guarda, 10 fallos (los casos colgados y la pestaña vieja). Con la regla vieja (recargar a los 6 s aunque la petición haya salido), 5 fallos: la petición lenta y la que no vuelve. En los dos casos, las redirecciones y los 404 siguen en verde. `pruebas:domingo` cubre lo mismo en `AbrirDomingo`: no sale, carga entera a los ~6 s; sale y no vuelve, a los ~20 s «Está tardando más de lo normal · Toca para recargar», y el toque recarga. `pruebas:no-voy-primer-toque`, en verde.
+
+## D204 — `pruebas:limpiar` lista las sesiones de Claude Code abiertas, sin cerrarlas nunca (Iván, 25/11/2026; Code, `feat/limpiar-sesiones-claude`)
+
+**Contexto:** en la revisión de memoria del 25/11 (D202) se contaron «tres sesiones viejas» de Claude Code y una era la propia sesión de trabajo. Cerrar una sesión por error pierde trabajo a medias, así que hace falta verlas bien, no cerrarlas solo.
+
+**Decisión:**
+1. **Al final de `npm run pruebas:limpiar`** (también con `-- --lista`), en Windows, se listan las sesiones del CLI de Claude Code (`@anthropic-ai/claude-code` o el nativo de `~/.local/bin`; no la aplicación de escritorio). De cada una:
+   - el PID y desde cuándo está abierta;
+   - su padre y la terminal de la que cuelga (Windows Terminal, VS Code, consola, el Explorador), y si esa terminal tiene ventana visible;
+   - sus servidores MCP (el servidor, no el `npx` que lo lanzó);
+   - la memoria, con todo lo que cuelga de ella.
+2. **Se marca la actual** (`► ESTA SESIÓN`): la que tiene en su cadena de padres al proceso que pregunta.
+3. **Nunca se cierra una sesión desde aquí**, ni con confirmación. Lo decide Iván, una a una: desde su terminal (`/exit`) o cerrando esa pestaña.
+
+**Pruebas:** `pruebas:huerfanos`, bloque D204, con listas de procesos inventadas:
+- tres sesiones, sin la aplicación de escritorio ni una anidada;
+- la actual, y solo esa;
+- la terminal y su ventana; una sesión cuya terminal ya se cerró;
+- los MCP y la memoria;
+- en el código de `limpiar.mjs`, que lo que lista no pasa por nada que pare procesos.
+
+En esta máquina, el 25/11: las tres sesiones (14, 20 y 21/11), con la del 20/11 marcada como la actual.

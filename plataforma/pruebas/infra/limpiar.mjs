@@ -12,6 +12,8 @@
 //     tarea programada viva no se toca nunca, sea de este worktree o de otro.
 // Nunca otros proyectos (Web TCPC), otros worktrees (salvo esos huérfanos) ni lo que no reconozca: lo dice y no lo toca.
 // Una prueba de ESTE worktree que siga en marcha sí se para (no lo lances mientras corre una).
+// Al final (D204, Windows) LISTA las sesiones de Claude Code abiertas: PID, inicio, de qué cuelgan (terminal y si tiene
+// ventana visible), sus servidores MCP y la memoria, marcando la actual. NUNCA las cierra: eso lo decide Iván.
 //   npm run pruebas:limpiar -- --lista      solo dice lo que pararía y los node huérfanos, sin tocar nada
 import fs from 'node:fs';
 import os from 'node:os';
@@ -19,7 +21,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { REPO, BASE } from './puertos.mjs';
 import { matarArbol, pararPostgres, barrerPostgres, procesos, norm, BIN_PG } from './matar.mjs';
-import { carpetasMaccabis, nodesHuerfanos } from './huerfanos.mjs';
+import { carpetasMaccabis, nodesHuerfanos, sesionesClaude } from './huerfanos.mjs';
 
 const PG = path.join(REPO, 'plataforma', 'pruebas', 'resultados', 'pg');
 const pgDir = norm(PG) + '/', plat = norm(path.join(REPO, 'plataforma')) + '/', repo = norm(REPO) + '/';
@@ -29,6 +31,27 @@ const deEsteWorktree = (cmd) => norm(cmd).includes(repo);
 const corto = (cmd) => cmd.replace(/\s+/g, ' ').slice(0, 140);
 
 const LISTA = process.argv.includes('--lista');
+
+/** Sesiones de Claude Code abiertas: solo se listan (D204). */
+function listarSesiones() {
+  if (process.platform !== 'win32') return;
+  let ventanas = new Set();
+  try {
+    const salida = execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', 'Get-Process | Where-Object { $_.MainWindowHandle -ne 0 } | ForEach-Object { $_.Id }'], { encoding: 'utf8', windowsHide: true });
+    ventanas = new Set(salida.split(/\s+/).filter(Boolean).map(Number));
+  } catch { /* sin saber las ventanas: todas «sin ventana visible» */ }
+  const lista = sesionesClaude(procesos(), process.pid, ventanas);
+  console.log(`\nSesiones de Claude Code abiertas: ${lista.length} (solo se listan; pruebas:limpiar nunca cierra una sesión)`);
+  const hoy = Date.now();
+  for (const x of lista) {
+    const dias = x.inicio ? Math.floor((hoy - x.inicio.getTime()) / 864e5) : null;
+    const cuando = x.inicio ? `${x.inicio.toLocaleString('es-ES', { timeZone: 'Europe/Madrid', dateStyle: 'short', timeStyle: 'short' })}${dias ? ` (hace ${dias} día${dias === 1 ? '' : 's'})` : ''}` : '?';
+    const desde = x.terminal ? `${x.terminal.nombre} ${x.terminal.pid}${x.terminal.ventana === null ? '' : x.terminal.ventana ? ', con ventana visible' : ', sin ventana visible'}` : 'ninguna terminal viva';
+    console.log(`  ${x.actual ? '► ESTA SESIÓN · ' : ''}PID ${x.pid} · desde ${cuando} · padre ${x.padre ? `${x.padre.nombre} ${x.padre.pid}` : 'ya cerrado'} · ${desde} · ${Math.round(x.mem / 2 ** 20)} MB`);
+    if (x.mcp.length) console.log(`      servidores MCP: ${x.mcp.map((m) => `${m.pid} ${/playwright/i.test(m.cmd) ? 'Playwright' : /context7/i.test(m.cmd) ? 'context7' : 'otro'}`).join(', ')}`);
+  }
+  if (lista.some((x) => !x.actual)) console.log('  Para cerrar una: desde su terminal (/exit) o cerrando esa pestaña. Nunca desde aquí.');
+}
 let parados = 0;
 /** Postgres (postmaster con -D) se para con pg_ctl; lo demas, matando su arbol. */
 function parar({ pid, cmd }, motivo) {
@@ -50,6 +73,7 @@ for (const p of todos) {
 if (LISTA) {
   if (process.platform === 'win32') for (const h of nodesHuerfanos(todos, carpetasMaccabis(REPO))) console.log(`  node huérfano ${h.pid}: ${corto(h.cmd)}`);
   console.log('(--lista: no se ha tocado nada; tampoco se miran los Postgres sin padre ni los puertos)');
+  listarSesiones();
   process.exit(0);
 }
 
@@ -103,3 +127,4 @@ for (const f of fs.readdirSync(os.tmpdir()).filter((f) => /^maccabis-pruebas-\d+
 let carpetas = 0;
 if (fs.existsSync(PG)) for (const d of fs.readdirSync(PG)) { try { fs.rmSync(path.join(PG, d), { recursive: true, force: true, maxRetries: 5 }); carpetas++; } catch { console.log(`  no se puede borrar ${d} (¿en uso por una prueba que sigue en marcha?)`); } }
 console.log(`${parados} proceso(s) parados y ${carpetas} carpeta(s) de base borradas (bloque de puertos ${BASE}-${BASE + 99}).`);
+listarSesiones();

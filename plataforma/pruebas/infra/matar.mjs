@@ -42,13 +42,13 @@ export function pararPostgres(dir) {
 const vivo = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 const dormir = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
-/** Procesos del sistema: { pid, ppid, t (creacion; para no confundir un PID reutilizado), cmd }. */
+/** Procesos del sistema: { pid, ppid, t (creacion; para no confundir un PID reutilizado), cmd, mem (bytes; Windows) }. */
 export function procesos() {
   if (process.platform === 'win32') {
     const orden = '[Console]::OutputEncoding = [Text.Encoding]::UTF8; ConvertTo-Json -Compress -InputObject @(Get-CimInstance Win32_Process | ' +
-      "Select-Object ProcessId,ParentProcessId,@{n='t';e={if ($_.CreationDate) { $_.CreationDate.ToFileTimeUtc() } else { 0 }}},CommandLine)";
+      "Select-Object ProcessId,ParentProcessId,@{n='t';e={if ($_.CreationDate) { $_.CreationDate.ToFileTimeUtc() } else { 0 }}},CommandLine,WorkingSetSize)";
     const salida = execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', orden], { encoding: 'utf8', maxBuffer: 1e8, windowsHide: true });
-    return JSON.parse(salida).map((p) => ({ pid: p.ProcessId, ppid: p.ParentProcessId, t: p.t || 0, cmd: p.CommandLine || '' }));
+    return JSON.parse(salida).map((p) => ({ pid: p.ProcessId, ppid: p.ParentProcessId, t: p.t || 0, cmd: p.CommandLine || '', mem: p.WorkingSetSize || 0 }));
   }
   return execFileSync('ps', ['-eo', 'pid=,ppid=,args='], { encoding: 'utf8', windowsHide: true }).split('\n').filter(Boolean)
     .map((l) => { const m = l.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/); return { pid: Number(m[1]), ppid: Number(m[2]), t: 0, cmd: m[3] }; });

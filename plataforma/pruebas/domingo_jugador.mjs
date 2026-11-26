@@ -273,30 +273,107 @@ try {
     { const n = await suyas(), m = await marcadaSi(); ok(n === 0 && !m, 'sin nada guardado ni marcado', `${n} filas, marcada ${m}, ${await pg.locator('.rw-vas button[aria-pressed="true"]').allInnerTexts()}`); }
     pg.off('request', cuentaCargas);
 
-    // 4) La ruta ya ha cambiado pero se queda en el esqueleto: a los ~10 s, carga entera (lo que no cubría D198).
+    // 4) La navegación cambia de dirección y el servidor no contesta. El domingo tiene DOS prefetch: el árbol de la ruta
+    //    (next-router-segment-prefetch: /_tree) y, después, el del esqueleto (next-router-prefetch sin segmento: el
+    //    loading.tsx, que está por debajo del layout dinámico, D198). Con los dos, el toque pinta el esqueleto; con solo el
+    //    árbol, Next cambia la dirección y deja #contenido vacío (la pantalla en blanco); sin ninguno, la dirección no
+    //    cambia (el caso del botón, arriba). Antes dependía de qué había llegado al tocar: 2 de cada 4 tandas, en blanco.
+    const esNav = (h) => h['rsc'] && !h['next-router-prefetch'] && !h['next-router-segment-prefetch'];
+    const esPrefetch = (h) => h['rsc'] && (h['next-router-prefetch'] || h['next-router-segment-prefetch']);
+    const esPrefetchEsqueleto = (h) => h['rsc'] && h['next-router-prefetch'] && !h['next-router-segment-prefetch'];
+    const vacio = () => pg.evaluate(() => { const c = document.getElementById('contenido'); return Boolean(c && !c.firstElementChild); }).catch(() => false);
+    // 4b) Con los dos prefetch hechos: se queda en el esqueleto y a los ~10 s, carga entera (D199, lo que no cubría D198).
     await sinBucle();
-    const retenidas = [];
-    const esqueleto = async (route) => {
-      const h = route.request().headers();
-      if (h['rsc'] && !h['next-router-prefetch'] && !h['next-router-segment-prefetch']) { retenidas.push(route); return; }
-      await route.fallback();
-    };
-    await pg.route('**/mi-zona/domingo/**', esqueleto);
-    try {
-      const b = await boton(pg);
+    {
+      const retenidas = [];
+      let prefetchEnCurso = 0, prefetchHechos = 0;
+      const esqueleto = async (route) => {
+        const h = route.request().headers();
+        if (esNav(h)) { retenidas.push(route); return; }
+        if (!esPrefetch(h)) return route.fallback();
+        prefetchEnCurso++;
+        try { await route.fallback(); } finally { prefetchEnCurso--; }
+      };
+      const terminado = (r) => { if (esPrefetchEsqueleto(r.headers()) && r.url().includes('/mi-zona/domingo/')) prefetchHechos++; };
+      await pg.route('**/mi-zona/domingo/**', esqueleto);
+      pg.on('requestfinished', terminado);
+      try {
+        const b = await boton(pg);
+        ok(await hasta(() => prefetchHechos > 0 && prefetchEnCurso === 0, 15000), '(4b) el prefetch del esqueleto ha llegado antes del toque', `${prefetchHechos} hechos, ${prefetchEnCurso} en curso`);
+        let carga = null;
+        const enteras = (r) => { if (r.isNavigationRequest() && r.frame() === pg.mainFrame() && r.url().includes(`/mi-zona/domingo/${J3}`)) carga ??= Date.now(); };
+        pg.on('request', enteras);
+        const t0 = Date.now();
+        await b?.click();
+        // Se espera a la condición (que salga el esqueleto), con un límite generoso. Solo cuenta si sale ANTES de la carga
+        // entera: el de la carga entera (loading.tsx también se ve ahí) no vale.
+        let tEsq = null;
+        const vioEsqueleto = await hasta(async () => {
+          if (carga !== null) return false;
+          if ((await pg.getByTestId('cargando-domingo').count()) > 0 && pg.url().includes('/mi-zona/domingo/')) { tEsq ??= Date.now(); return true; }
+          return false;
+        }, 20000);
+        ok(vioEsqueleto, '(4b) la navegación cambia de ruta y se queda en el esqueleto (las peticiones del domingo no vuelven)', `${pg.url()}${carga !== null ? `, carga entera antes del esqueleto (${carga - t0} ms)` : ''}${(await vacio()) ? ', pantalla en blanco' : ''}`);
+        ok(await visto(pg.getByTestId('situacion'), 35000), '(4b) a los ~10 s, el domingo llega por una carga entera');
+        ok(vioEsqueleto && carga !== null && carga - tEsq >= 9000, '(4b) por una carga entera, y no antes de ~10 s con el esqueleto en pantalla', carga === null ? 'sin carga entera' : tEsq === null ? 'sin esqueleto' : `${carga - tEsq} ms tras el esqueleto (${tEsq - t0} ms tras el toque)`);
+        pg.off('request', enteras);
+      } finally {
+        pg.off('requestfinished', terminado);
+        await pg.unroute('**/mi-zona/domingo/**', esqueleto);
+        for (const r of retenidas) await r.abort().catch(() => {});
+      }
+    }
+    // 4a) El prefetch del esqueleto llega cuando la navegación ya ha salido: ni esqueleto ni página, solo el marco
+    //     (#contenido vacío). Antes se quedaba así para siempre. Ahora: a los ~1,5 s, «Cargando tu domingo…» fijo; la petición salió, así que no se recarga sola
+    //     (ni a los 6 s ni a los 9); a los ~20 s «Está tardando más de lo normal» con «Recargar», que hace la carga entera.
+    await sinBucle();
+    {
+      const retenidas = [];
+      let navs = 0, arbol = 0, arbolHecho = 0;
+      const esqueletoRetenido = [];
+      const arbolTerminado = (r) => { const h = r.headers(); if (esPrefetch(h) && !esPrefetchEsqueleto(h) && r.url().includes('/mi-zona/domingo/')) arbolHecho++; };
+      pg.on('requestfinished', arbolTerminado);
+      const blanco = async (route) => {
+        const h = route.request().headers();
+        if (!h['rsc']) return route.fallback();
+        if (esNav(h)) navs++;
+        if (esPrefetch(h) && !esPrefetchEsqueleto(h)) { arbol++; return route.fallback(); }
+        if (esPrefetchEsqueleto(h)) { esqueletoRetenido.push(route); return; }
+        retenidas.push(route);
+      };
+      await pg.route('**/mi-zona/domingo/**', blanco);
       let carga = null;
       const enteras = (r) => { if (r.isNavigationRequest() && r.frame() === pg.mainFrame() && r.url().includes(`/mi-zona/domingo/${J3}`)) carga ??= Date.now(); };
-      pg.on('request', enteras);
-      const t0 = Date.now();
-      await b?.click();
-      const vioEsqueleto = await hasta(async () => (await pg.getByTestId('cargando-domingo').count()) > 0 && pg.url().includes('/mi-zona/domingo/'), 5000);
-      ok(vioEsqueleto, 'la navegación cambia de ruta y se queda en el esqueleto (las peticiones del domingo no vuelven)', pg.url());
-      ok(await visto(pg.getByTestId('situacion'), 25000), 'a los ~10 s, el domingo llega por una carga entera');
-      ok(carga !== null && (!vioEsqueleto || carga - t0 >= 9000), 'por una carga entera, y no antes de ~10 s con el esqueleto', carga === null ? 'sin carga entera' : `${carga - t0} ms`);
-      pg.off('request', enteras);
-    } finally {
-      await pg.unroute('**/mi-zona/domingo/**', esqueleto);
-      for (const r of retenidas) await r.abort().catch(() => {});
+      try {
+        const b = await boton(pg);
+        ok(await hasta(() => arbolHecho > 0 && esqueletoRetenido.length > 0, 15000), '(4a) el prefetch del árbol ha llegado y el del esqueleto está retenido', `${arbol} árbol (${arbolHecho} hechos), ${esqueletoRetenido.length} del esqueleto`);
+        pg.on('request', enteras);
+        const t0 = Date.now();
+        await b?.click();
+        // El del esqueleto llega cuando la navegación ya ha salido (lo que pasa en un móvil lento): Next cambia la
+        // dirección y deja #contenido vacío.
+        ok(await hasta(() => navs > 0, 5000), '(4a) la petición de la página ha salido', `${navs}`);
+        for (const r of esqueletoRetenido.splice(0)) await r.fallback().catch(() => {});
+        const ind = pg.getByTestId('indicador-carga');
+        let tInd = null;
+        ok(await hasta(async () => { if (pg.url().includes('/mi-zona/domingo/') && (await vacio()) && (await ind.count()) > 0 && (await ind.getAttribute('data-tipo')) === 'cargando') { tInd ??= Date.now(); return true; } return false; }, 15000),
+          '(4a) dirección cambiada y pantalla en blanco: indicador fijo', `${pg.url()}, en blanco ${await vacio()}, indicador ${await ind.count()}`);
+        ok(tInd !== null && tInd - t0 >= 1000 && /Cargando tu domingo/.test(await ind.innerText()) && (await ind.getAttribute('role')) === 'status', '(4a) a los ~1,5 s, «Cargando tu domingo…»', tInd === null ? '' : `${tInd - t0} ms`);
+        ok(!(await hasta(() => carga !== null, 9000)), '(4a) la petición salió y sigue en curso: pasados ~6 s (y 9), sin carga entera', carga === null ? '' : `${carga - t0} ms`);
+        ok(await hasta(async () => (await ind.count()) > 0 && (await ind.getAttribute('data-tipo')) === 'tarda', 16000) && Date.now() - t0 >= 18000 && carga === null,
+          '(4a) a los ~20 s, sin recargar sola: el indicador pasa a avisar', `${Date.now() - t0} ms, carga ${carga === null ? 'no' : carga - t0}`);
+        ok(/Está tardando más de lo normal/.test(await ind.innerText()) && (await ind.getAttribute('role')) === 'alert', '(4a) «Está tardando más de lo normal», con «Recargar»', await ind.innerText());
+        ok(navs === 1, '(4a) una sola petición de la página (nada pedido dos veces)', `${navs}`);
+        await pg.unroute('**/mi-zona/domingo/**', blanco);
+        await ind.getByRole('button', { name: 'Recargar' }).click();
+        ok(await visto(pg.getByTestId('situacion'), 20000) && carga !== null && pg.url().endsWith(`/mi-zona/domingo/${J3}`), '(4a) «Recargar»: el domingo llega por una carga entera');
+        ok(await hasta(async () => (await ind.count()) === 0, 5000), '(4a) y el indicador se va');
+      } finally {
+        pg.off('request', enteras);
+        pg.off('requestfinished', arbolTerminado);
+        await pg.unroute('**/mi-zona/domingo/**', blanco).catch(() => {});
+        for (const r of [...retenidas, ...esqueletoRetenido]) await r.abort().catch(() => {});
+      }
     }
     e.errores.length = erroresD199; // los 409, las peticiones cortadas y su console.error son a propósito
   }

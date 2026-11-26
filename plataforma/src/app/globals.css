@@ -850,3 +850,9 @@ a[data-abriendo] { cursor: progress; animation: abriendo 0.9s ease-in-out infini
 a[data-tarda] { animation: none; opacity: 1; }
 .enlace-tarda { position: absolute; z-index: 60; margin-top: 4px; max-width: calc(100vw - 16px); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; background: var(--fondo, #fff); color: inherit; border: 2px solid var(--amarillo, #f5c400); border-radius: 10px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); }
 .enlace-tarda .boton { min-height: 44px; }
+/* D199 + D203: la dirección ya cambió y la página no se pinta (ni su esqueleto): indicador fijo, y a los ~20 s «Recargar». */
+.indicador-carga { position: fixed; z-index: 70; left: 50%; top: calc(env(safe-area-inset-top) + 88px); transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 12px 16px; background: var(--fondo, #fff); color: inherit; font-weight: 700; border: 2px solid var(--amarillo, #f5c400); border-radius: 12px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); }
+.indicador-carga .boton { min-height: 44px; }
+.indicador-girando { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: indicador-gira 0.8s linear infinite; }
+@keyframes indicador-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .indicador-girando { animation: none; border-right-color: currentColor; opacity: 0.5; } }

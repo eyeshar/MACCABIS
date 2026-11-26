@@ -2,6 +2,12 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
+## El domingo ya no se queda en blanco (D199 + D203, ajuste) — 26/11/2026, `fix/domingo-en-blanco`
+
+- **El hueco (ya venía de D198/D199):** si el prefetch del esqueleto llegaba con la navegación ya en marcha, la dirección pasaba a `/mi-zona/domingo/…` y la página se quedaba vacía para siempre: sin esqueleto, sin domingo y sin ninguna salida de emergencia. Por eso el caso del esqueleto colgado de `pruebas:domingo` fallaba 2 de cada 4 tandas.
+- **Ahora:** a los ~1,5 s en blanco, un indicador fijo, «Cargando tu domingo…». Si la petición no salió, carga entera a los ~6 s. Si salió y sigue en curso, no se recarga: a los ~20 s, «Está tardando más de lo normal» con «Recargar». Lo mismo para los enlaces al evento y a los planes.
+- **Pruebas:** en `pruebas:domingo`, el caso se parte en dos deterministas: con el esqueleto y en blanco. En verde en 6 tandas seguidas; sin el arreglo, 4 fallos. `pruebas:enlaces` y `pruebas:no-voy-primer-toque`, en verde.
+
 ## `pruebas:limpiar` lista las sesiones de Claude Code (D204) — 25/11/2026, `feat/limpiar-sesiones-claude`
 
 - **Qué cambia:** al final de `pruebas:limpiar` (también con `-- --lista`) salen las sesiones de Claude Code abiertas: PID, desde cuándo, de qué terminal cuelgan y si tiene ventana, sus MCP y la memoria. Se marca la actual (`► ESTA SESIÓN`). **Nunca las cierra:** lo decide Iván.

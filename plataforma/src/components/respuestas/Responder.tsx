@@ -62,7 +62,8 @@ export default function Responder({ eventoId, fecha, domingo, actual, nombre, gr
 // mientras carga no relanza la navegacion (antes cada toque pedia la pagina otra vez y no se veia nada).
 // D203: la salida de emergencia es la comun (@/lib/navegacion/salida): carga entera si la pestaña es vieja o si a los ~6 s
 // la peticion ni ha salido; si salio y sigue en curso, no se recarga y a los ~20 s el boton dice «Está tardando más de lo
-// normal · Toca para recargar» (y otro toque recarga).
+// normal · Toca para recargar» (y otro toque recarga). Si la dirección cambia y la pantalla se queda en blanco (sin el
+// esqueleto), el indicador fijo «Cargando tu domingo…» (salida.ts, lo pinta GuardaEnlaces).
 function AbrirDomingo({ href, texto, grande }: { href: string; texto: string; grande?: boolean }) {
   const cargando = useRef(false);
   const [estado, setEstado] = useState<"listo" | "abriendo" | "tarda">("listo");
@@ -72,7 +73,7 @@ function AbrirDomingo({ href, texto, grande }: { href: string; texto: string; gr
         if (estado === "tarda") { ev.preventDefault(); window.location.assign(href); return; }
         if (cargando.current || estado === "abriendo") { ev.preventDefault(); return; }
         setEstado("abriendo");
-        salidaDeEmergencia(href, { alCambiar: () => setEstado("listo"), alTardar: () => setEstado("tarda") });
+        salidaDeEmergencia(href, { textoCargando: "Cargando tu domingo…", alCambiar: () => setEstado("listo"), alTardar: () => setEstado("tarda") });
       }}>
       <EstadoEnlace texto={texto} estado={estado} cargando={cargando} />
     </Link>

@@ -101,6 +101,26 @@ _(22, cerrado el 10/11/2026: ver «Histórico».)_
      - el registro pendiente de `privado/tmp/`, si lo hay.
    - **Al acabar:** quitar la guarda de `verificar_real.mjs` (con el OK de Iván) y la prohibición de `CLAUDE.md`.
    - **Prueba:** en la pila local, cortar la verificación a medias (matar el proceso) y comprobar que la orden encuentra los restos y que la limpieza los quita. Recuento de cuentas de auth antes y después (norma 14).
+29. [ ] **PRIORIDAD BAJA (Iván, 26/11/2026, D203): comprobar la sesión en el proxy para que el esqueleto del domingo quede por encima de todo el trabajo dinámico.** **Aparcado.** **Solo se retoma si**, con el indicador del #105, los jugadores siguen viendo pantallas en blanco o esperas largas.
+    - **Qué se movería:**
+      - la sesión (307 a `/entrar`) y la fecha mal escrita, del layout de `/mi-zona/domingo/[fecha]` a `src/proxy.ts`;
+      - «ese día hay partido»: o en el proxy (una consulta a la base) o en la página, por debajo del esqueleto (sería un 404 suave: un 200 con la pantalla de «no encontrado»).
+    - **Ventajas:**
+      - el layout queda sin trabajo dinámico: el esqueleto va en el prefetch junto con el árbol y desaparece la causa del blanco que se ha visto (D199, ajuste del 26/11);
+      - la sesión sale gratis: el proxy ya pide el usuario a Supabase en cada página de quien tiene la cookie;
+      - lo mismo serviría para `/evento`, que no tiene esqueleto por esto mismo (D198).
+    - **Riesgos:**
+      - no se sabe si el blanco desaparece del todo (sin comprobar: un toque antes de cualquier prefetch); el indicador seguiría como red;
+      - sin cookie, hoy el proxy ni se ejecuta (ver el `matcher`): habría que añadir una regla para `/mi-zona/domingo/…`;
+      - el `matcher` lleva el nombre de la cookie escrito a mano: una regla más que cambiar si cambia el proyecto de Supabase;
+      - el 404 desde el proxy (reescribir a una página de «no encontrado» con estado 404) está sin probar en Next 16;
+      - la consulta del partido en el proxy correría en cada petición a esa ruta, también en los prefetch (hoy la hace el layout);
+      - más lógica en el proxy, que corre en todas las páginas con sesión; una redirección del proxy en una navegación del cliente hay que probarla.
+    - **Qué tocaría:**
+      - `src/proxy.ts` (lógica y `matcher`);
+      - `src/app/mi-zona/domingo/[fecha]/layout.tsx` (quitarlo o dejarlo sin esperas), con la sesión en `page.tsx` como defensa;
+      - pruebas: los 307 y 404 de `pruebas:domingo`, `pruebas:cache-publica`, `pruebas:navegacion` y el caso de la pantalla en blanco, que habría que rehacer.
+    - **Recomendación de Code, si se retoma:** solo la sesión al proxy, y decidir aparte si «sin partido ese día» puede ser un 404 suave.
 
 ## Pendiente de Iván
 

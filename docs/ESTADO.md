@@ -2,19 +2,59 @@
 
 > Foto de qué está hecho HOY. Se actualiza en cada sesión.
 
-## El domingo ya no se queda en blanco (D199 + D203, ajuste) — 26/11/2026, `fix/domingo-en-blanco`
+## Resumen del bloque del 24 al 26/11/2026 (PR #95 a #105): qué cambió para el jugador
+
+**Origen:** el 24/11 un jugador tocó «Responder al domingo» en el iPhone y no vio nada, y el domingo anterior creyó haber respondido y no constaba. No había ningún error: había esperas sin ninguna señal en pantalla, y una navegación que se quedaba dentro del móvil.
+
+**Para el jugador, desde el 24/11:**
+- **El toque se nota al momento.** «Responder al domingo» se hunde y dice «Abriendo…». Los enlaces al evento y a los planes, en cualquier pantalla, parpadean suave. Un segundo toque no vuelve a pedir la página. Sin zoom por doble toque. (#95, #103)
+- **El domingo carga antes.** «Quién va» se calcula solo con los partidos pedidos y en paralelo con lo demás. Antes recorría la temporada entera: hasta 3,7 s. (#95)
+- **Mientras carga, se ve algo:**
+  - el esqueleto del domingo;
+  - si la página se queda en blanco, «Cargando tu domingo…» a los ~1,5 s;
+  - si algo falla, «No se ha podido cargar tu domingo», con «Reintentar».
+  (#95, #105)
+- **Nunca se queda colgado sin salida:**
+  - una pestaña de una versión vieja se recarga en seguida;
+  - si la navegación ni salió del móvil, carga entera a los ~6 s;
+  - si salió y el servidor tarda, **no se recarga** (no se duplica el trabajo) y a los ~20 s sale «Está tardando más de lo normal» con «Recargar»;
+  - si se queda en el esqueleto, carga entera a los ~10 s.
+  (#95, #97, #103, #105)
+- **Una respuesta nunca se pierde en silencio:**
+  - el botón solo se marca cuando la base lo confirma;
+  - mientras tanto, «Guardando…»; a los ~10 s sin confirmar, «tu respuesta todavía NO está guardada»;
+  - si falla o la web se actualizó, recarga y lo dice: «vuelve a pulsar tu respuesta».
+  (#97)
+- **Las respuestas que venían de SportEasy siguen valiendo** como respuestas. El importador ya no puede volver a escribirlas: hay un disparador en la base. (#99, #100)
+- **El caso del 22/11, corregido:** las dos faltas pasan a «con excusa» y el −1 de MdFantasy se queda (Iván). (#98, #100)
+- **Ctrl/⌘ + clic, clic central y «abrir en otra pestaña»** funcionan como siempre: la guarda no se mete. (#103)
+
+**Por dentro (no lo ve el jugador):**
+- las `-real` comprueban propiedades, no recuentos (#101);
+- `verificar_real.mjs` está prohibida contra el real hasta el BACKLOG 28 (#102);
+- las pruebas miran la memoria antes de las pesadas, y `pruebas:limpiar` caza los node huérfanos y lista las sesiones de Claude Code sin cerrarlas (#102, #104);
+- `pruebas:enlaces` es nueva y `pruebas:domingo`, determinista (#103, #105).
+
+**Queda abierto:**
+- BACKLOG 28 (`verificar_real.mjs`, prioridad alta);
+- BACKLOG 29 (la sesión en el proxy, prioridad baja, con su condición);
+- las dos pestañas viejas de Claude Code (14 y 21/11), que cierra Iván.
+
+## El domingo ya no se queda en blanco (D199 + D203, ajuste) — 26/11/2026, `fix/domingo-en-blanco`; **PR #105 MERGEADO** (`c59e3df`, Actions en verde en `49eab94`) y desplegado (una carga de `/mi-zona/domingo/2026-11-29` sin sesión: 307 a `/entrar`, D179)
+
+- **Alternativa aparcada:** comprobar la sesión en el proxy para quitar el hueco de raíz. BACKLOG 29, prioridad baja: solo si, con el indicador, siguen las pantallas en blanco o las esperas largas (D203).
 
 - **El hueco (ya venía de D198/D199):** si el prefetch del esqueleto llegaba con la navegación ya en marcha, la dirección pasaba a `/mi-zona/domingo/…` y la página se quedaba vacía para siempre: sin esqueleto, sin domingo y sin ninguna salida de emergencia. Por eso el caso del esqueleto colgado de `pruebas:domingo` fallaba 2 de cada 4 tandas.
 - **Ahora:** a los ~1,5 s en blanco, un indicador fijo, «Cargando tu domingo…». Si la petición no salió, carga entera a los ~6 s. Si salió y sigue en curso, no se recarga: a los ~20 s, «Está tardando más de lo normal» con «Recargar». Lo mismo para los enlaces al evento y a los planes.
 - **Pruebas:** en `pruebas:domingo`, el caso se parte en dos deterministas: con el esqueleto y en blanco. En verde en 6 tandas seguidas; sin el arreglo, 4 fallos. `pruebas:enlaces` y `pruebas:no-voy-primer-toque`, en verde.
 
-## `pruebas:limpiar` lista las sesiones de Claude Code (D204) — 25/11/2026, `feat/limpiar-sesiones-claude`
+## `pruebas:limpiar` lista las sesiones de Claude Code (D204) — 25/11/2026, `feat/limpiar-sesiones-claude`; **PR #104 MERGEADO** (`f38dc4c`, Actions en verde en `25f2b43`)
 
 - **Qué cambia:** al final de `pruebas:limpiar` (también con `-- --lista`) salen las sesiones de Claude Code abiertas: PID, desde cuándo, de qué terminal cuelgan y si tiene ventana, sus MCP y la memoria. Se marca la actual (`► ESTA SESIÓN`). **Nunca las cierra:** lo decide Iván.
 - **Hoy:** dos, del 14 y del 21/11, en pestañas de una ventana de Windows Terminal abierta, más la actual (20/11).
 - **Pruebas:** `pruebas:huerfanos`, bloque D204 (22 OK en total).
 
-## Enlaces al evento y a los planes con salida de emergencia (D203, BACKLOG 25 cerrado) — 25/11/2026, `fix/enlaces-sin-salida`
+## Enlaces al evento y a los planes con salida de emergencia (D203, BACKLOG 25 cerrado) — 25/11/2026, `fix/enlaces-sin-salida`; **PR #103 MERGEADO** (`1ac1b39`, Actions en verde en `181ae27`) y desplegado (una carga de `/`: 200)
 
 - **Qué cambia:** un toque en cualquier enlace a `/evento/…` o `/planes/…` ya no puede quedarse sin respuesta. El enlace parpadea suave mientras abre y un segundo toque no lo relanza.
   - Pestaña de un despliegue anterior (`/version.txt`): carga entera en seguida.

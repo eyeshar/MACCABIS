@@ -2215,6 +2215,16 @@ Revisado después (Iván, 04/11): el aviso «Tu duda ha pasado a no va» lleva a
 - **Vale para todo lo que usa la salida común:** `AbrirDomingo` y los enlaces a `/evento` y `/planes`.
 - `pruebas:enlaces` sigue en verde. Las pruebas del blanco están en `pruebas:domingo` (D199).
 
+**Alternativa valorada y aparcada (Iván, 26/11/2026): quitar el hueco de raíz con el proxy.** Consiste en llevar la sesión (y la fecha) del layout de `[fecha]` a `src/proxy.ts`, para que `loading.tsx` quede por encima de todo el trabajo dinámico manteniendo el 307 a `/entrar`:
+- **Lo bueno:** el esqueleto iría siempre en el prefetch, la sesión sale gratis (el proxy ya pide el usuario) y serviría también para `/evento`.
+- **En contra:**
+  - «ese día hay partido» necesita la base: o una consulta en el proxy, en cada petición y prefetch, o un 404 suave;
+  - sin cookie el proxy no se ejecuta;
+  - el `matcher` es literal;
+  - el 404 desde el proxy está sin probar;
+  - no consta que quite el blanco en todos los casos.
+- **No se hace ahora:** basta el indicador. Queda en el BACKLOG (29, prioridad baja), con la condición para retomarlo: que, con el indicador, los jugadores sigan viendo pantallas en blanco o esperas largas.
+
 ## D204 — `pruebas:limpiar` lista las sesiones de Claude Code abiertas, sin cerrarlas nunca (Iván, 25/11/2026; Code, `feat/limpiar-sesiones-claude`)
 
 **Contexto:** en la revisión de memoria del 25/11 (D202) se contaron «tres sesiones viejas» de Claude Code y una era la propia sesión de trabajo. Cerrar una sesión por error pierde trabajo a medias, así que hace falta verlas bien, no cerrarlas solo.
